@@ -938,7 +938,7 @@ mono_debug_free_source_location (MonoDebugSourceLocation *location)
 	}
 }
 
-static int (*get_seq_point) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
+static int (*get_seq_point) (MonoMethod *method, gint32 native_offset);
 
 void
 mono_install_get_seq_point (MonoGetSeqPointFunc func)
@@ -976,7 +976,7 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 		}
 
 		if (offset < 0 && get_seq_point)
-			offset = get_seq_point (domain, method, native_offset);
+			offset = get_seq_point (method, native_offset);
 
 		if (offset < 0)
 			res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);

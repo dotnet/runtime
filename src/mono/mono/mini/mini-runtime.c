@@ -2835,7 +2835,7 @@ mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *metho
 				mono_error_cleanup (oerror);
 
 			/* Might be interpreted */
-			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);
+			ji = mini_get_interp_callbacks ()->find_jit_info (method);
 		}
 	}
 

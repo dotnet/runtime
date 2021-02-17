@@ -6983,11 +6983,11 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 }
 
 static MonoJitInfo*
-interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
+interp_find_jit_info (MonoMethod *method)
 {
 	InterpMethod* imethod;
 
-	imethod = lookup_imethod (domain, method);
+	imethod = lookup_imethod (mono_get_root_domain (), method);
 	if (imethod)
 		return imethod->jinfo;
 	else
