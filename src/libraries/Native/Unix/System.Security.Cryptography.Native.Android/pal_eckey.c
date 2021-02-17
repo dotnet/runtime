@@ -129,6 +129,7 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 
 int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)
 {
-    // TODO: The public APIs do not support getting a name from an ECKeyParameters object.
-    return FAIL;
+    // The public APIs do not support getting a name from an ECKeyParameters object.
+    *nidName = 0;
+    return SUCCESS;
 }
