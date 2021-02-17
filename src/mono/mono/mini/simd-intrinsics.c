@@ -318,6 +318,94 @@ type_to_insert_op (MonoType *type)
 	}
 }
 
+struct IntrinGroup {
+    const char *name;
+    MonoCPUFeatures feature;
+    SimdIntrinsic *intrinsics;
+    int intrinsics_size;
+    gboolean jit_supported;
+};
+
+struct EmitIntrinsicCtx {
+	gboolean is_64bit;
+	MonoClass *klass;
+	const struct IntrinGroup *intrin_group;
+	MonoCompile *cfg;
+	MonoMethodSignature *fsig;
+	MonoInst **args;
+	MonoTypeEnum arg0_type;
+	SimdIntrinsic *info;
+	int id;
+};
+
+typedef MonoInst * (* EmitIntrinsicFn) (struct EmitIntrinsicCtx *);
+
+static MonoInst *
+emit_hardware_intrinsics (
+	MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
+	MonoInst **args, const struct IntrinGroup *groups, int groups_size_bytes,
+	EmitIntrinsicFn custom_emit)
+{
+	struct EmitIntrinsicCtx ectx = { 0 };
+	ectx.klass = cmethod->klass;
+	ectx.cfg = cfg;
+	ectx.fsig = fsig;
+	ectx.args = args;
+	ectx.id = -1;
+	int groups_size = groups_size_bytes / sizeof (groups [0]);
+	for (int i = 0; i < groups_size; ++i) {
+		const struct IntrinGroup *group = &groups [i];
+		if (is_hw_intrinsics_class (ectx.klass, group->name, &ectx.is_64bit)) {
+			ectx.intrin_group = group;
+			break;
+		}
+	}
+
+	MonoInst *ins = NULL;
+	gboolean supported = FALSE;
+	ectx.arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	if (ectx.intrin_group) {
+		SimdIntrinsic *intrinsics = ectx.intrin_group->intrinsics;
+		int intrinsics_size = ectx.intrin_group->intrinsics_size;
+		MonoCPUFeatures feature = ectx.intrin_group->feature;
+
+		// Hardware intrinsics are LLVM-only.
+		if (!COMPILE_LLVM (cfg) && !ectx.intrin_group->jit_supported)
+			goto support_probe_complete;
+
+		ectx.info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
+		if (!ectx.info)
+			goto support_probe_complete;
+
+		if (feature)
+			supported = (mini_get_cpu_features (cfg) & feature) != 0;
+		else
+			supported = TRUE;
+
+		ectx.id = ectx.info->id;
+
+		if (ectx.info->op != 0)
+			return emit_simd_ins_for_sig (cfg, ectx.klass, ectx.info->op, ectx.info->instc0, ectx.arg0_type, fsig, args);
+	}
+support_probe_complete:
+	if (ectx.id == SN_get_IsSupported) {
+		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+		return ins;
+	}
+	if (!supported) {
+		// Can't emit non-supported llvm intrinsics
+		if (!ectx.intrin_group || cfg->method != cmethod) {
+			// Keep the original call so we end up in the intrinsic method
+			return NULL;
+		} else {
+			// Emit an exception from the intrinsic method
+			mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
+			return NULL;
+		}
+	}
+	return custom_emit (&ectx);
+}
+
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
@@ -838,12 +926,9 @@ static SimdIntrinsic crypto_aes_methods [] = {
 	{SN_Encrypt, OP_XOP_X_X_X, SIMD_OP_AES_ENC},
 	{SN_InverseMixColumns, OP_XOP_X_X, SIMD_OP_AES_IMC},
 	{SN_MixColumns, OP_XOP_X_X, SIMD_OP_ARM64_AES_AESMC},
-	{SN_get_IsSupported}
-};
-
-static SimdIntrinsic neon_aes_methods [] = {
 	{SN_PolynomialMultiplyWideningLower, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_LOWER},
-	{SN_PolynomialMultiplyWideningUpper, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_UPPER}
+	{SN_PolynomialMultiplyWideningUpper, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_UPPER},
+	{SN_get_IsSupported},
 };
 
 static SimdIntrinsic sha1_methods [] = {
@@ -894,94 +979,27 @@ MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodS
 	return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
 }
 
+static const struct IntrinGroup supported_arm_intrinsics [] = {
+	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
+	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
+	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
+	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
+	{ "AdvSimd", MONO_CPU_ARM64_ADVSIMD, advsimd_methods, sizeof (advsimd_methods) },
+};
+
 static MonoInst*
-emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+emit_arm64_intrinsics (struct EmitIntrinsicCtx *ectx)
 {
-	gboolean is_64bit = FALSE;
-	MonoClass *klass = cmethod->klass;
-	MonoCPUFeatures feature = -1;
-	SimdIntrinsic *intrinsics = NULL;
-	int intrinsics_size = 0;
-	if (is_hw_intrinsics_class (klass, "ArmBase", &is_64bit)) {
-		feature = MONO_CPU_ARM64_BASE;
-		intrinsics = armbase_methods;
-		intrinsics_size = sizeof (armbase_methods);
-	} else if (is_hw_intrinsics_class (klass, "Crc32", &is_64bit)) {
-		feature = MONO_CPU_ARM64_CRC;
-		intrinsics = crc32_methods;
-		intrinsics_size = sizeof (crc32_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sha256", &is_64bit)) {
-		feature = MONO_CPU_ARM64_CRYPTO;
-		intrinsics = sha256_methods;
-		intrinsics_size = sizeof (sha256_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sha1", &is_64bit)) {
-		feature = MONO_CPU_ARM64_CRYPTO;
-		intrinsics = sha1_methods;
-		intrinsics_size = sizeof (sha1_methods);
-	} else if (is_hw_intrinsics_class (klass, "Aes", &is_64bit) && (!strcmp (cmethod->name, "PolynomialMultiplyWideningLower") || !strcmp (cmethod->name, "PolynomialMultiplyWideningUpper"))) {
-		feature = MONO_CPU_ARM64_NEON;
-		intrinsics = neon_aes_methods;
-		intrinsics_size = sizeof (neon_aes_methods);
-	} else if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
-		feature = MONO_CPU_ARM64_CRYPTO;
-		intrinsics = crypto_aes_methods;
-		intrinsics_size = sizeof (crypto_aes_methods);
-	}
-	} else if (is_hw_intrinsics_class (klass, "AdvSimd", &is_64bit)) {
-		feature = MONO_CPU_ARM64_NEON;
-		intrinsics = advsimd_methods;
-		intrinsics_size = sizeof (advsimd_methods);
-	}
-
-	MonoInst *ins = NULL;
-	SimdIntrinsic *info = NULL;
-	int id = -1;
-	gboolean supported = FALSE;
-	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
-	if (intrinsics) {
-		// Hardware intrinsics are LLVM-only.
-		if (!COMPILE_LLVM (cfg))
-			goto support_probe_complete;
-
-		info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
-		if (!info)
-			goto support_probe_complete;
-
-		if (feature)
-			supported = (mini_get_cpu_features (cfg) & feature) != 0;
-		else
-			supported = TRUE;
-
-		id = info->id;
-
-		if (info->op != 0)
-			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
-	}
-support_probe_complete:
-	if (id == SN_get_IsSupported) {
-		/*
-		 * Temporary hack: unconditionally return false for
-		 * AdvSimd.IsSupported (but still translate all supported
-		 * intrinsics) until all of the AdvSimd intrinsics are
-		 * implemented.
-		 */
-		if (feature == MONO_CPU_ARM64_NEON)
-			EMIT_NEW_ICONST (cfg, ins, 0);
-		else
-			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	if (!supported) {
-		// Can't emit non-supported llvm intrinsics
-		if (cfg->method != cmethod) {
-			// Keep the original call so we end up in the intrinsic method
-			return NULL;
-		} else {
-			// Emit an exception from the intrinsic method
-			mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
-			return NULL;
-		}
-	}
+	gboolean is_64bit = ectx->is_64bit;
+	MonoClass *klass = ectx->klass;
+	MonoCPUFeatures feature = ectx->intrin_group->feature;
+	MonoInst **args = ectx->args;
+	MonoMethodSignature *fsig = ectx->fsig;
+	MonoCompile *cfg = ectx->cfg;
+	int id = ectx->id;
+	MonoTypeEnum arg0_type = ectx->arg0_type;
+	SimdIntrinsic *info = ectx->info;
 
 	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
 
@@ -1031,10 +1049,9 @@ support_probe_complete:
 
 			// HACK: Temporary, while Vector64 support is completed
 			MonoClass *arg0_klass = mono_class_from_mono_type_internal (fsig->params [0]);
-			if (m_class_get_name (arg0_klass), "Vector64`1") {
-				supported = FALSE;
-				goto support_probe_complete;
-			}
+			if (m_class_get_name (arg0_klass), "Vector64`1")
+				mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
+
 			switch (get_underlying_type (fsig->params [0])) {
 			case MONO_TYPE_R8:
 				op = SIMD_OP_ARM64_DABS;
@@ -1453,116 +1470,37 @@ static SimdIntrinsic x86base_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static const struct IntrinGroup supported_x86_intrinsics [] = {
+	{ "Sse", MONO_CPU_X86_SSE, sse_methods, sizeof (sse_methods) },
+	{ "Sse2", MONO_CPU_X86_SSE2, sse2_methods, sizeof (sse2_methods) },
+	{ "Sse3", MONO_CPU_X86_SSE3, sse3_methods, sizeof (sse3_methods) },
+	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
+	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
+	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
+	{ "Pclmulqdq", MONO_CPU_X86_PCLMUL, pclmulqdq_methods, sizeof (pclmulqdq_methods) },
+	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
+	{ "Popcnt", MONO_CPU_X86_POPCNT, popcnt_methods, sizeof (popcnt_methods), TRUE },
+	{ "Lzcnt", MONO_CPU_X86_LZCNT, lzcnt_methods, sizeof (lzcnt_methods), TRUE },
+	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
+	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
+	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
+};
+
 static MonoInst*
-emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+emit_x86_intrinsics (struct EmitIntrinsicCtx *ectx)
 {
-	gboolean is_64bit = FALSE;
-	MonoClass *klass = cmethod->klass;
-	MonoCPUFeatures feature = -1;
-	SimdIntrinsic *intrinsics = NULL;
-	int intrinsics_size = 0;
-	gboolean jit_supported = FALSE;
+	gboolean is_64bit = ectx->is_64bit;
+	MonoClass *klass = ectx->klass;
+	MonoCPUFeatures feature = ectx->intrin_group->feature;
+	SimdIntrinsic *intrinsics = ectx->intrin_group->intrinsics;
+	gboolean jit_supported = ectx->intrin_group->jit_supported;
+	MonoInst **args = ectx->args;
+	MonoMethodSignature *fsig = ectx->fsig;
+	MonoCompile *cfg = ectx->cfg;
+	int id = ectx->id;
+	MonoTypeEnum arg0_type = ectx->arg0_type;
+	SimdIntrinsic *info = ectx->info;
 
-	if (is_hw_intrinsics_class (klass, "Sse", &is_64bit)) {
-		feature = MONO_CPU_X86_SSE;
-		intrinsics = sse_methods;
-		intrinsics_size = sizeof (sse_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sse2", &is_64bit)) {
-		feature = MONO_CPU_X86_SSE2;
-		intrinsics = sse2_methods;
-		intrinsics_size = sizeof (sse2_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sse3", &is_64bit)) {
-		feature = MONO_CPU_X86_SSE3;
-		intrinsics = sse3_methods;
-		intrinsics_size = sizeof (sse3_methods);
-	} else if (is_hw_intrinsics_class (klass, "Ssse3", &is_64bit)) {
-		feature = MONO_CPU_X86_SSSE3;
-		intrinsics = ssse3_methods;
-		intrinsics_size = sizeof (ssse3_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sse41", &is_64bit)) {
-		feature = MONO_CPU_X86_SSE41;
-		intrinsics = sse41_methods;
-		intrinsics_size = sizeof (sse41_methods);
-	} else if (is_hw_intrinsics_class (klass, "Sse42", &is_64bit)) {
-		feature = MONO_CPU_X86_SSE42;
-		intrinsics = sse42_methods;
-		intrinsics_size = sizeof (sse42_methods);
-	} else if (is_hw_intrinsics_class (klass, "Pclmulqdq", &is_64bit)) {
-		feature = MONO_CPU_X86_PCLMUL;
-		intrinsics = pclmulqdq_methods;
-		intrinsics_size = sizeof (pclmulqdq_methods);
-	} else if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
-		feature = MONO_CPU_X86_AES;
-		intrinsics = aes_methods;
-		intrinsics_size = sizeof (aes_methods);
-	} else if (is_hw_intrinsics_class (klass, "Popcnt", &is_64bit)) {
-		feature = MONO_CPU_X86_POPCNT;
-		intrinsics = popcnt_methods;
-		intrinsics_size = sizeof (popcnt_methods);
-		jit_supported = TRUE;
-	} else if (is_hw_intrinsics_class (klass, "Lzcnt", &is_64bit)) {
-		feature = MONO_CPU_X86_LZCNT;
-		intrinsics = lzcnt_methods;
-		intrinsics_size = sizeof (lzcnt_methods);
-		jit_supported = TRUE;
-	} else if (is_hw_intrinsics_class (klass, "Bmi1", &is_64bit)) {
-		feature = MONO_CPU_X86_BMI1;
-		intrinsics = bmi1_methods;
-		intrinsics_size = sizeof (bmi1_methods);
-	} else if (is_hw_intrinsics_class (klass, "Bmi2", &is_64bit)) {
-		feature = MONO_CPU_X86_BMI2;
-		intrinsics = bmi2_methods;
-		intrinsics_size = sizeof (bmi2_methods);
-	} else if (is_hw_intrinsics_class (klass, "X86Base", &is_64bit)) {
-		feature = 0;
-		intrinsics = x86base_methods;
-		intrinsics_size = sizeof (x86base_methods);
-	}
-
-	MonoInst *ins = NULL;
-	SimdIntrinsic *info = NULL;
-	int id = -1;
-	gboolean supported = FALSE;
-	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
-	if (intrinsics) {
-		// Hardware intrinsics are LLVM-only.
-		if (!COMPILE_LLVM (cfg))
-			goto support_probe_complete;
-
-		info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
-		if (!info)
-			goto support_probe_complete;
-
-		if (feature)
-			supported = (mini_get_cpu_features (cfg) & feature) != 0;
-		else
-			supported = TRUE;
-
-		id = info->id;
-
-		if (info->op != 0)
-			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
-	}
-support_probe_complete:
-	if (id == SN_get_IsSupported) {
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	if (!supported) {
-		// Can't emit non-supported llvm intrinsics
-		if (cfg->method != cmethod) {
-			// Keep the original call so we end up in the intrinsic method
-			return NULL;
-		} else {
-			// Emit an exception from the intrinsic method
-			mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
-			return NULL;
-		}
-	}
-
-	/*
-	 * Instruction set specific cases
-	 */
 	if (feature == MONO_CPU_X86_SSE) {
 		switch (id) {
 		case SN_Shuffle:
@@ -2009,11 +1947,10 @@ support_probe_complete:
 		}
 	}
 
+	MonoInst *ins = NULL;
 	if (feature == MONO_CPU_X86_POPCNT) {
 		switch (id) {
 		case SN_PopCount:
-			if (!supported)
-				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
 			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
@@ -2027,8 +1964,6 @@ support_probe_complete:
 	if (feature == MONO_CPU_X86_LZCNT) {
 		switch (id) {
 		case SN_LeadingZeroCount:
-			if (!supported)
-				return NULL;
 			MONO_INST_NEW (cfg, ins, is_64bit ? OP_LZCNT64 : OP_LZCNT32);
 			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
@@ -2275,7 +2210,9 @@ MonoInst*
 emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		return emit_x86_intrinsics (cfg, cmethod, fsig, args);
+		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
+			supported_x86_intrinsics, sizeof (supported_x86_intrinsics),
+			emit_x86_intrinsics);
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
@@ -2303,7 +2240,9 @@ emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile 
 {
 	// FIXME: implement Vector64<T>, Vector128<T> and Vector<T> for Arm64
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Arm")) {
-		return emit_arm64_intrinsics (cfg, cmethod, fsig, args);
+		return emit_hardware_intrinsics(cfg, cmethod, fsig, args,
+			supported_arm_intrinsics, sizeof (supported_arm_intrinsics),
+			emit_arm64_intrinsics);
 	}
 
 	return NULL;
