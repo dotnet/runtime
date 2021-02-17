@@ -989,7 +989,7 @@ FCFuncStart(gStreamFuncs)
 FCFuncEnd()
 
 
-#if defined(FEATURE_EVENTSOURCE_XPLAT) 
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCFuncStart(gEventLogger)
     QCFuncElement("IsEventSourceLoggingEnabled", XplatEventSourceLogger::IsEventSourceLoggingEnabled)
     QCFuncElement("LogEventSource", XplatEventSourceLogger::LogEventSource)
