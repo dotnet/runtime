@@ -60,7 +60,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
-#include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-merp.h>
 #include <mono/utils/mono-mmap.h>
