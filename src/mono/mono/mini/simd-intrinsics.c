@@ -62,6 +62,8 @@ typedef struct {
 	int instc0;
 } SimdIntrinsic;
 
+static const SimdIntrinsic unsupported [] = { {SN_get_IsSupported} };
+
 void
 mono_simd_intrinsics_init (void)
 {
@@ -321,7 +323,7 @@ type_to_insert_op (MonoType *type)
 struct IntrinGroup {
     const char *name;
     MonoCPUFeatures feature;
-    SimdIntrinsic *intrinsics;
+    const SimdIntrinsic *intrinsics;
     int intrinsics_size;
     gboolean jit_supported;
 };
@@ -334,7 +336,7 @@ struct EmitIntrinsicCtx {
 	MonoMethodSignature *fsig;
 	MonoInst **args;
 	MonoTypeEnum arg0_type;
-	SimdIntrinsic *info;
+	const SimdIntrinsic *info;
 	int id;
 };
 
@@ -365,7 +367,7 @@ emit_hardware_intrinsics (
 	gboolean supported = FALSE;
 	ectx.arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 	if (ectx.intrin_group) {
-		SimdIntrinsic *intrinsics = ectx.intrin_group->intrinsics;
+		const SimdIntrinsic *intrinsics = ectx.intrin_group->intrinsics;
 		int intrinsics_size = ectx.intrin_group->intrinsics_size;
 		MonoCPUFeatures feature = ectx.intrin_group->feature;
 
@@ -373,12 +375,12 @@ emit_hardware_intrinsics (
 		if (!COMPILE_LLVM (cfg) && !ectx.intrin_group->jit_supported)
 			goto support_probe_complete;
 
-		ectx.info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
+		ectx.info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
 		if (!ectx.info)
 			goto support_probe_complete;
 
 		if (feature)
-			supported = (mini_get_cpu_features (cfg) & feature) != 0;
+			supported = ((mini_get_cpu_features (cfg) & feature) != 0) && (ectx.intrin_group->intrinsics != unsupported);
 		else
 			supported = TRUE;
 
@@ -980,12 +982,14 @@ MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodS
 }
 
 static const struct IntrinGroup supported_arm_intrinsics [] = {
+	{ "AdvSimd", MONO_CPU_ARM64_ADVSIMD, advsimd_methods, sizeof (advsimd_methods) },
+	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
 	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
-	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Dp", MONO_CPU_ARM64_DP, unsupported, sizeof (unsupported) },
+	{ "Rdm", MONO_CPU_ARM64_RDM, unsupported, sizeof (unsupported) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
-	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
-	{ "AdvSimd", MONO_CPU_ARM64_ADVSIMD, advsimd_methods, sizeof (advsimd_methods) },
+	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
 };
 
 static MonoInst*
@@ -999,7 +1003,7 @@ emit_arm64_intrinsics (struct EmitIntrinsicCtx *ectx)
 	MonoCompile *cfg = ectx->cfg;
 	int id = ectx->id;
 	MonoTypeEnum arg0_type = ectx->arg0_type;
-	SimdIntrinsic *info = ectx->info;
+	const SimdIntrinsic *info = ectx->info;
 
 	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
 
@@ -1471,18 +1475,21 @@ static SimdIntrinsic x86base_methods [] = {
 };
 
 static const struct IntrinGroup supported_x86_intrinsics [] = {
+	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
+	{ "Avx", MONO_CPU_X86_AVX, unsupported, sizeof (unsupported) },
+	{ "Avx2", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
+	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
+	{ "Fma", MONO_CPU_X86_FMA, unsupported, sizeof (unsupported) },
+	{ "Lzcnt", MONO_CPU_X86_LZCNT, lzcnt_methods, sizeof (lzcnt_methods), TRUE },
+	{ "Pclmulqdq", MONO_CPU_X86_PCLMUL, pclmulqdq_methods, sizeof (pclmulqdq_methods) },
+	{ "Popcnt", MONO_CPU_X86_POPCNT, popcnt_methods, sizeof (popcnt_methods), TRUE },
 	{ "Sse", MONO_CPU_X86_SSE, sse_methods, sizeof (sse_methods) },
 	{ "Sse2", MONO_CPU_X86_SSE2, sse2_methods, sizeof (sse2_methods) },
 	{ "Sse3", MONO_CPU_X86_SSE3, sse3_methods, sizeof (sse3_methods) },
-	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
 	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
 	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
-	{ "Pclmulqdq", MONO_CPU_X86_PCLMUL, pclmulqdq_methods, sizeof (pclmulqdq_methods) },
-	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
-	{ "Popcnt", MONO_CPU_X86_POPCNT, popcnt_methods, sizeof (popcnt_methods), TRUE },
-	{ "Lzcnt", MONO_CPU_X86_LZCNT, lzcnt_methods, sizeof (lzcnt_methods), TRUE },
-	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
-	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
+	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
 	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
 };
 
@@ -1492,14 +1499,13 @@ emit_x86_intrinsics (struct EmitIntrinsicCtx *ectx)
 	gboolean is_64bit = ectx->is_64bit;
 	MonoClass *klass = ectx->klass;
 	MonoCPUFeatures feature = ectx->intrin_group->feature;
-	SimdIntrinsic *intrinsics = ectx->intrin_group->intrinsics;
-	gboolean jit_supported = ectx->intrin_group->jit_supported;
+	const SimdIntrinsic *intrinsics = ectx->intrin_group->intrinsics;
 	MonoInst **args = ectx->args;
 	MonoMethodSignature *fsig = ectx->fsig;
 	MonoCompile *cfg = ectx->cfg;
 	int id = ectx->id;
 	MonoTypeEnum arg0_type = ectx->arg0_type;
-	SimdIntrinsic *info = ectx->info;
+	const SimdIntrinsic *info = ectx->info;
 
 	if (feature == MONO_CPU_X86_SSE) {
 		switch (id) {
