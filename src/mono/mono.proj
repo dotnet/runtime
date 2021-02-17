@@ -52,6 +52,23 @@
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(MonoCMakeUseLd)' != ''">
+    <_MonoCMakeArgs Include="-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=$(MonoCMakeUseLd)" />
+    <_MonoCMakeArgs Include="-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=$(MonoCMakeUseLd)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoCMakeLd)' != ''">
+    <_MonoCMakeArgs Include="-DCMAKE_LINKER=$(MonoCMakeLd)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoCMakeAr)' != ''">
+    <_MonoCMakeArgs Include="-DCMAKE_AR=$(MonoCMakeAr)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoCMakeRanlib)' != ''">
+    <_MonoCMakeArgs Include="-DCMAKE_RANLIB=$(MonoCMakeRanlib)" />
+  </ItemGroup>
+
   <!-- default thread suspend for specific platforms -->
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
@@ -65,7 +82,7 @@
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <!-- CI specific build options -->    
+  <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
@@ -499,7 +516,7 @@
 
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
-    </ItemGroup> 
+    </ItemGroup>
 
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
