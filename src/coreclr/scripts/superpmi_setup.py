@@ -462,6 +462,12 @@ def main(main_args):
             with tempfile.TemporaryDirectory() as jitutils_directory:
                 run_command(
                     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+
+                # Make sure ".dotnet" directory exists, by running the script at least once
+                dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
+                dotnet_script_path = path.join(source_directory, dotnet_script_name)
+                run_command([dotnet_script_path, "--info"], jitutils_directory, _exit_on_fail=True)
+
                 # Set dotnet path to run bootstrap
                 os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
                 bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"

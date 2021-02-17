@@ -168,11 +168,13 @@ def build_and_run(coreclr_args, output_mch_name):
         # Unset the JitName so dotnet process will not fail
         if is_windows:
             contents.append("set JitName=%COMPlus_JitName%")
+            contents.append("set COMPlus_TC_QuickJitForLoops=1")
             contents.append("set COMPlus_JitName=")
             contents.append("set COMPlus_TieredCompilation=")
         else:
             contents.append("#!/bin/bash")
             contents.append("export JitName=$COMPlus_JitName")
+            contents.append("export COMPlus_TC_QuickJitForLoops=1")
             contents.append("unset COMPlus_JitName")
             contents.append("unset COMPlus_TieredCompilation")
         contents.append(f"pushd {performance_directory}")
