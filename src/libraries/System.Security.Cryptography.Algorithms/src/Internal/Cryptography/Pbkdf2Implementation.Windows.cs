@@ -140,6 +140,7 @@ namespace Internal.Cryptography
 
                     if (openStatus != NTSTATUS.STATUS_SUCCESS)
                     {
+                        pbkdf2AlgorithmHandle.Dispose();
                         CryptographicOperations.ZeroMemory(clearSpan);
                         throw Interop.BCrypt.CreateCryptographicException(openStatus);
                     }
@@ -166,6 +167,7 @@ namespace Internal.Cryptography
 
             if (generateKeyStatus != NTSTATUS.STATUS_SUCCESS)
             {
+                keyHandle.Dispose();
                 throw Interop.BCrypt.CreateCryptographicException(generateKeyStatus);
             }
 
