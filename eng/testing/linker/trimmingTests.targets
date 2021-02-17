@@ -29,8 +29,10 @@
       <!-- We need to separate Item metadata declaration in two in order to be able to use ProjectDir and TestRuntimeIdentifier bellow -->
       <TestConsoleAppSourceFiles>
         <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
-        <TestCommand>$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
-        <TestExecutionDirectory>$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestCommand Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish', 'project'))</TestCommand>
+        <TestCommand Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizePath('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'AppBundle', 'run-v8.sh'))</TestCommand>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' != 'wasm' Or '$(TargetOs)' != 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'publish'))</TestExecutionDirectory>
+        <TestExecutionDirectory Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$([MSBuild]::NormalizeDirectory('%(ProjectDir)', 'bin', '$(Configuration)', '$(NetCoreAppCurrent)', '%(TestRuntimeIdentifier)', 'AppBundle'))</TestExecutionDirectory>
         <RuntimePackDirectory>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.%(TestRuntimeIdentifier)', '$(Configuration)'))</RuntimePackDirectory>
       </TestConsoleAppSourceFiles>
     </ItemGroup>
@@ -76,7 +78,14 @@
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
-                                                 .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)'))"
+                                                 .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
+                                                 .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
+                                                 .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
+                                                 .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
+                                                 .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
+                                                 .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
+                                                 .Replace('{ILLinkTasksAssembly}', '$(ILLinkTasksAssembly)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
           DestinationFolder="$(_projectDir)" />
@@ -88,12 +97,17 @@
 
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
+
+    <PropertyGroup>
+      <_TrimmedProjectsPublishTargets>Publish</_TrimmedProjectsPublishTargets>
+      <_TrimmedProjectsPublishTargets Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$(_TrimmedProjectsPublishTargets);BundleTestWasmApp</_TrimmedProjectsPublishTargets>
+    </PropertyGroup>
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
 
     <MSBuild Projects="@(TestConsoleApps)"
-             Targets="Publish"
+             Targets="$(_TrimmedProjectsPublishTargets)"
              Properties="Configuration=$(Configuration)" />
   </Target>
 
@@ -108,7 +122,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ExecutionExitCode" />
     </Exec>
 
-    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." />
+    <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems) The Command %(TestConsoleApps.TestCommand) return a non-success exit code." ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />

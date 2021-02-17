@@ -1,4 +1,6 @@
 <Project>
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
+
   <Target Name="RemoveRuntimePackFromDownloadItem"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
@@ -28,5 +30,22 @@
       <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="RootJavaScriptInteropAssembly"
+          BeforeTargets="_RunILLink"
+          Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="%(ManagedAssemblyToLink.Identity)" Condition="'%(ManagedAssemblyToLink.FileName)' == 'System.Private.Runtime.InteropServices.JavaScript'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Overriding this target as these projects won't need to binplace -->
+  <Target Name="GetBinPlaceTargetFramework" />
+  <Target Name="PublishTestAsSelfContained" />
+
+  <PropertyGroup>
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
+    <WasmMainAssemblyFileName>project.dll</WasmMainAssemblyFileName>
+  </PropertyGroup>
 
 </Project>

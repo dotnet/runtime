@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
+    <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
+    <ILLinkTasksAssembly>{ILLinkTasksAssembly}</ILLinkTasksAssembly>
+    <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
+    <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <TargetFramework>{NetCoreAppCurrent}</TargetFramework>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>

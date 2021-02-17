@@ -57,6 +57,7 @@ jobs:
     - windows_x64
     - OSX_x64
     - Linux_x64
+    - Browser_wasm
     jobParameters:
       testGroup: innerloop
       timeoutInMinutes: 120

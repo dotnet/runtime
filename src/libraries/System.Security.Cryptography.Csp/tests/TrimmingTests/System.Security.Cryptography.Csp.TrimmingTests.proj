@@ -2,7 +2,9 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="PasswordDeriveBytesTest.cs" />
+    <TestConsoleAppSourceFiles Include="PasswordDeriveBytesTest.cs">
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: System.Security.Cryptography.DeriveBytes..ctor() throws PNSE on wasm -->
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
