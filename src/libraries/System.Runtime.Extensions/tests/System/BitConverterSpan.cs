@@ -46,6 +46,11 @@ namespace System.Tests
 
         public override void ConvertFromShort(short num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[2]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -53,6 +58,11 @@ namespace System.Tests
 
         public override void ConvertFromChar(char character, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[2]);
             Assert.True(BitConverter.TryWriteBytes(span, character));
             Assert.Equal(expected, span.ToArray());
@@ -60,6 +70,11 @@ namespace System.Tests
 
         public override void ConvertFromInt(int num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[4]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -67,6 +82,11 @@ namespace System.Tests
 
         public override void ConvertFromLong(long num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[8]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -74,6 +94,11 @@ namespace System.Tests
 
         public override void ConvertFromUShort(ushort num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[2]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -81,6 +106,11 @@ namespace System.Tests
 
         public override void ConvertFromUInt(uint num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[4]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -88,6 +118,11 @@ namespace System.Tests
 
         public override void ConvertFromULong(ulong num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[8]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -95,6 +130,11 @@ namespace System.Tests
 
         public override void ConvertFromHalf(Half num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[2]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -102,6 +142,11 @@ namespace System.Tests
 
         public override void ConvertFromFloat(float num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[4]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -109,6 +154,11 @@ namespace System.Tests
 
         public override void ConvertFromDouble(double num, byte[] expected)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                expected = (byte[]) expected.Clone();
+                Array.Reverse(expected);
+            }
             Span<byte> span = new Span<byte>(new byte[8]);
             Assert.True(BitConverter.TryWriteBytes(span, num));
             Assert.Equal(expected, span.ToArray());
@@ -116,6 +166,11 @@ namespace System.Tests
 
         public override void ToChar(int index, char expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 2);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             BitConverter.ToChar(span);
             Assert.Equal(expected, BitConverter.ToChar(span.Slice(index)));
@@ -123,54 +178,99 @@ namespace System.Tests
 
         public override void ToInt16(int index, short expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 2);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToInt16(span.Slice(index)));
         }
 
         public override void ToInt32(int expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, 0, 4);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToInt32(byteArray));
         }
 
         public override void ToInt64(int index, long expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 8);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToInt64(span.Slice(index)));
         }
 
         public override void ToUInt16(int index, ushort expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 2);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToUInt16(span.Slice(index)));
         }
 
         public override void ToUInt32(int index, uint expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 4);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToUInt32(span.Slice(index)));
         }
 
         public override void ToUInt64(int index, ulong expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 8);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToUInt64(span.Slice(index)));
         }
 
         public override void ToHalf(int index, Half expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 2);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToHalf(span.Slice(index)));
         }
 
         public override void ToSingle(int index, float expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 4);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToSingle(span.Slice(index)));
         }
 
         public override void ToDouble(int index, double expected, byte[] byteArray)
         {
+            if (!BitConverter.IsLittleEndian)
+            {
+                byteArray = (byte[]) byteArray.Clone();
+                Array.Reverse(byteArray, index, 8);
+            }
             ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(byteArray);
             Assert.Equal(expected, BitConverter.ToDouble(span.Slice(index)));
         }

@@ -171,9 +171,6 @@ namespace Microsoft.VisualBasic.Tests
         {
             ResetSeed();
 
-            if (!BitConverter.IsLittleEndian)
-                throw new NotImplementedException("big endian tests");
-
             VBMath.Randomize(-2E30);
             Assert.Equal(-0.0297851562f, VBMath.Rnd(0.0f));
             VBMath.Randomize(-0.003356);
