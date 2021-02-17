@@ -52,23 +52,6 @@
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MonoCMakeUseLd)' != ''">
-    <_MonoCMakeArgs Include="-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=$(MonoCMakeUseLd)" />
-    <_MonoCMakeArgs Include="-DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=$(MonoCMakeUseLd)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MonoCMakeLd)' != ''">
-    <_MonoCMakeArgs Include="-DCMAKE_LINKER=$(MonoCMakeLd)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MonoCMakeAr)' != ''">
-    <_MonoCMakeArgs Include="-DCMAKE_AR=$(MonoCMakeAr)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MonoCMakeRanlib)' != ''">
-    <_MonoCMakeArgs Include="-DCMAKE_RANLIB=$(MonoCMakeRanlib)" />
-  </ItemGroup>
-
   <!-- default thread suspend for specific platforms -->
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
@@ -373,7 +356,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
