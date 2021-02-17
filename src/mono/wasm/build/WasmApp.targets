@@ -3,6 +3,7 @@
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -210,16 +211,13 @@
     <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
   </Target>
 
-  <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC" Condition="'$(WasmBuildNative)' == 'true'">
+  <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
       <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
-      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
       <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     </PropertyGroup>
-
-    <Error Condition="!Exists('$(RuntimeEmccVersionFile)')" Text="Cannot find $(RuntimeEmccVersionFile)" />
 
     <ReadLinesFromFile File="$(EmccFlagsFile)">
         <Output TaskParameter="Lines" PropertyName="_DefaultEmccFlags" />
@@ -230,28 +228,6 @@
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
     </PropertyGroup>
-
-    <PropertyGroup>
-      <_EmsdkEnvSourceCommand Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(EMSDK_PATH)\emsdk_env.bat</_EmsdkEnvSourceCommand>
-      <_EmsdkEnvSourceCommand Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">source $(EMSDK_PATH)/emsdk_env.sh &gt; /dev/null 2&gt;&amp;1</_EmsdkEnvSourceCommand>
-
-      <_EmccCommand>$(_EmsdkEnvSourceCommand) &amp;&amp; emcc</_EmccCommand>
-    </PropertyGroup>
-
-    <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
-        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
-    </ReadLinesFromFile>
-
-    <Exec Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)"
-          Command="bash -c '$(_EmccCommand) --version | head -1 > emcc-version.txt'" />
-
-    <Exec Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)"
-          Command="$(_EmccCommand) --version > emcc-version.txt &amp;&amp; set /p EMCC_VERSION=&lt;emcc-version.txt &amp;&amp; echo %EMCC_VERSION% > emcc-version.txt" />
-
-    <ReadLinesFromFile File="$(EmccPublishVersionFile)">
-        <Output TaskParameter="Lines" PropertyName="EmccVersion" />
-    </ReadLinesFromFile>
-    <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
 
    <ItemGroup>
       <_WasmPInvokeModules Include="libSystem.Native" />
@@ -304,11 +280,11 @@
      <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
    </PropertyGroup>
 
-    <Exec Command="$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o $(_WasmIntermediateOutputPath)driver.o" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" />
-    <Exec Command="$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o $(_WasmIntermediateOutputPath)corebindings.o" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" />
-    <Exec Command="$(_EmccCommand) $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o $(_WasmIntermediateOutputPath)pinvoke.o" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" />
-    <Exec Command="$(_EmccCommand) $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o $(_WasmIntermediateOutputPath)dotnet.js" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" />
-    <Exec Command="$(_WasmOptCommand) --strip-dwarf $(_WasmIntermediateOutputPath)dotnet.wasm -o $(_WasmIntermediateOutputPath)dotnet.wasm" Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" />
+    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o $(_WasmIntermediateOutputPath)driver.o" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o $(_WasmIntermediateOutputPath)corebindings.o" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o $(_WasmIntermediateOutputPath)pinvoke.o" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblies->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o $(_WasmIntermediateOutputPath)dotnet.js" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="$(_WasmOptCommand) --strip-dwarf $(_WasmIntermediateOutputPath)dotnet.wasm -o $(_WasmIntermediateOutputPath)dotnet.wasm" Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)\dotnet.wasm" />
@@ -355,6 +331,30 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
 
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
+  </Target>
+
+  <Target Name="_CheckEmccIsExpectedVersion">
+    <PropertyGroup>
+      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(RuntimeEmccVersionFile)')" Text="Cannot find $(RuntimeEmccVersionFile)" />
+
+    <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
+        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
+    </ReadLinesFromFile>
+
+    <RunWithEmSdkEnv Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)"
+                     Command="emcc --version | head -1" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="EmccVersion" />
+    </RunWithEmSdkEnv>
+
+    <RunWithEmSdkEnv Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)"
+                     Command="emcc --version > emcc-version.txt &amp;&amp; set /p EMCC_VERSION=&lt;emcc-version.txt &amp;&amp; echo %EMCC_VERSION% > emcc-version.txt" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="EmccVersion" />
+    </RunWithEmSdkEnv>
+
+    <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
   </Target>
 
   <Target Name="_AfterWasmBuildApp">
