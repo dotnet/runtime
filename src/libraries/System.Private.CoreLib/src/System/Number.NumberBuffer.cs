@@ -71,18 +71,6 @@ namespace System
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
                 Debug.Assert(numDigits < Digits.Length, "Null terminator not found in Number");
 
-                uint totalDigits = (uint)(DigitsCount);
-                uint positiveExponent = (uint)(Math.Max(0, Scale));
-                uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
-                uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
-
-                // For a number like 1.23000, verify that we don't store trailing zeros in Digits
-                // However, if the number of digits exceeds maxDigCount and rounding is required, we store the trailing zeros in the buffer.
-                if (Kind != NumberBufferKind.Decimal && fractionalDigitsPresent > 0 && !HasNonZeroTail)
-                {
-                    Debug.Assert(Digits[DigitsCount - 1] != '0', ToString());
-                }
-
 #endif // DEBUG
             }
 
