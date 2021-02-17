@@ -636,6 +636,7 @@ get_intrins_id (IntrinsicId id)
 #define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
 #define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
 #define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#define INTRINS_OVR_TAG(id, llvm_id, ...) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -651,11 +652,39 @@ is_overloaded_intrins (IntrinsicId id)
 #define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG(id, llvm_id, ...) case INTRINS_ ## id: return true;
 #include "llvm-intrinsics.h"
 	default:
 		break;
 	}
 	return false;
+}
+
+llvm_ovr_tag_t
+ovr_tag_from_mono_vector_class (MonoClass *klass) {
+	int size = mono_class_value_size (klass, NULL);
+	llvm_ovr_tag_t ret = 0;
+	switch (size) {
+	case 8: ret |= LLVM_Vector64; break;
+	case 16: ret |= LLVM_Vector128; break;
+	}
+	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	switch (etype->type) {
+	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= LLVM_Int8; break;
+	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= LLVM_Int16; break;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: ret |= LLVM_Int32; break;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: ret |= LLVM_Int64; break;
+	case MONO_TYPE_R4: ret |= LLVM_Float32; break;
+	case MONO_TYPE_R8: ret |= LLVM_Float64; break;
+	}
+	return ret;
+}
+
+llvm_ovr_tag_t
+ovr_tag_from_mono_vector_type (MonoType *type)
+{
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	return ovr_tag_from_mono_vector_class (klass);
 }
 
 /*
@@ -694,11 +723,11 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 
 	const int max_types = 5;
 	g_assert (ntypes <= max_types);
-    Type *arr [max_types];
-    for (int i = 0; i < ntypes; ++i)
+	Type *arr [max_types];
+	for (int i = 0; i < ntypes; ++i)
 		arr [i] = unwrap (types [i]);
-    auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
-    return wrap (f);
+	auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
+	return wrap (f);
 }
 
 unsigned int

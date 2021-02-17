@@ -12,6 +12,15 @@
  * 	 To define an overloaded intrinsic with three arguments
  */
 
+#define V64 LLVM_Vector64
+#define V128 LLVM_Vector128
+#define I1 LLVM_Int8
+#define I2 LLVM_Int16
+#define I4 LLVM_Int32
+#define I8 LLVM_Int64
+#define R4 LLVM_Float32
+#define R8 LLVM_Float64
+
 INTRINS_OVR_2_ARG(MEMSET, memset, LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type ())
 INTRINS_OVR_3_ARG(MEMCPY, memcpy, LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type () )
 INTRINS_OVR_3_ARG(MEMMOVE, memmove, LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt64Type ())
@@ -296,10 +305,28 @@ INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_FLOAT, aarch64_neon_facgt, sse
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE, aarch64_neon_facgt, sse_i4_t, sse_r8_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT, aarch64_neon_facge, sse_i4_t, sse_r4_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE, aarch64_neon_facge, sse_i4_t, sse_r8_t)
+INTRINS_OVR(AARCH64_ADV_SIMD_TBX64, aarch64_neon_tbx1, LLVMVectorType (LLVMInt8Type (), 8))
+INTRINS_OVR(AARCH64_ADV_SIMD_TBX128, aarch64_neon_tbx1, sse_i1_t)
+INTRINS_OVR(AARCH64_ADV_SIMD_TBL64, aarch64_neon_tbl1, LLVMVectorType (LLVMInt8Type (), 8))
+INTRINS_OVR(AARCH64_ADV_SIMD_TBL128, aarch64_neon_tbl1, sse_i1_t)
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSUB, aarch64_neon_uqsub, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSUB, aarch64_neon_sqsub, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSUBHN, aarch64_neon_rsubhn, V64 | I1 | I2 | I4)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FSQRT, sqrt, V64 | V128 | R4 | R8)
+
 #endif
 
 #undef INTRINS
 #undef INTRINS_OVR
 #undef INTRINS_OVR_2_ARG
 #undef INTRINS_OVR_3_ARG
-
+#undef INTRINS_OVR_TAG
+#undef V64
+#undef V128
+#undef I1
+#undef I2
+#undef I4
+#undef I8
+#undef R4
+#undef R8

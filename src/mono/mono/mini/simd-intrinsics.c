@@ -11,6 +11,7 @@
 #include "ir-emit.h"
 #ifdef ENABLE_LLVM
 #include "mini-llvm.h"
+#include "mini-llvm-cpp.h"
 #endif
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
@@ -99,7 +100,7 @@ static int
 lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 {
 	const guint16 *result = (const guint16 *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
-	
+
 	if (result == NULL)
 		return -1;
 	else
@@ -268,6 +269,20 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector256`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
+}
+
+static gboolean
+type_is_unsigned (MonoType *type) {
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	switch (etype->type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_U8:
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static int
@@ -955,6 +970,35 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_SignExtendWideningLower, OP_ARM64_SXTL},
+	{SN_SignExtendWideningUpper, OP_ARM64_SXTL2},
+	{SN_SqrtScalar, OP_ARM64_SQRT_SCALAR},
+	{SN_Sqrt},
+	{SN_Store, OP_ARM64_ST1},
+	{SN_StorePair, OP_ARM64_STP},
+	{SN_StorePairNonTemporal, OP_ARM64_STNP},
+	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
+	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
+	{SN_StoreSelectedScalar, OP_ARM64_ST1_SCALAR},
+	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
+	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
+	{SN_SubtractRoundedHighNarrowingLower, OP_ARM64_RSUBHN},
+	{SN_SubtractRoundedHighNarrowingUpper, OP_ARM64_RSUBHN2},
+	{SN_SubtractSaturateScalar},
+	{SN_SubtractScalar},
+	{SN_SubtractWideningUpper},
+	{SN_Subtract},
+	{SN_TransposeEven, OP_ARM64_TRN1},
+	{SN_TransposeOdd, OP_ARM64_TRN2},
+	{SN_UnzipEven, OP_ARM64_UZP1},
+	{SN_UnzipOdd, OP_ARM64_UZP2},
+	{SN_VectorTableLookup, OP_XOP_X_X_X, SIMD_OP_ARM64_TBL},
+	{SN_VectorTableLookupExtension, OP_XOP_X_X_X_X, SIMD_OP_ARM64_TBX},
+	{SN_Xor, OP_XXOR},
+	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
+	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
+	{SN_ZipHigh, OP_ARM64_ZIP2},
+	{SN_ZipLow, OP_ARM64_ZIP1},
 	{SN_get_IsSupported},
 };
 
@@ -973,7 +1017,7 @@ MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodS
 	default:
 		g_assert_not_reached();
 	}
-	
+
 	return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
 }
 
@@ -1039,16 +1083,16 @@ emit_arm64_intrinsics (
 	}
 
 	if (feature == MONO_CPU_ARM64_NEON) {
+		SimdOp op = (SimdOp) 0;
+		IntrinsicId iid = (IntrinsicId) -1;
 		switch (id) {
 		case SN_Abs: {
-			SimdOp op = (SimdOp)0;
-
 			// HACK: Temporary, while Vector64 support is completed
 			MonoClass *arg0_klass = mono_class_from_mono_type_internal (fsig->params [0]);
 			if (m_class_get_name (arg0_klass), "Vector64`1")
 				mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
 
-			switch (get_underlying_type (fsig->params [0])) {
+			switch (arg0_type) {
 			case MONO_TYPE_R8:
 				op = SIMD_OP_ARM64_DABS;
 				break;
@@ -1097,43 +1141,73 @@ emit_arm64_intrinsics (
 		}
 
 		case SN_AbsSaturate: {
-			SimdOp op = (SimdOp)0;
-			switch (get_underlying_type (fsig->params [0])) {
-			case MONO_TYPE_I1:
-				op = SIMD_OP_ARM64_I8ABS_SATURATE;
-				break;
-			case MONO_TYPE_I2:
-				op = SIMD_OP_ARM64_I16ABS_SATURATE;
-				break;
-			case MONO_TYPE_I4:
-				op = SIMD_OP_ARM64_I32ABS_SATURATE;
-				break;
-			case MONO_TYPE_I8:
-				op = SIMD_OP_ARM64_I64ABS_SATURATE;
-				break;
+			switch (arg0_type) {
+			case MONO_TYPE_I1: op = SIMD_OP_ARM64_I8ABS_SATURATE; break;
+			case MONO_TYPE_I2: op = SIMD_OP_ARM64_I16ABS_SATURATE; break;
+			case MONO_TYPE_I4: op = SIMD_OP_ARM64_I32ABS_SATURATE; break;
+			case MONO_TYPE_I8: op = SIMD_OP_ARM64_I64ABS_SATURATE; break;
+			default: g_assert_not_reached ();
 			}
 
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
 
 		case SN_AbsScalar: {
-			SimdOp op = (SimdOp)0;
-			switch (get_underlying_type (fsig->params [0])) {
-			case MONO_TYPE_I1:
-				op = SIMD_OP_ARM64_I8ABS_SATURATE;
-				break;
-			case MONO_TYPE_I2:
-				op = SIMD_OP_ARM64_I16ABS_SATURATE;
-				break;
-			case MONO_TYPE_I4:
-				op = SIMD_OP_ARM64_I32ABS_SATURATE;
-				break;
-			case MONO_TYPE_I8:
-				op = SIMD_OP_ARM64_I64ABS_SATURATE;
-				break;
+			switch (arg0_type) {
+			case MONO_TYPE_I1: op = SIMD_OP_ARM64_I8ABS_SATURATE; break;
+			case MONO_TYPE_I2: op = SIMD_OP_ARM64_I16ABS_SATURATE; break;
+			case MONO_TYPE_I4: op = SIMD_OP_ARM64_I32ABS_SATURATE; break;
+			case MONO_TYPE_I8: op = SIMD_OP_ARM64_I64ABS_SATURATE; break;
+			default: g_assert_not_reached ();
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
-		}		
+		}
+		case SN_Sqrt: {
+			llvm_ovr_tag_t tag = ovr_tag_from_mono_vector_type (fsig->ret);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, tag, fsig, args);
+		}
+		case SN_SubtractScalar:
+		case SN_Subtract: {
+			gboolean is_float = FALSE;
+			switch (arg0_type) {
+			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
+			}
+			op = is_float ? OP_FSUB : OP_ISUB;
+			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, op, arg0_type, fsig, args);
+			if (id == SN_SubtractScalar)
+				ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
+			return ret;
+		}
+		case SN_SubtractSaturate:
+		case SN_SubtractSaturateScalar: {
+			llvm_ovr_tag_t tag = ovr_tag_from_mono_vector_type (fsig->ret);
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSUB : INTRINS_AARCH64_ADV_SIMD_SQSUB;
+			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, iid, tag, fsig, args);
+			/* LLVM has intrinsic functions for only the 32 and 64-bit forms of the scalar variants
+			 * of NEON uqsub and sqsub. The CoreCLR runtime tests for these intrinsics look like they
+			 * assert that all lanes > 0 are zeroed out, so just use the vector variant of these
+			 * instructions here and then set the upper "non-scalar" bits to zero.
+			 */
+			if (id == SN_SubtractSaturateScalar)
+				ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
+			return ret;
+		}
+		case SN_SubtractWideningLower:
+		case SN_SubtractWideningUpper: {
+			gboolean is_upper = id == SN_SubtractWideningUpper;
+			MonoTypeEnum ret_t = get_underlying_type (fsig->params [1]);
+			int op = is_upper ? OP_ARM64_SSUB2 : OP_ARM64_SSUB;
+			switch (ret_t) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_U8:
+				op = is_upper ? OP_ARM64_USUB2 : OP_ARM64_USUB;
+				break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -1231,7 +1305,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_SSE_XOR},
+	{SN_Xor, OP_XXOR},
 	{SN_get_IsSupported}
 };
 
@@ -1343,7 +1417,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_SSE_XOR},
+	{SN_Xor, OP_XXOR},
 	{SN_get_IsSupported}
 };
 
