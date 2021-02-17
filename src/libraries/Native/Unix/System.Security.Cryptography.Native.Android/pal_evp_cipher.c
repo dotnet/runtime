@@ -151,11 +151,10 @@ int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t*
 
     // CryptoNative_EvpCipherSetKeyAndIV can be called separately for key and iv
     // so we need to wait for both and do Init after.
-    // TODO: What to do if key or iv is already set. Ignore or replace?
     if (key && !ctx->key)
-        SaveTo(key, &ctx->key, (size_t)keyLength);
+        SaveTo(key, &ctx->key, (size_t)keyLength, /* overwrite */ true);
     if (iv && !ctx->iv)
-        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength);
+        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
 
     if (!ctx->key || !ctx->iv)
         return SUCCESS;
