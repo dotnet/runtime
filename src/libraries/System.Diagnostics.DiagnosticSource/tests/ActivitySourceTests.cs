@@ -881,6 +881,98 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivityCreate()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SourceActivityCreatorListener");
+                int counter = 0;
+                Assert.False(aSource.HasListeners());
+
+                // No Listeners. return nulls
+
+                Activity a1 = aSource.CreateActivity("a1", default);
+                Assert.Null(a1);
+                a1 = aSource.CreateActivity("a1", default, "StringParentId");
+                Assert.Null(a1);
+                a1 = aSource.CreateActivity("a1", default, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default));
+                Assert.Null(a1);
+
+                // Enable Listener
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.ActivityStarted = activity => counter++;
+                listener.ActivityStopped = activity => counter--;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                ActivitySource.AddActivityListener(listener);
+                Assert.True(aSource.HasListeners());
+
+                Activity root = Activity.Current;
+
+                using (Activity a2 = aSource.CreateActivity("a2", ActivityKind.Server))
+                {
+                    Assert.NotNull(a2);
+                    Assert.Equal(root, Activity.Current);
+                    Assert.Equal(ActivityKind.Server, a2.Kind);
+                    Assert.Equal(0, counter);
+                    a2.Start();
+                    Assert.Equal(1, counter);
+                    Assert.Equal(a2, Activity.Current);
+                    Assert.Equal(root, a2.Parent);
+
+                    List<KeyValuePair<string, object>> tags = new List<KeyValuePair<string, object>>() { new KeyValuePair<string, object>("Key", "Value") };
+                    List<ActivityLink> links = new List<ActivityLink>() { new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key-value")) };
+                    using (Activity a3 = aSource.CreateActivity("a3", ActivityKind.Client, "ParentId", tags, links))
+                    {
+                        Assert.NotNull(a3);
+                        Assert.Equal(tags, a3.TagObjects);
+                        Assert.Equal(links, a3.Links);
+                        Assert.Equal(ActivityKind.Client, a3.Kind);
+                        Assert.Equal(a2, Activity.Current);
+                        Assert.Equal(1, counter);
+                        a3.Start();
+                        Assert.Equal(2, counter);
+                        Assert.Equal(a3, Activity.Current);
+                        Assert.Null(a3.Parent);
+                        Assert.Equal("ParentId", a3.ParentId);
+
+                        ActivityContext parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None);
+                        using (Activity a4 = aSource.CreateActivity("a4", ActivityKind.Internal, parentContext, tags, links))
+                        {
+                            Assert.NotNull(a4);
+                            Assert.Equal(tags, a4.TagObjects);
+                            Assert.Equal(links, a4.Links);
+                            Assert.Equal(ActivityKind.Internal, a4.Kind);
+                            Assert.Equal(a3, Activity.Current);
+                            Assert.Equal(2, counter);
+                            a4.Start();
+                            Assert.Equal(3, counter);
+                            Assert.Equal(a4, Activity.Current);
+                            Assert.Null(a4.Parent);
+                            Assert.Equal(parentContext.TraceId, a4.TraceId);
+                            Assert.Equal(parentContext.SpanId, a4.ParentSpanId);
+                            Assert.Equal(parentContext.TraceFlags, a4.ActivityTraceFlags);
+                            Assert.Equal(parentContext.TraceState, a4.TraceStateString);
+                        }
+
+                        Assert.Equal(2, counter);
+                        Assert.Equal(a3, Activity.Current);
+                    }
+
+                    Assert.Equal(1, counter);
+                    Assert.Equal(a2, Activity.Current);
+                }
+
+                Assert.Equal(0, counter);
+                Assert.Equal(root, Activity.Current);
+
+            }).Dispose();
+        }
+
+
         public void Dispose() => Activity.Current = null;
     }
 }
