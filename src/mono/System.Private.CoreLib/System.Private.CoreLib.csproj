@@ -136,6 +136,8 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
                              Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml"
+                             Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
 
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"

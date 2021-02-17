@@ -2635,6 +2635,13 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
     key.A = CastHandle(ftn);
     key.B = CastHandle(memberParent);
 
+
+    AssertCodeMsg(GetMethodSig != nullptr, EXCEPTIONCODE_MC,
+                  "Didn't find anything anything for ftn-%016llX prt-%016llX", key.A, key.B);
+
+    AssertCodeMsg(GetMethodSig->GetIndex(key) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find anything anything for ftn-%016llX prt-%016llX", key.A, key.B);
+
     value = GetMethodSig->Get(key);
 
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap);
@@ -2683,9 +2690,6 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
                                                    CORINFO_ARG_LIST_HANDLE args,
                                                    DWORD*                  exceptionCode)
 {
-    AssertCodeMsg(GetArgClass != nullptr, EXCEPTIONCODE_MC,
-                  "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", CastHandle(sig->scope), CastHandle(args));
-
     Agnostic_GetArgClass_Key key;
     ZeroMemory(&key, sizeof(Agnostic_GetArgClass_Key)); // We use the input structs as a key and use memcmp to compare.. so
                                                         // we need to zero out padding too
@@ -2695,9 +2699,11 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
     key.methodSignature        = CastPointer(sig->methodSignature);
     key.scope                  = CastHandle(sig->scope);
     key.args                   = CastHandle(args);
-
     key.sigInst_classInst_Index = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap);
     key.sigInst_methInst_Index  = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap);
+
+    AssertCodeMsg(GetArgClass != nullptr, EXCEPTIONCODE_MC,
+                  "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", key.scope, key.args);
 
     AssertCodeMsg(GetArgClass->GetIndex(key) != -1, EXCEPTIONCODE_MC,
                   "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", key.scope, key.args);
