@@ -389,7 +389,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
-      <MonoAotOption Include="mattr=base" />
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />
       <MonoAotOption Include="mattr=neon" />
