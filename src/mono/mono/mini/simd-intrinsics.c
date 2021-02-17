@@ -871,7 +871,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
-	{SN_AbsoluteCompareLessThanOrEqual}
+	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_get_IsSupported},
 };
 
 static
@@ -940,11 +941,11 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 	if (intrinsics) {
 		// Arm64 intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg))
-			goto next;
+			goto support_probe_complete;
 
 		info = lookup_intrins_info (intrinsics, intrinsics_size, cmethod);
 		if (!info)
-			goto next;
+			goto support_probe_complete;
 
 		if (feature)
 			supported = (mini_get_cpu_features (cfg) & feature) != 0;
@@ -956,7 +957,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 	}
-next:
+support_probe_complete:
 	if (id == SN_get_IsSupported) {
 		/*
 		 * Temporary hack: unconditionally return false for
