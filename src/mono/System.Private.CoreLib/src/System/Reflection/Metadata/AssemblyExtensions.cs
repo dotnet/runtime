@@ -30,11 +30,11 @@ namespace System.Reflection.Metadata
 #if !FEATURE_METADATA_UPDATE
             throw new NotSupportedException ("Method body replacement not supported in this runtime");
 #else
-		    if (assembly is not RuntimeAssembly runtimeAssembly)
-		    {
-			    if (assembly is null) throw new ArgumentNullException(nameof(assembly));
-			    throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
-		    }
+            if (assembly is not RuntimeAssembly runtimeAssembly)
+            {
+                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+            }
 
             // System.Private.CoreLib is not editable
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
