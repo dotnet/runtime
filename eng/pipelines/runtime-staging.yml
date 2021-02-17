@@ -197,7 +197,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
     jobParameters:
       nameSuffix: Libraries_Mono_AndroidCrypto
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig)
+      buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
       condition: >-
         or(
