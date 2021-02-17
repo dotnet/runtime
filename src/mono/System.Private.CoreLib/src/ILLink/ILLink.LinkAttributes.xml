@@ -15,19 +15,10 @@
     </type>
 
     <!-- System.Diagnostics.CodeAnalysis -->
-    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.AllowNullAttribute">
@@ -145,6 +136,19 @@
   <!-- Internal attributes shared as implementation, so they could be in any assembly -->
   <assembly fullname="*">
     <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <!-- Attributes that are allowed to be in any assembly -->
+  <assembly fullname="*">
+    <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
