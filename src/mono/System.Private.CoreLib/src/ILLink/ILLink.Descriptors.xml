@@ -548,11 +548,6 @@
 			<method signature="System.Void .ctor(System.Object)" />
 		</type>
 
-		<!-- Used by metadata update -->
-		<type fullname="System.Runtime.CompilerServices.RuntimeFeature">
-			<method name="LoadMetadataUpdate" />
-		</type>
-
 		<!-- domain.c: mono_defaults.marshal_class -->
 		<type fullname="System.Runtime.InteropServices.Marshal" preserve="fields" >
 			<!-- marshal.c (mono_marshal_get_struct_to_ptr) -->
@@ -637,5 +632,11 @@
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+    <!-- Used by metadata update -->
+		<type fullname="System.Reflection.Metadata.AssemblyExtensions">
+			<method name="ApplyUpdateSdb" />
+		</type>
+
 	</assembly>
 </linker>

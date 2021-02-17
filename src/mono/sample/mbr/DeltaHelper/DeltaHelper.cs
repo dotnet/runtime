@@ -6,26 +6,23 @@ using System.Collections.Generic;
 
 namespace MonoDelta {
 	public class DeltaHelper {
-		const string name = "System.Runtime.CompilerServices.RuntimeFeature";
-
 		private static MethodBase _updateMethod;
 
 		private static MethodBase UpdateMethod => _updateMethod ?? InitUpdateMethod();
 
 		private static MethodBase InitUpdateMethod ()
 		{
-			var monoType = Type.GetType (name, throwOnError: true);
-			if (monoType == null)
-				throw new Exception ($"Couldn't get the type {name}");
-			_updateMethod = monoType.GetMethod ("LoadMetadataUpdate", BindingFlags.NonPublic | BindingFlags.Static);
-			if (_updateMethod == null)
-				throw new Exception ($"Couldn't get LoadMetadataUpdate from {name}");
-			return _updateMethod;
-		}
+            var monoType = typeof(System.Reflection.Metadata.AssemblyExtensions);
+            const string methodName = "ApplyUpdateSdb";
+            _updateMethod = monoType.GetMethod (methodName, BindingFlags.NonPublic | BindingFlags.Static);
+            if (_updateMethod == null)
+                throw new Exception ($"Couldn't get {methodName} from {monoType.FullName}");
+            return _updateMethod;
+        }
 
-		private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data)
+		private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
 		{
-			UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data});
+			UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data, dpdb_data});
 		}
 
 		DeltaHelper () { }
@@ -49,7 +46,8 @@ namespace MonoDelta {
 				throw new ArgumentException ("assemblyName");
 			var dmeta_data = Convert.FromBase64String (dmeta_base64);
 			var dil_data = Convert.FromBase64String (dil_base64);
-			LoadMetadataUpdate (assm, dmeta_data, dil_data);
+            byte[] dpdb_data = null;
+			LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
 		}
 
 		private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
@@ -72,8 +70,9 @@ namespace MonoDelta {
 			string dil_name = $"{basename}.{count}.dil";
 			byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
 			byte[] dil_data = System.IO.File.ReadAllBytes (dil_name);
+            byte[] dpdb_data = null; // TODO also use the dpdb data
 
-			LoadMetadataUpdate (assm, dmeta_data, dil_data);
+			LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
 		}
 	}
 }
