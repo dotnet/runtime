@@ -20,7 +20,7 @@ namespace System.Net.Http
             if (handlerMethod == null)
             {
                 Type? runtimeOptions = Type.GetType("ObjCRuntime.RuntimeOptions, Xamarin.iOS");
-                handlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.Static)!;
+                handlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             }
 
             return (HttpMessageHandler)handlerMethod!.Invoke(null, null)!;
