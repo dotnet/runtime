@@ -449,8 +449,6 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
 
-	mono_debug_domain_create (domain);
-
 	mono_alc_create_default (domain);
 
 	if (create_domain_hook)

@@ -593,7 +593,7 @@ mono_find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev
 				*managed = TRUE;
 
 		if (trace)
-			*trace = mono_debug_print_stack_frame (method, offset, mono_get_root_domain ());
+			*trace = mono_debug_print_stack_frame (method, offset, NULL);
 	} else {
 		if (trace) {
 			char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
@@ -704,7 +704,7 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 		}
 
 		if (trace)
-			*trace = mono_debug_print_stack_frame (method, frame->native_offset, mono_get_root_domain ());
+			*trace = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 	} else {
 		if (trace && frame->method) {
 			char *fname = mono_method_full_name (frame->method, TRUE);
@@ -1120,7 +1120,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		 * and the IL offset.  Note that computing the IL offset is already an expensive
 		 * operation, so we shouldn't call this method twice.
 		 */
-		location = mono_debug_lookup_source_location (jinfo_get_method (ji), sf->native_offset, domain);
+		location = mono_debug_lookup_source_location (jinfo_get_method (ji), sf->native_offset, NULL);
 		if (location) {
 			sf->il_offset = location->il_offset;
 		} else {
@@ -1334,7 +1334,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 
 			// Don't do this when we can be in a signal handler
 			if (!crash_context)
-				source = mono_debug_lookup_source_location (jinfo_get_method (frame.ji), frame.native_offset, domain);
+				source = mono_debug_lookup_source_location (jinfo_get_method (frame.ji), frame.native_offset, NULL);
 			if (source) {
 				il_offset = source->il_offset;
 			} else {
@@ -1643,7 +1643,7 @@ summarize_frame_managed_walk (MonoMethod *method, gpointer ip, size_t frame_nati
 	int il_offset = -1;
 
 	if (managed && method) {
-		MonoDebugSourceLocation *location = mono_debug_lookup_source_location (method, frame_native_offset, mono_get_root_domain ());
+		MonoDebugSourceLocation *location = mono_debug_lookup_source_location (method, frame_native_offset, NULL);
 		if (location) {
 			il_offset = location->il_offset;
 			mono_debug_free_source_location (location);
@@ -1912,9 +1912,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	mono_gc_wbarrier_generic_store_internal (method, (MonoObject*) rm);
 
 	if (il_offset != -1) {
-		location = mono_debug_lookup_source_location_by_il (jmethod, il_offset, domain);
+		location = mono_debug_lookup_source_location_by_il (jmethod, il_offset, NULL);
 	} else {
-		location = mono_debug_lookup_source_location (jmethod, *native_offset, domain);
+		location = mono_debug_lookup_source_location (jmethod, *native_offset, NULL);
 	}
 	if (location)
 		*iloffset = location->il_offset;
@@ -3264,7 +3264,7 @@ print_overflow_stack_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer da
 		if (method == user_data->omethod)
 			return FALSE;
 
-		location = mono_debug_print_stack_frame (method, frame->native_offset, mono_get_root_domain ());
+		location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 		mono_runtime_printf_err ("  %s", location);
 		g_free (location);
 
@@ -3327,7 +3327,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 		method = jinfo_get_method (frame->ji);
 
 	if (method && frame->domain) {
-		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, mono_get_root_domain ());
+		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 		g_string_append_printf (p, "  %s\n", location);
 		g_free (location);
 	} else
