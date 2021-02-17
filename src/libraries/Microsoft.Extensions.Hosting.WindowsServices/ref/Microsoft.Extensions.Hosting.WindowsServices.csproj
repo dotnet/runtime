@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\ref\Microsoft.Extensions.Hosting.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\ref\System.ServiceProcess.ServiceController.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\ref\System.ServiceProcess.ServiceController.csproj" Condition="'$(TargetFramework)' != 'net461'" />
   </ItemGroup>
 
 </Project>
