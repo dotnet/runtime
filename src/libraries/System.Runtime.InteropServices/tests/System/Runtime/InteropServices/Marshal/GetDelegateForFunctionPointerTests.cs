@@ -76,7 +76,8 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void GetDelegateForFunctionPointer_DelegateBaseTypes_ThrowsMustBeDelegate()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48379", TestRuntimes.Mono)]
+        public void GetDelegateForFunctionPointer_MulticastDelegate_ThrowsMustBeDelegate()
         {
             IntPtr ptr = Marshal.AllocHGlobal(16);
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetDelegateForFunctionPointer(ptr, typeof(MulticastDelegate)));
