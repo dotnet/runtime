@@ -1483,7 +1483,6 @@ namespace System.Net.Sockets
                 {
                     fixed (byte* pinnedValue = &optionValue[0])
                     {
-                        Debug.Assert(BitConverter.IsLittleEndian, "Expected little endian");
                         *((int*)pinnedValue) = outError;
                     }
                     optionLength = sizeof(int);
