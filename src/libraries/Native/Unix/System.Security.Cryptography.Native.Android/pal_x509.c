@@ -4,6 +4,23 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define INIT_LOCALS(name, ...) \
+    enum { __VA_ARGS__, count_##name }; \
+    jobject name[count_##name] = { 0 }; \
+
+#define RELEASE_LOCALS(name, env) \
+{ \
+    for (int i = 0; i < count_##name; ++i) \
+    { \
+        jobject local = name[i]; \
+        if (local != NULL) \
+            (*env)->DeleteLocalRef(env, local); \
+    } \
+} \
+
+#define VALUE_FAIL -1
+#define BUFFER_FAIL FAIL
+
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len);
 static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t len);
 
@@ -13,24 +30,28 @@ jobject /*X509Certificate*/ CryptoNative_DecodeX509(const uint8_t *buf, int32_t 
     assert(buf != NULL && len > 0);
     JNIEnv* env = GetJNIEnv();
 
+    jobject ret = NULL;
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory)
+
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    jbyteArray bytes = (*env)->NewByteArray(env, len);
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (const jbyte*)buf);
-    jobject stream = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, bytes);
+    loc[bytes] = (*env)->NewByteArray(env, len);
+    (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte*)buf);
+    loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
     // return (X509Certificate)certFactory.generateCertificate(stream);
-    jstring certType = JSTRING("X.509");
-    jobject certFactory = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, certType);
-    jobject ret = (*env)->CallObjectMethod(env, certFactory, g_CertFactoryGenerateCertificate, stream);
-    if (!CheckJNIExceptions(env) && ret != NULL)
+    loc[certType] = JSTRING("X.509");
+    loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertificate, loc[stream]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (ret != NULL)
         ret = ToGRef(env, ret);
 
-    (*env)->DeleteLocalRef(env, bytes);
-    (*env)->DeleteLocalRef(env, stream);
-    (*env)->DeleteLocalRef(env, certType);
-    (*env)->DeleteLocalRef(env, certFactory);
+cleanup:
+    RELEASE_LOCALS(loc, env)
     return ret;
 }
 
@@ -39,12 +60,15 @@ int32_t CryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, 
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
 
     // byte[] encoded = cert.getEncoded();
     // return encoded.length
     jbyteArray encoded =  (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
-    int32_t ret = PopulateByteArray(env, encoded, buf, len);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, encoded, buf, len);
 
+cleanup:
     (*env)->DeleteLocalRef(env, encoded);
     return ret;
 }
@@ -64,22 +88,26 @@ int32_t CryptoNative_GetX509Thumbprint(jobject /*X509Certificate*/ cert, uint8_t
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
 
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, algorithm, md, encoded, thumbprint)
+
     // MessageDigest md = MessageDigest.getInstance("SHA-1");
-    jstring algorithm = JSTRING("SHA-1");
-    jobject md = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, algorithm);
+    loc[algorithm] = JSTRING("SHA-1");
+    loc[md] = (*env)->CallStaticObjectMethod(env, g_mdClass, g_mdGetInstanceMethod, loc[algorithm]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // byte[] encoded = cert.getEncoded();
-    jbyteArray encoded = (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
+    loc[encoded] = (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // byte[] thumbprint = md.digest(encoded);
     // return thumbprint.length;
-    jbyteArray thumbprint = (*env)->CallObjectMethod(env, md, g_mdDigestMethod, encoded);
-    int32_t ret = PopulateByteArray(env, thumbprint, buf, len);
+    loc[thumbprint] = (*env)->CallObjectMethod(env, loc[md], g_mdDigestMethod, loc[encoded]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, loc[thumbprint], buf, len);
 
-    (*env)->DeleteLocalRef(env, algorithm);
-    (*env)->DeleteLocalRef(env, md);
-    (*env)->DeleteLocalRef(env, encoded);
-    (*env)->DeleteLocalRef(env, thumbprint);
+cleanup:
+    RELEASE_LOCALS(loc, env)
     return ret;
 }
 
@@ -87,28 +115,34 @@ int64_t CryptoNative_GetX509NotBefore(jobject /*X509Certificate*/ cert)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    int64_t ret = VALUE_FAIL;
 
     // Date notBefore = cert.getNotBefore()
     // return notBefore.getTime()
     jobject notBefore = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
-    jlong time = (*env)->CallLongMethod(env, notBefore, g_DateGetTime);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int64_t)(*env)->CallLongMethod(env, notBefore, g_DateGetTime);
 
+cleanup:
     (*env)->DeleteLocalRef(env, notBefore);
-    return (int64_t)time;
+    return ret;
 }
 
 int64_t CryptoNative_GetX509NotAfter(jobject /*X509Certificate*/ cert)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    int64_t ret = VALUE_FAIL;
 
     // Date notAfter = cert.getNotAfter()
     // return notAfter.getTime()
     jobject notAfter = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
-    jlong time = (*env)->CallLongMethod(env, notAfter, g_DateGetTime);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int64_t)(*env)->CallLongMethod(env, notAfter, g_DateGetTime);
 
+cleanup:
     (*env)->DeleteLocalRef(env, notAfter);
-    return (int64_t)time;
+    return ret;
 }
 
 int32_t CryptoNative_GetX509Version(jobject /*X509Certificate*/ cert)
@@ -118,7 +152,7 @@ int32_t CryptoNative_GetX509Version(jobject /*X509Certificate*/ cert)
 
     // return cert.getVersion();
     jint ver = (*env)->CallIntMethod(env, cert, g_X509CertGetVersion);
-    return (int32_t)ver;
+    return CheckJNIExceptions(env) ? VALUE_FAIL : (int32_t)ver;
 }
 
 int32_t CryptoNative_GetX509PublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
@@ -126,15 +160,20 @@ int32_t CryptoNative_GetX509PublicKeyAlgorithm(jobject /*X509Certificate*/ cert,
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
 
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, key, algorithm)
+
     // PublicKey key = cert.getPublicKey();
     // String algorithm = key.getAlgorithm();
     // return encoded.length;
-    jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    jstring algorithm = (*env)->CallObjectMethod(env, key, g_KeyGetAlgorithm);
-    int32_t ret = PopulateString(env, algorithm, buf, len);
+    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[algorithm] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetAlgorithm);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateString(env, loc[algorithm], buf, len);
 
-    (*env)->DeleteLocalRef(env, key);
-    (*env)->DeleteLocalRef(env, algorithm);
+cleanup:
+    RELEASE_LOCALS(loc, env)
     return ret;
 }
 
@@ -142,12 +181,15 @@ int32_t CryptoNative_GetX509SignatureAlgorithm(jobject /*X509Certificate*/ cert,
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
 
     // String oid = cert.getSigAlgOID()
     // return oid.length;
     jstring oid = (jstring)(*env)->CallObjectMethod(env, cert, g_X509CertGetSigAlgOID);
-    int32_t ret = PopulateString(env, oid, buf, len);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateString(env, oid, buf, len);
 
+cleanup:
     (*env)->DeleteLocalRef(env, oid);
     return ret;
 }
@@ -159,25 +201,29 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(jobject /*X509Certificate*/ 
     // String algorithm = key.getAlgorithm()
     // if (algorithm == "...") ...
     // getParams()
-    return 0;
+    return BUFFER_FAIL;
 }
 
-// [TODO] This is currently returning the key with the algorithm (SubjectPublicKeyInfo
 int32_t CryptoNative_GetX509PublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
 
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, key, keyInfoBytes)
+
     // PublicKey key = cert.getPublicKey();
     // byte[] keyInfoBytes = key.getEncoded();
-    jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    jbyteArray keyInfoBytes = (*env)->CallObjectMethod(env, key, g_KeyGetEncoded);
+    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[keyInfoBytes] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // return keyInfoBytes.length;
-    int32_t ret = PopulateByteArray(env, keyInfoBytes, buf, len);
+    ret = PopulateByteArray(env, loc[keyInfoBytes], buf, len);
 
-    (*env)->DeleteLocalRef(env, key);
-    (*env)->DeleteLocalRef(env, keyInfoBytes);
+cleanup:
+    RELEASE_LOCALS(loc, env)
     return ret;
 }
 
@@ -187,15 +233,20 @@ int32_t CryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
 
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, serial, bytes)
+
     // BigInteger serial = cert.getSerialNumber();
     // buf = serial.toByteArray();
     // return buf.length;
-    jobject serial = (*env)->CallObjectMethod(env, cert, g_X509CertGetSerialNumber);
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, serial, g_toByteArrayMethod);
-    int32_t ret = PopulateByteArray(env, bytes, buf, len);
+    loc[serial] = (*env)->CallObjectMethod(env, cert, g_X509CertGetSerialNumber);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[bytes] = (*env)->CallObjectMethod(env, loc[serial], g_toByteArrayMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, loc[bytes], buf, len);
 
-    (*env)->DeleteLocalRef(env, serial);
-    (*env)->DeleteLocalRef(env, bytes);
+cleanup:
+    RELEASE_LOCALS(loc, env)
     return ret;
 }
 
@@ -203,32 +254,43 @@ jobject /*X500Principal*/ CryptoNative_X509GetIssuerName(jobject /*X509Certifica
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    jobject ret = NULL;
 
     // return cert.getIssuerX500Principal()
-    jobject issuer = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
-    return ToGRef(env, issuer);
+    ret = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
+    if (!CheckJNIExceptions(env) && ret != NULL)
+        ret = ToGRef(env, ret);
+
+    return ret;
 }
 
 jobject /*X500Principal*/ CryptoNative_X509GetSubjectName(jobject /*X509Certificate*/ cert)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    jobject ret = NULL;
 
     // return cert.getSubjectX500Principal()
-    jobject subject = (*env)->CallObjectMethod(env, cert, g_X509CertGetSubjectX500Principal);
-    return ToGRef(env, subject);
+    ret = (*env)->CallObjectMethod(env, cert, g_X509CertGetSubjectX500Principal);
+    if (!CheckJNIExceptions(env) && ret != NULL)
+        ret = ToGRef(env, ret);
+
+    return ret;
 }
 
 int32_t CryptoNative_GetX509NameRawBytes(jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
 {
     assert(name != NULL);
     JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
 
     // byte[] raw = name.getEncoded();
     // return raw.length
     jbyteArray encoded = (*env)->CallObjectMethod(env, name, g_X500PrincipalGetEncoded);
-    int32_t ret = PopulateByteArray(env, encoded, buf, len);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, encoded, buf, len);
 
+cleanup:
     (*env)->DeleteLocalRef(env, encoded);
     return ret;
 }
@@ -237,22 +299,30 @@ uint64_t CryptoNative_X509IssuerNameHash(jobject /*X509Certificate*/ cert)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
+    uint64_t ret = (uint64_t)VALUE_FAIL;
 
     // X500Principal issuer = cert.getIssuerX500Principal()
     // return issuer.hashCode();
     jobject issuer = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     jint hash = (*env)->CallIntMethod(env, issuer, g_X500PrincipalHashCode);
+    if (!CheckJNIExceptions(env))
+        ret = (uint64_t)hash;
 
+cleanup:
     (*env)->DeleteLocalRef(env, issuer);
-    return (uint64_t)hash;
+    return ret;
 }
 
 static void EnumExtensions(JNIEnv *env, jobject /*X509Certificate*/ cert, bool critical, EnumX509ExtensionsCallback cb, void *context)
 {
+    INIT_LOCALS(loc, exts, iter)
+
     // Set<string> crit = critical ? cert.getCriticalExtensionOIDs() : cert.getNonCriticalExtensionOIDs();
-    jobject exts = critical
+    loc[exts] = critical
         ? (*env)->CallObjectMethod(env, cert, g_X509CertGetCriticalExtensionOIDs)
         : (*env)->CallObjectMethod(env, cert, g_X509CertGetNonCriticalExtensionOIDs);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // Iterator<string> iter = collection.iterator();
     // while (iter.hasNext()) {
@@ -260,30 +330,45 @@ static void EnumExtensions(JNIEnv *env, jobject /*X509Certificate*/ cert, bool c
     //     byte[] data = cert.getExtensionValue(oid);
     //     cb(oid, oid.length, data, data.length, /*critical*/ true, context);
     // }
-    jobject iter = (*env)->CallObjectMethod(env, exts, g_SetIterator);
-    jboolean hasNext = (*env)->CallBooleanMethod(env, iter, g_IteratorHasNext);
+    loc[iter] = (*env)->CallObjectMethod(env, loc[exts], g_SetIterator);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    jboolean hasNext = (*env)->CallBooleanMethod(env, loc[iter], g_IteratorHasNext);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     while (hasNext)
     {
-        jstring oid = (*env)->CallObjectMethod(env, iter, g_IteratorNext);
-        jsize oidLen = (*env)->GetStringUTFLength(env, oid);
-        const char *oidPtr = (*env)->GetStringUTFChars(env, oid, NULL);
+        INIT_LOCALS(locLoop, oid, data)
+        const char *oidPtr = NULL;
+        jbyte *dataPtr = NULL;
 
-        jbyteArray data = (*env)->CallObjectMethod(env, cert, g_X509CertGetExtensionValue, oid);
-        jsize dataLen = (*env)->GetArrayLength(env, data);
-        jbyte *dataPtr = (*env)->GetByteArrayElements(env, data, NULL);
+        locLoop[oid] = (*env)->CallObjectMethod(env, loc[iter], g_IteratorNext);
+        ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
+        jsize oidLen = (*env)->GetStringUTFLength(env, locLoop[oid]);
+        oidPtr = (*env)->GetStringUTFChars(env, locLoop[oid], NULL);
+
+        locLoop[data] = (*env)->CallObjectMethod(env, cert, g_X509CertGetExtensionValue, locLoop[oid]);
+        ON_EXCEPTION_PRINT_AND_GOTO(loop_cleanup);
+        jsize dataLen = (*env)->GetArrayLength(env, locLoop[data]);
+        dataPtr = (*env)->GetByteArrayElements(env, locLoop[data], NULL);
 
         // X509Certificate.getExtensionValue returns the full DER-encoded data.
         cb(oidPtr, oidLen, (const uint8_t *)dataPtr, dataLen, critical, context);
 
-        (*env)->ReleaseByteArrayElements(env, data, dataPtr, JNI_ABORT);
-        (*env)->DeleteLocalRef(env, oid);
-        (*env)->DeleteLocalRef(env, data);
+        hasNext = (*env)->CallBooleanMethod(env, loc[iter], g_IteratorHasNext);
+        if (CheckJNIExceptions(env))
+            hasNext = false;
 
-        hasNext = (*env)->CallBooleanMethod(env, iter, g_IteratorHasNext);
+    loop_cleanup:
+        if (oidPtr != NULL)
+            (*env)->ReleaseStringUTFChars(env, locLoop[oid], oidPtr);
+
+        if (dataPtr != NULL)
+            (*env)->ReleaseByteArrayElements(env, locLoop[data], dataPtr, JNI_ABORT);
+
+        RELEASE_LOCALS(locLoop, env)
     }
 
-    (*env)->DeleteLocalRef(env, exts);
-    (*env)->DeleteLocalRef(env, iter);
+cleanup:
+    RELEASE_LOCALS(loc, env)
 }
 
 int32_t AndroidCryptoNative_X509EnumExtensions(jobject /*X509Certificate*/ cert, EnumX509ExtensionsCallback cb, void *context)
@@ -291,6 +376,7 @@ int32_t AndroidCryptoNative_X509EnumExtensions(jobject /*X509Certificate*/ cert,
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
 
+    // [TODO] We're skipping over any errors - do we care to propagate?
     EnumExtensions(env, cert, true /*critical*/, cb, context);
     EnumExtensions(env, cert, false /*critical*/, cb, context);
     return SUCCESS;
@@ -302,7 +388,7 @@ int32_t AndroidCryptoNative_X509FindExtensionData(jobject /*X509Certificate*/ ce
 
     // byte[] data = cert.getExtensionValue(oid);
     // return data.length;
-    return FAIL;
+    return BUFFER_FAIL;
 }
 
 
@@ -311,51 +397,42 @@ jobject /*X509CRL*/ CryptoNative_DecodeX509Crl(const uint8_t *buf, int32_t len)
     assert(buf != NULL && len > 0);
     JNIEnv *env = GetJNIEnv();
 
+    jobject ret = NULL;
+    INIT_LOCALS(loc, bytes, stream, certType, certFactory)
+
     // byte[] bytes = new byte[] { ... }
     // InputStream stream = new ByteArrayInputStream(bytes);
-    jbyteArray bytes = (*env)->NewByteArray(env, len);
-    (*env)->SetByteArrayRegion(env, bytes, 0, len, (const jbyte *)buf);
-    jobject stream = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, bytes);
+    loc[bytes] = (*env)->NewByteArray(env, len);
+    (*env)->SetByteArrayRegion(env, loc[bytes], 0, len, (const jbyte *)buf);
+    loc[stream] = (*env)->NewObject(env, g_ByteArrayInputStreamClass, g_ByteArrayInputStreamCtor, loc[bytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
     // return (X509CRL)certFactory.generateCRL(stream);
-    jstring certType = JSTRING("X.509");
-    jobject certFactory = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, certType);
+    loc[certType] = JSTRING("X.509");
+    loc[certFactory] = (*env)->CallStaticObjectMethod(env, g_CertFactoryClass, g_CertFactoryGetInstance, loc[certType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCRL, loc[stream]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if (ret != NULL)
+        ret = ToGRef(env, ret);
 
-    jobject ret = (*env)->CallObjectMethod(env, certFactory, g_CertFactoryGenerateCRL, stream);
-
-    (*env)->DeleteLocalRef(env, bytes);
-    (*env)->DeleteLocalRef(env, stream);
-    (*env)->DeleteLocalRef(env, certType);
-    (*env)->DeleteLocalRef(env, certFactory);
-    return ToGRef(env, ret);
+cleanup:
+    RELEASE_LOCALS(loc, env)
+    return ret;
 }
 
 long CryptoNative_GetX509CrlNextUpdate(jobject /*X509CRL*/ crl)
 {
     assert(crl != NULL);
     LOG_ERROR("Not yet implemented");
-    return FAIL;
+    return VALUE_FAIL;
 }
 
 void CryptoNative_X509CrlDestroy(jobject /*X509_CRL*/ crl)
 {
     assert(crl != NULL);
     ReleaseGRef(GetJNIEnv(), crl);
-}
-
-int32_t CryptoNative_GetX509SubjectPublicKeyInfoDerSize(jobject /*X509Certificate*/ cert)
-{
-    assert(cert != NULL);
-    LOG_ERROR("Not yet implemented");
-    return FAIL;
-}
-
-int32_t CryptoNative_EncodeX509SubjectPublicKeyInfo(jobject /*X509Certificate*/ cert, uint8_t* buf)
-{
-    assert (cert != NULL);
-    LOG_ERROR("Not yet implemented");
-    return FAIL;
 }
 
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len)

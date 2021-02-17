@@ -23,9 +23,6 @@ PALEXPORT int32_t CryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ c
 PALEXPORT jobject /*X500Principal*/ CryptoNative_X509GetSubjectName(jobject /*X509Certificate*/ cert);
 PALEXPORT uint64_t CryptoNative_X509IssuerNameHash(jobject /*X509Certificate*/ cert);
 
-PALEXPORT int32_t CryptoNative_GetX509SubjectPublicKeyInfoDerSize(jobject /*X509Certificate*/ cert);
-PALEXPORT int32_t CryptoNative_EncodeX509SubjectPublicKeyInfo(jobject /*X509Certificate*/ cert, uint8_t* buf);
-
 typedef void (*EnumX509ExtensionsCallback)(const char *oid, int32_t oid_len, const uint8_t *data, int32_t data_len, bool isCritical, void *context);
 
 /* Enumerate all extensions */
