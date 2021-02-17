@@ -19,15 +19,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
                 intermediateAuthorityCount: 2,
-                pkiOptionsInSubject: false);
-
-            CertificateAuthority intermediate1 = intermediates[0];
-            CertificateAuthority intermediate2 = intermediates[1];
+                pkiOptionsInSubject: false,
+                testName: nameof(EmptyAiaResponseIsIgnored));
 
             using (responder)
             using (root)
-            using (intermediate1)
-            using (intermediate2)
+            using (CertificateAuthority intermediate1 = intermediates[0])
+            using (CertificateAuthority intermediate2 = intermediates[1])
             using (endEntity)
             using (ChainHolder holder = new ChainHolder())
             using (X509Certificate2 intermediate2Cert = intermediate2.CloneIssuerCert())
@@ -57,7 +55,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
                 out X509Certificate2 endEntity,
-                pkiOptionsInSubject: false);
+                pkiOptionsInSubject: false,
+                testName: nameof(DisableAiaOptionWorks));
 
             using (responder)
             using (root)
