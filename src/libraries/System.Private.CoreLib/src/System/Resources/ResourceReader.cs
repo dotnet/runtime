@@ -380,10 +380,7 @@ namespace System.Resources
                     if (_ums.Position > _ums.Length - byteLen)
                         throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourcesIndexTooLong, index));
 
-                    string? s = null;
-                    char* charPtr = (char*)_ums.PositionPointer;
-
-                    s = new string(charPtr, 0, byteLen / 2);
+                    string s = Encoding.Unicode.GetString(_ums.PositionPointer, byteLen);
 
                     _ums.Position += byteLen;
                     dataOffset = _store.ReadInt32();

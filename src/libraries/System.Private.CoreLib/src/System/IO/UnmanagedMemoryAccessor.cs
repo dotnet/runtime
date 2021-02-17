@@ -494,8 +494,8 @@ namespace System.IO
                 int* valuePtr = (int*)(&value);
                 int flags = *valuePtr;
                 int hi = *(valuePtr + 1);
-                int lo = *(valuePtr + 2);
-                int mid = *(valuePtr + 3);
+                int lo = *(valuePtr + (BitConverter.IsLittleEndian ? 2 : 3));
+                int mid = *(valuePtr + (BitConverter.IsLittleEndian ? 3 : 2));
 
                 byte* pointer = null;
                 try

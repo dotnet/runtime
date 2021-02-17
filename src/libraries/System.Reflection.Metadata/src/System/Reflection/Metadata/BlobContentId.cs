@@ -77,6 +77,24 @@ namespace System.Reflection.Metadata
             guidPtr[7] = (byte)((guidPtr[7] & 0x0f) | (4 << 4));
             guidPtr[8] = (byte)((guidPtr[8] & 0x3f) | (2 << 6));
 
+            // the code above assumed the host is little-endian; if this is not the case,
+            // we need to fix up the first three fields (int, short, short)
+            if (!BitConverter.IsLittleEndian)
+            {
+                byte tmp = guidPtr[0];
+                guidPtr[0] = guidPtr[3];
+                guidPtr[3] = tmp;
+                tmp = guidPtr[1];
+                guidPtr[1] = guidPtr[2];
+                guidPtr[2] = tmp;
+                tmp = guidPtr[4];
+                guidPtr[4] = guidPtr[5];
+                guidPtr[5] = tmp;
+                tmp = guidPtr[6];
+                guidPtr[6] = guidPtr[7];
+                guidPtr[7] = tmp;
+            }
+
             // compute a random-looking stamp from the remaining bits, but with the upper bit set
             uint stamp = 0x80000000u | ((uint)hashCode[19] << 24 | (uint)hashCode[18] << 16 | (uint)hashCode[17] << 8 | hashCode[16]);
 
