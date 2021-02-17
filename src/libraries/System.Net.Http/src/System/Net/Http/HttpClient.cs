@@ -813,6 +813,16 @@ namespace System.Net.Http
             }
         }
 
+        private static bool IsNativeHandlerEnabled()
+        {
+            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
+            {
+                return false;
+            }
+
+            return isEnabled;
+        }
+
         private Uri? CreateUri(string? uri) =>
             string.IsNullOrEmpty(uri) ? null : new Uri(uri, UriKind.RelativeOrAbsolute);
 

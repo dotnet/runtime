@@ -7,14 +7,12 @@ namespace System.Net.Http
 {
     public partial class HttpClient
     {
-        private const string HandlerSwitchName = "System.Net.Http.UseNativeHttpHandler";
-
         private static MethodInfo? handlerMethod;
 
         private static HttpMessageHandler CreateDefaultHandler()
         {
             // Default is to use the Android native handler
-            if (!AppContext.TryGetSwitch(HandlerSwitchName, out bool isEnabled))
+            if (!IsNativeHandlerEnabled())
             {
                 return new HttpClientHandler();
             }
