@@ -423,7 +423,7 @@ namespace ILCompiler
                 pdbPath: null,
                 generatePerfMapFile: false,
                 perfMapPath: null,
-                perfMapMvid: new Guid(),
+                perfMapMvid: null,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
                 customPESectionAlignment: 0);
