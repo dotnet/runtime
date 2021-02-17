@@ -256,11 +256,12 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _exit_on_fail=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
+        _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
         (string, string): Returns a tuple of stdout and stderr
@@ -269,7 +270,7 @@ def run_command(command_to_run, _exit_on_fail=False):
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
         command_stdout, command_stderr = proc.communicate()
         return_code = proc.returncode
 

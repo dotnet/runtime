@@ -158,8 +158,7 @@ def build_and_run(coreclr_args, output_mch_name):
          "-o", artifacts_directory], _exit_on_fail=True)
 
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-                         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
-                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
+                         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} "
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
@@ -170,10 +169,12 @@ def build_and_run(coreclr_args, output_mch_name):
         if is_windows:
             contents.append("set JitName=%COMPlus_JitName%")
             contents.append("set COMPlus_JitName=")
+            contents.append("set COMPlus_TieredCompilation=")
         else:
             contents.append("#!/bin/bash")
             contents.append("export JitName=$COMPlus_JitName")
             contents.append("unset COMPlus_JitName")
+            contents.append("unset COMPlus_TieredCompilation")
         contents.append(f"pushd {performance_directory}")
         contents.append(collection_command)
 
@@ -190,8 +191,6 @@ def build_and_run(coreclr_args, output_mch_name):
 
         run_command([
             python_path, path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
-            # Disable ReadyToRun so we always JIT R2R methods and collect them
-            "--use_zapdisable",
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
             script_name], _exit_on_fail=True)
 
