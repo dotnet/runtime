@@ -5,6 +5,7 @@
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
     <Nullable>Annotations</Nullable>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
