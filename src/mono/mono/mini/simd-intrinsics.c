@@ -384,6 +384,11 @@ emit_hardware_intrinsics (
 		else
 			supported = TRUE;
 
+#if defined(TARGET_ARM64)
+		// HACK: Mark AdvSimd as unsupported until it's completely implemented
+		if (feature == MONO_CPU_ARM64_ADVSIMD) supported = FALSE;
+#endif
+
 		ectx.id = ectx.info->id;
 
 		if (ectx.info->op != 0)
@@ -934,12 +939,12 @@ static SimdIntrinsic crypto_aes_methods [] = {
 };
 
 static SimdIntrinsic sha1_methods [] = {
-	// {SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
-	// {SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
-	// {SN_HashUpdateMajority, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1M},
-	// {SN_HashUpdateParity, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1P},
-	// {SN_ScheduleUpdate0, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1SU0},
-	// {SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
+	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
+	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
+	{SN_HashUpdateMajority, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1M},
+	{SN_HashUpdateParity, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1P},
+	{SN_ScheduleUpdate0, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1SU0},
+	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
 	{SN_get_IsSupported}
 };
 
@@ -988,7 +993,7 @@ static const struct IntrinGroup supported_arm_intrinsics [] = {
 	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
 	{ "Dp", MONO_CPU_ARM64_DP, unsupported, sizeof (unsupported) },
 	{ "Rdm", MONO_CPU_ARM64_RDM, unsupported, sizeof (unsupported) },
-	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
+	{ "Sha1", MONO_CPU_ARM64_CRYPTO, unsupported, sizeof (unsupported) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
 };
 
