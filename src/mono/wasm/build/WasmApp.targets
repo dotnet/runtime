@@ -57,10 +57,6 @@
   -->
 
   <PropertyGroup>
-    <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-    <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
-    <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
-    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
@@ -155,6 +151,9 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
     <PropertyGroup>
+      <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
 
@@ -216,6 +215,8 @@
       <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
       <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
       <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+      <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(RuntimeEmccVersionFile)')" Text="Cannot find $(RuntimeEmccVersionFile)" />
