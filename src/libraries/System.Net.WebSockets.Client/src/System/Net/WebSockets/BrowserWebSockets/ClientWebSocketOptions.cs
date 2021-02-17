@@ -101,6 +101,13 @@ namespace System.Net.WebSockets
         }
 
         [UnsupportedOSPlatform("browser")]
+        public WebSocketDeflateOptions? DeflateOptions
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [UnsupportedOSPlatform("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize)
         {
             throw new PlatformNotSupportedException();

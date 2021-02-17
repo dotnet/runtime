@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -175,6 +176,21 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                // Because deflate options are negotiated we need a new object
+                WebSocketDeflateOptions? deflateOptions = null;
+
+                if (options.DeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out var extensions))
+                {
+                    foreach (var extension in extensions)
+                    {
+                        if (extension.StartsWith("permessage-deflate"))
+                        {
+                            deflateOptions = ParseDeflateOptions(extension, options.DeflateOptions);
+                            break;
+                        }
+                    }
+                }
+
                 if (response.Content is null)
                 {
                     throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
@@ -184,11 +200,13 @@ namespace System.Net.WebSockets
                 Stream connectedStream = response.Content.ReadAsStream();
                 Debug.Assert(connectedStream.CanWrite);
                 Debug.Assert(connectedStream.CanRead);
-                WebSocket = WebSocket.CreateFromStream(
-                    connectedStream,
-                    isServer: false,
-                    subprotocol,
-                    options.KeepAliveInterval);
+                WebSocket = WebSocket.CreateFromStream(connectedStream, new WebSocketCreationOptions
+                {
+                    IsServer = false,
+                    SubProtocol = subprotocol,
+                    KeepAliveInterval = options.KeepAliveInterval,
+                    DeflateOptions = deflateOptions,
+                });
             }
             catch (Exception exc)
             {
@@ -218,6 +236,47 @@ namespace System.Net.WebSockets
             }
         }
 
+        private static WebSocketDeflateOptions ParseDeflateOptions(string extensions, WebSocketDeflateOptions original)
+        {
+            var options = new WebSocketDeflateOptions();
+
+            foreach (var value in extensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (value == "client_no_context_takeover")
+                {
+                    options.ClientContextTakeover = false;
+                }
+                else if (value == "server_no_context_takeover")
+                {
+                    options.ServerContextTakeover = false;
+                }
+                else if (value.StartsWith("client_max_window_bits="))
+                {
+                    options.ClientMaxWindowBits = int.Parse(value.Substring("client_max_window_bits=".Length),
+                                                            NumberFormatInfo.InvariantInfo);
+                }
+                else if (value.StartsWith("server_max_window_bits="))
+                {
+                    options.ServerMaxWindowBits = int.Parse(value.Substring("server_max_window_bits=".Length),
+                                                            NumberFormatInfo.InvariantInfo);
+                }
+            }
+
+            if (options.ClientMaxWindowBits > original.ClientMaxWindowBits)
+            {
+                throw new WebSocketException(string.Format(SR.net_WebSockets_WindowBitsNegotiationFailure,
+                    "client", original.ClientMaxWindowBits, options.ClientMaxWindowBits));
+            }
+
+            if (options.ServerMaxWindowBits > original.ServerMaxWindowBits)
+            {
+                throw new WebSocketException(string.Format(SR.net_WebSockets_WindowBitsNegotiationFailure,
+                    "server", original.ServerMaxWindowBits, options.ServerMaxWindowBits));
+            }
+
+            return options;
+        }
+
         /// <summary>Adds the necessary headers for the web socket request.</summary>
         /// <param name="request">The request to which the headers should be added.</param>
         /// <param name="secKey">The generated security key to send in the Sec-WebSocket-Key header.</param>
@@ -231,6 +290,41 @@ namespace System.Net.WebSockets
             if (options._requestedSubProtocols?.Count > 0)
             {
                 request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketProtocol, string.Join(", ", options.RequestedSubProtocols));
+            }
+            if (options.DeflateOptions is not null)
+            {
+                request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketExtensions, string.Join("; ", GetDeflateOptions(options.DeflateOptions)));
+
+                static IEnumerable<string> GetDeflateOptions(WebSocketDeflateOptions options)
+                {
+                    yield return "permessage-deflate";
+
+                    if (options.ClientMaxWindowBits != 15)
+                    {
+                        yield return "client_max_window_bits=" + options.ClientMaxWindowBits;
+                    }
+                    else
+                    {
+                        // Advertise that we support this option
+                        yield return "client_max_window_bits";
+                    }
+
+                    if (options.ServerMaxWindowBits != 15)
+                    {
+                        yield return "server_max_window_bits=" + options.ServerMaxWindowBits;
+                    }
+                    else
+                    {
+                        // Advertise that we support this option
+                        yield return "server_max_window_bits";
+                    }
+
+                    if (!options.ServerContextTakeover)
+                        yield return "server_no_context_takeover";
+
+                    if (!options.ClientContextTakeover)
+                        yield return "client_no_context_takeover";
+                }
             }
         }
 
