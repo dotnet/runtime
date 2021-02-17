@@ -8,7 +8,7 @@
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
 #include "errorhandling.h"
-#include "corjitflags.h"
+#include "spmidumphelper.h"
 
 int verbJitFlags::DoWork(const char* nameOfInput)
 {
@@ -17,6 +17,7 @@ int verbJitFlags::DoWork(const char* nameOfInput)
         return -1;
 
     LightWeightMap<unsigned long long, unsigned> flagMap;
+    unsigned mcCount = 0;
 
     while (mci.MoveNext())
     {
@@ -35,75 +36,46 @@ int verbJitFlags::DoWork(const char* nameOfInput)
             int oldVal = flagMap.GetItem(index);
             flagMap.Update(index, oldVal + 1);
         }
+
+        mcCount++;
     }
 
     if (!mci.Destroy())
         return -1;
 
-    printf("%16s,%8s, parsed\n", "bits", "count");
+    printf("\nGrouped Flag Appearances (%u contexts)\n\n", mcCount);
+    printf("%-16s %8s %8s  parsed\n", "bits", "count", "percent");
+
+    unsigned appearancesPerBit[64] = {};
 
     const unsigned int count = flagMap.GetCount();
-    unsigned long long* pFlag = flagMap.GetRawKeys();
+    unsigned long long* pFlags = flagMap.GetRawKeys();
+
     for (unsigned int i = 0; i < count; i++)
     {
-        const unsigned long long flag = *pFlag++;
-        const int index = flagMap.GetIndex(flag);
+        const unsigned long long flags = *pFlags++;
+        const int index = flagMap.GetIndex(flags);
+        const unsigned appearances = flagMap.GetItem(index);
 
-        printf("%016llx,%8u", flag, flagMap.GetItem(index));
+        printf("%016llx %8u %7.2f%% %s\n", flags, appearances, 100.0 * ((double) appearances / mcCount), SpmiDumpHelper::DumpJitFlags(flags).c_str());
 
-        for (int flagBit = 63; flagBit >= 0; flagBit--)
+        for (unsigned int bit = 0; bit < 64; bit++)
         {
-            if (((flag >> flagBit) & 1ull) == 1ull)
+            if (flags & (1ull << bit))
             {
-                switch (flagBit)
-                {
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SPEED_OPT: printf(", SPEED_OPT"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SIZE_OPT: printf(", SIZE_OPT"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_CODE: printf(", DEBUG_CODE"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_EnC: printf(", DEBUG_EnC"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_INFO: printf(", DEBUG_INFO"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MIN_OPT: printf(", MIN_OPT"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MCJIT_BACKGROUND: printf(", MCJIT_BACKGROUND"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_OSR: printf(", OSR"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT: printf(", ALT_JIT"); break;
-
-                    case 17: printf(", FEATURE_SIMD"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE: printf(", MAKEFINALCODE"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN: printf(", READYTORUN"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE: printf(", PROF_ENTERLEAVE"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE: printf(", NO_PINVOKE_INLINE"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SKIP_VERIFICATION: printf(", SKIP_VERIFICATION"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PREJIT: printf(", PREJIT"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELOC: printf(", RELOC"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IMPORT_ONLY: printf(", IMPORT_ONLY"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IL_STUB: printf(", IL_STUB"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROCSPLIT: printf(", PROCSPLIT"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR: printf(", BBINSTR"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT: printf(", BBOPT"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED: printf(", FRAMED"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PUBLISH_SECRET_PARAM: printf(", PUBLISH_SECRET_PARAM"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND: printf(", SAMPLING_JIT_BACKGROUND"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS: printf(", USE_PINVOKE_HELPERS"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_REVERSE_PINVOKE: printf(", REVERSE_PINVOKE"); break;                    
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TRACK_TRANSITIONS: printf(", TRACK_TRANSITIONS"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER0: printf(", TIER0"); break;
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER1: printf(", TIER1"); break;
-
-                    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_NO_INLINING: printf(", NO_INLINING"); break;
-                    default:
-                        printf(", ?_%02u_?", flagBit);
-                        break;
-                }
+                appearancesPerBit[bit] += appearances;
             }
         }
+    }
 
-        printf("\n");
+    printf("\nIndividual Flag Appearances\n\n");
+    for (unsigned int bit = 0; bit < 64; bit++)
+    {
+        unsigned perBit = appearancesPerBit[bit];
+        if (perBit > 0)
+        {
+            printf("%8u %7.2f%% %s\n", perBit, 100.0 * (double) perBit / mcCount, SpmiDumpHelper::DumpJitFlags(1ull<<bit).c_str());
+        }
     }
 
     return 0;

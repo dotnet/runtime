@@ -4,7 +4,7 @@
 //
 
 //----------------------------------------------------------
-// verbJitFlags.h - verb that prints sumary of jit flags values
+// verbJitFlags.h - verb that prints summary of jit flags values
 //----------------------------------------------------------
 #ifndef _verbJitFlags
 #define _verbJitFlags
