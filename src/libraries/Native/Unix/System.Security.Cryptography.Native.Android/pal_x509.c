@@ -24,6 +24,24 @@
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len);
 static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t len);
 
+// Encodes as DER format
+int32_t AndroidCryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
+
+    // byte[] encoded = cert.getEncoded();
+    // return encoded.length
+    jbyteArray encoded =  (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, encoded, buf, len);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, encoded);
+    return ret;
+}
+
 // Handles both DER and PEM formats
 jobject /*X509Certificate*/ CryptoNative_DecodeX509(const uint8_t *buf, int32_t len)
 {
@@ -55,24 +73,6 @@ cleanup:
     return ret;
 }
 
-// Encodes as DER format
-int32_t CryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // byte[] encoded = cert.getEncoded();
-    // return encoded.length
-    jbyteArray encoded =  (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, encoded, buf, len);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, encoded);
-    return ret;
-}
-
 void CryptoNative_X509Destroy(jobject /*X509Certificate*/ cert)
 {
     ReleaseGRef(GetJNIEnv(), cert);
@@ -81,6 +81,152 @@ void CryptoNative_X509Destroy(jobject /*X509Certificate*/ cert)
 jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certificate*/ cert)
 {
     return AddGRef(GetJNIEnv(), cert);
+}
+
+int64_t AndroidCryptoNative_GetX509NotAfter(jobject /*X509Certificate*/ cert)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+    int64_t ret = VALUE_FAIL;
+
+    // Date notAfter = cert.getNotAfter()
+    // return notAfter.getTime()
+    jobject notAfter = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int64_t)(*env)->CallLongMethod(env, notAfter, g_DateGetTime);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, notAfter);
+    return ret;
+}
+
+int64_t AndroidCryptoNative_GetX509NotBefore(jobject /*X509Certificate*/ cert)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+    int64_t ret = VALUE_FAIL;
+
+    // Date notBefore = cert.getNotBefore()
+    // return notBefore.getTime()
+    jobject notBefore = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = (int64_t)(*env)->CallLongMethod(env, notBefore, g_DateGetTime);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, notBefore);
+    return ret;
+}
+
+int32_t AndroidCryptoNative_GetX509PublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, key, algorithm)
+
+    // PublicKey key = cert.getPublicKey();
+    // String algorithm = key.getAlgorithm();
+    // return encoded.length;
+    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[algorithm] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetAlgorithm);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateString(env, loc[algorithm], buf, len);
+
+cleanup:
+    RELEASE_LOCALS(loc, env)
+    return ret;
+}
+
+int32_t AndroidCryptoNative_GetX509SignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
+
+    // String oid = cert.getSigAlgOID()
+    // return oid.length;
+    jstring oid = (jstring)(*env)->CallObjectMethod(env, cert, g_X509CertGetSigAlgOID);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateString(env, oid, buf, len);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, oid);
+    return ret;
+}
+
+int32_t AndroidCryptoNative_GetX509PublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, key, keyInfoBytes)
+
+    // PublicKey key = cert.getPublicKey();
+    // byte[] keyInfoBytes = key.getEncoded();
+    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[keyInfoBytes] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // return keyInfoBytes.length;
+    ret = PopulateByteArray(env, loc[keyInfoBytes], buf, len);
+
+cleanup:
+    RELEASE_LOCALS(loc, env)
+    return ret;
+}
+
+// Serial number as a byte array in big-endian byte-order
+int32_t AndroidCryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
+{
+    assert(cert != NULL);
+    JNIEnv *env = GetJNIEnv();
+
+    int32_t ret = BUFFER_FAIL;
+    INIT_LOCALS(loc, serial, bytes)
+
+    // BigInteger serial = cert.getSerialNumber();
+    // buf = serial.toByteArray();
+    // return buf.length;
+    loc[serial] = (*env)->CallObjectMethod(env, cert, g_X509CertGetSerialNumber);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[bytes] = (*env)->CallObjectMethod(env, loc[serial], g_toByteArrayMethod);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, loc[bytes], buf, len);
+
+cleanup:
+    RELEASE_LOCALS(loc, env)
+    return ret;
+}
+
+int32_t CryptoNative_GetX509NameRawBytes(jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
+{
+    assert(name != NULL);
+    JNIEnv *env = GetJNIEnv();
+    int32_t ret = BUFFER_FAIL;
+
+    // byte[] raw = name.getEncoded();
+    // return raw.length
+    jbyteArray encoded = (*env)->CallObjectMethod(env, name, g_X500PrincipalGetEncoded);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = PopulateByteArray(env, encoded, buf, len);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, encoded);
+    return ret;
+}
+
+int32_t CryptoNative_GetX509PublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *pBuf, int32_t cBuf)
+{
+    // [TODO]
+    // PublicKey key = cert.publicKey()
+    // String algorithm = key.getAlgorithm()
+    // if (algorithm == "...") ...
+    // getParams()
+    return BUFFER_FAIL;
 }
 
 int32_t CryptoNative_GetX509Thumbprint(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
@@ -111,40 +257,6 @@ cleanup:
     return ret;
 }
 
-int64_t CryptoNative_GetX509NotBefore(jobject /*X509Certificate*/ cert)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int64_t ret = VALUE_FAIL;
-
-    // Date notBefore = cert.getNotBefore()
-    // return notBefore.getTime()
-    jobject notBefore = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = (int64_t)(*env)->CallLongMethod(env, notBefore, g_DateGetTime);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, notBefore);
-    return ret;
-}
-
-int64_t CryptoNative_GetX509NotAfter(jobject /*X509Certificate*/ cert)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int64_t ret = VALUE_FAIL;
-
-    // Date notAfter = cert.getNotAfter()
-    // return notAfter.getTime()
-    jobject notAfter = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = (int64_t)(*env)->CallLongMethod(env, notAfter, g_DateGetTime);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, notAfter);
-    return ret;
-}
-
 int32_t CryptoNative_GetX509Version(jobject /*X509Certificate*/ cert)
 {
     assert(cert != NULL);
@@ -153,101 +265,6 @@ int32_t CryptoNative_GetX509Version(jobject /*X509Certificate*/ cert)
     // return cert.getVersion();
     jint ver = (*env)->CallIntMethod(env, cert, g_X509CertGetVersion);
     return CheckJNIExceptions(env) ? VALUE_FAIL : (int32_t)ver;
-}
-
-int32_t CryptoNative_GetX509PublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, key, algorithm)
-
-    // PublicKey key = cert.getPublicKey();
-    // String algorithm = key.getAlgorithm();
-    // return encoded.length;
-    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[algorithm] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetAlgorithm);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateString(env, loc[algorithm], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
-
-int32_t CryptoNative_GetX509SignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // String oid = cert.getSigAlgOID()
-    // return oid.length;
-    jstring oid = (jstring)(*env)->CallObjectMethod(env, cert, g_X509CertGetSigAlgOID);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateString(env, oid, buf, len);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, oid);
-    return ret;
-}
-
-int32_t CryptoNative_GetX509PublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *pBuf, int32_t cBuf)
-{
-    // [TODO]
-    // PublicKey key = cert.publicKey()
-    // String algorithm = key.getAlgorithm()
-    // if (algorithm == "...") ...
-    // getParams()
-    return BUFFER_FAIL;
-}
-
-int32_t CryptoNative_GetX509PublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, key, keyInfoBytes)
-
-    // PublicKey key = cert.getPublicKey();
-    // byte[] keyInfoBytes = key.getEncoded();
-    loc[key] = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[keyInfoBytes] = (*env)->CallObjectMethod(env, loc[key], g_KeyGetEncoded);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    // return keyInfoBytes.length;
-    ret = PopulateByteArray(env, loc[keyInfoBytes], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
-}
-
-// Serial number as a byte array in big-endian byte-order
-int32_t CryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    int32_t ret = BUFFER_FAIL;
-    INIT_LOCALS(loc, serial, bytes)
-
-    // BigInteger serial = cert.getSerialNumber();
-    // buf = serial.toByteArray();
-    // return buf.length;
-    loc[serial] = (*env)->CallObjectMethod(env, cert, g_X509CertGetSerialNumber);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[bytes] = (*env)->CallObjectMethod(env, loc[serial], g_toByteArrayMethod);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, loc[bytes], buf, len);
-
-cleanup:
-    RELEASE_LOCALS(loc, env)
-    return ret;
 }
 
 jobject /*X500Principal*/ CryptoNative_X509GetIssuerName(jobject /*X509Certificate*/ cert)
@@ -275,23 +292,6 @@ jobject /*X500Principal*/ CryptoNative_X509GetSubjectName(jobject /*X509Certific
     if (!CheckJNIExceptions(env) && ret != NULL)
         ret = ToGRef(env, ret);
 
-    return ret;
-}
-
-int32_t CryptoNative_GetX509NameRawBytes(jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
-{
-    assert(name != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
-
-    // byte[] raw = name.getEncoded();
-    // return raw.length
-    jbyteArray encoded = (*env)->CallObjectMethod(env, name, g_X500PrincipalGetEncoded);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = PopulateByteArray(env, encoded, buf, len);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, encoded);
     return ret;
 }
 
@@ -420,13 +420,6 @@ jobject /*X509CRL*/ CryptoNative_DecodeX509Crl(const uint8_t *buf, int32_t len)
 cleanup:
     RELEASE_LOCALS(loc, env)
     return ret;
-}
-
-long CryptoNative_GetX509CrlNextUpdate(jobject /*X509CRL*/ crl)
-{
-    assert(crl != NULL);
-    LOG_ERROR("Not yet implemented");
-    return VALUE_FAIL;
 }
 
 void CryptoNative_X509CrlDestroy(jobject /*X509_CRL*/ crl)

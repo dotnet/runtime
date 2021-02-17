@@ -439,8 +439,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyFactoryGenPrivateMethod =     GetMethod(env, false, g_KeyFactoryClass, "generatePrivate", "(Ljava/security/spec/KeySpec;)Ljava/security/PrivateKey;");
     g_KeyFactoryGenPublicMethod =      GetMethod(env, false, g_KeyFactoryClass, "generatePublic", "(Ljava/security/spec/KeySpec;)Ljava/security/PublicKey;");
 
-    g_X509EncodedKeySpecClass       = GetClassGRef(env, "java/security/spec/X509EncodedKeySpec");
-    g_X509EncodedKeySpecCtor        = GetMethod(env, false, g_X509EncodedKeySpecClass, "<init>", "([B)V");
+    g_X509EncodedKeySpecClass =        GetClassGRef(env, "java/security/spec/X509EncodedKeySpec");
+    g_X509EncodedKeySpecCtor =         GetMethod(env, false, g_X509EncodedKeySpecClass, "<init>", "([B)V");
 
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
