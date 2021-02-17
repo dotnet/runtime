@@ -172,9 +172,7 @@ var BindingSupportLib = {
 			if (!ptr)
 				throw new Error ("null pointer passed to _store_string_in_intern_table");
 			else if (typeof (ptr) !== "number")
-				throw new Error (`non-pointer passed to _store_string_in_intern_table: ${typeof(ptr)} ${ptr}, for string '${string}'`);
-
-			var originalArg = ptr;
+				throw new Error (`non-pointer passed to _store_string_in_intern_table: ${typeof(ptr)}`);
 			
 			const internBufferSize = 8192;
 
@@ -1430,7 +1428,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultRoot.value, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
 				"    }",
 				"}",
 				"",
