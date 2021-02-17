@@ -639,7 +639,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 * requires allocation on the stack, as this wouldn't be encoded in unwind
 	 * information for the caller frame.
 	 */
-	sp = (uintptr_t) (UCONTEXT_SP(uc));
+	sp = (uintptr_t) (UCONTEXT_REG_Rn(uc, 15));
 	sp = sp - S390_MINIMAL_STACK_SIZE;
 
 	mono_sigctx_to_monoctx (uc, uc_copy);
