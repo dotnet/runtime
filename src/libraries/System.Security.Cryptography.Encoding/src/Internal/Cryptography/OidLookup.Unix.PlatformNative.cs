@@ -45,7 +45,7 @@ namespace Internal.Cryptography
         //
         // These Name/OID pairs are not "universal", in that either Windows localizes it or Windows
         // and OpenSSL produce different answers.  Since the answers originally came from OpenSSL
-        // on macOS, this preserves the OpenSSL names.
+        // on macOS and Android, this preserves the OpenSSL names.
         private static readonly Dictionary<string, string> s_extraFriendlyNameToOid =
             new Dictionary<string, string>(ExtraFriendlyNameToOidCount, StringComparer.OrdinalIgnoreCase)
             {
