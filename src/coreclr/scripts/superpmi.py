@@ -1286,7 +1286,7 @@ def print_superpmi_failure_code(return_code, coreclr_args):
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        logging.warning("SPMI misses found")
+        logging.warning("SuperPMI missing data encountered")
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
