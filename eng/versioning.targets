@@ -20,6 +20,9 @@
     <AssemblyMetadata Include="PreferInbox">
       <Value>True</Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="IsTrimmable">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
