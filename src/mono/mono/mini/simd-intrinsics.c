@@ -978,7 +978,7 @@ support_probe_complete:
 			return NULL;
 		} else {
 			// Emit an exception from the intrinsic method
-			mono_emit_jit_icall (cfg, mono_throw_not_supported, NULL);
+			mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
 			return NULL;
 		}
 	}
@@ -1028,6 +1028,13 @@ support_probe_complete:
 		switch (id) {
 		case SN_Abs: {
 			SimdOp op = (SimdOp)0;
+
+			// HACK: Temporary, while Vector64 support is completed
+			MonoClass *arg0_klass = mono_class_from_mono_type_internal (fsig->params [0]);
+			if (m_class_get_name (arg0_klass), "Vector64`1") {
+				supported = FALSE;
+				goto support_probe_complete;
+			}
 			switch (get_underlying_type (fsig->params [0])) {
 			case MONO_TYPE_R8:
 				op = SIMD_OP_ARM64_DABS;
@@ -1543,7 +1550,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return NULL;
 			} else {
 				/* Emit an exception from the intrinsic method */
-				mono_emit_jit_icall (cfg, mono_throw_not_supported, NULL);
+				mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
 				return NULL;
 			}
 		}
