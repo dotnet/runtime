@@ -30,16 +30,11 @@ namespace System.Reflection.Metadata
 #if !FEATURE_METADATA_UPDATE
             throw new NotSupportedException ("Method body replacement not supported in this runtime");
 #else
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            RuntimeAssembly? runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly == null)
-            {
-                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
-            }
+		    if (assembly is not RuntimeAssembly runtimeAssembly)
+		    {
+			    if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+			    throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+		    }
 
             unsafe
             {
