@@ -129,9 +129,6 @@
     </type>
 
     <!-- System.Runtime.Versioning -->
-    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.Versioning.SupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -141,6 +138,13 @@
 
     <!-- System.ComponentModel -->
     <type fullname="System.ComponentModel.EditorBrowsableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <!-- Internal attributes shared as implementation, so they could be in any assembly -->
+  <assembly fullname="*">
+    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>

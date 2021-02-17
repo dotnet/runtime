@@ -49,6 +49,9 @@ public:
 
     static std::string DumpCorInfoFlag(CorInfoFlag flags);
 
+    static std::string DumpJitFlags(CORJIT_FLAGS corJitFlags);
+    static std::string DumpJitFlags(unsigned long long rawFlags);
+
 private:
 
     static void FormatAgnostic_CORINFO_SIG_INST_Element(
