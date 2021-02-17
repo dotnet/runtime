@@ -243,7 +243,7 @@
     </ReadLinesFromFile>
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)"
-          Command="$(_EmccCommand) --version | head -1 > emcc-version.txt" />
+          Command="bash -c '$(_EmccCommand) --version | head -1 > emcc-version.txt'" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)"
           Command="$(_EmccCommand) --version > emcc-version.txt &amp;&amp; set /p EMCC_VERSION=&lt;emcc-version.txt &amp;&amp; echo %EMCC_VERSION% > emcc-version.txt" />
