@@ -15,7 +15,7 @@
 #include "assert.h"
 
 #define STRESS_LOG
-#define STRESS_LOG_STANDALONE
+#define STRESS_LOG_ANALYZER
 #define MEMORY_MAPPED_STRESSLOG
 
 class MapViewHolder
@@ -32,7 +32,7 @@ bool IsInCantAllocStressLogRegion()
     return true;
 }
 
-#include "stresslog.h"
+#include "../../../inc/stresslog.h"
 
 BOOL g_bDacBroken;
 WCHAR g_mdName[1];

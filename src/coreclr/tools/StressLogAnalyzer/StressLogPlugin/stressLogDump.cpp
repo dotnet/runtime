@@ -18,7 +18,7 @@
 #define STRESS_LOG
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
-#include "stresslog.h"
+#include "../../../inc/stresslog.h"
 
 
 void GcHistClear();

@@ -7,7 +7,7 @@ struct Volatile
 
 typedef void* CRITSEC_COOKIE;
 
-#define STRESS_LOG_STANDALONE
+#define STRESS_LOG_ANALYZER
 
 #include <malloc.h>
 #include "staticcontract.h"
