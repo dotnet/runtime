@@ -36,7 +36,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 Command = $"bash -c 'source {envScriptPath} > /dev/null 2>&1 && {Command}'";
             }
-            Log.LogMessage(MessageImportance.High, $"Using Command: {Command}");
+            Log.LogMessage(MessageImportance.Low, $"Using Command: {Command}");
 
             return base.Execute() && !Log.HasLoggedErrors;
 
