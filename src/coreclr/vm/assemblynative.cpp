@@ -1411,7 +1411,7 @@ void QCALLTYPE AssemblyNative::TraceSatelliteSubdirectoryPathProbed(LPCWSTR file
 }
 
 // static
-INT32 QCALLTYPE AssemblyNative::ApplyUpdate(
+void QCALLTYPE AssemblyNative::ApplyUpdate(
     QCall::AssemblyHandle assembly,
     UINT8* metadataDelta,
     INT32 metadataDeltaLength,
@@ -1421,8 +1421,6 @@ INT32 QCALLTYPE AssemblyNative::ApplyUpdate(
     INT32 pdbDeltaLength)
 {
     QCALL_CONTRACT;
-
-    INT32 result = E_NOTIMPL;
 
     BEGIN_QCALL;
 
@@ -1440,21 +1438,25 @@ INT32 QCALLTYPE AssemblyNative::ApplyUpdate(
             Module* pModule = assembly->GetDomainAssembly()->GetModule();
             if (pModule->IsEditAndContinueEnabled())
             {
-                result = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+                HRESULT hr = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+                if (FAILED(hr))
+                {
+                    COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
+                }
             }
             else
             {
-                result = E_INVALIDARG;
+                COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));
             }
         }
         else
         {
-            result = E_ACCESSDENIED;
+            COMPlusThrow(kNotSupportedException);
         }
     }
+#else
+    COMPlusThrow(kNotImplementedException);
 #endif
 
     END_QCALL;
-
-    return result;
 }

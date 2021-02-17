@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern unsafe int ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
+        private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
@@ -77,17 +77,7 @@ namespace System.Reflection.Metadata
                 RuntimeAssembly rtAsm = runtimeAssembly;
                 fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
                 {
-                    if (ApplyUpdate(
-                        new QCallAssembly(ref rtAsm),
-                        metadataDeltaPtr,
-                        metadataDelta.Length,
-                        ilDeltaPtr,
-                        ilDelta.Length,
-                        pdbDeltaPtr,
-                        pdbDelta.Length) != 0)
-                    {
-                        throw new NotSupportedException();
-                    }
+                    ApplyUpdate(new QCallAssembly(ref rtAsm), metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
                 }
             }
         }
