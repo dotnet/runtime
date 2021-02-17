@@ -488,8 +488,8 @@ One such scenario is a COM host on multiple threads. The app is not running any 
 At the same time it gives the native app (`comhost` in this case) the ability to query and modify runtime properties in between the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` calls on the `first host context`.
 
 ### API usage
-The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/master/src/installer/corehost/cli/hostfxr.h) header file.
-The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/master/src/installer/corehost/cli/coreclr_delegates.h) header file.
+The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/master/src/native/corehost/hostfxr.h) header file.
+The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/master/src/native/corehost/coreclr_delegates.h) header file.
 
 Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.
 

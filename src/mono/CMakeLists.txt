@@ -72,13 +72,11 @@ endif()
 #
 set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-set(DISABLE_REMOTING 1)
 set(DISABLE_APPDOMAINS 1)
 set(DISABLE_CLEANUP 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
-set(DISABLE_ATTACH 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -218,6 +216,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?

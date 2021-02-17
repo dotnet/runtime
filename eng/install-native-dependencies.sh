@@ -48,8 +48,8 @@ elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     fi
 elif [ "$1" = "Android" ]; then
     if [ -z "${ANDROID_OPENSSL_AAR}" ]; then
-        echo "The ANDROID_OPENSSL_AAR variable must be set!"
-        exit 1;
+        echo "The ANDROID_OPENSSL_AAR variable is not set. OpenSSL will not be installed."
+        exit 0;
     fi
     if [ -d "${ANDROID_OPENSSL_AAR}" ]; then
         exit 0;
