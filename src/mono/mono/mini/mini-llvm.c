@@ -9111,9 +9111,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean getLowerElement = FALSE;
 			int arg_idx = -1;
 			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; break;
+			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; break;
+			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; break;
 			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
-			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
+			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
 			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; arg_idx = 1; break;
 			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; arg_idx = 1; break;
