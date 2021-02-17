@@ -254,7 +254,7 @@ extern jclass    g_TrustManager;
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if(CheckJNIExceptions(env)) goto label
 
-void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);

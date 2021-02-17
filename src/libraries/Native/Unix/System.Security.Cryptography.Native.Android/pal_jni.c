@@ -292,9 +292,13 @@ void AssertOnJNIExceptions(JNIEnv* env)
     assert(!CheckJNIExceptions(env));
 }
 
-void SaveTo(uint8_t* src, uint8_t** dst, size_t len)
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
 {
-    assert(!(*dst));
+    assert(overwrite || !(*dst));
+    if (overwrite)
+    {
+        free(*dst);
+    }
     *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
     memcpy(*dst, src, len);
 }
