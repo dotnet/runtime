@@ -1433,25 +1433,19 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
 #ifdef EnC_SUPPORTED
     GCX_COOP();
     {
-        if (!CORDebuggerAttached())
-        {
-            Module* pModule = assembly->GetDomainAssembly()->GetModule();
-            if (pModule->IsEditAndContinueEnabled())
-            {
-                HRESULT hr = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
-                if (FAILED(hr))
-                {
-                    COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
-                }
-            }
-            else
-            {
-                COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));
-            }
-        }
-        else
+        if (CORDebuggerAttached())
         {
             COMPlusThrow(kNotSupportedException);
+        }
+        Module* pModule = assembly->GetDomainAssembly()->GetModule();
+        if (!pModule->IsEditAndContinueEnabled())
+        {
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssemblyNotEditable"));
+        }
+        HRESULT hr = ((EditAndContinueModule*)pModule)->ApplyEditAndContinue(metadataDeltaLength, metadataDelta, ilDeltaLength, ilDelta);
+        if (FAILED(hr))
+        {
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
         }
     }
 #else
