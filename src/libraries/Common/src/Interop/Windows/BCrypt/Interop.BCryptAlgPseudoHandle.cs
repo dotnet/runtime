@@ -17,7 +17,6 @@ internal partial class Interop
             BCRYPT_SHA256_ALG_HANDLE = 0x00000041,
             BCRYPT_SHA384_ALG_HANDLE = 0x00000051,
             BCRYPT_SHA512_ALG_HANDLE = 0x00000061,
-
             BCRYPT_PBKDF2_ALG_HANDLE = 0x00000331,
         }
     }

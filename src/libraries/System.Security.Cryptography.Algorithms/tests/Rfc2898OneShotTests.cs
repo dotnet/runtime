@@ -263,6 +263,16 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Equal(0, destinationBuffer[0]); // Make sure we didn't write before the destination
         }
 
+        [Theory]
+        [MemberData(nameof(Pbkdf2_Rfc6070_Vectors))]
+        public static void Pbkdf2_Rfc6070(string password, string salt, int iterations, string expectedHex)
+        {
+            byte[] expected = expectedHex.HexToByteArray();
+            byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
+            byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, saltBytes, iterations, HashAlgorithmName.SHA1, expected.Length);
+            Assert.Equal(expected, actual);
+        }
+
         public static IEnumerable<object[]> Pbkdf2_PasswordBytes_Compare_Data()
         {
             foreach (HashAlgorithmName hashAlgorithm in SupportedHashAlgorithms)
@@ -308,6 +318,16 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 // case for password exceeding the stack buffer limit.
                 yield return new object[] { hashAlgorithm.Name, 257, 257, largePassword, "0000000000000000" };
             }
+        }
+
+        public static IEnumerable<object[]> Pbkdf2_Rfc6070_Vectors()
+        {
+            // password (P), salt (S), iterations (c), expected (DK)
+            yield return new object[] { "password", "salt", 1, "0c60c80f961f0e71f3a9b524af6012062fe037a6" };
+            yield return new object[] { "password", "salt", 2, "ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957" };
+            yield return new object[] { "password", "salt", 16777216, "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984" };
+            yield return new object[] { "passwordPASSWORDpassword", "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, "3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038" };
+            yield return new object[] { "pass\0word", "sa\0lt", 4096, "56fa6aa75548099dcc37d7f03425e0c3" };
         }
 
         private static HashAlgorithmName[] SupportedHashAlgorithms => new []

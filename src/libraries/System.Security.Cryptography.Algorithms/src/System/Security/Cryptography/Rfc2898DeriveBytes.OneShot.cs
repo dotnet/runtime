@@ -257,8 +257,14 @@ namespace System.Security.Cryptography
             int passwordBytesWritten = s_throwingUtf8Encoding.GetBytes(password, passwordBuffer);
             Span<byte> passwordBytes = passwordBuffer.Slice(0, passwordBytesWritten);
 
-            Pbkdf2Core(passwordBytes, salt, destination, iterations, hashAlgorithm);
-            CryptographicOperations.ZeroMemory(passwordBytes);
+            try
+            {
+                Pbkdf2Core(passwordBytes, salt, destination, iterations, hashAlgorithm);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(passwordBytes);
+            }
 
             if (rentedPasswordBuffer is not null)
             {

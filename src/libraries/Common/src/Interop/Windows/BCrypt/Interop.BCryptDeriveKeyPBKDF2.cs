@@ -21,6 +21,6 @@ internal partial class Interop
             ulong cIterations,
             byte* pbDerivedKey,
             int cbDerivedKey,
-            int dwFlags);
+            uint dwFlags);
     }
 }
