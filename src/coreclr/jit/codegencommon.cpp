@@ -4437,17 +4437,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 #endif
                 instruction copyIns = ins_Copy(regNum, destMemType);
-#if defined(TARGET_XARCH)
-                // For INS_mov_xmm2i, the source xmm reg comes first.
-                if (copyIns == INS_mov_xmm2i)
-                {
-                    GetEmitter()->emitIns_R_R(copyIns, size, regNum, destRegNum);
-                }
-                else
-#endif // TARGET_XARCH
-                {
-                    GetEmitter()->emitIns_R_R(copyIns, size, destRegNum, regNum);
-                }
+                GetEmitter()->emitIns_R_R(copyIns, size, destRegNum, regNum);
 #ifdef USING_SCOPE_INFO
                 psiMoveToReg(varNum);
 #endif // USING_SCOPE_INFO
@@ -12067,42 +12057,15 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         }
         return;
     }
+
+    regNumber srcReg     = genConsumeReg(op1);
     var_types targetType = treeNode->TypeGet();
     regNumber targetReg  = treeNode->GetRegNum();
+    assert(srcReg != REG_NA);
     assert(targetReg != REG_NA);
     assert(targetType != TYP_STRUCT);
 
-    // Check whether this node and the node from which we're copying the value have
-    // different register types. This can happen if (currently iff) we have a SIMD
-    // vector type that fits in an integer register, in which case it is passed as
-    // an argument, or returned from a call, in an integer register and must be
-    // copied if it's in an xmm register.
-
-    bool srcFltReg = (varTypeUsesFloatReg(op1));
-    bool tgtFltReg = (varTypeUsesFloatReg(treeNode));
-    if (srcFltReg != tgtFltReg)
-    {
-        instruction ins;
-        regNumber   fpReg;
-        regNumber   intReg;
-        if (tgtFltReg)
-        {
-            ins    = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
-            fpReg  = targetReg;
-            intReg = op1->GetRegNum();
-        }
-        else
-        {
-            ins    = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
-            intReg = targetReg;
-            fpReg  = op1->GetRegNum();
-        }
-        inst_RV_RV(ins, fpReg, intReg, targetType);
-    }
-    else
-    {
-        inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
-    }
+    inst_RV_RV(ins_Copy(srcReg, targetType), targetReg, srcReg, targetType);
 
     if (op1->IsLocal())
     {

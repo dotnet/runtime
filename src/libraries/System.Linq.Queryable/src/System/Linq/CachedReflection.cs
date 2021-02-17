@@ -188,6 +188,13 @@ namespace System.Linq
              (s_Cast_TResult_1 = new Func<IQueryable, IQueryable<object>>(Queryable.Cast<object>).GetMethodInfo().GetGenericMethodDefinition()))
               .MakeGenericMethod(TResult);
 
+        private static MethodInfo? s_Chunk_TSource_1;
+
+        public static MethodInfo Chunk_TSource_1(Type TSource) =>
+             (s_Chunk_TSource_1 ??
+             (s_Chunk_TSource_1 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Chunk).GetMethodInfo().GetGenericMethodDefinition()))
+              .MakeGenericMethod(TSource);
+
         private static MethodInfo? s_Concat_TSource_2;
 
         public static MethodInfo Concat_TSource_2(Type TSource) =>

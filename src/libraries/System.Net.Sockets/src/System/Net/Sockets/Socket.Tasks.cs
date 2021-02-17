@@ -350,18 +350,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveFromResult"/> containing the number of bytes received and the endpoint of the sending host.</returns>
         public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
-            if (remoteEndPoint is null)
-            {
-                throw new ArgumentNullException(nameof(remoteEndPoint));
-            }
-            if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), nameof(remoteEndPoint));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
-            }
+            ValidateReceiveFromEndpointAndState(remoteEndPoint, nameof(remoteEndPoint));
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -403,18 +392,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes with a <see cref="SocketReceiveMessageFromResult"/> containing the number of bytes received and additional information about the sending host.</returns>
         public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Memory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken = default)
         {
-            if (remoteEndPoint is null)
-            {
-                throw new ArgumentNullException(nameof(remoteEndPoint));
-            }
-            if (!CanTryAddressFamily(remoteEndPoint.AddressFamily))
-            {
-                throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, remoteEndPoint.AddressFamily, _addressFamily), nameof(remoteEndPoint));
-            }
-            if (_rightEndPoint == null)
-            {
-                throw new InvalidOperationException(SR.net_sockets_mustbind);
-            }
+            ValidateReceiveFromEndpointAndState(remoteEndPoint, nameof(remoteEndPoint));
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<SocketReceiveMessageFromResult>(cancellationToken);

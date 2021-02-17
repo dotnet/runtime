@@ -23,6 +23,7 @@ public:
             , actionDumpMap(false)
             , actionDumpToc(false)
             , actionFracture(false)
+            , actionJitFlags(false)
             , actionILDump(false)
             , actionInteg(false)
             , actionMerge(false)
@@ -51,6 +52,7 @@ public:
         bool  actionDumpMap;
         bool  actionDumpToc;
         bool  actionFracture;
+        bool  actionJitFlags;
         bool  actionILDump;
         bool  actionInteg;
         bool  actionMerge;

@@ -354,7 +354,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     {
         SpmiException e(&param.exceptionPointers);
 
-        if (e.GetCode() == EXCEPTIONCODE_MC)
+        if (param.exceptionCode == EXCEPTIONCODE_MC) // Can't check e.GetCode() because of https://github.com/dotnet/runtime/issues/48356
         {
             char* message = e.GetExceptionMessage();
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);

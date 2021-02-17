@@ -66,6 +66,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x64
+    - Android_arm64
     - iOS_x64
     variables:
       # map dependencies variables to local variables
@@ -174,6 +175,34 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Build Mono and Libraries for Android using Android native crypto instead of OpenSSL
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm64
+    variables:
+      # disable using OpenSSL
+      - name: ANDROID_OPENSSL_AAR
+        value: ''
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+    jobParameters:
+      nameSuffix: Libraries_Mono_AndroidCrypto
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 # Run disabled installer tests on Linux x64
 - template: /eng/pipelines/common/platform-matrix.yml

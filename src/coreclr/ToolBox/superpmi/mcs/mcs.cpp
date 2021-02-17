@@ -12,6 +12,7 @@
 #include "verbfracture.h"
 #include "verbdumpmap.h"
 #include "verbdumptoc.h"
+#include "verbjitflags.h"
 #include "verbildump.h"
 #include "verbtoc.h"
 #include "verbremovedup.h"
@@ -101,6 +102,10 @@ int __cdecl main(int argc, char* argv[])
     if (o.actionPrintJITEEVersion)
     {
         exitCode = verbPrintJITEEVersion::DoWork();
+    }
+    if (o.actionJitFlags)
+    {
+        exitCode = verbJitFlags::DoWork(o.nameOfFile1);
     }
 
     Logger::Shutdown();

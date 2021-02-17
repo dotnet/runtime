@@ -3656,24 +3656,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		encode_value (method->wrapper_type, p, &p);
 
 		switch (method->wrapper_type) {
-		case MONO_WRAPPER_REMOTING_INVOKE:
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-		case MONO_WRAPPER_XDOMAIN_INVOKE: {
-			MonoMethod *m;
-
-			m = mono_marshal_method_from_wrapper (method);
-			g_assert (m);
-			encode_method_ref (acfg, m, p, &p);
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST:
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD: {
-			g_assert (info);
-			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
-			break;
-		}
 		case MONO_WRAPPER_ALLOC: {
 			/* The GC name is saved once in MonoAotFileInfo */
 			g_assert (info->d.alloc.alloc_type != -1);
@@ -4606,7 +4588,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (!mono_class_is_contextbound (method->klass)) {
+		{
 			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
 			gboolean has_nullable = FALSE;
 
@@ -5090,7 +5072,6 @@ MONO_RESTORE_WARNING
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
 
-#ifdef ENABLE_NETCORE
 			for (j = 0; j < cattr->num_attrs; ++j)
 				if (cattr->attrs [j].ctor && mono_is_corlib_image (m_class_get_image (cattr->attrs [j].ctor->klass)) && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "UnmanagedCallersOnlyAttribute"))
 					break;
@@ -5132,7 +5113,6 @@ MONO_RESTORE_WARNING
 				if (export_name)
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
 			}
-#endif
 
 			g_free (cattr);
 		}
@@ -5423,24 +5403,6 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			name_prefix = g_strdup_printf ("%s.%s", klass_name_space, "IEnumerable`1");
 		else
 			name_prefix = g_strdup_printf ("%s.%s", klass_name_space, klass_name);
-
-#ifndef ENABLE_NETCORE
-		/* Add the T[]/InternalEnumerator class */
-		if (!strcmp (klass_name, "IEnumerable`1") || !strcmp (klass_name, "IEnumerator`1")) {
-			ERROR_DECL (error);
-			MonoClass *nclass;
-
-			iter = NULL;
-			while ((nclass = mono_class_get_nested_types (m_class_get_parent (array_class), &iter))) {
-				if (!strcmp (m_class_get_name (nclass), "InternalEnumerator`1"))
-					break;
-			}
-			g_assert (nclass);
-			nclass = mono_class_inflate_generic_class_checked (nclass, mono_generic_class_get_context (mono_class_get_generic_class (klass)), error);
-			mono_error_assert_ok (error); /* FIXME don't swallow the error */
-			add_generic_class (acfg, nclass, FALSE, "ICollection<T>");
-		}
-#endif
 
 		iter = NULL;
 		while ((method = mono_class_get_methods (array_class, &iter))) {
@@ -5801,24 +5763,6 @@ add_generic_instances (MonoAotCompile *acfg)
 			insts [ninsts ++] = byte_type;
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
-
-#ifndef ENABLE_NETCORE
-			ninsts = 0;
-			insts [ninsts ++] = int16_type;
-			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "ShortEnumEqualityComparer`1");
-			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
-
-			ninsts = 0;
-			insts [ninsts ++] = sbyte_type;
-			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "SByteEnumEqualityComparer`1");
-			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
-
-			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "LongEnumEqualityComparer`1");
-			ninsts = 0;
-			insts [ninsts ++] = int64_type;
-			insts [ninsts ++] = uint64_type;
-			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
-#endif
 		}
 
 		/* Add instances of the array generic interfaces for primitive types */
@@ -7744,10 +7688,6 @@ emit_trampolines (MonoAotCompile *acfg)
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
 			/* we overload the boolean here to indicate the slightly different trampoline needed, see mono_arch_create_generic_trampoline() */
-#ifdef DISABLE_REMOTING
-			if (tramp_type == MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING)
-				continue;
-#endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, info);
 			mono_tramp_info_free (info);
@@ -8550,15 +8490,8 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (method->wrapper_type) {
 			switch (method->wrapper_type) {
 			case MONO_WRAPPER_NONE:
-			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-			case MONO_WRAPPER_XDOMAIN_INVOKE:
-			case MONO_WRAPPER_STFLD:
-			case MONO_WRAPPER_LDFLD:
-			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_ALLOC:
-			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_OTHER:
 			case MONO_WRAPPER_WRITE_BARRIER:
 			case MONO_WRAPPER_DELEGATE_INVOKE:
@@ -9399,27 +9332,6 @@ append_mangled_wrapper_type (GString *s, guint32 wrapper_type)
 	const char *label;
 
 	switch (wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-		label = "remoting_invoke";
-		break;
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-		label = "remoting_invoke_check";
-		break;
-	case MONO_WRAPPER_XDOMAIN_INVOKE:
-		label = "remoting_invoke_xdomain";
-		break;
-	case MONO_WRAPPER_PROXY_ISINST:
-		label = "proxy_isinst";
-		break;
-	case MONO_WRAPPER_LDFLD:
-		label = "ldfld";
-		break;
-	case MONO_WRAPPER_LDFLDA:
-		label = "ldflda";
-		break;
-	case MONO_WRAPPER_STFLD: 
-		label = "stfld";
-		break;
 	case MONO_WRAPPER_ALLOC:
 		label = "alloc";
 		break;
@@ -9672,22 +9584,6 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		append_mangled_wrapper_type (s, method->wrapper_type);
 
 	switch (method->wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-	case MONO_WRAPPER_XDOMAIN_INVOKE: {
-		MonoMethod *m = mono_marshal_method_from_wrapper (method);
-		g_assert (m);
-		success = success && append_mangled_method (s, m);
-		break;
-	}
-	case MONO_WRAPPER_PROXY_ISINST:
-	case MONO_WRAPPER_LDFLD:
-	case MONO_WRAPPER_LDFLDA:
-	case MONO_WRAPPER_STFLD: {
-		g_assert (info);
-		success = success && append_mangled_klass (s, info->d.proxy.klass);
-		break;
-	}
 	case MONO_WRAPPER_ALLOC: {
 		/* The GC name is saved once in MonoAotFileInfo */
 		g_assert (info->d.alloc.alloc_type != -1);
@@ -10628,7 +10524,7 @@ mono_aot_method_hash (MonoMethod *method)
 	hashes = hashes_start;
 
 	/* Some wrappers are assigned to random classes */
-	if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+	if (!method->wrapper_type)
 		klass = method->klass;
 	else
 		klass = mono_defaults.object_class;
@@ -10648,11 +10544,7 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [0] = mono_metadata_str_hash (m_class_get_name (klass));
 		hashes [1] = mono_metadata_str_hash (m_class_get_name_space (klass));
 	}
-	if (method->wrapper_type == MONO_WRAPPER_STFLD || method->wrapper_type == MONO_WRAPPER_LDFLD || method->wrapper_type == MONO_WRAPPER_LDFLDA)
-		/* The method name includes a stringified pointer */
-		hashes [2] = 0;
-	else
-		hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	hindex = 5;
@@ -12891,7 +12783,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 		return;
 
 	/* Images */
-	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain (), FALSE);
+	GPtrArray *assemblies = mono_domain_get_assemblies (mono_get_root_domain ());
 	g_hash_table_iter_init (&iter, data->images);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		ImageProfileData *idata = (ImageProfileData*)value;
@@ -13822,7 +13714,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
-#ifdef MONOTOUCH
+#if defined(MONOTOUCH)&& !defined(TARGET_AMD64)
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
 	acfg->aot_opts.clangxx = g_strdup ("clang++");

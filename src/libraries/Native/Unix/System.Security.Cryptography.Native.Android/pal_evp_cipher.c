@@ -107,7 +107,7 @@ static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
     //if (type == CryptoNative_EvpAes192Cfb128()) return JSTRING("AES/CFB/NoPadding");
     //if (type == CryptoNative_EvpAes256Cfb128()) return JSTRING("AES/CFB/NoPadding");
 
-    LOG_ERROR("This algorithm (%ld) is not supported", type);
+    LOG_ERROR("This algorithm (%ld) is not supported", (long)type);
     return FAIL;
 }
 

@@ -536,13 +536,6 @@ mono_class_set_nonblittable (MonoClass *klass) {
 	mono_loader_unlock ();
 }
 
-#ifndef DISABLE_REMOTING
-void
-mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out) {
-	mono_marshal_find_bitfield_offset (MonoClass, contextbound, byte_offset_out, mask_out);
-}
-#endif
-
 /**
  * mono_class_publish_gc_descriptor:
  * \param klass the \c MonoClass whose GC descriptor is to be set

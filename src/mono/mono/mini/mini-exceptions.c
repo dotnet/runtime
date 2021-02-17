@@ -1997,8 +1997,6 @@ MonoJitInfo*
 mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
-	MonoInternalThread *t = mono_thread_internal_current ();
-	gpointer *refs;
 
 	if (out_domain)
 		*out_domain = NULL;
@@ -2022,21 +2020,6 @@ mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_
 			if (out_domain)
 				*out_domain = mono_get_root_domain ();
 			return ji;
-		}
-	}
-
-	if (!t)
-		return NULL;
-
-	refs = (gpointer *)((t->appdomain_refs) ? *(gpointer *) t->appdomain_refs : NULL);
-	for (; refs && *refs; refs++) {
-		if (*refs != domain && *refs != mono_get_root_domain ()) {
-			ji = mono_jit_info_table_find_internal ((MonoDomain*) *refs, addr, TRUE, allow_trampolines);
-			if (ji) {
-				if (out_domain)
-					*out_domain = (MonoDomain*) *refs;
-				return ji;
-			}
 		}
 	}
 
@@ -2193,7 +2176,6 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
 			MonoDomain *domain = mono_domain_get ();
-#ifdef ENABLE_NETCORE
 			int methods_len = g_slist_length (*dynamic_methods);
 			MonoArray *old_methods = mono_ex->dynamic_methods;
 			int old_methods_len = 0;
@@ -2225,29 +2207,6 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			}
 
 			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, all_methods);
-#else
-			GSList *l;
-			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
-
-			for (l = *dynamic_methods; l; l = l->next) {
-				MonoGCHandle dis_link;
-
-				if (domain->method_to_dyn_method) {
-					mono_domain_lock (domain);
-					dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
-					mono_domain_unlock (domain);
-					if (dis_link) {
-						MonoObject *o = mono_gchandle_get_target_internal (dis_link);
-						if (o) {
-							list = mono_mlist_prepend_checked (list, o, error);
-							mono_error_assert_ok (error);
-						}
-					}
-				}
-			}
-
-			MONO_OBJECT_SETREF_INTERNAL (mono_ex, dynamic_methods, list);
-#endif
 
 			g_slist_free (*dynamic_methods);
 			*dynamic_methods = NULL;
@@ -2747,9 +2706,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		MONO_PROFILER_RAISE (exception_throw, (obj));
 		jit_tls->orig_ex_ctx_set = FALSE;
 
-#ifdef ENABLE_NETCORE
 		mono_first_chance_exception_internal (obj);
-#endif
 
 		StackFrameInfo catch_frame;
 		MonoFirstPassResult res;
@@ -2771,20 +2728,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			mono_unhandled_exception_internal (obj);
 		} else {
 			gboolean unhandled = FALSE;
-
-			/*
-			 * The exceptions caught by the mono_runtime_invoke_checked () calls
-			 * in the threadpool needs to be treated as unhandled (#669836).
-			 *
-			 * FIXME: The check below is hackish, but its hard to distinguish
-			 * these runtime invoke calls from others in the runtime.
-			 */
-#ifndef ENABLE_NETCORE
-			if (ji && jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-				if (prev_ji && jinfo_get_method (prev_ji) == mono_defaults.threadpool_perform_wait_callback_method)
-					unhandled = TRUE;
-			}
-#endif
 
 			if (unhandled)
 				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);

@@ -581,7 +581,7 @@ ALLOC_DONE:
         }
         else
         {
-            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment);
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, regTmp);
         }
 
         // Return the stackalloc'ed address in result register.

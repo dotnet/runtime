@@ -136,6 +136,7 @@ namespace ILCompiler
                     "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }

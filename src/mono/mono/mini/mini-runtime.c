@@ -46,7 +46,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/monitor.h>
@@ -72,7 +71,6 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
 #include <mono/metadata/w32handle.h>
-#include <mono/metadata/threadpool.h>
 
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep.h>
@@ -81,13 +79,9 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#ifndef ENABLE_NETCORE
-#include "version.h"
-#endif
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "llvmonly-runtime.h"
@@ -373,16 +367,6 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	if (caller->domain_neutral && !callee->domain_neutral)
 		return FALSE;
 
-#ifndef ENABLE_NETCORE
-	MonoMethod *cmethod;
-
-	cmethod = jinfo_get_method (caller);
-	if ((cmethod->klass == mono_defaults.appdomain_class) &&
-		(strstr (cmethod->name, "InvokeInDomain"))) {
-		 /* The InvokeInDomain methods change the current appdomain */
-		return FALSE;
-	}
-#endif
 	return TRUE;
 }
 
@@ -3041,7 +3025,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				supported = FALSE;
 		}
 
-		if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
+		if (!info->compiled_method)
 			supported = FALSE;
 
 		if (supported) {
@@ -3261,20 +3245,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
 
 	if (!info) {
-		if (mono_security_core_clr_enabled ()) {
-			/*
-			 * This might be redundant since mono_class_vtable () already does this,
-			 * but keep it just in case for moonlight.
-			 */
-			mono_class_setup_vtable (method->klass);
-			if (mono_class_has_failure (method->klass)) {
-				mono_error_set_for_class_failure (error, method->klass);
-				if (exc)
-					*exc = (MonoObject*)mono_class_get_exception_for_failure (method->klass);
-				return NULL;
-			}
-		}
-
 		gpointer compiled_method;
 
 		callee = method;
@@ -3698,40 +3668,6 @@ MONO_SIG_HANDLER_FUNC (, mono_sigint_signal_handler)
 	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 }
 
-#ifndef DISABLE_REMOTING
-/* mono_jit_create_remoting_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline which calls the remoting functions. This
- * is used in the vtable of transparent proxies.
- *
- * Returns: a pointer to the newly created code
- */
-static gpointer
-mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
-{
-	MonoMethod *nm;
-	guint8 *addr = NULL;
-
-	error_init (error);
-
-	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature_internal (method)->generic_param_count) {
-		return mono_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
-			domain, NULL);
-	}
-
-	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	    (mono_method_signature_internal (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
-		nm = mono_marshal_get_remoting_invoke_for_target (method, target, error);
-	else
-		nm = method;
-	return_val_if_nok (error, NULL);
-	addr = (guint8 *)mono_compile_method_checked (nm, error);
-	return_val_if_nok (error, NULL);
-	return mono_get_addr_from_ftnptr (addr);
-}
-#endif
-
 static G_GNUC_UNUSED void
 no_imt_trampoline (void)
 {
@@ -3848,20 +3784,6 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 
 	if (addr)
 		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
-
-#ifndef DISABLE_REMOTING
-	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
-		if (mono_use_interpreter) {
-			MONO_HANDLE_SETVAL (delegate, interp_method, gpointer, mini_get_interp_callbacks ()->get_remoting_invoke (method, addr, error));
-		} else {
-			g_assert (method);
-			method = mono_marshal_get_remoting_invoke (method, error);
-			return_if_nok (error);
-			MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
-		}
-		return_if_nok (error);
-	}
-#endif
 
 	MONO_HANDLE_SET (delegate, target, target);
 	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (domain, mono_handle_class (delegate)));
@@ -4018,7 +3940,7 @@ mini_parse_debug_option (const char *option)
 	else if (!strcmp (option, "use-fallback-tls"))
 		mini_debug_options.use_fallback_tls = TRUE;
 	else if (!strcmp (option, "debug-domain-unload"))
-		mono_enable_debug_domain_unload (TRUE);
+		g_error ("MONO_DEBUG option debug-domain-unload is deprecated.");
 	else if (!strcmp (option, "partial-sharing"))
 		mono_set_partial_sharing_supported (TRUE);
 	else if (!strcmp (option, "align-small-structs"))
@@ -4429,13 +4351,6 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
 	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
-#ifndef DISABLE_REMOTING
-	callbacks.create_remoting_trampoline = mono_jit_create_remoting_trampoline;
-#endif
-#endif
-#ifndef DISABLE_REMOTING
-	if (mono_use_interpreter)
-		callbacks.interp_get_remoting_invoke = mini_get_interp_callbacks ()->get_remoting_invoke;
 #endif
 	callbacks.is_interpreter_enabled = mini_is_interpreter_enabled;
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
@@ -4616,10 +4531,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	mono_simd_intrinsics_init ();
-#endif
-
-#ifndef ENABLE_NETCORE
-	mono_tasklets_init ();
 #endif
 
 	register_trampolines (domain);
@@ -5067,10 +4978,6 @@ mini_cleanup (MonoDomain *domain)
 	mono_runtime_cleanup (domain);
 #endif
 
-#ifndef ENABLE_NETCORE
-	mono_threadpool_cleanup ();
-#endif
-
 	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
 
 	mono_profiler_cleanup ();
@@ -5236,14 +5143,6 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_compile_method_checked (invoke, error);
 			mono_error_assert_ok (error);
 		}
-#ifndef DISABLE_REMOTING
-		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature_internal (method)->hasthis) {
-			invoke = mono_marshal_get_remoting_invoke_with_check (method, error);
-			mono_error_assert_ok (error);
-			mono_compile_method_checked (invoke, error);
-			mono_error_assert_ok (error);
-		}
-#endif
 	}
 
 	/* Load and precompile referenced assemblies as well */
