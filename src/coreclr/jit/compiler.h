@@ -6315,7 +6315,9 @@ public:
     void optOptimizeBools();
 
 private:
-    GenTree* optIsBoolCond(GenTree* condBranch, GenTree** compPtr, bool* boolPtr);
+    void optOptimizeBoolsBbjCond(BasicBlock* b1, BasicBlock* b2, bool* change);
+    void optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBlock* b3, bool* change);
+    GenTree* optIsBoolComp(GenTree* tree, GenTree** compPtr, bool* boolPtr);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
