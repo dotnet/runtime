@@ -87,7 +87,6 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross$(_ExeExt)</MonoAotCrossCompilerPath>
       <AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">AotInterp</AOTMode>
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
@@ -156,6 +155,7 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross$(_ExeExt)</MonoAotCrossCompilerPath>
 
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
       <_WasmIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)\wasm\'))</_WasmIntermediateOutputPath>
@@ -293,7 +293,7 @@
      <_BitcodeFile Include="%(_WasmAssemblies.LlvmBitcodeFile)" />
    </ItemGroup>
 
-   <Error Condition="@(_BitcodeFile->Count()) != @(_WasmAssemblies->Count())"
+   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssemblies->Count())"
      Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblies->Count())" />
 
    <PropertyGroup>
