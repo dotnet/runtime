@@ -254,6 +254,10 @@ mini_llvm_ins_info[] = {
 
 #define ctx_ok(ctx) (!(ctx)->cfg->disable_llvm)
 
+enum {
+	MAX_VECTOR_ELEMS = 32
+};
+
 static LLVMIntPredicate cond_to_llvm_cond [] = {
 	LLVMIntEQ,
 	LLVMIntNE,
@@ -4702,6 +4706,18 @@ create_const_vector_2_i32 (int v0, int v1)
 	return LLVMConstVector (mask, 2);
 }
 
+static LLVMValueRef
+extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
+{
+	LLVMTypeRef src_t = LLVMTypeOf (src_vec);
+	unsigned int src_elems = LLVMGetVectorSize (src_t);
+	unsigned int dst_elems = src_elems / 2;
+	int mask [MAX_VECTOR_ELEMS] = { 0 };
+	for (int i = 0; i < dst_elems; ++i)
+		mask [i] = dst_elems + i;
+	return LLVMBuildShuffleVector (ctx->builder, src_vec, LLVMGetUndef (src_t), create_const_vector_i32 (mask, dst_elems), "");
+}
+
 static void
 emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBlockRef cbb)
 {
@@ -6968,9 +6984,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-			/* 
-			 * SIMD
-			 */
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 		case OP_EXPAND_I1:
 		case OP_EXPAND_I2:
@@ -6979,11 +6992,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			LLVMTypeRef t;
-			LLVMValueRef mask [32], v;
+			LLVMValueRef mask [MAX_VECTOR_ELEMS], v;
 			int i;
 
 			t = simd_class_to_llvm_type (ctx, ins->klass);
-			for (i = 0; i < 32; ++i)
+			for (i = 0; i < MAX_VECTOR_ELEMS; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 
 			v = convert (ctx, values [ins->sreg1], LLVMGetElementType (t));
@@ -7010,6 +7023,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (t, 0));
 			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
+			break;
+		}
+		case OP_XXOR: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			unsigned int bit_width = mono_llvm_get_prim_size_bits (t);
+			LLVMTypeRef intermediate_t = LLVMVectorType (LLVMInt8Type (), bit_width / 8);
+			LLVMValueRef lhs_i8 = convert (ctx, lhs, intermediate_t);
+			LLVMValueRef rhs_i8 = convert (ctx, rhs, intermediate_t);
+			LLVMValueRef result = LLVMBuildXor (builder, lhs_i8, rhs_i8, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
 			break;
 		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
@@ -7162,11 +7185,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_PAVGB_UN:
 		case OP_PAVGW_UN: {
 			LLVMValueRef ones_vec;
-			LLVMValueRef ones [32];
+			LLVMValueRef ones [MAX_VECTOR_ELEMS];
 			int vector_size = LLVMGetVectorSize (LLVMTypeOf (lhs));
 			LLVMTypeRef ext_elem_type = vector_size == 16 ? LLVMInt16Type () : LLVMInt32Type ();
 
-			for (int i = 0; i < 32; ++i)
+			for (int i = 0; i < MAX_VECTOR_ELEMS; ++i)
 				ones [i] = LLVMConstInt (ext_elem_type, 1, FALSE);
 			ones_vec = LLVMConstVector (ones, vector_size);
 
@@ -7907,14 +7930,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
 			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
 			LLVMValueRef vec_and = LLVMBuildOr (builder, vec_lhs_i64, vec_rhs_i64, "");
-			values [ins->dreg] = LLVMBuildBitCast (builder, vec_and, type_to_sse_type (ins->inst_c1), "");
-			break;
-		}
-
-		case OP_SSE_XOR: {
-			LLVMValueRef vec_lhs_i64 = convert (ctx, lhs, sse_i8_t);
-			LLVMValueRef vec_rhs_i64 = convert (ctx, rhs, sse_i8_t);
-			LLVMValueRef vec_and = LLVMBuildXor (builder, vec_lhs_i64, vec_rhs_i64, "");
 			values [ins->dreg] = LLVMBuildBitCast (builder, vec_and, type_to_sse_type (ins->inst_c1), "");
 			break;
 		}
@@ -8812,7 +8827,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XEQUAL: {
 			LLVMTypeRef t;
-			LLVMValueRef cmp, mask [32], shuffle;
+			LLVMValueRef cmp, mask [MAX_VECTOR_ELEMS], shuffle;
 			int nelems;
 
 #if defined(TARGET_WASM) && LLVM_API_VERSION >= 800
@@ -9079,6 +9094,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE; break;
 			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT; break;
 			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE; break;
+			case SIMD_OP_ARM64_TBL:
+				if (mono_llvm_get_prim_size_bits (LLVMTypeOf (rhs)) == 128)
+					id = INTRINS_AARCH64_ADV_SIMD_TBL128;
+				else
+					id = INTRINS_AARCH64_ADV_SIMD_TBL64;
+				break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
@@ -9100,6 +9121,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; idx = 1; break;
 			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; idx = 1; break;
 			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_TBX:
+				if (mono_llvm_get_prim_size_bits (LLVMTypeOf (lhs)) == 128)
+					id = INTRINS_AARCH64_ADV_SIMD_TBX128;
+				else
+					id = INTRINS_AARCH64_ADV_SIMD_TBX64;
+				break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef args [] = { lhs, rhs, arg3 };
@@ -9178,6 +9205,24 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
+		}
+		case OP_ARM64_SUSUB:
+		case OP_ARM64_SUSUB2: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			g_assert_not_reached ();
+		}
+		case OP_ARM64_UXTL:
+		case OP_ARM64_UXTL2: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			unsigned int elem_bits = LLVMGetIntTypeWidth (LLVMGetElementType (t));
+			unsigned int src_elems = LLVMGetVectorSize (t);
+			unsigned int dst_elems = src_elems;
+			LLVMValueRef arg = lhs;
+			if (ins->opcode == OP_ARM64_UXTL2) {
+				arg = extract_high_elements (ctx, lhs);
+				dst_elems = LLVMGetVectorSize (LLVMTypeOf (arg));
+			}
+			values [ins->dreg] = LLVMBuildZExt (builder, arg, LLVMVectorType (LLVMIntType (elem_bits * 2), dst_elems), "");
 		}
 #endif
 

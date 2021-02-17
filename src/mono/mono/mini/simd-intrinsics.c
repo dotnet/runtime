@@ -866,7 +866,14 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
-	{SN_AbsoluteCompareLessThanOrEqual}
+	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_SubtractWideningLower, OP_ARM64_SUSUB},
+	{SN_SubtractWideningUpper, OP_ARM64_SUSUB2},
+	{SN_VectorTableLookup, OP_XOP_X_X_X, SIMD_OP_ARM64_TBL},
+	{SN_VectorTableLookupExtension, OP_XOP_X_X_X_X, SIMD_OP_ARM64_TBX},
+	{SN_Xor, OP_XXOR},
+	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
+	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
 };
 
 static
@@ -940,7 +947,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		info = lookup_intrins_info (crc32_methods, sizeof (crc32_methods), cmethod);
 		if (!info)
 			return NULL;
-		
+
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_CRC) != 0;
 
 		switch (info->id) {
@@ -970,18 +977,18 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha256_methods;
 		intrinsics_size = sizeof (sha256_methods);
-	}
-
-	if (is_hw_intrinsics_class (klass, "Sha1", &is_64bit)) {
+	} else if (is_hw_intrinsics_class (klass, "Sha1", &is_64bit)) {
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha1_methods;
 		intrinsics_size = sizeof (sha1_methods);
-	}
-
-	if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
+	} else if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = crypto_aes_methods;
 		intrinsics_size = sizeof (crypto_aes_methods);
+	} else if (is_hw_intrinsics_class (klass, "AdvSimd", &is_64bit)) {
+		feature = MONO_CPU_ARM64_ADVSIMD;
+		intrinsics = advsimd_methods;
+		intrinsics_size = sizeof (advsimd_methods);
 	}
 
 	/*
@@ -1019,9 +1026,9 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 	}
-	
-	if (is_hw_intrinsics_class (klass, "AdvSimd", &is_64bit)) {
-		info = lookup_intrins_info (advsimd_methods, sizeof (advsimd_methods), cmethod);	
+
+	if (feature == MONO_CPU_ARM64_ADVSIMD) {
+		info = lookup_intrins_info (advsimd_methods, sizeof (advsimd_methods), cmethod);
 
 		if (!info)
 			return NULL;
@@ -1212,7 +1219,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_SSE_XOR},
+	{SN_Xor, OP_XXOR},
 	{SN_get_IsSupported}
 };
 
@@ -1324,7 +1331,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_SSE_XOR},
+	{SN_Xor, OP_XXOR},
 	{SN_get_IsSupported}
 };
 
