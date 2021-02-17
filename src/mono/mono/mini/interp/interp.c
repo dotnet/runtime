@@ -4948,11 +4948,6 @@ call:
 			ip += 4;;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
-			LOCAL_VAR (ip [1], gpointer) = *LOCAL_VAR (ip [2], gpointer*);
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET) {
 			LOCAL_VAR (ip [1], gpointer) = LOCAL_VAR (ip [2], guint8*) + LOCAL_VAR (ip [3], mono_u);
 			ip += 4;

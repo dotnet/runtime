@@ -722,7 +722,6 @@ OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassTok
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_GET_TYPE, "intrins_get_type", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_SPAN_CTOR, "intrins_span_ctor", 4, 1, 2, MintOpNoArgs)
-OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 3, 1, 1, MintOpNoArgs)
