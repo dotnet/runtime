@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -40,12 +42,15 @@ namespace Internal.Cryptography.Pal
             return certPal.DuplicateHandles();
         }
 
-        // [TODO] Pkcs7, Pkcs12
         public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
             ICertificatePal? cert;
-            if (TryReadX509(rawData, out cert))
+            Exception? openSslException;
+            if (TryReadX509(rawData, out cert)
+                || PkcsFormatReader.TryReadPkcs7Der(rawData, out cert)
+                || PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert)
+                || PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -57,7 +62,8 @@ namespace Internal.Cryptography.Pal
             }
 
             // Unsupported
-            throw new CryptographicException();
+            Debug.Assert(openSslException != null);
+            throw openSslException;
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -166,11 +172,19 @@ namespace Internal.Cryptography.Pal
 
         public byte[] Thumbprint => Interop.Crypto.GetX509Thumbprint(_cert);
 
-        public string KeyAlgorithm => Interop.AndroidCrypto.GetX509PublicKeyAlgorithm(_cert);
+        public string KeyAlgorithm => new Oid(Interop.AndroidCrypto.GetX509PublicKeyAlgorithm(_cert)).Value!;
 
         public byte[] KeyAlgorithmParameters => Interop.Crypto.GetX509PublicKeyParameterBytes(_cert);
 
-        public byte[] PublicKeyValue => Interop.AndroidCrypto.GetX509PublicKeyBytes(_cert);
+        public byte[] PublicKeyValue
+        {
+            get
+            {
+                // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
+                byte[] bytes = Interop.AndroidCrypto.GetX509PublicKeyBytes(_cert);
+                return SubjectPublicKeyInfoAsn.Decode(bytes, AsnEncodingRules.DER).SubjectPublicKey.ToArray();
+            }
+        }
 
         public byte[] SerialNumber => Interop.AndroidCrypto.X509GetSerialNumber(_cert);
 
@@ -261,7 +275,7 @@ namespace Internal.Cryptography.Pal
         {
             ref PolicyData policyData = ref Unsafe.As<byte, PolicyData>(ref *(byte*)context);
             string oidStr = Encoding.UTF8.GetString(oid, oidLen);
-            byte[] rawData = new ReadOnlySpan<byte>(data, dataLen).ToArray();
+            byte[] rawData = AsnDecoder.ReadOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out _);
             switch (oidStr)
             {
                 case Oids.ApplicationCertPolicies:
@@ -306,7 +320,7 @@ namespace Internal.Cryptography.Pal
         {
             ref EnumExtensionsContext callbackContext = ref Unsafe.As<byte, EnumExtensionsContext>(ref *(byte*)context);
             string oidStr = Encoding.UTF8.GetString(oid, oidLen);
-            byte[] rawData = new ReadOnlySpan<byte>(data, dataLen).ToArray();
+            byte[] rawData = AsnDecoder.ReadOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out _);
             bool critical = isCritical != 0;
             callbackContext.Results.Add(new X509Extension(new Oid(oidStr), rawData, critical));
         }
