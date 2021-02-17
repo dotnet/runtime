@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text;
 using Internal.Cryptography;
 
@@ -80,11 +81,15 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
             if (outputLength < 0)
                 throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
 
+            ValidateHashAlgorithm(hashAlgorithm);
+
             byte[] result = new byte[outputLength];
-            Pbkdf2(password, salt, result, iterations, hashAlgorithm);
+            Pbkdf2Core(password, salt, result, iterations, hashAlgorithm);
             return result;
         }
 
@@ -115,6 +120,11 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+
+            ValidateHashAlgorithm(hashAlgorithm);
+
             Pbkdf2Core(password, salt, destination, iterations, hashAlgorithm);
         }
 
@@ -205,9 +215,13 @@ namespace System.Security.Cryptography
         {
             if (outputLength < 0)
                 throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+
+            ValidateHashAlgorithm(hashAlgorithm);
 
             byte[] result = new byte[outputLength];
-            Pbkdf2(password, salt, result, iterations, hashAlgorithm);
+            Pbkdf2Core(password, salt, result, iterations, hashAlgorithm);
             return result;
         }
 
@@ -246,6 +260,29 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+
+            ValidateHashAlgorithm(hashAlgorithm);
+
+            Pbkdf2Core(password, salt, destination, iterations, hashAlgorithm);
+        }
+
+        private static void Pbkdf2Core(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> salt,
+            Span<byte> destination,
+            int iterations,
+            HashAlgorithmName hashAlgorithm)
+        {
+            Debug.Assert(hashAlgorithm.Name is not null);
+            Debug.Assert(iterations > 0);
+
+            if (destination.IsEmpty)
+            {
+                return;
+            }
+
             const int MaxPasswordStackSize = 256;
 
             byte[]? rentedPasswordBuffer = null;
@@ -259,7 +296,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                Pbkdf2Core(passwordBytes, salt, destination, iterations, hashAlgorithm);
+                Pbkdf2Implementation.Fill(passwordBytes, salt, iterations, hashAlgorithm, destination);
             }
             finally
             {
@@ -279,8 +316,19 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            Debug.Assert(hashAlgorithm.Name is not null);
+            Debug.Assert(iterations > 0);
+
+            if (destination.IsEmpty)
+            {
+                return;
+            }
+
+            Pbkdf2Implementation.Fill(password, salt, iterations, hashAlgorithm, destination);
+        }
+
+        private static void ValidateHashAlgorithm(HashAlgorithmName hashAlgorithm)
+        {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
@@ -294,13 +342,6 @@ namespace System.Security.Cryptography
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName));
             }
-
-            if (destination.IsEmpty)
-            {
-                return;
-            }
-
-            Pbkdf2Implementation.Fill(password, salt, iterations, hashAlgorithm, destination);
         }
     }
 }
