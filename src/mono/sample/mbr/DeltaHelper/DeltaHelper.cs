@@ -20,59 +20,59 @@ namespace MonoDelta {
             return _updateMethod;
         }
 
-		private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
-		{
-			UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data, dpdb_data});
-		}
+        private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
+        {
+            UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data, dpdb_data});
+        }
 
-		DeltaHelper () { }
+        DeltaHelper () { }
 
-		public static DeltaHelper Make ()
-		{
-			return new DeltaHelper ();
-		}
+        public static DeltaHelper Make ()
+        {
+            return new DeltaHelper ();
+        }
 
-		public static void InjectUpdate (string assemblyName, string dmeta_base64, string dil_base64) {
-			var an = new AssemblyName (assemblyName);
-			Assembly assm = null;
-			/* TODO: non-default ALCs */
-			foreach (var candidate in AssemblyLoadContext.Default.Assemblies) {
-				if (candidate.GetName().Name == an.Name) {
-					assm = candidate;
-					break;
-				}
-			}
-			if (assm == null)
-				throw new ArgumentException ("assemblyName");
-			var dmeta_data = Convert.FromBase64String (dmeta_base64);
-			var dil_data = Convert.FromBase64String (dil_base64);
+        public static void InjectUpdate (string assemblyName, string dmeta_base64, string dil_base64) {
+            var an = new AssemblyName (assemblyName);
+            Assembly assm = null;
+            /* TODO: non-default ALCs */
+            foreach (var candidate in AssemblyLoadContext.Default.Assemblies) {
+                if (candidate.GetName().Name == an.Name) {
+                    assm = candidate;
+                    break;
+                }
+            }
+            if (assm == null)
+                throw new ArgumentException ("assemblyName");
+            var dmeta_data = Convert.FromBase64String (dmeta_base64);
+            var dil_data = Convert.FromBase64String (dil_base64);
             byte[] dpdb_data = null;
-			LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
-		}
+            LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
+        }
 
-		private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
+        private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
 
-		public void Update (Assembly assm) {
-			int count;
-			if (!assembly_count.TryGetValue (assm, out count))
-				count = 1;
-			else
-				count++;
-			assembly_count [assm] = count;
+        public void Update (Assembly assm) {
+            int count;
+            if (!assembly_count.TryGetValue (assm, out count))
+                count = 1;
+            else
+                count++;
+            assembly_count [assm] = count;
 
-			/* FIXME WASM: Location is empty on wasm. Make up a name based on Name */
-			string basename = assm.Location;
-			if (basename == "")
-				basename = assm.GetName().Name + ".dll";
-			Console.WriteLine ($"Apply Delta Update for {basename}, revision {count}");
+            /* FIXME WASM: Location is empty on wasm. Make up a name based on Name */
+            string basename = assm.Location;
+            if (basename == "")
+                basename = assm.GetName().Name + ".dll";
+            Console.WriteLine ($"Apply Delta Update for {basename}, revision {count}");
 
-			string dmeta_name = $"{basename}.{count}.dmeta";
-			string dil_name = $"{basename}.{count}.dil";
-			byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
-			byte[] dil_data = System.IO.File.ReadAllBytes (dil_name);
+            string dmeta_name = $"{basename}.{count}.dmeta";
+            string dil_name = $"{basename}.{count}.dil";
+            byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
+            byte[] dil_data = System.IO.File.ReadAllBytes (dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
-			LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
-		}
-	}
+            LoadMetadataUpdate (assm, dmeta_data, dil_data, dpdb_data);
+        }
+    }
 }

@@ -5857,8 +5857,8 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 void
 ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 					   gconstpointer dmeta_bytes, int32_t dmeta_len,
-                                           gconstpointer dil_bytes, int32_t dil_len,
-                                           gconstpointer dpdb_bytes, int32_t dpdb_len)
+					   gconstpointer dil_bytes, int32_t dil_len,
+					   gconstpointer dpdb_bytes, int32_t dpdb_len)
 {
 	ERROR_DECL (error);
 	g_assert (assm);
