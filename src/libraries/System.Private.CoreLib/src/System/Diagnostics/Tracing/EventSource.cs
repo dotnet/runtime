@@ -1283,7 +1283,15 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
 
                     if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
+                    {
+#if MONO
+                        // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
+                        // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
+                        // So we need to prevent this from getting written directly to the Listeners.
+                        if (typeof(this) != typeof(NativeRuntimeEventSource))
+#endif // MONO
                         WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
+                    }
                 }
                 catch (Exception ex)
                 {
