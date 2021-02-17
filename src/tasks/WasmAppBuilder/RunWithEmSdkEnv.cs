@@ -26,7 +26,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (!CheckEnvScript(envScriptPath))
                     return false;
 
-                Command = $"\"{envScriptPath}\" > nul 2>&1 && {Command}";
+                Command = $"@cmd /c \"call \"{envScriptPath}\" > nul 2>&1 && {Command}\"";
             }
             else
             {
