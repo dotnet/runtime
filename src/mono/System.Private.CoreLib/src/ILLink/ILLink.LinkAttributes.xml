@@ -65,6 +65,29 @@
     </type>
 
     <!-- System.Runtime.CompilerServices -->
+    <type fullname="System.Reflection.AssemblyCompanyAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyConfigurationAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyCopyrightAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyDefaultAliasAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyDescriptionAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyProductAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Reflection.AssemblyTitleAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+
+    <!-- System.Runtime.CompilerServices -->
     <type fullname="System.Runtime.CompilerServices.AsyncMethodBuilderAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -106,9 +129,6 @@
     </type>
 
     <!-- System.Runtime.Versioning -->
-    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.Versioning.SupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -118,6 +138,13 @@
 
     <!-- System.ComponentModel -->
     <type fullname="System.ComponentModel.EditorBrowsableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <!-- Internal attributes shared as implementation, so they could be in any assembly -->
+  <assembly fullname="*">
+    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>

@@ -700,3 +700,8 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
     auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
     return wrap (f);
 }
+
+unsigned int
+mono_llvm_get_prim_size_bits (LLVMTypeRef type) {
+	return unwrap (type)->getPrimitiveSizeInBits ();
+}

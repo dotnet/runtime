@@ -44,7 +44,6 @@ MONO_JIT_ICALL (generic_trampoline_rgctx_lazy_fetch)	\
 MONO_JIT_ICALL (generic_trampoline_aot)	\
 MONO_JIT_ICALL (generic_trampoline_aot_plt)	\
 MONO_JIT_ICALL (generic_trampoline_delegate)	\
-MONO_JIT_ICALL (generic_trampoline_generic_virtual_remoting)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
 /* These must be ordered like MonoTlsKey (alphabetical). */ \
@@ -253,7 +252,6 @@ MONO_JIT_ICALL (mono_marshal_set_last_error) \
 MONO_JIT_ICALL (mono_marshal_set_last_error_windows) \
 MONO_JIT_ICALL (mono_marshal_string_to_utf16) \
 MONO_JIT_ICALL (mono_marshal_string_to_utf16_copy) \
-MONO_JIT_ICALL (mono_marshal_xdomain_copy_out_value) \
 MONO_JIT_ICALL (mono_monitor_enter_fast) \
 MONO_JIT_ICALL (mono_monitor_enter_internal) \
 MONO_JIT_ICALL (mono_monitor_enter_v4_fast) \
@@ -268,8 +266,6 @@ MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
-MONO_JIT_ICALL (mono_remoting_update_exception) \
-MONO_JIT_ICALL (mono_remoting_wrapper) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mono_resolve_iface_call_gsharedvt) \
@@ -333,7 +329,6 @@ MONO_JIT_ICALL (ves_icall_marshal_alloc) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor_interp) \
 MONO_JIT_ICALL (ves_icall_mono_ldstr) \
-MONO_JIT_ICALL (ves_icall_mono_marshal_xdomain_copy_value) \
 MONO_JIT_ICALL (ves_icall_mono_string_from_utf16) \
 MONO_JIT_ICALL (ves_icall_mono_string_to_utf8) \
 MONO_JIT_ICALL (ves_icall_object_new) \

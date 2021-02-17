@@ -132,6 +132,13 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
     return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    mcs->AddCall("getDefaultComparerClass");
+    return original_ICorJitInfo->getDefaultComparerClass(elemType);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
