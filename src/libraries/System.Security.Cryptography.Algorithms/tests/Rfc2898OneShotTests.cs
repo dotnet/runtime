@@ -287,6 +287,8 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
         public static IEnumerable<object[]> Pbkdf2_PasswordBytes_Compare_Data()
         {
+            string largeInputHex = new string('A', 8192); // 8192 hex characters = 4096 bytes.
+
             foreach (HashAlgorithmName hashAlgorithm in SupportedHashAlgorithms)
             {
                 // hashAlgorithm, length, iterations, passwordHex, saltHex
@@ -295,6 +297,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "", s_salt.ByteArrayToHex() };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "D8D8D8D8D8D8D8D8", "D8D8D8D8D8D8D8D8" };
                 yield return new object[] { hashAlgorithm.Name, 257, 257, "0000000000000000", "0000000000000000" };
+                yield return new object[] { hashAlgorithm.Name, 257, 257,  largeInputHex, largeInputHex };
             }
 
             // Test around HMAC SHA1 and SHA256 block boundaries
