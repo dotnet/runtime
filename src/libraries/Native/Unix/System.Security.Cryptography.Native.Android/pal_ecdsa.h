@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "pal_types.h"
 #include "pal_compiler.h"
 #include "pal_eckey.h"
+#include "pal_types.h"
 
 /*
 Shims the ECDSA_sign method.

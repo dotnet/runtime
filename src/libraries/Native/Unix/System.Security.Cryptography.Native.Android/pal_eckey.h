@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "pal_types.h"
 #include "pal_compiler.h"
 #include "pal_jni.h"
+#include "pal_types.h"
 
 typedef struct EC_KEY
 {

@@ -52,8 +52,9 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     // First, generate the key pair based on the curve defined by the oid.
     jobject paramSpec = (*env)->NewObject(env, g_ECGenParameterSpecClass, g_ECGenParameterSpecCtor, oidStr);
     ReleaseLRef(env, oidStr);
-    
-    jobject keyPairGenerator = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
+
+    jobject keyPairGenerator =
+        (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
     (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeMethod, paramSpec);
 
     ReleaseLRef(env, paramSpec);
@@ -65,13 +66,14 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     }
 
     jobject keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
-    
+
     ReleaseLRef(env, keyPairGenerator);
-    
+
     // Now that we have the key pair, we can get the curve parameters from the public key.
     jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, ec);
     jobject publicKey = (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod);
-    jobject keySpec = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGetKeySpecMethod, publicKey, g_ECPublicKeySpecClass);
+    jobject keySpec =
+        (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGetKeySpecMethod, publicKey, g_ECPublicKeySpecClass);
 
     ReleaseLRef(env, ec);
     ReleaseLRef(env, publicKey);
@@ -108,7 +110,7 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 {
     if (!keySize)
         return 0;
-    
+
     *keySize = 0;
 
     if (!key)
