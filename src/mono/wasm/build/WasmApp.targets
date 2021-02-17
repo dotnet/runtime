@@ -4,6 +4,7 @@
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ReadEmccVersion" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -334,27 +335,16 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
-    <PropertyGroup>
-      <RuntimeEmccVersionFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt</RuntimeEmccVersionFile>
-    </PropertyGroup>
+    <ReadEmccVersion VersionFile="$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt">
+        <Output TaskParameter="Version" PropertyName="RuntimeEmccVersion" />
+    </ReadEmccVersion>
 
-    <Error Condition="!Exists('$(RuntimeEmccVersionFile)')" Text="Cannot find $(RuntimeEmccVersionFile)" />
+    <RunWithEmSdkEnv Command="emcc --version > emcc-version.txt" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)" />
+    <ReadEmccVersion VersionFile="$(_WasmIntermediateOutputPath)emcc-version.txt">
+        <Output TaskParameter="Version" PropertyName="ActualEmccVersion" />
+    </ReadEmccVersion>
 
-    <ReadLinesFromFile File="$(RuntimeEmccVersionFile)">
-        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
-    </ReadLinesFromFile>
-
-    <RunWithEmSdkEnv Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)"
-                     Command="emcc --version | head -1" ConsoleToMsBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="EmccVersion" />
-    </RunWithEmSdkEnv>
-
-    <RunWithEmSdkEnv Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)"
-                     Command="emcc --version > emcc-version.txt &amp;&amp; set /p EMCC_VERSION=&lt;emcc-version.txt &amp;&amp; echo %EMCC_VERSION% > emcc-version.txt" ConsoleToMsBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="EmccVersion" />
-    </RunWithEmSdkEnv>
-
-    <Error Condition="'$(RuntimeEmccVersion)' != '$(EmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(EmccVersion)'"/>
+    <Error Condition="'$(RuntimeEmccVersion)' != '$(ActualEmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(ActualEmccVersion)'"/>
   </Target>
 
   <Target Name="_AfterWasmBuildApp">
