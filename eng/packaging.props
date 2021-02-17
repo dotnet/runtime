@@ -15,6 +15,12 @@
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <NuSpecOutputPath Condition="'$(NuSpecOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'specs'))</NuSpecOutputPath>
+    <NuSpecPath>$(NuSpecOutputPath)$(Title)$(NuspecSuffix).nuspec</NuSpecPath>
+    <NuspecOutputAbsolutePath>$(NuSpecPath)</NuspecOutputAbsolutePath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
     <!-- Don't build referenced projects -->
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
