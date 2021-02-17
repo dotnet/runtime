@@ -972,6 +972,78 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddingMorePropertiesWithActivityCreate()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("SourceActivityCreator");
+
+                List<KeyValuePair<string, object>> tagsToCheckAgainst = null;
+                List<KeyValuePair<string, string>> baggageToCheckAgainst = null;
+                List<ActivityLink> linksToCheckAgainst = null;
+
+                Activity.Current = null;
+
+                // Enable Listener
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.ActivityStarted = activity =>
+                {
+                    Assert.Equal(tagsToCheckAgainst, activity.TagObjects);
+                    Assert.Equal(linksToCheckAgainst, activity.Links);
+                    Assert.Equal(baggageToCheckAgainst, activity.Baggage);
+                };
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                ActivitySource.AddActivityListener(listener);
+
+                ActivityContext ac = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "key-value");
+                linksToCheckAgainst = new List<ActivityLink>() {new ActivityLink(ac)};
+
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, default(string), default, linksToCheckAgainst))
+                {
+                    Assert.NotNull(a);
+                    a.AddTag("tag1", "value1");
+                    a.AddBaggage("baggage1", "value1");
+
+                    tagsToCheckAgainst = new List<KeyValuePair<string, object>>() { new KeyValuePair<string, object>("tag1", "value1")};
+                    baggageToCheckAgainst = new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("baggage1", "value1")};
+
+                    a.Start();
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestIdFormats()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("FormatIdSource");
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                ActivitySource.AddActivityListener(listener);
+
+                Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
+                Activity.ForceDefaultIdFormat = true;
+
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server))
+                {
+                    a.Start();
+                    Assert.Equal(ActivityIdFormat.Hierarchical, a.IdFormat);
+
+                    using (Activity b = aSource.CreateActivity("b", ActivityKind.Server))
+                    {
+                        b.SetIdFormat(ActivityIdFormat.W3C).Start();
+                        Assert.Equal(ActivityIdFormat.W3C, b.IdFormat);
+                    }
+                }
+
+            }).Dispose();
+        }
 
         public void Dispose() => Activity.Current = null;
     }

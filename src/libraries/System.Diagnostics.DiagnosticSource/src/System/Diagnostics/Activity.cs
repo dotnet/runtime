@@ -1081,36 +1081,7 @@ namespace System.Diagnostics
 
             if (startIt)
             {
-                activity._previousActiveActivity = Current;
-                if (activity._parentId == null && activity._traceId == null && activity._previousActiveActivity != null)
-                {
-                    // The parent change should not form a loop. We are actually guaranteed this because
-                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
-                    // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = activity._previousActiveActivity;
-                }
-
-                activity.IdFormat =
-                    ForceDefaultIdFormat ? DefaultIdFormat :
-                    activity.Parent != null ? activity.Parent.IdFormat :
-                    activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                    activity._parentId == null ? DefaultIdFormat :
-                    IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
-                    ActivityIdFormat.Hierarchical;
-
-                if (activity.IdFormat == ActivityIdFormat.W3C)
-                    activity.GenerateW3CId();
-                else
-                    activity._id = activity.GenerateHierarchicalId();
-
-                if (activity.StartTimeUtc == default)
-                {
-                    activity.StartTimeUtc = GetUtcNow();
-                }
-
-                SetCurrent(activity);
-
-                source.NotifyActivityStart(activity);
+                activity.Start();
             }
 
             return activity;
