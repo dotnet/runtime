@@ -110,7 +110,7 @@
 
     <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
       <EmbeddedResource Include="$(ILLinkTrimXml)">
-        <LogicalName>$(AssemblyName).xml</LogicalName>
+        <LogicalName>ILLink.Descriptors.xml</LogicalName>
       </EmbeddedResource>
     </ItemGroup>
 
