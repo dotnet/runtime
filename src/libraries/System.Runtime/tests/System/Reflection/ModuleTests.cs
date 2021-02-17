@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -48,6 +47,7 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(Module.FilterTypeName);
             Assert.Same(Module.FilterTypeName, Module.FilterTypeName);
+            Assert.NotSame(Module.FilterTypeName, Module.FilterTypeNameIgnoreCase);
         }
 
         public static IEnumerable<object[]> FilterTypeName_TestData()
@@ -104,6 +104,7 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(Module.FilterTypeNameIgnoreCase);
             Assert.Same(Module.FilterTypeNameIgnoreCase, Module.FilterTypeNameIgnoreCase);
+            Assert.NotSame(Module.FilterTypeNameIgnoreCase, Module.FilterTypeName);
         }
 
         public static IEnumerable<object[]> FilterTypeNameIgnoreCase_TestData()

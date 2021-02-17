@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Globalization;
@@ -49,7 +48,6 @@ namespace System.Reflection.Tests
             Assert.Throws<NotSupportedException>(() => method.CreateDelegate(delegateType, target));
         }
 
-#if false
         [Fact]
         public void CreateDelegate_InvokeGeneric_ThrowsNotSupportedException()
         {
@@ -65,7 +63,6 @@ namespace System.Reflection.Tests
             var method = new SubMethodInfo();
             Assert.Throws<NotSupportedException>(() => method.CreateDelegate<EventHandler>(target));
         }
-#endif
 
         public static IEnumerable<object[]> Equals_TestData()
         {
