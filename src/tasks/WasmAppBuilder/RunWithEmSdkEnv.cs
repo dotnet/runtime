@@ -26,7 +26,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (!CheckEnvScript(envScriptPath))
                     return false;
 
-                Command = $"{envScriptPath} > nul 2>&1 && {Command}";
+                Command = $"\"{envScriptPath}\" > nul 2>&1 && {Command}";
             }
             else
             {
@@ -36,8 +36,9 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 Command = $"bash -c 'source {envScriptPath} > /dev/null 2>&1 && {Command}'";
             }
+            Log.LogMessage(MessageImportance.High, $"Using Command: {Command}");
 
-            return base.Execute();
+            return base.Execute() && !Log.HasLoggedErrors;
 
             bool CheckEnvScript(string envScriptPath)
             {
