@@ -215,6 +215,11 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD
     # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
     set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+
+    # The following linked options can be inserted into the linker libraries list to
+    # ensure proper resolving of circular references between a subset of the libraries.
+    set(START_LIBRARY_GROUP -Wl,--start-group)
+    set(END_LIBRARY_GROUP -Wl,--end-group)
 endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -227,7 +232,10 @@ set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(
     singlefilehost
+
+    ${START_LIBRARY_GROUP}
     ${NATIVE_LIBS}
+    ${END_LIBRARY_GROUP}
 
     ${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
