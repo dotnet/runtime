@@ -12,8 +12,7 @@ namespace System.IO.Pipelines
         private ReadOnlySequence<byte> _sequence;
         private bool _isReaderCompleted;
 
-        private CancellationTokenSource? _internalTokenSource;
-        private readonly object _lock = new object();
+        private int _cancelNext;
 
         public SequencePipeReader(ReadOnlySequence<byte> sequence)
         {
@@ -41,25 +40,10 @@ namespace System.IO.Pipelines
             _sequence = _sequence.Slice(consumed);
         }
 
-        private CancellationTokenSource InternalTokenSource
-        {
-            get
-            {
-                lock (_lock)
-                {
-                    if (_internalTokenSource == null)
-                    {
-                        _internalTokenSource = new CancellationTokenSource();
-                    }
-                    return _internalTokenSource;
-                }
-            }
-        }
-
         /// <inheritdoc />
         public override void CancelPendingRead()
         {
-            InternalTokenSource.Cancel();
+            Interlocked.Exchange(ref _cancelNext, 1);
         }
 
         /// <inheritdoc />
@@ -79,7 +63,7 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            if (TryReadInternal(InternalTokenSource, out var result))
+            if (TryReadInternal(out var result))
             {
                 return new ValueTask<ReadResult>(result);
             }
@@ -93,33 +77,20 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            return TryReadInternal(InternalTokenSource, out result);
+            return TryReadInternal(out result);
         }
 
-        private bool TryReadInternal(CancellationTokenSource source, out ReadResult result)
+        private bool TryReadInternal(out ReadResult result)
         {
-            bool isCancellationRequested = source.IsCancellationRequested;
+            var isCancellationRequested = Interlocked.Exchange(ref _cancelNext, 0) == 1;
             if (isCancellationRequested || _sequence.Length > 0)
             {
-                if (isCancellationRequested)
-                {
-                    ClearCancellationToken();
-                }
-
                 result = new ReadResult(_sequence, isCancellationRequested, isCompleted: true);
                 return true;
             }
 
             result = default;
             return false;
-        }
-
-        private void ClearCancellationToken()
-        {
-            lock (_lock)
-            {
-                _internalTokenSource = null;
-            }
         }
 
         private void ThrowIfCompleted()
