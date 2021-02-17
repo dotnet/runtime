@@ -212,7 +212,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
-            monoPaths = string.Join(':', AdditionalAssemblySearchPaths);
+            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
 
         if (DisableParallelAot)
         {
@@ -354,7 +354,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", $"{directory}:{monoPaths}"},
+            {"MONO_PATH", $"{directory}{Path.PathSeparator}{monoPaths}"},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
