@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 using BCryptAlgPseudoHandle = Interop.BCrypt.BCryptAlgPseudoHandle;
 using BCryptBuffer = Interop.BCrypt.BCryptBuffer;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
-using NCryptBCryptBufferDescriptors = Interop.BCrypt.NCryptBCryptBufferDescriptors;
+using CngBufferDescriptors = Interop.BCrypt.CngBufferDescriptors;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 
 namespace Internal.Cryptography
@@ -181,15 +181,15 @@ namespace Internal.Cryptography
             fixed (byte* pDestination = destination)
             {
                 Span<BCryptBuffer> buffers = stackalloc BCryptBuffer[3];
-                buffers[0].BufferType = NCryptBCryptBufferDescriptors.KDF_ITERATION_COUNT;
+                buffers[0].BufferType = CngBufferDescriptors.KDF_ITERATION_COUNT;
                 buffers[0].pvBuffer = (IntPtr)(&kdfIterations);
                 buffers[0].cbBuffer = sizeof(ulong);
 
-                buffers[1].BufferType = NCryptBCryptBufferDescriptors.KDF_SALT;
+                buffers[1].BufferType = CngBufferDescriptors.KDF_SALT;
                 buffers[1].pvBuffer = (IntPtr)pSalt;
                 buffers[1].cbBuffer = salt.Length;
 
-                buffers[2].BufferType = NCryptBCryptBufferDescriptors.KDF_HASH_ALGORITHM;
+                buffers[2].BufferType = CngBufferDescriptors.KDF_HASH_ALGORITHM;
                 buffers[2].pvBuffer = (IntPtr)pHashAlgorithmName;
 
                 // C# spec: "A char* value produced by fixing a string instance always points to a null-terminated string"

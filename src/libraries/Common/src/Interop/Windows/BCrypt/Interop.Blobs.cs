@@ -229,7 +229,7 @@ internal partial class Interop
         /// <summary>
         ///     NCrypt or BCrypt buffer descriptors
         /// </summary>
-        internal enum NCryptBCryptBufferDescriptors : int
+        internal enum CngBufferDescriptors : int
         {
             KDF_HASH_ALGORITHM = 0,
             KDF_SECRET_PREPEND = 1,
@@ -258,7 +258,7 @@ internal partial class Interop
         internal struct BCryptBuffer
         {
             internal int cbBuffer;             // Length of buffer, in bytes
-            internal NCryptBCryptBufferDescriptors BufferType; // Buffer type
+            internal CngBufferDescriptors BufferType; // Buffer type
             internal IntPtr pvBuffer;          // Pointer to buffer
         }
 
