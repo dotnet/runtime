@@ -102,7 +102,8 @@ int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
     // As a result, we see that there are 6 additional bytes in the DER encoding than the lengths of R and S combined.
     // As the ECDSA algorithm is defined, the maximum length of R and S each is the bitlength of the order, so as a
     // result we get the maximum size as 2 * bitlength of the order + 6.
-    const int derEncodingBytes = 6;
+    // With some additional padding bytes for the bigintegers to keep them positive, we get a current max of 7.
+    const int derEncodingBytes = 7;
     JNIEnv* env = GetJNIEnv();
     jobject order = (*env)->CallObjectMethod(key->curveParameters, g_ECParameterSpecGetOrder);
     int byteLength = CryptoNative_GetBigNumBytes(order);
