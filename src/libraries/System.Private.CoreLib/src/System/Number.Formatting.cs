@@ -374,7 +374,7 @@ namespace System
             }
             *dst = (byte)('\0');
 
-            number.CheckConsistency(skipTrailingZeroCheck: true);
+            number.CheckConsistency();
         }
 
         public static string FormatDouble(double value, string? format, NumberFormatInfo info)

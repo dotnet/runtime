@@ -49,7 +49,7 @@ namespace System
             }
 
             [Conditional("DEBUG")]
-            public void CheckConsistency(bool skipTrailingZeroCheck = false)
+            public void CheckConsistency()
             {
 #if DEBUG
                 Debug.Assert((Kind == NumberBufferKind.Integer) || (Kind == NumberBufferKind.Decimal) || (Kind == NumberBufferKind.FloatingPoint));
@@ -78,7 +78,7 @@ namespace System
 
                 // For a number like 1.23000, verify that we don't store trailing zeros in Digits
                 // However, if the number of digits exceeds maxDigCount and rounding is required, we store the trailing zeros in the buffer.
-                if (!skipTrailingZeroCheck && fractionalDigitsPresent > 0 && !HasNonZeroTail)
+                if (Kind != NumberBufferKind.Decimal && fractionalDigitsPresent > 0 && !HasNonZeroTail)
                 {
                     Debug.Assert(Digits[DigitsCount - 1] != '0', ToString());
                 }
