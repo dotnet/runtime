@@ -36,6 +36,10 @@ namespace System.Reflection.Metadata
 			    throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 		    }
 
+            // System.Private.CoreLib is not editable
+            if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
+                throw new InvalidOperationException ("The assembly can not be edited or changed.");
+
             unsafe
             {
                 IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle ();
