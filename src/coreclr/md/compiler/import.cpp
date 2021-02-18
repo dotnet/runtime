@@ -37,12 +37,12 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG           ridStartMethod;
-    ULONG           ridEndMethod;
-    ULONG           ridStartField;
-    ULONG           ridEndField;
-    ULONG           index;
-    ULONG           indexField;
+    RID             ridStartMethod;
+    RID             ridEndMethod;
+    RID             ridStartField;
+    RID             ridEndField;
+    RID             index;
+    RID             indexField;
     TypeDefRec      *pRec;
     HENUMInternal   *pEnum = *ppmdEnum;
 
@@ -126,9 +126,9 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
     FieldRec            *pField;
@@ -243,8 +243,8 @@ STDMETHODIMP RegMeta::EnumMethods(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     TypeDefRec          *pRec;
     HENUMInternal       *pEnum = *ppmdEnum;
 
@@ -341,9 +341,9 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     TypeDefRec          *pRec;
     MethodRec           *pMethod;
     HENUMInternal       *pEnum = *ppmdEnum;
@@ -442,8 +442,8 @@ RegMeta::EnumFields(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal **ppmdEnum = reinterpret_cast<HENUMInternal **>(phEnum);
-    ULONG           ridStart;
-    ULONG           ridEnd;
+    RID             ridStart;
+    RID             ridEnd;
     TypeDefRec     *pRec;
     HENUMInternal  *pEnum = *ppmdEnum;
 
@@ -537,8 +537,8 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     ULONG               index;
     TypeDefRec          *pRec;
     FieldRec            *pField;
@@ -634,8 +634,8 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
+    RID                 ridStart;
+    RID                 ridEnd;
     MethodRec           *pRec;
     HENUMInternal       *pEnum = *ppmdEnum;
 
@@ -857,9 +857,9 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart;
-    ULONG               ridEnd;
-    ULONG               index;
+    RID                 ridStart;
+    RID                 ridEnd;
+    RID                 index;
     DeclSecurityRec     *pRec;
     HENUMInternal       *pEnum = *ppmdEnum;
     bool                fCompareParent = false;
@@ -1314,9 +1314,9 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG               ridStart = 0;
-    ULONG               ridEnd = 0;
-    ULONG               ridMax = 0;
+    RID                 ridStart = 0;
+    RID                 ridEnd = 0;
+    RID                 ridMax = 0;
     HENUMInternal       *pEnum = *ppmdEnum;
 
     LOG((LOGMD, "MD RegMeta::EnumProperties(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -1423,9 +1423,9 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG           ridStart = 0;
-    ULONG           ridEnd = 0;
-    ULONG           ridMax = 0;
+    RID             ridStart = 0;
+    RID             ridEnd = 0;
+    RID             ridMax = 0;
     HENUMInternal   *pEnum = *ppmdEnum;
 
     LOG((LOGMD, "MD RegMeta::EnumEvents(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
@@ -1794,9 +1794,9 @@ STDMETHODIMP RegMeta::GetClassLayout(
     if (rFieldOffset || pcFieldOffset)
     {
         ULONG       iFieldOffset = 0;
-        ULONG       ridFieldStart;
-        ULONG       ridFieldEnd;
-        ULONG       ridFieldLayout;
+        RID         ridFieldStart;
+        RID         ridFieldEnd;
+        RID         ridFieldLayout;
         ULONG       ulOffset;
         TypeDefRec  *pTypeDefRec;
         FieldLayoutRec *pLayout2Rec;
@@ -1955,7 +1955,7 @@ RegMeta::GetRVA(
     }
     else
     {   // FieldDef token or invalid type of token (not mdtMethodDef)
-        ULONG iRecord;
+        uint32_t iRecord;
 
         IfFailGo(pMiniMd->FindFieldRVAHelper(tk, &iRecord));
 
@@ -2293,10 +2293,10 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal ** ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG            iCountTypeDef;      // Count of TypeDefs.
-    ULONG            ulStart, ulEnd;     // Bounds of methods on a given TypeDef.
-    ULONG            index;              // For counting methods on a TypeDef.
-    ULONG            indexTypeDef;       // For counting TypeDefs.
+    uint32_t         iCountTypeDef;      // Count of TypeDefs.
+    uint32_t         ulStart, ulEnd;     // Bounds of methods on a given TypeDef.
+    uint32_t         index;              // For counting methods on a TypeDef.
+    uint32_t         indexTypeDef;       // For counting TypeDefs.
     bool             bIsInterface;       // Is a given TypeDef an interface?
     HENUMInternal *  pEnum = *ppmdEnum; // Enum we're working with.
     CMiniMdRW *      pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -2507,7 +2507,7 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     ImplMapRec * pRecord;
-    ULONG        iRecord;
+    uint32_t     iRecord;
 
     LOG((LOGMD, "MD RegMeta::GetPinvokeMap(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL));
@@ -3468,7 +3468,7 @@ HRESULT RegMeta::GetNestedClassProps(   // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     NestedClassRec  *pRecord;
-    ULONG           iRecord;
+    uint32_t        iRecord;
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
 
 

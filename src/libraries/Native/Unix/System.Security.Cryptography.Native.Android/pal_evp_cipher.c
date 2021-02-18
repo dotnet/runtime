@@ -151,18 +151,21 @@ int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t*
 
     // CryptoNative_EvpCipherSetKeyAndIV can be called separately for key and iv
     // so we need to wait for both and do Init after.
-    if (key)
-        SaveTo(key, &ctx->key, (size_t)keyLength);
-    if (iv)
-        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength);
+    if (key && !ctx->key)
+        SaveTo(key, &ctx->key, (size_t)keyLength, /* overwrite */ true);
+    if (iv && !ctx->iv)
+        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
 
     if (!ctx->key || !ctx->iv)
         return SUCCESS;
 
-    // input:  0 for Decrypt, 1 for Encrypt
-    // Cipher: 2 for Decrypt, 1 for Encrypt
-    assert(enc == 0 || enc == 1);
-    ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
+    // input:  0 for Decrypt, 1 for Encrypt, -1 leave untouched
+    // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
+    if (enc != -1)
+    {
+        assert(enc == 0 || enc == 1);
+        ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
+    }
 
     JNIEnv* env = GetJNIEnv();
 
@@ -213,7 +216,11 @@ CipherCtx* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t ke
     if (CryptoNative_EvpCipherSetKeyAndIV(ctx, key, iv, enc) != SUCCESS)
         return FAIL;
     
-    assert(keyLength == GetAlgorithmWidth(type));
+    if (keyLength != GetAlgorithmWidth(type))
+    {
+        LOG_ERROR("Key length must match algorithm width.");
+        return FAIL;
+    }
     return ctx;
 }
 
@@ -225,6 +232,9 @@ int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* out
     if (!outl && !in)
         // it means caller wants us to record "inl" but we don't need it.
         return SUCCESS;
+
+    if (!in)
+        return FAIL;
 
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
@@ -265,6 +275,8 @@ int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* ou
     int tagLength = (hasTag && !decrypt) ? TAG_MAX_LENGTH : 0;
 
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
+    if (CheckJNIExceptions(env)) return FAIL;
+
     jsize outBytesLen = (*env)->GetArrayLength(env, outBytes);
 
     if (outBytesLen > tagLength)

@@ -32,6 +32,13 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     jbyteArray keyBytes = (*env)->NewByteArray(env, keyLen);
     (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, keyBytes);
+        (*env)->DeleteLocalRef(env, sksObj);
+        (*env)->DeleteLocalRef(env, macName);
+        return FAIL;
+    }
     assert(sksObj && "Unable to create an instance of SecretKeySpec");
     jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_macClass, g_macGetInstanceMethod, macName));
     (*env)->CallVoidMethod(env, macObj, g_macInitMethod, sksObj);

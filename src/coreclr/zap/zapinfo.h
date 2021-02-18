@@ -282,10 +282,7 @@ public:
     int  canHandleException(struct _EXCEPTION_POINTERS *pExceptionPointers);
     void * getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
                                     void **ppIndirection);
-        ZapImport * GetProfilingHandleImport();
-
-
-
+    ZapImport * GetProfilingHandleImport();
 };
 
 #endif // __ZAPINFO_H__
