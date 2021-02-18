@@ -24,6 +24,7 @@ struct JitInterfaceCallbacks
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, void* info);
     void* (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, void* ftn, bool* requiresInstMethodTableArg);
+    void* (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, void* elemType);
     void* (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, void* elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, void* pResolvedToken, void* pResult);
     int (* getIntrinsicID)(void * thisHandle, CorInfoExceptionClass** ppException, void* method, bool* pMustExpand);
@@ -334,6 +335,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     void* temp = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual void* getDefaultComparerClass(
+          void* elemType)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    void* temp = _callbacks->getDefaultComparerClass(_thisHandle, &pException, elemType);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -43,9 +43,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/utils/mono-math.h>
@@ -91,13 +89,13 @@ gboolean mono_using_xdebug;
 /* Counters */
 static guint32 discarded_code;
 static gint64 discarded_jit_time;
-static guint32 jinfo_try_holes_size;
 
 #define mono_jit_lock() mono_os_mutex_lock (&jit_mutex)
 #define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
 #ifndef DISABLE_JIT
+static guint32 jinfo_try_holes_size;
 static MonoBackend *current_backend;
 
 gpointer
@@ -949,87 +947,6 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 	if (assembly->image == mono_defaults.corlib)
 		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
-}
-
-/*
- * mini_method_verify:
- * 
- * Verify the method using the verfier.
- * 
- * Returns true if the method is invalid. 
- */
-static gboolean
-mini_method_verify (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
-{
-	GSList *tmp, *res;
-	gboolean is_fulltrust;
-
-	if (mono_method_get_verification_success (method))
-		return FALSE;
-
-	if (!mono_verifier_is_enabled_for_method (method))
-		return FALSE;
-
-	/*skip verification implies the assembly must be */
-	is_fulltrust = mono_verifier_is_method_full_trust (method) ||  mini_assembly_can_skip_verification (cfg->domain, method);
-
-	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility, is_fulltrust);
-
-	if (res) { 
-		for (tmp = res; tmp; tmp = tmp->next) {
-			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
-			if (info->info.status == MONO_VERIFY_ERROR) {
-				if (fail_compile) {
-				char *method_name = mono_method_full_name (method, TRUE);
-					cfg->exception_type = (MonoExceptionType)info->exception_type;
-					cfg->exception_message = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
-					g_free (method_name);
-				}
-				mono_free_verify_list (res);
-				return TRUE;
-			}
-			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
-				if (fail_compile) {
-					char *method_name = mono_method_full_name (method, TRUE);
-					char *msg = g_strdup_printf ("Error verifying %s: %s", method_name, info->info.message);
-
-					if (info->exception_type == MONO_EXCEPTION_METHOD_ACCESS)
-						mono_error_set_generic_error (cfg->error, "System", "MethodAccessException", "%s", msg);
-					else if (info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)
-						mono_error_set_generic_error (cfg->error, "System", "FieldAccessException", "%s", msg);
-					else if (info->exception_type == MONO_EXCEPTION_UNVERIFIABLE_IL)
-						mono_error_set_generic_error (cfg->error, "System.Security", "VerificationException", "%s", msg);
-					if (!is_ok (cfg->error)) {
-						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-						g_free (msg);
-					} else {
-						cfg->exception_type = (MonoExceptionType)info->exception_type;
-						cfg->exception_message = msg;
-					}
-					g_free (method_name);
-				}
-				mono_free_verify_list (res);
-				return TRUE;
-			}
-		}
-		mono_free_verify_list (res);
-	}
-	mono_method_set_verification_success (method);
-	return FALSE;
-}
-
-/*Returns true if something went wrong*/
-gboolean
-mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
-{
-	MonoMethod *method_definition = method;
-
-	while (method_definition->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
-		method_definition = imethod->declaring;
-	}
-
-	return mini_method_verify (cfg, method_definition, fail_compile);
 }
 
 static void
@@ -3467,13 +3384,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 */
 	//cfg->enable_extended_bblocks = TRUE;
 
-	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
-	if (mono_compile_is_broken (cfg, cfg->method, TRUE)) {
-		if (mini_debug_options.break_on_unverified)
-			G_BREAKPOINT ();
-		return cfg;
-	}
-
 	/*
 	 * create MonoInst* which represents arguments and local variables
 	 */
@@ -4208,12 +4118,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (prof_method != method)
 		MONO_PROFILER_RAISE (jit_done, (prof_method, jinfo));
 
-	if (!(method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
-		  method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		  method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)) {
-		if (!mono_runtime_class_init_full (vtable, error))
-			return NULL;
-	}
+	if (!mono_runtime_class_init_full (vtable, error))
+		return NULL;
 	return MINI_ADDR_TO_FTNPTR (code);
 }
 

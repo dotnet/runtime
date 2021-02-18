@@ -114,10 +114,14 @@ inline Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::CreateAgnostic_CORIN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin tokenIn;
     ZeroMemory(&tokenIn, sizeof(tokenIn));
-    tokenIn.tokenContext = CastHandle(pResolvedToken->tokenContext);
-    tokenIn.tokenScope   = CastHandle(pResolvedToken->tokenScope);
-    tokenIn.token        = (DWORD)pResolvedToken->token;
-    tokenIn.tokenType    = (DWORD)pResolvedToken->tokenType;
+
+    if (pResolvedToken != nullptr)
+    {
+        tokenIn.tokenContext = CastHandle(pResolvedToken->tokenContext);
+        tokenIn.tokenScope   = CastHandle(pResolvedToken->tokenScope);
+        tokenIn.token        = (DWORD)pResolvedToken->token;
+        tokenIn.tokenType    = (DWORD)pResolvedToken->tokenType;
+    }
     return tokenIn;
 }
 
@@ -126,12 +130,16 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::
 {
     Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
     ZeroMemory(&tokenOut, sizeof(tokenOut));
-    tokenOut.hClass  = CastHandle(pResolvedToken->hClass);
-    tokenOut.hMethod = CastHandle(pResolvedToken->hMethod);
-    tokenOut.hField  = CastHandle(pResolvedToken->hField);
 
-    tokenOut.cbTypeSpec   = (DWORD)pResolvedToken->cbTypeSpec;
-    tokenOut.cbMethodSpec = (DWORD)pResolvedToken->cbMethodSpec;
+    if (pResolvedToken != nullptr)
+    {
+        tokenOut.hClass  = CastHandle(pResolvedToken->hClass);
+        tokenOut.hMethod = CastHandle(pResolvedToken->hMethod);
+        tokenOut.hField  = CastHandle(pResolvedToken->hField);
+
+        tokenOut.cbTypeSpec   = (DWORD)pResolvedToken->cbTypeSpec;
+        tokenOut.cbMethodSpec = (DWORD)pResolvedToken->cbMethodSpec;
+    }
 
     tokenOut.pTypeSpec_Index   = -1;
     tokenOut.pMethodSpec_Index = -1;
@@ -146,10 +154,13 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::StoreAgnostic_CORIN
     Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
         CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken));
 
-    tokenOut.pTypeSpec_Index =
-        (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-    tokenOut.pMethodSpec_Index =
-        (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+    if (pResolvedToken != nullptr)
+    {
+        tokenOut.pTypeSpec_Index =
+            (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
+        tokenOut.pMethodSpec_Index =
+            (DWORD)buffers->AddBuffer((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+    }
 
     return tokenOut;
 }
@@ -160,10 +171,13 @@ inline Agnostic_CORINFO_RESOLVED_TOKENout SpmiRecordsHelper::RestoreAgnostic_COR
 {
     Agnostic_CORINFO_RESOLVED_TOKENout tokenOut(
         CreateAgnostic_CORINFO_RESOLVED_TOKENout_without_buffers(pResolvedToken));
-    tokenOut.pTypeSpec_Index =
-        (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-    tokenOut.pMethodSpec_Index =
-        (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+    if (pResolvedToken != nullptr)
+    {
+        tokenOut.pTypeSpec_Index =
+            (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
+        tokenOut.pMethodSpec_Index =
+            (DWORD)buffers->Contains((unsigned char*)pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
+    }
     return tokenOut;
 }
 
@@ -194,13 +208,16 @@ inline void SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(
     Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut,
     LightWeightMap<key, value>* buffers)
 {
-    pResolvedToken->hClass       = (CORINFO_CLASS_HANDLE)tokenOut.hClass;
-    pResolvedToken->hMethod      = (CORINFO_METHOD_HANDLE)tokenOut.hMethod;
-    pResolvedToken->hField       = (CORINFO_FIELD_HANDLE)tokenOut.hField;
-    pResolvedToken->pTypeSpec    = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pTypeSpec_Index);
-    pResolvedToken->cbTypeSpec   = (ULONG)tokenOut.cbTypeSpec;
-    pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pMethodSpec_Index);
-    pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
+    if (pResolvedToken != nullptr)
+    {
+        pResolvedToken->hClass       = (CORINFO_CLASS_HANDLE)tokenOut.hClass;
+        pResolvedToken->hMethod      = (CORINFO_METHOD_HANDLE)tokenOut.hMethod;
+        pResolvedToken->hField       = (CORINFO_FIELD_HANDLE)tokenOut.hField;
+        pResolvedToken->pTypeSpec    = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pTypeSpec_Index);
+        pResolvedToken->cbTypeSpec   = (ULONG)tokenOut.cbTypeSpec;
+        pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)buffers->GetBuffer(tokenOut.pMethodSpec_Index);
+        pResolvedToken->cbMethodSpec = (ULONG)tokenOut.cbMethodSpec;
+    }
 }
 
 inline Agnostic_CORINFO_SIG_INFO SpmiRecordsHelper::CreateAgnostic_CORINFO_SIG_INFO_without_buffers(

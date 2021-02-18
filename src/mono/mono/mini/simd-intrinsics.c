@@ -261,39 +261,12 @@ get_vector_t_elem_type (MonoType *vector_type)
 	klass = mono_class_from_mono_type_internal (vector_type);
 	g_assert (
 		!strcmp (m_class_get_name (klass), "Vector`1") || 
+		!strcmp (m_class_get_name (klass), "Vector64`1") ||
 		!strcmp (m_class_get_name (klass), "Vector128`1") || 
 		!strcmp (m_class_get_name (klass), "Vector256`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
 }
-
-static MonoInst *
-emit_arch_vector128_create_multi (MonoCompile *cfg, MonoMethodSignature *fsig, MonoClass *klass, MonoType *etype, MonoInst **args)
-{
-#if defined(TARGET_AMD64)
-	MonoInst *ins, *load;
-
-	// FIXME: Optimize this
-	MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-	ins->dreg = alloc_preg (cfg);
-	ins->inst_imm = 16;
-	MONO_ADD_INS (cfg->cbb, ins);
-
-	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-	int store_opcode = mono_type_to_store_membase (cfg, etype);
-	for (int i = 0; i < fsig->param_count; ++i)
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, store_opcode, ins->dreg, i * esize, args [i]->dreg);
-
-	load = emit_simd_ins (cfg, klass, OP_SSE_LOADU, ins->dreg, -1);
-	load->inst_c0 = 16;
-	load->inst_c1 = get_underlying_type (etype);
-	return load;
-#else
-	return NULL;
-#endif
-}
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 static int
 type_to_expand_op (MonoType *type)
@@ -320,7 +293,49 @@ type_to_expand_op (MonoType *type)
 	}
 }
 
-static guint16 vector_128_methods [] = {
+static int
+type_to_insert_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_INSERT_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_INSERT_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_INSERT_I4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_INSERT_I8;
+	case MONO_TYPE_R4:
+		return OP_INSERT_R4;
+	case MONO_TYPE_R8:
+		return OP_INSERT_R8;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static MonoInst *
+emit_vector_create_elementwise (
+	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
+	MonoType *etype, MonoInst **args)
+{
+	int op = type_to_insert_op (etype);
+	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
+	MonoInst *ins = emit_simd_ins (cfg, vklass, OP_XZERO, -1, -1);
+	for (int i = 0; i < fsig->param_count; ++i) {
+		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
+		ins->inst_c0 = i;
+	}
+	return ins;
+}
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+static guint16 sri_vector_methods [] = {
 	SN_AsByte,
 	SN_AsDouble,
 	SN_AsInt16,
@@ -336,13 +351,13 @@ static guint16 vector_128_methods [] = {
 };
 
 static MonoInst*
-emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 
 	MonoClass *klass = cmethod->klass;
-	int id = lookup_intrins (vector_128_methods, sizeof (vector_128_methods), cmethod);
+	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1)
 		return NULL;
 
@@ -368,7 +383,7 @@ emit_vector128 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
 		else
-			return emit_arch_vector128_create_multi (cfg, fsig, klass, etype, args);
+			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
 	}
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
@@ -818,6 +833,14 @@ static SimdIntrinsic crc32_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic crypto_aes_methods [] = {
+	{SN_Decrypt, OP_XOP_X_X_X, SIMD_OP_AES_DEC},
+	{SN_Encrypt, OP_XOP_X_X_X, SIMD_OP_AES_ENC},
+	{SN_InverseMixColumns, OP_XOP_X_X, SIMD_OP_AES_IMC},
+	{SN_MixColumns, OP_XOP_X_X, SIMD_OP_ARM64_AES_AESMC},
+	{SN_get_IsSupported}
+};
+
 static SimdIntrinsic sha1_methods [] = {
 	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
 	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
@@ -928,6 +951,12 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = sha1_methods;
 		intrinsics_size = sizeof (sha1_methods);
+	}
+
+	if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
+		feature = MONO_CPU_ARM64_CRYPTO;
+		intrinsics = crypto_aes_methods;
+		intrinsics_size = sizeof (crypto_aes_methods);
 	}
 
 	/*
@@ -2226,8 +2255,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector128"))
-			return emit_vector128 (cfg, cmethod, fsig, args);
+		if (!strcmp (class_name, "Vector128") || !strcmp (class_name, "Vector64"))
+			return emit_sri_vector (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 

@@ -42,7 +42,6 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/loaded-images-internals.h>
@@ -1233,9 +1232,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		if (care_about_pecoff == FALSE)
 			goto done;
 
-		if (image->loader == &pe_loader && !mono_verifier_verify_pe_data (image, error))
-			goto invalid_image;
-
 		if (!mono_image_load_pe_data (image))
 			goto invalid_image;
 	} else {
@@ -1246,13 +1242,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 	}
 
-	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_cli_data (image, error))
-		goto invalid_image;
-
 	if (!mono_image_load_cli_data (image))
-		goto invalid_image;
-
-	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, error))
 		goto invalid_image;
 
 #ifdef ENABLE_METADATA_UPDATE
@@ -2160,7 +2150,6 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 
 	free_hash (cache->native_func_wrapper_aot_cache);
 	free_hash (cache->native_func_wrapper_indirect_cache);
-	free_hash (cache->remoting_invoke_cache);
 	free_hash (cache->synchronized_cache);
 	free_hash (cache->unbox_wrapper_cache);
 	free_hash (cache->cominterop_invoke_cache);
@@ -2309,13 +2298,7 @@ mono_image_close_except_pools (MonoImage *image)
 		g_hash_table_destroy (image->name_cache);
 	}
 
-	free_hash (image->ldfld_wrapper_cache);
-	free_hash (image->ldflda_wrapper_cache);
-	free_hash (image->stfld_wrapper_cache);
-	free_hash (image->isinst_cache);
-	free_hash (image->castclass_cache);
 	free_hash (image->icall_wrapper_cache);
-	free_hash (image->proxy_isinst_cache);
 	if (image->var_gparam_cache)
 		mono_conc_hashtable_destroy (image->var_gparam_cache);
 	if (image->mvar_gparam_cache)

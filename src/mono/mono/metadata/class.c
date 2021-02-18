@@ -40,7 +40,6 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-string.h>
@@ -127,9 +126,6 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	MonoImage *module;
 
 	error_init (error);
-
-	if (!mono_verifier_verify_typeref_row (image, (type_token & 0xffffff) - 1, error))
-		return NULL;
 
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
@@ -1551,9 +1547,6 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error)
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC) //no need to decode static fields
 			continue;
 
-		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], error))
-			goto fail;
-
 		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
@@ -2711,19 +2704,12 @@ mono_class_name_from_token (MonoImage *image, guint32 type_token)
 	}
 
 	case MONO_TOKEN_TYPE_REF: {
-		ERROR_DECL (error);
 		guint32 cols [MONO_TYPEREF_SIZE];
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 		guint tidx = mono_metadata_token_index (type_token);
 
 		if (tidx > t->rows)
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
-
-		if (!mono_verifier_verify_typeref_row (image, tidx - 1, error)) {
-			char *msg = g_strdup_printf ("Invalid type token 0x%08x due to '%s'", type_token, mono_error_get_message (error));
-			mono_error_cleanup (error);
-			return msg;
-		}
 
 		mono_metadata_decode_row (t, tidx-1, cols, MONO_TYPEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
@@ -2755,7 +2741,6 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 			return g_strdup (image->assembly_name);
 		return g_strdup_printf ("%s", image->name ? image->name : "[Could not resolve assembly name");
 	case MONO_TOKEN_TYPE_REF: {
-		ERROR_DECL (error);
 		MonoAssemblyName aname;
 		memset (&aname, 0, sizeof (MonoAssemblyName));
 		guint32 cols [MONO_TYPEREF_SIZE];
@@ -2765,11 +2750,6 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
 		if (idx > t->rows)
 			return g_strdup_printf ("Invalid type token 0x%08x", type_token);
 	
-		if (!mono_verifier_verify_typeref_row (image, idx - 1, error)) {
-			char *msg = g_strdup_printf ("Invalid type token 0x%08x due to '%s'", type_token, mono_error_get_message (error));
-			mono_error_cleanup (error);
-			return msg;
-		}
 		mono_metadata_decode_row (t, idx-1, cols, MONO_TYPEREF_SIZE);
 
 		idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLUTION_SCOPE_BITS;
@@ -6377,11 +6357,6 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 
 		/* first_field_idx and idx points into the fieldptr table */
 		mono_metadata_decode_table_row (image, MONO_TABLE_FIELD, idx, cols, MONO_FIELD_SIZE);
-
-		if (!mono_verifier_verify_field_signature (image, cols [MONO_FIELD_SIGNATURE], error)) {
-			mono_class_set_type_load_failure (klass, "%s", mono_error_get_message (error));
-			return;
-		}
 
 		sig = mono_metadata_blob_heap (image, cols [MONO_FIELD_SIGNATURE]);
 
