@@ -348,6 +348,17 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
         }
 
+        const int MaxArraySize = 0X7FEFFFFF;
+
+        [Theory]
+        [InlineData(MaxArraySize + 1)]
+        [InlineData(int.MaxValue)]
+        public void Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
+        {
+            var queue = GenericQueueFactory();
+            AssertExtensions.Throws<OutOfMemoryException>(() => queue.EnsureCapacity(requestedCapacity));
+        }
+
         [Theory]
         [InlineData(5)]
         public void Queue_Generic_EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCurrent_CapacityUnchanged(int currentCapacity)

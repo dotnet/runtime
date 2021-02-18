@@ -183,12 +183,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                int newcapacity = (int)(_array.Length * (long)GrowFactor / 100);
-                if (newcapacity < _array.Length + MinimumGrow)
-                {
-                    newcapacity = _array.Length + MinimumGrow;
-                }
-                SetCapacity(newcapacity);
+                EnsureCapacityCore(_size + 1);
             }
 
             _array[_tail] = item;
@@ -388,7 +383,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Ensures that the capacity of this Queue is at least the specified <paramref name="capacity"/>.
         /// </summary>
-        /// <param name="capacity">The minimum capacity to ensure</param>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)
@@ -398,28 +393,23 @@ namespace System.Collections.Generic
 
             if (_array.Length < capacity)
             {
-                long newCapacity = _array.Length == 0 ? MinimumGrow : _array.Length * (long)GrowFactor / 100;
-
-                while (newCapacity < capacity)
-                {
-                    newCapacity = newCapacity * GrowFactor / 100;
-                }
-
-                // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
-                // It represents the maximum number of elements that can be in an array where
-                // the size of the element is greater than one byte; a separate, slightly larger constant,
-                // is used when the size of the element is one.
-                const int MaxArrayLength = 0x7FEFFFFF;
-                if (newCapacity > MaxArrayLength) // Exceeds MaxArrayLength which includes possibility of integer overflow during extending capacity
-                {
-                    newCapacity = MaxArrayLength;
-                    if (newCapacity < capacity) newCapacity = capacity;
-                }
-
-                SetCapacity((int)newCapacity);
+                EnsureCapacityCore(capacity);
             }
 
             return _array.Length;
+        }
+
+        private void EnsureCapacityCore(int capacity)
+        {
+            Debug.Assert(capacity > _array.Length);
+
+            int newcapacity = (int)((long)_array.Length * GrowFactor / 100);
+
+            // Ensure minimum growth and account for arithmetic overflow.
+            if (newcapacity < _array.Length + MinimumGrow) newcapacity = _array.Length + MinimumGrow;
+            if (newcapacity < capacity) newcapacity = capacity;
+
+            SetCapacity(newcapacity);
         }
 
         // Implements an enumerator for a Queue.  The enumerator uses the

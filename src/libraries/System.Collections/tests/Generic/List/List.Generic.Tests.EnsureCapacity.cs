@@ -41,6 +41,17 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => list.EnsureCapacity(-1));
         }
 
+        const int MaxArraySize = 0X7FEFFFFF;
+
+        [Theory]
+        [InlineData(5, MaxArraySize + 1)]
+        [InlineData(1, int.MaxValue)]
+        public void EnsureCapacity_LargeCapacity_Throws(int count, int requestCapacity)
+        {
+            List<T> list = GenericListFactory(count);
+            Assert.Throws<OutOfMemoryException>(() => list.EnsureCapacity(requestCapacity));
+        }
+
         [Theory]
         [InlineData(5)]
         public void EnsureCapacity_RequestedCapacitySmallerThanOrEqualToCurrent_CapacityUnchanged(int currentCapacity)

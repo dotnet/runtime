@@ -413,28 +413,21 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Increase the capacity of this list to at least the specified <paramref name="min"/> by continuously twice current capacity.
+        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/> by continuously twice current capacity.
         /// </summary>
-        /// <param name="min">The minimum capacity to ensure</param>
-        private void EnsureCapacityCore(int min)
+        /// <param name="capacity">The minimum capacity to ensure.</param>
+        private void EnsureCapacityCore(int capacity)
         {
-            if (_items.Length < min)
-            {
-                int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length << 1;
-                while ((uint)newCapacity < min)
-                {
-                    newCapacity <<= 1;
-                }
+            Debug.Assert(_items.Length < capacity);
 
-                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > Array.MaxArrayLength)
-                {
-                    newCapacity = Array.MaxArrayLength;
-                    if (newCapacity < min) newCapacity = min;
-                }
-                Capacity = newCapacity;
-            }
+            int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
+
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
+            if (newCapacity < capacity) newCapacity = capacity;
+
+            Capacity = newCapacity;
         }
 
         public bool Exists(Predicate<T> match)

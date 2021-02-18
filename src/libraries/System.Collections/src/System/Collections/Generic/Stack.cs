@@ -282,7 +282,8 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushWithResize(T item)
         {
-            Array.Resize(ref _array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
+            Debug.Assert(_size == _array.Length);
+            EnsureCapacityCore(_size + 1);
             _array[_size] = item;
             _version++;
             _size++;
@@ -293,7 +294,7 @@ namespace System.Collections.Generic
         /// If the current capacity of the Stack is less than specified <paramref name="capacity"/>,
         /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
         /// </summary>
-        /// <param name="capacity">The minimum capacity to ensure</param>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)
@@ -303,28 +304,22 @@ namespace System.Collections.Generic
 
             if (_array.Length < capacity)
             {
-                int newCapacity = _array.Length == 0 ? DefaultCapacity : _array.Length << 1;
-                while ((uint)newCapacity < capacity)
-                {
-                    newCapacity <<= 1;
-                }
-
-                // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
-                // It represents the maximum number of elements that can be in an array where
-                // the size of the element is greater than one byte; a separate, slightly larger constant,
-                // is used when the size of the element is one.
-                const int MaxArrayLength = 0x7FEFFFFF;
-                if ((uint)newCapacity > MaxArrayLength)
-                {
-                    newCapacity = MaxArrayLength;
-                    if (newCapacity < capacity) newCapacity = capacity;
-                }
-
-                Array.Resize(ref _array, newCapacity);
+                EnsureCapacityCore(capacity);
                 _version++;
             }
 
             return _array.Length;
+        }
+
+        private void EnsureCapacityCore(int capacity)
+        {
+            Debug.Assert(_array.Length < capacity);
+
+            int newcapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
+            // ensure min capacity is respected and account for arithmetic overflow
+            if (newcapacity < capacity) newcapacity = capacity;
+
+            Array.Resize(ref _array, newcapacity);
         }
 
         // Copies the Stack to an array, in the same order Pop would return the items.
