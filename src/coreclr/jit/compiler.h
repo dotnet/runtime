@@ -6124,7 +6124,7 @@ private:
     void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
 public:
-    PhaseStatus optInvertLoops();    // Invert while loops so they're entered at top and tested at bottom.
+    PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
 
     void optOptimizeLoops(); // for "while-do" loops duplicates simple loop conditions and transforms
