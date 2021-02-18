@@ -440,6 +440,7 @@ FCFuncEnd()
 
 FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
+    QCFuncElement("ApplyUpdate", AssemblyNative::ApplyUpdate)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
