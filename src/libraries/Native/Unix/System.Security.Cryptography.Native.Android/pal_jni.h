@@ -97,6 +97,7 @@ extern jmethodID g_keyPairGetPublicMethod;
 extern jclass    g_keyPairGenClass;
 extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
+extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/Signature

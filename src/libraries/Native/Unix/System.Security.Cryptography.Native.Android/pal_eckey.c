@@ -47,6 +47,7 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
 
 EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 {
+    LOG_DEBUG("Creating curve from oid '%s'", oid);
     JNIEnv* env = GetJNIEnv();
 
     jstring oidStr = JSTRING(oid);
@@ -58,11 +59,12 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 
     jobject keyPairGenerator =
         (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
-    (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeMethod, paramSpec);
+    (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, paramSpec);
 
     ReleaseLRef(env, paramSpec);
     if (CheckJNIExceptions(env))
     {
+        LOG_DEBUG("Failed to create curve");
         ReleaseLRef(env, ec);
         ReleaseLRef(env, keyPairGenerator);
         return NULL;
@@ -84,12 +86,15 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 
     if (CheckJNIExceptions(env))
     {
+        LOG_DEBUG("Failed to create curve");
         ReleaseLRef(env, keySpec);
         ReleaseLRef(env, keyPair);
         return NULL;
     }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
+    
+    LOG_DEBUG("Created curve from oid '%s'", oid);
 
     return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }
