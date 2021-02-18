@@ -8,7 +8,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ApplyUpdateTests.cs" />
+    <Compile Include="AssemblyExtensionsTest.cs" />
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
     <Compile Include="ContextualReflection.cs" />
