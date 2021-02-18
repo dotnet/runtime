@@ -14,17 +14,16 @@ PALEXPORT jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certi
 PALEXPORT int64_t AndroidCryptoNative_X509GetNotAfter(jobject /*X509Certificate*/ cert);
 PALEXPORT int64_t AndroidCryptoNative_X509GetNotBefore(jobject /*X509Certificate*/ cert);
 PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *pBuf, int32_t cBuf);
-PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *pBuf, int32_t cBuf);
+PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
+PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t* buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetSignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetThumbprint(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetVersion(jobject /*X509Certificate*/ cert);
 
 // Name
-PALEXPORT int32_t AndroidCryptoNative_X509GetNameRawBytes(jobject /*X500Principal*/ name, uint8_t *pBuf, int32_t cBuf);
-PALEXPORT jobject /*X500Principal*/ AndroidCryptoNative_X509GetIssuerName(jobject /*X509Certificate*/ cert);
-PALEXPORT jobject /*X500Principal*/ AndroidCryptoNative_X509GetSubjectName(jobject /*X509Certificate*/ cert);
+PALEXPORT int32_t AndroidCryptoNative_X509GetIssuerNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
+PALEXPORT int32_t AndroidCryptoNative_X509GetSubjectNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 PALEXPORT uint64_t AndroidCryptoNative_X509IssuerNameHash(jobject /*X509Certificate*/ cert);
 
 // Extensions

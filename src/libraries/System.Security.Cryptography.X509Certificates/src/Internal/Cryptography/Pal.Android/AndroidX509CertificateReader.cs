@@ -144,7 +144,7 @@ namespace Internal.Cryptography.Pal
                     // IssuerName is mutable to callers in X509Certificate. We want to be
                     // able to get the issuer even if IssuerName has been mutated, so we
                     // don't use it here.
-                    _issuer = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetIssuerName(_cert)).Name;
+                    _issuer = Interop.AndroidCrypto.X509GetIssuerName(_cert).Name;
                 }
 
                 return _issuer;
@@ -160,7 +160,7 @@ namespace Internal.Cryptography.Pal
                     // SubjectName is mutable to callers in X509Certificate. We want to be
                     // able to get the subject even if SubjectName has been mutated, so we
                     // don't use it here.
-                    _subject = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetSubjectName(_cert)).Name;
+                    _subject = Interop.AndroidCrypto.X509GetSubjectName(_cert).Name;
                 }
 
                 return _subject;
@@ -251,7 +251,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_subjectName == null)
                 {
-                    _subjectName = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetSubjectName(_cert));
+                    _subjectName = Interop.AndroidCrypto.X509GetSubjectName(_cert);
                 }
 
                 return _subjectName;
@@ -264,7 +264,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_issuerName == null)
                 {
-                    _issuerName = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetIssuerName(_cert));
+                    _issuerName = Interop.AndroidCrypto.X509GetIssuerName(_cert);
                 }
 
                 return _issuerName;

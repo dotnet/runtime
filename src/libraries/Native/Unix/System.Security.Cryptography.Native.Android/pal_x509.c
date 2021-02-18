@@ -253,10 +253,9 @@ int32_t AndroidCryptoNative_X509GetVersion(jobject /*X509Certificate*/ cert)
     return CheckJNIExceptions(env) ? VALUE_FAIL : (int32_t)ver;
 }
 
-int32_t AndroidCryptoNative_X509GetNameRawBytes(jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
+static int32_t GetNameBytes(JNIEnv *env, jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)
 {
     assert(name != NULL);
-    JNIEnv *env = GetJNIEnv();
     int32_t ret = BUFFER_FAIL;
 
     // byte[] raw = name.getEncoded();
@@ -270,31 +269,33 @@ cleanup:
     return ret;
 }
 
-jobject /*X500Principal*/ AndroidCryptoNative_X509GetIssuerName(jobject /*X509Certificate*/ cert)
+int32_t AndroidCryptoNative_X509GetIssuerNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
-    jobject ret = NULL;
+    int32_t ret = BUFFER_FAIL;
 
-    // return cert.getIssuerX500Principal()
-    ret = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
-    if (!CheckJNIExceptions(env) && ret != NULL)
-        ret = ToGRef(env, ret);
+    // X500Principal name = cert.getIssuerX500Principal()
+    jobject name = (*env)->CallObjectMethod(env, cert, g_X509CertGetIssuerX500Principal);
+    if (!CheckJNIExceptions(env) && name != NULL)
+        ret = GetNameBytes(env, name, buf, len);
 
+    (*env)->DeleteLocalRef(env, name);
     return ret;
 }
 
-jobject /*X500Principal*/ AndroidCryptoNative_X509GetSubjectName(jobject /*X509Certificate*/ cert)
+int32_t AndroidCryptoNative_X509GetSubjectNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
-    jobject ret = NULL;
+    int32_t ret = BUFFER_FAIL;
 
-    // return cert.getSubjectX500Principal()
-    ret = (*env)->CallObjectMethod(env, cert, g_X509CertGetSubjectX500Principal);
-    if (!CheckJNIExceptions(env) && ret != NULL)
-        ret = ToGRef(env, ret);
+    // X500Principal name = cert.getSubjectX500Principal()
+    jobject name = (*env)->CallObjectMethod(env, cert, g_X509CertGetSubjectX500Principal);
+    if (!CheckJNIExceptions(env) && name != NULL)
+        ret = GetNameBytes(env, name, buf, len);
 
+    (*env)->DeleteLocalRef(env, name);
     return ret;
 }
 

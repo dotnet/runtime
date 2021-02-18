@@ -27,10 +27,10 @@ internal static partial class Interop
         internal static extern ulong X509GetNotBefore(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetPublicKeyAlgorithm")]
-        private static extern int X509GetPublicKeyAlgorithm(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static extern int X509GetPublicKeyAlgorithm(SafeX509Handle x509, byte[]? buf, int len);
         internal static string X509GetPublicKeyAlgorithm(SafeX509Handle x509)
         {
-            // Null terminator is included in byte array.
+            // Null terminator is included in byte array, so we ignore the last byte.
             byte[] bytes = Crypto.GetDynamicBuffer((handle, buf, i) => X509GetPublicKeyAlgorithm(handle, buf, i), x509);
             if (bytes.Length <= 1)
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -39,31 +39,31 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetPublicKeyBytes")]
-        private static extern int X509GetPublicKeyBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static extern int X509GetPublicKeyBytes(SafeX509Handle x509, byte[]? buf, int len);
         internal static byte[] X509GetPublicKeyBytes(SafeX509Handle x509)
         {
             return Crypto.GetDynamicBuffer((handle, buf, i) => X509GetPublicKeyBytes(handle, buf, i), x509);
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetPublicKeyParameterBytes")]
-        private static extern int X509GetPublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static extern int X509GetPublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int len);
         internal static byte[] X509GetPublicKeyParameterBytes(SafeX509Handle x509)
         {
             return Crypto.GetDynamicBuffer((handle, buf, i) => X509GetPublicKeyParameterBytes(handle, buf, i), x509);
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetSerialNumber")]
-        private static extern int X509GetSerialNumber(SafeX509Handle x, [Out] byte[]? buf, int len);
-        internal static byte[] X509GetSerialNumber(SafeX509Handle x)
+        private static extern int X509GetSerialNumber(SafeX509Handle x509, [Out] byte[]? buf, int len);
+        internal static byte[] X509GetSerialNumber(SafeX509Handle x509)
         {
-            return Crypto.GetDynamicBuffer((ptr, buf, i) => X509GetSerialNumber(ptr, buf, i), x);
+            return Crypto.GetDynamicBuffer((handle, buf, i) => X509GetSerialNumber(handle, buf, i), x509);
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetSignatureAlgorithm")]
-        private static extern int X509GetSignatureAlgorithm(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static extern int X509GetSignatureAlgorithm(SafeX509Handle x509, byte[]? buf, int len);
         internal static string X509GetSignatureAlgorithm(SafeX509Handle x509)
         {
-            // Null terminator is included in byte array.
+            // Null terminator is included in byte array, so we ignore the last byte.
             byte[] oidBytes = Crypto.GetDynamicBuffer((handle, buf, i) => X509GetSignatureAlgorithm(handle, buf, i), x509);
             if (oidBytes.Length <= 1)
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -72,7 +72,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetThumbprint")]
-        private static extern int X509GetThumbprint(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static extern int X509GetThumbprint(SafeX509Handle x509, byte[]? buf, int len);
         internal static byte[] X509GetThumbprint(SafeX509Handle x509)
         {
             return Crypto.GetDynamicBuffer((handle, buf, i) => X509GetThumbprint(handle, buf, i), x509);
@@ -81,18 +81,19 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetVersion")]
         internal static extern int X509GetVersion(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetNameRawBytes")]
-        private static extern int X509GetNameRawBytes(IntPtr x509Name, byte[]? buf, int cBuf);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetIssuerName")]
-        internal static extern IntPtr X509GetIssuerName(SafeX509Handle x);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetSubjectName")]
-        internal static extern IntPtr X509GetSubjectName(SafeX509Handle x);
-
-        internal static X500DistinguishedName LoadX500Name(IntPtr namePtr)
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetIssuerNameBytes")]
+        internal static extern int X509GetIssuerNameBytes(SafeX509Handle x509, byte[]? buf, int len);
+        internal static X500DistinguishedName X509GetIssuerName(SafeX509Handle x509)
         {
-            byte[] buf = Crypto.GetDynamicBuffer((ptr, buf1, i) => X509GetNameRawBytes(ptr, buf1, i), namePtr);
+            byte[] buf = Crypto.GetDynamicBuffer((handle, buf, i) => X509GetIssuerNameBytes(handle, buf, i), x509);
+            return new X500DistinguishedName(buf);
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetSubjectNameBytes")]
+        internal static extern int X509GetSubjectNameBytes(SafeX509Handle x509, byte[]? buf, int len);
+        internal static X500DistinguishedName X509GetSubjectName(SafeX509Handle x509)
+        {
+            byte[] buf = Crypto.GetDynamicBuffer((handle, buf, i) => X509GetSubjectNameBytes(handle, buf, i), x509);
             return new X500DistinguishedName(buf);
         }
 
@@ -103,10 +104,10 @@ internal static partial class Interop
             void* callbackContext);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509FindExtensionData")]
-        private static extern int X509FindExtensionData(SafeX509Handle x, string oid, [Out] byte[]? buf, int len);
-        internal static byte[] X509FindExtensionData(SafeX509Handle x, string oid)
+        private static extern int X509FindExtensionData(SafeX509Handle x509, string oid, [Out] byte[]? buf, int len);
+        internal static byte[] X509FindExtensionData(SafeX509Handle x509, string oid)
         {
-            return Crypto.GetDynamicBuffer((ptr, buf, i) => X509FindExtensionData(ptr, oid, buf, i), x);
+            return Crypto.GetDynamicBuffer((handle, buf, i) => X509FindExtensionData(handle, oid, buf, i), x509);
         }
     }
 }
