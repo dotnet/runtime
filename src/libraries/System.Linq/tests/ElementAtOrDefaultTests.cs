@@ -199,6 +199,26 @@ namespace System.Linq.Tests
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(new Index(10)));
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^0));
 
+            const int ElementCount = 10;
+            int state = -1;
+            int moveNextCallCount = 0;
+            Func<DelegateIterator<int?>> getSource = () =>
+            {
+                state = -1;
+                moveNextCallCount = 0;
+                return new DelegateIterator<int?>(
+                    moveNext: () => { moveNextCallCount++; return ++state < ElementCount; },
+                    current: () => state,
+                    dispose: () => state = -1);
+            };
+
+            Assert.Null(getSource().ElementAtOrDefault(10));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Null(getSource().ElementAtOrDefault(new Index(10)));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Null(getSource().ElementAtOrDefault(^0));
+            Assert.Equal(0, moveNextCallCount);
+
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(int.MinValue));
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(^int.MaxValue));
 

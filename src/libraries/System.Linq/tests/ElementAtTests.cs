@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -150,6 +152,43 @@ namespace System.Linq.Tests
             Assert.Equal(-1, query2[2].ElementAt(^4));
         }
 
+        private class ArrayWrapper<T> : IList<T>
+        {
+            private readonly T[] _list;
+
+            internal ArrayWrapper(T[] list) => _list = list;
+
+            public int Count => _list.Length;
+
+            public T this[int index]
+            {
+                get => _list[index];
+                set => _list[index] = value;
+            }
+
+            public IEnumerator<T> GetEnumerator() => ((IList<T>)_list).GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+
+            public bool Contains(T item) => _list.Contains(item);
+
+            public void Add(T item) => throw new NotImplementedException();
+
+            public void Clear() => throw new NotImplementedException();
+
+            public bool Remove(T item) => throw new NotImplementedException();
+
+            public bool IsReadOnly => throw new NotImplementedException();
+
+            public int IndexOf(T item) => throw new NotImplementedException();
+
+            public void Insert(int index, T item) => throw new NotImplementedException();
+
+            public void RemoveAt(int index) => throw new NotImplementedException();
+        }
+
         [Fact]
         public void NonEmptySource_Consistency()
         {
@@ -169,10 +208,15 @@ namespace System.Linq.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
+            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(-1));
+            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(^11));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(10));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(10)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(10));
+            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(new Index(10)));
+            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(^0));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
@@ -204,6 +248,26 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(10));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(10)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
+
+            const int ElementCount = 10;
+            int state = -1;
+            int moveNextCallCount = 0;
+            Func<DelegateIterator<int>> getSource = () =>
+            {
+                state = -1;
+                moveNextCallCount = 0;
+                return new DelegateIterator<int>(
+                    moveNext: () => { moveNextCallCount++; return ++state < ElementCount; },
+                    current: () => state,
+                    dispose: () => state = -1);
+            };
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(10));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(new Index(10)));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(^0));
+            Assert.Equal(0, moveNextCallCount);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
@@ -339,7 +403,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_Consistency()
         {
-            int[] source = {  };
+            int[] source = { };
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
