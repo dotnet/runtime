@@ -11,8 +11,6 @@ namespace Tracing.Tests
 {
     internal sealed class RuntimeEventListener : EventListener
     {
-        private readonly EventLevel _level;
-        
         public int TPWorkerThreadStartCount = 0;
         public int TPWorkerThreadStopCount = 0;
         public int TPWorkerThreadWaitCount = 0;
