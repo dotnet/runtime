@@ -50,7 +50,29 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     LOG_DEBUG("Creating curve from oid '%s'", oid);
     JNIEnv* env = GetJNIEnv();
 
-    jstring oidStr = JSTRING(oid);
+    // Older versions of Android don't support mapping an OID to a curve name,
+    // so do some of the common mappings here.
+    jstring oidStr;
+    if (strcmp(oid, "1.3.132.0.33") == 0)
+    {
+        oidStr = JSTRING("secp224r1");
+    }
+    else if (strcmp(oid, "1.3.132.0.34") == 0)
+    {
+        oidStr = JSTRING("secp384r1");
+    }
+    else if (strcmp(oid, "1.3.132.0.35") == 0)
+    {
+        oidStr = JSTRING("secp521r1");
+    }
+    else if (strcmp(oid, "1.2.840.10045.3.1.7") == 0)
+    {
+        oidStr = JSTRING("secp256r1");
+    }
+    else 
+    {
+        oidStr = JSTRING(oid);
+    }
     jstring ec = JSTRING("EC");
 
     // First, generate the key pair based on the curve defined by the oid.
