@@ -14,6 +14,7 @@ namespace System.Reflection.Metadata
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45689", platforms: TestPlatforms.AnyUnix, runtimes: TestRuntimes.Mono)]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnMono("Not yet implemented on Mono")]
         public static void ApplyUpdateInvalidParameters()
         {
             // Dummy delta arrays
