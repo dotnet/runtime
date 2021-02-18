@@ -938,6 +938,7 @@ static SimdIntrinsic crypto_aes_methods [] = {
 	{SN_get_IsSupported},
 };
 
+#if 0
 static SimdIntrinsic sha1_methods [] = {
 	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
 	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
@@ -947,6 +948,7 @@ static SimdIntrinsic sha1_methods [] = {
 	{SN_ScheduleUpdate1, OP_XOP_X_X_X, SIMD_OP_ARM64_SHA1SU1},
 	{SN_get_IsSupported}
 };
+#endif
 
 static SimdIntrinsic sha256_methods [] = {
 	{SN_HashUpdate1, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA256H},
