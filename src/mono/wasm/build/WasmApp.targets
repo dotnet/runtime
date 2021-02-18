@@ -4,7 +4,6 @@
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ReadEmccVersion" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -216,7 +215,6 @@
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
       <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
-      <EmccPublishVersionFile>$(_WasmIntermediateOutputPath)emcc-version.txt</EmccPublishVersionFile>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     </PropertyGroup>
@@ -336,14 +334,17 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
-    <ReadEmccVersion VersionFile="$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt">
-        <Output TaskParameter="Version" PropertyName="RuntimeEmccVersion" />
-    </ReadEmccVersion>
+    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt">
+        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
+    </ReadLinesFromFile>
 
     <RunWithEmSdkEnv Command="emcc --version > emcc-version.txt" WorkingDirectory="$(_WasmIntermediateOutputPath)" EmSdkPath="$(EMSDK_PATH)" />
-    <ReadEmccVersion VersionFile="$(_WasmIntermediateOutputPath)emcc-version.txt">
-        <Output TaskParameter="Version" PropertyName="ActualEmccVersion" />
-    </ReadEmccVersion>
+    <ReadLinesFromFile File="$(_WasmIntermediateOutputPath)emcc-version.txt">
+        <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <ActualEmccVersion Condition="$([System.String]::new('%(_VersionLines.Identity)').Contains('emcc'))">@(_VersionLines)</ActualEmccVersion>
+    </PropertyGroup>
 
     <Error Condition="'$(RuntimeEmccVersion)' != '$(ActualEmccVersion)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersion)', got '$(ActualEmccVersion)'"/>
   </Target>
