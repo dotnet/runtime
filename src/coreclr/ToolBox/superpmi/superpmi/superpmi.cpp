@@ -128,7 +128,7 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         LogError("main method %d of size %d failed to load and compile correctly.", (*reader)->GetMethodContextIndex(),
                  (*mc)->methodSize);
