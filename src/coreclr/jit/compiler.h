@@ -5445,6 +5445,7 @@ public:
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckNodesUniqueness();
+    void fgDebugCheckLoopTable();
 
     void fgDebugCheckFlags(GenTree* tree);
     void fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags);

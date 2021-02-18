@@ -3949,7 +3949,7 @@ void Compiler::optUnrollLoops()
             /* Make sure to update loop table */
 
             /* Use the LPFLG_REMOVED flag and update the bbLoopMask accordingly
-                * (also make head and bottom NULL - to hit an assert or GPF) */
+                * (also make head and bottom NULL - to hit an assert or an access violation) */
 
             optLoopTable[lnum].lpFlags |= LPFLG_REMOVED;
             optLoopTable[lnum].lpHead = optLoopTable[lnum].lpBottom = nullptr;
@@ -4576,6 +4576,8 @@ void Compiler::optOptimizeLoops()
                 printf("\n");
             }
         }
+
+        fgDebugCheckLoopTable();
 #endif
         optLoopsMarked = true;
     }
@@ -5194,6 +5196,8 @@ void Compiler::optCloneLoops()
         printf("\nAfter loop cloning:\n");
         fgDispBasicBlocks(/*dumpTrees*/ true);
     }
+
+    fgDebugCheckLoopTable();
 #endif
 }
 
