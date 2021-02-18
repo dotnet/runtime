@@ -1,21 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Net.WebSockets;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 
-namespace System.IO.Compression
+namespace System.Net.WebSockets.Compression
 {
     /// <summary>
     /// Provides a wrapper around the ZLib decompression API.
     /// </summary>
-    internal sealed class Inflater : IDisposable
+    internal sealed class WebSocketInflater : IDisposable
     {
         private readonly ZLibNative.ZLibStreamHandle _handle;
 
-        internal Inflater(int windowBits)
+        internal WebSocketInflater(int windowBits)
         {
             ZLibNative.ErrorCode error;
             try

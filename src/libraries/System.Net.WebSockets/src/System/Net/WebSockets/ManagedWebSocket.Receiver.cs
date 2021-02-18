@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Net.WebSockets.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -474,7 +475,7 @@ namespace System.Net.WebSockets
 
                 // Although the inflater isn't persisted accross messages, a single message
                 // might have been split into multiple frames.
-                private IO.Compression.Inflater? _inflater;
+                private WebSocketInflater? _inflater;
 
                 public Inflater(int windowBits) => _windowBits = windowBits;
 
@@ -495,11 +496,11 @@ namespace System.Net.WebSockets
 
                 public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
                 {
-                    _inflater ??= new IO.Compression.Inflater(_windowBits);
+                    _inflater ??= new WebSocketInflater(_windowBits);
                     _inflater.Inflate(input, output, out consumed, out written);
                 }
 
-                public static bool Finish(IO.Compression.Inflater inflater, Span<byte> output, out int written, ref byte? remainingByte)
+                public static bool Finish(WebSocketInflater inflater, Span<byte> output, out int written, ref byte? remainingByte)
                 {
                     written = 0;
 
@@ -532,7 +533,7 @@ namespace System.Net.WebSockets
                     return false;
                 }
 
-                public static bool IsFinished(IO.Compression.Inflater inflater, out byte? remainingByte)
+                public static bool IsFinished(WebSocketInflater inflater, out byte? remainingByte)
                 {
                     // There is no other way to make sure that we'e consumed all data
                     // but to try to inflate again with at least one byte of output buffer.
@@ -552,7 +553,7 @@ namespace System.Net.WebSockets
             {
                 private static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
 
-                private readonly IO.Compression.Inflater _inflater;
+                private readonly WebSocketInflater _inflater;
                 private bool _needsFlushMarker;
                 private byte? _remainingByte;
 

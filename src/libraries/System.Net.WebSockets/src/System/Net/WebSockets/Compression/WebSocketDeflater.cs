@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.WebSockets;
+using System.IO.Compression;
 
 using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
 using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
 
-namespace System.IO.Compression
+namespace System.Net.WebSockets.Compression
 {
     /// <summary>
     /// Provides a wrapper around the ZLib compression API.
     /// </summary>
-    internal sealed class Deflater : IDisposable
+    internal sealed class WebSocketDeflater : IDisposable
     {
         private readonly ZLibNative.ZLibStreamHandle _handle;
 
-        internal Deflater(int windowBits)
+        internal WebSocketDeflater(int windowBits)
         {
             var compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
             var memLevel = ZLibNative.Deflate_DefaultMemLevel;

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Net.WebSockets.Compression;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -248,7 +249,7 @@ namespace System.Net.WebSockets
 
                 // Although the inflater isn't persisted accross messages, a single message
                 // might be split into multiple frames.
-                private IO.Compression.Deflater? _deflater;
+                private WebSocketDeflater? _deflater;
 
                 public Deflater(int windowBits) => _windowBits = windowBits;
 
@@ -259,7 +260,7 @@ namespace System.Net.WebSockets
                     Debug.Assert((continuation && _deflater is not null) || (!continuation && _deflater is null),
                         "Invalid state. The deflater was expected to be null if not continuation and not null otherwise.");
 
-                    _deflater ??= new IO.Compression.Deflater(_windowBits);
+                    _deflater ??= new WebSocketDeflater(_windowBits);
 
                     Encode(payload, ref buffer, _deflater, endOfMessage);
                     reservedBits = continuation ? 0 : PerMessageDeflateBit;
@@ -271,7 +272,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                public static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, IO.Compression.Deflater deflater, bool final)
+                public static void Encode(ReadOnlySpan<byte> payload, ref Buffer buffer, WebSocketDeflater deflater, bool final)
                 {
                     while (payload.Length > 0)
                     {
@@ -310,7 +311,7 @@ namespace System.Net.WebSockets
             /// </summary>
             private sealed class PersistedDeflater : Encoder
             {
-                private readonly IO.Compression.Deflater _deflater;
+                private readonly WebSocketDeflater _deflater;
 
                 public PersistedDeflater(int windowBits) => _deflater = new(windowBits);
 
