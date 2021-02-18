@@ -35,93 +35,93 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
-    #- Linux_x64
-    #- windows_x64
-    #- windows_x86
-    #- Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - Linux_arm64
     - Linux_musl_x64
     jobParameters:
       testGroup: perf
 
 # build mono on wasm
-#- template: /eng/pipelines/common/platform-matrix.yml
-#  parameters:
-#    jobTemplate: /eng/pipelines/common/global-build-job.yml
-#    buildConfig: release
-#    runtimeFlavor: mono
-#    platforms:
-#    - Browser_wasm
-#    jobParameters:
-#      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-#      nameSuffix: wasm
-#      isOfficialBuild: false
-#      extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-#      extraStepsParameters:
-#        rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-#        includeRootFolder: true
-#        displayName: Browser Wasm Artifacts
-#        artifactName: BrowserWasm
-#        archiveType: zip
-#        archiveExtension: .zip
+- template: /eng/pipelines/common/platform-matrix.yml
+ parameters:
+   jobTemplate: /eng/pipelines/common/global-build-job.yml
+   buildConfig: release
+   runtimeFlavor: mono
+   platforms:
+   - Browser_wasm
+   jobParameters:
+     buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+     nameSuffix: wasm
+     isOfficialBuild: false
+     extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+     extraStepsParameters:
+       rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+       includeRootFolder: true
+       displayName: Browser Wasm Artifacts
+       artifactName: BrowserWasm
+       archiveType: zip
+       archiveExtension: .zip
 
 # build mono
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-#     runtimeFlavor: mono
-#     buildConfig: release
-#     platforms:
-#     - Linux_x64
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - Linux_x64
 
 # run mono microbenchmarks perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: mono
-#       projectFile: microbenchmarks.proj
-#       runKind: micro_mono
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run mono interpreter perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: mono
-#       codeGenType: 'Interpreter'
-#       projectFile: microbenchmarks.proj
-#       runKind: micro_mono
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      codeGenType: 'Interpreter'
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run mono wasm microbenchmarks perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-#     buildConfig: release
-#     runtimeFlavor: wasm
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: wasm
-#       codeGenType: 'wasm'
-#       projectFile: microbenchmarks.proj
-#       runKind: micro
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      codeGenType: 'wasm'
+      projectFile: microbenchmarks.proj
+      runKind: micro
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 
 # run coreclr microbenchmarks perf job
@@ -131,10 +131,10 @@ jobs:
     buildConfig: release
     runtimeFlavor: coreclr
     platforms:
-    #- Linux_x64
-    #- windows_x64
-    #- windows_x86
-    #- Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - Linux_arm64
     - Linux_musl_x64
     jobParameters:
       testGroup: perf
@@ -144,36 +144,36 @@ jobs:
       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run coreclr crossgen perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: coreclr
-#     platforms:
-#     - Linux_x64
-#     - windows_x64
-#     - windows_x86
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       projectFile: crossgen_perf.proj
-#       runKind: crossgen_scenarios
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: coreclr
+    platforms:
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      projectFile: crossgen_perf.proj
+      runKind: crossgen_scenarios
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
 
 # run mono wasm blazor perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: wasm
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: wasm
-#       projectFile: blazor_perf.proj
-#       runKind: blazor_scenarios
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-#       additionalSetupParameters: '--latestdotnet'
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: wasm
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: wasm
+      projectFile: blazor_perf.proj
+      runKind: blazor_scenarios
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+      additionalSetupParameters: '--latestdotnet'
 
