@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Compression;
-
-using ZErrorCode = System.IO.Compression.ZLibNative.ErrorCode;
-using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
+using System.Buffers;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using static System.IO.Compression.ZLibNative;
 
 namespace System.Net.WebSockets.Compression
 {
@@ -13,18 +13,120 @@ namespace System.Net.WebSockets.Compression
     /// </summary>
     internal sealed class WebSocketDeflater : IDisposable
     {
-        private readonly ZLibNative.ZLibStreamHandle _handle;
+        private ZLibStreamHandle? _stream;
+        private readonly int _windowBits;
+        private readonly bool _persisted;
 
-        internal WebSocketDeflater(int windowBits)
+        internal WebSocketDeflater(int windowBits, bool persisted)
         {
-            var compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
-            var memLevel = ZLibNative.Deflate_DefaultMemLevel;
-            var strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
+            Debug.Assert(windowBits >= 9 && windowBits <= 15);
 
-            ZErrorCode errorCode;
+            // We use negative window bits in order to produce raw deflate data
+            _windowBits = -windowBits;
+            _persisted = persisted;
+        }
+
+        public void Dispose() => _stream?.Dispose();
+
+        public void Deflate(ReadOnlySpan<byte> payload, IBufferWriter<byte> output, bool continuation, bool endOfMessage)
+        {
+            Debug.Assert(!continuation || _stream is not null, "Invalid state. The stream should not be null in continuations.");
+
+            if (_stream is null)
+                Initialize();
+
+            while (payload.Length > 0)
+            {
+                Deflate(payload, output.GetSpan(payload.Length), out var consumed, out var written);
+                output.Advance(written);
+
+                payload = payload.Slice(consumed);
+            }
+
+            // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
+            // At that point there will be at most a few bits left to write.
+            // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
+            Span<byte> end = stackalloc byte[6];
+            var count = Flush(end);
+
+            end = end.Slice(0, count);
+            // The deflated block always ends with 0x00 0x00 0xFF 0xFF
+            Debug.Assert(count >= 4);
+            Debug.Assert(end[^4] == 0x00 &&
+                         end[^3] == 0x00 &&
+                         end[^2] == 0xFF &&
+                         end[^1] == 0xFF);
+
+            if (endOfMessage)
+            {
+                // As per RFC we need to remove the flush markers
+                end = end.Slice(0, end.Length - 4);
+            }
+
+            end.CopyTo(output.GetSpan(end.Length));
+            output.Advance(end.Length);
+
+            if (endOfMessage && !_persisted)
+            {
+                _stream.Dispose();
+                _stream = null;
+            }
+        }
+
+        private unsafe void Deflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
+        {
+            Debug.Assert(_stream is not null);
+
+            fixed (byte* fixedInput = input)
+            fixed (byte* fixedOutput = output)
+            {
+                _stream.NextIn = (IntPtr)fixedInput;
+                _stream.AvailIn = (uint)input.Length;
+
+                _stream.NextOut = (IntPtr)fixedOutput;
+                _stream.AvailOut = (uint)output.Length;
+
+                // If flush is set to Z_BLOCK, a deflate block is completed
+                // and emitted, as for Z_SYNC_FLUSH, but the output
+                // is not aligned on a byte boundary, and up to seven bits
+                // of the current block are held to be written as the next byte after
+                // the next deflate block is completed.
+                Deflate(_stream, (FlushCode)5/*Z_BLOCK*/);
+
+                consumed = input.Length - (int)_stream.AvailIn;
+                written = output.Length - (int)_stream.AvailOut;
+            }
+        }
+
+        private unsafe int Flush(Span<byte> output)
+        {
+            Debug.Assert(_stream is not null);
+            Debug.Assert(_stream.AvailIn == 0);
+            Debug.Assert(output.Length >= 6);
+
+            fixed (byte* fixedOutput = output)
+            {
+                _stream.NextIn = IntPtr.Zero;
+                _stream.AvailIn = 0;
+
+                _stream.NextOut = (IntPtr)fixedOutput;
+                _stream.AvailOut = (uint)output.Length;
+
+                var errorCode = Deflate(_stream, (FlushCode)3/*Z_FULL_FLUSH*/);
+                var writtenBytes = output.Length - (int)_stream.AvailOut;
+
+                Debug.Assert(errorCode == ErrorCode.Ok);
+
+                return writtenBytes;
+            }
+        }
+
+        private static ErrorCode Deflate(ZLibStreamHandle stream, FlushCode flushCode)
+        {
+            ErrorCode errorCode;
             try
             {
-                errorCode = ZLibNative.CreateZLibStreamForDeflate(out _handle, compressionLevel, windowBits, memLevel, strategy);
+                errorCode = stream.Deflate(flushCode);
             }
             catch (Exception cause)
             {
@@ -33,68 +135,34 @@ namespace System.Net.WebSockets.Compression
 
             switch (errorCode)
             {
-                case ZErrorCode.Ok:
-                    return;
+                case ErrorCode.Ok:
+                case ErrorCode.StreamEnd:
+                    return errorCode;
 
-                case ZErrorCode.MemError:
-                    throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
+                case ErrorCode.BufError:
+                    return errorCode;  // This is a recoverable error
 
-                case ZErrorCode.VersionError:
-                    throw new WebSocketException(SR.ZLibErrorVersionMismatch);
-
-                case ZErrorCode.StreamError:
-                    throw new WebSocketException(SR.ZLibErrorIncorrectInitParameters);
+                case ErrorCode.StreamError:
+                    throw new WebSocketException(SR.ZLibErrorInconsistentStream);
 
                 default:
                     throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
             }
         }
 
-        public void Dispose() => _handle.Dispose();
-
-        public unsafe void Deflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
+        [MemberNotNull(nameof(_stream))]
+        private void Initialize()
         {
-            fixed (byte* fixedInput = input)
-            fixed (byte* fixedOutput = output)
-            {
-                _handle.NextIn = (IntPtr)fixedInput;
-                _handle.AvailIn = (uint)input.Length;
+            Debug.Assert(_stream is null);
 
-                _handle.NextOut = (IntPtr)fixedOutput;
-                _handle.AvailOut = (uint)output.Length;
+            var compressionLevel = CompressionLevel.DefaultCompression;
+            var memLevel = Deflate_DefaultMemLevel;
+            var strategy = CompressionStrategy.DefaultStrategy;
 
-                Deflate((ZFlushCode)5/*Z_BLOCK*/);
-
-                consumed = input.Length - (int)_handle.AvailIn;
-                written = output.Length - (int)_handle.AvailOut;
-            }
-        }
-
-        public unsafe int Finish(Span<byte> output, out bool completed)
-        {
-            fixed (byte* fixedOutput = output)
-            {
-                _handle.NextIn = IntPtr.Zero;
-                _handle.AvailIn = 0;
-
-                _handle.NextOut = (IntPtr)fixedOutput;
-                _handle.AvailOut = (uint)output.Length;
-
-                var errorCode = Deflate((ZFlushCode)3/*Z_FULL_FLUSH*/);
-                var writtenBytes = output.Length - (int)_handle.AvailOut;
-
-                completed = errorCode == ZErrorCode.Ok && writtenBytes < output.Length;
-
-                return writtenBytes;
-            }
-        }
-
-        private ZErrorCode Deflate(ZFlushCode flushCode)
-        {
-            ZErrorCode errorCode;
+            ErrorCode errorCode;
             try
             {
-                errorCode = _handle.Deflate(flushCode);
+                errorCode = CreateZLibStreamForDeflate(out _stream, compressionLevel, _windowBits, memLevel, strategy);
             }
             catch (Exception cause)
             {
@@ -103,16 +171,10 @@ namespace System.Net.WebSockets.Compression
 
             switch (errorCode)
             {
-                case ZErrorCode.Ok:
-                case ZErrorCode.StreamEnd:
-                    return errorCode;
-
-                case ZErrorCode.BufError:
-                    return errorCode;  // This is a recoverable error
-
-                case ZErrorCode.StreamError:
-                    throw new WebSocketException(SR.ZLibErrorInconsistentStream);
-
+                case ErrorCode.Ok:
+                    return;
+                case ErrorCode.MemError:
+                    throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);
                 default:
                     throw new WebSocketException(string.Format(SR.ZLibErrorUnexpected, (int)errorCode));
             }

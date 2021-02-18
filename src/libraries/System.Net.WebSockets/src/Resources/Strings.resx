@@ -204,17 +204,11 @@
   <data name="ZLibErrorDLLLoadError" xml:space="preserve">
     <value>The underlying compression routine could not be loaded correctly.</value>
   </data>
-  <data name="ZLibErrorIncorrectInitParameters" xml:space="preserve">
-    <value>The underlying compression routine received incorrect initialization parameters.</value>
-  </data>
   <data name="ZLibErrorNotEnoughMemory" xml:space="preserve">
     <value>The underlying compression routine could not reserve sufficient memory.</value>
   </data>
   <data name="ZLibErrorUnexpected" xml:space="preserve">
     <value>The underlying compression routine returned an unexpected error code {0}.</value>
-  </data>
-  <data name="ZLibErrorVersionMismatch" xml:space="preserve">
-    <value>The version of the underlying compression routine does not match expected version.</value>
   </data>
   <data name="UnsupportedCompression" xml:space="preserve">
     <value>The message was compressed using an unsupported compression method.</value>

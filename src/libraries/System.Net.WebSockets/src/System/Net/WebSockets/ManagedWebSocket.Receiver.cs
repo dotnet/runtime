@@ -33,14 +33,14 @@ namespace System.Net.WebSockets
         {
             private readonly bool _isServer;
             private readonly Stream _stream;
-            private readonly Decoder? _decoder;
+            private readonly WebSocketInflater? _inflater;
 
             /// <summary>
             /// Because a message might be split into multiple fragments we need to
             /// keep in mind that even if we've processed all of them, we need to call
             /// finish on the decoder to flush any left over data.
             /// </summary>
-            private bool _decodingFinished = true;
+            private bool _inflateFinished = true;
 
             /// <summary>
             /// If we have a decoder we cannot use the buffer provided from clients because
@@ -104,24 +104,15 @@ namespace System.Net.WebSockets
                 {
                     // Important note here is that we must use negative window bits
                     // which will instruct the underlying implementation to not expect deflate headers
-                    if (options.IsServer)
-                    {
-                        _decoder = deflate.ServerContextTakeover ?
-                            new PersistedInflater(-deflate.ServerMaxWindowBits) :
-                            new Inflater(-deflate.ServerMaxWindowBits);
-                    }
-                    else
-                    {
-                        _decoder = deflate.ClientContextTakeover ?
-                            new PersistedInflater(-deflate.ClientMaxWindowBits) :
-                            new Inflater(-deflate.ClientMaxWindowBits);
-                    }
+                    _inflater = options.IsServer ?
+                        new WebSocketInflater(deflate.ServerMaxWindowBits, deflate.ServerContextTakeover) :
+                        new WebSocketInflater(deflate.ClientMaxWindowBits, deflate.ClientContextTakeover);
                 }
             }
 
             public void Dispose()
             {
-                _decoder?.Dispose();
+                _inflater?.Dispose();
 
                 if (_decoderInputBuffer is not null)
                 {
@@ -198,10 +189,10 @@ namespace System.Net.WebSockets
                 // When there's nothing left over to receive, start a new
                 if (_lastHeader.PayloadLength == 0)
                 {
-                    if (!_decodingFinished)
+                    if (!_inflateFinished)
                     {
-                        Debug.Assert(_decoder is not null);
-                        _decodingFinished = _decoder.Finish(buffer.Span, out var written);
+                        Debug.Assert(_inflater is not null);
+                        _inflateFinished = _inflater.Finish(buffer.Span, out var written);
 
                         return Result(written);
                     }
@@ -233,9 +224,9 @@ namespace System.Net.WebSockets
 
                     if (_lastHeader.Compressed)
                     {
-                        Debug.Assert(_decoder is not null);
-                        _decoder.Decode(input: _readBuffer.AvailableSpan.Slice(0, available),
-                                        output: buffer.Span, out consumed, out written);
+                        Debug.Assert(_inflater is not null);
+                        _inflater.Inflate(input: _readBuffer.AvailableSpan.Slice(0, available),
+                                          output: buffer.Span, out consumed, out written);
                     }
                     else
                     {
@@ -252,9 +243,9 @@ namespace System.Net.WebSockets
                     if (_lastHeader.PayloadLength == 0 || buffer.Length == written)
                     {
                         // We have either received everything or the buffer is full.
-                        if (_decoder is not null && _lastHeader.PayloadLength == 0 && _lastHeader.Fin)
+                        if (_inflater is not null && _lastHeader.PayloadLength == 0 && _lastHeader.Fin)
                         {
-                            _decodingFinished = _decoder.Finish(buffer.Span.Slice(written), out written);
+                            _inflateFinished = _inflater.Finish(buffer.Span.Slice(written), out written);
                             resultByteCount += written;
                         }
 
@@ -268,7 +259,7 @@ namespace System.Net.WebSockets
                 // and should start issuing reads on the stream.
                 Debug.Assert(_readBuffer.AvailableLength == 0 && _lastHeader.PayloadLength > 0);
 
-                if (_decoder is null)
+                if (_inflater is null)
                 {
                     if (buffer.Length > _lastHeader.PayloadLength)
                     {
@@ -305,8 +296,8 @@ namespace System.Net.WebSockets
                         ApplyMask(_decoderInputBuffer.AsSpan(0, _decoderInputCount));
                     }
 
-                    _decoder.Decode(input: _decoderInputBuffer.AsSpan(_decoderInputPosition, _decoderInputCount),
-                                    output: buffer.Span, out var consumed, out var written);
+                    _inflater.Inflate(input: _decoderInputBuffer.AsSpan(_decoderInputPosition, _decoderInputCount),
+                                      output: buffer.Span, out var consumed, out var written);
 
                     resultByteCount += written;
                     _decoderInputPosition += consumed;
@@ -320,7 +311,7 @@ namespace System.Net.WebSockets
 
                         if (_lastHeader.PayloadLength == 0 && _lastHeader.Fin)
                         {
-                            _decodingFinished = _decoder.Finish(buffer.Span.Slice(written), out written);
+                            _inflateFinished = _inflater.Finish(buffer.Span.Slice(written), out written);
                             resultByteCount += written;
                         }
                     }
@@ -339,7 +330,7 @@ namespace System.Net.WebSockets
                 {
                     if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header, out var error, out var consumedBytes))
                     {
-                        if (header.Compressed && _decoder is null)
+                        if (header.Compressed && _inflater is null)
                         {
                             _headerError = SR.net_Websockets_PerMessageCompressedFlagWhenNotEnabled;
                             return false;
@@ -388,7 +379,7 @@ namespace System.Net.WebSockets
                 Count = count,
                 ResultType = ReceiveResultType.Message,
                 MessageType = _lastHeader.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                EndOfMessage = _lastHeader.Fin && _lastHeader.PayloadLength == 0 && _decodingFinished
+                EndOfMessage = _lastHeader.Fin && _lastHeader.PayloadLength == 0 && _inflateFinished
             };
 
             private ReceiveResult Result(ReceiveResultType resultType) => new ReceiveResult
@@ -452,134 +443,6 @@ namespace System.Net.WebSockets
 
                     _position -= _consumed;
                     _consumed = 0;
-                }
-            }
-
-            private abstract class Decoder : IDisposable
-            {
-                public abstract void Dispose();
-
-                public abstract void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written);
-
-                /// <summary>
-                /// Finishes the decoding by writing any outstanding data to the output.
-                /// </summary>
-                /// <returns>true if the finish completed, false to indicate that there is more outstanding data.</returns>
-                public abstract bool Finish(Span<byte> output, out int written);
-            }
-
-            private class Inflater : Decoder
-            {
-                private readonly int _windowBits;
-                private byte? _remainingByte;
-
-                // Although the inflater isn't persisted accross messages, a single message
-                // might have been split into multiple frames.
-                private WebSocketInflater? _inflater;
-
-                public Inflater(int windowBits) => _windowBits = windowBits;
-
-                public override void Dispose() => _inflater?.Dispose();
-
-                public override bool Finish(Span<byte> output, out int written)
-                {
-                    Debug.Assert(_inflater is not null);
-
-                    if (Finish(_inflater, output, out written, ref _remainingByte))
-                    {
-                        _inflater.Dispose();
-                        _inflater = null;
-                        return true;
-                    }
-                    return false;
-                }
-
-                public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
-                {
-                    _inflater ??= new WebSocketInflater(_windowBits);
-                    _inflater.Inflate(input, output, out consumed, out written);
-                }
-
-                public static bool Finish(WebSocketInflater inflater, Span<byte> output, out int written, ref byte? remainingByte)
-                {
-                    written = 0;
-
-                    if (output.Length == 0)
-                    {
-                        if (remainingByte is not null)
-                            return false;
-
-                        if (IsFinished(inflater, out remainingByte))
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        if (remainingByte is not null)
-                        {
-                            output[0] = remainingByte.GetValueOrDefault();
-                            written = 1;
-                            remainingByte = null;
-                        }
-
-                        written += inflater.Inflate(output.Slice(written));
-                        if (written < output.Length || IsFinished(inflater, out remainingByte))
-                        {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                public static bool IsFinished(WebSocketInflater inflater, out byte? remainingByte)
-                {
-                    // There is no other way to make sure that we'e consumed all data
-                    // but to try to inflate again with at least one byte of output buffer.
-                    Span<byte> oneByte = stackalloc byte[1];
-                    if (inflater.Inflate(oneByte) == 0)
-                    {
-                        remainingByte = null;
-                        return true;
-                    }
-
-                    remainingByte = oneByte[0];
-                    return false;
-                }
-            }
-
-            private sealed class PersistedInflater : Decoder
-            {
-                private static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
-
-                private readonly WebSocketInflater _inflater;
-                private bool _needsFlushMarker;
-                private byte? _remainingByte;
-
-                public PersistedInflater(int windowBits) => _inflater = new(windowBits);
-
-                public override void Dispose() => _inflater.Dispose();
-
-                public override bool Finish(Span<byte> output, out int written)
-                {
-                    if (_needsFlushMarker)
-                    {
-                        _needsFlushMarker = false;
-                        _inflater.Inflate(FlushMarker, output, out var consumed, out written);
-
-                        Debug.Assert(consumed == FlushMarker.Length);
-
-                        return written < output.Length || Inflater.IsFinished(_inflater, out _remainingByte);
-                    }
-
-                    return Inflater.Finish(_inflater, output, out written, ref _remainingByte);
-                }
-
-                public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
-                {
-                    _inflater.Inflate(input, output, out consumed, out written);
-                    _needsFlushMarker = true;
                 }
             }
         }
