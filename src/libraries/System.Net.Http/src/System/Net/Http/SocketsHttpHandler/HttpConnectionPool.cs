@@ -396,9 +396,9 @@ namespace System.Net.Http
             return GetHttpConnectionAsync(request, async, cancellationToken);
         }
 
-        private static bool IsUsableHttp11Connection(HttpConnection connection, TimeSpan lifetime, bool async)
+        private static bool IsUsableHttp11Connection(HttpConnection connection, long nowTicks, TimeSpan lifetime, bool async)
         {
-            if (connection.LifetimeExpired(Environment.TickCount64, lifetime))
+            if (connection.LifetimeExpired(nowTicks, lifetime))
             {
                 return false;
             }
@@ -424,9 +424,10 @@ namespace System.Net.Http
                 return ValueTask.FromCanceled<HttpConnection?>(cancellationToken);
             }
 
-            List<CachedConnection> list = _idleConnections;
+            List<CachedConnection> idleConnections = _idleConnections;
+            long nowTicks = Environment.TickCount64;
 
-            // Try to find a usable cached connection.
+            // Look for a usable idle connection.
             // If we can't find one, we will either wait for one to become available (if at the connection limit)
             // or just increment the connection count and return null so the caller can create a new connection.
             TaskCompletionSourceWithCancellation<HttpConnection?> waiter;
@@ -435,12 +436,12 @@ namespace System.Net.Http
                 HttpConnection connection;
                 lock (SyncObj)
                 {
-                    if (list.Count > 0)
+                    if (idleConnections.Count > 0)
                     {
                         // We have a cached connection that we can attempt to use.
                         // Test it below outside the lock, to avoid doing expensive validation while holding the lock.
-                        connection = list[list.Count - 1]._connection;
-                        list.RemoveAt(list.Count - 1);
+                        connection = idleConnections[idleConnections.Count - 1]._connection;
+                        idleConnections.RemoveAt(idleConnections.Count - 1);
                     }
                     else
                     {
@@ -473,7 +474,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (IsUsableHttp11Connection(connection, _poolManager.Settings._pooledConnectionLifetime, async))
+                if (IsUsableHttp11Connection(connection, nowTicks, _poolManager.Settings._pooledConnectionLifetime, async))
                 {
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable connection in pool.");
                     return new ValueTask<HttpConnection?>(connection);
@@ -1928,7 +1929,7 @@ namespace System.Net.Http
                     return false;
                 }
 
-                return IsUsableHttp11Connection(_connection, pooledConnectionLifetime, false);
+                return IsUsableHttp11Connection(_connection, nowTicks, pooledConnectionLifetime, false);
             }
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
