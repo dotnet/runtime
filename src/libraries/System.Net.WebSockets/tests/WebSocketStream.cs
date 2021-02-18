@@ -28,6 +28,27 @@ namespace System.Net.WebSockets.Tests
 
         public WebSocketStream Remote { get; }
 
+        /// <summary>
+        /// Returns the number of unread bytes.
+        /// </summary>
+        public int Available
+        {
+            get
+            {
+                var available = 0;
+
+                lock (_inputQueue)
+                {
+                    foreach ( var x in _inputQueue)
+                    {
+                        available += x.AvailableLength;
+                    }
+                }
+
+                return available;
+            }
+        }
+
         public override bool CanRead => true;
 
         public override bool CanSeek => false;
@@ -49,7 +70,7 @@ namespace System.Net.WebSockets.Tests
                     Remote._inputLock.Release();
                     Remote._inputQueue.Enqueue(Block.ConnectionClosed);
                 }
-                catch ( ObjectDisposedException)
+                catch (ObjectDisposedException)
                 {
                 }
             }
@@ -78,7 +99,20 @@ namespace System.Net.WebSockets.Tests
                 block.Advance(count);
 
                 if (block.AvailableLength == 0)
+                {
                     _inputQueue.Dequeue();
+                }
+                else
+                {
+                    try
+                    {
+                        // Because we haven't fully consumed the buffer
+                        // we should release once the input lock so we can acquire
+                        // it again on consequent receive.
+                        _inputLock.Release();
+                    }
+                    catch (ObjectDisposedException) { }
+                }
 
                 return count;
             }

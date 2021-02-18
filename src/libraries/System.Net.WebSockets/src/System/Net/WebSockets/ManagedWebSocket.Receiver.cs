@@ -12,9 +12,21 @@ namespace System.Net.WebSockets
 {
     internal partial class ManagedWebSocket
     {
-        private const int ReceivedConnectionClose = -1;
-        private const int ReceivedControlMessage = -2;
-        private const int ReceivedHeaderError = -3;
+        private enum ReceiveResultType
+        {
+            Message,
+            ConnectionClose,
+            ControlMessage,
+            HeaderError
+        }
+
+        private readonly struct ReceiveResult
+        {
+            public int Count { get; init; }
+            public bool EndOfMessage { get; init; }
+            public ReceiveResultType ResultType { get; init; }
+            public WebSocketMessageType MessageType { get; init; }
+        }
 
         private sealed class Receiver : IDisposable
         {
@@ -23,21 +35,28 @@ namespace System.Net.WebSockets
             private readonly Decoder? _decoder;
 
             /// <summary>
+            /// Because a message might be split into multiple fragments we need to
+            /// keep in mind that even if we've processed all of them, we need to call
+            /// finish on the decoder to flush any left over data.
+            /// </summary>
+            private bool _decodingFinished = true;
+
+            /// <summary>
             /// If we have a decoder we cannot use the buffer provided from clients because
             /// we cannot guarantee that the decoding can happen in place. This buffer is rent'ed
             /// and returned when consumed.
             /// </summary>
-            private byte[]? _decoderBuffer;
+            private byte[]? _decoderInputBuffer;
 
             /// <summary>
-            /// The next index that needs to be consumed from the decoder's buffer.
+            /// The next index that needs to be consumed from the decoder's input buffer.
             /// </summary>
-            private int _decoderBufferPosition;
+            private int _decoderInputPosition;
 
             /// <summary>
             /// The number of usable bytes in the decoder's buffer.
             /// </summary>
-            private int _decoderBufferCount;
+            private int _decoderInputCount;
 
             /// <summary>
             /// The last header received in a ReceiveAsync. If ReceiveAsync got a header but then
@@ -103,14 +122,12 @@ namespace System.Net.WebSockets
             {
                 _decoder?.Dispose();
 
-                if (_decoderBuffer is not null)
+                if (_decoderInputBuffer is not null)
                 {
-                    ArrayPool<byte>.Shared.Return(_decoderBuffer);
-                    _decoderBuffer = null;
+                    ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
+                    _decoderInputBuffer = null;
                 }
             }
-
-            public MessageHeader GetLastHeader() => _lastHeader;
 
             public string? GetHeaderError() => _headerError;
 
@@ -175,28 +192,35 @@ namespace System.Net.WebSockets
                 return new ControlMessage(_lastHeader.Opcode, payload);
             }
 
-            public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            public async ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                _readBuffer.DiscardConsumed();
-
                 // When there's nothing left over to receive, start a new
                 if (_lastHeader.PayloadLength == 0)
                 {
+                    if (!_decodingFinished)
+                    {
+                        Debug.Assert(_decoder is not null);
+                        _decodingFinished = _decoder.Finish(buffer.Span, out var written);
+
+                        return Result(written);
+                    }
+
+                    _readBuffer.DiscardConsumed();
                     var success = await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false);
 
                     if (!success)
-                        return _headerError is not null ? ReceivedHeaderError : ReceivedConnectionClose;
+                        return Result(_headerError is not null ? ReceiveResultType.HeaderError : ReceiveResultType.ConnectionClose);
 
                     if (_lastHeader.Opcode > MessageOpcode.Binary)
                     {
                         // The received message is a control message and it's up
                         // to the websocket how to handle it.
-                        return ReceivedControlMessage;
+                        return Result(ReceiveResultType.ControlMessage);
                     }
                 }
 
                 if (buffer.IsEmpty)
-                    return 0;
+                    return default;
 
                 // The number of bytes that are copied onto the provided buffer
                 var resultByteCount = 0;
@@ -221,15 +245,20 @@ namespace System.Net.WebSockets
                     _readBuffer.Consume(consumed);
                     _lastHeader.PayloadLength -= consumed;
 
-                    if (_lastHeader.PayloadLength == 0 || _readBuffer.AvailableLength > 0)
+                    resultByteCount += written;
+
+                    if (_lastHeader.PayloadLength == 0 || buffer.Length == written)
                     {
-                        // If the payload length is 0 it means that we have consumed everything.
-                        // Otherwise if available length is still non zero, than it means that the
-                        // decoder needs more memory and the operation cannot continue.
-                        return written;
+                        // We have either received everything or the buffer is full.
+                        if (_decoder is not null && _lastHeader.PayloadLength == 0 && _lastHeader.Fin)
+                        {
+                            _decodingFinished = _decoder.Finish(buffer.Span.Slice(written), out written);
+                            resultByteCount += written;
+                        }
+
+                        return Result(resultByteCount);
                     }
 
-                    resultByteCount += written;
                     buffer = buffer.Slice(written);
                 }
 
@@ -247,45 +276,55 @@ namespace System.Net.WebSockets
 
                     var bytesRead = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                     if (bytesRead <= 0)
-                        return ReceivedConnectionClose;
+                        return Result(ReceiveResultType.ConnectionClose);
 
                     resultByteCount += bytesRead;
                     ApplyMask(buffer.Span.Slice(0, bytesRead));
                 }
                 else
                 {
-                    if (_decoderBuffer is null)
+                    if (_decoderInputBuffer is null)
                     {
                         // Rent a buffer but restrict it's max size to 1MB
-                        _decoderBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(_lastHeader.PayloadLength, 1_000_000));
-                        _decoderBufferCount = await _stream.ReadAsync(_decoderBuffer, cancellationToken).ConfigureAwait(false);
-                        if (_decoderBufferCount <= 0)
+                        var decoderBufferLength = (int)Math.Min(_lastHeader.PayloadLength, 1_000_000);
+
+                        _decoderInputBuffer = ArrayPool<byte>.Shared.Rent(decoderBufferLength);
+                        _decoderInputCount = await _stream.ReadAsync(_decoderInputBuffer.AsMemory(0, decoderBufferLength), cancellationToken).ConfigureAwait(false);
+                        _decoderInputPosition = 0;
+
+                        if (_decoderInputCount <= 0)
                         {
-                            ArrayPool<byte>.Shared.Return(_decoderBuffer);
-                            return ReceivedConnectionClose;
+                            ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
+                            _decoderInputBuffer = null;
+
+                            return Result(ReceiveResultType.ConnectionClose);
                         }
 
-                        ApplyMask(_decoderBuffer.AsSpan(_decoderBufferPosition, _decoderBufferCount));
+                        ApplyMask(_decoderInputBuffer.AsSpan(0, _decoderInputCount));
                     }
 
-                    // There is lefover data that we need to decode
-                    _decoder.Decode(input: _decoderBuffer.AsSpan(_decoderBufferPosition, _decoderBufferCount),
+                    _decoder.Decode(input: _decoderInputBuffer.AsSpan(_decoderInputPosition, _decoderInputCount),
                                     output: buffer.Span, out var consumed, out var written);
 
                     resultByteCount += written;
-                    _decoderBufferPosition += consumed;
-                    _decoderBufferCount -= consumed;
+                    _decoderInputPosition += consumed;
+                    _decoderInputCount -= consumed;
                     _lastHeader.PayloadLength -= consumed;
 
-                    if (_decoderBufferCount == 0)
+                    if (_decoderInputCount == 0)
                     {
-                        ArrayPool<byte>.Shared.Return(_decoderBuffer);
-                        _decoderBuffer = null;
-                        _decoderBufferPosition = 0;
+                        ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
+                        _decoderInputBuffer = null;
+
+                        if (_lastHeader.PayloadLength == 0 && _lastHeader.Fin)
+                        {
+                            _decodingFinished = _decoder.Finish(buffer.Span.Slice(written), out written);
+                            resultByteCount += written;
+                        }
                     }
                 }
 
-                return resultByteCount;
+                return Result(resultByteCount);
             }
 
             private async ValueTask<bool> ReceiveHeaderAsync(CancellationToken cancellationToken)
@@ -304,10 +343,6 @@ namespace System.Net.WebSockets
                         {
                             header.Opcode = _lastHeader.Opcode;
                             header.Compressed = _lastHeader.Compressed;
-                        }
-                        else
-                        {
-                            _decoder?.Reset();
                         }
 
                         _lastHeader = header;
@@ -340,6 +375,19 @@ namespace System.Net.WebSockets
 
                 return true;
             }
+
+            private ReceiveResult Result(int count) => new ReceiveResult
+            {
+                Count = count,
+                ResultType = ReceiveResultType.Message,
+                MessageType = _lastHeader.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
+                EndOfMessage = _lastHeader.Fin && _lastHeader.PayloadLength == 0 && _decodingFinished
+            };
+
+            private ReceiveResult Result(ReceiveResultType resultType) => new ReceiveResult
+            {
+                ResultType = resultType
+            };
 
             private void ApplyMask(Span<byte> input)
             {
@@ -406,17 +454,19 @@ namespace System.Net.WebSockets
 
                 public abstract void Dispose();
 
-                /// <summary>
-                /// Resets the decoder state after fully processing a message.
-                /// </summary>
-                public abstract void Reset();
-
                 public abstract void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written);
+
+                /// <summary>
+                /// Finishes the decoding by writing any outstanding data to the output.
+                /// </summary>
+                /// <returns>true if the finish completed, false to indicate that there is more outstanding data.</returns>
+                public abstract bool Finish(Span<byte> output, out int written);
             }
 
             private class Inflater : Decoder
             {
                 private readonly int _windowBits;
+                private byte? _remainingByte;
 
                 // Although the inflater isn't persisted accross messages, a single message
                 // might have been split into multiple frames.
@@ -428,10 +478,17 @@ namespace System.Net.WebSockets
 
                 public override void Dispose() => _inflater?.Dispose();
 
-                public override void Reset()
+                public override bool Finish(Span<byte> output, out int written)
                 {
-                    _inflater?.Dispose();
-                    _inflater = null;
+                    Debug.Assert(_inflater is not null);
+
+                    if (Finish(_inflater, output, out written, ref _remainingByte))
+                    {
+                        _inflater.Dispose();
+                        _inflater = null;
+                        return true;
+                    }
+                    return false;
                 }
 
                 public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
@@ -439,14 +496,63 @@ namespace System.Net.WebSockets
                     _inflater ??= new IO.Compression.Inflater(_windowBits);
                     _inflater.Inflate(input, output, out consumed, out written);
                 }
+
+                public static bool Finish(IO.Compression.Inflater inflater, Span<byte> output, out int written, ref byte? remainingByte)
+                {
+                    written = 0;
+
+                    if (output.Length == 0)
+                    {
+                        if (remainingByte is not null)
+                            return false;
+
+                        if (IsFinished(inflater, out remainingByte))
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if (remainingByte is not null)
+                        {
+                            output[0] = remainingByte.GetValueOrDefault();
+                            written = 1;
+                            remainingByte = null;
+                        }
+
+                        written += inflater.Inflate(output.Slice(written));
+                        if (written < output.Length || IsFinished(inflater, out remainingByte))
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                public static bool IsFinished(IO.Compression.Inflater inflater, out byte? remainingByte)
+                {
+                    // There is no other way to make sure that we'e consumed all data
+                    // but to try to inflate again with at least one byte of output buffer.
+                    Span<byte> oneByte = stackalloc byte[1];
+                    if (inflater.Inflate(oneByte) == 0)
+                    {
+                        remainingByte = null;
+                        return true;
+                    }
+
+                    remainingByte = oneByte[0];
+                    return false;
+                }
             }
 
             private sealed class PersistedInflater : Decoder
             {
-                private static ReadOnlySpan<byte> Trailer => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
+                private static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
 
                 private readonly IO.Compression.Inflater _inflater;
-                private bool _needsTrailer;
+                private bool _needsFlushMarker;
+                private byte? _remainingByte;
 
                 public PersistedInflater(int windowBits) => _inflater = new(windowBits);
 
@@ -454,22 +560,25 @@ namespace System.Net.WebSockets
 
                 public override void Dispose() => _inflater.Dispose();
 
-                public override void Reset()
+                public override bool Finish(Span<byte> output, out int written)
                 {
-                    if (_needsTrailer)
+                    if (_needsFlushMarker)
                     {
-                        _needsTrailer = false;
-                        _inflater.Inflate(Trailer, Array.Empty<byte>(), out var consumed, out var written);
+                        _needsFlushMarker = false;
+                        _inflater.Inflate(FlushMarker, output, out var consumed, out written);
 
-                        Debug.Assert(consumed == 4);
-                        Debug.Assert(written == 0);
+                        Debug.Assert(consumed == FlushMarker.Length);
+
+                        return written < output.Length || Inflater.IsFinished(_inflater, out _remainingByte);
                     }
+
+                    return Inflater.Finish(_inflater, output, out written, ref _remainingByte);
                 }
 
                 public override void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
                 {
                     _inflater.Inflate(input, output, out consumed, out written);
-                    _needsTrailer = true;
+                    _needsFlushMarker = true;
                 }
             }
         }

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 
@@ -62,12 +64,24 @@ namespace System.IO.Compression
             }
         }
 
+        public unsafe int Inflate(Span<byte> destination)
+        {
+            fixed (byte* bufPtr = &MemoryMarshal.GetReference(destination))
+            {
+                _handle.NextOut = (IntPtr)bufPtr;
+                _handle.AvailOut = (uint)destination.Length;
+
+                Inflate(ZLibNative.FlushCode.NoFlush);
+                return destination.Length - (int)_handle.AvailOut;
+            }
+        }
+
         public void Dispose() => _handle.Dispose();
 
         /// <summary>
         /// Wrapper around the ZLib inflate function
         /// </summary>
-        private ZLibNative.ErrorCode Inflate(ZLibNative.FlushCode flushCode)
+        private void Inflate(ZLibNative.FlushCode flushCode)
         {
             ZLibNative.ErrorCode errorCode;
             try
@@ -82,10 +96,8 @@ namespace System.IO.Compression
             {
                 case ZLibNative.ErrorCode.Ok:           // progress has been made inflating
                 case ZLibNative.ErrorCode.StreamEnd:    // The end of the input stream has been reached
-                    return errorCode;
-
                 case ZLibNative.ErrorCode.BufError:     // No room in the output buffer - inflate() can be called again with more space to continue
-                    return errorCode;
+                    break;
 
                 case ZLibNative.ErrorCode.MemError:     // Not enough memory to complete the operation
                     throw new WebSocketException(SR.ZLibErrorNotEnoughMemory);

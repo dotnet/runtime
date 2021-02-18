@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,18 +30,19 @@ namespace System.Net.WebSockets
                 if (deflate is not null)
                 {
                     // Important note here is that we must use negative window bits
-                    // which will instruct the underlying implementation to not emit deflate headers
+                    // which will instruct the underlying implementation to not emit gzip headers
                     if (options.IsServer)
+                    {
+                        // If we are the server we must use the client options
+                        _encoder = deflate.ClientContextTakeover ?
+                            new PersistedDeflater(-deflate.ClientMaxWindowBits) :
+                            new Deflater(-deflate.ClientMaxWindowBits);
+                    }
+                    else
                     {
                         _encoder = deflate.ServerContextTakeover ?
                             new PersistedDeflater(-deflate.ServerMaxWindowBits) :
                             new Deflater(-deflate.ServerMaxWindowBits);
-                    }
-                    else
-                    {
-                        _encoder = deflate.ClientContextTakeover ?
-                            new PersistedDeflater(-deflate.ClientMaxWindowBits) :
-                            new Deflater(-deflate.ClientMaxWindowBits);
                     }
                 }
             }
@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
                 buffer.Advance(MaxMessageHeaderLength);
 
                 // Encoding is onlt supported for user messages
-                if (_encoder is not null && opcode <= MessageOpcode.Continuation)
+                if (_encoder is not null && opcode <= MessageOpcode.Binary)
                 {
                     _encoder.Encode(content.Span, ref buffer, continuation: opcode == MessageOpcode.Continuation, endOfMessage, out reservedBits);
                 }
@@ -182,7 +182,7 @@ namespace System.Net.WebSockets
                 {
                     // Generate the mask.
                     header[1] |= 0x80;
-                    RandomNumberGenerator.Fill(header.Slice(header.Length - _maskLength));
+                    RandomNumberGenerator.Fill(header.Slice(header.Length - MaskLength));
                 }
             }
 
@@ -281,25 +281,25 @@ namespace System.Net.WebSockets
                         payload = payload.Slice(consumed);
                     }
 
-                    while (true)
-                    {
-                        var bytesWritten = deflater.Finish(buffer.GetSpan(), out var completed);
-                        buffer.Advance(bytesWritten);
+                    // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
+                    // At that point there will be at most a few bits left to write.
+                    // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
+                    var bytesWritten = deflater.Finish(buffer.GetSpan(6), out var completed);
+                    buffer.Advance(bytesWritten);
 
-                        if (completed)
-                            break;
-                    }
+                    Debug.Assert(completed);
 
-                    if (final)
-                    {
-                        // The deflated block always ends with 0x00 0x00 0xFF 0xFF
-                        // but the websocket protocol doesn't want it.
-                        Debug.Assert(
+                    // The deflated block always ends with 0x00 0x00 0xFF 0xFF
+                    Debug.Assert(
                             buffer.WrittenSpan[^4] == 0x00 &&
                             buffer.WrittenSpan[^3] == 0x00 &&
                             buffer.WrittenSpan[^2] == 0xFF &&
                             buffer.WrittenSpan[^1] == 0xFF);
 
+                    if (final)
+                    {
+                        // As per RFC we need to remove the flush markers
+                        // 0x00 0x00 0xFF 0xFF
                         buffer.Advance(-4);
                     }
                 }

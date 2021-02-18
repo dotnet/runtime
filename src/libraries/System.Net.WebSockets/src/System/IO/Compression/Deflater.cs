@@ -63,7 +63,7 @@ namespace System.IO.Compression
                 _handle.NextOut = (IntPtr)fixedOutput;
                 _handle.AvailOut = (uint)output.Length;
 
-                Deflate(ZFlushCode.NoFlush);
+                Deflate((ZFlushCode)5/*Z_BLOCK*/);
 
                 consumed = input.Length - (int)_handle.AvailIn;
                 written = output.Length - (int)_handle.AvailOut;
@@ -80,7 +80,7 @@ namespace System.IO.Compression
                 _handle.NextOut = (IntPtr)fixedOutput;
                 _handle.AvailOut = (uint)output.Length;
 
-                var errorCode = Deflate(ZFlushCode.SyncFlush);
+                var errorCode = Deflate((ZFlushCode)3/*Z_FULL_FLUSH*/);
                 var writtenBytes = output.Length - (int)_handle.AvailOut;
 
                 completed = errorCode == ZErrorCode.Ok && writtenBytes < output.Length;

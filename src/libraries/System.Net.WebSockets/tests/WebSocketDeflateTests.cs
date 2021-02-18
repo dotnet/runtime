@@ -1,4 +1,8 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -7,6 +11,17 @@ namespace System.Net.WebSockets.Tests
     [PlatformSpecific(~TestPlatforms.Browser)]
     public class WebSocketDeflateTests
     {
+        public static IEnumerable<object[]> SupportedWindowBits
+        {
+            get
+            {
+                for (var i = 9; i <= 15; ++i)
+                {
+                    yield return new object[] { i };
+                }
+            }
+        }
+
         [Fact]
         public async Task HelloWithContextTakeover()
         {
@@ -69,6 +84,40 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
+        public async Task TwoDeflateBlocksInOneMessage()
+        {
+            // Two or more DEFLATE blocks may be used in one message.
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
+            var stream = new WebSocketStream();
+            using var websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                DeflateOptions = new()
+            });
+            // The first 3 octets(0xf2 0x48 0x05) and the least significant two
+            // bits of the 4th octet(0x00) constitute one DEFLATE block with
+            // "BFINAL" set to 0 and "BTYPE" set to 01 containing "He". The rest of
+            // the 4th octet contains the header bits with "BFINAL" set to 0 and
+            // "BTYPE" set to 00, and the 3 padding bits of 0. Together with the
+            // following 4 octets(0x00 0x00 0xff 0xff), the header bits constitute
+            // an empty DEFLATE block with no compression. A DEFLATE block
+            // containing "llo" follows the empty DEFLATE block.
+            stream.Write(0x41, 0x08, 0xf2, 0x48, 0x05, 0x00, 0x00, 0x00, 0xff, 0xff);
+            stream.Write(0x80, 0x05, 0xca, 0xc9, 0xc9, 0x07, 0x00);
+
+            Memory<byte> buffer = new byte[5];
+            var result = await websocket.ReceiveAsync(buffer, cancellation.Token);
+
+            Assert.Equal(2, result.Count);
+            Assert.False(result.EndOfMessage);
+
+            result = await websocket.ReceiveAsync(buffer.Slice(result.Count), cancellation.Token);
+
+            Assert.Equal(3, result.Count);
+            Assert.True(result.EndOfMessage);
+            Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span));
+        }
+
+        [Fact]
         public async Task Duplex()
         {
             var stream = new WebSocketStream();
@@ -108,6 +157,76 @@ namespace System.Net.WebSockets.Tests
                 Assert.Equal(WebSocketMessageType.Text, result.MessageType);
 
                 Assert.Equal(message, Encoding.UTF8.GetString(buffer.AsSpan(0, result.Count)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SupportedWindowBits))]
+        public async Task LargeMessageSplitInMultipleFrames(int windowBits)
+        {
+            var stream = new WebSocketStream();
+            using var server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DeflateOptions = new()
+                {
+                    ClientMaxWindowBits = windowBits
+                }
+            });
+            using var client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                DeflateOptions = new()
+                {
+                    ClientMaxWindowBits = windowBits
+                }
+            });
+
+            Memory<byte> testData = File.ReadAllBytes(typeof(WebSocketDeflateTests).Assembly.Location).AsMemory().TrimEnd((byte)0);
+            Memory<byte> receivedData = new byte[testData.Length];
+
+            // Test it a few times with different frame sizes
+            for (var i = 0; i < 10; ++i)
+            {
+                // Use a timeout cancellation token in case something doesn't work right
+                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
+
+                var frameSize = RandomNumberGenerator.GetInt32(1024, 2048);
+                var position = 0;
+
+                while (position < testData.Length)
+                {
+                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    var eof = position + currentFrameSize == testData.Length;
+
+                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, cancellation.Token);
+                    position += currentFrameSize;
+                }
+
+                Assert.Equal(testData.Length, position);
+                Assert.True(testData.Length > stream.Remote.Available, "The data must be compressed.");
+
+                // Receive the data from the client side
+                receivedData.Span.Clear();
+                position = 0;
+
+                // Intentionally receive with a frame size that is less than what the sender used
+                frameSize /= 3;
+
+                while (true)
+                {
+                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    var result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), cancellation.Token);
+
+                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
+                    position += result.Count;
+
+                    if (result.EndOfMessage)
+                        break;
+                }
+
+                Assert.Equal(0, stream.Remote.Available);
+                Assert.Equal(testData.Length, position);
+                Assert.True(testData.Span.SequenceEqual(receivedData.Span));
             }
         }
 

@@ -541,11 +541,11 @@ namespace System.Net.WebSockets
             {
                 while (true) // in case we get control frames that should be ignored from the user's perspective
                 {
-                    var byteCount = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
+                    var result = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
 
-                    if (byteCount < 0)
+                    if (result.ResultType != ReceiveResultType.Message)
                     {
-                        if (byteCount == ReceivedControlMessage)
+                        if (result.ResultType == ReceiveResultType.ControlMessage)
                         {
                             var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
                             if (messageOrNull is null)
@@ -572,32 +572,30 @@ namespace System.Net.WebSockets
                                 return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
                             }
                         }
-                        else if (byteCount == ReceivedConnectionClose)
+                        else if (result.ResultType == ReceiveResultType.ConnectionClose)
                         {
                             ThrowIfEOFUnexpected(true);
                         }
                         else
                         {
-                            Debug.Assert(byteCount == ReceivedHeaderError);
+                            Debug.Assert(result.ResultType == ReceiveResultType.HeaderError);
 
                             var error = _receiver.GetHeaderError();
                             await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, error).ConfigureAwait(false);
                         }
                     }
 
-                    var header = _receiver.GetLastHeader();
-
                     // If this a text message, validate that it contains valid UTF8.
-                    if (header.Opcode == MessageOpcode.Text && byteCount > 0 &&
-                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, byteCount), header.Fin && header.PayloadLength == 0, _utf8TextState))
+                    if (result.MessageType == WebSocketMessageType.Text && result.Count > 0 &&
+                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, result.Count), result.EndOfMessage, _utf8TextState))
                     {
                         await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
                     }
 
                     return resultGetter.GetResult(
-                        count: byteCount,
-                        messageType: header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                        endOfMessage: header.Fin && header.PayloadLength == 0,
+                        count: result.Count,
+                        messageType: result.MessageType,
+                        endOfMessage: result.EndOfMessage,
                         closeStatus: null, closeDescription: null);
                 }
             }
