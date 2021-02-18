@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             _stringResource2 = s;
         }
 
-        private static string Issue48345(string s)
+        private static string StoreArgumentAndReturnLiteral(string s)
         {
             _stringResource = $"s: {s} length: {s?.Length}";
             return "1";

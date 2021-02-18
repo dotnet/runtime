@@ -843,10 +843,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void Issue48345()
+        public static void InternedStringReturnValuesWork()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:Issue48345";
+            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
             Runtime.InvokeJS(
                 $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
                 $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
