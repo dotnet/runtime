@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,6 +12,18 @@ namespace System.Net.WebSockets.Tests
     [PlatformSpecific(~TestPlatforms.Browser)]
     public class WebSocketDeflateTests
     {
+        private CancellationTokenSource? _cancellation;
+
+        public WebSocketDeflateTests()
+        {
+            if (!Debugger.IsAttached)
+            {
+                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            }
+        }
+
+        public CancellationToken CancellationToken => _cancellation?.Token ?? default;
+
         public static IEnumerable<object[]> SupportedWindowBits
         {
             get
@@ -34,7 +47,7 @@ namespace System.Net.WebSockets.Tests
             });
 
             var buffer = new byte[5];
-            var result = await websocket.ReceiveAsync(buffer, default);
+            var result = await websocket.ReceiveAsync(buffer, CancellationToken);
 
             Assert.True(result.EndOfMessage);
             Assert.Equal(buffer.Length, result.Count);
@@ -46,7 +59,7 @@ namespace System.Net.WebSockets.Tests
             stream.Write(0xc1, 0x05, 0xf2, 0x00, 0x11, 0x00, 0x00);
 
             buffer.AsSpan().Clear();
-            result = await websocket.ReceiveAsync(buffer, default);
+            result = await websocket.ReceiveAsync(buffer, CancellationToken);
 
             Assert.True(result.EndOfMessage);
             Assert.Equal(buffer.Length, result.Count);
@@ -74,7 +87,7 @@ namespace System.Net.WebSockets.Tests
                 stream.Write(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
                 buffer.AsSpan().Clear();
 
-                var result = await websocket.ReceiveAsync(buffer, default);
+                var result = await websocket.ReceiveAsync(buffer, CancellationToken);
 
                 Assert.True(result.EndOfMessage);
                 Assert.Equal(buffer.Length, result.Count);
@@ -87,7 +100,6 @@ namespace System.Net.WebSockets.Tests
         public async Task TwoDeflateBlocksInOneMessage()
         {
             // Two or more DEFLATE blocks may be used in one message.
-            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
             var stream = new WebSocketStream();
             using var websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
@@ -105,12 +117,12 @@ namespace System.Net.WebSockets.Tests
             stream.Write(0x80, 0x05, 0xca, 0xc9, 0xc9, 0x07, 0x00);
 
             Memory<byte> buffer = new byte[5];
-            var result = await websocket.ReceiveAsync(buffer, cancellation.Token);
+            var result = await websocket.ReceiveAsync(buffer, CancellationToken);
 
             Assert.Equal(2, result.Count);
             Assert.False(result.EndOfMessage);
 
-            result = await websocket.ReceiveAsync(buffer.Slice(result.Count), cancellation.Token);
+            result = await websocket.ReceiveAsync(buffer.Slice(result.Count), CancellationToken);
 
             Assert.Equal(3, result.Count);
             Assert.True(result.EndOfMessage);
@@ -138,7 +150,7 @@ namespace System.Net.WebSockets.Tests
                 var message = $"Sending number {i} from server.";
                 await SendTextAsync(message, server);
 
-                var result = await client.ReceiveAsync(buffer.AsMemory(), default);
+                var result = await client.ReceiveAsync(buffer.AsMemory(), CancellationToken);
 
                 Assert.True(result.EndOfMessage);
                 Assert.Equal(WebSocketMessageType.Text, result.MessageType);
@@ -151,7 +163,7 @@ namespace System.Net.WebSockets.Tests
                 var message = $"Sending number {i} from client.";
                 await SendTextAsync(message, client);
 
-                var result = await server.ReceiveAsync(buffer.AsMemory(), default);
+                var result = await server.ReceiveAsync(buffer.AsMemory(), CancellationToken);
 
                 Assert.True(result.EndOfMessage);
                 Assert.Equal(WebSocketMessageType.Text, result.MessageType);
@@ -188,8 +200,6 @@ namespace System.Net.WebSockets.Tests
             for (var i = 0; i < 10; ++i)
             {
                 // Use a timeout cancellation token in case something doesn't work right
-                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1000));
-
                 var frameSize = RandomNumberGenerator.GetInt32(1024, 2048);
                 var position = 0;
 
@@ -198,7 +208,7 @@ namespace System.Net.WebSockets.Tests
                     var currentFrameSize = Math.Min(frameSize, testData.Length - position);
                     var eof = position + currentFrameSize == testData.Length;
 
-                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, cancellation.Token);
+                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, CancellationToken);
                     position += currentFrameSize;
                 }
 
@@ -215,7 +225,7 @@ namespace System.Net.WebSockets.Tests
                 while (true)
                 {
                     var currentFrameSize = Math.Min(frameSize, testData.Length - position);
-                    var result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), cancellation.Token);
+                    var result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), CancellationToken);
 
                     Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
                     position += result.Count;
@@ -230,10 +240,10 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        private static ValueTask SendTextAsync(string text, WebSocket websocket)
+        private ValueTask SendTextAsync(string text, WebSocket websocket)
         {
             var bytes = Encoding.UTF8.GetBytes(text);
-            return websocket.SendAsync(bytes.AsMemory(), WebSocketMessageType.Text, true, default);
+            return websocket.SendAsync(bytes.AsMemory(), WebSocketMessageType.Text, true, CancellationToken);
         }
     }
 }
