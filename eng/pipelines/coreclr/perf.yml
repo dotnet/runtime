@@ -22,11 +22,6 @@ trigger:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-pr:
-  branches:
-    include:
-    - master
-
 jobs:
 
 # build coreclr and libraries
