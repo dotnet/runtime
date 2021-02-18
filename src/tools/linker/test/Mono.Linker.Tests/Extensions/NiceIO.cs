@@ -293,8 +293,7 @@ namespace Mono.Linker.Tests.Extensions
 
 		static char Slash (SlashMode slashMode)
 		{
-			return slashMode switch
-			{
+			return slashMode switch {
 				SlashMode.Backward => '\\',
 				SlashMode.Forward => '/',
 				_ => Path.DirectorySeparatorChar,

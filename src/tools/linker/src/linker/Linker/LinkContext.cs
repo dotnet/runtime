@@ -642,8 +642,7 @@ namespace Mono.Linker
 				return _targetRuntime.Value;
 
 			TypeDefinition objectType = BCL.FindPredefinedType ("System", "Object", this);
-			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major switch
-			{
+			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major switch {
 				6 => TargetRuntimeVersion.NET6,
 				5 => TargetRuntimeVersion.NET5,
 				_ => TargetRuntimeVersion.Unknown,

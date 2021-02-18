@@ -381,8 +381,7 @@ namespace Mono.Linker
 		// element type should be marked.
 		public static TypeDefinition ResolveToMainTypeDefinition (this TypeReference type)
 		{
-			return type switch
-			{
+			return type switch {
 				ArrayType _ => type.Module.ImportReference (typeof (Array))?.Resolve (),
 				_ => type?.Resolve ()
 			};

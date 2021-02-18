@@ -90,8 +90,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[RecognizedReflectionAccessPattern]
 		static void TestSwitchAllValid (int number, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type parentWithAll)
 		{
-			Type typeOfParent = number switch
-			{
+			Type typeOfParent = number switch {
 				1 => parentWithAll,
 				2 => null,
 				3 => typeof (GetNestedTypeOnAllAnnotatedType)

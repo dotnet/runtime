@@ -77,8 +77,7 @@ namespace Mono.Linker
 				if (elementType == null)
 					return null;
 
-				return typeName switch
-				{
+				return typeName switch {
 					ArrayTypeName _ => new ArrayType (elementType),
 					MultiDimArrayTypeName multiDimArrayTypeName => new ArrayType (elementType, multiDimArrayTypeName.Rank),
 					ByRefTypeName _ => new ByReferenceType (elementType),
