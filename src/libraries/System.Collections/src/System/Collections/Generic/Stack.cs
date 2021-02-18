@@ -303,10 +303,10 @@ namespace System.Collections.Generic
 
             if (_array.Length < capacity)
             {
-                int newCapacity = (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length;
-                while (newCapacity < capacity)
+                int newCapacity = _array.Length == 0 ? DefaultCapacity : _array.Length << 1;
+                while ((uint)newCapacity < capacity)
                 {
-                    newCapacity *= 2;
+                    newCapacity <<= 1;
                 }
 
                 // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.

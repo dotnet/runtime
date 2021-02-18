@@ -398,10 +398,11 @@ namespace System.Collections.Generic
 
             if (_array.Length < capacity)
             {
-                int newCapacity = (int)((long)(_array.Length == 0 ? 1 : _array.Length) * (long)GrowFactor / 100);
+                long newCapacity = _array.Length == 0 ? MinimumGrow : _array.Length * (long)GrowFactor / 100;
+
                 while (newCapacity < capacity)
                 {
-                    newCapacity = (int)((long)newCapacity * (long)GrowFactor / 100);
+                    newCapacity = newCapacity * GrowFactor / 100;
                 }
 
                 // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
@@ -409,35 +410,13 @@ namespace System.Collections.Generic
                 // the size of the element is greater than one byte; a separate, slightly larger constant,
                 // is used when the size of the element is one.
                 const int MaxArrayLength = 0x7FEFFFFF;
-                if ((uint)newCapacity > MaxArrayLength)
+                if (newCapacity > MaxArrayLength) // Exceeds MaxArrayLength which includes possibility of integer overflow during extending capacity
                 {
                     newCapacity = MaxArrayLength;
                     if (newCapacity < capacity) newCapacity = capacity;
                 }
 
-                if (newCapacity < _array.Length + MinimumGrow)
-                {
-                    newCapacity = _array.Length + MinimumGrow;
-                }
-
-                T[] newArray = new T[newCapacity];
-                if (_size > 0)
-                {
-                    if (_head < _tail)
-                    {
-                        Array.Copy(_array, _head, newArray, 0, _size);
-                    }
-                    else
-                    {
-                        Array.Copy(_array, _head, newArray, 0, _array.Length - _head);
-                        Array.Copy(_array, 0, newArray, _array.Length - _head, _tail);
-                    }
-                }
-
-                _array = newArray;
-                _head = 0;
-                _tail = _size;
-                _version++;
+                SetCapacity((int)newCapacity);
             }
 
             return _array.Length;
