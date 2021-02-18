@@ -6,23 +6,24 @@ using System.Collections.Generic;
 
 namespace MonoDelta {
 	public class DeltaHelper {
-		private static MethodBase _updateMethod;
+		private static Action<Assembly, byte[], byte[], byte[]> _updateMethod;
 
-		private static MethodBase UpdateMethod => _updateMethod ?? InitUpdateMethod();
+		private static Action<Assembly, byte[], byte[], byte[]> UpdateMethod => _updateMethod ?? InitUpdateMethod();
 
-		private static MethodBase InitUpdateMethod ()
+		private static Action<Assembly, byte[], byte[], byte[]> InitUpdateMethod ()
 		{
             var monoType = typeof(System.Reflection.Metadata.AssemblyExtensions);
             const string methodName = "ApplyUpdateSdb";
-            _updateMethod = monoType.GetMethod (methodName, BindingFlags.NonPublic | BindingFlags.Static);
-            if (_updateMethod == null)
+            var mi = monoType.GetMethod (methodName, BindingFlags.NonPublic | BindingFlags.Static);
+            if (mi == null)
                 throw new Exception ($"Couldn't get {methodName} from {monoType.FullName}");
+            _updateMethod = Delegate.CreateDelegate (typeof(Action<Assembly, byte[], byte[], byte[]>), mi) as Action<Assembly, byte[], byte[], byte[]>;
             return _updateMethod;
         }
 
         private static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data, byte[] dpdb_data)
         {
-            UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data, dpdb_data});
+            UpdateMethod (assm, dmeta_data, dil_data, dpdb_data);
         }
 
         DeltaHelper () { }
