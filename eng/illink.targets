@@ -47,7 +47,6 @@
     <ILLinkSuppressionsXmlFilePrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFilePrefix>
     <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
     <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
-    <ILLinkSuppressionsLibraryBuildXmlFile>$(ILLinkSuppressionsXmlFilePrefix).LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXmlFile>
 
     <!-- if building a PDB, tell illink to rewrite the symbols file -->
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
@@ -86,8 +85,6 @@
                             Include="$(ILLinkSuppressionsXmlFile)" />
     <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)')"
                             Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsLibraryBuildXmlFile)')"
-                            Include="$(ILLinkSuppressionsLibraryBuildXmlFile)" />
     <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
   </ItemGroup>
 

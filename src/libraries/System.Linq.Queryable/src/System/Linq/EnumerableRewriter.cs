@@ -19,6 +19,13 @@ namespace System.Linq
         // Finding equivalent types can be relatively expensive, and hitting with the same types repeatedly is quite likely.
         private Dictionary<Type, Type>? _equivalentTypeCache;
 
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        public EnumerableRewriter()
+        {
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             Expression? obj = Visit(m.Object);
@@ -208,8 +215,6 @@ namespace System.Linq
             return c;
         }
 
-
-
         private static ILookup<string, MethodInfo>? s_seqMethods;
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "Enumerable methods don't have trim annotations.")]
@@ -232,7 +237,7 @@ namespace System.Linq
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static);
         }
 
-        [RequiresUnreferencedCode("Enumerating in-memory collections as IQueryable can require unreferenced code because expressions referencing IQueryable extension methods can get rebound to IEnumerable extension methods. The IEnumerable extension methods could be trimmed causing the application to fail at runtime.")]
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[]? typeArgs)
         {
             using (IEnumerator<MethodInfo> en = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Where(m => m.Name == name).GetEnumerator())
