@@ -13,16 +13,16 @@ namespace System.Net.WebSockets
 
         /// <summary>
         /// This parameter indicates the base-2 logarithm of the LZ77 sliding window size of the client context.
-        /// Must be a value between 8 and 15. The default is 15.
+        /// Must be a value between 9 and 15. The default is 15.
         /// </summary>
         public int ClientMaxWindowBits
         {
             get => _clientMaxWindowBits;
             set
             {
-                if (value < 8 || value > 15)
+                if (value < 9 || value > 15)
                     throw new ArgumentOutOfRangeException(nameof(ClientMaxWindowBits), value,
-                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 8, 15));
+                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 9, 15));
 
                 _clientMaxWindowBits = value;
             }
@@ -36,16 +36,16 @@ namespace System.Net.WebSockets
 
         /// <summary>
         /// This parameter indicates the base-2 logarithm of the LZ77 sliding window size of the server context.
-        /// Must be a value between 8 and 15. The default is 15.
+        /// Must be a value between 9 and 15. The default is 15.
         /// </summary>
         public int ServerMaxWindowBits
         {
             get => _serverMaxWindowBits;
             set
             {
-                if (value < 8 || value > 15)
+                if (value < 9 || value > 15)
                     throw new ArgumentOutOfRangeException(nameof(ServerMaxWindowBits), value,
-                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 8, 15));
+                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 9, 15));
 
                 _serverMaxWindowBits = value;
             }
