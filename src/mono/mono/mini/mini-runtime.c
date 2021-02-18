@@ -4290,8 +4290,12 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_interp_stub_init ();
 #ifndef DISABLE_INTERPRETER
-	if (mono_use_interpreter)
+	if (mono_use_interpreter) {
+		if (g_hasenv ("MONO_METADATA_UPDATE") && mono_interp_opts_string == NULL) {
+			mono_interp_opts_string = "-inline";
+		}
 		mono_ee_interp_init (mono_interp_opts_string);
+	}
 #endif
 
 	mono_debugger_agent_stub_init ();
