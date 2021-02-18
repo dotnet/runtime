@@ -789,7 +789,18 @@ namespace System.Net.Sockets
 
                 if (!context.IsRegistered)
                 {
-                    context.Register();
+                    // TryRegister throws for fatal errors.
+                    // When it returns false the registration failed because the peer has closed.
+                    // We'll retry the operation, and abort when it fails to complete.
+                    if (!context.TryRegister())
+                    {
+                        if (!operation.TryComplete(context))
+                        {
+                            operation.DoAbort();
+                        }
+                        Trace(context, $"Leave, not registered");
+                        return false;
+                    }
                 }
 
                 while (true)
@@ -1224,7 +1235,7 @@ namespace System.Net.Sockets
             get => _socket.PreferInlineCompletions;
         }
 
-        private void Register()
+        private bool TryRegister()
         {
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
@@ -1236,9 +1247,18 @@ namespace System.Net.Sockets
                     {
                         _socket.DangerousAddRef(ref addedRef);
                         IntPtr handle = _socket.DangerousGetHandle();
-                        Volatile.Write(ref _asyncEngine, SocketAsyncEngine.RegisterSocket(handle, this));
+                        if (SocketAsyncEngine.TryRegisterSocket(handle, this, out SocketAsyncEngine? engine))
+                        {
+                            Volatile.Write(ref _asyncEngine, engine);
 
-                        Trace("Registered");
+                            Trace("Registered");
+                            return true;
+                        }
+                        else
+                        {
+                            Trace("Registration failed");
+                            return false;
+                        }
                     }
                     finally
                     {
@@ -1248,6 +1268,7 @@ namespace System.Net.Sockets
                         }
                     }
                 }
+                return true;
             }
         }
 

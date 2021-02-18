@@ -97,15 +97,16 @@ namespace System.Net.Sockets
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
         //
-        public static SocketAsyncEngine RegisterSocket(IntPtr socketHandle, SocketAsyncContext context)
+        public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine)
         {
             int engineIndex = Math.Abs(Interlocked.Increment(ref s_allocateFromEngine) % s_engines.Length);
-            SocketAsyncEngine engine = s_engines[engineIndex];
-            engine.RegisterCore(socketHandle, context);
-            return engine;
+            SocketAsyncEngine nextEngine = s_engines[engineIndex];
+            bool registered = nextEngine.TryRegisterCore(socketHandle, context);
+            engine = registered ? nextEngine : null;
+            return registered;
         }
 
-        private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
+        private bool TryRegisterCore(IntPtr socketHandle, SocketAsyncContext context)
         {
             bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
             if (!added)
@@ -119,10 +120,15 @@ namespace System.Net.Sockets
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
             if (error == Interop.Error.SUCCESS)
             {
-                return;
+                return true;
             }
 
             _handleToContextMap.TryRemove(socketHandle, out _);
+            // macOS: kevent returns EPIPE when adding pipe fd for which the other end is closed.
+            if (error == Interop.Error.EPIPE)
+            {
+                return false;
+            }
             if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
             {
                 throw new OutOfMemoryException();
