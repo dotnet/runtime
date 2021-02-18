@@ -2933,6 +2933,18 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     if (!IsContextSafeToRedirect(pCtx))
         return (FALSE);
 
+    // In some rare cases the stack pointer may be outside the stack limits.
+    // SetThreadContext would fail assuming that we are trying to bypass CFG.
+    // 
+    // NB: the check here is slightly more strict than what OS requires,
+    //     but it is simple and uses only documented parts of TEB
+    auto pTeb = this->GetTEB();
+    void* stackPointer = (void*)GetSP(pCtx);
+    if ((stackPointer < pTeb->StackLimit) || (stackPointer > pTeb->StackBase))
+    {
+        return (FALSE);
+    }
+
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
 
