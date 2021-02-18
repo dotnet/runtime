@@ -371,7 +371,8 @@ int32_t CryptoNative_EvpCipherSetGcmTag(CipherCtx* ctx, uint8_t* tag, int32_t ta
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, tagLength, (jbyte*)tag);
     jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
     (*env)->DeleteLocalRef(env, outDataBytes);
-    return SUCCESS;
+    (*env)->DeleteLocalRef(env, inDataBytes);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherSetCcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength)
