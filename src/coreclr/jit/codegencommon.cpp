@@ -1325,8 +1325,6 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     unsigned mul;
 #endif // SCALED_ADDR_MODES
 
-    GenTree* tmp;
-
     /* What order are the sub-operands to be evaluated */
 
     if (addr->gtFlags & GTF_REVERSE_OPS)
@@ -1377,9 +1375,7 @@ AGAIN:
     if (op1->IsCnsIntOrI())
     {
         // Presumably op2 is assumed to not be a constant (shouldn't happen if we've done constant folding)?
-        tmp = op1;
-        op1 = op2;
-        op2 = tmp;
+        std::swap(op1, op2);
     }
 
     /* Check for an addition of a constant */
@@ -1624,18 +1620,20 @@ AGAIN:
 
 FOUND_AM:
 
-    if (rv2)
+    if (rv2 != nullptr)
     {
-        /* Make sure a GC address doesn't end up in 'rv2' */
-
+        // Make sure a GC address doesn't end up in 'rv2'.
         if (varTypeIsGC(rv2->TypeGet()))
         {
-            noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
-            tmp = rv1;
-            rv1 = rv2;
-            rv2 = tmp;
-
+            noway_assert((rv1 != nullptr) && !varTypeIsGC(rv1->TypeGet()));
+            std::swap(rv1, rv2);
+            rev = !rev;
+        }
+        if (rv2->DefinesLocalAddr(compiler))
+        {
+            // liveness makes an assumption that only base can be a lclVarAddress.
+            assert((rv1 != nullptr) && !rv1->DefinesLocalAddr(compiler));
+            std::swap(rv1, rv2);
             rev = !rev;
         }
 
@@ -1695,6 +1693,8 @@ FOUND_AM:
             }
         }
     }
+
+    assert((rv2 == nullptr) || (!varTypeIsGC(rv2) && !rv2->DefinesLocalAddr(compiler)));
 
     // We shouldn't have [rv2*1 + cns] - this is equivalent to [rv1 + cns]
     noway_assert(rv1 || mul != 1);
