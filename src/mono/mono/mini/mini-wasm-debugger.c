@@ -803,7 +803,7 @@ invoke_to_string (const char *class_name, MonoClass *klass, gpointer addr)
 			mono_error_assert_ok (error);
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, to_string)
 
-		method = mono_class_get_virtual_method (klass, to_string, FALSE, error);
+		method = mono_class_get_virtual_method (klass, to_string, error);
 		if (!method)
 			return NULL;
 

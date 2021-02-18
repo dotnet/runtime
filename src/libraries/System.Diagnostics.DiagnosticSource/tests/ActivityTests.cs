@@ -1785,6 +1785,34 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TraceIdCustomGenerationTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Random random = new Random();
+                byte [] traceIdBytes = new byte[16];
+
+                Activity.TraceIdGenerator = () =>
+                {
+                    random.NextBytes(traceIdBytes);
+                    return ActivityTraceId.CreateFromBytes(traceIdBytes);
+                };
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Null(Activity.Current);
+                    Activity a = new Activity("CustomTraceId");
+                    a.Start();
+
+                    Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
+
+                    a.Stop();
+                }
+            }).Dispose();
+        }
+
         public void Dispose()
         {
             Activity.Current = null;

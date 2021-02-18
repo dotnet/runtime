@@ -1263,8 +1263,27 @@ char* SystemNative_RealPath(const char* path)
     return realpath(path, NULL);
 }
 
+static int16_t ConvertLockType(int16_t managedLockType)
+{
+    // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
+    // which can be different per distro:
+    // https://github.com/torvalds/linux/blob/fcadab740480e0e0e9fa9bd272acd409884d431a/arch/alpha/include/uapi/asm/fcntl.h#L48-L50
+    // https://github.com/freebsd/freebsd-src/blob/fb8c2f743ab695f6004650b58bf96972e2535b20/sys/sys/fcntl.h#L277-L279
+    switch (managedLockType)
+    {
+        case 0:
+            return F_RDLCK;
+        case 1:
+            return F_WRLCK;
+        default:
+            assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
+            return F_UNLCK;
+    }
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+    int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
         errno = EINVAL;
@@ -1277,7 +1296,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-    lockArgs.l_type = lockType;
+    lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;

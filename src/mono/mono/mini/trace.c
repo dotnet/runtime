@@ -353,6 +353,11 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 	type = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
 	gpointer buf = mini_profiler_context_get_result (ctx);
+	if (!buf && type->type != MONO_TYPE_VOID) {
+		printf ("result unknown");
+		goto finish;
+	}
+
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		break;
@@ -435,6 +440,7 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 	}
 	mini_profiler_context_free_buffer (buf);
 
+finish:
 	//printf (" ip: %p\n", MONO_RETURN_ADDRESS_N (1));
 	printf ("\n");
 	fflush (stdout);

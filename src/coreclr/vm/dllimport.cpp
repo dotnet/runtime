@@ -454,7 +454,7 @@ public:
             pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
 
             SigPointer  sigPtr(pNewSig, cbNewSig);
-            ULONG       callConvInfo;
+            uint32_t    callConvInfo;
             IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
 
             if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
@@ -2367,10 +2367,10 @@ void NDirectStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStub
 
     IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
 
-    ULONG numLocals;
+    uint32_t numLocals;
     IfFailThrow(ptr.GetData(&numLocals));
 
-    for (ULONG i = 0; i < numLocals; i++)
+    for (uint32_t i = 0; i < numLocals; i++)
     {
         BYTE modifier;
         IfFailThrow(ptr.PeekByte(&modifier));
@@ -3119,7 +3119,7 @@ BOOL NDirect::MarshalingRequired(
     // Check to make certain that the signature only contains types that marshal trivially
     SigPointer ptr(pSig);
     IfFailThrow(ptr.GetCallingConvInfo(NULL));
-    ULONG numArgs;
+    uint32_t numArgs;
     IfFailThrow(ptr.GetData(&numArgs));
     numArgs++;   // +1 for return type
 
@@ -4660,7 +4660,7 @@ MethodDesc* CreateInteropILStub(
                         {
                             SigPointer ptr = pSigDesc->m_sig.CreateSigPointer();
 
-                            ULONG callConvInfo;
+                            uint32_t callConvInfo;
                             IfFailThrow(ptr.GetCallingConvInfo(&callConvInfo));
 
                             BOOL fSigIsStatic = !(callConvInfo & IMAGE_CEE_CS_CALLCONV_HASTHIS);

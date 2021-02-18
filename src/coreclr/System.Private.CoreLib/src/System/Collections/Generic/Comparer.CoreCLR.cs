@@ -10,7 +10,7 @@ namespace System.Collections.Generic
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
         // as possible and define most of the creation logic in a non-generic class.
-        public static Comparer<T> Default { get; } = (Comparer<T>)ComparerHelpers.CreateDefaultComparer(typeof(T));
+        public static Comparer<T> Default { [Intrinsic] get; } = (Comparer<T>)ComparerHelpers.CreateDefaultComparer(typeof(T));
     }
 
     internal sealed partial class EnumComparer<T> : Comparer<T> where T : struct, Enum

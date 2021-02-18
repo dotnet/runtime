@@ -1052,9 +1052,27 @@ namespace System.Net.Sockets
                 transmitFileBuffers.TailLength = postBufferLength;
             }
 
-            return Interop.Mswsock.TransmitFile(
-                socket, fileHandle, 0, 0, overlapped,
-                needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
+            bool releaseRef = false;
+            IntPtr fileHandlePtr = IntPtr.Zero;
+            try
+            {
+                if (fileHandle != null)
+                {
+                    fileHandle.DangerousAddRef(ref releaseRef);
+                    fileHandlePtr = fileHandle.DangerousGetHandle();
+                }
+
+                return Interop.Mswsock.TransmitFile(
+                    socket, fileHandlePtr, 0, 0, overlapped,
+                    needTransmitFileBuffers ? &transmitFileBuffers : null, flags);
+            }
+            finally
+            {
+                if (releaseRef)
+                {
+                    fileHandle!.DangerousRelease();
+                }
+            }
         }
 
         public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)

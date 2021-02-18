@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // lwmlist.h - List of all LightWeightMap in MethodContext.
@@ -74,6 +72,7 @@ LWM(GetClassSize, DWORDLONG, DWORD)
 LWM(GetHeapClassSize, DWORDLONG, DWORD)
 LWM(CanAllocateOnStack, DWORDLONG, DWORD)
 LWM(GetCookieForPInvokeCalliSig, GetCookieForPInvokeCalliSigValue, DLDL)
+LWM(GetDefaultComparerClass, DWORDLONG, DWORDLONG)
 LWM(GetDefaultEqualityComparerClass, DWORDLONG, DWORDLONG)
 LWM(GetDelegateCtor, Agnostic_GetDelegateCtorIn, Agnostic_GetDelegateCtorOut)
 LWM(GetEEInfo, DWORD, Agnostic_CORINFO_EE_INFO)

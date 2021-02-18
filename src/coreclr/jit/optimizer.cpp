@@ -3949,7 +3949,7 @@ void Compiler::optUnrollLoops()
             /* Make sure to update loop table */
 
             /* Use the LPFLG_REMOVED flag and update the bbLoopMask accordingly
-                * (also make head and bottom NULL - to hit an assert or GPF) */
+                * (also make head and bottom NULL - to hit an assert or an access violation) */
 
             optLoopTable[lnum].lpFlags |= LPFLG_REMOVED;
             optLoopTable[lnum].lpHead = optLoopTable[lnum].lpBottom = nullptr;
@@ -4576,6 +4576,8 @@ void Compiler::optOptimizeLoops()
                 printf("\n");
             }
         }
+
+        fgDebugCheckLoopTable();
 #endif
         optLoopsMarked = true;
     }
@@ -5194,6 +5196,8 @@ void Compiler::optCloneLoops()
         printf("\nAfter loop cloning:\n");
         fgDispBasicBlocks(/*dumpTrees*/ true);
     }
+
+    fgDebugCheckLoopTable();
 #endif
 }
 
@@ -5319,6 +5323,18 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // checked them to guarantee they are clonable.
         bool cloneOk = BasicBlock::CloneBlockState(this, newBlk, blk);
         noway_assert(cloneOk);
+
+#if FEATURE_LOOP_ALIGN
+        // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
+        // rare scenario. Additionally, having to align cloned loop will force us to disable some VEX prefix encoding
+        // and adding compensation for over-estimated instructions.
+        if (blk->isLoopAlign())
+        {
+            newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
+            JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
+        }
+#endif
+
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
         // loop, if one exists -- the parent of the loop we're cloning.

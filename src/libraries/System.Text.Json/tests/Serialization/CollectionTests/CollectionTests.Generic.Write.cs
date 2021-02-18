@@ -882,6 +882,78 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJson, JsonSerializer.Serialize<IEnumerable<ValueB>>(valueBs));
         }
 
+        [Fact]
+        public static void WriteIEnumerableT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var items = new RefCountedList<int>(Enumerable.Range(1, count));
+                _ = JsonSerializer.Serialize(items.AsEnumerable());
+
+                Assert.Equal(0, items.RefCount);
+            }
+        }
+
+        [Fact]
+        public static void WriteICollectionT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var items = new RefCountedList<int>(Enumerable.Range(1, count));
+                _ = JsonSerializer.Serialize((ICollection<int>)items);
+
+                Assert.Equal(0, items.RefCount);
+            }
+        }
+
+        [Fact]
+        public static void WriteIListT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var items = new RefCountedList<int>(Enumerable.Range(1, count));
+                _ = JsonSerializer.Serialize((IList<int>)items);
+
+                Assert.Equal(0, items.RefCount);
+            }
+        }
+
+        [Fact]
+        public static void WriteIDictionaryT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var pairs = new RefCountedDictionary<int, int>(Enumerable.Range(1, count).Select(x => new KeyValuePair<int, int>(x, x)));
+                _ = JsonSerializer.Serialize((IDictionary<int, int>)pairs);
+
+                Assert.Equal(0, pairs.RefCount);
+            }
+        }
+
+        [Fact]
+        public static void WriteIReadOnlyDictionaryT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var pairs = new RefCountedDictionary<int, int>(Enumerable.Range(1, count).Select(x => new KeyValuePair<int, int>(x, x)));
+                _ = JsonSerializer.Serialize((IReadOnlyDictionary<int, int>)pairs);
+
+                Assert.Equal(0, pairs.RefCount);
+            }
+        }
+
+        [Fact]
+        public static void WriteISetT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var items = new RefCountedSet<int>(Enumerable.Range(1, count));
+                _ = JsonSerializer.Serialize((ISet<int>)items);
+
+                Assert.Equal(0, items.RefCount);
+            }
+        }
+
         public class SimpleClassWithKeyValuePairs
         {
             public KeyValuePair<string, string> KvpWStrVal { get; set; }
@@ -900,6 +972,58 @@ namespace System.Text.Json.Serialization.Tests
         public class ValueB
         {
             public int Value { get; set; }
+        }
+
+        private class RefCountedList<T> : List<T>, IEnumerable<T>   //  Reimplement interface.
+        {
+            public RefCountedList() : base() { }
+            public RefCountedList(IEnumerable<T> collection) : base(collection) { }
+
+            public int RefCount { get; private set; }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            {
+                RefCount++;
+                return new DisposableEnumerator<T>(GetEnumerator(), () => RefCount--);
+            }
+
+            Collections.IEnumerator Collections.IEnumerable.GetEnumerator() => this.AsEnumerable().GetEnumerator();
+        }
+
+        private class RefCountedDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>    //  Reimplement interface.
+        {
+            public RefCountedDictionary() : base() { }
+            public RefCountedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+            {
+                foreach (var kvp in collection)
+                    Add(kvp.Key, kvp.Value);
+            }
+
+            public int RefCount { get; private set; }
+
+            IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
+            {
+                RefCount++;
+                return new DisposableEnumerator<KeyValuePair<TKey, TValue>>(GetEnumerator(), () => RefCount--);
+            }
+
+            Collections.IEnumerator Collections.IEnumerable.GetEnumerator() => this.AsEnumerable().GetEnumerator();
+        }
+
+        private class RefCountedSet<T> : HashSet<T>, IEnumerable<T>     // Reimplement interface.
+        {
+            public RefCountedSet() : base() { }
+            public RefCountedSet(IEnumerable<T> collection) : base(collection) { }
+
+            public int RefCount { get; private set; }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            {
+                RefCount++;
+                return new DisposableEnumerator<T>(GetEnumerator(), () => RefCount--);
+            }
+
+            Collections.IEnumerator Collections.IEnumerable.GetEnumerator() => this.AsEnumerable().GetEnumerator();
         }
     }
 }

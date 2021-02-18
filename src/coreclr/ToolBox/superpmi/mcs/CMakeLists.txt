@@ -21,6 +21,7 @@ set(MCS_SOURCES
     verbdumpmap.cpp
     verbdumptoc.cpp
     verbfracture.cpp
+    verbjitflags.cpp
     verbildump.cpp
     verbinteg.cpp
     verbmerge.cpp

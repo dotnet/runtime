@@ -23,7 +23,7 @@
       - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `LLVMOnly`
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(WasmInvariantGlobalization)
+      - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -156,7 +156,7 @@
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(WasmInvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
+      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
@@ -167,7 +167,7 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(WasmInvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.timezones.blat" />
     </ItemGroup>
 
@@ -175,7 +175,7 @@
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
       Assemblies="@(_WasmAssemblies)"
-      InvariantGlobalization="$(WasmInvariantGlobalization)"
+      InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileName="$(WasmIcuDataFileName)"
@@ -250,8 +250,8 @@
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicuuc.a"/>
-     <_WasmRuntimePackNativeLibs Include="libicui18n.a"/>
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
      <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
 
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>

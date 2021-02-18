@@ -1585,6 +1585,9 @@
   <data name="ArgumentNull_Path" xml:space="preserve">
     <value>Path cannot be null.</value>
   </data>
+  <data name="ArgumentNull_SafeHandle" xml:space="preserve">
+    <value>SafeHandle cannot be null.</value>
+  </data>
   <data name="ArgumentNull_Stream" xml:space="preserve">
     <value>Stream cannot be null.</value>
   </data>
