@@ -11,7 +11,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
-         TODO: Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
+         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
@@ -403,7 +403,7 @@
   </ItemGroup>
    <!-- Used in Android (native crypto) -->
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="Internal\Cryptography\Pal.Android\OpenSslX509CertificateReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidX509CertificateReader.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
           Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
   </ItemGroup>

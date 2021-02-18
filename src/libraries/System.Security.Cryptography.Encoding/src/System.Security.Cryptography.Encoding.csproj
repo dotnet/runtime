@@ -9,7 +9,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
-         TODO: Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
+         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
@@ -87,11 +87,11 @@
   </ItemGroup>
     <!-- Used in Unix except Android (native crypto) and Apple -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
-    <Compile Include="Internal\Cryptography\OidLookup.Unix.OpenSSL.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.Unix.cs" />
   </ItemGroup>
    <!-- Used in Android (native crypto) -->
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="Internal\Cryptography\OidLookup.Unix.PlatformNative.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.NoFallback.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
@@ -125,7 +125,7 @@
       <DependentUpon>Common\System\Security\Cryptography\Asn1\OtherNameAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="Internal\Cryptography\AsnFormatter.OSX.cs" />
-    <Compile Include="Internal\Cryptography\OidLookup.Unix.PlatformNative.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.NoFallback.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

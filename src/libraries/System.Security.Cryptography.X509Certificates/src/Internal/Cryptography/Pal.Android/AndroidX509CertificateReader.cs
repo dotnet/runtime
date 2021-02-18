@@ -16,6 +16,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
+    // TODO: [AndroidCrypto] Rename class to AndroidX509CertificateReader
     internal sealed class OpenSslX509CertificateReader : ICertificatePal
     {
         private SafeX509Handle _cert;
@@ -46,11 +47,11 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
             ICertificatePal? cert;
-            Exception? openSslException;
+            Exception? exception;
             if (TryReadX509(rawData, out cert)
                 || PkcsFormatReader.TryReadPkcs7Der(rawData, out cert)
                 || PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert)
-                || PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out openSslException))
+                || PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out exception))
             {
                 if (cert == null)
                 {
@@ -62,8 +63,8 @@ namespace Internal.Cryptography.Pal
             }
 
             // Unsupported
-            Debug.Assert(openSslException != null);
-            throw openSslException;
+            Debug.Assert(exception != null);
+            throw exception;
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
