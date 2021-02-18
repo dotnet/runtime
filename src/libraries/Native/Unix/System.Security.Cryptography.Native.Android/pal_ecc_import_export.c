@@ -39,10 +39,10 @@ int32_t CryptoNative_GetECKeyParameters(const EC_KEY* key,
 
     // Success; assign variables
     *qx = ToGRef(env, xBn);
-    *cbQx = CryptoNative_GetBigNumBytes(xBn);
+    *cbQx = CryptoNative_GetBigNumBytes(*qx);
     xBn = NULL;
     *qy = ToGRef(env, yBn);
-    *cbQy = CryptoNative_GetBigNumBytes(yBn);
+    *cbQy = CryptoNative_GetBigNumBytes(*qy);
     yBn = NULL;
     if (*cbQx == FAIL || *cbQy == FAIL)
         goto error;
@@ -195,7 +195,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
         seedBn = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, seedArray);
 
         *seed = ToGRef(env, seedBn);
-        *cbSeed = CryptoNative_GetBigNumBytes(seedBn);
+        *cbSeed = CryptoNative_GetBigNumBytes(*seed);
 
         /*
             To implement SEC 1 standard and align to Windows, we also want to extract the nid
@@ -212,30 +212,21 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
 
     // Success; assign variables
     *gx = ToGRef(env, xBn);
-    *cbGx = CryptoNative_GetBigNumBytes(xBn);
+    *cbGx = CryptoNative_GetBigNumBytes(*gx);
     *gy = ToGRef(env, yBn);
-    *cbGy = CryptoNative_GetBigNumBytes(yBn);
+    *cbGy = CryptoNative_GetBigNumBytes(*gy);
     *p = ToGRef(env, pBn);
-    *cbP = CryptoNative_GetBigNumBytes(pBn);
+    *cbP = CryptoNative_GetBigNumBytes(*p);
     *a = ToGRef(env, aBn);
-    *cbA = CryptoNative_GetBigNumBytes(aBn);
+    *cbA = CryptoNative_GetBigNumBytes(*a);
     *b = ToGRef(env, bBn);
-    *cbB = CryptoNative_GetBigNumBytes(bBn);
+    *cbB = CryptoNative_GetBigNumBytes(*b);
     *order = ToGRef(env, orderBn);
-    *cbOrder = CryptoNative_GetBigNumBytes(orderBn);
+    *cbOrder = CryptoNative_GetBigNumBytes(*order);
     *cofactor = ToGRef(env, cofactorBn);
-    *cbCofactor = CryptoNative_GetBigNumBytes(cofactorBn);
+    *cbCofactor = CryptoNative_GetBigNumBytes(*cofactor);
 
     rc = SUCCESS;
-
-    ReleaseLRef(env, xBn);
-    ReleaseLRef(env, yBn);
-    ReleaseLRef(env, pBn);
-    ReleaseLRef(env, aBn);
-    ReleaseLRef(env, bBn);
-    ReleaseLRef(env, orderBn);
-    ReleaseLRef(env, cofactorBn);
-    ReleaseLRef(env, seedBn);
 
     goto exit;
 
@@ -426,7 +417,6 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     if ((*key)->keyPair == NULL)
     {
         // We were unable to make the keys, so clean up and return FAIL.
-        ReleaseGRef(env, (*key)->curveParameters);
         CryptoNative_EcKeyDestroy(*key);
         *key = NULL;
         return FAIL;
