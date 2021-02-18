@@ -2484,7 +2484,7 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
 #endif
 
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
-        FastInterlockIncrement (&g_TrapReturningThreads);
+        FastInterlockIncrement ((LONG *)&g_TrapReturningThreads);
         _ASSERTE(g_TrapReturningThreads > 0);
 
 #ifdef _DEBUG
@@ -2493,7 +2493,7 @@ void ThreadStore::TrapReturningThreads(BOOL yes)
     }
     else
     {
-        FastInterlockDecrement (&g_TrapReturningThreads);
+        FastInterlockDecrement ((LONG *)&g_TrapReturningThreads);
         GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
         _ASSERTE(g_TrapReturningThreads >= 0);
     }

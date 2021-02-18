@@ -492,7 +492,7 @@ CEEInfo::ConvToJitSig(
         _ASSERTE(!sig.IsNull());
         Module * module = GetModule(scopeHnd);
 
-        ULONG data;
+        uint32_t data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
         sigRet->callConv = (CorInfoCallConv) data;
 
@@ -509,7 +509,7 @@ CEEInfo::ConvToJitSig(
         if (sigRet->callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
           IfFailThrow(sig.GetData(NULL));
 
-        ULONG numArgs;
+        uint32_t numArgs;
         IfFailThrow(sig.GetData(&numArgs));
         if (numArgs != (unsigned short) numArgs)
             COMPlusThrowHR(COR_E_INVALIDPROGRAM);
@@ -546,14 +546,14 @@ CEEInfo::ConvToJitSig(
         sigRet->numArgs = 0;
         if (!sig.IsNull())
         {
-            ULONG callConv;
+            uint32_t callConv;
             IfFailThrow(sig.GetCallingConvInfo(&callConv));
             if (callConv != IMAGE_CEE_CS_CALLCONV_LOCAL_SIG)
             {
                 COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_CALLCONV_NOT_LOCAL_SIG);
             }
 
-            ULONG numArgs;
+            uint32_t numArgs;
             IfFailThrow(sig.GetData(&numArgs));
 
             if (numArgs != (unsigned short) numArgs)
@@ -782,7 +782,7 @@ bool CEEInfo::isValidStringRef (
     return result;
 }
 
-LPCWSTR CEEInfo::getStringLiteral (
+const char16_t* CEEInfo::getStringLiteral (
         CORINFO_MODULE_HANDLE       moduleHnd,
         mdToken                     metaTOK,
         int*                        length)
@@ -795,7 +795,7 @@ LPCWSTR CEEInfo::getStringLiteral (
 
     Module* module = GetModule(moduleHnd);
 
-    LPCWSTR result = nullptr;
+    const char16_t* result = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
@@ -805,13 +805,13 @@ LPCWSTR CEEInfo::getStringLiteral (
     }
     else
     {
-        DWORD dwCharCount;
+        ULONG dwCharCount;
         LPCWSTR pString;
         if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
         {
             // For string.Empty pString will be null
             *length = dwCharCount;
-            result = pString;
+            result = (const char16_t *)pString;
         }
         else
         {
@@ -1099,7 +1099,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
                     ThrowBadTokenException(pResolvedToken);
 
-                IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(metaTOK, &pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec));
+                IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(metaTOK, &pResolvedToken->pTypeSpec, (ULONG*)&pResolvedToken->cbTypeSpec));
 
                 SigTypeContext typeContext;
                 GetTypeContext(pResolvedToken->tokenContext, &typeContext);
@@ -1133,7 +1133,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 GetTypeContext(pResolvedToken->tokenContext, &typeContext);
 
                 MemberLoader::GetDescFromMemberRef(pModule, metaTOK, &pMD, &pFD, &typeContext, (tokenType != CORINFO_TOKENKIND_Ldtoken),
-                    &th, TRUE, &pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec);
+                    &th, TRUE, &pResolvedToken->pTypeSpec, (ULONG*)&pResolvedToken->cbTypeSpec);
 
                 _ASSERTE((pMD != NULL) ^ (pFD != NULL));
                 _ASSERTE(!th.IsNull());
@@ -1161,7 +1161,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
                 // We need the method desc to carry exact instantiation, thus allowInstParam == FALSE.
                 pMD = MemberLoader::GetMethodDescFromMethodSpec(pModule, metaTOK, &typeContext, (tokenType != CORINFO_TOKENKIND_Ldtoken), FALSE /* allowInstParam */,
-                    &th, TRUE, &pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec, &pResolvedToken->pMethodSpec, &pResolvedToken->cbMethodSpec);
+                    &th, TRUE, &pResolvedToken->pTypeSpec, (ULONG*)&pResolvedToken->cbTypeSpec, &pResolvedToken->pMethodSpec, (ULONG*)&pResolvedToken->cbMethodSpec);
             }
             break;
 
@@ -1794,7 +1794,7 @@ CEEInfo::findCallSiteSig(
     JIT_TO_EE_TRANSITION();
 
     PCCOR_SIGNATURE       pSig = NULL;
-    DWORD                 cbSig = 0;
+    uint32_t              cbSig = 0;
 
     if (IsDynamicScope(scopeHnd))
     {
@@ -1837,11 +1837,11 @@ CEEInfo::findCallSiteSig(
 
         if (TypeFromToken(sigMethTok) == mdtMemberRef)
         {
-            IfFailThrow(module->GetMDImport()->GetNameAndSigOfMemberRef(sigMethTok, &pSig, &cbSig, &szName));
+            IfFailThrow(module->GetMDImport()->GetNameAndSigOfMemberRef(sigMethTok, &pSig, (ULONG*)&cbSig, &szName));
         }
         else if (TypeFromToken(sigMethTok) == mdtMethodDef)
         {
-            IfFailThrow(module->GetMDImport()->GetSigOfMethodDef(sigMethTok, &cbSig, &pSig));
+            IfFailThrow(module->GetMDImport()->GetSigOfMethodDef(sigMethTok, (ULONG*)&cbSig, &pSig));
         }
     }
 
@@ -1877,7 +1877,7 @@ CEEInfo::findSig(
     JIT_TO_EE_TRANSITION();
 
     PCCOR_SIGNATURE       pSig = NULL;
-    DWORD                 cbSig = 0;
+    uint32_t              cbSig = 0;
 
     if (IsDynamicScope(scopeHnd))
     {
@@ -1892,7 +1892,7 @@ CEEInfo::findSig(
         // We need to resolve this stand alone sig
         IfFailThrow(module->GetMDImport()->GetSigFromToken(
             (mdSignature)sigTok,
-            &cbSig,
+            (ULONG*)(&cbSig),
             &pSig));
     }
 
@@ -2704,9 +2704,9 @@ void CEEInfo::ScanForModuleDependencies(Module* pModule, SigPointer psig)
             ScanForModuleDependencies(pModule,psig);
             IfFailThrow(psig.SkipExactlyOne());
 
-            ULONG ntypars;
+            uint32_t ntypars;
             IfFailThrow(psig.GetData(&ntypars));
-            for (ULONG i = 0; i < ntypars; i++)
+            for (uint32_t i = 0; i < ntypars; i++)
             {
               ScanForModuleDependencies(pModule,psig);
               IfFailThrow(psig.SkipExactlyOne());
@@ -2751,10 +2751,10 @@ void CEEInfo::ScanMethodSpec(Module * pModule, PCCOR_SIGNATURE pMethodSpec, ULON
 
     _ASSERT(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST);
 
-    ULONG nGenericMethodArgs;
+    uint32_t nGenericMethodArgs;
     IfFailThrow(sp.GetData(&nGenericMethodArgs));
 
-    for (ULONG i = 0; i < nGenericMethodArgs; i++)
+    for (uint32_t i = 0; i < nGenericMethodArgs; i++)
     {
         ScanForModuleDependencies(pModule,sp);
         IfFailThrow(sp.SkipExactlyOne());
@@ -2781,10 +2781,10 @@ bool CEEInfo::ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cb
 
     IfFailThrow(sp.SkipExactlyOne());
 
-    ULONG ntypars;
+    uint32_t ntypars;
     IfFailThrow(sp.GetData(&ntypars));
 
-    for (ULONG i = 0; i < ntypars; i++)
+    for (uint32_t i = 0; i < ntypars; i++)
     {
         ScanForModuleDependencies(pModule,sp);
         IfFailThrow(sp.SkipExactlyOne());
@@ -2967,14 +2967,14 @@ static bool IsSignatureForTypicalInstantiation(SigPointer sigptr, CorElementType
 {
     STANDARD_VM_CONTRACT;
 
-    for (ULONG i = 0; i < ntypars; i++)
+    for (uint32_t i = 0; i < ntypars; i++)
     {
         CorElementType type;
         IfFailThrow(sigptr.GetElemType(&type));
         if (type != varType)
             return false;
 
-        ULONG data;
+        uint32_t data;
         IfFailThrow(sigptr.GetData(&data));
 
         if (data != i)
@@ -2993,7 +2993,7 @@ static bool IsMethodSpecForTypicalInstantation(SigPointer sigptr)
     IfFailThrow(sigptr.GetByte(&etype));
     _ASSERTE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST);
 
-    ULONG ntypars;
+    uint32_t ntypars;
     IfFailThrow(sigptr.GetData(&ntypars));
 
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_MVAR, ntypars);
@@ -3011,7 +3011,7 @@ static bool IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
 
     IfFailThrow(sigptr.SkipExactlyOne());
 
-    ULONG ntypars;
+    uint32_t ntypars;
     IfFailThrow(sigptr.GetData(&ntypars));
 
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
@@ -3169,7 +3169,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                     pResult->indirectFirstOffset = 1;
                 }
 
-                ULONG data;
+                uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3250,7 +3250,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 #endif
                 pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
                 pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
-                ULONG data;
+                uint32_t data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[2] = sizeof(TypeHandle) * data;
 
@@ -3426,7 +3426,7 @@ NoSpecialCase:
                 // Load the generic method instantiation
                 THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
 
-                DWORD nGenericMethodArgs;
+                uint32_t nGenericMethodArgs;
                 IfFailThrow(sigptr.GetData(&nGenericMethodArgs));
                 sigBuilder.AppendData(nGenericMethodArgs);
 
@@ -3596,7 +3596,7 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
+int CEEInfo::appendClassName(__deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
                              int* pnBufLen,
                              CORINFO_CLASS_HANDLE    clsHnd,
                              bool fNamespace,
@@ -3623,7 +3623,7 @@ int CEEInfo::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf,
     nLen = (int)wcslen(szString);
     if (*pnBufLen > 0)
     {
-    wcscpy_s(*ppBuf, *pnBufLen, szString );
+    wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, szString );
     (*ppBuf)[(*pnBufLen) - 1] = W('\0');
     (*ppBuf) += nLen;
     (*pnBufLen) -= nLen;
@@ -3797,7 +3797,7 @@ CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, 
 }
 
 /*********************************************************************/
-DWORD CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
+uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
         THROWS;
@@ -3807,7 +3807,7 @@ DWORD CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
 
     // <REVISIT_TODO>@todo FIX need to really fetch the class atributes.  at present
     // we don't need to because the JIT only cares in the case of COM classes</REVISIT_TODO>
-    DWORD ret = 0;
+    uint32_t ret = 0;
 
     JIT_TO_EE_TRANSITION();
 
@@ -3842,7 +3842,7 @@ bool CEEInfo::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
-DWORD CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
+uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4946,7 +4946,7 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 // the inline optimization (thus preserving the original behavior).
 void * CEEInfo::getArrayInitializationData(
             CORINFO_FIELD_HANDLE        field,
-            DWORD                       size
+            uint32_t                    size
             )
 {
     CONTRACTL {
@@ -5574,7 +5574,7 @@ void CEEInfo::getCallInfo(
             else
             if (pResolvedToken->pMethodSpec != NULL)
             {
-                DWORD nGenericMethodArgs = 0;
+                uint32_t nGenericMethodArgs = 0;
                 CQuickBytes qbGenericMethodArgs;
                 TypeHandle *genericMethodArgs = NULL;
 
@@ -5596,7 +5596,7 @@ void CEEInfo::getCallInfo(
 
                 genericMethodArgs = reinterpret_cast<TypeHandle *>(qbGenericMethodArgs.AllocThrows(cbAllocSize));
 
-                for (DWORD i = 0; i < nGenericMethodArgs; i++)
+                for (uint32_t i = 0; i < nGenericMethodArgs; i++)
                 {
                     genericMethodArgs[i] = sp.GetTypeHandleThrowing((Module *)pResolvedToken->tokenScope, &typeContext);
                     _ASSERTE (!genericMethodArgs[i].IsNull());
@@ -6619,7 +6619,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 }
 
 /*********************************************************************/
-DWORD CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
+uint32_t CEEInfo::getMethodAttribs (CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
         THROWS;
@@ -7588,7 +7588,7 @@ getMethodInfoHelper(
     /* Grab information from the IL header */
 
     PCCOR_SIGNATURE pLocalSig = NULL;
-    DWORD           cbLocalSig = 0;
+    uint32_t        cbLocalSig = 0;
 
     if (NULL != header)
     {
@@ -7834,10 +7834,10 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
 
     IfFailThrow(ptr.GetData(NULL)); // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG
 
-    ULONG numLocals;
+    uint32_t numLocals;
     IfFailThrow(ptr.GetData(&numLocals));
 
-    for(ULONG i = 0; i < numLocals; i++)
+    for(uint32_t i = 0; i < numLocals; i++)
     {
         CorElementType eType;
         IfFailThrow(ptr.PeekElemType(&eType));
@@ -7869,7 +7869,7 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
 
 CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                                   CORINFO_METHOD_HANDLE hCallee,
-                                  DWORD*                pRestrictions)
+                                  uint32_t*             pRestrictions)
 {
     CONTRACTL {
         THROWS;
@@ -9543,7 +9543,7 @@ unsigned CEEInfo::getFieldOffset (CORINFO_FIELD_HANDLE fieldHnd)
 }
 
 /*********************************************************************/
-DWORD CEEInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE fieldHnd, void **ppIndirection)
+uint32_t CEEInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE fieldHnd, void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -9551,7 +9551,7 @@ DWORD CEEInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE fieldHnd, void **
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    DWORD result = 0;
+    uint32_t result = 0;
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
@@ -9606,7 +9606,7 @@ void CEEInfo::freeArray(void *array)
 }
 
 void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
-                               unsigned int *cILOffsets, DWORD **pILOffsets,
+                               unsigned int *cILOffsets, uint32_t **pILOffsets,
                                ICorDebugInfo::BoundaryTypes *implicitBoundaries)
 {
     CONTRACTL {
@@ -9620,7 +9620,7 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
 #ifdef DEBUGGING_SUPPORTED
     if (g_pDebugInterface && !IsCompilationProcess())
     {
-        g_pDebugInterface->getBoundaries(GetMethod(ftn), cILOffsets, pILOffsets,
+        g_pDebugInterface->getBoundaries(GetMethod(ftn), cILOffsets, (DWORD**)pILOffsets,
                                      implicitBoundaries);
     }
     else
@@ -9862,7 +9862,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         SigParser parser(pSig, cbSig);
-        ULONG rawCallConv;
+        uint32_t rawCallConv;
         if (FAILED(parser.GetCallingConv(&rawCallConv)))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
@@ -9910,7 +9910,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        ULONG methodCallConv;
+        uint32_t methodCallConv;
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;
         pMD->GetSig(&pSig, &cbSig);
@@ -10346,7 +10346,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-LPCWSTR CEEInfo::getJitTimeLogFilename()
+const char16_t * CEEInfo::getJitTimeLogFilename()
 {
     CONTRACTL {
         THROWS;
@@ -10360,13 +10360,13 @@ LPCWSTR CEEInfo::getJitTimeLogFilename()
     result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return (const char16_t *)result;
 }
 
 
 
     // Return details about EE internal data structures
-DWORD CEEInfo::getThreadTLSIndex(void **ppIndirection)
+uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
     CONTRACTL {
         THROWS;
@@ -10374,7 +10374,7 @@ DWORD CEEInfo::getThreadTLSIndex(void **ppIndirection)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    DWORD result = (DWORD)-1;
+    uint32_t result = (uint32_t)-1;
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
@@ -10408,7 +10408,7 @@ const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
     return result;
 }
 
-LONG * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
+int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
     CONTRACTL {
         NOTHROW;
@@ -10416,14 +10416,14 @@ LONG * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    LONG * result = NULL;
+    int32_t * result = NULL;
 
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    result = (LONG *)&g_TrapReturningThreads;
+    result = (int32_t *)&g_TrapReturningThreads;
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -10462,7 +10462,7 @@ HRESULT CEEInfo::GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers)
 }
 
 
-ULONG CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) LPWSTR buffer, ULONG bufferLength)
+uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer, uint32_t bufferLength)
 {
     CONTRACTL {
         THROWS;
@@ -10470,7 +10470,7 @@ ULONG CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) LPWSTR buffer, ULONG
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    ULONG result = 0;
+    uint32_t result = 0;
 
 #ifndef CROSSGEN_COMPILE
     JIT_TO_EE_TRANSITION();
@@ -10483,7 +10483,7 @@ ULONG CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) LPWSTR buffer, ULONG
     {
         EX_TRY
         {
-            result = GetExceptionMessage(throwable, buffer, bufferLength);
+            result = GetExceptionMessage(throwable, (LPWSTR)buffer, bufferLength);
         }
         EX_CATCH
         {
@@ -10782,7 +10782,7 @@ void CEEInfo::setJitFlags(const CORJIT_FLAGS& jitFlags)
 }
 
 /*********************************************************************/
-DWORD CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
+uint32_t CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 {
     CONTRACTL {
         NOTHROW;
@@ -11136,7 +11136,7 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
 
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
-void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
+void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap,
                                ICorDebugInfo::OffsetMapping *pMap)
 {
     CONTRACTL {
@@ -11155,7 +11155,7 @@ void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo *vars)
 {
     CONTRACTL {
         THROWS;
@@ -11263,7 +11263,7 @@ void CEEJitInfo::CompressDebugInfo()
     EE_TO_JIT_TRANSITION();
 }
 
-void reservePersonalityRoutineSpace(ULONG &unwindSize)
+void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
 #if defined(TARGET_X86)
     // Do nothing
@@ -11301,7 +11301,7 @@ void reservePersonalityRoutineSpace(ULONG &unwindSize)
 // For prejitted code we split up the unwinding information into
 // separate sections .rdata and .pdata.
 //
-void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
+void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
 {
 #ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
@@ -11319,7 +11319,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwind
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
         "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
 
-    ULONG currentSize  = unwindSize;
+    uint32_t currentSize  = unwindSize;
 
     reservePersonalityRoutineSpace(currentSize);
 
@@ -11355,12 +11355,12 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwind
 //    funcKind        type of funclet (main method code, handler, filter)
 //
 void CEEJitInfo::allocUnwindInfo (
-        BYTE *              pHotCode,              /* IN */
-        BYTE *              pColdCode,             /* IN */
-        ULONG               startOffset,           /* IN */
-        ULONG               endOffset,             /* IN */
-        ULONG               unwindSize,            /* IN */
-        BYTE *              pUnwindBlock,          /* IN */
+        uint8_t *           pHotCode,              /* IN */
+        uint8_t *           pColdCode,             /* IN */
+        uint32_t            startOffset,           /* IN */
+        uint32_t            endOffset,             /* IN */
+        uint32_t            unwindSize,            /* IN */
+        uint8_t *           pUnwindBlock,          /* IN */
         CorJitFuncKind      funcKind               /* IN */
         )
 {
@@ -11511,7 +11511,7 @@ void CEEJitInfo::allocUnwindInfo (
 #endif // FEATURE_EH_FUNCLETS
 }
 
-void CEEJitInfo::recordCallSite(ULONG                 instrOffset,
+void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
                                 CORINFO_SIG_INFO *    callSig,
                                 CORINFO_METHOD_HANDLE methodHandle)
 {
@@ -11746,7 +11746,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     return (WORD)-1;
 }
 
-DWORD CEEJitInfo::getExpectedTargetArchitecture()
+uint32_t CEEJitInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -12008,8 +12008,8 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
-            UINT32 countSchemaItems, /* IN */
-            BYTE** pInstrumentationData /* OUT */
+            uint32_t countSchemaItems, /* IN */
+            uint8_t** pInstrumentationData /* OUT */
             )
 {
     CONTRACTL {
@@ -12058,12 +12058,11 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
 // Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-
 HRESULT CEEJitInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
-            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            uint32_t *                   pCountSchemaItems,          // pointer to the count schema items
+            uint8_t **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             )
 {
     CONTRACTL {
@@ -12121,9 +12120,9 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
 CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
                      CORINFO_METHOD_HANDLE ftnHnd,
                      CORINFO_CLASS_HANDLE  baseHnd,
-                     UINT32                ilOffset,
-                     UINT32 *              pLikelihood,
-                     UINT32 *              pNumberOfClasses
+                     uint32_t              ilOffset,
+                     uint32_t *            pLikelihood,
+                     uint32_t *            pNumberOfClasses
 )
 {
     CONTRACTL {
@@ -12167,10 +12166,10 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getLikelyClass(
 }
 
 void CEEJitInfo::allocMem (
-    ULONG               hotCodeSize,    /* IN */
-    ULONG               coldCodeSize,   /* IN */
-    ULONG               roDataSize,     /* IN */
-    ULONG               xcptnsCount,    /* IN */
+    uint32_t            hotCodeSize,    /* IN */
+    uint32_t            coldCodeSize,   /* IN */
+    uint32_t            roDataSize,     /* IN */
+    uint32_t            xcptnsCount,    /* IN */
     CorJitAllocMemFlag  flag,           /* IN */
     void **             hotCodeBlock,   /* OUT */
     void **             coldCodeBlock,  /* OUT */
@@ -12477,7 +12476,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                  struct CORINFO_METHOD_INFO *info,
                                  CORJIT_FLAGS jitFlags,
                                  BYTE **nativeEntry,
-                                 ULONG *nativeSizeOfCode)
+                                 uint32_t *nativeSizeOfCode)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -12627,7 +12626,7 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
                                  struct CORINFO_METHOD_INFO *info,
                                  CORJIT_FLAGS jitFlags,
                                  BYTE **nativeEntry,
-                                 ULONG *nativeSizeOfCode)
+                                 uint32_t *nativeSizeOfCode)
 {
     CONTRACTL {
         THROWS;
@@ -12657,7 +12656,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
                                 struct CORINFO_METHOD_INFO *info,
                                 CORJIT_FLAGS flags,
                                 BYTE **nativeEntry,
-                                ULONG *nativeSizeOfCode,
+                                uint32_t *nativeSizeOfCode,
                                 NativeCodeVersion nativeCodeVersion)
 {
     // no dynamic contract here because SEH is used, with a finally clause
@@ -12675,7 +12674,7 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
         struct CORINFO_METHOD_INFO *info;
         CORJIT_FLAGS flags;
         BYTE **nativeEntry;
-        ULONG *nativeSizeOfCode;
+        uint32_t *nativeSizeOfCode;
         MethodDesc *ftn;
         CorJitResult res;
     }; Param param;
@@ -13208,7 +13207,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
         CorJitResult res;
         PBYTE nativeEntry;
-        ULONG sizeOfCode;
+        uint32_t sizeOfCode;
 
         {
             GCX_COOP();
@@ -13515,11 +13514,11 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
     SigPointer p(pBlob);
     IfFailThrow(p.SkipExactlyOne());
 
-    DWORD dwFlags;
+    uint32_t dwFlags;
     IfFailThrow(p.GetData(&dwFlags));
 
     // Size is checked unconditionally
-    DWORD dwExpectedSize;
+    uint32_t dwExpectedSize;
     IfFailThrow(p.GetData(&dwExpectedSize));
 
     DWORD dwActualSize = pMT->GetNumInstanceFieldBytes();
@@ -13529,7 +13528,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 #ifdef FEATURE_HFA
     if (dwFlags & READYTORUN_LAYOUT_HFA)
     {
-        DWORD dwExpectedHFAType;
+        uint32_t dwExpectedHFAType;
         IfFailThrow(p.GetData(&dwExpectedHFAType));
 
         DWORD dwActualHFAType = pMT->GetHFAType();
@@ -13547,7 +13546,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
     if (dwFlags & READYTORUN_LAYOUT_Alignment)
     {
-        DWORD dwExpectedAlignment = TARGET_POINTER_SIZE;
+        uint32_t dwExpectedAlignment = TARGET_POINTER_SIZE;
         if (!(dwFlags & READYTORUN_LAYOUT_Alignment_Native))
         {
             IfFailThrow(p.GetData(&dwExpectedAlignment));
@@ -14252,10 +14251,10 @@ bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 void CEEInfo::allocMem (
-        ULONG               hotCodeSize,    /* IN */
-        ULONG               coldCodeSize,   /* IN */
-        ULONG               roDataSize,     /* IN */
-        ULONG               xcptnsCount,    /* IN */
+        uint32_t            hotCodeSize,    /* IN */
+        uint32_t            coldCodeSize,   /* IN */
+        uint32_t            roDataSize,     /* IN */
+        uint32_t            xcptnsCount,    /* IN */
         CorJitAllocMemFlag  flag,           /* IN */
         void **             hotCodeBlock,   /* OUT */
         void **             coldCodeBlock,  /* OUT */
@@ -14269,7 +14268,7 @@ void CEEInfo::allocMem (
 void CEEInfo::reserveUnwindInfo (
         bool                isFunclet,             /* IN */
         bool                isColdCode,            /* IN */
-        ULONG               unwindSize             /* IN */
+        uint32_t            unwindSize             /* IN */
         )
 {
     LIMITED_METHOD_CONTRACT;
@@ -14277,12 +14276,12 @@ void CEEInfo::reserveUnwindInfo (
 }
 
 void CEEInfo::allocUnwindInfo (
-        BYTE *              pHotCode,              /* IN */
-        BYTE *              pColdCode,             /* IN */
-        ULONG               startOffset,           /* IN */
-        ULONG               endOffset,             /* IN */
-        ULONG               unwindSize,            /* IN */
-        BYTE *              pUnwindBlock,          /* IN */
+        uint8_t *           pHotCode,              /* IN */
+        uint8_t *           pColdCode,             /* IN */
+        uint32_t            startOffset,           /* IN */
+        uint32_t            endOffset,             /* IN */
+        uint32_t            unwindSize,            /* IN */
+        uint8_t *           pUnwindBlock,          /* IN */
         CorJitFuncKind      funcKind               /* IN */
         )
 {
@@ -14384,20 +14383,19 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 HRESULT CEEInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
-            UINT32 countSchemaItems, /* IN */
-            BYTE** pInstrumentationData /* OUT */
+            uint32_t countSchemaItems, /* IN */
+            uint8_t** pInstrumentationData /* OUT */
             )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-
 HRESULT CEEInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-            UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
-            BYTE **                    pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+            uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
+            uint8_t **                 pInstrumentationData        // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
             )
 {
     LIMITED_METHOD_CONTRACT;
@@ -14407,9 +14405,9 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
 CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
                      CORINFO_METHOD_HANDLE ftnHnd,
                      CORINFO_CLASS_HANDLE  baseHnd,
-                     UINT32                ilOffset,
-                     UINT32*               pLikelihood,
-                     UINT32*               pNumberOfCases
+                     uint32_t              ilOffset,
+                     uint32_t*             pLikelihood,
+                     uint32_t*             pNumberOfCases
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -14417,7 +14415,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getLikelyClass(
 }
 
 void CEEInfo::recordCallSite(
-        ULONG                 instrOffset,  /* IN */
+        uint32_t              instrOffset,  /* IN */
         CORINFO_SIG_INFO *    callSig,      /* IN */
         CORINFO_METHOD_HANDLE methodHandle  /* IN */
         )
@@ -14444,7 +14442,7 @@ WORD CEEInfo::getRelocTypeHint(void * target)
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-DWORD CEEInfo::getExpectedTargetArchitecture()
+uint32_t CEEInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
 
