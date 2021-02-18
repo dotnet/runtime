@@ -1145,7 +1145,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	*events_written = false;
 
-	// FIXME: find a way to forward declare this without having to assign it
 	ep_rt_thread_session_state_list_iterator_t thread_session_state_list_iterator = ep_rt_thread_session_state_list_iterator_begin (&buffer_manager->thread_session_state_list);
 	EP_RT_DECLARE_LOCAL_THREAD_SESSION_STATE_ARRAY(session_states_to_delete);
 	ep_rt_thread_session_state_array_init(&session_states_to_delete);

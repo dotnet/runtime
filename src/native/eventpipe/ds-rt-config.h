@@ -8,7 +8,7 @@
 #endif
 
 #ifdef EP_INCLUDE_SOURCE_FILES
-//#define DS_INCLUDE_SOURCE_FILES
+#define DS_INCLUDE_SOURCE_FILES
 #endif
 
 #endif /* __DIAGNOSTICS_RT_CONFIG_H__ */
