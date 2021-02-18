@@ -41,7 +41,7 @@ namespace System.Collections.Tests
         [Fact]
         public void PriorityQueue_DefaultConstructor_ComparerEqualsDefaultComparer()
         {
-            var queue = new PriorityQueue<TPriority, TPriority>();
+            var queue = new PriorityQueue<TElement, TPriority>();
 
             Assert.Equal(expected: 0, queue.Count);
             Assert.Empty(queue.UnorderedItems);
@@ -69,7 +69,7 @@ namespace System.Collections.Tests
         {
             var queue = new PriorityQueue<TElement, TPriority>(comparer: null);
             Assert.Equal(0, queue.Count);
-            Assert.Equal(Comparer<TPriority>.Default, queue.Comparer);
+            Assert.Same(Comparer<TPriority>.Default, queue.Comparer);
         }
 
         [Theory]
@@ -78,14 +78,14 @@ namespace System.Collections.Tests
         {
             var queue = new PriorityQueue<TElement, TPriority>(initialCapacity);
             Assert.Empty(queue.UnorderedItems);
-            Assert.Equal(Comparer<TPriority>.Default, queue.Comparer);
+            Assert.Same(Comparer<TPriority>.Default, queue.Comparer);
         }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void PriorityQueue_EnumerableConstructor_ShouldContainAllElements(int count)
         {
-            var itemsToEnqueue = CreateItems(count).ToArray();
+            (TElement, TPriority)[] itemsToEnqueue = CreateItems(count).ToArray();
             PriorityQueue<TElement, TPriority> queue = new PriorityQueue<TElement, TPriority>(itemsToEnqueue);
             Assert.Equal(itemsToEnqueue.Length, queue.Count);
             AssertExtensions.CollectionEqual(itemsToEnqueue, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
@@ -99,10 +99,10 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void PriorityQueue_Enqueue_IEnumerable(int count)
         {
-            var itemsToEnqueue = CreateItems(count).ToArray();
+            (TElement, TPriority)[] itemsToEnqueue = CreateItems(count).ToArray();
             PriorityQueue<TElement, TPriority> queue = CreateEmptyPriorityQueue();
 
-            foreach (var (element, priority) in itemsToEnqueue)
+            foreach ((TElement element, TPriority priority) in itemsToEnqueue)
             {
                 queue.Enqueue(element, priority);
             }
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
             PriorityQueue<TElement, TPriority> queue = CreateEmptyPriorityQueue();
             (TElement Element, TPriority Priority) minItem = itemsToEnqueue.First();
 
-            foreach (var (element, priority) in itemsToEnqueue)
+            foreach ((TElement element, TPriority priority) in itemsToEnqueue)
             {
                 if (queue.Comparer.Compare(priority, minItem.Priority) < 0)
                 {
@@ -127,10 +127,10 @@ namespace System.Collections.Tests
 
                 queue.Enqueue(element, priority);
 
-                var actualPeekElement = queue.Peek();
+                TElement actualPeekElement = queue.Peek();
                 Assert.Equal(minItem.Element, actualPeekElement);
 
-                var actualTryPeekSuccess = queue.TryPeek(out TElement actualTryPeekElement, out TPriority actualTryPeekPriority);
+                bool actualTryPeekSuccess = queue.TryPeek(out TElement actualTryPeekElement, out TPriority actualTryPeekPriority);
                 Assert.True(actualTryPeekSuccess);
                 Assert.Equal(minItem.Element, actualTryPeekElement);
                 Assert.Equal(minItem.Priority, actualTryPeekPriority);
@@ -143,19 +143,19 @@ namespace System.Collections.Tests
         [InlineData(3, 100)]
         public void PriorityQueue_PeekAndDequeue(int initialCapacity, int count)
         {
-            PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(initialCapacity, count, out var generatedItems);
+            PriorityQueue<TElement, TPriority> queue = CreatePriorityQueue(initialCapacity, count, out List<(TElement element, TPriority priority)> generatedItems);
 
-            var expectedPeekPriorities = generatedItems
+            TPriority[] expectedPeekPriorities = generatedItems
                 .Select(x => x.priority)
                 .OrderBy(x => x, queue.Comparer)
                 .ToArray();
 
-            for (var i = 0; i < count; ++i)
+            for (int i = 0; i < count; ++i)
             {
-                var expectedPeekPriority = expectedPeekPriorities[i];
+                TPriority expectedPeekPriority = expectedPeekPriorities[i];
 
-                var actualTryPeekSuccess = queue.TryPeek(out TElement actualTryPeekElement, out TPriority actualTryPeekPriority);
-                var actualTryDequeueSuccess = queue.TryDequeue(out TElement actualTryDequeueElement, out TPriority actualTryDequeuePriority);
+                bool actualTryPeekSuccess = queue.TryPeek(out TElement actualTryPeekElement, out TPriority actualTryPeekPriority);
+                bool actualTryDequeueSuccess = queue.TryDequeue(out TElement actualTryDequeueElement, out TPriority actualTryDequeuePriority);
 
                 Assert.True(actualTryPeekSuccess);
                 Assert.True(actualTryDequeueSuccess);
@@ -193,7 +193,7 @@ namespace System.Collections.Tests
                 queue.EnqueueDequeue(element, priority);
             }
 
-            var expectedItems = itemsToEnqueue.OrderByDescending(x => x.Priority, queue.Comparer).Take(count);
+            IEnumerable<(TElement Element, TPriority Priority)> expectedItems = itemsToEnqueue.OrderByDescending(x => x.Priority, queue.Comparer).Take(count);
             AssertExtensions.CollectionEqual(expectedItems, queue.UnorderedItems, EqualityComparer<(TElement, TPriority)>.Default);
         }
 

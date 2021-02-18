@@ -200,7 +200,7 @@ namespace System.Collections.Tests
         public void PriorityQueue_Generic_EnsureCapacityAndTrimExcess(int count)
         {
             IReadOnlyCollection<(int, int)> itemsToEnqueue = Enumerable.Range(1, count).Select(i => (i, i)).ToArray();
-            PriorityQueue<int, int> queue = new PriorityQueue<int, int>();
+            var queue = new PriorityQueue<int, int>();
             int expectedCount = 0;
             Random random = new Random(Seed: 34);
             int getNextEnsureCapacity() => random.Next(0, count * 2);
@@ -216,7 +216,7 @@ namespace System.Collections.Tests
                 Assert.Equal(capacityAfterTrimExcess, GetUnderlyingBufferCapacity(queue));
             };
 
-            foreach (var (element, priority) in itemsToEnqueue)
+            foreach ((int element, int priority) in itemsToEnqueue)
             {
                 trimAndEnsureCapacity();
                 queue.Enqueue(element, priority);
