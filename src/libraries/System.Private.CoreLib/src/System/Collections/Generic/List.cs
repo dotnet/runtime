@@ -396,7 +396,7 @@ namespace System.Collections.Generic
         /// If the current capacity of the list is less than specified <paramref name="capacity"/>,
         /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
         /// </summary>
-        /// <param name="capacity">The minimum capacity to ensure</param>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)
