@@ -80,7 +80,7 @@ PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uin
 PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
-        return FAIL;
+        return RSA_FAIL;
 
     JNIEnv* env = GetJNIEnv();
 
@@ -97,6 +97,15 @@ PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, ui
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, cipher);
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, algName);
+        return RSA_FAIL;
+    }
+
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
     (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
 

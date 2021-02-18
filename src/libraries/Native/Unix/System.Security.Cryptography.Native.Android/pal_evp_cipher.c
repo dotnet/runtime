@@ -360,13 +360,19 @@ int32_t CryptoNative_EvpCipherSetGcmTag(CipherCtx* ctx, uint8_t* tag, int32_t ta
     if (!ctx)
         return FAIL;
 
+    if (!tag)
+        return FAIL;
+
     assert(tagLength <= TAG_MAX_LENGTH);
 
     // Tag is provided using regular "cipher.update(tag)"
-    int32_t outl = 0;
-    uint8_t outd[1];
-    CryptoNative_EvpCipherUpdate(ctx, outd, &outl, tag, tagLength);
-    return SUCCESS;
+    JNIEnv* env = GetJNIEnv();
+    jbyteArray inDataBytes = (*env)->NewByteArray(env, tagLength);
+    (*env)->SetByteArrayRegion(env, inDataBytes, 0, tagLength, (jbyte*)tag);
+    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
+    (*env)->DeleteLocalRef(env, outDataBytes);
+    (*env)->DeleteLocalRef(env, inDataBytes);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherSetCcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength)
