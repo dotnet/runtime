@@ -9120,8 +9120,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (getLowerElement)
 				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
 			result = call_intrins (ctx, id, &arg0, "");
-			if (getLowerElement)
-				result = LLVMBuildZExt (ctx->builder, result, LLVMInt64Type (), "");
+			if (getLowerElement) {
+				LLVMTypeRef t;
+				t = simd_class_to_llvm_type (ctx, ins->klass);
+				result = LLVMBuildInsertElement (ctx->builder, LLVMConstNull (t), result, const_int32 (0), "");
+			}
 			values [ins->dreg] = result;
 
 			break;
