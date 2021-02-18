@@ -1210,6 +1210,19 @@ interp_generate_not_supported_throw (TransformData *td)
 }
 
 static void
+interp_generate_platform_not_supported_throw (TransformData *td)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_platform_not_supported;
+
+	interp_add_ins (td, MINT_ICALL_V_V);
+	// Allocate a dummy local to serve as dreg for this instruction
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
+	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
+static void
 interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 {
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_invalid_program;
@@ -2438,6 +2451,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
+		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
+		interp_generate_platform_not_supported_throw (td);
 	}
 
 	return FALSE;
@@ -8584,4 +8601,3 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	// FIXME: Add a different callback ?
 	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 }
-
