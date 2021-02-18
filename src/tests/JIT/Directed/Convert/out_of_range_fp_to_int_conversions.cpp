@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <limits.h>
-#include <intrin.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
