@@ -3117,13 +3117,10 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         // some VNF_ that we can evaluate
         switch (vnf)
         {
-            // Consider adding:
-            //   case VNF_GT_UN:
-            //   case VNF_GE_UN:
-            //   case VNF_LT_UN:
-            //   case VNF_LE_UN:
-            //
-
+            case VNF_GT_UN:
+            case VNF_GE_UN:
+            case VNF_LT_UN:
+            case VNF_LE_UN:
             case VNF_Cast:
                 // We can evaluate these.
                 return true;
