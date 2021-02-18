@@ -378,7 +378,7 @@ namespace FPBehaviorApp
 
                 case Architecture.Arm:
                 case Architecture.Arm64:
-                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SENTINEL;
+                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
                     break;
             }
             Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule} Execute with parameter to adjust");
