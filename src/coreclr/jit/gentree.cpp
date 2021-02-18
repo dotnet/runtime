@@ -16623,6 +16623,14 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
     return false;
 }
 
+bool GenTree::DefinesLocalAddr(Compiler* comp)
+{
+    const unsigned       dummyWidth      = 0;
+    GenTreeLclVarCommon* dummyLclVarTree = nullptr;
+    bool                 dummyIsEntire   = false;
+    return DefinesLocalAddr(comp, dummyWidth, &dummyLclVarTree, &dummyIsEntire);
+}
+
 //------------------------------------------------------------------------
 // IsLocalExpr: Determine if this is a LclVarCommon node and return some
 //              additional info about it in the two out parameters.
