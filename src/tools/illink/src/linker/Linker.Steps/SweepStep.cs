@@ -402,8 +402,7 @@ namespace Mono.Linker.Steps
 				return false;
 
 			if (definition.Namespace == "System.Security") {
-				return definition.FullName switch
-				{
+				return definition.FullName switch {
 					// This seems to be one attribute in the System.Security namespace that doesn't count
 					// as an attribute that requires HasSecurity to be true
 					"System.Security.SecurityCriticalAttribute" => false,

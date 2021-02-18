@@ -141,8 +141,7 @@ namespace ILLink.RoslynAnalyzer
 					return ValueUsageInfo.Read;
 				}
 			} else if (operation.Parent is IReturnOperation returnOperation) {
-				return returnOperation.GetRefKind (containingSymbol) switch
-				{
+				return returnOperation.GetRefKind (containingSymbol) switch {
 					RefKind.RefReadOnly => ValueUsageInfo.ReadableReference,
 					RefKind.Ref => ValueUsageInfo.ReadableWritableReference,
 					_ => ValueUsageInfo.Read,

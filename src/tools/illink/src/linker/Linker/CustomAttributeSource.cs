@@ -23,8 +23,7 @@ namespace Mono.Linker
 
 		public static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
 		{
-			return provider switch
-			{
+			return provider switch {
 				MemberReference mr => mr.Module.Assembly,
 				AssemblyDefinition ad => ad,
 				ModuleDefinition md => md.Assembly,

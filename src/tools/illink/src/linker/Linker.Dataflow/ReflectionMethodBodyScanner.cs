@@ -261,8 +261,7 @@ namespace Mono.Linker.Dataflow
 
 		static IntrinsicId GetIntrinsicIdForMethod (MethodDefinition calledMethod)
 		{
-			return calledMethod.Name switch
-			{
+			return calledMethod.Name switch {
 				// static System.Reflection.IntrospectionExtensions.GetTypeInfo (Type type)
 				"GetTypeInfo" when calledMethod.IsDeclaredOnType ("System.Reflection", "IntrospectionExtensions") => IntrinsicId.IntrospectionExtensions_GetTypeInfo,
 
@@ -634,8 +633,7 @@ namespace Mono.Linker.Dataflow
 
 						reflectionContext.AnalyzingPattern ();
 						BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-						DynamicallyAccessedMemberTypes requiredMemberTypes = getRuntimeMember switch
-						{
+						DynamicallyAccessedMemberTypes requiredMemberTypes = getRuntimeMember switch {
 							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent => DynamicallyAccessedMemberTypes.PublicEvents,
 							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField => DynamicallyAccessedMemberTypes.PublicFields,
 							IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod => DynamicallyAccessedMemberTypes.PublicMethods,
@@ -871,8 +869,7 @@ namespace Mono.Linker.Dataflow
 							// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
 							bindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
-						int? ctorParameterCount = parameters.Count switch
-						{
+						int? ctorParameterCount = parameters.Count switch {
 							1 => (methodParams[1] as ArrayValue)?.Size.AsConstInt (),
 							4 => (methodParams[3] as ArrayValue)?.Size.AsConstInt (),
 							5 => (methodParams[4] as ArrayValue)?.Size.AsConstInt (),
@@ -1069,8 +1066,7 @@ namespace Mono.Linker.Dataflow
 							// Assume a default value for BindingFlags for methods that don't use BindingFlags as a parameter
 							bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 
-						DynamicallyAccessedMemberTypes memberTypes = fieldPropertyOrEvent switch
-						{
+						DynamicallyAccessedMemberTypes memberTypes = fieldPropertyOrEvent switch {
 							IntrinsicId.Type_GetEvent => GetDynamicallyAccessedMemberTypesFromBindingFlagsForEvents (bindingFlags),
 							IntrinsicId.Type_GetField => GetDynamicallyAccessedMemberTypesFromBindingFlagsForFields (bindingFlags),
 							IntrinsicId.Type_GetProperty => GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties (bindingFlags),
@@ -1176,7 +1172,7 @@ namespace Mono.Linker.Dataflow
 							if (value is SystemTypeValue systemTypeValue) {
 								// Special case known type values as we can do better by applying exact binding flags and parameter count.
 								MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented,
-									ctorParameterCount == null ? (Func<MethodDefinition, bool>) null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
+									ctorParameterCount == null ? null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
 								reflectionContext.RecordHandledPattern ();
 							} else {
 								// Otherwise fall back to the bitfield requirements
@@ -1414,7 +1410,7 @@ namespace Mono.Linker.Dataflow
 								continue;
 							}
 
-							MarkConstructorsOnType (ref reflectionContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : (Func<MethodDefinition, bool>) null, bindingFlags);
+							MarkConstructorsOnType (ref reflectionContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
 						} else {
 							reflectionContext.RecordUnrecognizedPattern (2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[1].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.");
 						}

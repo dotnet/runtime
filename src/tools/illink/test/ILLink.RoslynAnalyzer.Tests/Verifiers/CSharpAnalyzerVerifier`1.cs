@@ -244,8 +244,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 					}
 				} else {
 					builder.Append (
-						diagnostics[i].Severity switch
-						{
+						diagnostics[i].Severity switch {
 							DiagnosticSeverity.Error => $"{nameof (DiagnosticResult)}.{nameof (DiagnosticResult.CompilerError)}(\"{diagnostics[i].Id}\")",
 							DiagnosticSeverity.Warning => $"{nameof (DiagnosticResult)}.{nameof (DiagnosticResult.CompilerWarning)}(\"{diagnostics[i].Id}\")",
 							var severity => $"new {nameof (DiagnosticResult)}(\"{diagnostics[i].Id}\", {nameof (DiagnosticSeverity)}.{severity})",
@@ -320,8 +319,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 					}
 				} else {
 					builder.Append (
-						diagnostics[i].Severity switch
-						{
+						diagnostics[i].Severity switch {
 							DiagnosticSeverity.Error => $"{nameof (DiagnosticResult)}.{nameof (DiagnosticResult.CompilerError)}(\"{diagnostics[i].Id}\")",
 							DiagnosticSeverity.Warning => $"{nameof (DiagnosticResult)}.{nameof (DiagnosticResult.CompilerWarning)}(\"{diagnostics[i].Id}\")",
 							var severity => $"new {nameof (DiagnosticResult)}(\"{diagnostics[i].Id}\", {nameof (DiagnosticSeverity)}.{severity})",
