@@ -3668,7 +3668,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 //     funclets to the ends of methods.
 //
 // Returns:
-//    True if anything got reordered. Not reordering may involve modifying
+//    True if anything got reordered. Reordering blocks may require changing
 //    IR to reverse branch conditions.
 //
 bool Compiler::fgReorderBlocks()
