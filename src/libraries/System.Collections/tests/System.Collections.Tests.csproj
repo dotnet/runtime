@@ -1,9 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
-    <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
@@ -131,9 +129,5 @@
              Link="Common\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs"
              Link="Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="FsCheck" Version="$(FsCheckVersion)" />
-    <PackageReference Include="FsCheck.Xunit" Version="$(FsCheckVersion)" />
   </ItemGroup>
 </Project>

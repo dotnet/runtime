@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using FsCheck;
-using FsCheck.Xunit;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -12,11 +10,12 @@ namespace System.Collections.Tests
     public static class PriorityQueue_PropertyTests
     {
         const int MaxTest = 100;
-        const string Seed = "(0,0)";
+        const int Seed = 42;
 
         private readonly static IComparer<string> s_stringComparer = StringComparer.Ordinal;
-        
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+
+        [Theory]
+        [MemberData(nameof(GetRandomStringArrays))]
         public static void HeapSort_Heapify_String(string[] elements)
         {
             IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
@@ -24,7 +23,8 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+        [Theory]
+        [MemberData(nameof(GetRandomIntArrays))]
         public static void HeapSort_Heapify_Int(int[] elements)
         {
             IEnumerable<int> expected = elements.OrderBy(e => e);
@@ -42,7 +42,8 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+        [Theory]
+        [MemberData(nameof(GetRandomStringArrays))]
         public static void HeapSort_EnqueueRange_String(string[] elements)
         {
             IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
@@ -50,7 +51,8 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+        [Theory]
+        [MemberData(nameof(GetRandomIntArrays))]
         public static void HeapSort_EnqueueRange_Int(int[] elements)
         {
             IEnumerable<int> expected = elements.OrderBy(e => e);
@@ -69,7 +71,8 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+        [Theory]
+        [MemberData(nameof(GetRandomStringArrays))]
         public static void HeapSort_Enqueue_String(string[] elements)
         {
             IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
@@ -77,7 +80,8 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
+        [Theory]
+        [MemberData(nameof(GetRandomIntArrays))]
         public static void HeapSort_Enqueue_Int(int[] elements)
         {
             IEnumerable<int> expected = elements.OrderBy(e => e);
@@ -101,19 +105,23 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
-        public static void KMaxElements_String(string[] elements, NonNegativeInt k)
+        [Theory]
+        [MemberData(nameof(GetRandomStringArrays))]
+        public static void KMaxElements_String(string[] elements)
         {
-            IEnumerable<string> expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k.Get);
-            IEnumerable<string> actual = KMaxElements(elements, k.Get, s_stringComparer);
+            const int k = 5;
+            IEnumerable<string> expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k);
+            IEnumerable<string> actual = KMaxElements(elements, k, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest, Replay = Seed)]
-        public static void KMaxElements_Int(int[] elements, NonNegativeInt k)
+        [Theory]
+        [MemberData(nameof(GetRandomIntArrays))]
+        public static void KMaxElements_Int(int[] elements)
         {
-            IEnumerable<int> expected = elements.OrderByDescending(e => e).Take(k.Get);
-            IEnumerable<int> actual = KMaxElements(elements, k.Get);
+            const int k = 5;
+            IEnumerable<int> expected = elements.OrderByDescending(e => e).Take(k);
+            IEnumerable<int> actual = KMaxElements(elements, k);
             Assert.Equal(expected, actual);
         }
 
@@ -156,6 +164,42 @@ namespace System.Collections.Tests
             }
 
             Assert.False(queue.TryPeek(out _, out _));
+        }
+
+        public static IEnumerable<object[]> GetRandomStringArrays() => GenerateMemberData(random => GenArray(GenString, random));
+        public static IEnumerable<object[]> GetRandomIntArrays() => GenerateMemberData(random => GenArray(GenInt, random));
+
+        private static IEnumerable<object[]> GenerateMemberData<T>(Func<Random, T> genElement)
+        {
+            var random = new Random(Seed);
+            for (int i = 0; i < MaxTest; i++)
+            {
+                yield return new object[] { genElement(random) };
+            };
+        }
+
+        private static T[] GenArray<T>(Func<Random, T> genElement, Random random)
+        {
+            const int MaxArraySize = 100;
+            int arraySize = random.Next(MaxArraySize);
+            var array = new T[arraySize];
+            for (int i = 0; i < arraySize; i++)
+            {
+                array[i] = genElement(random);
+            }
+
+            return array;
+        }
+
+        private static int GenInt(Random random) => random.Next();
+
+        private static string GenString(Random random)
+        {
+            const int MaxSize = 50;
+            int size = random.Next(MaxSize);
+            var buffer = new byte[size];
+            random.NextBytes(buffer);
+            return Convert.ToBase64String(buffer);
         }
     }
 }
