@@ -12,10 +12,11 @@ namespace System.Collections.Tests
     public static class PriorityQueue_PropertyTests
     {
         const int MaxTest = 100;
+        const string Seed = "(0,0)";
 
         private readonly static IComparer<string> s_stringComparer = StringComparer.Ordinal;
         
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Heapify_String(string[] elements)
         {
             var expected = elements.OrderBy(e => e, s_stringComparer);
@@ -23,7 +24,7 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Heapify_Int(int[] elements)
         {
             var expected = elements.OrderBy(e => e);
@@ -41,7 +42,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_EnqueueRange_String(string[] elements)
         {
             var expected = elements.OrderBy(e => e, s_stringComparer);
@@ -49,7 +50,7 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_EnqueueRange_Int(int[] elements)
         {
             var expected = elements.OrderBy(e => e);
@@ -68,7 +69,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Enqueue_String(string[] elements)
         {
             var expected = elements.OrderBy(e => e, s_stringComparer);
@@ -76,7 +77,7 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Enqueue_Int(int[] elements)
         {
             var expected = elements.OrderBy(e => e);
@@ -100,7 +101,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void KMaxElements_String(string[] elements, NonNegativeInt k)
         {
             var expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k.Get);
@@ -108,7 +109,7 @@ namespace System.Collections.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Property(MaxTest = MaxTest)]
+        [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void KMaxElements_Int(int[] elements, NonNegativeInt k)
         {
             var expected = elements.OrderByDescending(e => e).Take(k.Get);
