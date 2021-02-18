@@ -77,7 +77,7 @@ namespace Internal.Cryptography.Pal
         internal static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
         {
             handle = null;
-            SafeX509Handle certHandle = Interop.Crypto.DecodeX509(
+            SafeX509Handle certHandle = Interop.AndroidCrypto.DecodeX509(
                 ref MemoryMarshal.GetReference(rawData),
                 rawData.Length);
 
@@ -144,7 +144,7 @@ namespace Internal.Cryptography.Pal
                     // IssuerName is mutable to callers in X509Certificate. We want to be
                     // able to get the issuer even if IssuerName has been mutated, so we
                     // don't use it here.
-                    _issuer = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert)).Name;
+                    _issuer = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetIssuerName(_cert)).Name;
                 }
 
                 return _issuer;
@@ -160,7 +160,7 @@ namespace Internal.Cryptography.Pal
                     // SubjectName is mutable to callers in X509Certificate. We want to be
                     // able to get the subject even if SubjectName has been mutated, so we
                     // don't use it here.
-                    _subject = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert)).Name;
+                    _subject = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetSubjectName(_cert)).Name;
                 }
 
                 return _subject;
@@ -171,31 +171,31 @@ namespace Internal.Cryptography.Pal
 
         public string LegacySubject => SubjectName.Decode(X500DistinguishedNameFlags.None);
 
-        public byte[] Thumbprint => Interop.Crypto.GetX509Thumbprint(_cert);
+        public byte[] Thumbprint => Interop.AndroidCrypto.X509GetThumbprint(_cert);
 
-        public string KeyAlgorithm => new Oid(Interop.AndroidCrypto.GetX509PublicKeyAlgorithm(_cert)).Value!;
+        public string KeyAlgorithm => new Oid(Interop.AndroidCrypto.X509GetPublicKeyAlgorithm(_cert)).Value!;
 
-        public byte[] KeyAlgorithmParameters => Interop.Crypto.GetX509PublicKeyParameterBytes(_cert);
+        public byte[] KeyAlgorithmParameters => Interop.AndroidCrypto.X509GetPublicKeyParameterBytes(_cert);
 
         public byte[] PublicKeyValue
         {
             get
             {
                 // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
-                byte[] bytes = Interop.AndroidCrypto.GetX509PublicKeyBytes(_cert);
+                byte[] bytes = Interop.AndroidCrypto.X509GetPublicKeyBytes(_cert);
                 return SubjectPublicKeyInfoAsn.Decode(bytes, AsnEncodingRules.DER).SubjectPublicKey.ToArray();
             }
         }
 
         public byte[] SerialNumber => Interop.AndroidCrypto.X509GetSerialNumber(_cert);
 
-        public string SignatureAlgorithm => Interop.AndroidCrypto.GetX509SignatureAlgorithm(_cert);
+        public string SignatureAlgorithm => Interop.AndroidCrypto.X509GetSignatureAlgorithm(_cert);
 
         public DateTime NotAfter
         {
             get
             {
-                ulong msFromUnixEpoch = Interop.AndroidCrypto.GetX509NotAfter(_cert);
+                ulong msFromUnixEpoch = Interop.AndroidCrypto.X509GetNotAfter(_cert);
                 return DateTime.UnixEpoch.AddMilliseconds(msFromUnixEpoch).ToLocalTime();
             }
         }
@@ -204,7 +204,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                ulong msFromUnixEpoch = Interop.AndroidCrypto.GetX509NotBefore(_cert);
+                ulong msFromUnixEpoch = Interop.AndroidCrypto.X509GetNotBefore(_cert);
                 return DateTime.UnixEpoch.AddMilliseconds(msFromUnixEpoch).ToLocalTime();
             }
         }
@@ -215,7 +215,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int version = Interop.Crypto.GetX509Version(_cert);
+                int version = Interop.AndroidCrypto.X509GetVersion(_cert);
                 if (version < 0)
                 {
                     throw new CryptographicException();
@@ -251,7 +251,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_subjectName == null)
                 {
-                    _subjectName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert));
+                    _subjectName = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetSubjectName(_cert));
                 }
 
                 return _subjectName;
@@ -264,7 +264,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_issuerName == null)
                 {
-                    _issuerName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert));
+                    _issuerName = Interop.AndroidCrypto.LoadX500Name(Interop.AndroidCrypto.X509GetIssuerName(_cert));
                 }
 
                 return _issuerName;
@@ -378,22 +378,12 @@ namespace Internal.Cryptography.Pal
 
         public ECDsa GetECDsaPublicKey()
         {
-            using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
-            {
-                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
-
-                return new ECDsaOpenSsl(publicKeyHandle);
-            }
+            throw new NotImplementedException(nameof(GetECDsaPublicKey));
         }
 
         public ECDiffieHellman GetECDiffieHellmanPublicKey()
         {
-            using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
-            {
-                Interop.Crypto.CheckValidOpenSslHandle(publicKeyHandle);
-
-                return new ECDiffieHellmanOpenSsl(publicKeyHandle);
-            }
+            throw new NotImplementedException(nameof(GetECDiffieHellmanPublicKey));
         }
 
         public ECDsa? GetECDsaPrivateKey()
@@ -416,96 +406,24 @@ namespace Internal.Cryptography.Pal
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
-        {
-            // This could be X509Duplicate for a full clone, but since OpenSSL certificates
-            // are functionally immutable (unlike Windows ones) an UpRef is sufficient.
-            SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
-            OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
-
-            duplicate.SetPrivateKey(privateKey);
-            return duplicate;
-        }
-
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
-            DSAOpenSsl? typedKey = privateKey as DSAOpenSsl;
-
-            if (typedKey != null)
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
-
-            DSAParameters dsaParameters = privateKey.ExportParameters(true);
-
-            using (PinAndClear.Track(dsaParameters.X!))
-            using (typedKey = new DSAOpenSsl(dsaParameters))
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
+            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(DSA)");
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            ECDsaOpenSsl? typedKey = privateKey as ECDsaOpenSsl;
-
-            if (typedKey != null)
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
-
-            ECParameters ecParameters = privateKey.ExportParameters(true);
-
-            using (PinAndClear.Track(ecParameters.D!))
-            using (typedKey = new ECDsaOpenSsl())
-            {
-                typedKey.ImportParameters(ecParameters);
-
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
+            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(ECDsa)");
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            ECDiffieHellmanOpenSsl? typedKey = privateKey as ECDiffieHellmanOpenSsl;
-
-            if (typedKey != null)
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
-
-            ECParameters ecParameters = privateKey.ExportParameters(true);
-
-            using (PinAndClear.Track(ecParameters.D!))
-            using (typedKey = new ECDiffieHellmanOpenSsl())
-            {
-                typedKey.ImportParameters(ecParameters);
-
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
+            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(ECDiffieHellman)");
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            RSAOpenSsl? typedKey = privateKey as RSAOpenSsl;
-
-            if (typedKey != null)
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
-
-            RSAParameters rsaParameters = privateKey.ExportParameters(true);
-
-            using (PinAndClear.Track(rsaParameters.D!))
-            using (PinAndClear.Track(rsaParameters.P!))
-            using (PinAndClear.Track(rsaParameters.Q!))
-            using (PinAndClear.Track(rsaParameters.DP!))
-            using (PinAndClear.Track(rsaParameters.DQ!))
-            using (PinAndClear.Track(rsaParameters.InverseQ!))
-            using (typedKey = new RSAOpenSsl(rsaParameters))
-            {
-                return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
-            }
+            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(RSA)");
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
@@ -543,6 +461,7 @@ namespace Internal.Cryptography.Pal
 
         internal OpenSslX509CertificateReader DuplicateHandles()
         {
+            // Add a global reference to the underlying cert object.
             SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
             OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
 
