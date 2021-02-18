@@ -5383,7 +5383,7 @@ public:
     void fgComputeCalledCount(BasicBlock::weight_t returnWeight);
     void fgComputeEdgeWeights();
 
-    void fgReorderBlocks();
+    bool fgReorderBlocks();
 
     void fgDetermineFirstColdBlock();
 

@@ -4511,18 +4511,15 @@ PhaseStatus Compiler::optOptimizeLayout()
     const bool allowTailDuplication = true;
 
     madeChanges |= fgUpdateFlowGraph(allowTailDuplication);
-    fgReorderBlocks();
-    madeChanges |= fgModified;
+    madeChanges |= fgReorderBlocks();
     madeChanges |= fgUpdateFlowGraph();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-/*****************************************************************************
- *
- *  Perform loop inversion, find and classify natural loops
- */
-
+//-----------------------------------------------------------------------------
+// optOptimizeLoops: find and classify natural loops
+//
 void Compiler::optOptimizeLoops()
 {
     noway_assert(opts.OptimizationEnabled());

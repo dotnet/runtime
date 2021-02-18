@@ -3661,15 +3661,17 @@ bool Compiler::fgOptimizeSwitchJumps()
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
-/*****************************************************************************
- *
- *  Function called to reorder the flowgraph of BasicBlocks such that any
- *  rarely run blocks are placed at the end of the block list.
- *  If we have profile information we also use that information to reverse
- *  all conditional jumps that would benefit.
- */
 
-void Compiler::fgReorderBlocks()
+//-----------------------------------------------------------------------------
+// fgReorderBlocks: reorder blocks to favor frequent fall through paths,
+//     move rare blocks to the end of the method/eh region, and move
+//     funclets to the ends of methods.
+//
+// Returns:
+//    True if anything got reordered. Not reordering may involve modifying
+//    IR to reverse branch conditions.
+//
+bool Compiler::fgReorderBlocks()
 {
     noway_assert(opts.compDbgCode == false);
 
@@ -3680,7 +3682,7 @@ void Compiler::fgReorderBlocks()
     // We can't relocate anything if we only have one block
     if (fgFirstBB->bbNext == nullptr)
     {
-        return;
+        return false;
     }
 
     bool newRarelyRun      = false;
@@ -4816,7 +4818,7 @@ void Compiler::fgReorderBlocks()
 
     } // end of for loop(bPrev,block)
 
-    bool changed = movedBlocks || newRarelyRun || optimizedSwitches;
+    const bool changed = movedBlocks || newRarelyRun || optimizedSwitches;
 
     if (changed)
     {
@@ -4829,6 +4831,8 @@ void Compiler::fgReorderBlocks()
         }
 #endif // DEBUG
     }
+
+    return changed;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
