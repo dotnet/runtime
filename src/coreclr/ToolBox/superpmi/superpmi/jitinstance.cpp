@@ -350,9 +350,9 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
-        if (param.exceptionCode == EXCEPTIONCODE_MC) // Can't check e.GetCode() because of https://github.com/dotnet/runtime/issues/48356
+        if (e.GetCode() == EXCEPTIONCODE_MC)
         {
             char* message = e.GetExceptionMessage();
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);
@@ -503,7 +503,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         LogError("failed to call jitStartup.");
         e.ShowAndDeleteMessage();
