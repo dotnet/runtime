@@ -766,6 +766,7 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
 
             NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
 
@@ -788,6 +789,7 @@ namespace System.Tests
             yield return new object[] { "  123  ", defaultStyle, null, 123m };
             yield return new object[] { (567.89m).ToString(), defaultStyle, null, 567.89m };
             yield return new object[] { (-567.89m).ToString(), defaultStyle, null, -567.89m };
+            yield return new object[] { "0.6666666666666666666666666666500000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.6666666666666666666666666666m };
 
             yield return new object[] { "79228162514264337593543950335", defaultStyle, null, 79228162514264337593543950335m };
             yield return new object[] { "-79228162514264337593543950335", defaultStyle, null, -79228162514264337593543950335m };
