@@ -30,9 +30,12 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
             {
                 // Destroy the private key data.
                 jobject privateKey = (*env)->CallObjectMethod(env, r->keyPair, g_keyPairGetPrivateMethod);
-                (*env)->CallVoidMethod(env, privateKey, g_destroy);
-                ReleaseLRef(env, privateKey);
-                CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+                if (privateKey)
+                {
+                    (*env)->CallVoidMethod(env, privateKey, g_destroy);
+                    ReleaseLRef(env, privateKey);
+                    CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+                }
             }
 
             ReleaseGRef(env, r->keyPair);

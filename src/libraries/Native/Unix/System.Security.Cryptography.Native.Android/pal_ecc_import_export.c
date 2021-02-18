@@ -348,14 +348,19 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(
         // if (!EC_KEY_check_key(key))
         //     goto error;
     }
-
-    assert(pubKeySpec != NULL && privKeySpec != NULL);
+    else
+    {
+        goto error;
+    }
 
     // Create the private and public keys and put them into a key pair.
     algorithmName = JSTRING("EC");
     keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
     publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, pubKeySpec);
-    privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, privKeySpec);
+    if (privKeySpec)
+    {
+        privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, privKeySpec);
+    }
     keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
 
     goto cleanup;
@@ -586,7 +591,8 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
     if (!keyPair)
         goto error;
 
-    keyInfo = CryptoNative_NewEcKey(ToGRef(env, paramSpec), keyPair);
+    // Use AddGRef here since we always delete the local ref below.
+    keyInfo = CryptoNative_NewEcKey(AddGRef(env, paramSpec), keyPair);
 
 error:
     CryptoNative_BigNumDestroy(pBn);
