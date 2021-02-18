@@ -320,7 +320,7 @@ namespace Internal.Cryptography.Pal
                 {
                     // relative link
                     var root = new DirectoryInfo(rootDirectory);
-                    root  = new DirectoryInfo(root.Parent + "/" + linkedDirectory);
+                    root  = new DirectoryInfo(Path.Join(root.Parent?.FullName, linkedDirectory));
                     rootDirectory = root.FullName;
                 }
 
