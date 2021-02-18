@@ -19,16 +19,16 @@ namespace System.Collections.Tests
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Heapify_String(string[] elements)
         {
-            var expected = elements.OrderBy(e => e, s_stringComparer);
-            var actual = HeapSort_Heapify(elements, s_stringComparer);
+            IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
+            IEnumerable<string> actual = HeapSort_Heapify(elements, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Heapify_Int(int[] elements)
         {
-            var expected = elements.OrderBy(e => e);
-            var actual = HeapSort_Heapify(elements);
+            IEnumerable<int> expected = elements.OrderBy(e => e);
+            IEnumerable<int> actual = HeapSort_Heapify(elements);
             Assert.Equal(expected, actual);
         }
 
@@ -45,16 +45,16 @@ namespace System.Collections.Tests
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_EnqueueRange_String(string[] elements)
         {
-            var expected = elements.OrderBy(e => e, s_stringComparer);
-            var actual = HeapSort_EnqueueRange(elements, s_stringComparer);
+            IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
+            IEnumerable<string> actual = HeapSort_EnqueueRange(elements, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_EnqueueRange_Int(int[] elements)
         {
-            var expected = elements.OrderBy(e => e);
-            var actual = HeapSort_EnqueueRange(elements);
+            IEnumerable<int> expected = elements.OrderBy(e => e);
+            IEnumerable<int> actual = HeapSort_EnqueueRange(elements);
             Assert.Equal(expected, actual);
         }
 
@@ -72,16 +72,16 @@ namespace System.Collections.Tests
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Enqueue_String(string[] elements)
         {
-            var expected = elements.OrderBy(e => e, s_stringComparer);
-            var actual = HeapSort_Enqueue(elements, s_stringComparer);
+            IEnumerable<string> expected = elements.OrderBy(e => e, s_stringComparer);
+            IEnumerable<string> actual = HeapSort_Enqueue(elements, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void HeapSort_Enqueue_Int(int[] elements)
         {
-            var expected = elements.OrderBy(e => e);
-            var actual = HeapSort_Enqueue(elements);
+            IEnumerable<int> expected = elements.OrderBy(e => e);
+            IEnumerable<int> actual = HeapSort_Enqueue(elements);
             Assert.Equal(expected, actual);
         }
 
@@ -89,7 +89,7 @@ namespace System.Collections.Tests
         {
             var queue = new PriorityQueue<TElement, TElement>(comparer);
 
-            foreach (var input in inputs)
+            foreach (TElement input in inputs)
             {
                 queue.Enqueue(input, input);
             }
@@ -104,16 +104,16 @@ namespace System.Collections.Tests
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void KMaxElements_String(string[] elements, NonNegativeInt k)
         {
-            var expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k.Get);
-            var actual = KMaxElements(elements, k.Get, s_stringComparer);
+            IEnumerable<string> expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k.Get);
+            IEnumerable<string> actual = KMaxElements(elements, k.Get, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
         [Property(MaxTest = MaxTest, Replay = Seed)]
         public static void KMaxElements_Int(int[] elements, NonNegativeInt k)
         {
-            var expected = elements.OrderByDescending(e => e).Take(k.Get);
-            var actual = KMaxElements(elements, k.Get);
+            IEnumerable<int> expected = elements.OrderByDescending(e => e).Take(k.Get);
+            IEnumerable<int> actual = KMaxElements(elements, k.Get);
             Assert.Equal(expected, actual);
         }
 
