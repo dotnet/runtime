@@ -4,6 +4,8 @@
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PackageDescription>ILCompiler.Reflection.ReadyToRun.dll</PackageDescription>
+    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
   </PropertyGroup>
 
   <ItemGroup>
