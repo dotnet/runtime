@@ -11,7 +11,6 @@ namespace Tracing.Tests
 {
     internal sealed class RuntimeEventListener : EventListener
     {
-        private readonly string _targetSourceName;
         private readonly EventLevel _level;
         
         public int TPWorkerThreadStartCount = 0;
@@ -45,11 +44,8 @@ namespace Tracing.Tests
 
     class EventPipeSmoke
     {
-        private static int messageIterations = 100;
-
         static int Main(string[] args)
         {
-            bool pass = false;
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
                 int someNumber = 0;
@@ -59,7 +55,7 @@ namespace Tracing.Tests
                     tasks[i] = Task.Run(() => { someNumber += 1; });
                 }
                 Task.WaitAll(tasks);
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
 
                 if (listener.TPWorkerThreadStartCount > 10 ||
                     listener.TPWorkerThreadStopCount > 10 ||
