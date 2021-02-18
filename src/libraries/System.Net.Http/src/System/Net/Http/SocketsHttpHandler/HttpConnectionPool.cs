@@ -424,8 +424,6 @@ namespace System.Net.Http
                 return ValueTask.FromCanceled<HttpConnection?>(cancellationToken);
             }
 
-            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-            long nowTicks = Environment.TickCount64;
             List<CachedConnection> list = _idleConnections;
 
             // Try to find a usable cached connection.
