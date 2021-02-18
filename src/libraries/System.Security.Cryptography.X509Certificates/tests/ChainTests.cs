@@ -368,7 +368,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> VerifyExpressionData()
+        public static IEnumerable<object[]> VerifyExpirationData()
         {
             // The test will be using the chain for TestData.MicrosoftDotComSslCertBytes
             // The leaf cert (microsoft.com) is valid from 2020-08-28 22:17:02Z to 2021-08-28 22:17:02Z
@@ -426,7 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VerifyExpressionData))]
+        [MemberData(nameof(VerifyExpirationData))]
         public static void VerifyExpiration_LocalTime(DateTime verificationTime, bool shouldBeValid)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
