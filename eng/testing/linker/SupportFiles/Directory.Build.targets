@@ -14,7 +14,7 @@
   <Target Name="UpdateRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackRidDir)/../../" />
       <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
     </ItemGroup>
   </Target>

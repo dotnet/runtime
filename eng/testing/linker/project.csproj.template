@@ -11,7 +11,6 @@
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <TargetFramework>{NetCoreAppCurrent}</TargetFramework>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
-    <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
