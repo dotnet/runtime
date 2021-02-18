@@ -363,26 +363,25 @@ namespace System.Text.Json.Serialization
                     // For internal converter only: Handle polymorphic case and get the new converter.
                     // Custom converter, even though polymorphic converter, get called for reading AND writing.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
-                    if (jsonConverter != this)
+                    Debug.Assert(jsonConverter != this);
+
+                    if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                        jsonConverter.IsValueType)
                     {
-                        if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
-                            jsonConverter.IsValueType)
-                        {
-                            // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
-                            state.ReferenceResolver.PushReferenceForCycleDetection(value);
-                            ignoreCyclesPopReference = true;
-                        }
-
-                        // We found a different converter; forward to that.
-                        bool success2 = jsonConverter.TryWriteAsObject(writer, value, options, ref state);
-
-                        if (ignoreCyclesPopReference)
-                        {
-                            state.ReferenceResolver.PopReferenceForCycleDetection();
-                        }
-
-                        return success2;
+                        // For boxed value types: push the value before it gets unboxed on TryWriteAsObject.
+                        state.ReferenceResolver.PushReferenceForCycleDetection(value);
+                        ignoreCyclesPopReference = true;
                     }
+
+                    // We found a different converter; forward to that.
+                    bool success2 = jsonConverter.TryWriteAsObject(writer, value, options, ref state);
+
+                    if (ignoreCyclesPopReference)
+                    {
+                        state.ReferenceResolver.PopReferenceForCycleDetection();
+                    }
+
+                    return success2;
                 }
             }
 
