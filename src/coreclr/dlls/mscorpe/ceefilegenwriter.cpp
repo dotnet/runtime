@@ -225,10 +225,6 @@ inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
     return (IMAGE_SYMBOL*) (((BYTE*) pHead) + IMAGE_SIZEOF_SYMBOL * idx);
 }
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
 #ifdef ENC_DELTA_HACK
     BOOL g_EnCMode = FALSE;
 #endif

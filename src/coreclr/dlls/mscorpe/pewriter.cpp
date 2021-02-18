@@ -27,10 +27,6 @@ static INT64 s_minPcRel25;
 static INT64 s_maxPcRel25;
 #endif
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
     /* This is the stub program that says it can't be run in DOS mode */
     /* it is x86 specific, but so is dos so I suppose that is OK */
 static const unsigned char x86StubPgm[] = {

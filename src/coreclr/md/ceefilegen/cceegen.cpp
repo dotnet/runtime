@@ -8,10 +8,6 @@
 
 #include "corerror.h"
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
 
 //*****************************************************************************
 // Creation for new CCeeGen instances

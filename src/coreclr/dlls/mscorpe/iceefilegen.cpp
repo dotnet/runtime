@@ -7,10 +7,6 @@
 #include "iceefilegen.h"
 #include "ceefilegenwriter.h"
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
 #ifdef ENC_DELTA_HACK
 extern BOOL g_EnCMode;
 #endif
