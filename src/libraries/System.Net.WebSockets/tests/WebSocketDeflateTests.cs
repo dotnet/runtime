@@ -240,6 +240,20 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
+        [Fact]
+        public async Task WebSocketWithoutDeflateShouldThrowOnCompressedMessage()
+        {
+            var stream = new WebSocketStream();
+
+            stream.Write(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            using var websocket = WebSocket.CreateFromStream(stream.Remote, new());
+
+            var exception = await Assert.ThrowsAsync<WebSocketException>(() =>
+               websocket.ReceiveAsync(Memory<byte>.Empty, CancellationToken).AsTask());
+
+            Assert.Equal("The WebSocket received compressed frame when compression is not enabled.", exception.Message);
+        }
+
         private ValueTask SendTextAsync(string text, WebSocket websocket)
         {
             var bytes = Encoding.UTF8.GetBytes(text);

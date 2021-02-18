@@ -225,4 +225,7 @@
   <data name="ZLibErrorInconsistentStream" xml:space="preserve">
     <value>The stream state of the underlying compression routine is inconsistent.</value>
   </data>
+  <data name="net_Websockets_PerMessageCompressedFlagWhenNotEnabled" xml:space="preserve">
+    <value>The WebSocket received compressed frame when compression is not enabled.</value>
+  </data>
 </root>

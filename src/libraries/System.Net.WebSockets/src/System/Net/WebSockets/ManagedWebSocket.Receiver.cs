@@ -230,8 +230,9 @@ namespace System.Net.WebSockets
                     int consumed, written;
                     int available = (int)Math.Min(_readBuffer.AvailableLength, _lastHeader.PayloadLength);
 
-                    if (_decoder is not null && _decoder.IsNeeded(_lastHeader))
+                    if (_lastHeader.Compressed)
                     {
+                        Debug.Assert(_decoder is not null);
                         _decoder.Decode(input: _readBuffer.AvailableSpan.Slice(0, available),
                                         output: buffer.Span, out consumed, out written);
                     }
@@ -266,7 +267,7 @@ namespace System.Net.WebSockets
                 // and should start issuing reads on the stream.
                 Debug.Assert(_readBuffer.AvailableLength == 0 && _lastHeader.PayloadLength > 0);
 
-                if (_decoder is null || !_decoder.IsNeeded(_lastHeader))
+                if (_decoder is null)
                 {
                     if (buffer.Length > _lastHeader.PayloadLength)
                     {
@@ -335,9 +336,14 @@ namespace System.Net.WebSockets
 
                 while (true)
                 {
-                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header,
-                            out var error, out var consumedBytes))
+                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header, out var error, out var consumedBytes))
                     {
+                        if (header.Compressed && _decoder is null)
+                        {
+                            _headerError = SR.net_Websockets_PerMessageCompressedFlagWhenNotEnabled;
+                            return false;
+                        }
+
                         // If this is a continuation, replace the opcode with the one of the message it's continuing
                         if (header.Opcode == MessageOpcode.Continuation)
                         {
@@ -450,8 +456,6 @@ namespace System.Net.WebSockets
 
             private abstract class Decoder : IDisposable
             {
-                public abstract bool IsNeeded(MessageHeader header);
-
                 public abstract void Dispose();
 
                 public abstract void Decode(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written);
@@ -473,8 +477,6 @@ namespace System.Net.WebSockets
                 private IO.Compression.Inflater? _inflater;
 
                 public Inflater(int windowBits) => _windowBits = windowBits;
-
-                public override bool IsNeeded(MessageHeader header) => header.Compressed;
 
                 public override void Dispose() => _inflater?.Dispose();
 
@@ -555,8 +557,6 @@ namespace System.Net.WebSockets
                 private byte? _remainingByte;
 
                 public PersistedInflater(int windowBits) => _inflater = new(windowBits);
-
-                public override bool IsNeeded(MessageHeader header) => header.Compressed;
 
                 public override void Dispose() => _inflater.Dispose();
 
