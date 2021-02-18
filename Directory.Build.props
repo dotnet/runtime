@@ -38,8 +38,8 @@
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
     <NetCoreAppCurrentVersion>$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
-    <AspNetCoreAppCurrentVersion>5.0</AspNetCoreAppCurrentVersion>
-    <NetCoreAppToolCurrentVersion>5.0</NetCoreAppToolCurrentVersion>
+    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
