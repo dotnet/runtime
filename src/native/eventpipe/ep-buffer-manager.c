@@ -1251,9 +1251,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	// There are sequence points created during this flush and we've marked session states for deletion.
 	// We need to remove these from the internal maps of the subsequent Sequence Points
 	if (ep_rt_thread_session_state_array_size(&session_states_to_delete) > 0) {
-		wait_start = ep_perf_timestamp_get();
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section4)
-			ep_buffer_manager_enter_lock (buffer_manager, wait_start);
 			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point)) {
 				// foreach (sequence_point in buffer_manager->sequence_point_list)
 				for (ep_rt_sequence_point_list_iterator_t sequence_point_list_iterator = ep_rt_sequence_point_list_iterator_begin(&buffer_manager->sequence_points);
