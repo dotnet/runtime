@@ -107,7 +107,7 @@ namespace Microsoft.XmlSerializer.Generator
                     else if (ArgumentMatch(arg, "default-namespace"))
                     {
                         i++;
-                        if (i >= args.Length)
+                        if (i >= args.Length || defaultNamespace != null)
                         {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
