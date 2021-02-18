@@ -8,7 +8,7 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySchemaClassCollection : CollectionBase
     {
-        private DirectoryEntry _classEntry;
+        private DirectoryEntry? _classEntry;
         private readonly string _propertyName;
         private readonly ActiveDirectorySchemaClass _schemaClass;
         private readonly bool _isBound;
@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // all properties in writeable class collection are non-defunct
                 // so calling constructor for non-defunct class
-                InnerList.Add(new ActiveDirectorySchemaClass(context, ldapDisplayName, (DirectoryEntry)null, null));
+                InnerList.Add(new ActiveDirectorySchemaClass(context, ldapDisplayName, (DirectoryEntry?)null, null));
             }
         }
 
@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySchemaClass this[int index]
         {
-            get => (ActiveDirectorySchemaClass)List[index];
+            get => (ActiveDirectorySchemaClass)List[index]!;
             set
             {
                 if (value == null)
@@ -178,7 +178,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i];
+                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, schemaClass.Name) == 0)
                 {
                     List.Remove(tmp);
@@ -224,7 +224,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i];
+                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, schemaClass.Name) == 0)
                 {
                     return true;
@@ -253,7 +253,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i];
+                ActiveDirectorySchemaClass tmp = (ActiveDirectorySchemaClass)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, schemaClass.Name) == 0)
                 {
                     return i;
@@ -286,7 +286,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnInsertComplete(int index, object value)
+        protected override void OnInsertComplete(int index, object? value)
         {
             if (_isBound)
             {
@@ -297,7 +297,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    _classEntry.Properties[_propertyName].Add(((ActiveDirectorySchemaClass)value).Name);
+                    _classEntry.Properties[_propertyName].Add(((ActiveDirectorySchemaClass)value!).Name);
                 }
                 catch (COMException e)
                 {
@@ -306,7 +306,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnRemoveComplete(int index, object value)
+        protected override void OnRemoveComplete(int index, object? value)
         {
             if (_isBound)
             {
@@ -319,7 +319,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // these values would not exist in the classEntry
                 // and therefore cannot be removed
                 // we need to throw an exception here
-                string valueName = ((ActiveDirectorySchemaClass)value).Name;
+                string valueName = ((ActiveDirectorySchemaClass)value!).Name;
 
                 try
                 {
@@ -339,7 +339,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnSetComplete(int index, object oldValue, object newValue)
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue)
         {
             if (_isBound)
             {
@@ -371,7 +371,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string[] values = new string[InnerList.Count];
             for (int i = 0; i < InnerList.Count; i++)
             {
-                values[i] = ((ActiveDirectorySchemaClass)InnerList[i]).Name;
+                values[i] = ((ActiveDirectorySchemaClass)InnerList[i]!).Name;
             }
             return values;
         }

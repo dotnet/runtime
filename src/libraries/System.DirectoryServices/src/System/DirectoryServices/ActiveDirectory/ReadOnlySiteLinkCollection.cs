@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
 using System.Collections;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -11,7 +10,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySiteLink this[int index]
         {
-            get => (ActiveDirectorySiteLink)InnerList[index];
+            get => (ActiveDirectorySiteLink)InnerList[index]!;
         }
 
         public bool Contains(ActiveDirectorySiteLink link)
@@ -19,12 +18,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (link == null)
                 throw new ArgumentNullException(nameof(link));
 
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i]!;
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -39,12 +38,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (link == null)
                 throw new ArgumentNullException(nameof(link));
 
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i]!;
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
