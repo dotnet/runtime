@@ -4370,8 +4370,6 @@ private:
 
     static BOOL impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
 
-    static bool IsInvariant(const GenTree* tree);
-
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
     // STATIC inlining decision based on the IL code.

@@ -1340,7 +1340,7 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
-                if (!Compiler::IsInvariant(prevArgTabEntry->GetNode()))
+                if (!prevArgTabEntry->GetNode()->IsInvariant())
                 {
                     prevArgTabEntry->needTmp = true;
                     needsTemps               = true;

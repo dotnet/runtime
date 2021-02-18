@@ -19456,7 +19456,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         INDEBUG(curArgVal->AsLclVar()->gtLclILoffs = argNum;)
     }
 
-    if (IsInvariant(curArgVal))
+    if (curArgVal->IsInvariant())
     {
         inlCurArgInfo->argIsInvariant = true;
         if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
