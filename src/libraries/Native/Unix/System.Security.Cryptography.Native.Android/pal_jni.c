@@ -164,10 +164,13 @@ jclass    g_TrustManager;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
-    assert(lref && "object shouldn't be null");
-    jobject gref = (*env)->NewGlobalRef(env, lref);
-    (*env)->DeleteLocalRef(env, lref);
-    return gref;
+    if (lref)
+    {
+        jobject gref = (*env)->NewGlobalRef(env, lref);
+        (*env)->DeleteLocalRef(env, lref);
+        return gref;
+    }
+    return lref;
 }
 
 jobject AddGRef(JNIEnv *env, jobject gref)
