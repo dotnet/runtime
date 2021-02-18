@@ -357,9 +357,12 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(
     algorithmName = JSTRING("EC");
     keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algorithmName);
     publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, pubKeySpec);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
     if (privKeySpec)
     {
         privateKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, privKeySpec);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
     keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
 
