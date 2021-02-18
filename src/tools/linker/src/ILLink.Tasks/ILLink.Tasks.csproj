@@ -30,9 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Sdk/Sdk.props">
-      <PackagePath>Sdk</PackagePath>
-    </Content>
+    <Content Include="sdk/Sdk.props" PackagePath="sdk" />
+    <Content Include="build/$(PackageId).props" PackagePath="build" />
   </ItemGroup>
 
   <ItemGroup>
