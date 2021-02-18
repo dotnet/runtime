@@ -12543,7 +12543,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                     fgWalkTreePre(&colon_op2, gtClearColonCond);
                 }
 
-                JITDUMP("\nIdentical GT_COLON trees! ");
+                JITDUMP("\nIdentical GT_COLON trees!\n");
                 DISPTREE(op2);
 
                 GenTree* op;

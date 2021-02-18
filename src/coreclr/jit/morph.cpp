@@ -5481,9 +5481,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            int     length;
-            LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                             asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+            int             length;
+            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
@@ -12674,10 +12674,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             break;
     }
 
-#if !CPU_HAS_FP_SUPPORT
-    tree = fgMorphToEmulatedFP(tree);
-#endif
-
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
      */
@@ -15672,200 +15668,6 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     }
     return tree;
 }
-
-#if !CPU_HAS_FP_SUPPORT
-GenTree* Compiler::fgMorphToEmulatedFP(GenTree* tree)
-{
-
-    genTreeOps oper = tree->OperGet();
-    var_types  typ  = tree->TypeGet();
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->gtGetOp2IfPresent();
-
-    /*
-        We have to use helper calls for all FP operations:
-
-            FP operators that operate on FP values
-            casts to and from FP
-            comparisons of FP values
-     */
-
-    if (varTypeIsFloating(typ) || (op1 && varTypeIsFloating(op1->TypeGet())))
-    {
-        int      helper;
-        GenTree* args;
-
-        /* Not all FP operations need helper calls */
-
-        switch (oper)
-        {
-            case GT_ASG:
-            case GT_IND:
-            case GT_LIST:
-            case GT_ADDR:
-            case GT_COMMA:
-                return tree;
-        }
-
-#ifdef DEBUG
-
-        /* If the result isn't FP, it better be a compare or cast */
-
-        if (!(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST))
-            gtDispTree(tree);
-
-        noway_assert(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST);
-#endif
-
-        /* Keep track of how many arguments we're passing */
-
-        /* Is this a binary operator? */
-
-        if (op2)
-        {
-            /* What kind of an operator do we have? */
-
-            switch (oper)
-            {
-                case GT_ADD:
-                    helper = CPX_R4_ADD;
-                    break;
-                case GT_SUB:
-                    helper = CPX_R4_SUB;
-                    break;
-                case GT_MUL:
-                    helper = CPX_R4_MUL;
-                    break;
-                case GT_DIV:
-                    helper = CPX_R4_DIV;
-                    break;
-                // case GT_MOD: helper = CPX_R4_REM; break;
-
-                case GT_EQ:
-                    helper = CPX_R4_EQ;
-                    break;
-                case GT_NE:
-                    helper = CPX_R4_NE;
-                    break;
-                case GT_LT:
-                    helper = CPX_R4_LT;
-                    break;
-                case GT_LE:
-                    helper = CPX_R4_LE;
-                    break;
-                case GT_GE:
-                    helper = CPX_R4_GE;
-                    break;
-                case GT_GT:
-                    helper = CPX_R4_GT;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP binary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp2, tree->AsOp()->gtOp1);
-        }
-        else
-        {
-            switch (oper)
-            {
-                case GT_RETURN:
-                    return tree;
-
-                case GT_CAST:
-                    noway_assert(!"FP cast");
-
-                case GT_NEG:
-                    helper = CPX_R4_NEG;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP unary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp1);
-        }
-
-        /* If we have double result/operands, modify the helper */
-
-        if (typ == TYP_DOUBLE)
-        {
-            static_assert_no_msg(CPX_R4_NEG + 1 == CPX_R8_NEG);
-            static_assert_no_msg(CPX_R4_ADD + 1 == CPX_R8_ADD);
-            static_assert_no_msg(CPX_R4_SUB + 1 == CPX_R8_SUB);
-            static_assert_no_msg(CPX_R4_MUL + 1 == CPX_R8_MUL);
-            static_assert_no_msg(CPX_R4_DIV + 1 == CPX_R8_DIV);
-
-            helper++;
-        }
-        else
-        {
-            noway_assert(tree->OperIsCompare());
-
-            static_assert_no_msg(CPX_R4_EQ + 1 == CPX_R8_EQ);
-            static_assert_no_msg(CPX_R4_NE + 1 == CPX_R8_NE);
-            static_assert_no_msg(CPX_R4_LT + 1 == CPX_R8_LT);
-            static_assert_no_msg(CPX_R4_LE + 1 == CPX_R8_LE);
-            static_assert_no_msg(CPX_R4_GE + 1 == CPX_R8_GE);
-            static_assert_no_msg(CPX_R4_GT + 1 == CPX_R8_GT);
-        }
-
-        tree = fgMorphIntoHelperCall(tree, helper, args);
-
-        return tree;
-
-        case GT_RETURN:
-
-            if (op1)
-            {
-
-                if (compCurBB == genReturnBB)
-                {
-                    /* This is the 'exitCrit' call at the exit label */
-
-                    noway_assert(op1->gtType == TYP_VOID);
-                    noway_assert(op2 == 0);
-
-                    tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
-
-                    return tree;
-                }
-
-                /* This is a (real) return value -- check its type */
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                if (genActualType(op1->TypeGet()) != genActualType(info.compRetType))
-                {
-                    bool allowMismatch = false;
-
-                    // Allow TYP_BYREF to be returned as TYP_I_IMPL and vice versa
-                    if ((info.compRetType == TYP_BYREF && genActualType(op1->TypeGet()) == TYP_I_IMPL) ||
-                        (op1->TypeGet() == TYP_BYREF && genActualType(info.compRetType) == TYP_I_IMPL))
-                        allowMismatch = true;
-
-                    if (varTypeIsFloating(info.compRetType) && varTypeIsFloating(op1->TypeGet()))
-                        allowMismatch = true;
-
-                    if (!allowMismatch)
-                        NO_WAY("Return type mismatch");
-                }
-#endif
-            }
-            break;
-    }
-    return tree;
-}
-#endif
 
 /*****************************************************************************
  *

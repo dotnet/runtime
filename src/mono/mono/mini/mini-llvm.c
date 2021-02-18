@@ -9071,6 +9071,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_AES_ENC: id = INTRINS_AARCH64_AESE; break;
 			case SIMD_OP_ARM64_SHA1SU1: id = INTRINS_AARCH64_SHA1SU1; break;
 			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
@@ -9082,19 +9090,27 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_X_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			gboolean getLowerElement = FALSE;
+			int idx = -1;
 			switch (ins->inst_c0) {
 			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
 			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
 			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
+			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; getLowerElement = TRUE; idx = 1; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef args [] = { lhs, rhs, arg3 };
+			if (getLowerElement)
+				args [idx] = LLVMBuildExtractElement (ctx->builder, args [idx], const_int32 (0), "");
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			gboolean getLowerElement = FALSE;
 			switch (ins->inst_c0) {
 			case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
 			case SIMD_OP_ARM64_AES_AESMC: id = INTRINS_AARCH64_AESMC; break;
@@ -9104,11 +9120,24 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_LLVM_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
 			case SIMD_OP_LLVM_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
 			case SIMD_OP_LLVM_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
+			case SIMD_OP_LLVM_I8ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT8; break;
+			case SIMD_OP_LLVM_I16ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT16; break;
+			case SIMD_OP_LLVM_I32ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT32; break;
+			case SIMD_OP_LLVM_I64ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT64; break;
+			case SIMD_OP_ARM64_SHA1H: id = INTRINS_AARCH64_SHA1H; getLowerElement = TRUE; break;
 			default: g_assert_not_reached (); break;
 			}
-
 			LLVMValueRef arg0 = lhs;
-			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
+			LLVMValueRef result;
+			if (getLowerElement)
+				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
+			result = call_intrins (ctx, id, &arg0, "");
+			if (getLowerElement) {
+				LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
+				result = LLVMBuildInsertElement (ctx->builder, LLVMConstNull (t), result, const_int32 (0), "");
+			}
+			values [ins->dreg] = result;
+
 			break;
 		}
 		case OP_LSCNT32:

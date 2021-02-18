@@ -73,9 +73,10 @@ namespace System.Text.Json
             Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
 
-            if (options.ReferenceHandler != null)
+            if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
             {
-                ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: true);
+                Debug.Assert(options.ReferenceHandler != null);
+                ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
             }
 
             SupportContinuation = supportContinuation;

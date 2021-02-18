@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public bool TryEnterOnCurrentStack()
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETSTANDARD2_1
             if (RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 return true;
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public TR RunOnEmptyStack<T1, T2, TR>(Func<T1, T2, TR> action, T1 arg1, T2 arg2)
         {
             // Prefer ValueTuple when available to reduce dependencies on Tuple
-#if NETCOREAPP
+#if NETSTANDARD2_1
             return RunOnEmptyStackCore(static s =>
             {
                 var t = ((Func<T1, T2, TR>, T1, T2))s;

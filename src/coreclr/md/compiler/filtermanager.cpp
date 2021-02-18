@@ -1063,8 +1063,8 @@ HRESULT FilterManager::MarkInterfaceImpls(
     mdTypeDef   td)
 {
     HRESULT         hr = NOERROR;
-    ULONG           ridStart, ridEnd;
-    ULONG           i;
+    RID             ridStart, ridEnd;
+    RID             i;
     InterfaceImplRec *pRec;
 
     // We know that the filter table is not null here.  Tell PREFIX that we know it.

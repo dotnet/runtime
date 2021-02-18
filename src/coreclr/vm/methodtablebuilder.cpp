@@ -2722,7 +2722,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
         {
             SigParser genericArgParser(pMemberSignature, cMemberSignature);
-            ULONG ulCallConv;
+            uint32_t ulCallConv;
             hr = genericArgParser.GetCallingConvInfo(&ulCallConv);
             if (FAILED(hr))
             {
@@ -3031,13 +3031,13 @@ MethodTableBuilder::EnumerateClassMethods()
             if ((bmtGenerics->pVarianceInfo != NULL) && !IsMdStatic(dwMemberAttrs))
             {
                 SigPointer sp(pMemberSignature, cMemberSignature);
-                ULONG callConv;
+                uint32_t callConv;
                 IfFailThrow(sp.GetCallingConvInfo(&callConv));
 
                 if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
                     IfFailThrow(sp.GetData(NULL));
 
-                DWORD numArgs;
+                uint32_t numArgs;
                 IfFailThrow(sp.GetData(&numArgs));
 
                 // Return type behaves covariantly
@@ -3051,7 +3051,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     BuildMethodTableThrowException(IDS_CLASSLOAD_VARIANCE_IN_METHOD_RESULT, tok);
                 }
                 IfFailThrow(sp.SkipExactlyOne());
-                for (DWORD j = 0; j < numArgs; j++)
+                for (uint32_t j = 0; j < numArgs; j++)
                 {
                     // Argument types behave contravariantly
                     if (!EEClass::CheckVarianceInSig(bmtGenerics->GetNumGenericArgs(),

@@ -324,6 +324,7 @@ namespace System
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
+            int numberOfTrailingZeros = 0;
 
             while (true)
             {
@@ -335,10 +336,10 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount++] = (byte)(ch);
+                            number.Digits[digCount] = (byte)(ch);
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
-                                digEnd = digCount;
+                                digEnd = digCount + 1;
                             }
                         }
                         else if (ch != '0')
@@ -357,6 +358,19 @@ namespace System
                         {
                             number.Scale++;
                         }
+                        else if (digCount < maxDigCount)
+                        {
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
+                            if (ch == '0')
+                            {
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
+                            }
+                        }
+                        digCount++;
                         state |= StateNonZero;
                     }
                     else if ((state & StateDecimal) != 0)
@@ -381,8 +395,17 @@ namespace System
             }
 
             bool negExp = false;
-            number.DigitsCount = digEnd;
-            number.Digits[digEnd] = (byte)('\0');
+            if (digEnd == maxDigCount && numberOfTrailingZeros > 0 && number.HasNonZeroTail)
+            {
+                // We have a non-zero digit in the input past maxDigitCount. We already handle this properly.
+                number.DigitsCount = digEnd;
+            }
+            else
+            {
+                // We have trailing 0s in the fractional part. We can strip it all out
+                number.DigitsCount = digEnd - numberOfTrailingZeros;
+            }
+            number.Digits[number.DigitsCount] = (byte)('\0');
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))

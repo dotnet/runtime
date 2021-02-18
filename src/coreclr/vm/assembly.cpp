@@ -1426,14 +1426,14 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     // Check for types
     SigPointer sig(pFD->GetSigPointer());
 
-    ULONG nCallConv;
+    uint32_t nCallConv;
     if (FAILED(sig.GetData(&nCallConv)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
     if (nCallConv != IMAGE_CEE_CS_CALLCONV_DEFAULT)
         ThrowMainMethodException(pFD, IDS_EE_LOAD_BAD_MAIN_SIG);
 
-    ULONG nParamCount;
+    uint32_t nParamCount;
     if (FAILED(sig.GetData(&nParamCount)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 

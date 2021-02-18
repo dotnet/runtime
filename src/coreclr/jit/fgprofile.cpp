@@ -3129,6 +3129,11 @@ void Compiler::fgComputeEdgeWeights()
                     if (!assignOK)
                     {
                         // Here we have inconsistent profile data
+                        JITDUMP("Inconsistent profile data at " FMT_BB " -> " FMT_BB
+                                ": dest weight %f, min/max into dest is %f/%f, edge %f/%f\n",
+                                bSrc->bbNum, bDst->bbNum, bDstWeight, minEdgeWeightSum, maxEdgeWeightSum,
+                                edge->edgeWeightMin(), edge->edgeWeightMax());
+
                         inconsistentProfileData = true;
                         // No point in continuing
                         goto EARLY_EXIT;
@@ -3222,6 +3227,43 @@ EARLY_EXIT:;
     fgEdgeWeightsComputed  = true;
 }
 
+//------------------------------------------------------------------------
+// fgProfileWeightsEqual: check if two profile weights are equal
+//   (or nearly so)
+//
+// Arguments:
+//   weight1 -- first weight
+//   weight2 -- second weight
+//
+// Notes:
+//   In most cases you should probably call fgProfileWeightsConsistent instead
+//   of this method.
+//
+bool Compiler::fgProfileWeightsEqual(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2)
+{
+    return fabs(weight1 - weight2) < 0.01;
+}
+
+//------------------------------------------------------------------------
+// fgProfileWeightsConsistentEqual: check if two profile weights are within
+//   some small percentage of one another.
+//
+// Arguments:
+//   weight1 -- first weight
+//   weight2 -- second weight
+//
+bool Compiler::fgProfileWeightsConsistent(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2)
+{
+    if (weight2 == 0)
+    {
+        return fgProfileWeightsEqual(weight1, weight2);
+    }
+
+    BasicBlock::weight_t const relativeDiff = (weight2 - weight1) / weight2;
+
+    return fgProfileWeightsEqual(relativeDiff, 0.0f);
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -3312,118 +3354,22 @@ void Compiler::fgDebugCheckProfileData()
         // But we have two edge counts... so for now we simply check if the block
         // count falls within the [min,max] range.
         //
+        bool incomingConsistent = true;
+        bool outgoingConsistent = true;
+
         if (verifyIncoming)
         {
-            BasicBlock::weight_t incomingWeightMin = 0;
-            BasicBlock::weight_t incomingWeightMax = 0;
-            bool                 foundPreds        = false;
-
-            for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
-            {
-                incomingWeightMin += predEdge->edgeWeightMin();
-                incomingWeightMax += predEdge->edgeWeightMax();
-                foundPreds = true;
-            }
-
-            if (!foundPreds)
-            {
-                // Might need to tone this down as we could see unreachable blocks?
-                problemBlocks++;
-                JITDUMP("  " FMT_BB " - expected to see predecessors\n", block->bbNum);
-            }
-            else
-            {
-                if (incomingWeightMin > incomingWeightMax)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - incoming min %d > incoming max %d\n", block->bbNum, incomingWeightMin,
-                            incomingWeightMax);
-                }
-                else if (blockWeight < incomingWeightMin)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - block weight %d < incoming min %d\n", block->bbNum, blockWeight,
-                            incomingWeightMin);
-                }
-                else if (blockWeight > incomingWeightMax)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - block weight %d > incoming max %d\n", block->bbNum, blockWeight,
-                            incomingWeightMax);
-                }
-            }
+            incomingConsistent = fgDebugCheckIncomingProfileData(block);
         }
 
         if (verifyOutgoing)
         {
-            const unsigned numSuccs = block->NumSucc();
+            outgoingConsistent = fgDebugCheckOutgoingProfileData(block);
+        }
 
-            if (numSuccs == 0)
-            {
-                problemBlocks++;
-                JITDUMP("  " FMT_BB " - expected to see successors\n", block->bbNum);
-            }
-            else
-            {
-                BasicBlock::weight_t outgoingWeightMin = 0;
-                BasicBlock::weight_t outgoingWeightMax = 0;
-
-                // Walking successor edges is a bit wonky. Seems like it should be easier.
-                // Note this can also fail to enumerate all the edges, if we have a multigraph
-                //
-                int missingEdges = 0;
-
-                for (unsigned i = 0; i < numSuccs; i++)
-                {
-                    BasicBlock* succBlock = block->GetSucc(i);
-                    flowList*   succEdge  = nullptr;
-
-                    for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
-                    {
-                        if (edge->getBlock() == block)
-                        {
-                            succEdge = edge;
-                            break;
-                        }
-                    }
-
-                    if (succEdge == nullptr)
-                    {
-                        missingEdges++;
-                        JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum,
-                                succBlock->bbNum);
-                    }
-                    else
-                    {
-                        outgoingWeightMin += succEdge->edgeWeightMin();
-                        outgoingWeightMax += succEdge->edgeWeightMax();
-                    }
-                }
-
-                if (missingEdges > 0)
-                {
-                    JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-                    problemBlocks++;
-                }
-                if (outgoingWeightMin > outgoingWeightMax)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - outgoing min %d > outgoing max %d\n", block->bbNum, outgoingWeightMin,
-                            outgoingWeightMax);
-                }
-                else if (blockWeight < outgoingWeightMin)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - block weight %d < outgoing min %d\n", block->bbNum, blockWeight,
-                            outgoingWeightMin);
-                }
-                else if (blockWeight > outgoingWeightMax)
-                {
-                    problemBlocks++;
-                    JITDUMP("  " FMT_BB " - block weight %d > outgoing max %d\n", block->bbNum, blockWeight,
-                            outgoingWeightMax);
-                }
-            }
+        if (!incomingConsistent || !outgoingConsistent)
+        {
+            problemBlocks++;
         }
     }
 
@@ -3434,7 +3380,7 @@ void Compiler::fgDebugCheckProfileData()
         if (entryWeight != exitWeight)
         {
             problemBlocks++;
-            JITDUMP("  Entry %d exit %d mismatch\n", entryWeight, exitWeight);
+            JITDUMP("  Entry %f exit %f weight mismatch\n", entryWeight, exitWeight);
         }
     }
 
@@ -3462,6 +3408,147 @@ void Compiler::fgDebugCheckProfileData()
             assert(!"Inconsistent profile");
         }
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckIncomingProfileData: verify profile data flowing into a
+//   block matches the profile weight of the block.
+//
+// Arguments:
+//   block - block to check
+//
+// Returns:
+//   true if counts consistent, false otherwise.
+//
+// Notes:
+//   Only useful to call on blocks with predecessors.
+//
+bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block)
+{
+    BasicBlock::weight_t const blockWeight       = block->bbWeight;
+    BasicBlock::weight_t       incomingWeightMin = 0;
+    BasicBlock::weight_t       incomingWeightMax = 0;
+    bool                       foundPreds        = false;
+
+    for (flowList* predEdge = block->bbPreds; predEdge != nullptr; predEdge = predEdge->flNext)
+    {
+        incomingWeightMin += predEdge->edgeWeightMin();
+        incomingWeightMax += predEdge->edgeWeightMax();
+        foundPreds = true;
+    }
+
+    if (!foundPreds)
+    {
+        // Assume this is ok.
+        //
+        return true;
+    }
+
+    if (incomingWeightMin > incomingWeightMax)
+    {
+        JITDUMP("  " FMT_BB " - incoming min %f > incoming max %f\n", block->bbNum, incomingWeightMin,
+                incomingWeightMax);
+        return false;
+    }
+
+    if (blockWeight < incomingWeightMin)
+    {
+        JITDUMP("  " FMT_BB " - block weight %f < incoming min %f\n", block->bbNum, blockWeight, incomingWeightMin);
+        return false;
+    }
+
+    if (blockWeight > incomingWeightMax)
+    {
+        JITDUMP("  " FMT_BB " - block weight %f > incoming max %f\n", block->bbNum, blockWeight, incomingWeightMax);
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckOutgoingProfileData: verify profile data flowing out of
+//   a block matches the profile weight of the block.
+//
+// Arguments:
+//   block - block to check
+//
+// Returns:
+//   true if counts consistent, false otherwise.
+//
+// Notes:
+//   Only useful to call on blocks with successors.
+//
+bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
+{
+    const unsigned numSuccs = block->NumSucc();
+
+    if (numSuccs == 0)
+    {
+        // Assume this is ok.
+        //
+        return true;
+    }
+
+    BasicBlock::weight_t const blockWeight       = block->bbWeight;
+    BasicBlock::weight_t       outgoingWeightMin = 0;
+    BasicBlock::weight_t       outgoingWeightMax = 0;
+
+    // Walking successor edges is a bit wonky. Seems like it should be easier.
+    // Note this can also fail to enumerate all the edges, if we have a multigraph
+    //
+    int missingEdges = 0;
+
+    for (unsigned i = 0; i < numSuccs; i++)
+    {
+        BasicBlock* succBlock = block->GetSucc(i);
+        flowList*   succEdge  = nullptr;
+
+        for (flowList* edge = succBlock->bbPreds; edge != nullptr; edge = edge->flNext)
+        {
+            if (edge->getBlock() == block)
+            {
+                succEdge = edge;
+                break;
+            }
+        }
+
+        if (succEdge == nullptr)
+        {
+            missingEdges++;
+            JITDUMP("  " FMT_BB " can't find successor edge to " FMT_BB "\n", block->bbNum, succBlock->bbNum);
+            continue;
+        }
+
+        outgoingWeightMin += succEdge->edgeWeightMin();
+        outgoingWeightMax += succEdge->edgeWeightMax();
+    }
+
+    if (missingEdges > 0)
+    {
+        JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
+    }
+
+    if (outgoingWeightMin > outgoingWeightMax)
+    {
+        JITDUMP("  " FMT_BB " - outgoing min %f > outgoing max %f\n", block->bbNum, outgoingWeightMin,
+                outgoingWeightMax);
+        return false;
+    }
+
+    if (blockWeight < outgoingWeightMin)
+    {
+        JITDUMP("  " FMT_BB " - block weight %f < outgoing min %f\n", block->bbNum, blockWeight, outgoingWeightMin);
+        return false;
+    }
+
+    if (blockWeight > outgoingWeightMax)
+    {
+        JITDUMP("  " FMT_BB " - block weight %f > outgoing max %f\n", block->bbNum, blockWeight, outgoingWeightMax);
+        return false;
+    }
+
+    return missingEdges == 0;
 }
 
 #endif // DEBUG
