@@ -59,6 +59,7 @@
   -->
 
   <PropertyGroup>
+    <WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>
     <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
@@ -113,7 +114,7 @@
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
-  <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(ArchiveTests)' != 'true'">
+  <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'AotInterp' and '$(ArchiveTests)' != 'true'">
     <PropertyGroup>
       <_WasmStrippedAssembliesPath>$([System.IO.Path]::GetFullPath('$(_WasmIntermediateOutputPath)\stripped-assemblies\'))</_WasmStrippedAssembliesPath>
     </PropertyGroup>
