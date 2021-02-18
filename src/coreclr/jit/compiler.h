@@ -6126,10 +6126,7 @@ private:
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
-
-    void optOptimizeLoops(); // for "while-do" loops duplicates simple loop conditions and transforms
-                             // the loop into a "do-while" loop
-                             // Also finds all natural loops and records them in the loop table
+    PhaseStatus optFindLoops();      // Finds loops and records them in the loop table
 
     // Optionally clone loops in the loop table.
     void optCloneLoops();

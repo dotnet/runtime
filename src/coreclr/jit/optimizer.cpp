@@ -4518,16 +4518,20 @@ PhaseStatus Compiler::optOptimizeLayout()
 }
 
 //-----------------------------------------------------------------------------
-// optOptimizeLoops: find and classify natural loops
+// optFindLoops: find and classify natural loops
 //
-void Compiler::optOptimizeLoops()
+// Notes:
+//  Also (re)sets all non-IBC block weights, and marks loops potentially needing
+//  alignment padding.
+//
+PhaseStatus Compiler::optFindLoops()
 {
     noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In optOptimizeLoops()\n");
+        printf("*************** In optFindLoops()\n");
     }
 #endif
 
@@ -4641,6 +4645,8 @@ void Compiler::optOptimizeLoops()
 #endif
         optLoopsMarked = true;
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

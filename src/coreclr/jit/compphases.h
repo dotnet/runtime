@@ -57,7 +57,7 @@ CompPhaseNameMacro(PHASE_INVERT_LOOPS,           "Invert loops",                
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,   "Compute blocks reachability",    "BL_REACH", false, -1, false)
 CompPhaseNameMacro(PHASE_ZERO_INITS,             "Redundant zero Inits",           "ZERO-INIT", false, -1, false)
-CompPhaseNameMacro(PHASE_OPTIMIZE_LOOPS,         "Optimize loops",                 "LOOP-OPT", false, -1, false)
+CompPhaseNameMacro(PHASE_FIND_LOOPS,             "Find loops",                     "LOOP-FND", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                    "LP-CLONE", false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                   "UNROLL",   false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,        "Hoist loop code",                "LP-HOIST", false, -1, false)
