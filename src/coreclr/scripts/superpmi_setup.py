@@ -256,12 +256,12 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None _exit_on_fail=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
-        _cmd (string): Current working directory.
+        _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code
