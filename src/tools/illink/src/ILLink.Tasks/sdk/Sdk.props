@@ -11,9 +11,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <PropertyGroup>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net5.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
-  </PropertyGroup>
+  <Import Project="..\build\Microsoft.NET.ILLink.Tasks.props" />
 
 </Project>
