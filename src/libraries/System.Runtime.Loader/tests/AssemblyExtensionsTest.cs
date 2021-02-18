@@ -12,7 +12,8 @@ namespace System.Reflection.Metadata
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45689", platforms: TestPlatforms.AnyUnix | TestPlatforms.OSX, runtimes: TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45689", platforms: TestPlatforms.AnyUnix, runtimes: TestRuntimes.Mono)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApplyUpdateInvalidParameters()
         {
             // Dummy delta arrays
