@@ -84,9 +84,8 @@ namespace System.Security.Cryptography
             {
                 Interop.Crypto.CheckValidOpenSslHandle(ctx);
                 Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
-                Interop.Crypto.EvpCipherSetCcmTag(ctx, tag);
-
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
+                Interop.Crypto.EvpCipherSetCcmTag(ctx, tag);
 
                 if (associatedData.Length != 0)
                 {

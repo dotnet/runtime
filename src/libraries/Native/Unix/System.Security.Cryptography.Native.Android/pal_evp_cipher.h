@@ -17,10 +17,12 @@ typedef struct CipherCtx
     jobject cipher;
     intptr_t type;
     int32_t ivLength;
+    int32_t tagLength;
     int32_t encMode;
     uint8_t* key;
     uint8_t* iv;
     uint8_t* tag[TAG_MAX_LENGTH];
+    jbyteArray dataFromSetTagUpdate;
 } CipherCtx;
 
 PALEXPORT CipherCtx* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);

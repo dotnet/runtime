@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp_cipher.h"
+#include "pal_utilities.h"
 
 // just some unique IDs
 intptr_t CryptoNative_EvpAes128Ecb()    { return 1001; }
@@ -121,6 +122,20 @@ static bool HasTag(intptr_t type)
            (type == CryptoNative_EvpAes256Ccm());
 }
 
+static bool IsAesCcm(intptr_t type)
+{
+    return (type == CryptoNative_EvpAes128Ccm()) ||
+           (type == CryptoNative_EvpAes192Ccm()) ||
+           (type == CryptoNative_EvpAes256Ccm());
+}
+
+static bool IsAesGcm(intptr_t type)
+{
+    return (type == CryptoNative_EvpAes128Gcm()) ||
+           (type == CryptoNative_EvpAes192Gcm()) ||
+           (type == CryptoNative_EvpAes256Gcm());
+}
+
 CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
 {
     JNIEnv* env = GetJNIEnv();
@@ -134,40 +149,21 @@ CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
     CipherCtx* ctx = malloc(sizeof(CipherCtx));
     ctx->cipher = cipher;
     ctx->type = type;
+    ctx->tagLength = TAG_MAX_LENGTH;
     ctx->ivLength = 0;
     ctx->encMode = 0;
     ctx->key = NULL;
     ctx->iv = NULL;
     memset(ctx->tag, 0, TAG_MAX_LENGTH);
+    ctx->dataFromSetTagUpdate = NULL;
     return CheckJNIExceptions(env) ? FAIL : ctx;
 }
 
-int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc)
+static int32_t CryptoNative_EvpCipherReinitialize(CipherCtx* ctx)
 {
-    if (!ctx)
-        return FAIL;
-
-    int32_t keyLength = GetAlgorithmWidth(ctx->type);
-
-    // CryptoNative_EvpCipherSetKeyAndIV can be called separately for key and iv
-    // so we need to wait for both and do Init after.
-    if (key && !ctx->key)
-        SaveTo(key, &ctx->key, (size_t)keyLength, /* overwrite */ true);
-    if (iv && !ctx->iv)
-        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
-
-    if (!ctx->key || !ctx->iv)
-        return SUCCESS;
-
-    // input:  0 for Decrypt, 1 for Encrypt, -1 leave untouched
-    // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
-    if (enc != -1)
-    {
-        assert(enc == 0 || enc == 1);
-        ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
-    }
-
     JNIEnv* env = GetJNIEnv();
+    
+    int32_t keyLength = GetAlgorithmWidth(ctx->type);
 
     // int ivSize = cipher.getBlockSize();
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
@@ -190,7 +186,7 @@ int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t*
     jobject ivPsObj;
 
     if (HasTag(ctx->type))
-        ivPsObj = (*env)->NewObject(env, g_GCMParameterSpecClass, g_GCMParameterSpecCtor, TAG_MAX_LENGTH * 8, ivBytes);
+        ivPsObj = (*env)->NewObject(env, g_GCMParameterSpecClass, g_GCMParameterSpecCtor, ctx->tagLength * 8, ivBytes);
     else
         ivPsObj = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, ivBytes);
 
@@ -202,6 +198,34 @@ int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t*
     (*env)->DeleteLocalRef(env, ivBytes);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+int32_t CryptoNative_EvpCipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc)
+{
+    if (!ctx)
+        return FAIL;
+
+    int32_t keyLength = GetAlgorithmWidth(ctx->type);
+    
+    // input:  0 for Decrypt, 1 for Encrypt, -1 leave untouched
+    // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
+    if (enc != -1)
+    {
+        assert(enc == 0 || enc == 1);
+        ctx->encMode = enc == 0 ? CIPHER_DECRYPT_MODE : CIPHER_ENCRYPT_MODE;
+    }
+
+    // CryptoNative_EvpCipherSetKeyAndIV can be called separately for key and iv
+    // so we need to wait for both and do Init after.
+    if (key)
+        SaveTo(key, &ctx->key, (size_t)keyLength, /* overwrite */ true);
+    if (iv)
+        SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
+
+    if (!ctx->key || !ctx->iv)
+        return SUCCESS;
+
+    return CryptoNative_EvpCipherReinitialize(ctx);
 }
 
 CipherCtx* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
@@ -234,7 +258,11 @@ int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* out
         return SUCCESS;
 
     if (!in)
-        return FAIL;
+    {
+        // in AES-CCM mode, the input length may be provided in a separate call before the data.
+        // Since we don't need that information, we can just return success.
+        return IsAesCcm(ctx->type) ? SUCCESS : FAIL;
+    }
 
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
@@ -247,14 +275,27 @@ int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* out
     }
     else
     {
+        *outl = 0;
         jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
-        if (outDataBytes && outm) {
+        if (outDataBytes && outm)
+        {
             jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
-            *outl = (int32_t)outDataBytesLen;
+            *outl = outDataBytesLen;
             (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
             (*env)->DeleteLocalRef(env, outDataBytes);
-        } else {
-            *outl = 0;
+        }
+        // HACK:
+        // If the Cipher is AES-CCM, then the managed code won't call into EvpCipherFinalEx in the shim because that's invalid for OpenSSL.
+        // So, we will call EvpCipherFinalEx here.
+        if (IsAesCcm(ctx->type) && ctx->encMode == CIPHER_DECRYPT_MODE)
+        {
+            int32_t finalOutl;
+            int32_t result = CryptoNative_EvpCipherFinalEx(ctx, outm + *outl, &finalOutl);
+            if (!result)
+            {
+                return FAIL;
+            }
+            outl += finalOutl;
         }
     }
 
@@ -269,10 +310,24 @@ int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* ou
 
     JNIEnv* env = GetJNIEnv();
 
+    *outl = 0;
+
+    // Since the SetTag operation just uses an update call, we need to copy the data
+    // that was returned from that call back out to the user.
+    if (ctx->dataFromSetTagUpdate)
+    {
+        jsize dataFromSetTagUpdateLen = (*env)->GetArrayLength(env, ctx->dataFromSetTagUpdate);
+        (*env)->GetByteArrayRegion(env, ctx->dataFromSetTagUpdate, 0, dataFromSetTagUpdateLen, (jbyte*)outm);
+        outm += dataFromSetTagUpdateLen;
+        *outl += dataFromSetTagUpdateLen;
+        ReleaseGRef(env, ctx->dataFromSetTagUpdate);
+        ctx->dataFromSetTagUpdate = NULL;
+    }
+
     // NOTE: Cipher appends TAG to the end of outBytes in case of CCM/GCM and "encryption" mode
     bool hasTag = HasTag(ctx->type);
     bool decrypt = ctx->encMode == CIPHER_DECRYPT_MODE;
-    int tagLength = (hasTag && !decrypt) ? TAG_MAX_LENGTH : 0;
+    int tagLength = (hasTag && !decrypt) ? ctx->tagLength : 0;
 
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
     if (CheckJNIExceptions(env)) return FAIL;
@@ -282,14 +337,10 @@ int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* ou
     if (outBytesLen > tagLength)
     {
         (*env)->GetByteArrayRegion(env, outBytes, 0, outBytesLen - tagLength, (jbyte*) outm);
-        *outl = outBytesLen - tagLength;
+        *outl += outBytesLen - tagLength;
 
         if (hasTag && !decrypt)
-            (*env)->GetByteArrayRegion(env, outBytes, outBytesLen - TAG_MAX_LENGTH, TAG_MAX_LENGTH, (jbyte*) ctx->tag);
-    }
-    else
-    {
-        *outl = 0;
+            (*env)->GetByteArrayRegion(env, outBytes, outBytesLen - ctx->tagLength, ctx->tagLength, (jbyte*) ctx->tag);
     }
 
     (*env)->DeleteLocalRef(env, outBytes);
@@ -360,17 +411,25 @@ int32_t CryptoNative_EvpCipherSetGcmTag(CipherCtx* ctx, uint8_t* tag, int32_t ta
     if (!ctx)
         return FAIL;
 
-    if (!tag)
-        return FAIL;
-
     assert(tagLength <= TAG_MAX_LENGTH);
+
+    ctx->tagLength = tagLength;
+
+    if (tag == NULL)
+    {
+        // A null tag means we should just set the tag length.
+        return SUCCESS;
+    }
 
     // Tag is provided using regular "cipher.update(tag)"
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, tagLength);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, tagLength, (jbyte*)tag);
     jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
-    (*env)->DeleteLocalRef(env, outDataBytes);
+    
+    assert(ctx->dataFromSetTagUpdate == NULL);
+    ctx->dataFromSetTagUpdate = ToGRef(env, outDataBytes);
+
     (*env)->DeleteLocalRef(env, inDataBytes);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
@@ -384,7 +443,9 @@ void CryptoNative_EvpCipherDestroy(CipherCtx* ctx)
 {
     if (ctx)
     {
-        ReleaseGRef(GetJNIEnv(), ctx->cipher);
+        JNIEnv* env = GetJNIEnv();
+        ReleaseGRef(env, ctx->cipher);
+        ReleaseGRef(env, ctx->dataFromSetTagUpdate);
         free(ctx->key);
         free(ctx->iv);
         free(ctx);
