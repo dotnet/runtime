@@ -3,12 +3,11 @@
 
   <PropertyGroup>
     <AdditionalProjectReferences>Microsoft.Extensions.Logging.Console</AdditionalProjectReferences>
+    <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: This depends on ConsoleLogger.Processor which requires System.Threading.Thread.Start() which throws PNSE on wasm. -->
   </PropertyGroup>
   
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="AddConsoleFormatterTests.cs">
-      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes> <!-- Justification: This depends on ConsoleLogger.Processor which requires System.Threading.Thread.Start() which throws PNSE on wasm. -->
-    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="AddConsoleFormatterTests.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

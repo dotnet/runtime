@@ -32,7 +32,7 @@
   </Target>
 
   <Target Name="RootJavaScriptInteropAssembly"
-          BeforeTargets="_RunILLink"
+          BeforeTargets="PrepareForILLink"
           Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <ItemGroup>
       <TrimmerRootAssembly Include="%(ManagedAssemblyToLink.Identity)" Condition="'%(ManagedAssemblyToLink.FileName)' == 'System.Private.Runtime.InteropServices.JavaScript'" />

@@ -37,7 +37,7 @@
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(PackageRID)'))">
       <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
