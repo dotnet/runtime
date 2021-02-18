@@ -3688,6 +3688,7 @@ bool Compiler::fgReorderBlocks()
     bool newRarelyRun      = false;
     bool movedBlocks       = false;
     bool optimizedSwitches = false;
+    bool optimizedBranches = false;
 
     // First let us expand the set of run rarely blocks
     newRarelyRun |= fgExpandRarelyRunBlocks();
@@ -4096,9 +4097,11 @@ bool Compiler::fgReorderBlocks()
             // Check for an unconditional branch to a conditional branch
             // which also branches back to our next block
             //
-            if (fgOptimizeBranch(bPrev))
+            const bool optimizedBranch = fgOptimizeBranch(bPrev);
+            if (optimizedBranch)
             {
                 noway_assert(bPrev->bbJumpKind == BBJ_COND);
+                optimizedBranches = true;
             }
             continue;
         }
@@ -4818,7 +4821,7 @@ bool Compiler::fgReorderBlocks()
 
     } // end of for loop(bPrev,block)
 
-    const bool changed = movedBlocks || newRarelyRun || optimizedSwitches;
+    const bool changed = movedBlocks || newRarelyRun || optimizedSwitches || optimizedBranches;
 
     if (changed)
     {
