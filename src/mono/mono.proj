@@ -65,7 +65,7 @@
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <!-- CI specific build options -->    
+  <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
@@ -356,7 +356,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
@@ -499,7 +499,7 @@
 
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
-    </ItemGroup> 
+    </ItemGroup>
 
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>

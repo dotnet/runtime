@@ -81,7 +81,7 @@ namespace System.Net.Security.Tests
 
         }
 
-        internal static void CleanupCertificates(string testName)
+        internal static void CleanupCertificates([CallerMemberName] string? testName = null)
         {
             string caName = $"O={testName}";
             try

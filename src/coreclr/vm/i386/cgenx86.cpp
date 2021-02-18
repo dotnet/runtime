@@ -44,7 +44,7 @@
 #include "stublink.inl"
 
 extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);
-extern "C" DWORD STDCALL GetSpecificCpuFeaturesAsm(DWORD *pInfo);
+extern "C" uint32_t STDCALL GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
 
 // NOTE on Frame Size C_ASSERT usage in this file
 // if the frame size changes then the stubs have to be revisited for correctness

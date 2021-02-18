@@ -316,11 +316,13 @@ enum {
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
 #ifdef TARGET_ARM64
-// SIMD is only supported on arm64 when using the LLVM backend. When not using
-// the LLVM backend, treat SIMD datatypes as regular value types.
-#define MONO_CLASS_IS_SIMD(cfg, klass) ( ((cfg)->opt & MONO_OPT_SIMD) && ( COMPILE_LLVM (cfg) ) && m_class_is_simd_type (klass) )
+/*
+ * SIMD is only supported on arm64 when using the LLVM backend. When not using
+ * the LLVM backend, treat SIMD datatypes as regular value types.
+ */
+#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && COMPILE_LLVM (cfg) && m_class_is_simd_type (klass))
 #else
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
 #endif
 
 #else
@@ -1156,9 +1158,8 @@ typedef enum {
 	MONO_TRAMPOLINE_AOT      = 3,
 	MONO_TRAMPOLINE_AOT_PLT  = 4,
 	MONO_TRAMPOLINE_DELEGATE = 5,
-	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING = 6,
-	MONO_TRAMPOLINE_VCALL    = 7,
-	MONO_TRAMPOLINE_NUM      = 8,
+	MONO_TRAMPOLINE_VCALL    = 6,
+	MONO_TRAMPOLINE_NUM      = 7,
 } MonoTrampolineType;
 
 // Assuming MONO_TRAMPOLINE_JIT / MONO_JIT_ICALL_generic_trampoline_jit are first.
@@ -2209,9 +2210,6 @@ gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer a
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr);
 gpointer          mono_magic_trampoline (host_mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp);
-#ifndef DISABLE_REMOTING
-gpointer          mono_generic_virtual_remoting_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp);
-#endif
 gpointer          mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
 gpointer          mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp);
@@ -2890,6 +2888,18 @@ typedef enum {
 	SIMD_OP_LLVM_I16ABS,
 	SIMD_OP_LLVM_I32ABS,
 	SIMD_OP_LLVM_I64ABS,
+	SIMD_OP_LLVM_I8ABS_SATURATE,
+	SIMD_OP_LLVM_I16ABS_SATURATE,
+	SIMD_OP_LLVM_I32ABS_SATURATE,
+	SIMD_OP_LLVM_I64ABS_SATURATE,
+	SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN,
+	SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN,
+	SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL,
+	SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL,
+	SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN,
+	SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN,
+	SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL,
+	SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL,
 	SIMD_OP_SSE_CVTSS2SI,
 	SIMD_OP_SSE_CVTTSS2SI,
 	SIMD_OP_SSE_CVTSS2SI64,

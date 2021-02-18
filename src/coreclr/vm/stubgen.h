@@ -175,7 +175,7 @@ public:
 
 protected:
     CQuickBytes     m_qbSigBuffer;
-    DWORD           m_nItems;
+    uint32_t        m_nItems;
     BYTE*           m_pbSigCursor;
     size_t          m_cbSig;
 

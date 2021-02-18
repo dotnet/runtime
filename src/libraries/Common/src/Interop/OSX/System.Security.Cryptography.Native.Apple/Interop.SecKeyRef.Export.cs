@@ -12,11 +12,13 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private static readonly SafeCreateHandle s_nullExportString = new SafeCreateHandle();
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
             SafeSecKeyRefHandle? key,
             int exportPrivate,
-            SafeCreateHandle? cfExportPassphrase,
+            SafeCreateHandle cfExportPassphrase,
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
@@ -25,9 +27,9 @@ internal static partial class Interop
             bool exportPrivate,
             ReadOnlySpan<char> password)
         {
-            SafeCreateHandle? exportPassword = exportPrivate
+            SafeCreateHandle exportPassword = exportPrivate
                 ? CoreFoundation.CFStringCreateFromSpan(password)
-                : null;
+                : s_nullExportString;
 
             int ret;
             SafeCFDataHandle cfData;
@@ -44,7 +46,10 @@ internal static partial class Interop
             }
             finally
             {
-                exportPassword?.Dispose();
+                if (exportPassword != s_nullExportString)
+                {
+                    exportPassword.Dispose();
+                }
             }
 
             if (ret == 1)

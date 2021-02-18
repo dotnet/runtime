@@ -358,7 +358,6 @@ cominterop_object_is_rcw_handle (MonoObjectHandle obj, MonoRealProxyHandle *real
 
 	return  !MONO_HANDLE_IS_NULL (obj)
 		&& (klass = mono_handle_class (obj))
-		&& mono_class_is_transparent_proxy (klass)
 		&& !MONO_HANDLE_IS_NULL (*real_proxy = MONO_HANDLE_NEW_GET (MonoRealProxy, MONO_HANDLE_CAST (MonoTransparentProxy, obj), rp))
 		&& (klass = mono_handle_class (*real_proxy))
 		&& klass == mono_class_get_interop_proxy_class ();
@@ -796,17 +795,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, com_interop_proxy_get_proxy)
 
-#ifndef DISABLE_REMOTING
-		MONO_STATIC_POINTER_INIT (MonoMethod, get_transparent_proxy)
-
-			ERROR_DECL (error);
-			get_transparent_proxy = mono_class_get_method_from_name_checked (mono_defaults.real_proxy_class, "GetTransparentProxy", 0, 0, error);
-			mono_error_assert_ok (error);
-
-		MONO_STATIC_POINTER_INIT_END (MonoMethod, get_transparent_proxy)
-#else
 		static MonoMethod* const get_transparent_proxy = NULL; // FIXME?
-#endif
 
 		mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_interop_proxy_class ()));
 
@@ -4236,7 +4225,7 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObjectHandle obj
 	if (cominterop_object_is_rcw_handle (object, &real_proxy)) {
 		MonoClass *klass = NULL;
 		klass = mono_handle_class (object);
-		if (!mono_class_is_transparent_proxy (klass)) {
+		if (TRUE) {
 			g_assertf (!icall, "Class is not transparent");
 			mono_error_set_invalid_operation (error, "Class is not transparent");
 			return NULL;

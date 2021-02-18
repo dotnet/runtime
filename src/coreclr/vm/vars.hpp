@@ -333,7 +333,7 @@ class Module;
 // For [<I1, etc. up to and including [Object
 GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
-extern "C" Volatile<LONG>   g_TrapReturningThreads;
+extern "C" Volatile<int32_t>   g_TrapReturningThreads;
 
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;

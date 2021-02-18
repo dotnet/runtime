@@ -401,7 +401,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector4")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
@@ -1225,8 +1225,10 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 				return LLVMBuildBitCast (ctx->builder, LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), ""), dtype, "");
 		}
 
-		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
-			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind) {
+			if (mono_llvm_get_prim_size_bits (stype) == mono_llvm_get_prim_size_bits (dtype))
+				return LLVMBuildBitCast (ctx->builder, v, dtype, "");
+		}
 
 		mono_llvm_dump_value (v);
 		mono_llvm_dump_type (dtype);
@@ -4286,13 +4288,30 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
 	}
 
+	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+	gboolean should_promote_to_value = FALSE;
+	const char *load_name = NULL;
 	/*
-	 * Convert the result
+	 * Convert the result. Non-SIMD value types are manipulated via an
+	 * indirection. SIMD value types are represented directly as LLVM vector
+	 * values, and must have a corresponding LLVM value definition in
+	 * `values`.
 	 */
 	switch (cinfo->ret.storage) {
+	case LLVMArgAsIArgs:
+	case LLVMArgFpStruct:
+		if (!addresses [call->inst.dreg])
+			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+		break;
+	case LLVMArgVtypeByVal:
+		/*
+		 * Only used by amd64 and x86. Only ever used when passing
+		 * arguments; never used for return values.
+		 */
+		g_assert_not_reached ();
+		break;
 	case LLVMArgVtypeInReg: {
-		LLVMValueRef regs [2];
-
 		if (LLVMTypeOf (lcall) == LLVMVoidType ())
 			/* Empty struct */
 			break;
@@ -4300,37 +4319,29 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [ins->dreg])
 			addresses [ins->dreg] = build_alloca (ctx, sig->ret);
 
+		LLVMValueRef regs [2] = { 0 };
 		regs [0] = LLVMBuildExtractValue (builder, lcall, 0, "");
 		if (cinfo->ret.pair_storage [1] != LLVMArgNone)
 			regs [1] = LLVMBuildExtractValue (builder, lcall, 1, "");
+
 		emit_args_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg], &cinfo->ret, regs);
+
+		load_name = "process_call_vtype_in_reg";
+		should_promote_to_value = is_simd;
 		break;
 	}
-	case LLVMArgVtypeByVal:
-		if (!addresses [call->inst.dreg])
-			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, addresses [call->inst.dreg]);
-		break;
-	case LLVMArgAsIArgs:
-	case LLVMArgFpStruct:
-		if (!addresses [call->inst.dreg])
-			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
-		break;
 	case LLVMArgVtypeAsScalar:
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
-		if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret)))
-			values [ins->dreg] = LLVMBuildBitCast(builder, lcall, type_to_llvm_type (ctx, sig->ret), "callret_cvt_simd");
+
+		load_name = "process_call_vtype_as_scalar";
+		should_promote_to_value = is_simd;
 		break;
 	case LLVMArgVtypeRetAddr:
 	case LLVMArgVtypeByRef:
-		if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret))) {
-			/* Some opcodes like STOREX_MEMBASE access these by value */
-			g_assert (addresses [call->inst.dreg]);
-			values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
-		}
+		load_name = "process_call_vtype_ret_addr";
+		should_promote_to_value = is_simd;
 		break;
 	case LLVMArgGsharedvtVariable:
 		break;
@@ -4343,6 +4354,12 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			/* If the method returns an unsigned value, need to zext it */
 			values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
 		break;
+	}
+	if (should_promote_to_value) {
+		g_assert (addresses [call->inst.dreg]);
+		LLVMTypeRef addr_type = LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0);
+		LLVMValueRef addr = convert_full (ctx, addresses [call->inst.dreg], addr_type, FALSE);
+		values [ins->dreg] = LLVMBuildLoad (builder, addr, load_name);
 	}
 
 	*builder_ref = ctx->builder;
@@ -5206,30 +5223,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			switch (linfo->ret.storage) {
 			case LLVMArgVtypeInReg: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef val, addr, retval;
-				int i;
-
-				retval = LLVMGetUndef (ret_type);
-
-				if (!addresses [ins->sreg1]) {
-					/*
-					 * The return type is an LLVM vector type, have to convert between it and the
-					 * real return type which is a struct type.
-					 */
-					g_assert (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret)));
-					/* Convert to 2xi64 first */
-					val = LLVMBuildBitCast (builder, values [ins->sreg1], LLVMVectorType (IntPtrType (), 2), "");
-
-					for (i = 0; i < 2; ++i) {
-						if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
-							retval = LLVMBuildInsertValue (builder, retval, LLVMBuildExtractElement (builder, val, LLVMConstInt (LLVMInt32Type (), i, FALSE), ""), i, "");
-						} else {
-							g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
-						}
+				LLVMValueRef retval = LLVMGetUndef (ret_type);
+				if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret))) {
+					/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
+					int width = mono_type_size (sig->ret, NULL);
+					int elems = width / TARGET_SIZEOF_VOID_P;
+					LLVMValueRef val = LLVMBuildBitCast (builder, values [ins->sreg1], LLVMVectorType (IntPtrType (), elems), "");
+					for (int i = 0; i < elems; ++i) {
+						LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
+						retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
 					}
 				} else {
-					addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
-					for (i = 0; i < 2; ++i) {
+					LLVMValueRef addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
+					for (int i = 0; i < 2; ++i) {
 						if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
 							LLVMValueRef indexes [2], part_addr;
 
@@ -5248,21 +5254,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 			case LLVMArgVtypeAsScalar: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef retval;
+				LLVMValueRef retval = NULL;
 				if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret)))
-					retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_cvt_simd");
+					retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
 				else {
 					g_assert (addresses [ins->sreg1]);
 					retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
 				}
-				LLVMBuildRet (builder, retval);
-				break;
-			}
-			case LLVMArgVtypeByVal: {
-				LLVMValueRef retval;
-
-				g_assert (addresses [ins->sreg1]);
-				retval = LLVMBuildLoad (builder, addresses [ins->sreg1], "");
 				LLVMBuildRet (builder, retval);
 				break;
 			}
@@ -8584,7 +8582,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CREATE_SCALAR:
 		case OP_CREATE_SCALAR_UNSAFE: {
 			MonoTypeEnum primty = inst_c1_type (ins);
-			LLVMTypeRef type = type_to_sse_type (primty);
+			LLVMTypeRef type = simd_class_to_llvm_type (ctx, ins->klass);
 			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
 			// and zero one for OP_CREATE_SCALAR
 			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
@@ -9073,6 +9071,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_AES_ENC: id = INTRINS_AARCH64_AESE; break;
 			case SIMD_OP_ARM64_SHA1SU1: id = INTRINS_AARCH64_SHA1SU1; break;
 			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE; break;
+			case SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT; break;
+			case SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
@@ -9084,19 +9090,27 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_X_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			gboolean getLowerElement = FALSE;
+			int idx = -1;
 			switch (ins->inst_c0) {
 			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
 			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
 			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
+			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; getLowerElement = TRUE; idx = 1; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef args [] = { lhs, rhs, arg3 };
+			if (getLowerElement)
+				args [idx] = LLVMBuildExtractElement (ctx->builder, args [idx], const_int32 (0), "");
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			gboolean getLowerElement = FALSE;
 			switch (ins->inst_c0) {
 			case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
 			case SIMD_OP_ARM64_AES_AESMC: id = INTRINS_AARCH64_AESMC; break;
@@ -9106,11 +9120,24 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_LLVM_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
 			case SIMD_OP_LLVM_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
 			case SIMD_OP_LLVM_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
+			case SIMD_OP_LLVM_I8ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT8; break;
+			case SIMD_OP_LLVM_I16ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT16; break;
+			case SIMD_OP_LLVM_I32ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT32; break;
+			case SIMD_OP_LLVM_I64ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT64; break;
+			case SIMD_OP_ARM64_SHA1H: id = INTRINS_AARCH64_SHA1H; getLowerElement = TRUE; break;
 			default: g_assert_not_reached (); break;
 			}
-
 			LLVMValueRef arg0 = lhs;
-			values [ins->dreg] = call_intrins (ctx, id, &arg0, "");
+			LLVMValueRef result;
+			if (getLowerElement)
+				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
+			result = call_intrins (ctx, id, &arg0, "");
+			if (getLowerElement) {
+				LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
+				result = LLVMBuildInsertElement (ctx->builder, LLVMConstNull (t), result, const_int32 (0), "");
+			}
+			values [ins->dreg] = result;
+
 			break;
 		}
 		case OP_LSCNT32:
