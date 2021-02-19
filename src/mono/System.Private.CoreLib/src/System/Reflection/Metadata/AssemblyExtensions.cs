@@ -27,9 +27,6 @@ namespace System.Reflection.Metadata
         /// <exception cref="NotSupportedException">The update could not be applied.</exception>
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta = default)
         {
-#if !FEATURE_METADATA_UPDATE
-            throw new NotSupportedException ("Method body replacement not supported in this runtime");
-#else
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
                 if (assembly is null) throw new ArgumentNullException(nameof(assembly));
@@ -40,6 +37,9 @@ namespace System.Reflection.Metadata
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
                 throw new InvalidOperationException ("The assembly can not be edited or changed.");
 
+#if !FEATURE_METADATA_UPDATE
+            throw new NotSupportedException ("Method body replacement not supported in this runtime");
+#else
             unsafe
             {
                 IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle ();
