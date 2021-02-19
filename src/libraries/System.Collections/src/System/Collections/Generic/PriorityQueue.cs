@@ -44,12 +44,12 @@ namespace System.Collections.Generic
         /// Specifies the arity of the d-ary heap, which here is quaternary.
         /// It is assumed that this value is a power of 2.
         /// </summary>
-        private const int Arity = 4;
+        private const int Arity = 2;
 
         /// <summary>
         /// The binary logarithm of <see cref="Arity" />.
         /// </summary>
-        private const int Log2Arity = 2;
+        private const int Log2Arity = 1;
 
         /// <summary>
         /// Creates an empty priority queue.
