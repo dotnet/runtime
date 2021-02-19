@@ -107,9 +107,9 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(2));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(new Index(2)));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(^2));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(2));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(new Index(2)));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAtOrDefault(^2));
         }
 
         [Fact]
@@ -142,6 +142,45 @@ namespace System.Linq.Tests
             Assert.Equal(-1, query2[0].ElementAtOrDefault(2));
             Assert.Equal(-1, query2[1].ElementAtOrDefault(new Index(2)));
             Assert.Equal(-1, query2[2].ElementAtOrDefault(^4));
+        }
+
+        [Fact]
+        public void EnumerateElements()
+        {
+            const int ElementCount = 10;
+            int state = -1;
+            int moveNextCallCount = 0;
+            Func<DelegateIterator<int?>> source = () =>
+            {
+                state = -1;
+                moveNextCallCount = 0;
+                return new DelegateIterator<int?>(
+                    moveNext: () => { moveNextCallCount++; return ++state < ElementCount; },
+                    current: () => state,
+                    dispose: () => state = -1);
+            };
+
+            Assert.Equal(0, source().ElementAtOrDefault(0));
+            Assert.Equal(1, moveNextCallCount);
+            Assert.Equal(0, source().ElementAtOrDefault(new Index(0)));
+            Assert.Equal(1, moveNextCallCount);
+
+            Assert.Equal(5, source().ElementAtOrDefault(5));
+            Assert.Equal(6, moveNextCallCount);
+            Assert.Equal(5, source().ElementAtOrDefault(new Index(5)));
+            Assert.Equal(6, moveNextCallCount);
+
+            Assert.Equal(0, source().ElementAtOrDefault(^ElementCount));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Equal(5, source().ElementAtOrDefault(^5));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+
+            Assert.Null(source().ElementAtOrDefault(ElementCount));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Null(source().ElementAtOrDefault(new Index(ElementCount)));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Null(source().ElementAtOrDefault(^0));
+            Assert.Equal(0, moveNextCallCount);
         }
 
         [Fact]

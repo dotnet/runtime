@@ -256,12 +256,12 @@ namespace System.Linq.Tests
         public void ThrowsOnNullSource()
         {
             int[] source = null;
-            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(5));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(5));
 
-            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(0..5));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(^5..5));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(0..^0));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Take(^5..^0));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(0..5));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(^5..5));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(0..^0));
+            Assert.Throws<ArgumentNullException>("source", () => source.Take(^5..^0));
         }
 
         [Fact]
@@ -374,32 +374,32 @@ namespace System.Linq.Tests
             var taken0 = source[0].Take(3);
             Assert.Equal(1, taken0.ElementAt(0));
             Assert.Equal(3, taken0.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
 
             var taken1 = source[1].Take(0..3);
             Assert.Equal(1, taken1.ElementAt(0));
             Assert.Equal(3, taken1.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
 
             var taken2 = source[2].Take(^6..3);
             Assert.Equal(1, taken2.ElementAt(0));
             Assert.Equal(3, taken2.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
 
             var taken3 = source[3].Take(0..^3);
             Assert.Equal(1, taken3.ElementAt(0));
             Assert.Equal(3, taken3.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
 
             var taken4 = source[4].Take(^6..^3);
             Assert.Equal(1, taken4.ElementAt(0));
             Assert.Equal(3, taken4.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
         }
 
         [Fact]
@@ -409,32 +409,32 @@ namespace System.Linq.Tests
             var taken0 = source[0].Take(3);
             Assert.Equal(1, taken0.ElementAt(0));
             Assert.Equal(3, taken0.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken0.ElementAt(3));
 
             var taken1 = source[1].Take(0..3);
             Assert.Equal(1, taken1.ElementAt(0));
             Assert.Equal(3, taken1.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken1.ElementAt(3));
 
             var taken2 = source[2].Take(^6..3);
             Assert.Equal(1, taken2.ElementAt(0));
             Assert.Equal(3, taken2.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken2.ElementAt(3));
 
             var taken3 = source[3].Take(0..^3);
             Assert.Equal(1, taken3.ElementAt(0));
             Assert.Equal(3, taken3.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken3.ElementAt(3));
 
             var taken4 = source[4].Take(^6..^3);
             Assert.Equal(1, taken4.ElementAt(0));
             Assert.Equal(3, taken4.ElementAt(2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => taken4.ElementAt(3));
         }
 
         [Fact]

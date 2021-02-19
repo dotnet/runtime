@@ -63,38 +63,38 @@ namespace System.Linq.Tests
         [Fact]
         public void InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(^3));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(new Index(int.MaxValue)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(^3));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int?[] { 9, 8 }.ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(4));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(new Index(4)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(^0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(^5));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(4));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(new Index(4)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[] { 1, 2, 3, 4 }.ElementAt(^5));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(^0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[0].ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(^6));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(new Index(int.MaxValue)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(^6));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(-4, 5).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(5));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(new Index(5)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(5));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(new Index(5)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(5, 5).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(^0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => NumberRangeGuaranteedNotCollectionType(0, 0).ElementAt(^1));
         }
 
         [Fact]
@@ -115,9 +115,9 @@ namespace System.Linq.Tests
         [Fact]
         public void NullSource_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(new Index(2)));
-            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(^2));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(2));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(new Index(2)));
+            Assert.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).ElementAt(^2));
         }
 
         [Fact]
@@ -152,41 +152,43 @@ namespace System.Linq.Tests
             Assert.Equal(-1, query2[2].ElementAt(^4));
         }
 
-        private class ArrayWrapper<T> : IList<T>
+        [Fact]
+        public void EnumerateElements()
         {
-            private readonly T[] _list;
-
-            internal ArrayWrapper(T[] list) => _list = list;
-
-            public int Count => _list.Length;
-
-            public T this[int index]
+            const int ElementCount = 10;
+            int state = -1;
+            int moveNextCallCount = 0;
+            Func<DelegateIterator<int>> source = () =>
             {
-                get => _list[index];
-                set => _list[index] = value;
-            }
+                state = -1;
+                moveNextCallCount = 0;
+                return new DelegateIterator<int>(
+                    moveNext: () => { moveNextCallCount++; return ++state < ElementCount; },
+                    current: () => state,
+                    dispose: () => state = -1);
+            };
 
-            public IEnumerator<T> GetEnumerator() => ((IList<T>)_list).GetEnumerator();
+            Assert.Equal(0, source().ElementAt(0));
+            Assert.Equal(1, moveNextCallCount);
+            Assert.Equal(0, source().ElementAt(new Index(0)));
+            Assert.Equal(1, moveNextCallCount);
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            Assert.Equal(5, source().ElementAt(5));
+            Assert.Equal(6, moveNextCallCount);
+            Assert.Equal(5, source().ElementAt(new Index(5)));
+            Assert.Equal(6, moveNextCallCount);
 
-            public void CopyTo(T[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+            Assert.Equal(0, source().ElementAt(^ElementCount));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Equal(5, source().ElementAt(^5));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
 
-            public bool Contains(T item) => _list.Contains(item);
-
-            public void Add(T item) => throw new NotImplementedException();
-
-            public void Clear() => throw new NotImplementedException();
-
-            public bool Remove(T item) => throw new NotImplementedException();
-
-            public bool IsReadOnly => throw new NotImplementedException();
-
-            public int IndexOf(T item) => throw new NotImplementedException();
-
-            public void Insert(int index, T item) => throw new NotImplementedException();
-
-            public void RemoveAt(int index) => throw new NotImplementedException();
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source().ElementAt(ElementCount));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source().ElementAt(new Index(ElementCount)));
+            Assert.Equal(ElementCount + 1, moveNextCallCount);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source().ElementAt(^0));
+            Assert.Equal(0, moveNextCallCount);
         }
 
         [Fact]
@@ -206,23 +208,36 @@ namespace System.Linq.Tests
             Assert.Equal(9, source.ElementAt(new Index(9)));
             Assert.Equal(9, source.ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
-            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(-1));
-            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
-            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(10));
-            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(new Index(10)));
-            AssertExtensions.Throws<IndexOutOfRangeException>(() => new ArrayWrapper<int>(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void NonEmptySource_Consistency_ThrowsIListIndexerException()
+        {
+            int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
+            // ImmutableArray indexer throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(-1));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^11));
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(10));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(new Index(10)));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^0));
         }
 
         [Fact]
@@ -242,38 +257,20 @@ namespace System.Linq.Tests
             Assert.Equal(9, ForceNotCollection(source).ElementAt(new Index(9)));
             Assert.Equal(9, ForceNotCollection(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
 
-            const int ElementCount = 10;
-            int state = -1;
-            int moveNextCallCount = 0;
-            Func<DelegateIterator<int>> getSource = () =>
-            {
-                state = -1;
-                moveNextCallCount = 0;
-                return new DelegateIterator<int>(
-                    moveNext: () => { moveNextCallCount++; return ++state < ElementCount; },
-                    current: () => state,
-                    dispose: () => state = -1);
-            };
+            
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(10));
-            Assert.Equal(ElementCount + 1, moveNextCallCount);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(new Index(10)));
-            Assert.Equal(ElementCount + 1, moveNextCallCount);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => getSource().ElementAt(^0));
-            Assert.Equal(0, moveNextCallCount);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -293,18 +290,18 @@ namespace System.Linq.Tests
             Assert.Equal(9, ListPartitionOrEmpty(source).ElementAt(new Index(9)));
             Assert.Equal(9, ListPartitionOrEmpty(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -324,18 +321,18 @@ namespace System.Linq.Tests
             Assert.Equal(9, EnumerablePartitionOrEmpty(source).ElementAt(new Index(9)));
             Assert.Equal(9, EnumerablePartitionOrEmpty(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -355,18 +352,18 @@ namespace System.Linq.Tests
             Assert.Equal(9, new TestCollection<int>(source).ElementAt(new Index(9)));
             Assert.Equal(9, new TestCollection<int>(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -386,18 +383,18 @@ namespace System.Linq.Tests
             Assert.Equal(9, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(9)));
             Assert.Equal(9, new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^11));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^11));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(10));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(10)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(10));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(10)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -405,20 +402,41 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(int.MaxValue)));
+        }
+
+        [Fact]
+        public void EmptySource_Consistency_ThrowsIListIndexerException()
+        {
+            int[] source = { };
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^1));
+            // ImmutableArray indexer throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(-1));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^1));
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^0));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(0));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^0));
+
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(new Index(1)));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(1));
+            Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(new Index(1)));
         }
 
         [Fact]
@@ -426,20 +444,20 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ForceNotCollection(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -447,20 +465,20 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => ListPartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -468,20 +486,20 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => EnumerablePartitionOrEmpty(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -489,20 +507,20 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestCollection<int>(source).ElementAt(new Index(int.MaxValue)));
         }
 
         [Fact]
@@ -510,20 +528,20 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(1)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(0)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(^int.MaxValue));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new TestNonGenericCollection<int>(source.ToArray()).ElementAt(new Index(int.MaxValue)));
         }
     }
 }
