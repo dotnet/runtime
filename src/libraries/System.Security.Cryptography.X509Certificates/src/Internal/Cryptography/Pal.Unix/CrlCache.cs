@@ -212,7 +212,6 @@ namespace Internal.Cryptography.Pal
             }
 
             uint persistentHash = unchecked((uint)persistentHashLong);
-
             Span<byte> hash = stackalloc byte[256 >> 3];
 
             // Endianness isn't important, it just needs to be consistent.
@@ -221,7 +220,7 @@ namespace Internal.Cryptography.Pal
 
             if (!SHA256.TryHashData(utf16Url, hash, out int written) || written != hash.Length)
             {
-                Debug.Fail("TryComputeHash failed or produced an incorrect length output");
+                Debug.Fail("TryHashData failed or produced an incorrect length output");
                 throw new CryptographicException();
             }
 
