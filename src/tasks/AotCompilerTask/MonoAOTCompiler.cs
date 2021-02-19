@@ -255,7 +255,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.AddRange(p.Split(";", StringSplitOptions.RemoveEmptyEntries));
         }
 
-        Utils.LogInfo($"[AOT] {assembly}");
+        Log.LogMessage(MessageImportance.Low, $"[AOT] {assembly}");
 
         processArgs.Add("--debug");
 
@@ -361,7 +361,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         try
         {
             // run the AOT compiler
-            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory, silent: false, outputMessageImportance: MessageImportance.Low);
+            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory, silent: false, outputMessageImportance: MessageImportance.Low, logMessageImportance: MessageImportance.Low);
         }
         catch (Exception ex)
         {
