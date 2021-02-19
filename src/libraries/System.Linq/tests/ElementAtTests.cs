@@ -228,7 +228,7 @@ namespace System.Linq.Tests
             int[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^11));
-            // ImmutableArray indexer throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
+            // ImmutableArray<T> implements IList<T>. ElementAt calls ImmutableArray<T>'s indexer, which throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
             Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(-1));
             Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^11));
 
@@ -424,7 +424,7 @@ namespace System.Linq.Tests
             int[] source = { };
             Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(-1));
             Assert.Throws<ArgumentOutOfRangeException>("index", () => source.ElementAt(^1));
-            // ImmutableArray indexer throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
+            // ImmutableArray<T> implements IList<T>. ElementAt calls ImmutableArray<T>'s indexer, which throws IndexOutOfRangeException instead of ArgumentOutOfRangeException.
             Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(-1));
             Assert.Throws<IndexOutOfRangeException>(() => ImmutableArray.Create(source).ElementAt(^1));
 
