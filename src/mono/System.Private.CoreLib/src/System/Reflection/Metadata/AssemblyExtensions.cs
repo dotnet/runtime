@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata
 
             // System.Private.CoreLib is not editable
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
-                throw new InvalidOperationException ("The assembly can not be edited or changed.");
+                throw new InvalidOperationException (SR.InvalidOperation_AssemblyNotEditable);
 
 #if !FEATURE_METADATA_UPDATE
             throw new NotSupportedException ("Method body replacement not supported in this runtime");
