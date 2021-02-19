@@ -96,16 +96,12 @@
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
 
-    <PropertyGroup>
-      <_TrimmedProjectsPublishTargets>Publish</_TrimmedProjectsPublishTargets>
-      <_TrimmedProjectsPublishTargets Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'">$(_TrimmedProjectsPublishTargets);BundleTestWasmApp</_TrimmedProjectsPublishTargets>
-    </PropertyGroup>
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
 
     <MSBuild Projects="@(TestConsoleApps)"
-             Targets="$(_TrimmedProjectsPublishTargets)"
+             Targets="Publish"
              Properties="Configuration=$(Configuration)" />
   </Target>
 
