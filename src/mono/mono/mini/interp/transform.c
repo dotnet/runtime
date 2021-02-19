@@ -2026,7 +2026,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
-		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+		*op = MINT_LDIND_I;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block"))
 			*op = MINT_INTRINS_MARVIN_BLOCK;
@@ -5621,14 +5621,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else {
 					td->sp--;
+					int foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					if (td->sp->type == STACK_TYPE_O) {
 						interp_add_ins (td, MINT_LDFLDA);
+						td->last_ins->data [0] = foffset;
 					} else {
 						int sp_type = td->sp->type;
 						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
-						interp_add_ins (td, MINT_LDFLDA_UNSAFE);
+						if (foffset) {
+							interp_add_ins (td, MINT_LDFLDA_UNSAFE);
+							td->last_ins->data [0] = foffset;
+						} else {
+							interp_add_ins (td, MINT_MOV_P);
+						}
 					}
-					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					push_simple_type (td, STACK_TYPE_MP);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
