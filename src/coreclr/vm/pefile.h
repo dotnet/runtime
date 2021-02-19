@@ -427,7 +427,6 @@ protected:
     void OpenImporter();
     void OpenEmitter();
 
-    void ConvertMDInternalToReadWrite();
     void ReleaseMetadataInterfaces(BOOL bDestructor, BOOL bKeepNativeData=FALSE);
 
 
@@ -536,7 +535,7 @@ public:
 
     static PEFile* Dummy();
     void MarkNativeImageInvalidIfOwned();
-    void ConvertMetadataToRWForEnC();
+    void ConvertMDInternalToReadWrite();
 
 protected:
     PTR_ICLRPrivAssembly m_pHostAssembly;

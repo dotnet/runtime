@@ -581,7 +581,7 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
-	scope_handle = mono_string_new_handle (domain, scope, error);
+	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assembly_handle;
@@ -645,7 +645,7 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
-	scope_handle = mono_string_new_handle (mono_alc_domain (alc), scope, error);
+	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
 	gpointer gchandle;
@@ -709,7 +709,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
-	scope_handle = mono_string_new_handle (domain, scope, error);
+	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assembly_handle;

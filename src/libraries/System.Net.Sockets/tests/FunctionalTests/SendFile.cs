@@ -202,6 +202,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47734")]
         public async Task SliceBuffers_Success()
         {
             if (!SupportsSendFileSlicing) return; // The overloads under test only support sending byte[] without offset and length

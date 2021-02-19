@@ -3959,52 +3959,6 @@ mono_class_setup_nested_types (MonoClass *klass)
 }
 
 /**
- * mono_class_setup_runtime_info:
- * \param klass the class to setup
- * \param domain the domain of the \p vtable
- * \param vtable
- *
- * Store \p vtable in \c klass->runtime_info.
- *
- * Sets the following field in MonoClass:
- *   -   runtime_info
- *
- * LOCKING: domain lock and loaderlock must be held.
- */
-void
-mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable *vtable)
-{
-	MonoClassRuntimeInfo *old_info = m_class_get_runtime_info (klass);
-	if (old_info && old_info->max_domain >= domain->domain_id) {
-		/* someone already created a large enough runtime info */
-		old_info->domain_vtables [domain->domain_id] = vtable;
-	} else {
-		int new_size = domain->domain_id;
-		if (old_info)
-			new_size = MAX (new_size, old_info->max_domain);
-		new_size++;
-		/* make the new size a power of two */
-		int i = 2;
-		while (new_size > i)
-			i <<= 1;
-		new_size = i;
-		/* this is a bounded memory retention issue: may want to 
-		 * handle it differently when we'll have a rcu-like system.
-		 */
-		MonoClassRuntimeInfo *runtime_info = (MonoClassRuntimeInfo *)mono_image_alloc0 (m_class_get_image (klass), MONO_SIZEOF_CLASS_RUNTIME_INFO + new_size * sizeof (gpointer));
-		runtime_info->max_domain = new_size - 1;
-		/* copy the stuff from the older info */
-		if (old_info) {
-			memcpy (runtime_info->domain_vtables, old_info->domain_vtables, (old_info->max_domain + 1) * sizeof (gpointer));
-		}
-		runtime_info->domain_vtables [domain->domain_id] = vtable;
-		/* keep this last*/
-		mono_memory_barrier ();
-		klass->runtime_info = runtime_info;
-	}
-}
-
-/**
  * mono_class_create_array_fill_type:
  *
  * Returns a \c MonoClass that is used by SGen to fill out nursery fragments before a collection.
@@ -4023,6 +3977,12 @@ mono_class_create_array_fill_type (void)
 	aklass.klass.name = "array_filler_type";
 
 	return &aklass.klass;
+}
+
+void
+mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
+{
+	klass->runtime_vtable = vtable;
 }
 
 /**

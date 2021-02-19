@@ -1170,7 +1170,6 @@ MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token
 
 void mono_type_set_alignment (MonoTypeEnum type, int align);
 
-MonoAotCacheConfig *mono_get_aot_cache_config (void);
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error);
 
