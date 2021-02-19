@@ -168,7 +168,7 @@ namespace System.Net.WebSockets
 
                 while (_lastHeader.PayloadLength > _readBuffer.AvailableLength)
                 {
-                    var byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
+                    int byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
                     if (byteCount <= 0)
                         return null;
 
@@ -178,7 +178,9 @@ namespace System.Net.WebSockets
 
                 // Update the payload length in the header to indicate
                 // that we've received everything we need.
-                var payload = _readBuffer.Consume((int)_lastHeader.PayloadLength);
+                ReadOnlyMemory<byte> payload = _readBuffer.AvailableMemory.Slice(0, (int)_lastHeader.PayloadLength);
+
+                _readBuffer.Consume(payload.Length);
                 _lastHeader.PayloadLength = 0;
 
                 return new ControlMessage(_lastHeader.Opcode, payload);
@@ -192,13 +194,13 @@ namespace System.Net.WebSockets
                     if (!_inflateFinished)
                     {
                         Debug.Assert(_inflater is not null);
-                        _inflateFinished = _inflater.Finish(buffer.Span, out var written);
+                        _inflateFinished = _inflater.Finish(buffer.Span, out int written);
 
                         return Result(written);
                     }
 
                     _readBuffer.DiscardConsumed();
-                    var success = await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false);
+                    bool success = await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false);
 
                     if (!success)
                         return Result(_headerError is not null ? ReceiveResultType.HeaderError : ReceiveResultType.ConnectionClose);
@@ -215,7 +217,7 @@ namespace System.Net.WebSockets
                     return default;
 
                 // The number of bytes that are copied onto the provided buffer
-                var resultByteCount = 0;
+                int resultByteCount = 0;
 
                 if (_readBuffer.AvailableLength > 0)
                 {
@@ -267,7 +269,7 @@ namespace System.Net.WebSockets
                         buffer = buffer.Slice(0, (int)_lastHeader.PayloadLength);
                     }
 
-                    var bytesRead = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    int bytesRead = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                     if (bytesRead <= 0)
                         return Result(ReceiveResultType.ConnectionClose);
 
@@ -279,7 +281,7 @@ namespace System.Net.WebSockets
                     if (_decoderInputBuffer is null)
                     {
                         // Rent a buffer but restrict it's max size to 1MB
-                        var decoderBufferLength = (int)Math.Min(_lastHeader.PayloadLength, 1_000_000);
+                        int decoderBufferLength = (int)Math.Min(_lastHeader.PayloadLength, 1_000_000);
 
                         _decoderInputBuffer = ArrayPool<byte>.Shared.Rent(decoderBufferLength);
                         _decoderInputCount = await _stream.ReadAsync(_decoderInputBuffer.AsMemory(0, decoderBufferLength), cancellationToken).ConfigureAwait(false);
@@ -297,7 +299,7 @@ namespace System.Net.WebSockets
                     }
 
                     _inflater.Inflate(input: _decoderInputBuffer.AsSpan(_decoderInputPosition, _decoderInputCount),
-                                      output: buffer.Span, out var consumed, out var written);
+                                      output: buffer.Span, out int consumed, out int written);
 
                     resultByteCount += written;
                     _decoderInputPosition += consumed;
@@ -328,7 +330,8 @@ namespace System.Net.WebSockets
 
                 while (true)
                 {
-                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer, out var header, out var error, out var consumedBytes))
+                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer,
+                        out MessageHeader header, out string? error, out int consumedBytes))
                     {
                         if (header.Compressed && _inflater is null)
                         {
@@ -364,7 +367,7 @@ namespace System.Net.WebSockets
                     }
 
                     // More data is neeed to parse the header
-                    var byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
+                    int byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
                     if (byteCount <= 0)
                         return false;
 
@@ -421,18 +424,9 @@ namespace System.Net.WebSockets
 
                 public int FreeLength => _bytes.Length - _position;
 
-                public void Commit(int count)
-                {
-                    _position += count;
-                }
+                public void Commit(int count) => _position += count;
 
-                public Memory<byte> Consume(int count)
-                {
-                    var memory = new Memory<byte>(_bytes, _consumed, count);
-                    _consumed += count;
-
-                    return memory;
-                }
+                public void Consume(int count) => _consumed += count;
 
                 public void DiscardConsumed()
                 {

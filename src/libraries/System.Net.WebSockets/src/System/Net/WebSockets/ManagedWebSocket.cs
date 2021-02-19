@@ -541,7 +541,7 @@ namespace System.Net.WebSockets
             {
                 while (true) // in case we get control frames that should be ignored from the user's perspective
                 {
-                    var result = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
+                    ReceiveResult result = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
 
                     if (result.ResultType != ReceiveResultType.Message)
                     {
@@ -551,7 +551,7 @@ namespace System.Net.WebSockets
                             if (messageOrNull is null)
                                 ThrowIfEOFUnexpected(true);
 
-                            var message = messageOrNull.GetValueOrDefault();
+                            ControlMessage message = messageOrNull.GetValueOrDefault();
 
                             // If the header represents a ping or a pong, it's a control message meant
                             // to be transparent to the user, so handle it and then loop around to read again.
@@ -580,7 +580,7 @@ namespace System.Net.WebSockets
                         {
                             Debug.Assert(result.ResultType == ReceiveResultType.HeaderError);
 
-                            var error = _receiver.GetHeaderError();
+                            string? error = _receiver.GetHeaderError();
                             await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, error).ConfigureAwait(false);
                         }
                     }

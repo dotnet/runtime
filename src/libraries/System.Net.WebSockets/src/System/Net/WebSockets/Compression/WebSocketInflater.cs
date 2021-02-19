@@ -13,14 +13,14 @@ namespace System.Net.WebSockets.Compression
     /// </summary>
     internal sealed class WebSocketInflater : IDisposable
     {
-        private static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
+        internal static ReadOnlySpan<byte> FlushMarker => new byte[] { 0x00, 0x00, 0xFF, 0xFF };
 
         private ZLibStreamHandle? _stream;
         private readonly int _windowBits;
         private readonly bool _persisted;
 
         /// <summary>
-        /// There is now way of knowing when decoding data if the underlying deflater
+        /// There is no way of knowing, when decoding data, if the underlying deflater
         /// has flushed all outstanding data to consumer other than to provide a buffer
         /// and see whether any bytes are written. There are cases when the consumers
         /// provide a buffer exactly the size of the uncompressed data and in this case
@@ -90,7 +90,7 @@ namespace System.Net.WebSockets.Compression
 
             written = 0;
 
-            if (output.Length == 0)
+            if (output.IsEmpty)
             {
                 if (_remainingByte is not null)
                     return false;
@@ -110,7 +110,7 @@ namespace System.Net.WebSockets.Compression
                     _remainingByte = null;
                 }
 
-                written += Inflate(_stream, output.Slice(written));
+                written += Inflate(_stream, output[written..]);
 
                 if (written < output.Length || IsFinished(_stream, out _remainingByte))
                 {

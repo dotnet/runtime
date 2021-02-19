@@ -44,7 +44,7 @@ namespace System.Net.WebSockets
             {
                 bool compressed = false;
 
-                // Encoding is onlt supported for user messages
+                // Compression is only supported for user messages
                 if (_deflater is not null && opcode <= MessageOpcode.Binary)
                 {
                     _buffer.EnsureFreeCapacity(MaxMessageHeaderLength + (int)(content.Length * 0.6));
@@ -53,7 +53,7 @@ namespace System.Net.WebSockets
                     _deflater.Deflate(content.Span, _buffer, continuation: opcode == MessageOpcode.Continuation, endOfMessage);
                     compressed = true;
                 }
-                else if (content.Length > 0)
+                else if (!content.IsEmpty)
                 {
                     _buffer.EnsureFreeCapacity(MaxMessageHeaderLength + content.Length);
                     _buffer.Advance(MaxMessageHeaderLength);
@@ -62,28 +62,28 @@ namespace System.Net.WebSockets
                     _buffer.Advance(content.Length);
                 }
 
-                var payload = _buffer.WrittenSpan.Slice(MaxMessageHeaderLength);
-                var headerLength = CalculateHeaderLength(payload.Length);
+                Span<byte> payload = _buffer.WrittenSpan.Slice(MaxMessageHeaderLength);
+                int headerLength = CalculateHeaderLength(payload.Length);
 
                 // Because we want the header to come just before to the payload
                 // we will use a slice that offsets the unused part.
-                var headerOffset = MaxMessageHeaderLength - headerLength;
-                var header = _buffer.WrittenSpan.Slice(headerOffset, headerLength);
+                int headerOffset = MaxMessageHeaderLength - headerLength;
+                Span<byte> header = _buffer.WrittenSpan.Slice(headerOffset, headerLength);
 
                 // Write the message header data to the buffer.
                 EncodeHeader(header, opcode, endOfMessage, payload.Length, compressed);
 
                 // If we added a mask to the header, XOR the payload with the mask.
-                if (payload.Length > 0 && _maskLength > 0)
+                if (!payload.IsEmpty && _maskLength > 0)
                 {
                     ApplyMask(payload, BitConverter.ToInt32(header.Slice(header.Length - MaskLength)), 0);
                 }
 
-                var resetBuffer = true;
+                bool resetBuffer = true;
 
                 try
                 {
-                    var sendTask = _stream.WriteAsync(_buffer.WrittenMemory.Slice(headerOffset), cancellationToken);
+                    ValueTask sendTask = _stream.WriteAsync(_buffer.WrittenMemory.Slice(headerOffset), cancellationToken);
 
                     if (sendTask.IsCompleted)
                         return sendTask;
@@ -245,7 +245,7 @@ namespace System.Net.WebSockets
 
                     if (sizeHint > (_array.Length - _index))
                     {
-                        var newArray = _arrayPool.Rent(_array.Length + sizeHint);
+                        byte[] newArray = _arrayPool.Rent(_array.Length + sizeHint);
                         _array.AsSpan().CopyTo(newArray);
 
                         _arrayPool.Return(_array);

@@ -35,32 +35,27 @@ namespace System.Net.WebSockets.Compression
             if (_stream is null)
                 Initialize();
 
-            while (payload.Length > 0)
+            while (!payload.IsEmpty)
             {
-                Deflate(payload, output.GetSpan(payload.Length), out var consumed, out var written);
+                Deflate(payload, output.GetSpan(payload.Length), out int consumed, out int written);
                 output.Advance(written);
 
-                payload = payload.Slice(consumed);
+                payload = payload[consumed..];
             }
 
             // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
             // At that point there will be at most a few bits left to write.
             // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
             Span<byte> end = stackalloc byte[6];
-            var count = Flush(end);
+            int count = Flush(end);
 
             end = end.Slice(0, count);
-            // The deflated block always ends with 0x00 0x00 0xFF 0xFF
-            Debug.Assert(count >= 4);
-            Debug.Assert(end[^4] == 0x00 &&
-                         end[^3] == 0x00 &&
-                         end[^2] == 0xFF &&
-                         end[^1] == 0xFF);
+            Debug.Assert(end.EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
             if (endOfMessage)
             {
                 // As per RFC we need to remove the flush markers
-                end = end.Slice(0, end.Length - 4);
+                end = end[..^4];
             }
 
             end.CopyTo(output.GetSpan(end.Length));
@@ -112,8 +107,8 @@ namespace System.Net.WebSockets.Compression
                 _stream.NextOut = (IntPtr)fixedOutput;
                 _stream.AvailOut = (uint)output.Length;
 
-                var errorCode = Deflate(_stream, (FlushCode)3/*Z_FULL_FLUSH*/);
-                var writtenBytes = output.Length - (int)_stream.AvailOut;
+                ErrorCode errorCode = Deflate(_stream, (FlushCode)3/*Z_FULL_FLUSH*/);
+                int writtenBytes = output.Length - (int)_stream.AvailOut;
 
                 Debug.Assert(errorCode == ErrorCode.Ok);
 
