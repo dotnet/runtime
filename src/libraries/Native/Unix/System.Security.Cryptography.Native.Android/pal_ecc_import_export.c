@@ -158,7 +158,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
     group = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurve);
 
     aBn = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetA);
-    aBn = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetB);
+    bBn = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetB);
     field = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetField);
 
     if ((*env)->IsInstanceOf(env, field, g_ECFieldF2mClass))
