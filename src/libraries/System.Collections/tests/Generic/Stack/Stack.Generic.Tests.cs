@@ -319,6 +319,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(MaxArraySize + 1)]
         [InlineData(int.MaxValue)]
+        [SkipOnMono("mono forces no restrictions on array size.")]
         public void Stack_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
             var stack = GenericStackFactory();

@@ -46,6 +46,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(5, MaxArraySize + 1)]
         [InlineData(1, int.MaxValue)]
+        [SkipOnMono("mono forces no restrictions on array size.")]
         public void EnsureCapacity_LargeCapacity_Throws(int count, int requestCapacity)
         {
             List<T> list = GenericListFactory(count);
