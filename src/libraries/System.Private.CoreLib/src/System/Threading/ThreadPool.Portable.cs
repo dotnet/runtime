@@ -31,9 +31,6 @@ namespace System.Threading
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 #endif
 
-        internal static bool EnableDispatchAutoreleasePool { get; } =
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", false);
-
         // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
         internal static void InitializeForThreadPoolThread() { }
 

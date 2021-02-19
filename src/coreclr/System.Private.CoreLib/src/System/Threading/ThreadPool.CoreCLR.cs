@@ -234,9 +234,6 @@ namespace System.Threading
                 ? AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false)
                 : GetEnableWorkerTrackingNative();
 
-        internal static bool EnableDispatchAutoreleasePool { get; } =
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableDispatchAutoreleasePool", false);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool CanSetMinIOCompletionThreads(int ioCompletionThreads);
 
