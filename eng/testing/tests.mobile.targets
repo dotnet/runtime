@@ -211,7 +211,7 @@
         <CultureName>$([System.IO.Directory]::GetParent('%(Identity)').Name)</CultureName>
       </WasmSatelliteAssemblies>
 
-      <WasmAssembliesToBundle Include="$(PublishDir)\*.dll"/>
+      <WasmAssembly Include="$(PublishDir)\*.dll"/>
 
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
       <WasmFilesToIncludeInFileSystem Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
