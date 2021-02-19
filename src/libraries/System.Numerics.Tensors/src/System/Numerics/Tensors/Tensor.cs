@@ -710,6 +710,8 @@ namespace System.Numerics.Tensors
 
             public T Current { get; private set; }
 
+            object? IEnumerator.Current => Current;
+
             public bool MoveNext()
             {
                 if (_index < _tensor.Length)
@@ -725,14 +727,19 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            object? IEnumerator.Current => Current;
-
-            void IEnumerator.Reset()
+            /// <summary>
+            /// Resets the enumerator to the beginning.
+            /// </summary>
+            public void Reset()
             {
-                this = default;
+                _index = 0;
+                Current = default;
             }
 
-            void IDisposable.Dispose() { }
+            /// <summary>
+            /// Disposes the enumerator.
+            /// </summary>
+            public void Dispose() { }
         }
 
         /// <summary>

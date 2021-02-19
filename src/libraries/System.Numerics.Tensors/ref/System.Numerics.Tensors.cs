@@ -122,10 +122,10 @@ namespace System.Numerics.Tensors
         public struct Enumerator : System.Collections.Generic.IEnumerator<T>
         {
             public T Current { get; private set; }
-            public bool MoveNext() => throw null;
             object? System.Collections.IEnumerator.Current => throw null;
-            void System.Collections.IEnumerator.Reset() { }
-            void System.IDisposable.Dispose() { }
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+            public void Dispose() { }
         }
         public Enumerator GetEnumerator() => throw null;
         void System.Collections.Generic.ICollection<T>.Add(T item) { }
