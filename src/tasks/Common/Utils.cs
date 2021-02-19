@@ -28,9 +28,10 @@ internal class Utils
         string? workingDir = null,
         bool ignoreErrors = false,
         bool silent = true,
-        MessageImportance outputMessageImportance=MessageImportance.High)
+        MessageImportance outputMessageImportance=MessageImportance.High,
+        MessageImportance logMessageImportance=MessageImportance.High)
     {
-        LogInfo($"Running: {path} {args}");
+        LogInfo($"Running: {path} {args}", logMessageImportance);
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
