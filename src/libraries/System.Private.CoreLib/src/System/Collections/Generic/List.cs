@@ -418,16 +418,21 @@ namespace System.Collections.Generic
         /// <param name="capacity">The minimum capacity to ensure.</param>
         private void EnsureCapacityCore(int capacity)
         {
+            Debug.Assert(capacity >= 0);
+
             if (_items.Length < capacity)
             {
-                int newCapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
+                int newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
 
                 // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
                 // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > Array.MaxArrayLength) newCapacity = Array.MaxArrayLength;
-                if (newCapacity < capacity) newCapacity = capacity;
+                if ((uint)newcapacity > Array.MaxArrayLength) newcapacity = Array.MaxArrayLength;
 
-                Capacity = newCapacity;
+                // If the computed capacity is still less than specified, set to the original argument.
+                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+                if (newcapacity < capacity) newcapacity = capacity;
+
+                Capacity = newcapacity;
             }
         }
 

@@ -398,17 +398,30 @@ namespace System.Collections.Generic
 
         private void EnsureCapacityCore(int capacity)
         {
-            Debug.Assert(capacity > _array.Length);
+            Debug.Assert(capacity >= 0);
 
-            const int MinimumGrow = 4;
+            if (_array.Length < capacity)
+            {
+                // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
+                const int MaxArrayLength = 0X7FEFFFFF;
+                const int GrowFactor = 2;
+                const int MinimumGrow = 4;
 
-            int newcapacity = 2 * _array.Length;
+                int newcapacity = GrowFactor * _array.Length;
 
-            // Ensure minimum growth and account for arithmetic overflow.
-            if (newcapacity < _array.Length + MinimumGrow) newcapacity = _array.Length + MinimumGrow;
-            if (newcapacity < capacity) newcapacity = capacity;
+                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+                if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
 
-            SetCapacity(newcapacity);
+                // Ensure minimum growth is respected.
+                newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
+
+                // If the computed capacity is still less than specified, set to the original argument.
+                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+                if (newcapacity < capacity) newcapacity = capacity;
+
+                SetCapacity(newcapacity);
+            }
         }
 
         // Implements an enumerator for a Queue.  The enumerator uses the
