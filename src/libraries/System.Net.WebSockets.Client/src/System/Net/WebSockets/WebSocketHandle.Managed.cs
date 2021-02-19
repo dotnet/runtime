@@ -179,11 +179,11 @@ namespace System.Net.WebSockets
                 // Because deflate options are negotiated we need a new object
                 WebSocketDeflateOptions? deflateOptions = null;
 
-                if (options.DeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out var extensions))
+                if (options.DeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out IEnumerable<string>? extensions))
                 {
-                    foreach (var extension in extensions)
+                    foreach (ReadOnlySpan<char> extension in extensions)
                     {
-                        if (extension.StartsWith("permessage-deflate"))
+                        if (extension.TrimStart().StartsWith("permessage-deflate"))
                         {
                             deflateOptions = ParseDeflateOptions(extension, options.DeflateOptions);
                             break;
@@ -236,30 +236,41 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static WebSocketDeflateOptions ParseDeflateOptions(string extensions, WebSocketDeflateOptions original)
+        private static WebSocketDeflateOptions ParseDeflateOptions(ReadOnlySpan<char> extension, WebSocketDeflateOptions original)
         {
             var options = new WebSocketDeflateOptions();
 
-            foreach (var value in extensions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            while (true)
             {
-                if (value == "client_no_context_takeover")
+                int end = extension.IndexOf(';');
+                ReadOnlySpan<char> value = (end >= 0 ? extension[..end] : extension).Trim();
+
+                if (!value.IsEmpty)
                 {
-                    options.ClientContextTakeover = false;
+                    if (value == "client_no_context_takeover")
+                    {
+                        options.ClientContextTakeover = false;
+                    }
+                    else if (value == "server_no_context_takeover")
+                    {
+                        options.ServerContextTakeover = false;
+                    }
+                    else if (value.StartsWith("client_max_window_bits="))
+                    {
+                        options.ClientMaxWindowBits = int.Parse(value["client_max_window_bits=".Length..],
+                                                                provider: CultureInfo.InvariantCulture);
+                    }
+                    else if (value.StartsWith("server_max_window_bits="))
+                    {
+                        options.ServerMaxWindowBits = int.Parse(value["server_max_window_bits=".Length..],
+                                                                provider: CultureInfo.InvariantCulture);
+                    }
                 }
-                else if (value == "server_no_context_takeover")
-                {
-                    options.ServerContextTakeover = false;
-                }
-                else if (value.StartsWith("client_max_window_bits="))
-                {
-                    options.ClientMaxWindowBits = int.Parse(value.Substring("client_max_window_bits=".Length),
-                                                            NumberFormatInfo.InvariantInfo);
-                }
-                else if (value.StartsWith("server_max_window_bits="))
-                {
-                    options.ServerMaxWindowBits = int.Parse(value.Substring("server_max_window_bits=".Length),
-                                                            NumberFormatInfo.InvariantInfo);
-                }
+
+                if (end < 0)
+                    break;
+
+                extension = extension[(end + 1)..];
             }
 
             if (options.ClientMaxWindowBits > original.ClientMaxWindowBits)

@@ -37,6 +37,7 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading.Channels" Condition="'$(TargetsBrowser)' == 'true'" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" Condition="'$(TargetsBrowser)' == 'true'" />
