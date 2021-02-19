@@ -27,7 +27,6 @@ typedef struct
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *delegate_trampoline_hash;
 	GHashTable *static_rgctx_trampoline_hash;
-	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
@@ -75,7 +74,6 @@ typedef struct {
 	GHashTable *delegate_trampoline_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
-	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;

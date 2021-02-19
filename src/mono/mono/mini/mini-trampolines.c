@@ -666,22 +666,24 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
-		if (domain_jit_info (domain)->jump_target_got_slot_hash) {
-			GSList *list, *tmp;
-			MonoMethod *shared_method = mini_method_to_shared (m);
-			m = shared_method ? shared_method : m;
+		MonoJitMemoryManager *jit_mm;
+		GSList *list, *tmp;
+		MonoMethod *shared_method = mini_method_to_shared (m);
+		m = shared_method ? shared_method : m;
+		jit_mm = jit_mm_for_method (m);
 
-			mono_domain_lock (domain);
-			list = (GSList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_got_slot_hash, m);
+		if (jit_mm->jump_target_got_slot_hash) {
+			jit_mm_lock (jit_mm);
+			list = (GSList *)g_hash_table_lookup (jit_mm->jump_target_got_slot_hash, m);
 			if (list) {
 				for (tmp = list; tmp; tmp = tmp->next) {
 					gpointer *got_slot = (gpointer *)tmp->data;
 					*got_slot = addr;
 				}
-				g_hash_table_remove (domain_jit_info (domain)->jump_target_got_slot_hash, m);
+				g_hash_table_remove (jit_mm->jump_target_got_slot_hash, m);
 				g_slist_free (list);
 			}
-			mono_domain_unlock (domain);
+			jit_mm_unlock (jit_mm);
 		}
 
 		return addr;

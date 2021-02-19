@@ -8563,9 +8563,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));
 		mono_runtime_print_stats ();
 	}
-	if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, imethod->method))
-		g_hash_table_insert (domain_jit_info (domain)->seq_points, imethod->method, imethod->jinfo->seq_points);
 	mono_domain_unlock (domain);
+
+	MonoJitMemoryManager *jit_mm = jit_mm_for_method (imethod->method);
+	jit_mm_lock (jit_mm);
+	if (!g_hash_table_lookup (jit_mm->seq_points, imethod->method))
+		g_hash_table_insert (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+	jit_mm_unlock (jit_mm);
 
 	// FIXME: Add a different callback ?
 	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));

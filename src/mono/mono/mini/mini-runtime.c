@@ -683,14 +683,18 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 }
 
 static MonoJitDynamicMethodInfo*
-mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
+mono_dynamic_code_hash_lookup (MonoMethod *method)
 {
 	MonoJitDynamicMethodInfo *res;
+	MonoJitMemoryManager *jit_mm;
 
-	if (domain_jit_info (domain)->dynamic_code_hash)
-		res = (MonoJitDynamicMethodInfo *)g_hash_table_lookup (domain_jit_info (domain)->dynamic_code_hash, method);
+	jit_mm = jit_mm_for_method (method);
+	jit_mm_lock (jit_mm);
+	if (jit_mm->dynamic_code_hash)
+		res = (MonoJitDynamicMethodInfo *)g_hash_table_lookup (jit_mm->dynamic_code_hash, method);
 	else
 		res = NULL;
+	jit_mm_unlock (jit_mm);
 	return res;
 }
 
@@ -1451,7 +1455,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		int i;
 
 		if (method && method->dynamic) {
-			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
+			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
 			MonoMemoryManager *mem_manager = m_method_get_mem_manager (method);
 			if (mono_aot_only) {
@@ -1726,7 +1730,7 @@ mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 	jlist = (MonoJumpList *)g_hash_table_lookup (jit_mm->jump_target_hash, method);
 	if (!jlist) {
 		jlist = (MonoJumpList *)mono_domain_alloc0 (domain, sizeof (MonoJumpList));
-		g_hash_table_insert (domain_jit_info (domain)->jump_target_hash, method, jlist);
+		g_hash_table_insert (jit_mm->jump_target_hash, method, jlist);
 	}
 	jlist->list = g_slist_prepend (jlist->list, ip);
 	jit_mm_unlock (jit_mm);
@@ -1780,9 +1784,14 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 void
 mini_patch_llvm_jit_callees (MonoDomain *domain, MonoMethod *method, gpointer addr)
 {
-	if (!domain_jit_info (domain)->llvm_jit_callees)
+	MonoJitMemoryManager *jit_mm;
+
+	jit_mm = jit_mm_for_method (method);
+	if (!jit_mm->llvm_jit_callees)
 		return;
-	GSList *callees = (GSList*)g_hash_table_lookup (domain_jit_info (domain)->llvm_jit_callees, method);
+
+	jit_mm_lock (jit_mm);
+	GSList *callees = (GSList*)g_hash_table_lookup (jit_mm->llvm_jit_callees, method);
 	GSList *l;
 
 	for (l = callees; l; l = l->next) {
@@ -1790,6 +1799,7 @@ mini_patch_llvm_jit_callees (MonoDomain *domain, MonoMethod *method, gpointer ad
 
 		*slot = addr;
 	}
+	jit_mm_unlock (jit_mm);
 }
 
 void
@@ -2745,7 +2755,6 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	gboolean destroy = TRUE, removed;
 	GHashTableIter iter;
 	MonoJumpList *jlist;
-	MonoJitDomainInfo *info = domain_jit_info (domain);
 	MonoJitMemoryManager *jit_mm;
 
 	g_assert (method->dynamic);
@@ -2754,10 +2763,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		mini_get_interp_callbacks ()->free_method (domain, method);
 	}
 
-	mono_domain_lock (domain);
-	ji = mono_dynamic_code_hash_lookup (domain, method);
-	mono_domain_unlock (domain);
-
+	ji = mono_dynamic_code_hash_lookup (method);
 	if (!ji)
 		return;
 
@@ -2765,25 +2771,21 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_lldb_remove_method (domain, method, ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_remove (info->dynamic_code_hash, method);
 	mono_domain_jit_code_hash_lock (domain);
 	removed = mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_assert (removed);
 	mono_domain_jit_code_hash_unlock (domain);
-	g_hash_table_remove (info->seq_points, method);
-
 	ji->ji->seq_points = NULL;
-
-	/* requires the domain lock - took above */
-	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
-
 	mono_domain_unlock (domain);
 
 	jit_mm = jit_mm_for_method (method);
 
 	jit_mm_lock (jit_mm);
 
+	mono_conc_hashtable_remove (jit_mm->runtime_invoke_hash, method);
+	g_hash_table_remove (jit_mm->dynamic_code_hash, method);
 	g_hash_table_remove (jit_mm->jump_trampoline_hash, method);
+	g_hash_table_remove (jit_mm->seq_points, method);
 
 	g_hash_table_iter_init (&iter, jit_mm->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
@@ -3207,10 +3209,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitDomainInfo *domain_info;
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
+	MonoJitMemoryManager *jit_mm;
 
 	if (mono_ee_features.force_use_interpreter)
 		return mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
@@ -3224,9 +3226,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		return NULL;
 	}
 
-	domain_info = domain_jit_info (domain);
+	jit_mm = jit_mm_for_method (method);
 
-	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (domain_info->runtime_invoke_hash, method);
+	info = (RuntimeInvokeInfo *)mono_conc_hashtable_lookup (jit_mm->runtime_invoke_hash, method);
 
 	if (!info) {
 		gpointer compiled_method;
@@ -3282,9 +3284,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		if (!is_ok (error))
 			return NULL;
 
-		mono_domain_lock (domain);
-		info2 = (RuntimeInvokeInfo *)mono_conc_hashtable_insert (domain_info->runtime_invoke_hash, method, info);
-		mono_domain_unlock (domain);
+		jit_mm_lock (jit_mm);
+		info2 = (RuntimeInvokeInfo *)mono_conc_hashtable_insert (jit_mm->runtime_invoke_hash, method, info);
+		jit_mm_unlock (jit_mm);
 		if (info2) {
 			g_free (info);
 			info = info2;
@@ -4059,11 +4061,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
 
-	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
-	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	mono_jit_code_hash_init (&info->interp_code_hash);
 
 	domain->runtime_info = info;
 }
@@ -4078,6 +4076,9 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
+	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
+	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
+	mono_jit_code_hash_init (&info->interp_code_hash);
 
 	mem_manager->runtime_info = info;
 }
@@ -4144,7 +4145,6 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->method_rgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
-	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);
@@ -4175,7 +4175,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_got_slot_list, NULL);
 		g_hash_table_destroy (info->jump_target_got_slot_hash);
 	}
-#if 0
 	if (info->dynamic_code_hash) {
 		g_hash_table_foreach (info->dynamic_code_hash, dynamic_method_info_free, NULL);
 		g_hash_table_destroy (info->dynamic_code_hash);
@@ -4184,24 +4183,24 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_trampoline_hash);
-#endif
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
-#if 0
 	g_hash_table_destroy (info->mrgctx_hash);
 	g_hash_table_destroy (info->method_rgctx_hash);
 	g_hash_table_destroy (info->interp_method_pointer_hash);
-	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);
+#if 0
 	if (info->agent_info)
 		mini_get_dbg_callbacks ()->free_domain_info (domain);
+#endif
 	g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
 	if (info->llvm_jit_callees) {
 		g_hash_table_foreach (info->llvm_jit_callees, free_jit_callee_list, NULL);
 		g_hash_table_destroy (info->llvm_jit_callees);
 	}
 	mono_internal_hash_table_destroy (&info->interp_code_hash);
+#if 0
 #ifdef ENABLE_LLVM
 	mono_llvm_free_domain_info (domain);
 #endif
