@@ -337,6 +337,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 case TypeCode.String:
                     result = MarshalType.STRING;
                     break;
+                case TypeCode.Char:
+                    result = MarshalType.CHAR;
+                    break;
             }
 
             // FIXME: Map underlying type somehow
@@ -345,7 +348,37 @@ namespace System.Runtime.InteropServices.JavaScript
                     (result == MarshalType.UINT64))
                     ? MarshalType.ENUM64
                     : MarshalType.ENUM;
-            } else if (type == typeof(DateTime))
+            } else if (typeof(Array).IsAssignableFrom(type)) {
+                switch (Type.GetTypeCode(type.GetElementType())) {
+                    case TypeCode.Byte:
+                        return MarshalType.ARRAY_UBYTE;
+                    case TypeCode.SByte:
+                        return MarshalType.ARRAY_BYTE;
+                    case TypeCode.Int16:
+                        return MarshalType.ARRAY_SHORT;
+                    case TypeCode.UInt16:
+                        return MarshalType.ARRAY_USHORT;
+                    case TypeCode.Int32:
+                        return MarshalType.ARRAY_INT;
+                    case TypeCode.UInt32:
+                        return MarshalType.ARRAY_UINT;
+                    case TypeCode.Single:
+                        return MarshalType.ARRAY_FLOAT;
+                    case TypeCode.Double:
+                        return MarshalType.ARRAY_DOUBLE;
+                    case TypeCode.Char:
+                    case TypeCode.Boolean:
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        // FIXME
+                        return MarshalType.OBJECT;
+                    default:
+                        // FIXME
+                        return MarshalType.OBJECT;
+                }
+            } else if (type == typeof(void))
+                return MarshalType.VOID;
+            else if (type == typeof(DateTime))
                 return MarshalType.DATE;
             else if (type == typeof(DateTimeOffset))
                 return MarshalType.DATEOFFSET;
