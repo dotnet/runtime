@@ -1,0 +1,74 @@
+<Project>
+    <Target Name="CreateWorkloadPacks">
+        <Error Text="%24(DotnetRoot) should be set the location to install the packs, like /usr/local/share/dotnet"
+               Condition="'$(DotnetRoot)' == ''" />
+
+        <Error Text="%24(DotnetVersion) - version to use for the packs"
+               Condition="'$(DotnetVersion)' == ''" />
+
+        <Error Text="%24(RuntimeConfig) - config to use for the local build"
+               Condition="'$(RuntimeConfig)' == ''" />
+
+        <PropertyGroup>
+            <RepoRoot>$(MSBuildThisFileDirectory)\..\..\..\..\</RepoRoot>
+            <ArtifactsDir>$(RepoRoot)\artifacts\</ArtifactsDir>
+
+            <PacksDir>$(DotnetRoot)\packs\</PacksDir>
+            <Arch Condition="'$(Arch)' == ''">osx-x64</Arch>
+
+        </PropertyGroup>
+
+        <!-- WebAssembly.Sdk -->
+        <PropertyGroup>
+            <_PackDir>$(PacksDir)\Microsoft.NET.Runtime.WebAssembly.Sdk\$(DotnetVersion)\</_PackDir>
+        </PropertyGroup>
+
+        <RemoveDir Directories="$(_PackDir)" />
+
+        <MakeDir Directories="$(_PackDir)" />
+        <ItemGroup>
+            <TaskFiles Include="$(ArtifactsDir)\bin\WasmAppBuilder\Debug\net5.0\WasmAppBuilder.*" />
+            <TaskFiles Include="$(ArtifactsDir)\bin\WasmBuildTasks\Debug\net5.0\WasmBuildTasks.*" />
+            <TaskFiles Include="$(ArtifactsDir)\bin\WasmAppBuilder\Debug\net5.0\publish\System.Reflection.MetadataLoadContext.*" />
+
+            <SdkFiles Include="$(RepoRoot)\src\mono\nuget\Microsoft.NET.Runtime.WebAssembly.Sdk\Sdk\Sdk.targets" />
+            <SdkFiles Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.targets" />
+            <SdkFiles Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.props" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(TaskFiles)" DestinationFolder="$(_PackDir)\tasks" />
+        <Copy SourceFiles="@(SdkFiles)" DestinationFolder="$(_PackDir)\Sdk" />
+
+        <!-- MonoAOTCompiler task -->
+        <PropertyGroup>
+            <_PackDir>$(PacksDir)\Microsoft.NET.Runtime.MonoAOTCompiler.Task\$(DotnetVersion)\</_PackDir>
+        </PropertyGroup>
+        <RemoveDir Directories="$(_PackDir)" />
+        <MakeDir Directories="$(_PackDir)" />
+
+        <ItemGroup>
+            <Files Include="$(ArtifactsDir)\bin\MonoAOTCompiler\Debug\net5.0\*" TargetDir="$(_PackDir)\tasks\" />
+            <Files Include="$(RepoRoot)\src\mono\nuget\Microsoft.NET.Runtime.MonoAOTCompiler.Task\Sdk\*" TargetDir="$(_PackDir)\Sdk\" />
+            <Files Include="$(RepoRoot)\src\mono\nuget\Microsoft.NET.Runtime.MonoAOTCompiler.Task\build\*" TargetDir="$(_PackDir)\build\" />
+        </ItemGroup>
+
+        <Copy SourceFiles="%(Files.Identity)" DestinationFiles="%(Files.TargetDir)%(Filename)%(Extension)" />
+
+        <!-- mono-aot-cross -->
+        <PropertyGroup>
+            <_PackDir>$(PacksDir)\microsoft.netcore.app.runtime.aot.$(Arch).cross.browser-wasm\$(DotnetVersion)\</_PackDir>
+            <RuntimePackSrcDir>$(ArtifactsDir)\bin\microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfig)\</RuntimePackSrcDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <MonoAotCrossFiles Include="$(RuntimePackSrcDir)runtimes\browser-wasm\native\cross\browser-wasm\**\*" />
+        </ItemGroup>
+
+        <RemoveDir Directories="$(_PackDir)" />
+        <MakeDir Directories="$(_PackDir)" />
+        <Copy SourceFiles="@(MonoAotCrossFiles)"
+              DestinationFiles="$(_PackDir)\tools\%(RecursiveDir)%(Filename)%(Extension)" />
+
+        <Copy SourceFiles="$(RepoRoot)\src\installer\pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.Sdk.props"
+              DestinationFiles="$(_PackDir)\Sdk\Sdk.props" />
+    </Target>
+</Project>
