@@ -290,7 +290,8 @@ namespace System.Runtime.InteropServices.JavaScript
             UINT64 = 27,
             CHAR = 28,
             STRING_INTERNED = 29,
-            VOID = 30
+            VOID = 30,
+            ENUM64 = 31
         }
 
         // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
@@ -306,49 +307,85 @@ namespace System.Runtime.InteropServices.JavaScript
             if (type == null)
                 return MarshalType.VOID;
 
+            MarshalType? result = null;
             switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte:
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.UInt16:
                 case TypeCode.Int32:
-                    return MarshalType.INT;
+                    result = MarshalType.INT;
+                    break;
                 case TypeCode.UInt32:
-                    return MarshalType.UINT32;
+                    result = MarshalType.UINT32;
+                    break;
                 case TypeCode.Boolean:
-                    return MarshalType.BOOL;
+                    result = MarshalType.BOOL;
+                    break;
                 case TypeCode.Int64:
-                    return MarshalType.INT64;
+                    result = MarshalType.INT64;
+                    break;
                 case TypeCode.UInt64:
-                    return MarshalType.UINT64;
+                    result = MarshalType.UINT64;
+                    break;
                 case TypeCode.Single:
-                    return MarshalType.FP32;
+                    result = MarshalType.FP32;
+                    break;
                 case TypeCode.Double:
-                    return MarshalType.FP64;
+                    result = MarshalType.FP64;
+                    break;
                 case TypeCode.String:
-                    return MarshalType.STRING;
+                    result = MarshalType.STRING;
+                    break;
             }
 
-            if (type.IsEnum)
-                return MarshalType.ENUM;
-            else if (type == typeof(DateTime))
+            // FIXME: Map underlying type somehow
+            if (type.IsEnum) {
+                return ((result == MarshalType.INT64) ||
+                    (result == MarshalType.UINT64))
+                    ? MarshalType.ENUM64
+                    : MarshalType.ENUM;
+            } else if (type == typeof(DateTime))
                 return MarshalType.DATE;
             else if (type == typeof(DateTimeOffset))
                 return MarshalType.DATEOFFSET;
+            else if (type == typeof(IntPtr))
+                return MarshalType.INT;
+            else if (type == typeof(UIntPtr))
+                return MarshalType.UINT32;
             else if (typeof(Delegate).IsAssignableFrom(type))
                 return MarshalType.DELEGATE;
             else if (typeof(Task).IsAssignableFrom(type))
                 return MarshalType.TASK;
             else if (typeof(Uri).IsAssignableFrom(type))
                 return MarshalType.URI;
+            else if (type == typeof(SafeHandle))
+                return MarshalType.SAFEHANDLE;
 
-            // FIXME: SafeHandle
-
-            if (type.IsValueType)
+            if (result.HasValue)
+                return result.Value;
+            else if (type.IsValueType)
                 return MarshalType.VT;
             else
                 return MarshalType.OBJECT;
         }
+
+        private static Dictionary<MarshalType, char> MarshalTypeToCallSignatureCharacter = new Dictionary<MarshalType, char> {
+            { MarshalType.BOOL, 'i' },
+            { MarshalType.INT, 'i' },
+            { MarshalType.UINT32, 'i' },
+            { MarshalType.UINT64, 'l' },
+            { MarshalType.INT64, 'l' },
+            { MarshalType.FP32, 'f' },
+            { MarshalType.FP64, 'd' },
+            { MarshalType.STRING, 's' },
+            { MarshalType.URI, 'u' },
+            { MarshalType.SAFEHANDLE, 'h' },
+            { MarshalType.ENUM, 'j' },
+            { MarshalType.ENUM64, 'k' },
+            { MarshalType.OBJECT, 'o' },
+            { MarshalType.VT, 'a' },
+        };
 
         public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
         {
@@ -369,59 +406,9 @@ namespace System.Runtime.InteropServices.JavaScript
             for (int c = 0; c < parmsLength; c++)
             {
                 Type t = parms[c].ParameterType;
-                switch (Type.GetTypeCode(t))
-                {
-                    case TypeCode.Byte:
-                    case TypeCode.SByte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Boolean:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'j';
-                        else
-                            res[c] = 'i';
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'k';
-                        else
-                            res[c] = 'l';
-                        break;
-                    case TypeCode.Single:
-                        res[c] = 'f';
-                        break;
-                    case TypeCode.Double:
-                        res[c] = 'd';
-                        break;
-                    case TypeCode.String:
-                        res[c] = 's';
-                        break;
-                    default:
-                        if (t == typeof(IntPtr))
-                        {
-                            res[c] = 'i';
-                        }
-                        else if (t == typeof(Uri))
-                        {
-                            res[c] = 'u';
-                        }
-                        else if (t == typeof(SafeHandle))
-                        {
-                            res[c] = 'h';
-                        }
-                        else
-                        {
-                            if (t.IsValueType)
-                                throw new NotSupportedException(SR.ValueTypeNotSupported);
-                            res[c] = 'o';
-                        }
-                        break;
-                }
+                var mt = GetMarshalTypeFromType(t);
+                if (!MarshalTypeToCallSignatureCharacter.TryGetValue(mt, out res[c]))
+                    throw new Exception ("No signature character for marshal type " + mt);
             }
             return new string(res);
         }
