@@ -196,7 +196,7 @@ namespace System.Net.WebSockets
                     _arrayPool = ArrayPool<byte>.Shared;
                 }
 
-                public Span<byte> WrittenSpan => new Span<byte>(_array, 0, _index);
+                public Span<byte> WrittenSpan => _array.AsSpan(0, _index);
 
                 public ReadOnlyMemory<byte> WrittenMemory => new ReadOnlyMemory<byte>(_array, 0, _index);
 

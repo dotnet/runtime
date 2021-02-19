@@ -133,7 +133,7 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private static bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
+        private static unsafe bool IsFinished(ZLibStreamHandle stream, out byte? remainingByte)
         {
             if (stream.AvailIn > 0)
             {
@@ -143,14 +143,14 @@ namespace System.Net.WebSockets.Compression
 
             // There is no other way to make sure that we'e consumed all data
             // but to try to inflate again with at least one byte of output buffer.
-            Span<byte> oneByte = stackalloc byte[1];
-            if (Inflate(stream, oneByte) == 0)
+            byte b;
+            if (Inflate(stream, new Span<byte>(&b, 1)) == 0)
             {
                 remainingByte = null;
                 return true;
             }
 
-            remainingByte = oneByte[0];
+            remainingByte = b;
             return false;
         }
 

@@ -96,7 +96,7 @@ namespace System.Net.WebSockets
                 // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
                 // control payloads (at most 125 bytes). Message payloads are read directly into the buffer
                 // supplied to ReceiveAsync.
-                _readBuffer = new(MaxControlPayloadLength + MaxMessageHeaderLength);
+                _readBuffer = new Buffer(MaxControlPayloadLength + MaxMessageHeaderLength);
 
                 var deflate = options.DeflateOptions;
 
@@ -254,7 +254,7 @@ namespace System.Net.WebSockets
                         return Result(resultByteCount);
                     }
 
-                    buffer = buffer.Slice(written);
+                    buffer = buffer[written..];
                 }
 
                 // At this point we should have consumed everything from the buffer
@@ -265,7 +265,7 @@ namespace System.Net.WebSockets
                 {
                     if (buffer.Length > _lastHeader.PayloadLength)
                     {
-                        // We don't want to receive more that we need
+                        // We don't want to receive more than we need
                         buffer = buffer.Slice(0, (int)_lastHeader.PayloadLength);
                     }
 
@@ -313,7 +313,7 @@ namespace System.Net.WebSockets
 
                         if (_lastHeader.PayloadLength == 0 && _lastHeader.Fin)
                         {
-                            _inflateFinished = _inflater.Finish(buffer.Span.Slice(written), out written);
+                            _inflateFinished = _inflater.Finish(buffer.Span[written..], out written);
                             resultByteCount += written;
                         }
                     }

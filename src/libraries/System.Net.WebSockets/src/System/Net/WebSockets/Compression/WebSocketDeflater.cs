@@ -49,7 +49,7 @@ namespace System.Net.WebSockets.Compression
             Span<byte> end = stackalloc byte[6];
             int count = Flush(end);
 
-            end = end.Slice(0, count);
+            end = end[..count];
             Debug.Assert(end.EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
             if (endOfMessage)
