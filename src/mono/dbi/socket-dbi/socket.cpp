@@ -24,6 +24,8 @@
 #include <sys/sockio.h>
 #include <sys/un.h>
 #include <sys/socketvar.h>
+#include <errno.h>
+#include <stdio.h>
 #endif
 
 
@@ -60,22 +62,23 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
         }
 
         int flag = 1;
-        if (setsockopt(socketId, SOL_SOCKET, SO_REUSEADDR, (char *)&flag,
-                    sizeof(int)))
-        continue;
+        if (setsockopt(socketId, SOL_SOCKET, SO_REUSEADDR, (char *)&flag, sizeof(int)))
+            continue;
 
         iResult = bind(socketId, ptr->ai_addr, (int)ptr->ai_addrlen);
+        int err = errno;
         if (iResult == -1)
-        continue;
+            continue;
 
         iResult = listen(socketId, 16);
         if (iResult == -1)
-        continue;
+            continue;
 
         break;
     }
 
-    socketId = accept(socketId, NULL, NULL);
+    if (iResult != -1)
+        socketId = accept(socketId, NULL, NULL);
 
     freeaddrinfo(result);
 
