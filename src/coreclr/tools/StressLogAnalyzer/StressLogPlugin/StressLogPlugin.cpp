@@ -98,28 +98,24 @@ int HeapNumberOfThreadId(uint64_t threadId)
 
 #define InterestingStrings \
 d(IS_UNKNOWN,                   "")                                                                                         \
-d(IS_THREAD_WAIT,               "%d gc thread waiting...")                                                                  \
-d(IS_THREAD_WAIT_DONE,          "%d gc thread waiting... Done")                                                             \
-d(IS_GCSTART,                   "*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)")                                                 \
-d(IS_GCEND,                     "*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)")                                     \
-d(IS_MARK_START,                "---- Mark Phase condemning %d ----")                                                       \
-d(IS_PLAN_START,                "---- Plan Phase ---- Condemned generation %d, promotion: %d")                              \
-d(IS_RELOCATE_START,            "---- Relocate phase -----")                                                                \
-d(IS_RELOCATE_END,              "---- End of Relocate phase ----")                                                          \
-d(IS_COMPACT_START,             "---- Compact Phase: %Ix(%Ix)----")                                                         \
-d(IS_COMPACT_END,               "---- End of Compact phase ----")                                                           \
-d(IS_JOIN_WAIT,                 "join%d(%d): Join() Waiting...join_lock is now %d")                                         \
-d(IS_JOIN_LAST,                 "join%d(%d): Last thread to complete the join, setting id")                                 \
-d(IS_EQUALIZE_MARK_LIST,        "equalize_mark_lists took %Id microseconds to equalize %Id mark list items")                \
-d(IS_SORT_MARK_LIST,            "sorting mark list took %Id microseconds to sort %Id mark list items")                      \
+d(IS_THREAD_WAIT,               ThreadStressLog::gcServerThread0StartMsg())                                                 \
+d(IS_THREAD_WAIT_DONE,          ThreadStressLog::gcServerThreadNStartMsg())                                                 \
+d(IS_GCSTART,                   ThreadStressLog::gcDetailedStartMsg())                                                      \
+d(IS_GCEND,                     ThreadStressLog::gcDetailedEndMsg())                                                        \
+d(IS_MARK_START,                ThreadStressLog::gcStartMarkMsg())                                                          \
+d(IS_PLAN_START,                ThreadStressLog::gcStartPlanMsg())                                                          \
+d(IS_RELOCATE_START,            ThreadStressLog::gcStartRelocateMsg())                                                      \
+d(IS_RELOCATE_END,              ThreadStressLog::gcEndRelocateMsg())                                                        \
+d(IS_COMPACT_START,             ThreadStressLog::gcStartCompactMsg())                                                       \
+d(IS_COMPACT_END,               ThreadStressLog::gcEndCompactMsg())                                                         \
 d(IS_GCROOT,                    ThreadStressLog::gcRootMsg())                                                               \
 d(IS_PLUG_MOVE,                 ThreadStressLog::gcPlugMoveMsg())                                                           \
-d(IS_GCMEMCOPY,                 " mc: [%Ix->%Ix, %Ix->%Ix[")                                                                \
+d(IS_GCMEMCOPY,                 ThreadStressLog::gcMemCopyMsg())                                                            \
 d(IS_GCROOT_PROMOTE,            ThreadStressLog::gcRootPromoteMsg())                                                        \
-d(IS_PLAN_PLUG,                 "(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)")                                \
-d(IS_PLAN_PINNED_PLUG,          "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)")                                                            \
-d(IS_DESIRED_NEW_ALLOCATION,    "h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id")    \
-d(IS_MAKE_UNUSED_ARRAY,         "Making unused array [%Ix, %Ix[")                                                           \
+d(IS_PLAN_PLUG,                 ThreadStressLog::gcPlanPlugMsg())                                                           \
+d(IS_PLAN_PINNED_PLUG,          ThreadStressLog::gcPlanPinnedPlugMsg())                                                     \
+d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())                                               \
+d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -269,6 +265,27 @@ int GcLogLevel(uint32_t facility)
     return 0;
 }
 
+static void RememberThreadForHeap(uint64_t threadId, uint64_t heapNumber)
+{
+    if (s_maxHeapNumberSeen == 0 && heapNumber == 0)
+    {
+        // we don't want to remember these associations for WKS GC,
+        // which can execute on any thread - as soon as we see
+        // a heap number != 0, we assume SVR GC and remember it
+        return;
+    }
+
+    if (heapNumber < MAX_NUMBER_OF_HEAPS)
+    {
+        s_threadIdOfHeap[heapNumber] = threadId;
+        uint64_t maxHeapNumberSeen = s_maxHeapNumberSeen;
+        while (maxHeapNumberSeen < heapNumber)
+        {
+            maxHeapNumberSeen = InterlockedCompareExchange64((volatile LONG64*)&s_maxHeapNumberSeen, heapNumber, maxHeapNumberSeen);
+        }
+    }
+}
+
 bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32_t facility, char* format, double deltaTime, int argCount, void** args)
 {
     bool fLevelFilter = false;
@@ -307,19 +324,8 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_THREAD_WAIT:
     case    IS_THREAD_WAIT_DONE:
     case    IS_DESIRED_NEW_ALLOCATION:
-    {
-        uint64_t heapNumber = (uint64_t)args[0];
-        if (heapNumber < MAX_NUMBER_OF_HEAPS)
-        {
-            s_threadIdOfHeap[heapNumber] = tsl->threadId;
-            uint64_t maxHeapNumberSeen = s_maxHeapNumberSeen;
-            while (maxHeapNumberSeen < heapNumber)
-            {
-                maxHeapNumberSeen = InterlockedCompareExchange64((volatile LONG64*)&s_maxHeapNumberSeen, heapNumber, maxHeapNumberSeen);
-            }
-        }
+        RememberThreadForHeap((uint64_t)args[0], tsl->threadId);
         break;
-    }
 
     case    IS_GCSTART:
     {
@@ -347,6 +353,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_RELOCATE_END:
     case    IS_COMPACT_START:
     case    IS_COMPACT_END:
+        RememberThreadForHeap((uint64_t)args[0], tsl->threadId);
         return true;
 
     case    IS_PLAN_PLUG:
@@ -369,9 +376,6 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
             }
         }
         break;
-        //    case    IS_JOIN_WAIT:
-        //    case    IS_JOIN_LAST:
-        //        return (args[0] == 0 && (args[1] == (void*)9 || args[1] == (void*)10));
 
     case    IS_GCMEMCOPY:
         if (s_valueFilterCount > 0)
@@ -412,8 +416,6 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         }
         break;
 
-    case    IS_EQUALIZE_MARK_LIST:
-    case    IS_SORT_MARK_LIST:
     case    IS_GCROOT:
     case    IS_PLUG_MOVE:
     case    IS_GCROOT_PROMOTE:
