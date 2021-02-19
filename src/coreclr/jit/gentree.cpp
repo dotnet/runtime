@@ -16625,10 +16625,10 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
 
 bool GenTree::DefinesLocalAddr(Compiler* comp)
 {
+    const unsigned       dummyWidth      = 0;
     GenTreeLclVarCommon* dummyLclVarTree = nullptr;
     bool                 dummyIsEntire   = false;
-    GenTree*             addrArg         = AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-    return addrArg->DefinesLocalAddr(comp, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire);
+    return DefinesLocalAddr(comp, dummyWidth, &dummyLclVarTree, &dummyIsEntire);
 }
 
 //------------------------------------------------------------------------
