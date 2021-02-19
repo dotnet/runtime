@@ -1268,6 +1268,7 @@ mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, M
 gpointer
 mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper, MonoError *error)
 {
+	MonoJitMemoryManager *jit_mm;
 	MonoJitInfo *ji;
 	gpointer code;
 	guint32 code_size = 0;
@@ -1281,7 +1282,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 		return ret;
 	}
 
-	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
+	code = mono_jit_find_compiled_method_with_jit_info (mono_get_root_domain (), method, &ji);
 	/*
 	 * We cannot recover the correct type of a shared generic
 	 * method from its native code address, so we use the
@@ -1298,9 +1299,11 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 		return code;
 	}
 
-	mono_domain_lock (domain);
-	code = g_hash_table_lookup (domain_jit_info (domain)->jump_trampoline_hash, method);
-	mono_domain_unlock (domain);
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	code = g_hash_table_lookup (jit_mm->jump_trampoline_hash, method);
+	jit_mm_unlock (jit_mm);
 	if (code)
 		return code;
 
@@ -1319,9 +1322,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 
 	mono_jit_info_table_add (domain, ji);
 
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->jump_trampoline_hash, method, code);
-	mono_domain_unlock (domain);
+	jit_mm_lock (jit_mm);
+	g_hash_table_insert (jit_mm->jump_trampoline_hash, method, code);
+	jit_mm_unlock (jit_mm);
 
 	return code;
 }

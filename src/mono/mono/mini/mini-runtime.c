@@ -2763,7 +2763,6 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	removed = mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_assert (removed);
 	mono_domain_jit_code_hash_unlock (domain);
-	g_hash_table_remove (info->jump_trampoline_hash, method);
 	g_hash_table_remove (info->seq_points, method);
 
 	ji->ji->seq_points = NULL;
@@ -2774,7 +2773,11 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_domain_unlock (domain);
 
 	jit_mm = jit_mm_for_method (method);
+
 	jit_mm_lock (jit_mm);
+
+	g_hash_table_remove (jit_mm->jump_trampoline_hash, method);
+
 	g_hash_table_iter_init (&iter, jit_mm->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
 		GSList *tmp, *remove;
@@ -4049,7 +4052,6 @@ mini_create_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
 
-	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -4067,6 +4069,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	MonoJitMemoryManager *info = g_new0 (MonoJitMemoryManager, 1);
 
 	info->mem_manager = mem_manager;
+	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 
 	mem_manager->runtime_info = info;
@@ -4128,7 +4131,6 @@ mini_free_jit_domain_info (MonoDomain *domain)
 		g_hash_table_destroy (info->dynamic_code_hash);
 	}
 	g_hash_table_destroy (info->method_code_hash);
-	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_trampoline_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
