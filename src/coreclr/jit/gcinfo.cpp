@@ -638,14 +638,7 @@ void GCInfo::gcRegPtrSetInit()
 
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    // If we store through an int to a GC_REF field, we'll assume that needs to use a checked barriers.
-    if (tgtAddr->TypeGet() == TYP_I_IMPL)
-    {
-        return GCInfo::WBF_BarrierChecked; // Why isn't this GCInfo::WBF_BarrierUnknown?
-    }
-
-    // Otherwise...
-    assert(tgtAddr->TypeGet() == TYP_BYREF);
+    assert(tgtAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
     bool simplifiedExpr = true;
     while (simplifiedExpr)
     {
@@ -657,7 +650,8 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         {
             tgtAddr        = tgtAddr->AsOp()->gtOp1->AsOp()->gtOp1;
             simplifiedExpr = true;
-            assert(tgtAddr->TypeGet() == TYP_BYREF);
+            // Question: The next cycle can produce a TYP_REF node, why does not this assert fail?
+            assert(tgtAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         }
         // For additions, one of the operands is a byref or a ref (and the other is not).  Follow this down to its
         // source.
@@ -669,13 +663,13 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 GenTree*  addOp2     = tgtAddr->AsOp()->gtGetOp2();
                 var_types addOp1Type = addOp1->TypeGet();
                 var_types addOp2Type = addOp2->TypeGet();
-                if (addOp1Type == TYP_BYREF || addOp1Type == TYP_REF)
+                if (addOp1->TypeIs(TYP_BYREF, TYP_REF))
                 {
-                    assert(addOp2Type != TYP_BYREF && addOp2Type != TYP_REF);
+                    assert(!addOp2->TypeIs(TYP_BYREF, TYP_REF));
                     tgtAddr        = addOp1;
                     simplifiedExpr = true;
                 }
-                else if (addOp2Type == TYP_BYREF || addOp2Type == TYP_REF)
+                else if (addOp2->TypeIs(TYP_BYREF, TYP_REF))
                 {
                     tgtAddr        = addOp2;
                     simplifiedExpr = true;
@@ -683,9 +677,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 else
                 {
                     // We might have a native int. For example:
-                    //        const     int    0
-                    //    +         byref
-                    //        lclVar    int    V06 loc5  // this is a local declared "valuetype VType*"
+                    //  * ADD long
+                    //  +--* LCL_VAR_ADDR long V00 - we change byref to long when know that it points to stack.
+                    //  \--* const     int    4
                     return GCInfo::WBF_BarrierUnknown;
                 }
             }
@@ -694,7 +688,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 // Must be an LEA (i.e., an AddrMode)
                 assert(tgtAddr->OperGet() == GT_LEA);
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
-                if (tgtAddr->TypeGet() == TYP_BYREF || tgtAddr->TypeGet() == TYP_REF)
+                if (tgtAddr->TypeIs(TYP_BYREF, TYP_REF))
                 {
                     simplifiedExpr = true;
                 }
@@ -753,10 +747,11 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
             }
         }
     }
-    if (tgtAddr->TypeGet() == TYP_REF)
+    if (tgtAddr->TypeIs(TYP_REF))
     {
         return GCInfo::WBF_BarrierUnchecked;
     }
+    assert(tgtAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
     // Otherwise, we have no information.
     return GCInfo::WBF_BarrierUnknown;
 }
