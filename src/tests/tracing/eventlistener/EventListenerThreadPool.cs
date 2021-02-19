@@ -55,9 +55,9 @@ namespace Tracing.Tests
                 Task.WaitAll(tasks);
                 Thread.Sleep(3000);
 
-                if (listener.TPWorkerThreadStartCount > 10 ||
-                    listener.TPWorkerThreadStopCount > 10 ||
-                    listener.TPWorkerThreadWaitCount > 10)
+                if (listener.TPWorkerThreadStartCount > 0 ||
+                    listener.TPWorkerThreadStopCount > 0 ||
+                    listener.TPWorkerThreadWaitCount > 0)
                 {
                     Console.WriteLine("Test Passed.");
                     return 100;
