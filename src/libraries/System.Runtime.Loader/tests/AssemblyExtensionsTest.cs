@@ -12,7 +12,6 @@ namespace System.Reflection.Metadata
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45689", platforms: ~TestPlatforms.Windows, runtimes: TestRuntimes.CoreCLR)]
         public static void ApplyUpdateInvalidParameters()
         {
             // Dummy delta arrays
