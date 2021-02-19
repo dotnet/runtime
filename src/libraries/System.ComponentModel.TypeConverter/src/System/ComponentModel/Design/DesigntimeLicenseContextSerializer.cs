@@ -5,7 +5,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
 using System.Collections;
 using System.IO;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Design
 {
@@ -36,32 +35,69 @@ namespace System.ComponentModel.Design
             {
                 using (BinaryWriter writer = new BinaryWriter(o, encoding: Text.Encoding.UTF8, leaveOpen: true))
                 {
+                    writer.Write(-1); // flag to identify BinaryWriter
                     writer.Write(cryptoKey);
                     writer.Write(context._savedLicenseKeys.Count);
-                    foreach (var key in context._savedLicenseKeys)
+                    foreach (DictionaryEntry keyAndValue in context._savedLicenseKeys)
                     {
-                        writer.Write(key.ToString());
-                        writer.Write(context._savedLicenseKeys[key].ToString());
+                        writer.Write(keyAndValue.Key.ToString());
+                        writer.Write(keyAndValue.Value.ToString());
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// During deserialization, the stream passed in may be binary formatted or may have used binary writer. This is quick test to discern between them.
+        /// </summary>
+        internal static bool StreamIsBinaryFormatted(Stream stream)
+        {
+            if (!stream.CanSeek)
+            {
+                throw new Exception("Expected a seek-able stream");
+            }
+            bool ret = true;
+
+            // For binary formatter, the first byte is the SerializationHeaderRecord and has a value 0
+            int firstByte = stream.ReadByte();
+            if (firstByte != 0)
+            {
+                ret = false;
+            }
+
+            stream.Seek(-1, SeekOrigin.Current);
+            return ret;
+        }
+
         internal static void Deserialize(Stream o, string cryptoKey, RuntimeLicenseContext context)
         {
-            if (LocalAppContextSwitches.BinaryFormatterEnabled)
+            if (StreamIsBinaryFormatted(o))
             {
+                try
+                {
 #pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39293 tracks finding an alternative to BinaryFormatter
-                IFormatter formatter = new BinaryFormatter();
+                    IFormatter formatter = new BinaryFormatter();
 
-                object obj = formatter.Deserialize(o);
+                    object obj = formatter.Deserialize(o);
 #pragma warning restore SYSLIB0011
 
-                if (obj is object[] value)
-                {
-                    if (value[0] is string && (string)value[0] == cryptoKey)
+                    if (obj is object[] value)
                     {
-                        context._savedLicenseKeys = (Hashtable)value[1];
+                        if (value[0] is string && (string)value[0] == cryptoKey)
+                        {
+                            context._savedLicenseKeys = (Hashtable)value[1];
+                        }
+                    }
+                }
+                catch (System.NotSupportedException exception)
+                {
+                    if (!LocalAppContextSwitches.BinaryFormatterEnabled)
+                    {
+                        throw new System.NotSupportedException(exception.Message + " Turn on the EnableUnsafeBinaryFormatterSerialization flag to continue using BinaryFormatter");
+                    }
+                    else
+                    {
+                        throw exception;
                     }
                 }
             }
@@ -69,6 +105,7 @@ namespace System.ComponentModel.Design
             {
                 using (BinaryReader reader = new BinaryReader(o, encoding: Text.Encoding.UTF8, leaveOpen: true))
                 {
+                    int binaryWriterIdentifer = reader.ReadInt32();
                     string streamCryptoKey = reader.ReadString();
                     int numEntries = reader.ReadInt32();
                     if (streamCryptoKey == cryptoKey)
