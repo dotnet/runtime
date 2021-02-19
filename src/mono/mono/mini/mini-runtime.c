@@ -1708,18 +1708,21 @@ void
 mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 {
 	MonoJumpList *jlist;
+	MonoJitMemoryManager *jit_mm;
 
 	MonoMethod *shared_method = mini_method_to_shared (method);
 	method = shared_method ? shared_method : method;
 
-	mono_domain_lock (domain);
-	jlist = (MonoJumpList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, method);
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	jlist = (MonoJumpList *)g_hash_table_lookup (jit_mm->jump_target_hash, method);
 	if (!jlist) {
 		jlist = (MonoJumpList *)mono_domain_alloc0 (domain, sizeof (MonoJumpList));
 		g_hash_table_insert (domain_jit_info (domain)->jump_target_hash, method, jlist);
 	}
 	jlist->list = g_slist_prepend (jlist->list, ip);
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 }
 
 /*
@@ -1730,11 +1733,7 @@ mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 void
 mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 {
-	GHashTable *hash = domain_jit_info (domain)->jump_target_hash;
-
-	if (!hash)
-		return;
-
+	MonoJitMemoryManager *jit_mm;
 	MonoJumpInfo patch_info;
 	MonoJumpList *jlist;
 	GSList *tmp;
@@ -1743,11 +1742,14 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 	MonoMethod *shared_method = mini_method_to_shared (method);
 	method = shared_method ? shared_method : method;
 
-	mono_domain_lock (domain);
-	jlist = (MonoJumpList *)g_hash_table_lookup (hash, method);
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	jlist = (MonoJumpList *)g_hash_table_lookup (jit_mm->jump_target_hash, method);
 	if (jlist)
-		g_hash_table_remove (hash, method);
-	mono_domain_unlock (domain);
+		g_hash_table_remove (jit_mm->jump_target_hash, method);
+	jit_mm_unlock (jit_mm);
+
 	if (jlist) {
 		patch_info.next = NULL;
 		patch_info.ip.i = 0;
@@ -2737,6 +2739,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	GHashTableIter iter;
 	MonoJumpList *jlist;
 	MonoJitDomainInfo *info = domain_jit_info (domain);
+	MonoJitMemoryManager *jit_mm;
 
 	g_assert (method->dynamic);
 
@@ -2768,8 +2771,11 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	/* requires the domain lock - took above */
 	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
 
-	/* Remove jump targets in this method */
-	g_hash_table_iter_init (&iter, info->jump_target_hash);
+	mono_domain_unlock (domain);
+
+	jit_mm = jit_mm_for_method (method);
+	jit_mm_lock (jit_mm);
+	g_hash_table_iter_init (&iter, jit_mm->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
 		GSList *tmp, *remove;
 
@@ -2785,7 +2791,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		}
 		g_slist_free (remove);
 	}
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 	if (mini_debug_options.keep_delegates && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
@@ -4050,7 +4056,6 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 	mono_jit_code_hash_init (&info->interp_code_hash);
 
 	domain->runtime_info = info;
@@ -4062,6 +4067,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	MonoJitMemoryManager *info = g_new0 (MonoJitMemoryManager, 1);
 
 	info->mem_manager = mem_manager;
+	info->jump_target_hash = g_hash_table_new (NULL, NULL);
 
 	mem_manager->runtime_info = info;
 }
