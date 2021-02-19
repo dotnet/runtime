@@ -2650,6 +2650,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int prev_n_data_items;
 	int i; 
 	int prev_sp_offset;
+	int prev_aggressive_inlining;
 	MonoGenericContext *generic_context = NULL;
 	StackInfo *prev_param_area;
 	InterpBasicBlock **prev_offset_to_bb;
@@ -2676,6 +2677,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	prev_offset_to_bb = td->offset_to_bb;
 	prev_cbb = td->cbb;
 	prev_entry_bb = td->entry_bb;
+	prev_aggressive_inlining = td->aggressive_inlining;
 	td->inlined_method = target_method;
 
 	prev_max_stack_height = td->max_stack_height;
@@ -2691,7 +2693,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 	int const prev_code_size = td->code_size;
 	td->code_size = header->code_size;
-
+	td->aggressive_inlining = !!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING);
 	if (td->verbose_level)
 		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 
@@ -2736,6 +2738,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	td->offset_to_bb = prev_offset_to_bb;
 	td->code_size = prev_code_size;
 	td->entry_bb = prev_entry_bb;
+	td->aggressive_inlining = prev_aggressive_inlining;
 
 	g_free (td->in_offsets);
 	td->in_offsets = prev_in_offsets;
@@ -2973,7 +2976,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	/* Don't inline methods that do calls */
-	if (op == -1 && td->inlined_method)
+	if (op == -1 && td->inlined_method && !td->aggressive_inlining)
 		return FALSE;
 
 	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
@@ -5453,7 +5456,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					// Inlining failed. Set the method to be executed as part of newobj instruction
 					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					/* The constructor was not inlined, abort inlining of current method */
-					INLINE_FAILURE;
+					if (!td->aggressive_inlining)
+						INLINE_FAILURE;
 				} else {
 					interp_add_ins (td, MINT_NEWOBJ);
 					g_assert (!m_class_is_valuetype (klass));
@@ -5589,7 +5593,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			break;
 		case CEE_THROW:
-			INLINE_FAILURE;
+			if (!td->aggressive_inlining)
+				INLINE_FAILURE;
 			CHECK_STACK (td, 1);
 			interp_add_ins (td, MINT_THROW);
 			interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
