@@ -387,7 +387,7 @@ namespace System.Collections.Generic
                 const int GrowthFactor = 2;
                 const int MinimumElementsToGrowBy = 4;
 
-                int newcapacity = Math.Max(GrowthFactor * _nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
+                int newcapacity = Math.Max(_nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
 
                 // Use the argument value if newcapacity is not large enough or has overflown.
                 // If it exceeds the maximum array length, let Array.Resize throw OutOfMemoryException.
