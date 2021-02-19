@@ -31,9 +31,6 @@ namespace System.Collections.Generic
         private int _size;       // Number of elements.
         private int _version;
 
-        private const int MinimumGrow = 4;
-        private const int GrowFactor = 200;  // double each time
-
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
         public Queue()
@@ -403,7 +400,9 @@ namespace System.Collections.Generic
         {
             Debug.Assert(capacity > _array.Length);
 
-            int newcapacity = (int)((long)_array.Length * GrowFactor / 100);
+            const int MinimumGrow = 4;
+
+            int newcapacity = 2 * _array.Length;
 
             // Ensure minimum growth and account for arithmetic overflow.
             if (newcapacity < _array.Length + MinimumGrow) newcapacity = _array.Length + MinimumGrow;
