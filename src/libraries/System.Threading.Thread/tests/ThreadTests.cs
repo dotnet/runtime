@@ -621,19 +621,20 @@ namespace System.Threading.Threads.Tests
                 {
                     var ct = Thread.CurrentThread;
                     Assert.Equal(name, ct.Name);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                    Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
+                    ct.Name = name + "xyz";
+                    Assert.Equal(name + "xyz", ct.Name);
+                    ct.Name = null;
+                    Assert.Null(ct.Name);
+                    ct.Name = name;
                     Assert.Equal(name, ct.Name);
                 });
             t.IsBackground = true;
             Assert.Null(t.Name);
             t.Name = null;
-            t.Name = null;
             Assert.Null(t.Name);
+            t.Name = name + "xyz";
+            Assert.Equal(name + "xyz", t.Name);
             t.Name = name;
-            Assert.Equal(name, t.Name);
-            Assert.Throws<InvalidOperationException>(() => t.Name = null);
-            Assert.Throws<InvalidOperationException>(() => t.Name = name + "b");
             Assert.Equal(name, t.Name);
             t.Start();
             waitForThread();
@@ -642,13 +643,13 @@ namespace System.Threading.Threads.Tests
             {
                 var ct = Thread.CurrentThread;
                 Assert.Null(ct.Name);
-                ct.Name = null;
+                ct.Name = name;
+                Assert.Equal(name, ct.Name);
+                ct.Name = name + "xyz";
+                Assert.Equal(name + "xyz", ct.Name);
                 ct.Name = null;
                 Assert.Null(ct.Name);
                 ct.Name = name;
-                Assert.Equal(name, ct.Name);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = null);
-                Assert.Throws<InvalidOperationException>(() => ct.Name = name + "b");
                 Assert.Equal(name, ct.Name);
             });
         }

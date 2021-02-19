@@ -2360,7 +2360,7 @@ namespace System.Diagnostics.Tests
         {
             string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
             string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
-            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+            string[] arguments = new string[] { "/c", "mkdir", fullPath };
 
             if (Directory.Exists(fullPath))
             {

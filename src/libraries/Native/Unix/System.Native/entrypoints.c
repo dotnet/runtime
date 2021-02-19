@@ -223,6 +223,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Acquire)
     DllImportEntry(SystemNative_LowLevelMonitor_Release)
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
+    DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_GetTimestamp)

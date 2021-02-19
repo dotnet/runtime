@@ -40,4 +40,8 @@ if(ENABLE_PERFTRACING)
 
     set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base})
 
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
+
+
 endif(ENABLE_PERFTRACING)

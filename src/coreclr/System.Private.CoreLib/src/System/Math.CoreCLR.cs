@@ -46,11 +46,11 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Atan2(double y, double x);
+        public static extern double Atanh(double d);
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Atanh(double d);
+        public static extern double Atan2(double y, double x);
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -80,12 +80,15 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double FusedMultiplyAdd(double x, double y, double z);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int ILogB(double x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log2(double x);
 
@@ -124,6 +127,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Tanh(double value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern double FMod(double x, double y);
 

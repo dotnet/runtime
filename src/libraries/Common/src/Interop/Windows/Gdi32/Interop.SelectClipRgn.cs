@@ -11,13 +11,6 @@ internal static partial class Interop
         [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true)]
         public static extern RegionType SelectClipRgn(IntPtr hdc, IntPtr hrgn);
 
-        public static RegionType SelectClipRgn(HandleRef hdc, IntPtr hrgn)
-        {
-            RegionType result = SelectClipRgn(hdc.Handle, hrgn);
-            GC.KeepAlive(hdc.Wrapper);
-            return result;
-        }
-
         public static RegionType SelectClipRgn(HandleRef hdc, HandleRef hrgn)
         {
             RegionType result = SelectClipRgn(hdc.Handle, hrgn.Handle);

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // SuperPMI-Shim-Collector.cpp - Shim that collects and yields .mc (method context) files.
@@ -27,6 +25,8 @@ char*          g_logFilePath        = nullptr; // We *don't* leak this, hooray!
 WCHAR*         g_HomeDirectory      = nullptr;
 WCHAR*         g_DefaultRealJitPath = nullptr;
 MethodContext* g_globalContext      = nullptr;
+WCHAR*         g_debugRecStr        = nullptr;
+WCHAR*         g_debugRepStr        = nullptr;
 
 void SetDefaultPaths()
 {
@@ -81,6 +81,27 @@ void SetLogFilePath()
     }
 }
 
+void SetDebugVariables()
+{
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
+}
+
 extern "C"
 #ifdef HOST_UNIX
     DLLEXPORT // For Win32 PAL LoadLibrary emulation
@@ -123,6 +144,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
 {
     SetDefaultPaths();
     SetLibName();
+    SetDebugVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {
@@ -153,6 +175,7 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
     SetLibName();
     SetLogPath();
     SetLogPathName();
+    SetDebugVariables();
 
     if (!LoadRealJitLib(g_hRealJit, g_realJitPath))
     {

@@ -845,6 +845,42 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new ActivitySource("OriginalParentSource");
+                using ActivityListener listener = new ActivityListener();
+
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(source, activitySource);
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+                ActivitySource.AddActivityListener(listener);
+
+                Assert.Null(Activity.Current);
+
+                using (Activity c = source.StartActivity("Root"))
+                {
+                    Assert.NotNull(Activity.Current);
+                    Assert.Equal("Root", Activity.Current.OperationName);
+
+                    // Create Activity with the parent context to not use Activity.Current as a parent
+                    using (Activity d = source.StartActivity("Child", default, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default)))
+                    {
+                        Assert.NotNull(Activity.Current);
+                        Assert.Equal("Child", Activity.Current.OperationName);
+                    }
+
+                    // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                    // the original parent stored in Activity.Current before we started the Activity.
+                    Assert.NotNull(Activity.Current);
+                    Assert.Equal("Root", Activity.Current.OperationName);
+                }
+                Assert.Null(Activity.Current);
+            }).Dispose();
+        }
+
         public void Dispose() => Activity.Current = null;
     }
 }

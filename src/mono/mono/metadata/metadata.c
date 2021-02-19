@@ -25,7 +25,6 @@
 #include "metadata-internals.h"
 #include "reflection-internals.h"
 #include "metadata-update.h"
-#include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
 #include "debug-helpers.h"
@@ -1339,6 +1338,9 @@ dword_align (const unsigned char *ptr)
 	return (const unsigned char *) (((gsize) (ptr + 3)) & ~3);
 }
 
+static void
+mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size);
+
 /**
  * mono_metadata_decode_row:
  * \param t table to extract information from.
@@ -1351,8 +1353,17 @@ dword_align (const unsigned char *ptr)
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	mono_image_effective_table (&t, &idx);
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		mono_metadata_decode_row_slow (t, idx, res, res_size);
+	} else {
+		mono_metadata_decode_row_raw (t, idx, res, res_size);
+	}
+}
 
+void
+mono_metadata_decode_row_slow (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
+{
+	mono_image_effective_table (&t, &idx);
 	mono_metadata_decode_row_raw (t, idx, res, res_size);
 }
 
@@ -1470,6 +1481,11 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 	return TRUE;
 }
 
+static guint32
+mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col);
+static guint32
+mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col);
+
 /**
  * mono_metadata_decode_row_col:
  * \param t table to extract information from.
@@ -1482,11 +1498,32 @@ mono_metadata_decode_row_dynamic_checked (const MonoDynamicImage *image, const M
 guint32
 mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
+	if (G_UNLIKELY (mono_metadata_has_updates ())) {
+		return mono_metadata_decode_row_col_slow (t, idx, col);
+	} else {
+		return mono_metadata_decode_row_col_raw (t, idx, col);
+	}
+}
+
+guint32
+mono_metadata_decode_row_col_slow (const MonoTableInfo *t, int idx, guint col)
+{
+	mono_image_effective_table (&t, &idx);
+	return mono_metadata_decode_row_col_raw (t, idx, col);
+}
+
+/**
+ * mono_metadata_decode_row_col_raw:
+ *
+ * Same as \c mono_metadata_decode_row_col but doesn't look for the effective
+ * table on metadata updates.
+ */
+guint32
+mono_metadata_decode_row_col_raw (const MonoTableInfo *t, int idx, guint col)
+{
 	int i;
 	const char *data;
 	int n;
-
-	mono_image_effective_table (&t, &idx);
 
 	guint32 bitfield = t->size_bitfield;
 	
@@ -4600,7 +4637,6 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	const char *ptr;
 	unsigned char flags, format;
 	guint16 fat_flags;
-	ERROR_DECL (error);
 
 	/*Only the GMD has a pointer to the metadata.*/
 	while (method->is_inflated)
@@ -4632,12 +4668,6 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 	idx = mono_metadata_token_index (method->token);
 	img = m_class_get_image (method->klass);
 	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
-
-	/*We must run the verifier since we'll be decoding it.*/
-	if (!mono_verifier_verify_method_header (img, rva, error)) {
-		mono_error_cleanup (error);
-		return FALSE;
-	}
 
 	ptr = mono_image_rva_map (img, rva);
 	if (!ptr)
@@ -4755,8 +4785,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		}
 		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
-		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
-			goto fail;
 	}
 	if (fat_flags & METHOD_HEADER_MORE_SECTS) {
 		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr, error);
@@ -6837,9 +6865,6 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 
-	if (!mono_verifier_verify_typespec_signature (image, cols [MONO_TYPESPEC_SIGNATURE], type_spec, error))
-		return NULL;
-
 	mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_metadata_parse_type_checked (image, NULL, 0, TRUE, ptr, &ptr, error);
@@ -7286,9 +7311,6 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	result = g_new (MonoMethod*, num * 2);
 	for (i = 0; i < num; ++i) {
 		MonoMethod *method;
-
-		if (!mono_verifier_verify_methodimpl_row (image, start + i, error))
-			break;
 
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
 		method = mono_method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION], generic_context, error);
@@ -7978,11 +8000,7 @@ mono_loader_set_strict_assembly_name_check (gboolean enabled)
 gboolean
 mono_loader_get_strict_assembly_name_check (void)
 {
-#if !defined(DISABLE_DESKTOP_LOADER) || defined(ENABLE_NETCORE)
 	return check_assembly_names_strictly;
-#else
-	return FALSE;
-#endif
 }
 
 

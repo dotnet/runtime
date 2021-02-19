@@ -112,7 +112,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class Test<T> { }
 
-        private static IEnumerable<object[]> OpenGenericTypes()
+        public static IEnumerable<object[]> OpenGenericTypes()
         {
             yield return new object[] { typeof(Test<>) };
             yield return new object[] { typeof(Nullable<>) };
@@ -125,14 +125,14 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(Dictionary<,>).MakeGenericType(typeof(Nullable<>), typeof(string)) };
         }
 
-        private static IEnumerable<object[]> OpenGenericTypes_ToSerialize()
+        public static IEnumerable<object[]> OpenGenericTypes_ToSerialize()
         {
             yield return new object[] { typeof(Test<>) };
             yield return new object[] { typeof(List<>) };
             yield return new object[] { typeof(Dictionary<,>) };
         }
 
-        private static IEnumerable<object[]> RefStructTypes()
+        public static IEnumerable<object[]> RefStructTypes()
         {
             yield return new object[] { typeof(Span<int>) };
             yield return new object[] { typeof(Utf8JsonReader) };
@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static readonly Type s_intPtrType = typeof(int*); // Unsafe code may not appear in iterators.
 
-        private static IEnumerable<object[]> PointerTypes()
+        public static IEnumerable<object[]> PointerTypes()
         {
             yield return new object[] { s_intPtrType };
         }
@@ -150,7 +150,7 @@ namespace System.Text.Json.Serialization.Tests
         // to the serializer on serialization due to type constraints,
         // e.g. int* can't be boxed and passed to the non-generic overload,
         // and typeof(int*) can't be a generic parameter to the generic overload.
-        private static IEnumerable<object[]> TypesWithInvalidMembers_WithMembers()
+        public static IEnumerable<object[]> TypesWithInvalidMembers_WithMembers()
         {
             yield return new object[] { typeof(Memory<byte>), typeof(Span<byte>), "Span" }; // Contains Span<byte> property.
 

@@ -38,6 +38,9 @@ function(process_enable_minimal)
   string(REPLACE "," ";" tmp1 "${ENABLE_MINIMAL}")
   foreach(arg ${tmp1})
     string(TOUPPER "${arg}" var1)
+	if("${DISABLE_${var1}}" STREQUAL "")
+	  message(FATAL_ERROR "Unknown DISABLE_ option DISABLE_${var1}.")
+	endif()
     set(DISABLE_${var1} 1 PARENT_SCOPE)
   endforeach(arg)
 endfunction()
@@ -46,52 +49,36 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-function(extract_mono_corlib_version)
-  file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac corlib_version_line REGEX ^MONO_CORLIB_VERSION=)
+#
+# This is the version of the corlib-runtime interface. When
+# making changes to this interface (by changing the layout
+# of classes the runtime knows about, changing icall signature or
+# semantics etc), change this variable.
+#
+# This must be unique relative to corlib interface and semantics.
+#
+# If you change corlib such that a runtime change is required, or
+# vice versa, change this string. Examples include removing icalls,
+# adding icalls, changing icall signatures, and changing type layouts
+# that both sides know.
+#
+# It is an arbitrary string and should be parsed as such.
+# A guid works and is encouraged.
+#
+# There is no ordering of corlib versions, no old or new,
+# an exact match is required between corlib and runtime.
+#
+# This line is parsed by other tools, it should remain in the format they expect.
+#
+set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-  if(corlib_version_line STREQUAL "")
-    message(FATAL_ERROR "Couldn't find MONO_CORLIB_VERSION from configure.ac")
-  endif()
-
-  string(REGEX REPLACE "MONO_CORLIB_VERSION=([0-9a-fA-F\-]+)" "\\1" corlib_version ${corlib_version_line})
-
-  if(corlib_version STREQUAL "")
-    message(FATAL_ERROR "Couldn't parse corlib version")
-  endif()
-
-  set(MONO_CORLIB_VERSION "\"${corlib_version}\"" PARENT_SCOPE)
-endfunction()
-
-extract_mono_corlib_version()
-
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mono.proj")
-  set(ENABLE_NETCORE 1)
-endif()
-
-if(ENABLE_NETCORE)
-  set(DISABLE_REMOTING 1)
-  set(DISABLE_REFLECTION_EMIT_SAVE 1)
-  set(DISABLE_APPDOMAINS 1)
-  set(DISABLE_SHADOW_COPY 1)
-  set(DISABLE_CLEANUP 1)
-  set(DISABLE_ASSEMBLY_REMAPPING 1)
-  set(DISABLE_SECURITY 1)
-  set(DISABLE_MDB 1)
-  set(DISABLE_COM 1)
-  set(DISABLE_GAC 1)
-  set(DISABLE_PERFCOUNTERS 1)
-  set(DISABLE_ATTACH 1)
-  set(DISABLE_CONFIG 1)
-  set(DISABLE_CFGDIR_CONFIG 1)
-  set(DISABLE_VERIFIER 1)
-else()
-  message(FATAL_ERROR "Building without -DENABLE_NETCORE=1 is not supported.")
-endif()
+set(DISABLE_APPDOMAINS 1)
+set(DISABLE_CLEANUP 1)
+set(DISABLE_MDB 1)
+set(DISABLE_COM 1)
+set(DISABLE_PERFCOUNTERS 1)
 
 # Dependencies between options
-if(DISABLE_ASSEMBLY_REMAPPING)
-  set(DISABLE_DESKTOP_LOADER 1)
-endif()
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
 endif()
@@ -109,6 +96,10 @@ set(DISABLED_FEATURES "\"\"")
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
   set(GCC 1)
+endif()
+
+if(DISABLE_INTERPRETER)
+  unset(ENABLE_METADATA_UPDATE)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
@@ -183,6 +174,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(HOST_OSX 1)
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+    set(HOST_MACCATALYST 1)
+  endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
@@ -222,6 +216,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_BROWSER 1)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
@@ -454,21 +449,21 @@ if(LLVM_PREFIX)
     set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
-    set(llvm_system_libs "-lz -lrt -ldl -lpthread -lm")
+    set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs "-lLLVMOrcJIT -lLLVMJITLink -lLLVMMCJIT -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+    set(llvm_core_libs "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
 
     # Check codegen libs and add needed libraries.
     if("${llvm_codegen_libs}" STREQUAL "x86codegen")
       # llvm-config --libs x86codegen
-      set(llvm_extra "-lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMX86Desc -lLLVMX86Utils -lLLVMX86Info -lLLVMMCDisassembler -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMBinaryFormat -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "armcodegen")
       # llvm-config --libs armcodegen
-      set(llvm_extra "-lLLVMARMCodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMARMDesc -lLLVMMCDisassembler -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMARMUtils -lLLVMARMInfo -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
     elseif("${llvm_codegen_libs}" STREQUAL "aarch64codegen")
       # llvm-config --libs aarch64codegen
-      set(llvm_extra "-lLLVMAArch64CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMDebugInfoDWARF -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMBitstreamReader -lLLVMCore -lLLVMRemarks -lLLVMAArch64Desc -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMAArch64Utils -lLLVMAArch64Info -lLLVMSupport -lLLVMDemangle")
+      set(llvm_extra "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
     else()
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()
@@ -486,8 +481,10 @@ if(LLVM_PREFIX)
     endif()
     execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
+    separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
 
   if (${llvm_api_version} LESS 900)
@@ -652,6 +649,21 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+endif()
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+"#define RuntimeFileMajorVersion 42\n"
+"#define RuntimeFileMinorVersion 42\n"
+"#define RuntimeFileBuildVersion 42\n"
+"#define RuntimeFileRevisionVersion 42424\n"
+"#define RuntimeProductMajorVersion 6\n"
+"#define RuntimeProductMinorVersion 0\n"
+"#define RuntimeProductPatchVersion 0\n"
+)
+endif()
+
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
@@ -679,6 +691,10 @@ if(TARGET_IOS OR TARGET_ANDROID)
   unset(DISABLE_DLLMAP)
 else()
   set(DISABLE_DLLMAP 1)
+endif()
+if (TARGET_BROWSER)
+  # sys/errno.h exists, but just emits a warning and includes errno.h
+  unset(HAVE_SYS_ERRNO_H)
 endif()
 ### End of OS specific checks
 

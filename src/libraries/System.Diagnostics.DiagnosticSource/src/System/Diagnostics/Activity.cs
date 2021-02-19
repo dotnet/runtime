@@ -82,6 +82,36 @@ namespace System.Diagnostics
         private LinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
+        private ActivityStatusCode _statusCode;
+        private string? _statusDescription;
+        private Activity? _previousActiveActivity;
+
+        /// <summary>
+        /// Gets status code of the current activity object.
+        /// </summary>
+        public ActivityStatusCode Status => _statusCode;
+
+        /// <summary>
+        /// Gets the status descrition of the current activity object.
+        /// </summary>
+        public string? StatusDescription => _statusDescription;
+
+        /// <summary>
+        /// Sets the status code and description on the current activity object.
+        /// </summary>
+        /// <param name="code">The status code</param>
+        /// <param name="description">The error status descrition</param>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <remarks>
+        /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
+        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// </remarks>
+        public Activity SetStatus(ActivityStatusCode code, string? description = null)
+        {
+            _statusCode = code;
+            _statusDescription = code == ActivityStatusCode.Error ? description : null;
+            return this;
+        }
 
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.
@@ -329,11 +359,19 @@ namespace System.Diagnostics
             return null;
         }
 
+        /// <summary>
+        /// Returns the value of the Activity tag mapped to the input key/>.
+        /// Returns null if that key does not exist.
+        /// </summary>
+        /// <param name="key">The tag key string.</param>
+        /// <returns>The tag value mapped to the input key.</returns>
+        public object? GetTagItem(string key) => _tags?.Get(key) ?? null;
+
         /* Constructors  Builder methods */
 
         /// <summary>
         /// Note that Activity has a 'builder' pattern, where you call the constructor, a number of 'Set*' and 'Add*' APIs and then
-        /// call <see cref="Start"/> to build the activity.  You MUST call <see cref="Start"/> before using it.
+        /// call <see cref="Start"/> to build the activity. You MUST call <see cref="Start"/> before using it.
         /// </summary>
         /// <param name="operationName">Operation's name <see cref="OperationName"/></param>
         public Activity(string operationName)
@@ -584,15 +622,15 @@ namespace System.Diagnostics
             }
             else
             {
+                _previousActiveActivity = Current;
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    Activity? parent = Current;
-                    if (parent != null)
+                    if (_previousActiveActivity != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
-                        Parent = parent;
+                        Parent = _previousActiveActivity;
                     }
                 }
 
@@ -649,8 +687,7 @@ namespace System.Diagnostics
                 }
 
                 Source.NotifyActivityStop(this);
-
-                SetCurrent(Parent);
+                SetCurrent(_previousActiveActivity);
             }
         }
 
@@ -794,6 +831,18 @@ namespace System.Diagnostics
                 return new ActivitySpanId(_parentSpanId);
             }
         }
+
+        /// <summary>
+        /// When starting an Activity which does not have a parent context, the Trace Id will automatically be generated using random numbers.
+        /// TraceIdGenerator can be used to override the runtime's default Trace Id generation algorithm.
+        /// </summary>
+        /// <remarks>
+        /// - TraceIdGenerator needs to be set only if the default Trace Id generation is not enough for the app scenario.
+        /// - When setting TraceIdGenerator, ensure it is performant enough to avoid any slowness in the Activity starting operation.
+        /// - If TraceIdGenerator is set multiple times, the last set will be the one used for the Trace Id generation.
+        /// - Setting TraceIdGenerator to null will re-enable the default Trace Id generation algorithm.
+        /// </remarks>
+        public static Func<ActivityTraceId>? TraceIdGenerator { get; set; }
 
         /* static state (configuration) */
         /// <summary>
@@ -967,6 +1016,7 @@ namespace System.Diagnostics
             activity.Source = source;
             activity.Kind = kind;
 
+            activity._previousActiveActivity = Current;
             if (parentId != null)
             {
                 activity._parentId = parentId;
@@ -985,13 +1035,12 @@ namespace System.Diagnostics
             }
             else
             {
-                Activity? parent = Current;
-                if (parent != null)
+                if (activity._previousActiveActivity != null)
                 {
                     // The parent change should not form a loop. We are actually guaranteed this because
                     // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                     // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = parent;
+                    activity.Parent = activity._previousActiveActivity;
                 }
             }
 
@@ -1069,7 +1118,9 @@ namespace System.Diagnostics
             {
                 if (!TrySetTraceIdFromParent())
                 {
-                    _traceId = ActivityTraceId.CreateRandom().ToHexString();
+                    Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    _traceId = id.ToHexString();
                 }
             }
 
@@ -1484,6 +1535,23 @@ namespace System.Diagnostics
                 }
             }
 
+            public object? Get(string key)
+            {
+                // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
+                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                while (current != null)
+                {
+                    if (current.Value.Key == key)
+                    {
+                        return current.Value.Value;
+                    }
+
+                    current = current.Next;
+                }
+
+                return null;
+            }
+
             public void Remove(string key)
             {
 
@@ -1709,7 +1777,7 @@ namespace System.Diagnostics
         {
             return _hexString == traceId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivityTraceId traceId)
                 return _hexString == traceId._hexString;
@@ -1894,7 +1962,7 @@ namespace System.Diagnostics
         {
             return _hexString == spanId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivitySpanId spanId)
                 return _hexString == spanId._hexString;

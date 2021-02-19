@@ -274,9 +274,7 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
-#ifdef ENABLE_NETCORE
 static void *sysglobal_native_handle;
-#endif
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -285,10 +283,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	if (handle)
 		return handle;
 
-#ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
 		return sysglobal_native_handle;
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	return dlopen(name, flags);
@@ -300,10 +296,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-#ifdef ENABLE_NETCORE
 	if (handle == sysglobal_native_handle)
 		assert (0);
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
@@ -354,14 +348,24 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#ifdef ICALL_TABLE_mscorlib
-	if (!strcmp (image_name, "mscorlib") || !strcmp (image_name, "System.Private.CoreLib")) {
+#if defined(ICALL_TABLE_mscorlib)
+	if (!strcmp (image_name, "mscorlib")) {
 		indexes = mscorlib_icall_indexes;
 		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
 		handles = mscorlib_icall_handles;
 		funcs = mscorlib_icall_funcs;
 		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
 	}
+#endif
+#if defined(ICALL_TABLE_corlib)
+	if (!strcmp (image_name, "System.Private.CoreLib")) {
+		indexes = corlib_icall_indexes;
+		indexes_size = sizeof (corlib_icall_indexes) / 4;
+		handles = corlib_icall_handles;
+		funcs = corlib_icall_funcs;
+		assert (sizeof (corlib_icall_indexes [0]) == 4);
+	}
+#endif
 #ifdef ICALL_TABLE_System
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
@@ -385,7 +389,6 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
 	return funcs [idx];
-#endif
 }
 
 static const char*
@@ -597,6 +600,12 @@ EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
 	return mono_class_get_method_from_name (klass, name, arguments);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_get_delegate_invoke (MonoObject *delegate)
+{
+	return mono_get_delegate_invoke(mono_object_get_class (delegate));
 }
 
 EMSCRIPTEN_KEEPALIVE MonoObject*
@@ -899,10 +908,8 @@ mono_wasm_get_obj_type (MonoObject *obj)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	)
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -928,10 +935,8 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
-	if (
-		(klass == mono_get_string_class ()) &&
-		(mono_string_is_interned (obj) == obj)
-	) {
+	if ((klass == mono_get_string_class ()) &&
+		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}

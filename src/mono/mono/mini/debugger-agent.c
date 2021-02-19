@@ -63,7 +63,6 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
@@ -1907,7 +1906,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
+	if (res->domain == NULL) {
 		PRINT_DEBUG_MSG (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
@@ -2069,8 +2068,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -2184,7 +2185,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 
 	g_assert (info);
 
-	ip = MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 	tid = mono_thread_info_get_tid (info);
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
@@ -2295,7 +2296,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 		/* not attached */
 		ji = NULL;
 	} else {
-		ji = mono_jit_info_table_find_internal ( domain, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (domain, MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
 	}
 
 	/* This is signal safe */
@@ -2439,11 +2440,6 @@ suspend_vm (void)
 		 */
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_suspend)
-		mono_threadpool_suspend ();
-#endif
 }
 
 /*
@@ -2482,11 +2478,6 @@ resume_vm (void)
 	if (suspend_count == 0)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_resume)
-		mono_threadpool_resume ();
-#endif
 }
 
 /*
@@ -3647,7 +3638,7 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
-	if (CHECK_PROTOCOL_VERSION (3, 0))
+	if (CHECK_PROTOCOL_VERSION (2, 59))
 		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_defaults.corlib->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
@@ -3884,9 +3875,6 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -3906,9 +3894,6 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	old_domain = mono_domain_get ();
 
@@ -4756,7 +4741,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (!agent_inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (throw_ctx));
 	if (catch_frame)
 		catch_ji = catch_frame->ji;
 	else
@@ -5029,7 +5014,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		if (!obj) {
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
-			if (CHECK_PROTOCOL_VERSION (3, 0)) {
+			if (CHECK_PROTOCOL_VERSION (2, 59)) {
 				buffer_add_info_for_null_value(buf, t, domain);
 			}
 		} else {
@@ -5133,16 +5118,7 @@ static gboolean
 obj_is_of_type (MonoObject *obj, MonoType *t)
 {
 	MonoClass *klass = obj->vtable->klass;
-	if (!mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-		if (mono_class_is_transparent_proxy (klass)) {
-			klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-			if (mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-				return TRUE;
-			}
-		}
-		return FALSE;
-	}
-	return TRUE;
+	return mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass);
 }
 
 static ErrorCode
@@ -5924,7 +5900,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		return ERR_INVALID_ARGUMENT;
 	} else if (m_class_is_valuetype (m->klass) && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
-		if (!CHECK_PROTOCOL_VERSION (3, 0)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
+		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
 			int type = decode_byte (p, &p, end);
 			if (type != VALUE_TYPE_ID_NULL) {
 				PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
@@ -5946,14 +5922,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 					return err;
 			}
 	} else {
-		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
 			if (err != ERR_NONE)
 				return err;
 		}
 	}
 
-	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (3, 0))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 		this_arg = *(MonoObject**)this_buf;
 	else
 		this_arg = NULL;
@@ -5992,7 +5968,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				return ERR_INVALID_ARGUMENT;
 			else {
 				ERROR_DECL (error);
-				this_arg = mono_object_new_checked (domain, m->klass, error);
+				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					return ERR_INVALID_ARGUMENT;
@@ -6321,9 +6297,6 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6362,9 +6335,6 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 
@@ -6671,11 +6641,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 			mono_environment_exitcode_set (exit_code);
 
-			/* Suspend all managed threads since the runtime is going away */
-#ifndef ENABLE_NETCORE
-			PRINT_DEBUG_MSG (1, "Suspending all threads...\n");
-			mono_thread_suspend_all_other_threads ();
-#endif
 			PRINT_DEBUG_MSG (1, "Shutting down the runtime...\n");
 			mono_runtime_quit_internal ();
 			transport_close2 ();
@@ -6783,7 +6748,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread), FALSE);
+		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		break;
 	}
@@ -7207,7 +7172,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new_checked (domain, s, error);
+		o = mono_string_new_checked (s, error);
 		if (!is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (error));
 			mono_error_cleanup (error);
@@ -7230,7 +7195,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		uintptr_t size = 0;
 		int len = decode_int (p, &p, end);
 		size = len;
-		arr = mono_array_new_full_checked (mono_domain_get (), mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
+		arr = mono_array_new_full_checked (mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
 		elem = mono_array_addr_internal (arr, guint8, 0);
 		memcpy (elem, p, len);
 		p += len;
@@ -7253,7 +7218,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME:
 		g_assert (domain == domain2);
 
-		o = mono_object_new_checked (domain, klass, error);
+		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
 		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
@@ -7544,7 +7509,7 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, domain, f->parent);
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		buffer_add_int (buf, f->type->attrs);
-		if (CHECK_PROTOCOL_VERSION (3, 0)) {
+		if (CHECK_PROTOCOL_VERSION (2, 59)) {
 			buffer_add_int (buf, f->type->type);
 			buffer_add_int (buf, m_class_get_type_token (f->parent));
 			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
@@ -7688,7 +7653,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		while ((m = mono_class_get_methods (klass, &iter))) {
 			buffer_add_methodid (buf, domain, m);
-			if (CHECK_PROTOCOL_VERSION (3, 0))
+			if (CHECK_PROTOCOL_VERSION (2, 59))
 				buffer_add_int(buf, m->token);
 			i ++;
 		}
@@ -7850,7 +7815,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				goto invalid_fieldid;
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7895,7 +7860,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -8040,7 +8005,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, loader_error);
 
 		if (vtable)
@@ -8053,7 +8018,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		MonoObject *obj;
 
-		obj = mono_object_new_checked (domain, klass, error);
+		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
 		break;
@@ -8423,7 +8388,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
+			s = mono_ldstr_checked (m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8_checked_internal (s, error);
@@ -9248,7 +9213,6 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClassField *f = NULL;
 	MonoClass *k;
 	gboolean found;
-	gboolean remote_obj = FALSE;
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	if (command == CMD_OBJECT_REF_IS_COLLECTED) {
@@ -9270,16 +9234,10 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClass *obj_type;
 
 	obj_type = obj->vtable->klass;
-	if (mono_class_is_transparent_proxy (obj_type)) {
-		obj_type = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-		remote_obj = TRUE;
-	}
-
 	g_assert (obj_type);
 
 	switch (command) {
 	case CMD_OBJECT_REF_GET_TYPE:
-		/* This handles transparent proxies too */
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
 	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
@@ -9321,7 +9279,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9335,22 +9293,7 @@ get_field_value:
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = NULL;
-#ifndef DISABLE_REMOTING
-				void *field_storage = NULL;
-#endif
-				if (remote_obj) {
-#ifndef DISABLE_REMOTING
-					field_value = mono_load_remote_field_checked(obj, obj_type, f, &field_storage, error);
-					if (!is_ok (error)) {
-						mono_error_cleanup (error); /* FIXME report the error */
-						goto invalid_object;
-					}
-#else
-					g_assert_not_reached ();
-#endif
-				} else
-					field_value = (guint8*)obj + f->offset;
+				void *field_value = (guint8*)obj + f->offset;
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
@@ -9383,7 +9326,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;

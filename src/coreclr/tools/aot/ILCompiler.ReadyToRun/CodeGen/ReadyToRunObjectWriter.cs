@@ -66,6 +66,11 @@ namespace ILCompiler.DependencyAnalysis
         private readonly SymbolFileBuilder _symbolFileBuilder;
 
         /// <summary>
+        /// Set to non-null when generating callchain profile info.
+        /// </summary>
+        private readonly ProfileFileBuilder _profileFileBuilder;
+
+        /// <summary>
         /// True when the map file builder should emit a textual map file
         /// </summary>
         private bool _generateMapFile;
@@ -94,6 +99,11 @@ namespace ILCompiler.DependencyAnalysis
         /// Explicit specification of the output PerfMap path
         /// </summary>
         private string _perfMapPath;
+
+        /// <summary>
+        /// MVID of the input managed module to embed in the perfmap file name.
+        /// </summary>
+        private Guid? _perfMapMvid;
 
         /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
@@ -130,6 +140,9 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            Guid? perfMapMvid,
+            bool generateProfileFile,
+            CallChainProfile callChainProfile,
             int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
@@ -143,11 +156,12 @@ namespace ILCompiler.DependencyAnalysis
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapMvid = perfMapMvid;
 
             bool generateMap = (generateMapFile || generateMapCsvFile);
             bool generateSymbols = (generatePdbFile || generatePerfMapFile);
 
-            if (generateMap || generateSymbols)
+            if (generateMap || generateSymbols || generateProfileFile)
             {
                 _outputInfoBuilder = new OutputInfoBuilder();
 
@@ -159,6 +173,11 @@ namespace ILCompiler.DependencyAnalysis
                 if (generateSymbols)
                 {
                     _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
+                }
+
+                if (generateProfileFile)
+                {
+                    _profileFileBuilder = new ProfileFileBuilder(_outputInfoBuilder, callChainProfile, _nodeFactory.Target);
                 }
             }
         }
@@ -270,7 +289,7 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section);
                     lastWrittenObjectNode = node;
 
-                    if ((_generatePdbFile || _generatePerfMapFile) && node is MethodWithGCInfo methodNode)
+                    if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
                     {
                         _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
                     }
@@ -346,7 +365,13 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath);
+                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath, _perfMapMvid);
+                    }
+
+                    if (_profileFileBuilder != null)
+                    {
+                        string path = Path.ChangeExtension(_objectFilePath, ".profile");
+                        _profileFileBuilder.SaveProfile(path);
                     }
                 }
 
@@ -417,6 +442,9 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            Guid? perfMapMvid,
+            bool generateProfileFile,
+            CallChainProfile callChainProfile,
             int customPESectionAlignment)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
@@ -431,6 +459,9 @@ namespace ILCompiler.DependencyAnalysis
                 pdbPath: pdbPath,
                 generatePerfMapFile: generatePerfMapFile,
                 perfMapPath: perfMapPath,
+                perfMapMvid: perfMapMvid,
+                generateProfileFile: generateProfileFile,
+                callChainProfile,
                 customPESectionAlignment);
             objectWriter.EmitPortableExecutable();
         }

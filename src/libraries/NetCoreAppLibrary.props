@@ -160,7 +160,4 @@
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
   </ItemGroup>
-  <PropertyGroup>
-    <IsAspNetCoreApp Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">true</IsAspNetCoreApp>
-  </PropertyGroup>
 </Project>
