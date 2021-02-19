@@ -69,37 +69,37 @@ jobs:
     - Linux_x64
 
 # run mono microbenchmarks perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: mono
-#       projectFile: microbenchmarks.proj
-#       runKind: micro_mono
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run mono interpreter perf job
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-#     buildConfig: release
-#     runtimeFlavor: mono
-#     platforms:
-#     - Linux_x64
-#     jobParameters:
-#       testGroup: perf
-#       liveLibrariesBuildConfig: Release
-#       runtimeType: mono
-#       codeGenType: 'Interpreter'
-#       projectFile: microbenchmarks.proj
-#       runKind: micro_mono
-#       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: perf
+      liveLibrariesBuildConfig: Release
+      runtimeType: mono
+      codeGenType: 'Interpreter'
+      projectFile: microbenchmarks.proj
+      runKind: micro_mono
+      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 # run mono wasm microbenchmarks perf job
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -127,9 +127,9 @@ jobs:
     runtimeFlavor: coreclr
     platforms:
     - Linux_x64
-    # - windows_x64
-    # - windows_x86
-    # - Linux_arm64
+    - windows_x64
+    - windows_x86
+    - Linux_arm64
     - Linux_musl_x64
     jobParameters:
       testGroup: perf
