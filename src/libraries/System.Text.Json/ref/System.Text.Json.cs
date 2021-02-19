@@ -559,6 +559,7 @@ namespace System.Text.Json.Serialization
     {
         protected ReferenceHandler() { }
         public static System.Text.Json.Serialization.ReferenceHandler Preserve { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandler IgnoreCycles { get { throw null; } }
         public abstract System.Text.Json.Serialization.ReferenceResolver CreateResolver();
     }
     public sealed partial class ReferenceHandler<T> : System.Text.Json.Serialization.ReferenceHandler where T : System.Text.Json.Serialization.ReferenceResolver, new()

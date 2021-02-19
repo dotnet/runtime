@@ -223,17 +223,6 @@ typedef enum {
 	/* add other exception type */
 } MonoExceptionType;
 
-/* This struct collects the info needed for the runtime use of a class,
- * like the vtables for a domain, the GC descriptor, etc.
- */
-typedef struct {
-	guint16 max_domain;
-	/* domain_vtables is indexed by the domain id and the size is max_domain + 1 */
-	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
-} MonoClassRuntimeInfo;
-
-#define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
-
 typedef struct {
 	MonoPropertyBagItem head;
 
@@ -1237,7 +1226,7 @@ MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type);
 
 MonoVTable*
-mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_class_vtable_checked (MonoClass *klass, MonoError *error);
 
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
@@ -1544,48 +1533,71 @@ m_field_get_offset (MonoClassField *field)
 }
 
 /*
- * Memory allocation for classes/methods
+ * Memory allocation for images/classes/methods
  *
  *   These should be used to allocate memory whose lifetime is equal to
- * the lifetime of the domain+class/method pair.
+ * the lifetime of the image/class/method.
  */
 
 static inline MonoMemoryManager*
-m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
+m_image_get_mem_manager (MonoImage *image)
 {
-	// FIXME:
-	return mono_domain_memory_manager (domain);
+	return (MonoMemoryManager*)mono_image_get_alc (image)->memory_manager;
 }
 
 static inline void *
-m_class_alloc (MonoDomain *domain, MonoClass *klass, guint size)
+m_image_alloc (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc (m_class_get_mem_manager (domain, klass), size);
+	return mono_mem_manager_alloc (m_image_get_mem_manager (image), size);
 }
 
 static inline void *
-m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
+m_image_alloc0 (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc0 (m_class_get_mem_manager (domain, klass), size);
+	return mono_mem_manager_alloc0 (m_image_get_mem_manager (image), size);
 }
 
 static inline MonoMemoryManager*
-m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
+m_class_get_mem_manager (MonoClass *klass)
+{
+	// FIXME: Generics
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (m_class_get_image (klass));
+	if (alc)
+		return (MonoMemoryManager*)alc->memory_manager;
+	else
+		/* Dynamic assemblies */
+		return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+}
+
+static inline void *
+m_class_alloc (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc (m_class_get_mem_manager (klass), size);
+}
+
+static inline void *
+m_class_alloc0 (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc0 (m_class_get_mem_manager (klass), size);
+}
+
+static inline MonoMemoryManager*
+m_method_get_mem_manager (MonoMethod *method)
 {
 	// FIXME:
-	return mono_domain_memory_manager (domain);
+	return mono_domain_memory_manager (mono_get_root_domain ());
 }
 
 static inline void *
-m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
+m_method_alloc (MonoMethod *method, guint size)
 {
-	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc (m_method_get_mem_manager (method), size);
 }
 
 static inline void *
-m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
+m_method_alloc0 (MonoMethod *method, guint size)
 {
-	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc0 (m_method_get_mem_manager (method), size);
 }
 
 // Enum and static storage for JIT icalls.

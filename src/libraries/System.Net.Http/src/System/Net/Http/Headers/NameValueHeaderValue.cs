@@ -51,7 +51,7 @@ namespace System.Net.Http.Headers
             _value = value;
         }
 
-        protected NameValueHeaderValue(NameValueHeaderValue source)
+        protected internal NameValueHeaderValue(NameValueHeaderValue source)
         {
             Debug.Assert(source != null);
 

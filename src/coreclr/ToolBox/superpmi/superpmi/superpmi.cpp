@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
 
@@ -130,7 +128,7 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         LogError("main method %d of size %d failed to load and compile correctly.", (*reader)->GetMethodContextIndex(),
                  (*mc)->methodSize);
@@ -537,8 +535,12 @@ int __cdecl main(int argc, char* argv[])
         {
             failToReplayCount++;
 
+            // Methods that don't compile due to missing JIT-EE information
+            // should still be added to the failing MC list but we don't create MC repro for them.
             if (o.mclFilename != nullptr)
+            {
                 failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+            }
 
             // The following only apply specifically to failures caused by errors (as opposed
             // to, for instance, failures caused by missing JIT-EE details).

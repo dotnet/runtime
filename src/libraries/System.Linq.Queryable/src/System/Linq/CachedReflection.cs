@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace System.Linq
 {
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+        Justification = "The methods passed into MakeGenericMethod do not contain trim annotations.")]
     internal static class CachedReflectionInfo
     {
         private static MethodInfo? s_Aggregate_TSource_2;

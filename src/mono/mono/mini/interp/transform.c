@@ -2026,7 +2026,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		*op = MINT_INTRINS_CLEAR_WITH_REFERENCES;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
-		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+		*op = MINT_LDIND_I;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Marvin")) {
 		if (!strcmp (tm, "Block"))
 			*op = MINT_INTRINS_MARVIN_BLOCK;
@@ -2046,7 +2046,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
 		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
 			ERROR_DECL(error);
-			MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, target_method->klass, error);
+			MonoVTable *vtable = mono_class_vtable_checked (target_method->klass, error);
 			if (!is_ok (error)) {
 				mono_interp_error_cleanup (error);
 				return FALSE;
@@ -2059,7 +2059,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
 			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
 			td->last_ins->data [0] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
-			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (td->rtm->domain, mono_defaults.string_class, error));
+			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (mono_defaults.string_class, error));
 			td->sp--;
 			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 			push_type (td, STACK_TYPE_O, mono_defaults.string_class);
@@ -2615,10 +2615,10 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (mono_class_needs_cctor_run (method->klass, NULL)) {
 		MonoVTable *vtable;
 		ERROR_DECL (error);
-		if (!m_class_get_runtime_info (method->klass))
+		if (!m_class_get_runtime_vtable (method->klass))
 			/* No vtable created yet */
 			return FALSE;
-		vtable = mono_class_vtable_checked (td->rtm->domain, method->klass, error);
+		vtable = mono_class_vtable_checked (method->klass, error);
 		if (!is_ok (error)) {
 			mono_interp_error_cleanup (error);
 			return FALSE;
@@ -2759,7 +2759,7 @@ interp_constrained_box (TransformData *td, MonoDomain *domain, MonoClass *constr
 		interp_add_ins (td, MINT_BOX_NULLABLE_PTR);
 		td->last_ins->data [0] = get_data_item_index (td, constrained_class);
 	} else {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, constrained_class, error);
+		MonoVTable *vtable = mono_class_vtable_checked (constrained_class, error);
 		return_if_nok (error);
 
 		interp_add_ins (td, MINT_BOX_PTR);
@@ -2927,7 +2927,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
-		(void)mono_class_vtable_checked (domain, target_method->klass, error);
+		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
 		if (method == target_method && *(td->ip + 5) == CEE_RET && !(csignature->hasthis && m_class_is_valuetype (target_method->klass))) {
@@ -3707,7 +3707,7 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
 	MonoDomain *domain = td->rtm->domain;
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
 
 	push_simple_type (td, STACK_TYPE_MP);
@@ -3816,7 +3816,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 {
 	MonoDomain *domain = td->rtm->domain;
 	// Initialize the offset for the field
-	MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
 
 	if (mono_class_field_is_special_static (field)) {
@@ -5280,7 +5280,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = mono_metadata_token_index (read32 (td->ip + 1));
 			push_type (td, STACK_TYPE_O, mono_defaults.string_class);
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
-				MonoString *s = mono_ldstr_checked (domain, image, token, error);
+				MonoString *s = mono_ldstr_checked (image, token, error);
 				goto_if_nok (error, exit);
 				/* GC won't scan code stream, but reference is held by metadata
 				 * machinery so we are good here */
@@ -5431,7 +5431,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
 					} else {
-						MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+						MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 						goto_if_nok (error, exit);
 						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_FAST);
 						interp_ins_set_dreg (newobj_fast, dreg);
@@ -5621,14 +5621,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					goto_if_nok (error, exit);
 				} else {
 					td->sp--;
+					int foffset = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					if (td->sp->type == STACK_TYPE_O) {
 						interp_add_ins (td, MINT_LDFLDA);
+						td->last_ins->data [0] = foffset;
 					} else {
 						int sp_type = td->sp->type;
 						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
-						interp_add_ins (td, MINT_LDFLDA_UNSAFE);
+						if (foffset) {
+							interp_add_ins (td, MINT_LDFLDA_UNSAFE);
+							td->last_ins->data [0] = foffset;
+						} else {
+							interp_add_ins (td, MINT_MOV_P);
+						}
 					}
-					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					push_simple_type (td, STACK_TYPE_MP);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -5728,7 +5734,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->sp--;
 
 					/* the vtable of the field might not be initialized at this point */
-					mono_class_vtable_checked (domain, field_klass, error);
+					mono_class_vtable_checked (field_klass, error);
 					goto_if_nok (error, exit);
 				} else {
 					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
@@ -5742,7 +5748,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					if (mt == MINT_TYPE_VT) {
 						/* the vtable of the field might not be initialized at this point */
-						mono_class_vtable_checked (domain, field_klass, error);
+						mono_class_vtable_checked (field_klass, error);
 						goto_if_nok (error, exit);
 						if (m_class_has_references (field_klass)) {
 							td->last_ins->data [1] = get_data_item_index (td, field_klass);
@@ -5803,7 +5809,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			/* the vtable of the field might not be initialized at this point */
 			MonoClass *fld_klass = mono_class_from_mono_type_internal (ftype);
-			mono_class_vtable_checked (domain, fld_klass, error);
+			mono_class_vtable_checked (fld_klass, error);
 			goto_if_nok (error, exit);
 
 			interp_emit_sfld_access (td, field, fld_klass, mt, FALSE, error);
@@ -5909,7 +5915,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (td->sp [-1].type == STACK_TYPE_R8 && m_class_get_byval_arg (klass)->type == MONO_TYPE_R4)
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
-				MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+				MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 				goto_if_nok (error, exit);
 
 				td->sp--;
@@ -5934,7 +5940,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			CHECK_TYPELOAD (klass);
 
 			MonoClass *array_class = mono_class_create_array (klass, 1);
-			MonoVTable *vtable = mono_class_vtable_checked (domain, array_class, error);
+			MonoVTable *vtable = mono_class_vtable_checked (array_class, error);
 			goto_if_nok (error, exit);
 
 			unsigned char lentype = (td->sp - 1)->type;
@@ -8229,7 +8235,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->in_offsets = (int*)g_malloc0((header->code_size + 1) * sizeof(int));
 	td->clause_indexes = (int*)g_malloc (header->code_size * sizeof (int));
 	td->mempool = mono_mempool_new ();
-	td->mem_manager = m_method_get_mem_manager (rtm->domain, method);
+	td->mem_manager = m_method_get_mem_manager (method);
 	td->n_data_items = 0;
 	td->max_data_items = 0;
 	td->data_items = NULL;
@@ -8454,7 +8460,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	}
 
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
-	method_class_vt = mono_class_vtable_checked (domain, imethod->method->klass, error);
+	method_class_vt = mono_class_vtable_checked (imethod->method->klass, error);
 	return_if_nok (error);
 
 	if (!method_class_vt->initialized) {
