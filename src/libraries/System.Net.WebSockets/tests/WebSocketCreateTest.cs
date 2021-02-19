@@ -117,8 +117,8 @@ namespace System.Net.WebSockets.Tests
         {
             var stream = new WebSocketStream();
 
-            stream.Write(firstByte, secondByte, (byte)'a');
-            using var websocket = CreateFromStream(stream.Remote, isServer: false, null, Timeout.InfiniteTimeSpan);
+            stream.Enqueue(firstByte, secondByte, (byte)'a');
+            using var websocket = CreateFromStream(stream, isServer: false, null, Timeout.InfiniteTimeSpan);
 
             var buffer = new byte[1];
             Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(buffer, CancellationToken.None);

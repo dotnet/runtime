@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -198,6 +199,72 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(messageSize, result.Count);
             Assert.True(result.EndOfMessage);
             Assert.True(message.AsSpan().SequenceEqual(buffer));
+        }
+
+        [Fact]
+        public async Task WhenPingReceivedPongMessageMustBeSent()
+        {
+            var stream = new WebSocketStream();
+            using var server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                // Use server so we don't receive any masked payload
+                IsServer = true
+            });
+            using var cancellation = new CancellationTokenSource();
+
+            stream.Enqueue(0b1000_1001, 0x00);
+            var receiveTask = server.ReceiveAsync(Memory<byte>.Empty, cancellation.Token).AsTask();
+
+            Assert.Equal(0, stream.Available);
+            Assert.Equal(2, stream.Remote.Available);
+            Assert.Equal<byte>(new byte[] { 0b1000_1010, 0x00 }, stream.Remote.NextAvailableBytes.ToArray());
+
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await receiveTask.ConfigureAwait(false));
+        }
+
+        [Fact]
+        public async Task WhenPongReceivedNothingShouldBeSentBack()
+        {
+            var stream = new WebSocketStream();
+            using var client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            using var cancellation = new CancellationTokenSource();
+
+            stream.Enqueue(0b1000_1010, 0x00);
+            var receiveTask = client.ReceiveAsync(Memory<byte>.Empty, cancellation.Token).AsTask();
+
+            Assert.Equal(0, stream.Available);
+            Assert.Equal(0, stream.Remote.Available);
+
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await receiveTask.ConfigureAwait(false));
+        }
+
+        [Fact]
+        public async Task ClosingWebSocketsGracefully()
+        {
+            var stream = new WebSocketStream();
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(155));
+            using var client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+            using var server = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = true
+            });
+
+            var clientClose = client.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Yeet", cancellation.Token);
+            var result = await server.ReceiveAsync(Memory<byte>.Empty, cancellation.Token);
+            
+            Assert.True(result.EndOfMessage);
+            Assert.Equal(WebSocketMessageType.Close, result.MessageType);
+            Assert.Equal(0, result.Count);
+            Assert.Equal("Yeet", server.CloseStatusDescription);
+            Assert.Equal(WebSocketCloseStatus.PolicyViolation, server.CloseStatus);
+
+            await clientClose;
+
+            Assert.Equal(WebSocketState.Closed, server.State);
+            Assert.Equal(WebSocketState.Closed, client.State);
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket

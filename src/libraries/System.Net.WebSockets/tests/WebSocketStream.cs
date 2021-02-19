@@ -13,6 +13,7 @@ namespace System.Net.WebSockets.Tests
     {
         private readonly SemaphoreSlim _inputLock = new(initialCount: 0);
         private readonly Queue<Block> _inputQueue = new();
+        private readonly CancellationTokenSource _disposed = new();
 
         public WebSocketStream()
         {
@@ -39,13 +40,29 @@ namespace System.Net.WebSockets.Tests
 
                 lock (_inputQueue)
                 {
-                    foreach ( var x in _inputQueue)
+                    foreach (var x in _inputQueue)
                     {
                         available += x.AvailableLength;
                     }
                 }
 
                 return available;
+            }
+        }
+
+        public Span<byte> NextAvailableBytes
+        {
+            get
+            {
+                lock (_inputQueue)
+                {
+                    var block = _inputQueue.Peek();
+
+                    if (block is null)
+                        return default;
+
+                    return block.Available;
+                }
             }
         }
 
@@ -61,30 +78,30 @@ namespace System.Net.WebSockets.Tests
 
         protected override void Dispose(bool disposing)
         {
-            _inputLock.Dispose();
-
-            lock (Remote._inputQueue)
+            if (!_disposed.IsCancellationRequested)
             {
-                try
+                _disposed.Cancel();
+
+                lock (Remote._inputQueue)
                 {
                     Remote._inputLock.Release();
                     Remote._inputQueue.Enqueue(Block.ConnectionClosed);
-                }
-                catch (ObjectDisposedException)
-                {
                 }
             }
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            try
+            using (var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposed.Token))
             {
-                await _inputLock.WaitAsync(cancellationToken);
-            }
-            catch (ObjectDisposedException)
-            {
-                return 0;
+                try
+                {
+                    await _inputLock.WaitAsync(cancellation.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
+                {
+                    return 0;
+                }
             }
 
             lock (_inputQueue)
@@ -104,26 +121,25 @@ namespace System.Net.WebSockets.Tests
                 }
                 else
                 {
-                    try
-                    {
-                        // Because we haven't fully consumed the buffer
-                        // we should release once the input lock so we can acquire
-                        // it again on consequent receive.
-                        _inputLock.Release();
-                    }
-                    catch (ObjectDisposedException) { }
+                    // Because we haven't fully consumed the buffer
+                    // we should release once the input lock so we can acquire
+                    // it again on consequent receive.
+                    _inputLock.Release();
                 }
 
                 return count;
             }
         }
 
-        public void Write(params byte[] data)
+        /// <summary>
+        /// Receives the data and enqueues it for processing.
+        /// </summary>
+        public void Enqueue(params byte[] data)
         {
-            lock (Remote._inputQueue)
+            lock (_inputQueue)
             {
-                Remote._inputLock.Release();
-                Remote._inputQueue.Enqueue(new Block(data));
+                _inputLock.Release();
+                _inputQueue.Enqueue(new Block(data));
             }
         }
 
@@ -131,14 +147,8 @@ namespace System.Net.WebSockets.Tests
         {
             lock (Remote._inputQueue)
             {
-                try
-                {
-                    Remote._inputLock.Release();
-                    Remote._inputQueue.Enqueue(new Block(buffer.ToArray()));
-                }
-                catch (ObjectDisposedException)
-                {
-                }
+                Remote._inputLock.Release();
+                Remote._inputQueue.Enqueue(new Block(buffer.ToArray()));
             }
         }
 

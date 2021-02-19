@@ -361,7 +361,7 @@ namespace System.Net.WebSockets
 
         private Task ValidateAndReceiveAsync(Task receiveTask, CancellationToken cancellationToken)
         {
-            if ( receiveTask.IsCompletedSuccessfully &&
+            if (receiveTask.IsCompletedSuccessfully &&
                !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
                !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close))
             {
@@ -670,7 +670,22 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;
 
-            if (!_isServer && _sentCloseFrame)
+            bool closeOutput = false;
+
+            lock (StateUpdateLock)
+            {
+                if (!_sentCloseFrame)
+                {
+                    _sentCloseFrame = true;
+                    closeOutput = true;
+                }
+            }
+
+            if (closeOutput)
+            {
+                await CloseOutputAsyncCore(closeStatus, closeStatusDescription, cancellationToken).ConfigureAwait(false);
+            }
+            else if (!_isServer)
             {
                 await _receiver.WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }

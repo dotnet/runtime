@@ -39,8 +39,8 @@ namespace System.Net.WebSockets.Tests
         {
             var stream = new WebSocketStream();
 
-            stream.Write(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
-            using var websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DeflateOptions = new()
             });
@@ -55,7 +55,7 @@ namespace System.Net.WebSockets.Tests
 
             // Because context takeover is set by default if we try to send
             // the same message it would take fewer bytes.
-            stream.Write(0xc1, 0x05, 0xf2, 0x00, 0x11, 0x00, 0x00);
+            stream.Enqueue(0xc1, 0x05, 0xf2, 0x00, 0x11, 0x00, 0x00);
 
             buffer.AsSpan().Clear();
             result = await websocket.ReceiveAsync(buffer, CancellationToken);
@@ -70,7 +70,7 @@ namespace System.Net.WebSockets.Tests
         {
             var stream = new WebSocketStream();
 
-            using var websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DeflateOptions = new()
                 {
@@ -83,7 +83,7 @@ namespace System.Net.WebSockets.Tests
             for (var i = 0; i < 100; ++i)
             {
                 // Without context takeover the message should look the same every time
-                stream.Write(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+                stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
                 buffer.AsSpan().Clear();
 
                 var result = await websocket.ReceiveAsync(buffer, CancellationToken);
@@ -100,7 +100,7 @@ namespace System.Net.WebSockets.Tests
         {
             // Two or more DEFLATE blocks may be used in one message.
             var stream = new WebSocketStream();
-            using var websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 DeflateOptions = new()
             });
@@ -112,8 +112,8 @@ namespace System.Net.WebSockets.Tests
             // following 4 octets(0x00 0x00 0xff 0xff), the header bits constitute
             // an empty DEFLATE block with no compression. A DEFLATE block
             // containing "llo" follows the empty DEFLATE block.
-            stream.Write(0x41, 0x08, 0xf2, 0x48, 0x05, 0x00, 0x00, 0x00, 0xff, 0xff);
-            stream.Write(0x80, 0x05, 0xca, 0xc9, 0xc9, 0x07, 0x00);
+            stream.Enqueue(0x41, 0x08, 0xf2, 0x48, 0x05, 0x00, 0x00, 0x00, 0xff, 0xff);
+            stream.Enqueue(0x80, 0x05, 0xca, 0xc9, 0xc9, 0x07, 0x00);
 
             Memory<byte> buffer = new byte[5];
             var result = await websocket.ReceiveAsync(buffer, CancellationToken);
@@ -247,8 +247,8 @@ namespace System.Net.WebSockets.Tests
         {
             var stream = new WebSocketStream();
 
-            stream.Write(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
-            using var websocket = WebSocket.CreateFromStream(stream.Remote, new());
+            stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            using var websocket = WebSocket.CreateFromStream(stream, new());
 
             var exception = await Assert.ThrowsAsync<WebSocketException>(() =>
                websocket.ReceiveAsync(Memory<byte>.Empty, CancellationToken).AsTask());
