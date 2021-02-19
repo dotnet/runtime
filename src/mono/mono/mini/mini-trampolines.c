@@ -97,10 +97,9 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 {
 	gpointer ctx;
 	gpointer res;
-	MonoDomain *domain;
 	RgctxTrampInfo tmp_info;
 	RgctxTrampInfo *info;
-	MonoMemoryManager *mem_manager;
+	MonoJitMemoryManager *jit_mm;
 
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 	g_assert (((gpointer*)addr) [2] == 0);
@@ -108,38 +107,36 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 
 	ctx = mini_method_get_rgctx (m);
 
-	domain = mono_domain_get ();
-	mem_manager = m_method_get_mem_manager (m);
+	jit_mm = jit_mm_for_method (m);
 
 	/*
 	 * In the AOT case, addr might point to either the method, or to an unbox trampoline,
 	 * so make the hash keyed on the m+addr pair.
 	 */
-	mono_domain_lock (domain);
-	if (!domain_jit_info (domain)->static_rgctx_trampoline_hash)
-		domain_jit_info (domain)->static_rgctx_trampoline_hash = g_hash_table_new (rgctx_tramp_info_hash, rgctx_tramp_info_equal);
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->static_rgctx_trampoline_hash)
+		jit_mm->static_rgctx_trampoline_hash = g_hash_table_new (rgctx_tramp_info_hash, rgctx_tramp_info_equal);
 	tmp_info.m = m;
 	tmp_info.addr = addr;
-	res = g_hash_table_lookup (domain_jit_info (domain)->static_rgctx_trampoline_hash,
+	res = g_hash_table_lookup (jit_mm->static_rgctx_trampoline_hash,
 							   &tmp_info);
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 	if (res)
 		return res;
 
 	if (mono_aot_only)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
-		res = mono_arch_get_static_rgctx_trampoline (mem_manager, ctx, addr);
+		res = mono_arch_get_static_rgctx_trampoline (jit_mm->mem_manager, ctx, addr);
 
-	mono_domain_lock (domain);
+	jit_mm_lock (jit_mm);
 	/* Duplicates inserted while we didn't hold the lock are OK */
 	info = (RgctxTrampInfo *)m_method_alloc (m, sizeof (RgctxTrampInfo));
 	info->m = m;
 	info->addr = addr;
-	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, info, res);
-
+	g_hash_table_insert (jit_mm->static_rgctx_trampoline_hash, info, res);
 	UnlockedIncrement (&static_rgctx_trampolines);
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 
 	return res;
 }
