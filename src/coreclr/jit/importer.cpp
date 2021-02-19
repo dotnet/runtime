@@ -12783,12 +12783,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#if !CPU_HAS_FP_SUPPORT
-                if (varTypeIsFloating(op1->gtType))
-                {
-                    callNode = true;
-                }
-#endif
                 /* Can't do arithmetic with references */
                 assertImp(genActualType(op1->TypeGet()) != TYP_REF && genActualType(op2->TypeGet()) != TYP_REF);
 

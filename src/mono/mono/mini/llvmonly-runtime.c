@@ -175,7 +175,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		MonoMethod *jmethod;
 		gpointer wrapper_addr;
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 		g_assert (ji);
 		jmethod = jinfo_get_method (ji);
 
@@ -314,7 +314,7 @@ llvmonly_fallback_imt_tramp (gpointer *arg, MonoMethod *imt_method)
 }
 
 gpointer
-mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	gpointer *buf;
 	gpointer *res;
@@ -351,7 +351,7 @@ mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIM
 	}
 
 	/* Save the entries into an array */
-	buf = (void **)mono_domain_alloc (domain, (real_count + 1) * 2 * sizeof (gpointer));
+	buf = (void **)m_class_alloc (vtable->klass, (real_count + 1) * 2 * sizeof (gpointer));
 	index = 0;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -374,7 +374,7 @@ mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIM
 	 * Return a function descriptor for a C function with 'buf' as its argument.
 	 * It will by called by JITted code.
 	 */
-	res = (void **)mono_domain_alloc (domain, 2 * sizeof (gpointer));
+	res = (void **)m_class_alloc (vtable->klass, 2 * sizeof (gpointer));
 	switch (real_count) {
 	case 1:
 		res [0] = (gpointer)llvmonly_imt_tramp_1;

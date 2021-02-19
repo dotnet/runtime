@@ -2952,7 +2952,26 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
         this, this->GetThreadId(), dwOrigEip, pTgt);
 
     bRes = EESetThreadContext(this, pCtx);
-    _ASSERTE(bRes && "Failed to SetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
+    if (!bRes)
+    {
+#ifdef _DEBUG
+        // In some rare cases the stack pointer may be outside the stack limits.
+        // SetThreadContext would fail assuming that we are trying to bypass CFG.
+        // 
+        // NB: the check here is slightly more strict than what OS requires,
+        //     but it is simple and uses only documented parts of TEB
+        auto pTeb = this->GetTEB();
+        void* stackPointer = (void*)GetSP(pCtx);
+        if ((stackPointer < pTeb->StackLimit) || (stackPointer > pTeb->StackBase))
+        {
+            return (FALSE);
+        }
+
+        _ASSERTE(!"Failed to SetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
+#endif
+
+        return FALSE;
+    }
 
     // Restore original IP
     SetIP(pCtx, dwOrigEip);

@@ -860,8 +860,33 @@ static SimdIntrinsic sha256_methods [] = {
 };
 
 static SimdIntrinsic advsimd_methods [] = {
-	{SN_Abs}
+	{SN_Abs},
+	{SN_AbsSaturate},
+	{SN_AbsScalar},
+	{SN_AbsoluteCompareGreaterThan},
+	{SN_AbsoluteCompareGreaterThanOrEqual},
+	{SN_AbsoluteCompareLessThan},
+	{SN_AbsoluteCompareLessThanOrEqual}
 };
+
+static
+MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum arg0_type, MonoInst **args, SimdOp op_for_r4, SimdOp op_for_r8)
+{
+	SimdOp op = (SimdOp)0;
+
+	switch (get_underlying_type (fsig->params [0])) {
+	case MONO_TYPE_R4:
+		op = op_for_r4;
+	  	break;
+	case MONO_TYPE_R8:
+		op = op_for_r8;
+		break;
+	default:
+		g_assert_not_reached();
+	}
+	
+	return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
+}
 
 static MonoInst*
 emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
@@ -1026,11 +1051,73 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 				op = SIMD_OP_LLVM_I64ABS;
 				break;
 			}
+		}
+
+		case SN_AbsoluteCompareGreaterThan: {
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN, SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN);
+		}
+
+	    	case SN_AbsoluteCompareGreaterThanOrEqual: {
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL, SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL);
+		}
+
+		case SN_AbsoluteCompareLessThan: {
+			// Compare less than uses the same instructions as greater than, with arguments swapped.
+			MonoInst *temp_for_swap = args [0];
+			args [0] = args [1];
+			args [1] = temp_for_swap;
+
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN, SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN);
+		}
+
+		case SN_AbsoluteCompareLessThanOrEqual: {
+			// Compare less than uses the same instructions as greater than, with arguments swapped.
+			MonoInst *temp_for_swap = args [0];
+			args [0] = args [1];
+			args [1] = temp_for_swap;
+
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL, SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL);
+		}
+		
+		case SN_AbsSaturate: {
+			SimdOp op = (SimdOp)0;
+			switch (get_underlying_type (fsig->params [0])) {
+			case MONO_TYPE_I1:
+				op = SIMD_OP_LLVM_I8ABS_SATURATE;
+				break;
+			case MONO_TYPE_I2:
+				op = SIMD_OP_LLVM_I16ABS_SATURATE;
+				break;
+			case MONO_TYPE_I4:
+				op = SIMD_OP_LLVM_I32ABS_SATURATE;
+				break;
+			case MONO_TYPE_I8:
+				op = SIMD_OP_LLVM_I64ABS_SATURATE;
+				break;
+			}
 
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
+
+		case SN_AbsScalar: {
+			SimdOp op = (SimdOp)0;
+			switch (get_underlying_type (fsig->params [0])) {
+			case MONO_TYPE_I1:
+				op = SIMD_OP_LLVM_I8ABS_SATURATE;
+				break;
+			case MONO_TYPE_I2:
+				op = SIMD_OP_LLVM_I16ABS_SATURATE;
+				break;
+			case MONO_TYPE_I4:
+				op = SIMD_OP_LLVM_I32ABS_SATURATE;
+				break;
+			case MONO_TYPE_I8:
+				op = SIMD_OP_LLVM_I64ABS_SATURATE;
+				break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}		
 		}
-		
 	}
 
 	return NULL;

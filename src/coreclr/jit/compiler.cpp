@@ -4838,19 +4838,23 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
         // Compute reachability sets and dominators.
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Perform loop inversion (i.e. transform "while" loops into
-        // "repeat" loops) and discover and classify natural loops
+        // Discover and classify natural loops
         // (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels
         //
-        DoPhase(this, PHASE_OPTIMIZE_LOOPS, &Compiler::optOptimizeLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
         // choose the one based on dynamic condition evaluation.
@@ -5299,10 +5303,8 @@ void Compiler::RecomputeLoopInfo()
         block->bbFlags &= ~BBF_LOOP_FLAGS;
     }
     fgComputeReachability();
-    // Rebuild the loop tree annotations themselves.  Since this is performed as
-    // part of 'optOptimizeLoops', this will also re-perform loop rotation, but
-    // not other optimizations, as the others are not part of 'optOptimizeLoops'.
-    optOptimizeLoops();
+    // Rebuild the loop tree annotations themselves
+    optFindLoops();
 }
 
 /*****************************************************************************/
