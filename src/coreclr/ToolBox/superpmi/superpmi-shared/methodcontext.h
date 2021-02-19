@@ -106,6 +106,18 @@ public:
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
 
+    void recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod);
+    void dmpGetClassModule(DWORDLONG key, DWORDLONG value);
+    CORINFO_MODULE_HANDLE repGetClassModule(CORINFO_CLASS_HANDLE cls);
+
+    void recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem);
+    void dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value);
+    CORINFO_ASSEMBLY_HANDLE repGetModuleAssembly(CORINFO_MODULE_HANDLE mod);
+
+    void recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName);
+    void dmpGetAssemblyName(DWORDLONG key, DWORD value);
+    const char* repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
+
     void recGetVars(CORINFO_METHOD_HANDLE ftn, ULONG32* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void dmpGetVars(DWORDLONG key, const Agnostic_GetVars& value);
     void repGetVars(CORINFO_METHOD_HANDLE ftn, ULONG32* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
@@ -869,7 +881,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 188
+// Highest packet number: 191
 // *************************************************************************************
 enum mcPackets
 {
@@ -1034,6 +1046,9 @@ enum mcPackets
     Packet_SigInstHandleMap                              = 184,
     Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
     Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021
+    Packet_GetClassModule                                = 189, // Added 2/19/2021
+    Packet_GetModuleAssembly                             = 190, // Added 2/19/2021
+    Packet_GetAssemblyName                               = 191, // Added 2/19/2021
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocGCInfo                       = 114,

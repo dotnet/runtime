@@ -796,6 +796,94 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
     return value;
 }
 
+void MethodContext::recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod)
+{
+    if (GetClassModule == nullptr)
+        GetClassModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetClassModule->Add(CastHandle(cls), CastHandle(mod));
+    DEBUG_REC(dmpGetClassModule(CastHandle(cls), CastHandle(mod)));
+}
+void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetClassModule cls-%016llX, mod-%016llX", key, value);
+}
+CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
+{
+    AssertCodeMsg(GetClassModule != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetClassModule for %016llX.", CastHandle(cls));
+    AssertCodeMsg(GetClassModule->GetIndex(CastHandle(cls)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(cls));
+    CORINFO_MODULE_HANDLE value = (CORINFO_MODULE_HANDLE)GetClassModule->Get(CastHandle(cls));
+    DEBUG_REP(dmpGetClassModule(CastHandle(cls), CastHandle(value)));
+    return value;
+}
+
+void MethodContext::recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem)
+{
+    if (GetModuleAssembly == nullptr)
+        GetModuleAssembly = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetModuleAssembly->Add(CastHandle(mod), CastHandle(assem));
+    DEBUG_REC(dmpGetModuleAssembly(CastHandle(mod), CastHandle(assem)));
+}
+void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetModuleAssembly mod-%016llX, assem-%016llX", key, value);
+}
+CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
+{
+    AssertCodeMsg(GetModuleAssembly != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetModuleAssembly for %016llX.", CastHandle(mod));
+    AssertCodeMsg(GetModuleAssembly->GetIndex(CastHandle(mod)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(mod));
+    CORINFO_ASSEMBLY_HANDLE value = (CORINFO_ASSEMBLY_HANDLE)GetModuleAssembly->Get(CastHandle(mod));
+    DEBUG_REP(dmpGetModuleAssembly(CastHandle(mod), CastHandle(assem)));
+    return value;
+}
+
+void MethodContext::recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName)
+{
+    if (GetAssemblyName == nullptr)
+        GetAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORD value;
+    if (assemblyName != nullptr)
+    {
+        value = GetAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
+    }
+    else
+    {
+        value = (DWORD)-1;
+    }
+
+    GetAssemblyName->Add(CastHandle(assem), value);
+    DEBUG_REC(dmpGetAssemblyName(CastHandle(mod), value));
+}
+void MethodContext::dmpGetAssemblyName(DWORDLONG key, DWORD value)
+{
+    const char* assemblyName = (const char*)GetAssemblyName->GetBuffer(value);
+    printf("GetAssemblyName assem-%016llX, value-%u '%s'", key, value, assemblyName);
+    GetAssemblyName->Unlock();
+}
+const char* MethodContext::repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
+{
+    const char* result = "hackishAssemblyName";
+    DWORD value = (DWORD)-1;
+    int itemIndex = -1;
+    if (GetAssemblyName != nullptr)
+    {
+        itemIndex = GetAssemblyName->GetIndex(CastHandle(assem));
+    }
+    if (itemIndex >= 0)
+    {
+        value = GetAssemblyName->Get(CastHandle(assem));
+        result = (const char*)GetAssemblyName->GetBuffer(value);
+    }
+    DEBUG_REP(dmpGetAssemblyName(CastHandle(assem), value));
+    return result;
+}
+
 // Note - the jit will call freearray on the array we give back....
 void MethodContext::recGetVars(CORINFO_METHOD_HANDLE      ftn,
                                ULONG32*                   cVars,
