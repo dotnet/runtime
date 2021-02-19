@@ -57,15 +57,15 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     {
         oidStr = JSTRING("secp224r1");
     }
-    else if (strcmp(oid, "1.3.132.0.34") == 0)
+    else if (strcmp(oid, "1.3.132.0.34") == 0 || strcmp(oid, "nistP384") == 0)
     {
         oidStr = JSTRING("secp384r1");
     }
-    else if (strcmp(oid, "1.3.132.0.35") == 0)
+    else if (strcmp(oid, "1.3.132.0.35") == 0 || strcmp(oid, "nistP521") == 0)
     {
         oidStr = JSTRING("secp521r1");
     }
-    else if (strcmp(oid, "1.2.840.10045.3.1.7") == 0)
+    else if (strcmp(oid, "1.2.840.10045.3.1.7") == 0 || strcmp(oid, "nistP256") == 0)
     {
         oidStr = JSTRING("secp256r1");
     }
@@ -117,6 +117,17 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
     
     LOG_DEBUG("Created curve from oid '%s'", oid);
+
+    jobject group = (*env)->CallObjectMethod(env, curveParameters, g_ECParameterSpecGetCurve);
+
+    jobject field = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetField);
+
+    int size = (*env)->CallIntMethod(env, field, g_ECFieldGetFieldSize);
+
+    LOG_DEBUG("Field size at creation is %d", size);
+
+    ReleaseLRef(env, field);
+    ReleaseLRef(env, group);
 
     return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }

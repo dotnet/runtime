@@ -10,8 +10,8 @@ static jobject CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
     jstring algorithmName = JSTRING("SHA1withECDSA");
     jobject signatureObject =
         (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
-    (*env)->DeleteLocalRef(algorithmName);
-    if (CheckJNIExceptions())
+    (*env)->DeleteLocalRef(env, algorithmName);
+    if (CheckJNIExceptions(env))
         return NULL;
     return signatureObject;
 }
@@ -44,8 +44,9 @@ int32_t CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* si
 
     jbyteArray sigResult = (*env)->CallObjectMethod(env, signatureObject, g_SignatureSign);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
-    jsize sigSize = (*env)->GetArrayLength(sigResult);
-    (*env)->GetByteArrayRegion(env, sigResult, 0, sigSize, sig);
+    jsize sigSize = (*env)->GetArrayLength(env, sigResult);
+    *siglen = sigSize;
+    (*env)->GetByteArrayRegion(env, sigResult, 0, sigSize, (jbyte*)sig);
     ReleaseLRef(env, sigResult);
 
     ReleaseLRef(env, signatureObject);
@@ -78,19 +79,19 @@ int32_t CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uin
     ReleaseLRef(env, digestArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
-    jbyteArray sigArray = (*env)->NewByteArray(env, dgstlen);
+    jbyteArray sigArray = (*env)->NewByteArray(env, siglen);
     (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
-    (*env)->CallObjectMethod(env, signatureObject, g_SignatureVerify, sigArray);
+    jboolean verified = (*env)->CallBooleanMethod(env, signatureObject, g_SignatureVerify, sigArray);
     ReleaseLRef(env, sigArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 
     ReleaseLRef(env, signatureObject);
 
-    return SUCCESS;
+    return verified ? SUCCESS : FAIL;
 
 error:
     ReleaseLRef(env, signatureObject);
-    return FAIL;
+    return -1;
 }
 
 int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
@@ -105,7 +106,7 @@ int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
     // With some additional padding bytes for the bigintegers to keep them positive, we get a current max of 7.
     const int derEncodingBytes = 7;
     JNIEnv* env = GetJNIEnv();
-    jobject order = (*env)->CallObjectMethod(key->curveParameters, g_ECParameterSpecGetOrder);
+    jobject order = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
     int byteLength = CryptoNative_GetBigNumBytes(order);
     ReleaseLRef(env, order);
     return 2 * byteLength + derEncodingBytes;
