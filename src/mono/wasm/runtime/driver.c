@@ -768,10 +768,12 @@ class_is_task (MonoClass *klass)
 	if (!klass)
 		return 0;
 
+	/*
 	char * type_name = mono_type_get_name_full (mono_class_get_type(klass), MONO_TYPE_NAME_FORMAT_REFLECTION);
 	EM_ASM({
 		console.log("class_is_task", Module.UTF8ToString($0));
 	}, type_name);
+	*/
 
 	if (!task_class && !resolved_task_class) {
 		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
@@ -1267,6 +1269,9 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 EMSCRIPTEN_KEEPALIVE wasm_method_signature_info * 
 mono_wasm_create_method_signature_info (MonoClass *klass, MonoMethod *method) 
 {
+	// FIXME: The recent changes on master completely broke this
+	return 0;
+
 	if (!method)
 		return 0;
 

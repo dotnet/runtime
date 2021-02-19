@@ -260,45 +260,94 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
-        private enum MarshalType : Int32 {
-            NULL = 0
-            , INT = 1
-            , FP64 = 2
-            , STRING = 3
-            , VT = 4
-            , DELEGATE = 5
-            , TASK = 6
-            , OBJECT = 7
-            , BOOL = 8
-            , ENUM = 9
-            , DATE = 20
-            , DATEOFFSET = 21
-            , URI = 22
-            , SAFEHANDLE = 23
-            , ARRAY_BYTE = 10
-            , ARRAY_UBYTE = 11
-            , ARRAY_UBYTE_C = 12
-            , ARRAY_SHORT = 13
-            , ARRAY_USHORT = 14
-            , ARRAY_INT = 15
-            , ARRAY_UINT = 16
-            , ARRAY_FLOAT = 17
-            , ARRAY_DOUBLE = 18
-            , FP32 = 24
-            , UINT32 = 25
-            , INT64 = 26
-            , UINT64 = 27
-            , CHAR = 28
-            , STRING_INTERNED = 29
-            , VOID = 30            
+        public enum MarshalType : int {
+            NULL = 0,
+            INT = 1,
+            FP64 = 2,
+            STRING = 3,
+            VT = 4,
+            DELEGATE = 5,
+            TASK = 6,
+            OBJECT = 7,
+            BOOL = 8,
+            ENUM = 9,
+            DATE = 20,
+            DATEOFFSET = 21,
+            URI = 22,
+            SAFEHANDLE = 23,
+            ARRAY_BYTE = 10,
+            ARRAY_UBYTE = 11,
+            ARRAY_UBYTE_C = 12,
+            ARRAY_SHORT = 13,
+            ARRAY_USHORT = 14,
+            ARRAY_INT = 15,
+            ARRAY_UINT = 16,
+            ARRAY_FLOAT = 17,
+            ARRAY_DOUBLE = 18,
+            FP32 = 24,
+            UINT32 = 25,
+            INT64 = 26,
+            UINT64 = 27,
+            CHAR = 28,
+            STRING_INTERNED = 29,
+            VOID = 30
         }
 
         // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
-        private enum MarshalError : Int32 {
+        public enum MarshalError : int {
             BUFFER_TOO_SMALL = 512,
             NULL_CLASS_POINTER = 513,
             NULL_TYPE_POINTER = 514,
+            UNSUPPORTED_TYPE = 515,
             FIRST = BUFFER_TOO_SMALL
+        }
+
+        public static MarshalType GetMarshalTypeFromType (Type type) {
+            if (type == null)
+                return MarshalType.VOID;
+
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                    return MarshalType.INT;
+                case TypeCode.UInt32:
+                    return MarshalType.UINT32;
+                case TypeCode.Boolean:
+                    return MarshalType.BOOL;
+                case TypeCode.Int64:
+                    return MarshalType.INT64;
+                case TypeCode.UInt64:
+                    return MarshalType.UINT64;
+                case TypeCode.Single:
+                    return MarshalType.FP32;
+                case TypeCode.Double:
+                    return MarshalType.FP64;
+                case TypeCode.String:
+                    return MarshalType.STRING;
+            }
+
+            if (type.IsEnum)
+                return MarshalType.ENUM;
+            else if (type == typeof(DateTime))
+                return MarshalType.DATE;
+            else if (type == typeof(DateTimeOffset))
+                return MarshalType.DATEOFFSET;
+            else if (typeof(Delegate).IsAssignableFrom(type))
+                return MarshalType.DELEGATE;
+            else if (typeof(Task).IsAssignableFrom(type))
+                return MarshalType.TASK;
+            else if (typeof(Uri).IsAssignableFrom(type))
+                return MarshalType.URI;
+
+            // FIXME: SafeHandle
+
+            if (type.IsValueType)
+                return MarshalType.VT;
+            else
+                return MarshalType.OBJECT;
         }
 
         public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
