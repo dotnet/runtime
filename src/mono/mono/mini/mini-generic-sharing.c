@@ -2271,13 +2271,6 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		else
 			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_VTYPE);
 	}
-#ifndef DISABLE_REMOTING
-	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK: {
-		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check ((MonoMethod *)data, error);
-		return_val_if_nok (error, NULL);
-		return mono_compile_method_checked (remoting_invoke_method, error);
-	}
-#endif
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return mono_domain_alloc0 (domain, sizeof (gpointer));
 	case MONO_RGCTX_INFO_CLASS_FIELD:

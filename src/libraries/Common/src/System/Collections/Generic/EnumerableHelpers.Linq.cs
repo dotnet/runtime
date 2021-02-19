@@ -12,32 +12,6 @@ namespace System.Collections.Generic
     internal static partial class EnumerableHelpers
     {
         /// <summary>
-        /// Tries to get the count of the enumerable cheaply.
-        /// </summary>
-        /// <typeparam name="T">The element type of the source enumerable.</typeparam>
-        /// <param name="source">The enumerable to count.</param>
-        /// <param name="count">The count of the enumerable, if it could be obtained cheaply.</param>
-        /// <returns><c>true</c> if the enumerable could be counted cheaply; otherwise, <c>false</c>.</returns>
-        internal static bool TryGetCount<T>(IEnumerable<T> source, out int count)
-        {
-            Debug.Assert(source != null);
-
-            if (source is ICollection<T> collection)
-            {
-                count = collection.Count;
-                return true;
-            }
-
-            if (source is IIListProvider<T> provider)
-            {
-                return (count = provider.GetCount(onlyIfCheap: true)) >= 0;
-            }
-
-            count = -1;
-            return false;
-        }
-
-        /// <summary>
         /// Copies items from an enumerable to an array.
         /// </summary>
         /// <typeparam name="T">The element type of the enumerable.</typeparam>

@@ -8604,7 +8604,7 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
 
     // If the targetClass is a TypeSpec that means its first element is GENERICINST.
     // We only need to build types for the Instantiation if targetClass is a TypeSpec.
-    ULONG classGenerics = 0;
+    uint32_t classGenerics = 0;
     SigParser typeSig;
     if (TypeFromToken(targetClass) == mdtTypeSpec)
     {
@@ -8632,10 +8632,10 @@ HRESULT CordbJITILFrame::BuildInstantiationForCallsite(CordbModule * pModule, Ne
 
     // Similarly for method generics.  Simply fill "methodGenerics" with the number
     // of generics, and move "genericSig" to the start of the first generic param.
-    ULONG methodGenerics = 0;
+    uint32_t methodGenerics = 0;
     if (!genericSig.IsNull())
     {
-        ULONG callingConv = 0;
+        uint32_t callingConv = 0;
         IfFailRet(genericSig.GetCallingConvInfo(&callingConv));
         if (callingConv == IMAGE_CEE_CS_CALLCONV_GENERICINST)
             IfFailRet(genericSig.GetData(&methodGenerics));

@@ -23,6 +23,11 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
+        public static void FlushStores()
+        {
+            OpenSslX509ChainProcessor.FlushStores();
+        }
+
         public static IChainPal BuildChain(
             bool useMachineContext,
             ICertificatePal cert,

@@ -32,7 +32,7 @@ namespace System.Resources.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void VerifyFeatureSwitchGeneratesTheRightException()
         {
             var remoteInvokeOptions = new RemoteInvokeOptions();

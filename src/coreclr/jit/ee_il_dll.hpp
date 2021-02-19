@@ -5,12 +5,12 @@ extern ICorJitHost* g_jitHost;
 
 class CILJit : public ICorJitCompiler
 {
-    CorJitResult __stdcall compileMethod(ICorJitInfo*         comp,            /* IN */
-                                         CORINFO_METHOD_INFO* methodInfo,      /* IN */
-                                         unsigned             flags,           /* IN */
-                                         BYTE**               nativeEntry,     /* OUT */
-                                         ULONG*               nativeSizeOfCode /* OUT */
-                                         );
+    CorJitResult compileMethod(ICorJitInfo*         comp,            /* IN */
+                               CORINFO_METHOD_INFO* methodInfo,      /* IN */
+                               unsigned             flags,           /* IN */
+                               uint8_t**            nativeEntry,     /* OUT */
+                               uint32_t*            nativeSizeOfCode /* OUT */
+                               );
 
     void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
