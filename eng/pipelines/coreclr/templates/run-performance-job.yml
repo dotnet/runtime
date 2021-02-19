@@ -102,7 +102,7 @@ jobs:
       clean: all
     pool:
       ${{ parameters.pool }}
-    - ${{ if ne(parameters.runtimeType, 'wasm') }}:
+    ${{ if ne(parameters.runtimeType, 'wasm') }}:
       container: ${{ parameters.container }}
     strategy:
       matrix:
