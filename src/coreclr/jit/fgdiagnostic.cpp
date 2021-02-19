@@ -2264,8 +2264,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 }
                 break;
             case GT_ADDR:
+            {
+                const bool stackAddr = op1->DefinesLocalAddr(this);
+                assert((!stackAddr && tree->TypeIs(TYP_BYREF)) || (stackAddr && tree->TypeIs(TYP_I_IMPL)));
                 assert(!op1->CanCSE());
-                break;
+            }
+            break;
 
             case GT_IND:
                 // Do we have a constant integer address as op1?
