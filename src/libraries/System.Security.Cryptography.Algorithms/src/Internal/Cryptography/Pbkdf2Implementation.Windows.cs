@@ -102,6 +102,7 @@ namespace Internal.Cryptography
                         hashBufferSize = SHA512.HashData(password, hashBuffer);
                         break;
                     default:
+                        Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
                         throw new CryptographicException();
                 }
 
@@ -260,13 +261,21 @@ namespace Internal.Cryptography
             }
         }
 
-        private static int GetHashBlockSize(string hashAlgorithmName) => hashAlgorithmName switch {
+        private static int GetHashBlockSize(string hashAlgorithmName)
+        {
             // Block sizes per NIST FIPS pub 180-4.
-            HashAlgorithmNames.SHA1 => 512 / 8,
-            HashAlgorithmNames.SHA256 => 512 / 8,
-            HashAlgorithmNames.SHA384 => 1024 / 8,
-            HashAlgorithmNames.SHA512 => 1024 / 8,
-            _ => throw new CryptographicException(), // Should have been validated before getting here.
-        };
+            switch (hashAlgorithmName)
+            {
+                case HashAlgorithmNames.SHA1:
+                case HashAlgorithmNames.SHA256:
+                    return 512 / 8;
+                case HashAlgorithmNames.SHA384:
+                case HashAlgorithmNames.SHA512:
+                    return 1024 / 8;
+                default:
+                    Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
+                    throw new CryptographicException();
+            }
+        }
     }
 }

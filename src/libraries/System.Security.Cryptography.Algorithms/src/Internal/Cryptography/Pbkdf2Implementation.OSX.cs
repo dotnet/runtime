@@ -19,12 +19,25 @@ namespace Internal.Cryptography
         {
             Debug.Assert(!destination.IsEmpty);
 
-            PAL_HashAlgorithm prfAlgorithm = hashAlgorithmName.Name switch {
-                "SHA1" => PAL_HashAlgorithm.Sha1,
-                "SHA256" => PAL_HashAlgorithm.Sha256,
-                "SHA384" => PAL_HashAlgorithm.Sha384,
-                "SHA512" => PAL_HashAlgorithm.Sha512,
-                _ => throw new CryptographicException() // Should have been validated before getting here.
+            PAL_HashAlgorithm prfAlgorithm;
+
+            switch (hashAlgorithmName.Name)
+            {
+                case HashAlgorithmNames.SHA1:
+                    prfAlgorithm = PAL_HashAlgorithm.Sha1;
+                    break;
+                case HashAlgorithmNames.SHA256:
+                    prfAlgorithm = PAL_HashAlgorithm.Sha256;
+                    break;
+                case HashAlgorithmNames.SHA384:
+                    prfAlgorithm = PAL_HashAlgorithm.Sha384;
+                    break;
+                case HashAlgorithmNames.SHA512:
+                    prfAlgorithm = PAL_HashAlgorithm.Sha512;
+                    break;
+                default:
+                    Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName.Name}'");
+                    throw new CryptographicException();
             };
 
             Interop.AppleCrypto.Pbkdf2(prfAlgorithm, password, salt, iterations, destination);
