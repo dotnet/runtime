@@ -22853,7 +22853,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
-    dprintf (2, (ThreadStressLog::gcStartMarkMsg(), condemned_gen_number, heap_number));
+    dprintf (2, (ThreadStressLog::gcStartMarkMsg(), heap_number, condemned_gen_number));
     BOOL  full_p = (condemned_gen_number == max_generation);
 
     int gen_to_init = condemned_gen_number;
@@ -31508,7 +31508,7 @@ void gc_heap::bgc_thread_function()
             break;
         }
         gc_background_running = TRUE;
-        dprintf (2, ("beginning of bgc: gen2 FL: %d, FO: %d, frag: %d",
+        dprintf (2, (ThreadStressLog::gcStartBgcThread(), heap_number,
             generation_free_list_space (generation_of (max_generation)),
             generation_free_obj_space (generation_of (max_generation)),
             dd_fragmentation (dynamic_data_of (max_generation))));

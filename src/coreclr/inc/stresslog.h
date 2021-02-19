@@ -838,7 +838,7 @@ public:
     static const char* gcStartMarkMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "---- Mark Phase condemning %d on heap %d ----";
+        return "---- Mark Phase on heap %d condemning %d ----";
     }
 
     static const char* gcStartPlanMsg()
@@ -899,6 +899,12 @@ public:
     {
         STATIC_CONTRACT_LEAF;
         return "Making unused array [%Ix, %Ix[";
+    }
+
+    static const char* gcStartBgcThread()
+    {
+        STATIC_CONTRACT_LEAF;
+        return "beginning of bgc on heap %d: gen2 FL: %d, FO: %d, frag: %d";
     }
 
     static const char* TaskSwitchMsg()

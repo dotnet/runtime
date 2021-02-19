@@ -117,6 +117,8 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
 {
     if (threadId & 0x8000000000000000)
         fprintf(file, "GC%2d %13.9f : ", (unsigned)threadId, timeStamp);
+    else if (threadId & 0x4000000000000000)
+        fprintf(file, "BG%2d %13.9f : ", (unsigned)threadId, timeStamp);
     else
         fprintf(file, "%4x %13.9f : ", threadId, timeStamp);
     fprintf(file, "%-20s ", getFacilityName ( facility ));
