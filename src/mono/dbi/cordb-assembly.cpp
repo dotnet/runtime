@@ -188,9 +188,12 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS *pAddress) {
                       MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
   m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(
-      bAnswer->p, &bAnswer->p, bAnswer->end, &m_assemblyMetadataLen);
+      pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
 
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
@@ -209,9 +212,12 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName,
                               MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
   char *assembly_name =
-      m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+      m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
 
   if (cchName < strlen(assembly_name) + 1) {
     *pcchName = (ULONG32)strlen(assembly_name) + 1;
@@ -251,8 +257,11 @@ HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef,
                       MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  int id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
   CordbFunction *func = NULL;
   func = m_pProcess->FindFunction(id);
   if (func == NULL) {

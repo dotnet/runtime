@@ -76,8 +76,12 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn,
   int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_EVENT_REQUEST,
                               MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  m_commandId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  m_commandId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
 
   LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepRange - IMPLEMENTED\n"));
   return S_OK;
@@ -101,7 +105,9 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepOut(void) {
                               MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
   m_dbgprot_buffer_free(&sendbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
 
   LOG((LF_CORDB, LL_INFO1000000, "CordbStepper - StepOut - IMPLEMENTED\n"));
   return S_OK;

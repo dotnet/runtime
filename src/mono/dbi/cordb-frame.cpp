@@ -69,16 +69,19 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG *pcelt) {
                               MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  m_nFrames = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  m_nFrames = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   m_ppFrames =
       (CordbNativeFrame **)malloc(sizeof(CordbNativeFrame *) * m_nFrames);
 
   for (int i = 0; i < m_nFrames; i++) {
-    int frameid = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int methodId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int il_offset = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int flags = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int frameid = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    int methodId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    int flags = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
 
     CordbNativeFrame *frame = new CordbNativeFrame(conn, frameid, methodId,
                                                    il_offset, flags, m_pThread);
@@ -264,8 +267,11 @@ CordbJITILFrame::GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue) {
                               MDBGPROT_CMD_STACK_FRAME_GET_VALUES, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  return CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  return CordbObjectValue::CreateCordbValue(conn, pReply, ppValue);
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -287,9 +293,12 @@ CordbJITILFrame::GetArgument(DWORD dwIndex, ICorDebugValue **ppValue) {
                               MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENT, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrame - GetArgument - IMPLEMENTED\n"));
-  return CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
+  return CordbObjectValue::CreateCordbValue(conn, pReply, ppValue);
 }
 
 HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackDepth(ULONG32 *pDepth) {

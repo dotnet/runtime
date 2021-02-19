@@ -229,13 +229,17 @@ CordbThread::GetActiveFrame(ICorDebugFrame **ppFrame) {
   int cmdId = this->conn->SendEvent(
       MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int nframes = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  int nframes = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   if (nframes > 0) {
-    int frameid = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int methodId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int il_offset = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int flags = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int frameid = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    int methodId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    int flags = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
     if (m_pCurrentFrame)
       m_pCurrentFrame->InternalRelease();
     m_pCurrentFrame =

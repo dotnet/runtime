@@ -171,8 +171,13 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
     int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_OBJECT_REF,
                                 MDBGPROT_CMD_OBJECT_REF_GET_TYPE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-    int type_id = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+    int type_id = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_id(&localbuf, type_id);
@@ -180,19 +185,23 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
     cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_INFO,
                             &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    bAnswer = conn->GetAnswer(cmdId);
+
+    received_reply_packet = conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    pReply = received_reply_packet->Buffer();
+
     char *namespace_str =
-        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
     char *class_name_str =
-        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
     char *class_fullname_str =
-        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
     int assembly_id =
-        m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int module_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    type_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    type_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    int type_id2 = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+    int token = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     m_pClass = new CordbClass(conn, token, assembly_id);
     m_pClass->InternalAddRef();
     m_pCordbType = new CordbType(m_type, conn, m_pClass);
@@ -212,12 +221,17 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
     int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
                                 MDBGPROT_CMD_ARRAY_REF_GET_TYPE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-    int type_id = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
-    int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+    int type_id = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
+    int rank = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     if (type_id == ELEMENT_TYPE_CLASS) {
       int klass_id =
-          m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
       m_dbgprot_buffer_init(&localbuf, 128);
       m_dbgprot_buffer_add_id(&localbuf, klass_id);
@@ -225,20 +239,24 @@ CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
       cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_INFO,
                               &localbuf);
       m_dbgprot_buffer_free(&localbuf);
-      bAnswer = conn->GetAnswer(cmdId);
+
+      received_reply_packet = conn->GetReplyWithError(cmdId);
+      CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+      pReply = received_reply_packet->Buffer();
+
       char *namespace_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       char *class_name_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       char *class_fullname_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       int assembly_id =
-          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
       int module_id =
-          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int type_id3 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int type_id3 = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int type_id2 = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int token = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
       m_pClass = new CordbClass(conn, token, module_id);
       m_pClass->InternalAddRef();
       free(namespace_str);
@@ -443,9 +461,14 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32 *pcchString) {
     int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STRING_REF,
                                 MDBGPROT_CMD_STRING_REF_GET_LENGTH, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
     *pcchString =
-        (ULONG32)m_dbgprot_decode_long(bAnswer->p, &bAnswer->p, bAnswer->end);
+        (ULONG32)m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
     return S_OK;
   }
   return E_NOTIMPL;
@@ -464,16 +487,21 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetString(ULONG32 cchString,
     int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STRING_REF,
                                 MDBGPROT_CMD_STRING_REF_GET_VALUE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
     *pcchString = cchString;
     int use_utf16 =
-        m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
     if (use_utf16) {
       LOG((LF_CORDB, LL_INFO100000,
            "CordbObjectValue - GetString - NOT IMPLEMENTED - use_utf16\n"));
     } else {
       char *value =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       LOG((LF_CORDB, LL_INFO1000000,
            "CordbObjectValue - GetString - IMPLEMENTED\n"));
       if (cchString >= strlen(value)) {
@@ -568,26 +596,51 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetFieldValue(
                       MDBGPROT_CMD_OBJECT_REF_GET_VALUES_ICORDBG, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  ReceivedReplyPacket *received_reply_packet = conn->GetAnswerWithError(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
   CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-  MdbgProtBuffer *bAnswer = received_reply_packet->Buffer();
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
 
-  return CreateCordbValue(conn, bAnswer, ppValue);
+  return CreateCordbValue(conn, pReply, ppValue);
+}
+
+int CordbObjectValue::GetTypeSize(int type) {
+  switch (type) {
+  case ELEMENT_TYPE_VOID:
+    return 0;
+  case ELEMENT_TYPE_BOOLEAN:
+  case ELEMENT_TYPE_I1:
+  case ELEMENT_TYPE_U1:
+    return 1;
+    break;
+  case ELEMENT_TYPE_CHAR:
+  case ELEMENT_TYPE_I2:
+  case ELEMENT_TYPE_U2:
+    return 2;
+  case ELEMENT_TYPE_I4:
+  case ELEMENT_TYPE_U4:
+  case ELEMENT_TYPE_R4:
+    return 4;
+  case ELEMENT_TYPE_I8:
+  case ELEMENT_TYPE_U8:
+  case ELEMENT_TYPE_R8:
+    return 8;
+  }
+  return 0;
 }
 
 HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
-                                           MdbgProtBuffer *bAnswer,
+                                           MdbgProtBuffer *pReply,
                                            ICorDebugValue **ppValue) {
   CorElementType type = (CorElementType)m_dbgprot_decode_byte(
-      bAnswer->p, &bAnswer->p, bAnswer->end);
+      pReply->p, &pReply->p, pReply->end);
   CordbContent value;
 
   if ((MdbgProtValueTypeId)type == MDBGPROT_VALUE_TYPE_ID_NULL) {
     CorElementType type = (CorElementType)m_dbgprot_decode_byte(
-        bAnswer->p, &bAnswer->p, bAnswer->end);
+        pReply->p, &pReply->p, pReply->end);
     if (type == ELEMENT_TYPE_CLASS || type == ELEMENT_TYPE_STRING) {
       int klass_id = (CorElementType)m_dbgprot_decode_id(
-          bAnswer->p, &bAnswer->p, bAnswer->end);
+          pReply->p, &pReply->p, pReply->end);
 
       MdbgProtBuffer localbuf;
       m_dbgprot_buffer_init(&localbuf, 128);
@@ -595,20 +648,23 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
       int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE,
                                   MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
       m_dbgprot_buffer_free(&localbuf);
-      bAnswer = conn->GetAnswer(cmdId);
+      ReceivedReplyPacket *received_reply_packet =
+          conn->GetReplyWithError(cmdId);
+      CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+      MdbgProtBuffer *pReply = received_reply_packet->Buffer();
       char *namespace_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       char *class_name_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       char *class_fullname_str =
-          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
       int assembly_id =
-          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
       int module_id =
-          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int type_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-      int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int type_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int type_id2 = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+      int token = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
       CordbClass *klass = new CordbClass(conn, token, module_id);
       CordbReferenceValue *refValue =
@@ -621,10 +677,10 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
     if (type == ELEMENT_TYPE_SZARRAY) {
       CordbClass *klass = NULL;
       int type_id =
-          m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+          m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
       if (type_id == ELEMENT_TYPE_CLASS) {
         int klass_id =
-            m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
@@ -632,22 +688,25 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
         int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE,
                                     MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
         m_dbgprot_buffer_free(&localbuf);
-        bAnswer = conn->GetAnswer(cmdId);
+        ReceivedReplyPacket *received_reply_packet =
+            conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer *pReply = received_reply_packet->Buffer();
         char *namespace_str =
-            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
         char *class_name_str =
-            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
         char *class_fullname_str =
-            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
         int assembly_id =
-            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
         int module_id =
-            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
         int type_id3 =
-            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
         int type_id2 =
-            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
-        int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+            m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+        int token = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
         klass = new CordbClass(conn, token, module_id);
         free(namespace_str);
         free(class_name_str);
@@ -668,30 +727,30 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
   case ELEMENT_TYPE_I1:
   case ELEMENT_TYPE_U1:
     value.booleanValue =
-        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     break;
   case ELEMENT_TYPE_CHAR:
   case ELEMENT_TYPE_I2:
   case ELEMENT_TYPE_U2:
     value.charValue =
-        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     break;
   case ELEMENT_TYPE_I4:
   case ELEMENT_TYPE_U4:
   case ELEMENT_TYPE_R4:
     value.intValue =
-        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     break;
   case ELEMENT_TYPE_I8:
   case ELEMENT_TYPE_U8:
   case ELEMENT_TYPE_R8:
     value.longValue =
-        m_dbgprot_decode_long(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
     break;
   case ELEMENT_TYPE_CLASS:
   case ELEMENT_TYPE_SZARRAY:
   case ELEMENT_TYPE_STRING: {
-    int object_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int object_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
     CordbReferenceValue *refValue =
         new CordbReferenceValue(conn, type, object_id);
     refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
@@ -702,8 +761,7 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
     return S_FALSE;
   }
 
-  *ppValue =
-      new CordbValue(conn, type, value, convert_mono_type_2_icordbg_size(type));
+  *ppValue = new CordbValue(conn, type, value, GetTypeSize(type));
   (*ppValue)->AddRef();
   return S_OK;
 }
@@ -1041,8 +1099,10 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetRank(ULONG32 *pnRank) {
   int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
                               MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+  int rank = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetRank - IMPLEMENTED\n"));
   *pnRank = rank;
   return S_OK;
@@ -1056,9 +1116,11 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetCount(ULONG32 *pnCount) {
   int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
                               MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
-  m_nCount = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+  int rank = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+  m_nCount = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetCount - IMPLEMENTED\n"));
   *pnCount = m_nCount;
   return S_OK;
@@ -1100,8 +1162,10 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetElement(
   int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
                               MDBGPROT_CMD_ARRAY_REF_GET_VALUES, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+  CordbObjectValue::CreateCordbValue(conn, pReply, ppValue);
   return S_OK;
 }
 

@@ -109,10 +109,9 @@ public:
   HRESULT GetClass(ICorDebugClass **ppClass);
   HRESULT GetFieldValue(ICorDebugClass *pClass, mdFieldDef fieldDef,
                         ICorDebugValue **ppValue);
-
-  static HRESULT CreateCordbValue(Connection *conn, MdbgProtBuffer *bAnswer,
+  static HRESULT CreateCordbValue(Connection *conn, MdbgProtBuffer *pReply,
                                   ICorDebugValue **ppValue);
-
+  static int GetTypeSize(int type);     
   HRESULT GetVirtualMethod(mdMemberRef memberRef,
                            ICorDebugFunction **ppFunction);
   HRESULT GetContext(ICorDebugContext **ppContext);

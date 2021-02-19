@@ -19,7 +19,7 @@ class CordbEval : public CordbBaseMono,
 public:
   CordbEval(Connection *conn, CordbThread *thread);
   ~CordbEval();
-  void EvalComplete(MdbgProtBuffer *bAnswer);
+  void EvalComplete(MdbgProtBuffer *pReply);
 
   HRESULT CallParameterizedFunction(ICorDebugFunction *pFunction,
                                     ULONG32 nTypeArgs,

@@ -61,9 +61,12 @@ HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule **ppModule) {
                                 MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
 
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
 
-    int module_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
     m_pModule = conn->GetProcess()->GetModule(module_id);
     if (m_pModule)
       m_pModule->InternalAddRef();
@@ -92,10 +95,14 @@ HRESULT __stdcall CordbFunction::GetToken(mdMethodDef *pMethodDef) {
     int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD,
                                 MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+
+    ReceivedReplyPacket *received_reply_packet =
+        conn->GetReplyWithError(cmdId);
+    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
 
     this->m_metadataToken =
-        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+        m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   }
   *pMethodDef = this->GetMetadataToken();
   return S_OK;

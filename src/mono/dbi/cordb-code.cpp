@@ -42,8 +42,11 @@ HRESULT __stdcall CordbCode::GetSize(ULONG32 *pcBytes) {
                               MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int code_size = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  int code_size = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   *pcBytes = code_size;
   LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetSize - IMPLEMENTED\n"));
   return S_OK;
@@ -70,9 +73,12 @@ HRESULT __stdcall CordbCode::GetCode(ULONG32 startOffset, ULONG32 endOffset,
                               MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
   uint8_t *code = m_dbgprot_decode_byte_array(
-      bAnswer->p, &bAnswer->p, bAnswer->end, (int32_t *)pcBufferSize);
+      pReply->p, &pReply->p, pReply->end, (int32_t *)pcBufferSize);
 
   memcpy(buffer, code, *pcBufferSize);
   free(code);

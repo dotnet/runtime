@@ -19,31 +19,6 @@
 #define DEBUG_ADDRESS "127.0.0.1"
 #define DEBUG_PORT "4712"
 
-int convert_mono_type_2_icordbg_size(int type) {
-  switch (type) {
-  case ELEMENT_TYPE_VOID:
-    return 0;
-  case ELEMENT_TYPE_BOOLEAN:
-  case ELEMENT_TYPE_I1:
-  case ELEMENT_TYPE_U1:
-    return 1;
-    break;
-  case ELEMENT_TYPE_CHAR:
-  case ELEMENT_TYPE_I2:
-  case ELEMENT_TYPE_U2:
-    return 2;
-  case ELEMENT_TYPE_I4:
-  case ELEMENT_TYPE_U4:
-  case ELEMENT_TYPE_R4:
-    return 4;
-  case ELEMENT_TYPE_I8:
-  case ELEMENT_TYPE_U8:
-  case ELEMENT_TYPE_R8:
-    return 8;
-  }
-  return 0;
-}
-
 MONO_API HRESULT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid,
                                             LPCWSTR lpApplicationGroupId,
                                             HMODULE hmodTargetCLR,
@@ -272,7 +247,7 @@ void Connection::Receive() {
   }
 }
 
-MdbgProtBuffer *Connection::GetAnswer(int cmdId) {
+MdbgProtBuffer *Connection::GetReply(int cmdId) {
   ReceivedReplyPacket *rrp = NULL;
   while (rrp == NULL || rrp->Id() != cmdId) {
     dbg_lock();
@@ -286,7 +261,7 @@ MdbgProtBuffer *Connection::GetAnswer(int cmdId) {
   return rrp->Buffer();
 }
 
-ReceivedReplyPacket *Connection::GetAnswerWithError(int cmdId) {
+ReceivedReplyPacket *Connection::GetReplyWithError(int cmdId) {
   ReceivedReplyPacket *rrp = NULL;
   while (rrp == NULL || rrp->Id() != cmdId) {
     dbg_lock();
@@ -446,13 +421,15 @@ void Connection::LoopSendReceive() {
   cmdId = SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_VERSION, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = GetAnswer(cmdId);
+  ReceivedReplyPacket *received_reply_packet = GetReplyWithError(cmdId);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
   char *vm_version =
-      m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
+      m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
   int major_version =
-      m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+      m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
   int minor_version =
-      m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+      m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
   LOG((LF_CORDB, LL_INFO100000,
        "Protocol version %d.%d, server protocol version %d.%d.\n",
@@ -532,13 +509,11 @@ int Connection::SendEvent(int cmd_set, int cmd, MdbgProtBuffer *sendbuf) {
 MONO_API HRESULT CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid,
                                           HMODULE hmodTargetCLR,
                                           void **ppCordb) {
-  LOG((LF_CORDB, LL_INFO100000, "CoreCLRCreateCordbObject\n"));
   *ppCordb = new Cordb();
   return S_OK;
 }
 
 MONO_API HRESULT CreateCordbObject(int iDebuggerVersion, void **ppCordb) {
-  LOG((LF_CORDB, LL_INFO100000, "CreateCordbObject\n"));
   *ppCordb = new Cordb();
   return S_OK;
 }
@@ -547,7 +522,6 @@ CordbBaseMono::CordbBaseMono(Connection *conn) {
   this->conn = conn;
   m_cRef = 0;
   m_cRefInternal = 0;
-  LOG((LF_CORDB, LL_INFO100000, "%s - New - %p\n", GetClassName(), this));
 }
 
 CordbBaseMono::~CordbBaseMono() {}
@@ -558,13 +532,7 @@ ULONG CordbBaseMono::InternalAddRef() {
 
 ULONG CordbBaseMono::InternalRelease() {
   ULONG cRef = InterlockedDecrement(&m_cRefInternal);
-  LOG((
-      LF_CORDB, LL_INFO100000,
-      "%s - InternalRelease - Decrement - EXTERNAL - %d - INTERNAL - %d - %p\n",
-      GetClassName(), m_cRef, cRef, this));
   if (cRef == 0 && m_cRef == 0) {
-    LOG((LF_CORDB, LL_INFO100000, "%s - InternalRelease - Delete - %p\n",
-         GetClassName(), this));
     delete this;
   }
   return cRef;
@@ -574,12 +542,7 @@ ULONG CordbBaseMono::BaseAddRef() { return InterlockedIncrement(&m_cRef); }
 
 ULONG CordbBaseMono::BaseRelease() {
   ULONG cRef = InterlockedDecrement(&m_cRef);
-  LOG((LF_CORDB, LL_INFO100000,
-       "%s - Release - Decrement - EXTERNAL - %d - INTERNAL - %d - %p\n",
-       GetClassName(), cRef, m_cRefInternal, this));
   if (cRef == 0 && m_cRefInternal == 0) {
-    LOG((LF_CORDB, LL_INFO100000, "%s - Release - Delete - %p\n",
-         GetClassName(), this));
     delete this;
   }
   return cRef;

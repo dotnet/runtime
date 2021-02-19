@@ -84,7 +84,7 @@ void CordbProcess::CheckPendingEval() {
     CordbEval *eval = (CordbEval *)m_pPendingEval->Get(i);
     if (eval) {
       ReceivedReplyPacket *recvbuf =
-          conn->GetAnswerWithError(eval->GetCommandId());
+          conn->GetReplyWithError(eval->GetCommandId());
       if (recvbuf) {
         eval->EvalComplete(recvbuf->Buffer());
         eval->InternalRelease();

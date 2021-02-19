@@ -79,15 +79,13 @@ public:
   int Id() { return id; }
 };
 
-int convert_mono_type_2_icordbg_size(int type);
-
 class Connection {
   Socket *socket;
   CordbProcess *pProcess;
   Cordb *pCordb;
-  ArrayList *receiveReplies;
-  ArrayList *pendingEval;
-  ArrayList *receivedPacketsToProcess;
+  ArrayList *receiveReplies; //TODO use hashmap
+  ArrayList *pendingEval; //TODO use hashmap
+  ArrayList *receivedPacketsToProcess; //TODO use hashmap
   void ProcessPacketInternal(MdbgProtBuffer *recvbuf);
   void ProcessPacketFromQueue();
   void EnableEvent(MdbgProtEventKind eventKind);
@@ -107,8 +105,8 @@ public:
   void Receive();
 
   int SendEvent(int cmd_set, int cmd, MdbgProtBuffer *sendbuf);
-  MdbgProtBuffer *GetAnswer(int cmdId);
-  ReceivedReplyPacket *GetAnswerWithError(int cmdId);
+  MdbgProtBuffer *GetReply(int cmdId);
+  ReceivedReplyPacket *GetReplyWithError(int cmdId);
   CordbAppDomain *GetCurrentAppDomain();
 };
 

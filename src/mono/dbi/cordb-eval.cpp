@@ -88,10 +88,10 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
   return S_OK;
 }
 
-void CordbEval::EvalComplete(MdbgProtBuffer *bAnswer) {
+void CordbEval::EvalComplete(MdbgProtBuffer *pReply) {
 
-  m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
-  CordbObjectValue::CreateCordbValue(conn, bAnswer, &m_pValue);
+  m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
+  CordbObjectValue::CreateCordbValue(conn, pReply, &m_pValue);
 
   conn->GetCordb()->GetCallback()->EvalComplete(
       conn->GetProcess()->GetCurrentAppDomain(), m_pThread, this);
@@ -137,8 +137,11 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
                               MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
-  int domainId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+  ReceivedReplyPacket *received_reply_packet = conn->GetReplyWithError(cmdId);
+  CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+  MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+
+  int domainId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
 
   LPSTR szString;
   UTF8STR(string, szString);
@@ -239,7 +242,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::CreateValue(CorElementType elementType,
   content_value.booleanValue = 0;
   CordbValue *value =
       new CordbValue(conn, elementType, content_value,
-                     convert_mono_type_2_icordbg_size(elementType));
+                     CordbObjectValue::GetTypeSize(elementType));
   LOG((LF_CORDB, LL_INFO1000000, "CordbEval - CreateValue - IMPLEMENTED\n"));
   value->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
   return S_OK;
