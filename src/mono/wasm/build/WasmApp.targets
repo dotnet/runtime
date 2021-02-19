@@ -9,6 +9,9 @@
       Required public items/properties:
       - $(WasmMainJSPath)
       - @(WasmAssembliesToBundle)    - list of assemblies to package as the wasm app
+          - %(InterpOnly) metadata   - if true, then skips this assembly from the AOT step.
+                                       Error for this to be set with AOTMode=LLVMOnly
+
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
@@ -77,10 +80,11 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
+      <_AotInputAssemblies Include="@(_WasmAssemblies->Distinct())" Condition="'%(_WasmAssemblies.InterpOnly)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <_AOTInterpOnlyAssemblies Include="@(_WasmAssemblies->WithMetadataValue('InterpOnly', 'true'))" />
 
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
 
@@ -93,6 +97,10 @@
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOTInterpOnlyAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as InterpOnly: @(_AOTInterpOnlyAssemblies)" />
+
+    <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
     <MonoAOTCompiler
       CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
       OutputDir="$(_WasmIntermediateOutputPath)"
