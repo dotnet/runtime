@@ -24,8 +24,8 @@ typedef struct
 	/* Maps methods/klasses to the address of the given type of trampoline */
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
-	GHashTable *delegate_trampoline_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
+	GHashTable *delegate_trampoline_hash;
 	GHashTable *static_rgctx_trampoline_hash;
 	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
@@ -58,6 +58,70 @@ typedef struct
 } MonoJitDomainInfo;
 
 #define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
+
+/*
+ * Per-memory manager information maintained by the JIT.
+ * FIXME: Move all data from MonoJitDomainInfo here.
+ */
+typedef struct {
+	MonoMemoryManager *mem_manager;
+
+	/* Maps MonoMethod's to a GSList of GOT slot addresses pointing to its code */
+	GHashTable *jump_target_got_slot_hash;
+	GHashTable *jump_target_hash;
+	/* Maps methods/klasses to the address of the given type of trampoline */
+	GHashTable *jump_trampoline_hash;
+	GHashTable *jit_trampoline_hash;
+	GHashTable *delegate_trampoline_hash;
+	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
+	GHashTable *static_rgctx_trampoline_hash;
+	GHashTable *llvm_vcall_trampoline_hash;
+	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
+	GHashTable *dynamic_code_hash;
+	GHashTable *method_code_hash;
+	/* Maps methods to a RuntimeInvokeInfo structure, protected by the associated MonoDomain lock */
+	MonoConcurrentHashTable *runtime_invoke_hash;
+	/* Maps MonoMethod to a GPtrArray containing sequence point locations */
+	/* Protected by the domain lock */
+	GHashTable *seq_points;
+	/* Debugger agent data */
+	gpointer agent_info;
+	/* Maps MonoMethod to an arch-specific structure */
+	GHashTable *arch_seq_points;
+	/* Maps a GSharedVtTrampInfo structure to a trampoline address */
+	GHashTable *gsharedvt_arg_tramp_hash;
+	/* memcpy/bzero methods specialized for small constant sizes */
+	gpointer *memcpy_addr [17];
+	gpointer *bzero_addr [17];
+	gpointer llvm_module;
+	/* Maps MonoMethod -> GSlist of addresses */
+	GHashTable *llvm_jit_callees;
+	/* Maps MonoMethod -> RuntimeMethod */
+	MonoInternalHashTable interp_code_hash;
+	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
+	GHashTable *mrgctx_hash;
+	GHashTable *method_rgctx_hash;
+	/* Maps gpointer -> InterpMethod */
+	GHashTable *interp_method_pointer_hash;
+} MonoJitMemoryManager;
+
+static inline MonoJitMemoryManager*
+jit_mm_for_method (MonoMethod *method)
+{
+	return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
+}
+
+static inline void
+jit_mm_lock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_lock (jit_mm->mem_manager);
+}
+
+static inline void
+jit_mm_unlock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_unlock (jit_mm->mem_manager);
+}
 
 /*
  * Stores state need to resume exception handling when using LLVM

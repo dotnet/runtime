@@ -4057,6 +4057,16 @@ mini_create_jit_domain_info (MonoDomain *domain)
 }
 
 static void
+init_jit_mem_manager (MonoMemoryManager *mem_manager)
+{
+	MonoJitMemoryManager *info = g_new0 (MonoJitMemoryManager, 1);
+
+	info->mem_manager = mem_manager;
+
+	mem_manager->runtime_info = info;
+}
+
+static void
 delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoJumpList *jlist = (MonoJumpList *)value;
@@ -4137,6 +4147,53 @@ mini_free_jit_domain_info (MonoDomain *domain)
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
+}
+
+static void
+free_jit_mem_manager (MonoMemoryManager *mem_manager)
+{
+	MonoJitMemoryManager *info = (MonoJitMemoryManager*)mem_manager->runtime_info;
+
+	g_hash_table_foreach (info->jump_target_hash, delete_jump_list, NULL);
+	g_hash_table_destroy (info->jump_target_hash);
+	if (info->jump_target_got_slot_hash) {
+		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_got_slot_list, NULL);
+		g_hash_table_destroy (info->jump_target_got_slot_hash);
+	}
+#if 0
+	if (info->dynamic_code_hash) {
+		g_hash_table_foreach (info->dynamic_code_hash, dynamic_method_info_free, NULL);
+		g_hash_table_destroy (info->dynamic_code_hash);
+	}
+	g_hash_table_destroy (info->method_code_hash);
+	g_hash_table_destroy (info->jump_trampoline_hash);
+	g_hash_table_destroy (info->jit_trampoline_hash);
+	g_hash_table_destroy (info->delegate_trampoline_hash);
+#endif
+	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
+#if 0
+	g_hash_table_destroy (info->mrgctx_hash);
+	g_hash_table_destroy (info->method_rgctx_hash);
+	g_hash_table_destroy (info->interp_method_pointer_hash);
+	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
+	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
+	g_hash_table_destroy (info->seq_points);
+	g_hash_table_destroy (info->arch_seq_points);
+	if (info->agent_info)
+		mini_get_dbg_callbacks ()->free_domain_info (domain);
+	g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
+	if (info->llvm_jit_callees) {
+		g_hash_table_foreach (info->llvm_jit_callees, free_jit_callee_list, NULL);
+		g_hash_table_destroy (info->llvm_jit_callees);
+	}
+	mono_internal_hash_table_destroy (&info->interp_code_hash);
+#ifdef ENABLE_LLVM
+	mono_llvm_free_domain_info (domain);
+#endif
+#endif
+
+	g_free (info);
+	mem_manager->runtime_info = NULL;
 }
 
 #ifdef ENABLE_LLVM
@@ -4330,6 +4387,8 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.metadata_update_init = mini_metadata_update_init;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 #endif
+	callbacks.init_mem_manager = init_jit_mem_manager;
+	callbacks.free_mem_manager = free_jit_mem_manager;
 
 	mono_install_callbacks (&callbacks);
 
