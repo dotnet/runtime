@@ -31,6 +31,8 @@
     </ItemGroup>
   </Target>
 
+  <!-- This target is just a workaround while https://github.com/dotnet/runtime/issues/48522 gets fixed. Once it is, this whole target
+  should be removed. -->
   <Target Name="RootJavaScriptInteropAssembly"
           BeforeTargets="PrepareForILLink"
           Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
