@@ -1251,7 +1251,7 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     }
     else
     {
-        destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+        destAddr = gtNewAddrNode(dest);
     }
 
     return (impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, ilOffset, block));
@@ -1658,7 +1658,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 
         type          = genActualType(lvaTable[tmpNum].TypeGet());
         GenTree* temp = gtNewLclvNode(tmpNum, type);
-        temp          = gtNewOperNode(GT_ADDR, TYP_BYREF, temp);
+        temp          = gtNewAddrNode(temp);
         return temp;
     }
     else if (oper == GT_COMMA)
@@ -1694,7 +1694,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal);
     }
 
-    return (gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+    return (gtNewAddrNode(structVal));
 }
 
 //------------------------------------------------------------------------
@@ -1823,7 +1823,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             structVal->gtType = structType;
             if ((structType == TYP_STRUCT) || forceNormalization)
             {
-                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+                structVal = gtNewObjNode(structHnd, gtNewAddrNode(structVal));
             }
             break;
 
@@ -1831,7 +1831,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         case GT_LCL_FLD:
             structLcl = structVal->AsLclVarCommon();
             // Wrap it in a GT_OBJ.
-            structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            structVal = gtNewObjNode(structHnd, gtNewAddrNode(structVal));
             FALLTHROUGH;
 
         case GT_OBJ:
@@ -1882,7 +1882,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             if (blockNode->OperGet() == GT_FIELD)
             {
                 // If we have a GT_FIELD then wrap it in a GT_OBJ.
-                blockNode = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, blockNode));
+                blockNode = gtNewObjNode(structHnd, gtNewAddrNode(blockNode));
             }
 
 #ifdef FEATURE_SIMD
@@ -1903,7 +1903,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
                 // In case of a chained GT_COMMA case, we sink the last
                 // GT_COMMA below the blockNode addr.
                 GenTree* blockNodeAddr = blockNode->AsOp()->gtOp1;
-                assert(blockNodeAddr->gtType == TYP_BYREF);
+                assert(blockNodeAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
                 GenTree* commaNode       = parent;
                 commaNode->gtType        = TYP_BYREF;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
@@ -1939,7 +1939,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         if ((forceNormalization || (structType == TYP_STRUCT)) && !structVal->OperIsBlk())
         {
             // Wrap it in a GT_OBJ
-            structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            structVal = gtNewObjNode(structHnd, gtNewAddrNode(structVal));
         }
     }
 
@@ -3745,7 +3745,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr)
     {
         // must be done regardless of DbgCode and MinOpts
-        return gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL));
+        return gtNewAddrNode(gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL));
     }
 #else
     assert(intrinsicID != CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr);
@@ -4133,7 +4133,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             GenTree* indexClone     = nullptr;
             GenTree* ptrToSpanClone = nullptr;
             assert(varTypeIsIntegral(index));
-            assert(ptrToSpan->TypeGet() == TYP_BYREF);
+            assert(ptrToSpan->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
 #if defined(DEBUG)
             if (verbose)
@@ -4200,7 +4200,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             impAssignTempGen(rawHandleSlot, rawHandle, clsHnd, (unsigned)CHECK_SPILL_NONE);
 
             GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
-            GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
+            GenTree*  lclVarAddr = gtNewAddrNode(lclVar);
             var_types resultType = JITtype2varType(sig->retType);
             retNode              = gtNewOperNode(GT_IND, resultType, lclVarAddr);
 
@@ -6850,7 +6850,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         //
 
         node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+        node = gtNewAddrNode(node);
 
         // Pop dimension arguments from the stack one at a time and store it
         // into lvaNewObjArrayArgs temp.
@@ -6859,7 +6859,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
 
             GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-            dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
+            dest          = gtNewAddrNode(dest);
             dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
                                  new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
             dest = gtNewOperNode(GT_IND, TYP_INT, dest);
@@ -12001,7 +12001,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                    Thus we are pessimistic and may report byrefs in the GC info
                    where it was not absolutely needed, but it is safer this way.
                  */
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
+                op1 = gtNewAddrNode(op1);
 
                 // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
                 assert((op1->gtFlags & GTF_GLOB_REF) == 0);
@@ -12047,7 +12047,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assert(lvaTable[lvaVarargsHandleArg].lvAddrExposed);
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
-                op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
+                op1    = gtNewAddrNode(op1);
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -12447,7 +12447,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // wrap it in a &
                         lclTyp = TYP_BYREF;
 
-                        op1 = gtNewOperNode(GT_ADDR, lclTyp, op1);
+                        op1 = gtNewAddrNode(op1);
                     }
                     else
                     {
@@ -14396,7 +14396,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         // Obtain the address of the temp
                         newObjThisPtr =
-                            gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
+                            gtNewAddrNode(gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
                     }
                     else
                     {
@@ -14802,7 +14802,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         // If the object is a struct, what we really want is
                         // for the field to operate on the address of the struct.
-                        if (!varTypeGCtype(obj->TypeGet()) && impIsValueType(tiObj))
+                        if (varTypeIsStruct(obj->TypeGet()) && impIsValueType(tiObj))
                         {
                             assert(opcode == CEE_LDFLD && objType != nullptr);
 
@@ -14842,8 +14842,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // wrap it in a address of operator if necessary
                         if (isLoadAddress)
                         {
-                            op1 = gtNewOperNode(GT_ADDR,
-                                                (var_types)(varTypeIsGC(obj->TypeGet()) ? TYP_BYREF : TYP_I_IMPL), op1);
+                            op1 = gtNewAddrNode(op1);
                         }
                         else
                         {
@@ -14867,7 +14866,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if (isLoadAddress)
                         {
-                            op1 = gtNewOperNode(GT_ADDR, (var_types)TYP_I_IMPL, op1);
+                            op1 = gtNewAddrNode(op1);
                         }
                         break;
 #else
@@ -15513,7 +15512,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
                                 lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
                                 op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
-                                op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
+                                op1              = gtNewAddrNode(op1);
                                 convertedToLocal = true;
 
                                 if (!this->opts.compDbgEnC)
@@ -16009,7 +16008,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
+                        op2 = gtNewAddrNode(op2);
                         op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
                     }
 
@@ -16048,7 +16047,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
+                        op2 = gtNewAddrNode(op2);
                         op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
 
                         // In this case the return value of the unbox helper is TYP_BYREF.
@@ -20063,9 +20062,12 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         //
         // Note argument type mismatches that prevent inlining should
         // have been caught in impInlineInitVars.
-        if (op1->TypeGet() != lclTyp)
+        if (!op1->TypeIs(lclTyp))
         {
-            op1->gtType = genActualType(lclTyp);
+            //if (lclTyp != TYP_BYREF) // We could have oprimized TYP_BYREF to TYP_I_IMPL.
+            {
+                op1->gtType = genActualType(lclTyp);
+            }
         }
     }
     else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef)

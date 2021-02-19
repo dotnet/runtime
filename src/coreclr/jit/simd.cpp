@@ -1117,7 +1117,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     // SIMD type struct that it points to.
     if (expectAddr)
     {
-        assert(tree->TypeGet() == TYP_BYREF);
+        assert(tree->TypeIs(TYP_BYREF, TYP_I_IMPL));
         if (tree->OperGet() == GT_ADDR)
         {
             tree = tree->gtGetOp1();
@@ -1420,7 +1420,6 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
     {
         op1 = impSIMDPopStack(TYP_BYREF);
     }
-    assert(op1->TypeGet() == TYP_BYREF);
     return op1;
 }
 
@@ -1944,7 +1943,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
 
-            assert(op1->TypeGet() == TYP_BYREF);
             assert(genActualType(op2->TypeGet()) == genActualType(baseType) || initFromFirstArgIndir);
 
             // For integral base types of size less than TYP_INT, expand the initializer
@@ -2322,7 +2320,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(src != nullptr);
             simdTree = gtNewSIMDNode(simdType, src, op2, simdIntrinsicID, baseType, size);
 
-            copyBlkDst = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
+            copyBlkDst = gtNewAddrNode(op1);
             doCopyBlk  = true;
         }
         break;
