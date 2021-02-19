@@ -2,6 +2,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/mono-hash-internals.h>
+#include <mono/metadata/debug-internals.h>
 
 static void
 memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
@@ -75,6 +76,11 @@ static void
 memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 {
 	// Scan here to assert no lingering references in vtables?
+
+	if (memory_manager->debug_info) {
+		mono_mem_manager_free_debug_info (memory_manager);
+		memory_manager->debug_info = NULL;
+	}
 
 	if (!memory_manager->freeing)
 		memory_manager_delete_objects (memory_manager);

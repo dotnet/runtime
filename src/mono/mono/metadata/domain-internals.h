@@ -204,8 +204,6 @@ struct _MonoJitInfo {
 	guint32     unwind_info;
 	int         code_size;
 	guint32     num_clauses:15;
-	/* Whenever the code is domain neutral or 'shared' */
-	gboolean    domain_neutral:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
 	gboolean    has_arch_eh_info:1;
@@ -358,17 +356,8 @@ struct _MonoDomain {
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;
 
-	/* Information maintained by mono-debug.c */
-	gpointer debug_info;
-
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
-
-	/* Contains the compiled runtime invoke wrapper used by async resylt creation to capture thread context*/
-	gpointer            capture_context_runtime_invoke;
-
-	/* Contains the compiled method used by async resylt creation to capture thread context*/
-	gpointer            capture_context_method;
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */

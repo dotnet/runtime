@@ -6867,8 +6867,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Encode method info */
 	/**********************/
 
-	g_assert (!(cfg->opt & MONO_OPT_SHARED));
-
 	guint32 *got_offsets = g_new0 (guint32, patches->len);
 
 	n_patches = 0;

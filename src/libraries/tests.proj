@@ -266,10 +266,15 @@
                       Condition="'$(TestTrimming)' == 'true'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
     <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
+                      BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'tvOS'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
   

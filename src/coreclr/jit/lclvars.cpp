@@ -3588,10 +3588,8 @@ void Compiler::lvaSortByRefCount()
 
             switch (type)
             {
-#if CPU_HAS_FP_SUPPORT
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
-#endif
                 case TYP_INT:
                 case TYP_LONG:
                 case TYP_REF:

@@ -557,7 +557,7 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 	rmb->code = NULL;
 	rmb->type = mb->type;
 	MONO_HANDLE_PIN (rmb->type);
-	rmb->name = mono_string_new_checked (mono_domain_get (), name, error);
+	rmb->name = mono_string_new_checked (name, error);
 	return_val_if_nok (error, FALSE);
 	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = &mb->table_idx;
@@ -2455,7 +2455,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 
 	g_assert (p - buffer <= buflen);
 	buflen = p - buffer;
-	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	result = mono_array_new_handle (mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, leave);
 	p = mono_array_addr_internal (MONO_HANDLE_RAW (result), char, 0);
 	memcpy (p, buffer, buflen);
@@ -2796,7 +2796,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 	error_init (error);
 	
 	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (domain);
-	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (domain, mono_class_get_marshal_as_attribute_class (), error));
+	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype;
 	utype = spec->native;
@@ -2829,12 +2829,12 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 				MONO_HANDLE_SET (minfo, marshal_type_ref, rt);
 			}
 
-			MonoStringHandle custom_name = mono_string_new_handle (domain, spec->data.custom_data.custom_name, error);
+			MonoStringHandle custom_name = mono_string_new_handle (spec->data.custom_data.custom_name, error);
 			goto_if_nok (error, fail);
 			MONO_HANDLE_SET (minfo, marshal_type, custom_name);
 		}
 		if (spec->data.custom_data.cookie) {
-			MonoStringHandle cookie = mono_string_new_handle (domain, spec->data.custom_data.cookie, error);
+			MonoStringHandle cookie = mono_string_new_handle (spec->data.custom_data.cookie, error);
 			goto_if_nok (error, fail);
 			MONO_HANDLE_SET (minfo, marshal_cookie, cookie);
 		}
@@ -3513,7 +3513,7 @@ modulebuilder_get_next_table_index (MonoReflectionModuleBuilder *mb, gint32 tabl
 	error_init (error);
 
 	if (mb->table_indexes == NULL) {
-		MonoArray *arr = mono_array_new_checked (mono_object_domain (&mb->module.obj), mono_defaults.int_class, 64, error);
+		MonoArray *arr = mono_array_new_checked (mono_defaults.int_class, 64, error);
 		return_val_if_nok (error, 0);
 		for (int i = 0; i < 64; i++) {
 			mono_array_set_internal (arr, int, i, 1);

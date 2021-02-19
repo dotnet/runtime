@@ -19,6 +19,13 @@ namespace System.Linq
         // Finding equivalent types can be relatively expensive, and hitting with the same types repeatedly is quite likely.
         private Dictionary<Type, Type>? _equivalentTypeCache;
 
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        public EnumerableRewriter()
+        {
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             Expression? obj = Visit(m.Object);
@@ -39,7 +46,7 @@ namespace System.Linq
                 else if (mInfo.DeclaringType == typeof(Queryable))
                 {
                     // convert Queryable method to Enumerable method
-                    MethodInfo seqMethod = FindEnumerableMethod(mInfo.Name, args, typeArgs);
+                    MethodInfo seqMethod = FindEnumerableMethodForQueryable(mInfo.Name, args, typeArgs);
                     args = FixupQuotedArgs(seqMethod, args);
                     return Expression.Call(obj, seqMethod, args);
                 }
@@ -208,25 +215,32 @@ namespace System.Linq
             return c;
         }
 
-
-
         private static ILookup<string, MethodInfo>? s_seqMethods;
-        private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[]? typeArgs)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "Enumerable methods don't have trim annotations.")]
+        private static MethodInfo FindEnumerableMethodForQueryable(string name, ReadOnlyCollection<Expression> args, params Type[]? typeArgs)
         {
             if (s_seqMethods == null)
             {
-                s_seqMethods = typeof(Enumerable).GetStaticMethods().ToLookup(m => m.Name);
+                s_seqMethods = GetEnumerableStaticMethods(typeof(Enumerable)).ToLookup(m => m.Name);
             }
             MethodInfo? mi = s_seqMethods[name].FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
             Debug.Assert(mi != null, "All static methods with arguments on Queryable have equivalents on Enumerable.");
             if (typeArgs != null)
                 return mi.MakeGenericMethod(typeArgs);
             return mi;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "This method is intentionally hiding the Enumerable type from the trimmer so it doesn't preserve all Enumerable's methods. " +
+                "This is safe because all Queryable methods have a DynamicDependency to the corresponding Enumerable method.")]
+            static MethodInfo[] GetEnumerableStaticMethods(Type type) =>
+                type.GetMethods(BindingFlags.Public | BindingFlags.Static);
         }
 
+        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[]? typeArgs)
         {
-            using (IEnumerator<MethodInfo> en = type.GetStaticMethods().Where(m => m.Name == name).GetEnumerator())
+            using (IEnumerator<MethodInfo> en = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Where(m => m.Name == name).GetEnumerator())
             {
                 if (!en.MoveNext())
                     throw Error.NoMethodOnType(name, type);
@@ -259,8 +273,13 @@ namespace System.Linq
                     return false;
                 if (m.GetGenericArguments().Length != typeArgs.Length)
                     return false;
-                m = m.MakeGenericMethod(typeArgs);
-                mParams = m.GetParameters();
+
+                mParams = GetConstrutedGenericParameters(m, typeArgs);
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                    Justification = "MakeGenericMethod is only called to get the parameter types, which are only used to make a 'match' decision. The generic method is not invoked.")]
+                static ParameterInfo[] GetConstrutedGenericParameters(MethodInfo method, Type[] genericTypes) =>
+                    method.MakeGenericMethod(genericTypes).GetParameters();
             }
             for (int i = 0, n = args.Count; i < n; i++)
             {

@@ -7012,7 +7012,7 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
         _ASSERTE(pOwnerMT != NULL);
 
         // decode flags
-        DWORD methodFlags;
+        uint32_t methodFlags;
         IfFailThrow(p.GetData(&methodFlags));
         BOOL isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) == ENCODE_METHOD_SIG_InstantiatingStub);
         BOOL isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) == ENCODE_METHOD_SIG_UnboxingStub);
@@ -7022,7 +7022,7 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
         if ( fMethodUsesSlotEncoding )
         {
             // get the method desc using slot number
-            DWORD slot;
+            uint32_t slot;
             IfFailThrow(p.GetData(&slot));
 
             if (slot >= pOwnerMT->GetNumVtableSlots())

@@ -194,17 +194,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>2437619a41b22e9326700403c845dde69d2a0f78</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.21116.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.2.21118.4">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>2cb420dbabb4ec86d41a1b431696e58f45f031cd</Sha>
+      <Sha>c56d010e0d8ab845cce10b741e8981487d58e8e4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21116.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21118.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a37010c5802a4938b1e9a653289e0077f3703b03</Sha>
+      <Sha>c633e37226393b985341ddf5eaf47018eb8dbacb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21116.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.21118.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a37010c5802a4938b1e9a653289e0077f3703b03</Sha>
+      <Sha>c633e37226393b985341ddf5eaf47018eb8dbacb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
