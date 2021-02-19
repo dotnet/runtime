@@ -220,7 +220,8 @@
     </ItemGroup>
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,assert_messages</_MonoMinimal>
+      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent</_MonoMinimal>
+      <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,eventpipe,qcalls$(_MonoMinimal)"/>

@@ -1606,27 +1606,18 @@ mono_error_set_for_class_failure (MonoError *oerror, const MonoClass *klass)
 /*
  * mono_class_alloc:
  *
- *   Allocate memory for some data belonging to CLASS, either from its image's mempool,
- * or from the heap.
+ *   Allocate memory for data belonging to CLASS.
  */
 gpointer
 mono_class_alloc (MonoClass *klass, int size)
 {
-	MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
-	if (gklass)
-		return mono_image_set_alloc (gklass->owner, size);
-	else
-		return mono_image_alloc (m_class_get_image (klass), size);
+	return m_class_alloc (klass, size);
 }
 
 gpointer
 (mono_class_alloc0) (MonoClass *klass, int size)
 {
-	gpointer res;
-
-	res = mono_class_alloc (klass, size);
-	memset (res, 0, size);
-	return res;
+	return m_class_alloc0 (klass, size);
 }
 
 #define mono_class_new0(klass,struct_type, n_structs)		\

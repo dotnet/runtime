@@ -2068,8 +2068,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -4739,7 +4741,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (!agent_inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (throw_ctx));
 	if (catch_frame)
 		catch_ji = catch_frame->ji;
 	else
@@ -5966,7 +5968,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				return ERR_INVALID_ARGUMENT;
 			else {
 				ERROR_DECL (error);
-				this_arg = mono_object_new_checked (domain, m->klass, error);
+				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					return ERR_INVALID_ARGUMENT;
@@ -7172,7 +7174,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new_checked (domain, s, error);
+		o = mono_string_new_checked (s, error);
 		if (!is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (error));
 			mono_error_cleanup (error);
@@ -7189,7 +7191,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		uintptr_t size = 0;
 		int len = decode_int (p, &p, end);
 		size = len;
-		arr = mono_array_new_full_checked (mono_domain_get (), mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
+		arr = mono_array_new_full_checked (mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
 		elem = mono_array_addr_internal (arr, guint8, 0);
 		memcpy (elem, p, len);
 		p += len;
@@ -7212,7 +7214,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME:
 		g_assert (domain == domain2);
 
-		o = mono_object_new_checked (domain, klass, error);
+		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
 		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
@@ -7809,7 +7811,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				goto invalid_fieldid;
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7854,7 +7856,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7999,7 +8001,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, loader_error);
 
 		if (vtable)
@@ -8012,7 +8014,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		MonoObject *obj;
 
-		obj = mono_object_new_checked (domain, klass, error);
+		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
 		break;
@@ -8382,7 +8384,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
+			s = mono_ldstr_checked (m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8_checked_internal (s, error);
@@ -9261,7 +9263,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9308,7 +9310,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;

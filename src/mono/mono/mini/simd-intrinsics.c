@@ -1033,32 +1033,32 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			SimdOp op = (SimdOp)0;
 			switch (get_underlying_type (fsig->params [0])) {
 			case MONO_TYPE_R8:
-				op = SIMD_OP_LLVM_DABS;
+				op = SIMD_OP_ARM64_DABS;
 				break;
 			case MONO_TYPE_R4:
-				op = SIMD_OP_LLVM_FABS;
+				op = SIMD_OP_ARM64_FABS;
 				break;
 			case MONO_TYPE_I1:
-				op = SIMD_OP_LLVM_I8ABS;
+				op = SIMD_OP_ARM64_I8ABS;
 				break;
 			case MONO_TYPE_I2:
-				op = SIMD_OP_LLVM_I16ABS;
+				op = SIMD_OP_ARM64_I16ABS;
 				break;
 			case MONO_TYPE_I4:
-				op = SIMD_OP_LLVM_I32ABS;
+				op = SIMD_OP_ARM64_I32ABS;
 				break;
 			case MONO_TYPE_I8:
-				op = SIMD_OP_LLVM_I64ABS;
+				op = SIMD_OP_ARM64_I64ABS;
 				break;
 			}
 		}
 
 		case SN_AbsoluteCompareGreaterThan: {
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN, SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN);
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN, SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN);
 		}
 
 	    	case SN_AbsoluteCompareGreaterThanOrEqual: {
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL, SIMD_OP_LLVM_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL);
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL, SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL);
 		}
 
 		case SN_AbsoluteCompareLessThan: {
@@ -1067,7 +1067,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			args [0] = args [1];
 			args [1] = temp_for_swap;
 
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN, SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN);
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN, SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN);
 		}
 
 		case SN_AbsoluteCompareLessThanOrEqual: {
@@ -1076,23 +1076,23 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			args [0] = args [1];
 			args [1] = temp_for_swap;
 
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_LLVM_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL, SIMD_OP_LLVM_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL);
+			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL, SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL);
 		}
 		
 		case SN_AbsSaturate: {
 			SimdOp op = (SimdOp)0;
 			switch (get_underlying_type (fsig->params [0])) {
 			case MONO_TYPE_I1:
-				op = SIMD_OP_LLVM_I8ABS_SATURATE;
+				op = SIMD_OP_ARM64_I8ABS_SATURATE;
 				break;
 			case MONO_TYPE_I2:
-				op = SIMD_OP_LLVM_I16ABS_SATURATE;
+				op = SIMD_OP_ARM64_I16ABS_SATURATE;
 				break;
 			case MONO_TYPE_I4:
-				op = SIMD_OP_LLVM_I32ABS_SATURATE;
+				op = SIMD_OP_ARM64_I32ABS_SATURATE;
 				break;
 			case MONO_TYPE_I8:
-				op = SIMD_OP_LLVM_I64ABS_SATURATE;
+				op = SIMD_OP_ARM64_I64ABS_SATURATE;
 				break;
 			}
 
@@ -1103,16 +1103,16 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			SimdOp op = (SimdOp)0;
 			switch (get_underlying_type (fsig->params [0])) {
 			case MONO_TYPE_I1:
-				op = SIMD_OP_LLVM_I8ABS_SATURATE;
+				op = SIMD_OP_ARM64_I8ABS_SATURATE;
 				break;
 			case MONO_TYPE_I2:
-				op = SIMD_OP_LLVM_I16ABS_SATURATE;
+				op = SIMD_OP_ARM64_I16ABS_SATURATE;
 				break;
 			case MONO_TYPE_I4:
-				op = SIMD_OP_LLVM_I32ABS_SATURATE;
+				op = SIMD_OP_ARM64_I32ABS_SATURATE;
 				break;
 			case MONO_TYPE_I8:
-				op = SIMD_OP_LLVM_I64ABS_SATURATE;
+				op = SIMD_OP_ARM64_I64ABS_SATURATE;
 				break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
