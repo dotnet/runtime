@@ -21,39 +21,6 @@
     <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.AllowNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.NotNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
 
     <!-- System.Runtime.CompilerServices -->
     <type fullname="System.Reflection.AssemblyCompanyAttribute">
@@ -149,6 +116,39 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.AllowNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.DisallowNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.NotNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.NotNullWhenAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
