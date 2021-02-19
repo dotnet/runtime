@@ -7441,7 +7441,7 @@ interp_invalidate_transformed (MonoDomain *domain)
 	gboolean need_stw_restart = FALSE;
 #ifdef ENABLE_METADATA_UPDATE
 	need_stw_restart = TRUE;
-	mono_gc_stop_world ();
+	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 	metadata_update_prepare_to_invalidate (domain);
 #endif
 	MonoJitDomainInfo *info = domain_jit_info (domain);
@@ -7450,7 +7450,7 @@ interp_invalidate_transformed (MonoDomain *domain)
 	mono_domain_jit_code_hash_unlock (domain);
 
 	if (need_stw_restart)
-		mono_gc_restart_world ();
+		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 }
 
 static void

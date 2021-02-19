@@ -239,7 +239,7 @@ collect_parser = subparsers.add_parser("collect", description=collect_descriptio
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
-collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
+collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
@@ -2972,8 +2972,8 @@ def setup_args(args):
 
         coreclr_args.verify(args,
                             "collection_command",
-                            lambda command: command is None or os.path.isfile(command),
-                            "Unable to find script.")
+                            lambda unused: True,
+                            "Unable to set collection_command.")
 
         coreclr_args.verify(args,
                             "collection_args",
@@ -3107,6 +3107,18 @@ def setup_args(args):
         if coreclr_args.temp_dir is not None:
             coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
             logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+
+        if coreclr_args.collection_command is not None:
+            if os.path.isfile(coreclr_args.collection_command):
+                coreclr_args.collection_command = os.path.abspath(coreclr_args.collection_command)
+            else:
+                # Look on path and in Core_Root. Searching Core_Root is useful so you can just specify "corerun.exe" as the collection command in it can be found.
+                collection_tool_path = find_tool(coreclr_args, coreclr_args.collection_command, search_core_root=True, search_product_location=False, search_path=True, throw_on_not_found=False)
+                if collection_tool_path is None:
+                    print("Couldn't find collection command \"{}\"".format(coreclr_args.collection_command))
+                    sys.exit(1)
+                coreclr_args.collection_command = collection_tool_path
+                logging.info("Using collection command from PATH: \"%s\"", coreclr_args.collection_command)
 
     elif coreclr_args.mode == "replay":
 

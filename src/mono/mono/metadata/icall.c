@@ -71,7 +71,6 @@
 #include <mono/metadata/security.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/metadata/number-formatter.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/mono-perfcounters.h>
@@ -7437,24 +7436,6 @@ ves_icall_System_Runtime_RuntimeImports_ecvt_s(char *buffer, size_t sizeInBytes,
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 	_ecvt_s(buffer, sizeInBytes, value, count, dec, sign);
 #endif
-}
-
-
-/* These parameters are "readonly" in corlib/System/NumberFormatter.cs */
-void
-ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
-					    gint32 const **exponents,
-					    gunichar2 const **digitLowerTable,
-					    gunichar2 const **digitUpperTable,
-					    gint64 const **tenPowersList,
-					    gint32 const **decHexDigits)
-{
-	*mantissas = Formatter_MantissaBitsTable;
-	*exponents = Formatter_TensExponentTable;
-	*digitLowerTable = Formatter_DigitLowerTable;
-	*digitUpperTable = Formatter_DigitUpperTable;
-	*tenPowersList = Formatter_TenPowersList;
-	*decHexDigits = Formatter_DecHexDigits;
 }
 
 static gboolean

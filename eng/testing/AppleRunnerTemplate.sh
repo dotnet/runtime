@@ -55,7 +55,7 @@ else
     HARNESS_RUNNER="dotnet xharness"
 fi
 
-$HARNESS_RUNNER ios $XHARNESS_CMD    \
+$HARNESS_RUNNER apple $XHARNESS_CMD    \
     --app="$EXECUTION_DIR/$TEST_NAME/$SCHEME_SDK/$TEST_NAME.app" \
     --targets="$TARGET" \
     --xcode="$XCODE_PATH"   \
