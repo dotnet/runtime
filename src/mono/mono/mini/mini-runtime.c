@@ -1786,7 +1786,8 @@ mini_patch_llvm_jit_callees (MonoDomain *domain, MonoMethod *method, gpointer ad
 {
 	MonoJitMemoryManager *jit_mm;
 
-	jit_mm = jit_mm_for_method (method);
+	// FIXME:
+	jit_mm = get_default_jit_mm ();
 	if (!jit_mm->llvm_jit_callees)
 		return;
 
@@ -4156,9 +4157,6 @@ mini_free_jit_domain_info (MonoDomain *domain)
 		g_hash_table_destroy (info->llvm_jit_callees);
 	}
 	mono_internal_hash_table_destroy (&info->interp_code_hash);
-#ifdef ENABLE_LLVM
-	mono_llvm_free_domain_info (domain);
-#endif
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
@@ -4200,10 +4198,8 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_destroy (info->llvm_jit_callees);
 	}
 	mono_internal_hash_table_destroy (&info->interp_code_hash);
-#if 0
 #ifdef ENABLE_LLVM
-	mono_llvm_free_domain_info (domain);
-#endif
+	mono_llvm_free_mem_manager (info);
 #endif
 
 	g_free (info);
