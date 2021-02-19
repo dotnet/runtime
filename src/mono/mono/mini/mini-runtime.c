@@ -1425,15 +1425,16 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
 
-		mono_domain_lock (domain);
-		if (!domain_jit_info (domain)->method_code_hash)
-			domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
-		code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, patch_info->data.method);
+		MonoJitMemoryManager *jit_mm = jit_mm_for_method (patch_info->data.method);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->method_code_hash)
+			jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
+		code_slot = g_hash_table_lookup (jit_mm->method_code_hash, patch_info->data.method);
 		if (!code_slot) {
 			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
-			g_hash_table_insert (domain_jit_info (domain)->method_code_hash, patch_info->data.method, code_slot);
+			g_hash_table_insert (jit_mm->method_code_hash, patch_info->data.method, code_slot);
 		}
-		mono_domain_unlock (domain);
+		jit_mm_unlock (jit_mm);
 		target = code_slot;
 		break;
 	}

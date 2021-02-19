@@ -1352,6 +1352,7 @@ typedef struct {
 
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
+	gpointer jit_mm;
 	MonoMemoryManager *mem_manager;
 
 	/* Points to the gsharedvt locals area at runtime */
