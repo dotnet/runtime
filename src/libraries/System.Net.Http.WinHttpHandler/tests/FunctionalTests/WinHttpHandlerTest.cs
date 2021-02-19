@@ -32,6 +32,20 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _output = output;
         }
 
+        [Fact]
+        public async Task ThrowOSInfo()
+        {
+            var handler = new WinHttpHandler()
+            {
+                QueryStreamErrorCode = true
+            };
+            using var client = new HttpClient(handler);
+
+            await client.GetAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
+
+            throw new Exception($"OSVersion: {Environment.OSVersion} | Query Error Code: {handler.StreamErrorCodeResult}");
+        }
+
         [OuterLoop]
         [Fact]
         public void SendAsync_SimpleGet_Success()

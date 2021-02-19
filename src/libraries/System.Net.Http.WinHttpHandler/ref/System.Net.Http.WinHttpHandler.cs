@@ -23,6 +23,8 @@ namespace System.Net.Http
     {
         public WinHttpHandler() { }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
+        public bool QueryStreamErrorCode { get { throw null; } set { } }
+        public int StreamErrorCodeResult { get { throw null; } set { } }
         public bool AutomaticRedirection { get { throw null; } set { } }
         public bool CheckCertificateRevocationList { get { throw null; } set { } }
         public System.Net.Http.ClientCertificateOption ClientCertificateOption { get { throw null; } set { } }

@@ -97,6 +97,10 @@ namespace System.Net.Http
         }
 
         #region Properties
+
+        public bool QueryStreamErrorCode { get; set; }
+        public int StreamErrorCodeResult { get; set; }
+
         public bool AutomaticRedirection
         {
             get
@@ -1006,6 +1010,22 @@ namespace System.Net.Http
             SetSessionHandleTimeoutOptions(sessionHandle);
             SetDisableHttp2StreamQueue(sessionHandle);
             SetTcpKeepalive(sessionHandle);
+            QueryStreamErrorCodeSupport(sessionHandle);
+        }
+
+        private unsafe void QueryStreamErrorCodeSupport(SafeWinHttpHandle sessionHandle)
+        {
+            if (QueryStreamErrorCode)
+            {
+                uint buffer = 0;
+                uint bufferSize = sizeof(uint);
+                if (Interop.WinHttp.WinHttpQueryOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_STREAM_ERROR_CODE, ref buffer, ref bufferSize))
+                {
+                    throw new Exception("Should have failed.");
+                }
+
+                StreamErrorCodeResult = Marshal.GetLastWin32Error();
+            }
         }
 
         private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
