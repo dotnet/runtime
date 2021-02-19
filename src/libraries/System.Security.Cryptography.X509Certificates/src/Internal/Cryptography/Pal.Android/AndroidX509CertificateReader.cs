@@ -216,7 +216,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 int version = Interop.AndroidCrypto.X509GetVersion(_cert);
-                if (version < 0)
+                if (version < 1)
                 {
                     throw new CryptographicException();
                 }
