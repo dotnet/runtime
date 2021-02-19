@@ -167,8 +167,7 @@ namespace System.Linq
         private static MethodInfo? s_Chunk_TSource_1;
 
         public static MethodInfo Chunk_TSource_1(Type TSource) =>
-             (s_Chunk_TSource_1 ??
-             (s_Chunk_TSource_1 = new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Chunk).GetMethodInfo().GetGenericMethodDefinition()))
+             (s_Chunk_TSource_1 ??= new Func<IQueryable<object>, int, IQueryable<object>>(Queryable.Chunk).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Concat_TSource_2;
