@@ -3,6 +3,8 @@
 
 #include "pal_rsa.h"
 
+#define RSA_FAIL -1
+
 PALEXPORT RSA* CryptoNative_RsaCreate()
 {
     RSA* rsa = malloc(sizeof(RSA));
@@ -41,7 +43,7 @@ PALEXPORT void CryptoNative_RsaDestroy(RSA* rsa)
 PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
-        return FAIL;
+        return RSA_FAIL;
 
     JNIEnv* env = GetJNIEnv();
 
@@ -58,6 +60,12 @@ PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uin
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray encryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, cipher);
+        return RSA_FAIL;
+    }
     jsize encryptedBytesLen = (*env)->GetArrayLength(env, encryptedBytes);
     (*env)->GetByteArrayRegion(env, encryptedBytes, 0, encryptedBytesLen, (jbyte*) to);
 
@@ -72,7 +80,7 @@ PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uin
 PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
-        return FAIL;
+        return RSA_FAIL;
 
     JNIEnv* env = GetJNIEnv();
 
@@ -89,6 +97,15 @@ PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, ui
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, cipher);
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, algName);
+        return RSA_FAIL;
+    }
+
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
     (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
 
@@ -111,7 +128,7 @@ PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
-        return NULL;
+        return FAIL;
     }
 
     JNIEnv* env = GetJNIEnv();
@@ -134,31 +151,84 @@ PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
     (*env)->DeleteLocalRef(env, bytes);
     (*env)->DeleteLocalRef(env, x509keySpec);
 
+    if (CheckJNIExceptions(env))
+    {
+        CryptoNative_RsaDestroy(rsa);
+        return FAIL;
+    }
+
     return rsa;
 }
 
 PALEXPORT int32_t CryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
-    // TODO:
-    return FAIL;
+    if (!rsa)
+        return RSA_FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject algName = JSTRING("RSA/ECB/NoPadding");
+
+    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
+    (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->privateKey);
+    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
+    (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
+    jbyteArray encryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, cipher);
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, algName);
+        return RSA_FAIL;
+    }
+    jsize encryptedBytesLen = (*env)->GetArrayLength(env, encryptedBytes);
+    (*env)->GetByteArrayRegion(env, encryptedBytes, 0, encryptedBytesLen, (jbyte*) to);
+
+    (*env)->DeleteLocalRef(env, cipher);
+    (*env)->DeleteLocalRef(env, fromBytes);
+    (*env)->DeleteLocalRef(env, encryptedBytes);
+    (*env)->DeleteLocalRef(env, algName);
+
+    return (int32_t)encryptedBytesLen;
 }
 
 PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
-    // TODO:
-    return FAIL;
+    if (!rsa)
+        return RSA_FAIL;
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject algName = JSTRING("RSA/ECB/NoPadding");
+
+    jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
+    (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_DECRYPT_MODE, rsa->publicKey);
+    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
+    (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
+    jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
+    (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
+
+    (*env)->DeleteLocalRef(env, cipher);
+    (*env)->DeleteLocalRef(env, fromBytes);
+    (*env)->DeleteLocalRef(env, decryptedBytes);
+    (*env)->DeleteLocalRef(env, algName);
+
+    return (int32_t)decryptedBytesLen;
 }
 
 PALEXPORT int32_t CryptoNative_RsaSign(int32_t type, uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {
     // TODO:
-    return FAIL;
+    LOG_ERROR("RSA signing NYI");
+    return RSA_FAIL;
 }
 
 PALEXPORT int32_t CryptoNative_RsaVerify(int32_t type, uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
 {
     // TODO:
-    return FAIL;
+    LOG_ERROR("RSA signing NYI");
+    return RSA_FAIL;
 }
 
 PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
@@ -232,9 +302,8 @@ PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa,
         *dmq1 = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyPrimeExpQField));
         *iqmp = ToGRef(env, (*env)->CallObjectMethod(env, privateKey, g_RSAPrivateCrtKeyCrtCoefField));
     }
-    else
+    else if (publicKey)
     {
-        assert(publicKey);
         *e = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAPublicKeyGetPubExpMethod));
         *n = ToGRef(env, (*env)->CallObjectMethod(env, publicKey, g_RSAKeyGetModulus));
         *d = NULL;
@@ -243,6 +312,10 @@ PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa,
         *dmp1 = NULL;
         *dmq1 = NULL;
         *iqmp = NULL;
+    }
+    else
+    {
+        return FAIL;
     }
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;

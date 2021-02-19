@@ -40,7 +40,6 @@
 #include <string.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
@@ -102,8 +101,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = s390_r2;
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	char trampName[128];
 
 	start = code = (guint8 *) mono_mem_manager_code_reserve (mem_manager, 28);
@@ -119,7 +117,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", m->name);
 
-	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
@@ -689,7 +687,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	s390_lgr (code, MONO_ARCH_VTABLE_REG, s390_r2);
 #endif
 
-	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 	tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
 		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 
@@ -731,7 +729,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	guint8 *code, *start;
 	gint64 displace;
 	int buf_len;
-	MonoDomain *domain = mono_domain_get ();
 
 	buf_len = 32;
 
@@ -750,7 +747,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return(start);
 }	

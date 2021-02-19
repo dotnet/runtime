@@ -173,9 +173,9 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     // Ensure the metadata is RW.
     EX_TRY
     {
-        // ConvertMetadataToRWForEnC should only ever be called on EnC capable files.
+        // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMetadataToRWForEnC();
+        GetFile()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -310,10 +310,13 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     CONTRACTL_END;
 
     // Notify the debugger of the update
-    HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        return hr;
+        HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
 
     // Notify the JIT that we've got new IL for this method
@@ -375,7 +378,10 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         // Class isn't loaded yet, don't have to modify any existing EE data structures beyond the metadata.
         // Just notify debugger and return.
         LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %p not loaded, our work is done\n", parentTypeDef));
-        hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        if (CORDebuggerAttached())
+        {
+            hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        }
         return hr;
     }
 
@@ -391,12 +397,15 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         return hr;
     }
 
-    // Tell the debugger about the new method so it get's the version number properly
-    hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    // Tell the debugger about the new method so it gets the version number properly
+    if (CORDebuggerAttached())
     {
-        _ASSERTE(!"Failed to add function");
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            _ASSERTE(!"Failed to add function");
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        }
     }
 
     return hr;
@@ -463,10 +472,13 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     }
 
     // Tell the debugger about the new field
-    hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        }
     }
 
 #ifdef _DEBUG

@@ -5,7 +5,7 @@
 /* interpreter callback stubs */
 
 static MonoJitInfo*
-stub_find_jit_info (MonoDomain *domain, MonoMethod *method)
+stub_find_jit_info (MonoMethod *method)
 {
 	return NULL;
 }

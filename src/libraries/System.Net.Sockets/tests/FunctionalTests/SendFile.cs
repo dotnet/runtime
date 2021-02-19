@@ -214,6 +214,7 @@ namespace System.Net.Sockets.Tests
             rnd.NextBytes(postBuffer);
 
             byte[] expected = preBuffer.ToArray().Concat(postBuffer.ToArray()).ToArray();
+            uint expectedChecksum = Fletcher32.Checksum(expected, 0, expected.Length);
 
             (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
 
@@ -221,10 +222,17 @@ namespace System.Net.Sockets.Tests
             using (server)
             {
                 await SendFileAsync(client, null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
-                byte[] receiveBuffer = new byte[100];
-                int receivedBytes = server.Receive(receiveBuffer);
-                Assert.Equal(100, receivedBytes);
-                AssertExtensions.SequenceEqual(expected, receiveBuffer);
+                Fletcher32 receivedChecksum = new Fletcher32();
+                byte[] receiveBuffer = new byte[expected.Length];
+                int receivedBytes;
+                int totalReceived = 0;
+                while (totalReceived < expected.Length && (receivedBytes = server.Receive(receiveBuffer)) != 0)
+                {
+                    totalReceived += receivedBytes;
+                    receivedChecksum.Add(receiveBuffer, 0, receivedBytes);
+                }
+                Assert.Equal(expected.Length, totalReceived);
+                Assert.Equal(expectedChecksum, receivedChecksum.Sum);
             }
         }
 

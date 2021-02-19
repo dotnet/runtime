@@ -285,7 +285,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	aname_str = mono_stringify_assembly_name (aname);
 
-	MonoStringHandle aname_obj = mono_string_new_handle (mono_alc_domain (alc), aname_str, error);
+	MonoStringHandle aname_obj = mono_string_new_handle (aname_str, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
