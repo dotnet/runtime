@@ -42,6 +42,38 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
 {
+    return GlobalizationNative_GetICUDTName(culture);
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
+{
+    return GlobalizationNative_LoadICUData(pData);
+}
+#endif
+
+int32_t GlobalizationNative_LoadICUData(void * pData)
+{
+
+    UErrorCode status = 0;
+    udata_setCommonData(pData, &status);
+
+    if (U_FAILURE(status)) {
+        log_icu_error("udata_setCommonData", status);
+        return 0;
+    } else {
+        //// Uncomment to enable ICU tracing,
+        //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
+        // utrace_setFunctions(0, 0, 0, icu_trace_data);
+        // utrace_setLevel(UTRACE_VERBOSE);
+        isDataSet = 1;
+        return 1;
+    }
+}
+
+const char* GlobalizationNative_GetICUDTName(const char* culture)
+{
     // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
 
     // Use full one if culture is null or empty
@@ -68,27 +100,6 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     // full except CJK cultures
     return "icudt_no_CJK.dat";
 }
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
-{
-    UErrorCode status = 0;
-    udata_setCommonData(pData, &status);
-
-    if (U_FAILURE(status)) {
-        log_icu_error("udata_setCommonData", status);
-        return 0;
-    } else {
-        //// Uncomment to enable ICU tracing,
-        //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-        // utrace_setFunctions(0, 0, 0, icu_trace_data);
-        // utrace_setLevel(UTRACE_VERBOSE);
-        isDataSet = 1;
-        return 1;
-    }
-}
-#endif
 
 int32_t GlobalizationNative_LoadICU(void)
 {

@@ -156,6 +156,8 @@ internal class Xcode
             dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
         }
 
+        dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
+
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
                 .Replace("//%DllMap%", dllMap.ToString())

@@ -5,6 +5,7 @@ enable_language(OBJC ASM)
 
 set(APP_RESOURCES
 %AppResources%
+/Users/steve/.nuget/packages/microsoft.netcore.runtime.icu.transport/6.0.0-preview.2.21108.1/runtimes/ios-x64/native/lib/icudt.dat
 )
 
 add_executable(
@@ -39,7 +40,13 @@ target_link_libraries(
     "-framework Security"
     "-framework UIKit"
     %FrameworksToLink%
-    "-lz"
+    "-lc++"
     "-liconv"
+    "-force_load
+    /Users/steve/.nuget/packages/microsoft.netcore.runtime.icu.transport/6.0.0-preview.2.21108.1/runtimes/ios-x64/native/lib/libicudata.a"
+    "-force_load
+    /Users/steve/.nuget/packages/microsoft.netcore.runtime.icu.transport/6.0.0-preview.2.21108.1/runtimes/ios-x64/native/lib/libicuuc.a"
+    "-force_load
+    /Users/steve/.nuget/packages/microsoft.netcore.runtime.icu.transport/6.0.0-preview.2.21108.1/runtimes/ios-x64/native/lib/libicui18n.a"
 %NativeLibrariesToLink%
 )

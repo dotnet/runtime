@@ -14,6 +14,8 @@
 #import <os/log.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static char *bundle_path;
 
@@ -201,6 +203,44 @@ register_dllmap (void)
 //%DllMap%
 }
 
+int32_t GlobalizationNative_LoadICUData(void * pData);
+
+static int32_t load_icu_data()
+{
+    char path [1024];
+    int res;
+    
+    const char *dname = "icudt.dat";
+    const char *bundle = get_bundle_path ();
+
+    os_log_info (OS_LOG_DEFAULT, "Loading ICU data file '%s'.", dname);
+    res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
+    assert (res > 0);
+   
+    char *source = NULL;
+    FILE *fp = fopen(path, "rb");
+    if (fp != NULL) {
+        if (fseek(fp, 0L, SEEK_END) == 0) {
+            long bufsize = ftell(fp);
+            if (bufsize == -1) { /* Error */ }
+
+            source = malloc(sizeof(char) * (bufsize + 1));
+
+            if (fseek(fp, 0L, SEEK_SET) != 0) { /* Error */ }
+
+            size_t newLen = fread(source, sizeof(char), bufsize, fp);
+            if ( ferror( fp ) != 0 ) {
+                fputs("Error reading file", stderr);
+            }
+        }
+        fclose(fp);
+    }
+
+    free(source);
+
+    return GlobalizationNative_LoadICUData(source);
+}
+
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
 void mono_jit_set_aot_mode (MonoAotMode mode);
 void register_aot_modules (void);
@@ -210,11 +250,20 @@ void
 mono_ios_runtime_init (void)
 {
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
-    setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+    //setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
     // uncomment for debug output:
     //
     // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     // setenv ("MONO_LOG_MASK", "all", TRUE);
+
+    int32_t ret = load_icu_data ();
+
+    if (ret == 0)
+    {
+        os_log_info (OS_LOG_DEFAULT, "ICU BAD EXIT %d.", ret);
+        exit (ret);
+        return;
+    }
 
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
