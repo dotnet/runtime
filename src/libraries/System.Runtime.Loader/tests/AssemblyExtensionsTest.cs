@@ -26,9 +26,9 @@ namespace System.Reflection.Metadata
             Assert.Throws<ArgumentException>(() =>
                 AssemblyExtensions.ApplyUpdate(new NonRuntimeAssembly(), new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
 
-            if (PlatformDetection.IsArmOrArm64Process)
+            if (PlatformDetection.IsNetCore && PlatformDetection.IsArmOrArm64Process)
             {
-                // Not implemented on arm and arm64
+                // Not implemented on .NET Core arm and arm64
                 Assert.Throws<NotImplementedException>(() =>
                     AssemblyExtensions.ApplyUpdate(typeof(AssemblyExtensions).Assembly, new ReadOnlySpan<byte>(metadataDelta), new ReadOnlySpan<byte>(ilDelta), ReadOnlySpan<byte>.Empty));
             }
