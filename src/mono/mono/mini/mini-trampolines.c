@@ -1414,12 +1414,16 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 	MonoDelegateTrampInfo *tramp_info;
 	MonoClassMethodPair pair, *dpair;
 	guint32 code_size = 0;
+	MonoJitMemoryManager *jit_mm;
 
 	pair.klass = klass;
 	pair.method = method;
-	mono_domain_lock (domain);
-	tramp_info = (MonoDelegateTrampInfo *)g_hash_table_lookup (domain_jit_info (domain)->delegate_trampoline_hash, &pair);
-	mono_domain_unlock (domain);
+
+	// FIXME: Use the proper memory manager
+	jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	tramp_info = (MonoDelegateTrampInfo *)g_hash_table_lookup (jit_mm->delegate_trampoline_hash, &pair);
+	jit_mm_unlock (jit_mm);
 	if (tramp_info)
 		return tramp_info;
 
@@ -1444,9 +1448,9 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));
 
 	/* store trampoline address */
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->delegate_trampoline_hash, dpair, tramp_info);
-	mono_domain_unlock (domain);
+	jit_mm_lock (jit_mm);
+	g_hash_table_insert (jit_mm->delegate_trampoline_hash, dpair, tramp_info);
+	jit_mm_unlock (jit_mm);
 
 	return tramp_info;
 }
