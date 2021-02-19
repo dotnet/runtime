@@ -1569,7 +1569,34 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	ep_char8_t *outputPath = ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	if (outputPath != NULL)
+	{
+		while (true)
+		{
+			const char* pidSearchString = "{pid}";
+			ep_char8_t* outputPathPid = strstr(outputPath, pidSearchString);
+			if (outputPathPid != NULL)
+			{
+				size_t newBufSize = strlen(outputPath) + 12; // 12 is 1 for the null-terminator + 11 for the largest possible 4 byte integer converted to a string
+				*outputPathPid = '\0';
+				ep_char8_t *newOutputPath =  reinterpret_cast<ep_char8_t *>(malloc(newBufSize));
+				sprintf_s(newOutputPath, newBufSize, "%s%d%s", outputPath, (int)GetCurrentProcessId(), outputPathPid + strlen(pidSearchString));
+				ep_rt_utf8_string_free(outputPath);
+				outputPath = newOutputPath;
+
+				continue; // In case there is a second use of {pid} in the output path
+			}
+
+			// No more instances of {pid} in the OutputPath
+			break;
+		}
+		return outputPath;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 static
@@ -2519,6 +2546,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc(size_t len)
+{
+	return reinterpret_cast<ep_char8_t *>(malloc(len));
 }
 
 static

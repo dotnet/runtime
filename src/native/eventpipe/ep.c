@@ -729,7 +729,7 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 {
 	EP_ASSERT (data != NULL);
 
-	uint8_t *buffer = NULL;
+	ep_char8_t *buffer = NULL;
 
 	const ep_char8_t *start = NULL;
 	const ep_char8_t *end = NULL;
@@ -737,12 +737,12 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 
 	ptrdiff_t byte_len = end - start;
 	if (byte_len != 0) {
-		buffer = ep_rt_byte_array_alloc (byte_len + 1);
+		buffer = ep_rt_utf8_string_alloc (byte_len + 1);
 		memcpy (buffer, start, byte_len);
 		buffer [byte_len] = '\0';
 	}
 
-	return (ep_char8_t *)buffer;
+	return buffer;
 }
 
 static

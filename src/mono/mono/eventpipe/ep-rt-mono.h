@@ -1867,6 +1867,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 }
 
 static
+ep_char8_t *
+ep_rt_utf8_string_alloc(size_t len)
+{
+	return g_new(ep_char8_t, len);
+}
+
+static
 inline
 void
 ep_rt_utf8_string_free (ep_char8_t *str)
