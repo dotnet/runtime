@@ -8,7 +8,7 @@
 
   <Target Name="PrepareForWasmBuild">
     <ItemGroup>
-      <WasmAssemblies Include="$(TargetDir)publish\*.dll" />
+      <WasmAssembly Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
 </Project>

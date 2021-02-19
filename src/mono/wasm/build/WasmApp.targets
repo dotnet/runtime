@@ -8,7 +8,7 @@
   <!--
       Required public items/properties:
       - $(WasmMainJSPath)
-      - @(WasmAssemblies)    - list of assemblies to package as the wasm app
+      - @(WasmAssembly)    - list of assemblies to package as the wasm app
           - %(InterpOnly) metadata   - if true, then skips this assembly from the AOT step.
                                        Error for this to be set with AOTMode=LLVMOnly
 
@@ -70,7 +70,7 @@
   <Target Name="WasmBuildApp" AfterTargets="$(WasmBuildAppAfterThisTarget)" />
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
-    <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
+    <Error Condition="'@(_WasmAssemblyInternal)' == ''" Text="Item _WasmAssemblyInternal is empty" />
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
 
     <ItemGroup>
@@ -80,13 +80,13 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssembliesInternal->Distinct())" Condition="'%(_WasmAssembliesInternal.InterpOnly)' != 'true'">
+      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal.InterpOnly)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-      <_AOTInterpOnlyAssemblies Include="@(_WasmAssembliesInternal->WithMetadataValue('InterpOnly', 'true'))" />
+      <_AOTInterpOnlyAssemblies Include="@(_WasmAssemblyInternal->WithMetadataValue('InterpOnly', 'true'))" />
 
-      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native" />
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
@@ -115,7 +115,7 @@
       UseLLVM="true"
       DisableParallelAot="true"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
-      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
+      <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblyInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
   </Target>
@@ -127,7 +127,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmStrippedAssemblies Include="@(_WasmAssembliesInternal->'$(_WasmStrippedAssembliesPath)\%(FileName)%(Extension)')" OriginalPath="%(_WasmAssembliesInternal.Identity)" />
+      <_WasmStrippedAssemblies Include="@(_WasmAssemblyInternal->'$(_WasmStrippedAssembliesPath)\%(FileName)%(Extension)')" OriginalPath="%(_WasmAssemblyInternal.Identity)" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -136,22 +136,22 @@
     <Exec Command="mono-cil-strip -q %(_WasmStrippedAssemblies.OriginalPath) %(_WasmStrippedAssemblies.Identity)" />
 
     <ItemGroup>
-      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies)" />
+      <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
+      <_WasmAssemblyInternal Include="@(_WasmStrippedAssemblies)" />
     </ItemGroup>
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
     <WasmLoadAssembliesAndReferences
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssemblyInternal)"
       AssemblySearchPaths="@(WasmAssemblySearchPaths)"
       SkipMissingAssemblies="$(WasmSkipMissingAssemblies)">
-      <Output TaskParameter="ReferencedAssemblies" ItemName="_TmpWasmAssemblies" />
+      <Output TaskParameter="ReferencedAssemblies" ItemName="_TmpWasmAssembly" />
     </WasmLoadAssembliesAndReferences>
 
     <ItemGroup>
-      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
-      <_WasmAssembliesInternal Include="@(_TmpWasmAssemblies)" />
+      <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
+      <_WasmAssemblyInternal Include="@(_TmpWasmAssembly)" />
     </ItemGroup>
   </Target>
 
@@ -176,7 +176,7 @@
       <MicrosoftNetCoreAppRuntimePackRidDir Condition="!HasTrailingSlash('$(MicrosoftNetCoreAppRuntimePackRidDir)')">$(MicrosoftNetCoreAppRuntimePackRidDir)\</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
     <ItemGroup>
-        <_WasmAssembliesInternal Include="@(WasmAssemblies)" />
+        <_WasmAssemblyInternal Include="@(WasmAssembly)" />
     </ItemGroup>
   </Target>
 
@@ -204,7 +204,7 @@
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssemblyInternal)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
@@ -245,14 +245,14 @@
    <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(_WasmIntermediateOutputPath) -->
    <PInvokeTableGenerator
      Modules="@(_WasmPInvokeModules)"
-     Assemblies="@(_WasmAssembliesInternal)"
+     Assemblies="@(_WasmAssemblyInternal)"
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
 
    <!-- ICall table generation -->
    <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(MonoAotCrossCompilerPath) --print-icall-table > $(_WasmIntermediateOutputPath)/runtime-icall-table.h" />
    <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
      RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)/runtime-icall-table.h"
-     Assemblies="@(_WasmAssembliesInternal)"
+     Assemblies="@(_WasmAssemblyInternal)"
      OutputPath="$(_WasmIntermediateOutputPath)/icall-table.h" />
    <PropertyGroup>
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
@@ -274,11 +274,11 @@
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)corebindings.o"/>
 
-     <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
+     <_BitcodeFile Include="%(_WasmAssemblyInternal.LlvmBitcodeFile)" />
    </ItemGroup>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssembliesInternal->Count())"
-     Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssembliesInternal->Count())" />
+   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssemblyInternal->Count())"
+     Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblyInternal->Count())" />
 
    <PropertyGroup>
      <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
@@ -292,7 +292,7 @@
     <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/driver.c -c -o $(_WasmIntermediateOutputPath)driver.o" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/corebindings.c -c -o $(_WasmIntermediateOutputPath)corebindings.o" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command="emcc $(EmccCFlags) $(_WasmSrcDir)/pinvoke.c -c -o $(_WasmIntermediateOutputPath)pinvoke.o" EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssembliesInternal->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o $(_WasmIntermediateOutputPath)dotnet.js" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) --js-library $(_WasmSrcDir)/library_mono.js --js-library $(_WasmSrcDir)/binding_support.js --js-library $(_WasmSrcDir)/dotnet_support.js --js-library $(_WasmSrcDir)/pal_random.js @(_WasmAssemblyInternal->'%(LlvmBitcodeFile)', ' ') @(_WasmObjects, ' ') -o $(_WasmIntermediateOutputPath)dotnet.js" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command="$(_WasmOptCommand) --strip-dwarf $(_WasmIntermediateOutputPath)dotnet.wasm -o $(_WasmIntermediateOutputPath)dotnet.wasm" Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
@@ -365,7 +365,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
-      <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" />
+      <WasmAssemblyFinal Include="@(_WasmAssemblyInternal)" />
     </ItemGroup>
   </Target>
 </Project>

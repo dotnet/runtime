@@ -27,7 +27,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmAssemblies Include="$(OutDir)\$(TargetFileName)" />
+      <WasmAssembly Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 
