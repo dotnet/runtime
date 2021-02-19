@@ -9,7 +9,7 @@
       Required public items/properties:
       - $(WasmMainJSPath)
       - @(WasmAssembly)    - list of assemblies to package as the wasm app
-          - %(InterpOnly) metadata   - if true, then skips this assembly from the AOT step.
+          - %(InterpreterOnly) metadata   - if true, then skips this assembly from the AOT step.
                                        Error for this to be set with AOTMode=LLVMOnly
 
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
@@ -80,11 +80,11 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal.InterpOnly)' != 'true'">
+      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal.InterpreterOnly)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-      <_AOTInterpOnlyAssemblies Include="@(_WasmAssemblyInternal->WithMetadataValue('InterpOnly', 'true'))" />
+      <_AOTInterpreterOnlyAssemblies Include="@(_WasmAssemblyInternal->WithMetadataValue('InterpreterOnly', 'true'))" />
 
       <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
 
@@ -97,8 +97,8 @@
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
-    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOTInterpOnlyAssemblies->Count()) > 0"
-           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as InterpOnly: @(_AOTInterpOnlyAssemblies)" />
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOTInterpreterOnlyAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as InterpreterOnly: @(_AOTInterpreterOnlyAssemblies)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
     <MonoAOTCompiler
