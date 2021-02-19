@@ -10,34 +10,33 @@
 #include <cordb.h>
 
 class CordbCode : public CordbBaseMono, public ICorDebugCode {
+  CordbFunction *m_pFunction;
+
 public:
-  CordbFunction *func;
   CordbCode(Connection *conn, CordbFunction *func);
-  HRESULT STDMETHODCALLTYPE IsIL(/* [out] */ BOOL *pbIL);
-  HRESULT STDMETHODCALLTYPE
-  GetFunction(/* [out] */ ICorDebugFunction **ppFunction);
-  HRESULT STDMETHODCALLTYPE GetAddress(/* [out] */ CORDB_ADDRESS *pStart);
-  HRESULT STDMETHODCALLTYPE GetSize(/* [out] */ ULONG32 *pcBytes);
-  HRESULT STDMETHODCALLTYPE
-  CreateBreakpoint(/* [in] */ ULONG32 offset, /* [out] */
-                   ICorDebugFunctionBreakpoint **ppBreakpoint);
-  HRESULT STDMETHODCALLTYPE GetCode(
-      /* [in] */ ULONG32 startOffset, /* [in] */ ULONG32 endOffset, /* [in] */
-      ULONG32 cBufferAlloc, /* [length_is][size_is][out] */ BYTE buffer[],
-      /* [out] */ ULONG32 *pcBufferSize);
-  HRESULT STDMETHODCALLTYPE GetVersionNumber(/* [out] */ ULONG32 *nVersion);
-  HRESULT STDMETHODCALLTYPE
-  GetILToNativeMapping(/* [in] */ ULONG32 cMap, /* [out] */ ULONG32 *pcMap,
-                       /* [length_is][size_is][out] */
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbCode"; }
+  HRESULT IsIL(BOOL *pbIL);
+  HRESULT
+  GetFunction(ICorDebugFunction **ppFunction);
+  HRESULT GetAddress(CORDB_ADDRESS *pStart);
+  HRESULT GetSize(ULONG32 *pcBytes);
+  HRESULT
+  CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint **ppBreakpoint);
+  HRESULT GetCode(ULONG32 startOffset, ULONG32 endOffset, ULONG32 cBufferAlloc,
+                  BYTE buffer[], ULONG32 *pcBufferSize);
+  HRESULT GetVersionNumber(ULONG32 *nVersion);
+  HRESULT
+  GetILToNativeMapping(ULONG32 cMap, ULONG32 *pcMap,
+
                        COR_DEBUG_IL_TO_NATIVE_MAP map[]);
-  HRESULT STDMETHODCALLTYPE
-  GetEnCRemapSequencePoints(/* [in] */ ULONG32 cMap, /* [out] */ ULONG32 *pcMap,
-                            /* [length_is][size_is][out] */ ULONG32 offsets[]);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
+  HRESULT
+  GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32 *pcMap, ULONG32 offsets[]);
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+
+  CordbFunction *GetFunction() const { return m_pFunction; }
 };
 
 #endif

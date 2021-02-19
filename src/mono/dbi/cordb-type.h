@@ -12,43 +12,48 @@
 class CordbType : public CordbBaseMono,
                   public ICorDebugType,
                   public ICorDebugType2 {
-  CorElementType type;
-  CordbClass *klass;
-  CordbType *typeParameter;
+  CorElementType m_type;
+  CordbClass *m_pClass;
+  CordbType *m_pTypeParameter;
+  CordbTypeEnum *m_pTypeEnum;
 
 public:
   CordbType(CorElementType type, Connection *conn, CordbClass *klass = NULL,
             CordbType *typeParameter = NULL);
-  HRESULT STDMETHODCALLTYPE GetType(CorElementType *ty);
-  HRESULT STDMETHODCALLTYPE GetClass(ICorDebugClass **ppClass);
-  HRESULT STDMETHODCALLTYPE
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbType"; }
+  ~CordbType();
+  HRESULT GetType(CorElementType *ty);
+  HRESULT GetClass(ICorDebugClass **ppClass);
+  HRESULT
   EnumerateTypeParameters(ICorDebugTypeEnum **ppTyParEnum);
-  HRESULT STDMETHODCALLTYPE GetFirstTypeParameter(ICorDebugType **value);
-  HRESULT STDMETHODCALLTYPE GetBase(ICorDebugType **pBase);
-  HRESULT STDMETHODCALLTYPE GetStaticFieldValue(mdFieldDef fieldDef,
-                                                ICorDebugFrame *pFrame,
-                                                ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetRank(ULONG32 *pnRank);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE GetTypeID(COR_TYPEID *id);
+  HRESULT GetFirstTypeParameter(ICorDebugType **value);
+  HRESULT GetBase(ICorDebugType **pBase);
+  HRESULT GetStaticFieldValue(mdFieldDef fieldDef, ICorDebugFrame *pFrame,
+                              ICorDebugValue **ppValue);
+  HRESULT GetRank(ULONG32 *pnRank);
+  HRESULT QueryInterface(REFIID riid, void **ppvObject);
+
+  HRESULT GetTypeID(COR_TYPEID *id);
 };
 
 class CordbTypeEnum : public CordbBaseMono, public ICorDebugTypeEnum {
-  CordbType *type;
+  CordbType *m_pType;
 
 public:
   CordbTypeEnum(Connection *conn, CordbType *type);
-  virtual HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugType *values[],
-                                         ULONG *pceltFetched);
-  HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
-  HRESULT STDMETHODCALLTYPE Reset(void);
-  HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum **ppEnum);
-  HRESULT STDMETHODCALLTYPE GetCount(ULONG *pcelt);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbTypeEnum"; }
+  ~CordbTypeEnum();
+  virtual HRESULT Next(ULONG celt, ICorDebugType *values[],
+                       ULONG *pceltFetched);
+  HRESULT Skip(ULONG celt);
+  HRESULT Reset(void);
+  HRESULT Clone(ICorDebugEnum **ppEnum);
+  HRESULT GetCount(ULONG *pcelt);
+  HRESULT QueryInterface(REFIID riid, void **ppvObject);
 };
 
 #endif

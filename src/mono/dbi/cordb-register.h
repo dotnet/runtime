@@ -9,31 +9,26 @@
 
 #include <cordb.h>
 
-class CordbRegisteSet : public CordbBaseMono, public ICorDebugRegisterSet {
-  uint8_t *ctx;
-  uint32_t ctx_len;
+class CordbRegisterSet : public CordbBaseMono, public ICorDebugRegisterSet {
+  uint8_t *m_pCtx;
+  uint32_t m_ctxLen;
 
 public:
-  CordbRegisteSet(Connection *conn, uint8_t *ctx, uint32_t ctx_len);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE
-  GetRegistersAvailable(/* [out] */ ULONG64 *pAvailable);
-  HRESULT STDMETHODCALLTYPE
-  GetRegisters(/* [in] */ ULONG64 mask, /* [in] */ ULONG32 regCount,
-               /* [length_is][size_is][out] */ CORDB_REGISTER regBuffer[]);
-  HRESULT STDMETHODCALLTYPE SetRegisters(
-      /* [in] */ ULONG64 mask, /* [in] */ ULONG32 regCount, /* [size_is][in] */
-      CORDB_REGISTER regBuffer[]);
-  HRESULT STDMETHODCALLTYPE GetThreadContext(
-      /* [in] */ ULONG32 contextSize, /* [size_is][length_is][out][in] */
-      BYTE context[]);
-  HRESULT STDMETHODCALLTYPE SetThreadContext(
-      /* [in] */ ULONG32 contextSize, /* [size_is][length_is][in] */
-      BYTE context[]);
+  CordbRegisterSet(Connection *conn, uint8_t *ctx, uint32_t ctx_len);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbRegisterSet"; }
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+
+  HRESULT
+  GetRegistersAvailable(ULONG64 *pAvailable);
+  HRESULT
+  GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[]);
+  HRESULT SetRegisters(ULONG64 mask, ULONG32 regCount,
+                       CORDB_REGISTER regBuffer[]);
+  HRESULT GetThreadContext(ULONG32 contextSize, BYTE context[]);
+  HRESULT SetThreadContext(ULONG32 contextSize, BYTE context[]);
 };
 
 #endif

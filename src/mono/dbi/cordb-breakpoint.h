@@ -11,20 +11,23 @@
 
 class CordbFunctionBreakpoint : public CordbBaseMono,
                                 public ICorDebugFunctionBreakpoint {
+  CordbCode *m_pCode;
+  ULONG32 m_offset;
+
 public:
-  CordbCode *code;
-  ULONG32 offset;
   CordbFunctionBreakpoint(Connection *conn, CordbCode *code, ULONG32 offset);
-  HRESULT STDMETHODCALLTYPE
-  GetFunction(/* [out] */ ICorDebugFunction **ppFunction);
-  HRESULT STDMETHODCALLTYPE GetOffset(/* [out] */ ULONG32 *pnOffset);
-  HRESULT STDMETHODCALLTYPE Activate(/* [in] */ BOOL bActive);
-  HRESULT STDMETHODCALLTYPE IsActive(/* [out] */ BOOL *pbActive);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  ULONG32 GetOffset() const { return m_offset; }
+  CordbCode *GetCode() const { return m_pCode; }
+  const char *GetClassName() { return "CordbFunctionBreakpoint"; }
+  ~CordbFunctionBreakpoint();
+  HRESULT GetFunction(ICorDebugFunction **ppFunction);
+  HRESULT GetOffset(ULONG32 *pnOffset);
+  HRESULT Activate(BOOL bActive);
+  HRESULT IsActive(BOOL *pbActive);
+  HRESULT QueryInterface(REFIID id,
+                         _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
 };
 
 #endif

@@ -29,20 +29,16 @@
       return S_FALSE;                                                          \
   } while (0)
 
+static UTSemReadWrite *m_pSemReadWrite;
 
-static UTSemReadWrite* m_pSemReadWrite = new UTSemReadWrite();
-
-#define dbg_lock()  m_pSemReadWrite->LockRead();
-#define dbg_unlock()  m_pSemReadWrite->UnlockRead();
-
-/*#define dbg_lock() mono_os_mutex_lock(&debug_mutex.m);
-#define dbg_unlock() mono_os_mutex_unlock(&debug_mutex.m);
-static MonoCoopMutex debug_mutex;*/
+#define dbg_lock() m_pSemReadWrite->LockRead();
+#define dbg_unlock() m_pSemReadWrite->UnlockRead();
 
 #ifdef _DEBUG
 #define LOGGING
-#include "log.h"
 #endif
+
+#include "log.h"
 
 #include "arraylist.h"
 
@@ -53,145 +49,140 @@ class Cordb;
 class CordbProcess;
 class CordbAppDomain;
 class CordbAssembly;
+class CordbModule;
 class CordbCode;
 class CordbThread;
 class CordbFunction;
 class CordbStepper;
 class RegMeta;
-class CordbRegisteSet;
+class CordbRegisterSet;
 class CordbClass;
+class CordbNativeFrame;
+class CordbAppDomainEnum;
+class CordbTypeEnum;
+class CordbBlockingObjectEnum;
+class CordbFunctionBreakpoint;
+class CordbEval;
 
-typedef struct ReceivedReplyPacket {
+class ReceivedReplyPacket {
   int error;
   int error_2;
   int id;
   MdbgProtBuffer *buf;
-} ReceivedReplyPacket;
+
+public:
+  ReceivedReplyPacket(int error, int error_2, int id, MdbgProtBuffer *buf);
+  ~ReceivedReplyPacket();
+  MdbgProtBuffer *Buffer() { return buf; }
+  int Error() { return error; }
+  int Error2() { return error_2; }
+  int Id() { return id; }
+};
 
 int convert_mono_type_2_icordbg_size(int type);
 
-class Cordb : public ICorDebug, public ICorDebugRemote {
-public:
-  ArrayList *breakpoints;
-  ArrayList *threads;
-  ArrayList *functions;
-  ArrayList *modules;
-
-  ICorDebugManagedCallback *pCallback;
-  Cordb();
-
-  CordbFunction *findFunction(int id);
-  CordbFunction *findFunctionByToken(int token);
-  HRESULT Initialize(void);
-
-  HRESULT Terminate(void);
-
-  HRESULT SetManagedHandler(
-      /* [in] */ ICorDebugManagedCallback *pCallback);
-
-  HRESULT SetUnmanagedHandler(
-      /* [in] */ ICorDebugUnmanagedCallback *pCallback);
-
-  HRESULT CreateProcess(
-      /* [in] */ LPCWSTR lpApplicationName,
-      /* [in] */ LPWSTR lpCommandLine,
-      /* [in] */ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-      /* [in] */ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-      /* [in] */ BOOL bInheritHandles,
-      /* [in] */ DWORD dwCreationFlags,
-      /* [in] */ PVOID lpEnvironment,
-      /* [in] */ LPCWSTR lpCurrentDirectory,
-      /* [in] */ LPSTARTUPINFOW lpStartupInfo,
-      /* [in] */ LPPROCESS_INFORMATION lpProcessInformation,
-      /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
-      /* [out] */ ICorDebugProcess **ppProcess);
-
-  HRESULT DebugActiveProcess(
-      /* [in] */ DWORD id,
-      /* [in] */ BOOL win32Attach,
-      /* [out] */ ICorDebugProcess **ppProcess);
-  HRESULT EnumerateProcesses(
-      /* [out] */ ICorDebugProcessEnum **ppProcess);
-
-  HRESULT GetProcess(
-      /* [in] */ DWORD dwProcessId,
-      /* [out] */ ICorDebugProcess **ppProcess);
-
-  HRESULT CanLaunchOrAttach(
-      /* [in] */ DWORD dwProcessId,
-      /* [in] */ BOOL win32DebuggingEnabled);
-  HRESULT QueryInterface(
-      /* [in] */ REFIID riid,
-      /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject);
-
-  ULONG AddRef(void);
-  ULONG Release(void);
-  HRESULT CreateProcessEx(
-      /* [in] */ ICorDebugRemoteTarget *pRemoteTarget,
-      /* [in] */ LPCWSTR lpApplicationName,
-      /* [annotation][in] */
-      _In_ LPWSTR lpCommandLine,
-      /* [in] */ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-      /* [in] */ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-      /* [in] */ BOOL bInheritHandles,
-      /* [in] */ DWORD dwCreationFlags,
-      /* [in] */ PVOID lpEnvironment,
-      /* [in] */ LPCWSTR lpCurrentDirectory,
-      /* [in] */ LPSTARTUPINFOW lpStartupInfo,
-      /* [in] */ LPPROCESS_INFORMATION lpProcessInformation,
-      /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
-      /* [out] */ ICorDebugProcess **ppProcess);
-
-  HRESULT DebugActiveProcessEx(
-      /* [in] */ ICorDebugRemoteTarget *pRemoteTarget,
-      /* [in] */ DWORD dwProcessId,
-      /* [in] */ BOOL fWin32Attach,
-      /* [out] */ ICorDebugProcess **ppProcess);
-  HRESULT GetModule(int module_id, ICorDebugModule** pModule);
-};
-
 class Connection {
-  Socket *connect_socket;
-  bool is_answer_pending;
+  Socket *socket;
+  CordbProcess *pProcess;
+  Cordb *pCordb;
+  ArrayList *receiveReplies;
+  ArrayList *pendingEval;
+  ArrayList *receivedPacketsToProcess;
+  void ProcessPacketInternal(MdbgProtBuffer *recvbuf);
+  void ProcessPacketFromQueue();
+  void EnableEvent(MdbgProtEventKind eventKind);
+  void SendPacket(MdbgProtBuffer &sendbuf);
+  int ProcessPacket(bool is_answer = false);
 
 public:
-  CordbProcess *ppProcess;
-  Cordb *ppCordb;
-  CordbAppDomain *pCorDebugAppDomain;
-  ArrayList *received_replies;
-  ArrayList *pending_eval;
-  ArrayList *received_packets_to_process;
+  CordbProcess *GetProcess() const { return pProcess; }
+  Cordb *GetCordb() const { return pCordb; }
   Connection(CordbProcess *proc, Cordb *cordb);
-  void loop_send_receive();
-  void process_packet_internal(MdbgProtBuffer *recvbuf);
-  void process_packet_from_queue();
-  void enable_event(MdbgProtEventKind eventKind);
-  void close_connection();
-  void start_connection();
-  void transport_handshake();
-  void receive();
-  void send_packet(MdbgProtBuffer &sendbuf);
-  void receive_packet(MdbgProtBuffer &b, int len);
-  void receive_header(MdbgProtHeader *header);
-  int send_event(int cmd_set, int cmd, MdbgProtBuffer *sendbuf);
-  int process_packet(bool is_answer = false);
-  MdbgProtBuffer *get_answer(int cmdId);
-  ReceivedReplyPacket *get_answer_with_error(int cmdId);
-  CordbThread *findThread(ArrayList *threads, long thread_id);
+  ~Connection();
+
+  void LoopSendReceive();
+  void CloseConnection();
+  void StartConnection();
+  void TransportHandshake();
+  void Receive();
+
+  int SendEvent(int cmd_set, int cmd, MdbgProtBuffer *sendbuf);
+  MdbgProtBuffer *GetAnswer(int cmdId);
+  ReceivedReplyPacket *GetAnswerWithError(int cmdId);
+  CordbAppDomain *GetCurrentAppDomain();
 };
 
 class CordbBaseMono {
 protected:
   Connection *conn;
-
+  ULONG m_cRef;         // Ref count.
+  ULONG m_cRefInternal; // Ref count.
 public:
   CordbBaseMono(Connection *conn);
+  virtual ~CordbBaseMono();
   void SetConnection(Connection *conn);
+  ULONG BaseAddRef(void);
+  ULONG BaseRelease(void);
+  ULONG InternalAddRef(void);
+  ULONG InternalRelease(void);
+  virtual const char *GetClassName() { return "CordbBaseMono"; }
+};
+
+class Cordb : public ICorDebug, public ICorDebugRemote, public CordbBaseMono {
+  ICorDebugManagedCallback *m_pCallback;
+  CordbProcess *m_pProcess;
+
+public:
+  ICorDebugManagedCallback *GetCallback() const { return m_pCallback; }
+  Cordb();
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "Cordb"; }
+  ~Cordb();
+
+  HRESULT Initialize(void);
+
+  HRESULT Terminate(void);
+
+  HRESULT SetManagedHandler(ICorDebugManagedCallback *pCallback);
+
+  HRESULT SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback);
+
+  HRESULT CreateProcess(LPCWSTR lpApplicationName, LPWSTR lpCommandLine,
+                        LPSECURITY_ATTRIBUTES lpProcessAttributes,
+                        LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                        BOOL bInheritHandles, DWORD dwCreationFlags,
+                        PVOID lpEnvironment, LPCWSTR lpCurrentDirectory,
+                        LPSTARTUPINFOW lpStartupInfo,
+                        LPPROCESS_INFORMATION lpProcessInformation,
+                        CorDebugCreateProcessFlags debuggingFlags,
+                        ICorDebugProcess **ppProcess);
+
+  HRESULT DebugActiveProcess(DWORD id, BOOL win32Attach,
+                             ICorDebugProcess **ppProcess);
+  HRESULT EnumerateProcesses(ICorDebugProcessEnum **ppProcess);
+
+  HRESULT GetProcess(DWORD dwProcessId, ICorDebugProcess **ppProcess);
+
+  HRESULT CanLaunchOrAttach(DWORD dwProcessId, BOOL win32DebuggingEnabled);
+  HRESULT QueryInterface(REFIID riid,
+                         _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject);
+  HRESULT CreateProcessEx(
+      ICorDebugRemoteTarget *pRemoteTarget, LPCWSTR lpApplicationName,
+      _In_ LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes,
+      LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles,
+      DWORD dwCreationFlags, PVOID lpEnvironment, LPCWSTR lpCurrentDirectory,
+      LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation,
+      CorDebugCreateProcessFlags debuggingFlags, ICorDebugProcess **ppProcess);
+
+  HRESULT DebugActiveProcessEx(ICorDebugRemoteTarget *pRemoteTarget,
+                               DWORD dwProcessId, BOOL fWin32Attach,
+                               ICorDebugProcess **ppProcess);
 };
 
 #define CHECK_ERROR_RETURN_FALSE(localbuf)                                     \
   do {                                                                         \
-    if (localbuf->error > 0 || localbuf->error_2 > 0) {                        \
+    if (localbuf->Error() > 0 || localbuf->Error2() > 0) {                     \
       LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED\n"));                      \
       return S_FALSE;                                                          \
     }                                                                          \

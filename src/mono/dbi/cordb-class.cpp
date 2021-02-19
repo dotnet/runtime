@@ -6,6 +6,7 @@
 
 #include <cordb-breakpoint.h>
 #include <cordb-class.h>
+#include <cordb-process.h>
 #include <cordb-value.h>
 #include <cordb.h>
 
@@ -15,21 +16,26 @@ using namespace std;
 
 CordbClass::CordbClass(Connection *conn, mdToken token, int module_id)
     : CordbBaseMono(conn) {
-  this->token = token;
-  this->module_id = module_id;
+  this->m_metadataToken = token;
+  this->m_debuggerId = module_id;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule **pModule) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetModule - IMPLEMENTED\n"));
   if (pModule) {
-      return conn->ppCordb->GetModule(module_id, pModule);
+    CordbModule *module = conn->GetProcess()->GetModule(m_debuggerId);
+    if (module) {
+      *pModule = static_cast<ICorDebugModule *>(module);
+      (*pModule)->AddRef();
+      return S_OK;
+    }
   }
-  return S_OK;
+  return S_FALSE;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetToken(mdTypeDef *pTypeDef) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetToken - IMPLEMENTED\n"));
-  *pTypeDef = token;
+  *pTypeDef = m_metadataToken;
   return S_OK;
 }
 
@@ -41,7 +47,7 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetStaticFieldValue(
   content_value.booleanValue = 0;
   CordbValue *value =
       new CordbValue(conn, ELEMENT_TYPE_BOOLEAN, content_value, 1);
-  *ppValue = static_cast<ICorDebugValue *>(value);
+  value->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
   return S_OK;
 }
 
@@ -57,13 +63,9 @@ HRESULT STDMETHODCALLTYPE CordbClass::QueryInterface(REFIID id,
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
-
+  AddRef();
   return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbClass::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbClass::Release(void) { return 0; }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetParameterizedType(
     CorElementType elementType, ULONG32 nTypeArgs, ICorDebugType *ppTypeArgs[],

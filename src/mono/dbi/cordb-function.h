@@ -15,38 +15,42 @@ class CordbFunction : public CordbBaseMono,
                       public ICorDebugFunction2,
                       public ICorDebugFunction3,
                       public ICorDebugFunction4 {
-public:
-  int id;
-  mdToken token;
-  CordbCode *code;
-  ICorDebugModule *module;
+  int m_debuggerId;
+  mdToken m_metadataToken;
+  CordbCode *m_pCode;
+  CordbModule *m_pModule;
 
-  CordbFunction(Connection *conn, mdToken token, int id, ICorDebugModule *module);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE GetModule(/* [out] */ ICorDebugModule **ppModule);
-  HRESULT STDMETHODCALLTYPE GetClass(/* [out] */ ICorDebugClass **ppClass);
-  HRESULT STDMETHODCALLTYPE GetToken(/* [out] */ mdMethodDef *pMethodDef);
-  HRESULT STDMETHODCALLTYPE GetILCode(/* [out] */ ICorDebugCode **ppCode);
-  HRESULT STDMETHODCALLTYPE GetNativeCode(/* [out] */ ICorDebugCode **ppCode);
-  HRESULT STDMETHODCALLTYPE
-  CreateBreakpoint(/* [out] */ ICorDebugFunctionBreakpoint **ppBreakpoint);
-  HRESULT STDMETHODCALLTYPE
-  GetLocalVarSigToken(/* [out] */ mdSignature *pmdSig);
-  HRESULT STDMETHODCALLTYPE
-  GetCurrentVersionNumber(/* [out] */ ULONG32 *pnCurrentVersion);
-  HRESULT STDMETHODCALLTYPE SetJMCStatus(/* [in] */ BOOL bIsJustMyCode);
-  HRESULT STDMETHODCALLTYPE GetJMCStatus(/* [out] */ BOOL *pbIsJustMyCode);
-  HRESULT STDMETHODCALLTYPE
-  EnumerateNativeCode(/* [out] */ ICorDebugCodeEnum **ppCodeEnum);
-  HRESULT STDMETHODCALLTYPE GetVersionNumber(/* [out] */ ULONG32 *pnVersion);
-  HRESULT STDMETHODCALLTYPE
+public:
+  CordbFunction(Connection *conn, mdToken token, int id, CordbModule *module);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbFunction"; }
+  ~CordbFunction();
+  int GetDebuggerId() const { return m_debuggerId; }
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+
+  HRESULT GetModule(ICorDebugModule **ppModule);
+  HRESULT GetClass(ICorDebugClass **ppClass);
+  HRESULT GetToken(mdMethodDef *pMethodDef);
+  HRESULT GetILCode(ICorDebugCode **ppCode);
+  HRESULT GetNativeCode(ICorDebugCode **ppCode);
+  HRESULT
+  CreateBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
+  HRESULT
+  GetLocalVarSigToken(mdSignature *pmdSig);
+  HRESULT
+  GetCurrentVersionNumber(ULONG32 *pnCurrentVersion);
+  HRESULT SetJMCStatus(BOOL bIsJustMyCode);
+  HRESULT GetJMCStatus(BOOL *pbIsJustMyCode);
+  HRESULT
+  EnumerateNativeCode(ICorDebugCodeEnum **ppCodeEnum);
+  HRESULT GetVersionNumber(ULONG32 *pnVersion);
+  HRESULT
   GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedILCode);
-  HRESULT STDMETHODCALLTYPE
+  HRESULT
   CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
+  mdToken GetMetadataToken() const { return m_metadataToken; }
 };
 
 #endif

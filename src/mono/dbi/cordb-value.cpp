@@ -15,24 +15,30 @@ using namespace std;
 CordbValue::CordbValue(Connection *conn, CorElementType type,
                        CordbContent value, int size)
     : CordbBaseMono(conn) {
-  this->type = type;
-  this->value = value;
-  this->size = size;
+  this->m_type = type;
+  this->m_value = value;
+  this->m_size = size;
   this->conn = conn;
+  m_pType = NULL;
+}
+
+CordbValue::~CordbValue() {
+  if (m_pType)
+    m_pType->InternalRelease();
 }
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetType(CorElementType *pType) {
-  *pType = type;
+  *pType = m_type;
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetSize(ULONG32 *pSize) {
-  *pSize = size;
+  *pSize = m_size;
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetAddress(CORDB_ADDRESS *pAddress) {
-  *pAddress = (CORDB_ADDRESS)&value;
+  *pAddress = (CORDB_ADDRESS)&m_value;
   LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetAddress - IMPLEMENTED\n"));
   return S_OK;
 }
@@ -62,17 +68,17 @@ HRESULT STDMETHODCALLTYPE CordbValue::QueryInterface(REFIID id,
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
 
-ULONG STDMETHODCALLTYPE CordbValue::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbValue::Release(void) { return 0; }
-
 HRESULT STDMETHODCALLTYPE CordbValue::GetExactType(ICorDebugType **ppType) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetExactType - IMPLEMENTED\n"));
-  CordbType *tp = new CordbType(type, conn);
-  *ppType = static_cast<ICorDebugType *>(tp);
+  if (m_pType == NULL) {
+    m_pType = new CordbType(m_type, conn);
+    m_pType->InternalAddRef();
+  }
+  m_pType->QueryInterface(IID_ICorDebugType, (void **)ppType);
   return S_OK;
 }
 
@@ -83,12 +89,12 @@ HRESULT STDMETHODCALLTYPE CordbValue::GetSize64(ULONG64 *pSize) {
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetValue(void *pTo) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetValue - IMPLEMENTED\n"));
-  memcpy(pTo, &value, size);
+  memcpy(pTo, &m_value, m_size);
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbValue::SetValue(void *pFrom) {
-  memcpy(&value, pFrom, size);
+  memcpy(&m_value, pFrom, m_size);
   LOG((LF_CORDB, LL_INFO1000000, "CordbValue - SetValue - IMPLEMENTED\n"));
   return S_OK;
 }
@@ -96,7 +102,7 @@ HRESULT STDMETHODCALLTYPE CordbValue::SetValue(void *pFrom) {
 HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetType(CorElementType *pType) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbReferenceValue - GetType - IMPLEMENTED\n"));
-  *pType = type;
+  *pType = m_type;
   return S_OK;
 }
 
@@ -108,7 +114,7 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetSize(ULONG32 *pSize) {
 
 HRESULT STDMETHODCALLTYPE
 CordbReferenceValue::GetAddress(CORDB_ADDRESS *pAddress) {
-  *pAddress = (CORDB_ADDRESS)&object_id;
+  *pAddress = (CORDB_ADDRESS)&m_debuggerId;
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbReferenceValue - GetAddress - IMPLEMENTED\n"));
   return S_OK;
@@ -139,114 +145,117 @@ CordbReferenceValue::QueryInterface(REFIID id, void **pInterface) {
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbReferenceValue::AddRef(void) { return 1; }
-
-ULONG STDMETHODCALLTYPE CordbReferenceValue::Release(void) { return 1; }
 
 HRESULT STDMETHODCALLTYPE
 CordbReferenceValue::GetExactType(ICorDebugType **ppType) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbReferenceValue - GetExactType - IMPLEMENTED\n"));
-  if (cordbtype) {
-    *ppType = static_cast<ICorDebugType *>(cordbtype);
+  if (m_pCordbType) {
+    m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
     return S_OK;
   }
-  if (klass != NULL) {
-    cordbtype = new CordbType(type, conn, klass);
-    *ppType = static_cast<ICorDebugType *>(cordbtype);
+  if (m_pClass != NULL) {
+    m_pCordbType = new CordbType(m_type, conn, m_pClass);
+    m_pCordbType->InternalAddRef();
+    m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
     return S_OK;
   }
-  if (type == ELEMENT_TYPE_CLASS && object_id != -1) {
+  if (m_type == ELEMENT_TYPE_CLASS && m_debuggerId != -1) {
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, object_id);
+    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_OBJECT_REF,
-                                 MDBGPROT_CMD_OBJECT_REF_GET_TYPE, &localbuf);
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_OBJECT_REF,
+                                MDBGPROT_CMD_OBJECT_REF_GET_TYPE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-    int type_id =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+    int type_id = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
 
     m_dbgprot_buffer_init(&localbuf, 128);
     m_dbgprot_buffer_add_id(&localbuf, type_id);
 
-    cmdId = conn->send_event(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_INFO,
-                             &localbuf);
+    cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_INFO,
+                            &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    bAnswer = conn->get_answer(cmdId);
+    bAnswer = conn->GetAnswer(cmdId);
     char *namespace_str =
-        m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
     char *class_name_str =
-        m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
     char *class_fullname_str =
-        m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
     int assembly_id =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int module_id =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    type_id = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int type_id2 =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int token = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    klass = new CordbClass(conn, token, assembly_id);
-    cordbtype = new CordbType(type, conn, klass);
-    *ppType = static_cast<ICorDebugType *>(cordbtype);
+        m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int module_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    type_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+    m_pClass = new CordbClass(conn, token, assembly_id);
+    m_pClass->InternalAddRef();
+    m_pCordbType = new CordbType(m_type, conn, m_pClass);
+    m_pCordbType->InternalAddRef();
+    m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
+    free(namespace_str);
+    free(class_name_str);
+    free(class_fullname_str);
     return S_OK;
   }
-  if (type == ELEMENT_TYPE_SZARRAY && object_id != -1) {
-    CordbClass *klass = NULL;
+  if (m_type == ELEMENT_TYPE_SZARRAY && m_debuggerId != -1) {
+    m_pClass = NULL;
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, object_id);
+    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_ARRAY_REF,
-                                 MDBGPROT_CMD_ARRAY_REF_GET_TYPE, &localbuf);
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
+                                MDBGPROT_CMD_ARRAY_REF_GET_TYPE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-    int type_id =
-        m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int rank = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+    int type_id = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
     if (type_id == ELEMENT_TYPE_CLASS) {
       int klass_id =
-          m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
 
       m_dbgprot_buffer_init(&localbuf, 128);
       m_dbgprot_buffer_add_id(&localbuf, klass_id);
 
-      cmdId = conn->send_event(MDBGPROT_CMD_SET_TYPE,
-                               MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
+      cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE, MDBGPROT_CMD_TYPE_GET_INFO,
+                              &localbuf);
       m_dbgprot_buffer_free(&localbuf);
-      bAnswer = conn->get_answer(cmdId);
+      bAnswer = conn->GetAnswer(cmdId);
       char *namespace_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       char *class_name_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       char *class_fullname_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       int assembly_id =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
       int module_id =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int type_id3 =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int type_id2 =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int token =
-          m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      klass = new CordbClass(conn, token, module_id);
+          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int type_id3 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+      m_pClass = new CordbClass(conn, token, module_id);
+      m_pClass->InternalAddRef();
+      free(namespace_str);
+      free(class_name_str);
+      free(class_fullname_str);
     }
 
-    cordbtype = new CordbType(type, conn, NULL,
-                              new CordbType((CorElementType)type_id, conn, klass));
-    *ppType = static_cast<ICorDebugType *>(cordbtype);
+    m_pCordbType =
+        new CordbType(m_type, conn, NULL,
+                      new CordbType((CorElementType)type_id, conn, m_pClass));
+    m_pCordbType->InternalAddRef();
+    m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
     return S_OK;
   }
-  CordbType *tp = new CordbType(type, conn);
-  *ppType = static_cast<ICorDebugType *>(tp);
+  m_pCordbType = new CordbType(m_type, conn);
+  m_pCordbType->InternalAddRef();
+  m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
   return S_OK;
 }
 
@@ -268,44 +277,41 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::SetValue(void *pFrom) {
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbReferenceValue::IsNull(/* [out] */ BOOL *pbNull) {
-  if (object_id == -1)
+HRESULT STDMETHODCALLTYPE CordbReferenceValue::IsNull(BOOL *pbNull) {
+  if (m_debuggerId == -1)
     *pbNull = true;
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbReferenceValue - IsNull - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbReferenceValue::GetValue(/* [out] */ CORDB_ADDRESS *pValue) {
-  if (object_id == -1)
+HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetValue(CORDB_ADDRESS *pValue) {
+  if (m_debuggerId == -1)
     *pValue = NULL;
   else
-    *pValue = (CORDB_ADDRESS)&object_id;
+    *pValue = (CORDB_ADDRESS)&m_debuggerId;
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbReferenceValue - GetValue - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbReferenceValue::SetValue(/* [in] */ CORDB_ADDRESS value) {
+HRESULT STDMETHODCALLTYPE CordbReferenceValue::SetValue(CORDB_ADDRESS value) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbReferenceValue - SetValue CORDB_ADDRESS - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE
-CordbReferenceValue::Dereference(/* [out] */ ICorDebugValue **ppValue) {
-  if (object_id == -1)
+CordbReferenceValue::Dereference(ICorDebugValue **ppValue) {
+  if (m_debuggerId == -1)
     return CORDBG_E_BAD_REFERENCE_VALUE;
-  if (type == ELEMENT_TYPE_SZARRAY || type == ELEMENT_TYPE_ARRAY) {
+  if (m_type == ELEMENT_TYPE_SZARRAY || m_type == ELEMENT_TYPE_ARRAY) {
     CordbArrayValue *objectValue =
-        new CordbArrayValue(conn, cordbtype, object_id, klass);
+        new CordbArrayValue(conn, m_pCordbType, m_debuggerId, m_pClass);
     objectValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
   } else {
     CordbObjectValue *objectValue =
-        new CordbObjectValue(conn, type, object_id, klass);
+        new CordbObjectValue(conn, m_type, m_debuggerId, m_pClass);
     objectValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
   }
   LOG((LF_CORDB, LL_INFO1000000,
@@ -314,7 +320,7 @@ CordbReferenceValue::Dereference(/* [out] */ ICorDebugValue **ppValue) {
 }
 
 HRESULT STDMETHODCALLTYPE
-CordbReferenceValue::DereferenceStrong(/* [out] */ ICorDebugValue **ppValue) {
+CordbReferenceValue::DereferenceStrong(ICorDebugValue **ppValue) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbReferenceValue - DereferenceStrong - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
@@ -322,26 +328,47 @@ CordbReferenceValue::DereferenceStrong(/* [out] */ ICorDebugValue **ppValue) {
 
 CordbReferenceValue::CordbReferenceValue(Connection *conn, CorElementType type,
                                          int object_id, CordbClass *klass,
-                                         CordbType *cordbtype)
+                                         CordbType *cordbType)
     : CordbBaseMono(conn) {
-  this->type = type;
-  this->object_id = object_id;
+  this->m_type = type;
+  this->m_debuggerId = object_id;
   this->conn = conn;
-  this->klass = klass;
-  this->cordbtype = cordbtype;
+  this->m_pClass = klass;
+  this->m_pCordbType = cordbType;
+  if (cordbType)
+    cordbType->InternalAddRef();
+  if (klass)
+    klass->InternalAddRef();
+}
+
+CordbReferenceValue::~CordbReferenceValue() {
+  if (m_pCordbType)
+    m_pCordbType->InternalRelease();
+  if (m_pClass)
+    m_pClass->InternalRelease();
 }
 
 CordbObjectValue::CordbObjectValue(Connection *conn, CorElementType type,
                                    int object_id, CordbClass *klass)
     : CordbBaseMono(conn) {
-  this->type = type;
-  this->object_id = object_id;
-  this->klass = klass;
+  this->m_type = type;
+  this->m_debuggerId = object_id;
+  this->m_pClass = klass;
+  if (klass)
+    klass->InternalAddRef();
+  m_pCordbType = NULL;
+}
+
+CordbObjectValue::~CordbObjectValue() {
+  if (m_pClass)
+    m_pClass->InternalRelease();
+  if (m_pCordbType)
+    m_pCordbType->InternalRelease();
 }
 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetType(CorElementType *pType) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbObjectValue - GetType - IMPLEMENTED\n"));
-  *pType = type;
+  *pType = m_type;
   return S_OK;
 }
 
@@ -354,7 +381,7 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetSize(ULONG32 *pSize) {
 
 HRESULT STDMETHODCALLTYPE
 CordbObjectValue::GetAddress(CORDB_ADDRESS *pAddress) {
-  *pAddress = (CORDB_ADDRESS)&object_id;
+  *pAddress = (CORDB_ADDRESS)&m_debuggerId;
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbObjectValue - GetAddress - IMPLEMENTED\n"));
   return S_OK;
@@ -367,16 +394,15 @@ CordbObjectValue::CreateBreakpoint(ICorDebugValueBreakpoint **ppBreakpoint) {
   return E_NOTIMPL;
 }
 
-ULONG STDMETHODCALLTYPE CordbObjectValue::AddRef(void) { return 1; }
-
-ULONG STDMETHODCALLTYPE CordbObjectValue::Release(void) { return 1; }
-
 HRESULT STDMETHODCALLTYPE
 CordbObjectValue::GetExactType(ICorDebugType **ppType) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbObjectValue - GetExactType - IMPLEMENTED\n"));
-  CordbType *tp = new CordbType(type, conn, klass);
-  *ppType = static_cast<ICorDebugType *>(tp);
+  if (m_pCordbType == NULL) {
+    m_pCordbType = new CordbType(m_type, conn, m_pClass);
+    m_pCordbType->InternalAddRef();
+  }
+  m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
   return S_OK;
 }
 
@@ -407,19 +433,19 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetVirtualMethodAndType(
 }
 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32 *pcchString) {
-  if (object_id == -1)
+  if (m_debuggerId == -1)
     return S_OK;
-  if (type == ELEMENT_TYPE_STRING) {
+  if (m_type == ELEMENT_TYPE_STRING) {
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, object_id);
+    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_STRING_REF,
-                                 MDBGPROT_CMD_STRING_REF_GET_LENGTH, &localbuf);
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STRING_REF,
+                                MDBGPROT_CMD_STRING_REF_GET_LENGTH, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-    *pcchString = (ULONG32)
-        m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+    *pcchString =
+        (ULONG32)m_dbgprot_decode_long(bAnswer->p, &bAnswer->p, bAnswer->end);
     return S_OK;
   }
   return E_NOTIMPL;
@@ -428,37 +454,33 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32 *pcchString) {
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetString(ULONG32 cchString,
                                                       ULONG32 *pcchString,
                                                       WCHAR szString[]) {
-  if (object_id == -1)
+  if (m_debuggerId == -1)
     return S_OK;
-  if (type == ELEMENT_TYPE_STRING) {
+  if (m_type == ELEMENT_TYPE_STRING) {
     MdbgProtBuffer localbuf;
     m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, object_id);
+    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-    int cmdId = conn->send_event(MDBGPROT_CMD_SET_STRING_REF,
-                                 MDBGPROT_CMD_STRING_REF_GET_VALUE, &localbuf);
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STRING_REF,
+                                MDBGPROT_CMD_STRING_REF_GET_VALUE, &localbuf);
     m_dbgprot_buffer_free(&localbuf);
-    MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
+    MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
     *pcchString = cchString;
     int use_utf16 =
-        m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
     if (use_utf16) {
       LOG((LF_CORDB, LL_INFO100000,
            "CordbObjectValue - GetString - NOT IMPLEMENTED - use_utf16\n"));
     } else {
       char *value =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       LOG((LF_CORDB, LL_INFO1000000,
            "CordbObjectValue - GetString - IMPLEMENTED\n"));
       if (cchString >= strlen(value)) {
-        MultiByteToWideChar(CP_UTF8,
-                            0,
-                            value,
-                            -1,
-                            szString,
-                            cchString);
+        MultiByteToWideChar(CP_UTF8, 0, value, -1, szString, cchString);
         *pcchString = cchString;
       }
+      free(value);
     }
     return S_OK;
   }
@@ -522,8 +544,7 @@ CordbObjectValue::GetFunction(ICorDebugFunction **ppFunction) {
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbObjectValue::GetClass(/* [out] */ ICorDebugClass **ppClass) {
+HRESULT STDMETHODCALLTYPE CordbObjectValue::GetClass(ICorDebugClass **ppClass) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbObjectValue - GetClass - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
@@ -534,23 +555,22 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetFieldValue(
 
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbObjectValue - GetFieldValue - IMPLEMENTED\n"));
-  if (object_id == -1)
+  if (m_debuggerId == -1)
     return S_FALSE;
 
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, object_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
   m_dbgprot_buffer_add_int(&localbuf, fieldDef);
 
   int cmdId =
-      conn->send_event(MDBGPROT_CMD_SET_OBJECT_REF,
-                       MDBGPROT_CMD_OBJECT_REF_GET_VALUES_ICORDBG, &localbuf);
+      conn->SendEvent(MDBGPROT_CMD_SET_OBJECT_REF,
+                      MDBGPROT_CMD_OBJECT_REF_GET_VALUES_ICORDBG, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  ReceivedReplyPacket *received_reply_packet =
-      conn->get_answer_with_error(cmdId);
+  ReceivedReplyPacket *received_reply_packet = conn->GetAnswerWithError(cmdId);
   CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-  MdbgProtBuffer *bAnswer = received_reply_packet->buf;
+  MdbgProtBuffer *bAnswer = received_reply_packet->Buffer();
 
   return CreateCordbValue(conn, bAnswer, ppValue);
 }
@@ -559,80 +579,83 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
                                            MdbgProtBuffer *bAnswer,
                                            ICorDebugValue **ppValue) {
   CorElementType type = (CorElementType)m_dbgprot_decode_byte(
-      bAnswer->buf, &bAnswer->buf, bAnswer->end);
+      bAnswer->p, &bAnswer->p, bAnswer->end);
   CordbContent value;
 
   if ((MdbgProtValueTypeId)type == MDBGPROT_VALUE_TYPE_ID_NULL) {
     CorElementType type = (CorElementType)m_dbgprot_decode_byte(
-        bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        bAnswer->p, &bAnswer->p, bAnswer->end);
     if (type == ELEMENT_TYPE_CLASS || type == ELEMENT_TYPE_STRING) {
       int klass_id = (CorElementType)m_dbgprot_decode_id(
-          bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          bAnswer->p, &bAnswer->p, bAnswer->end);
 
       MdbgProtBuffer localbuf;
       m_dbgprot_buffer_init(&localbuf, 128);
       m_dbgprot_buffer_add_id(&localbuf, klass_id);
-      int cmdId = conn->send_event(MDBGPROT_CMD_SET_TYPE,
-                                   MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
+      int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE,
+                                  MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
       m_dbgprot_buffer_free(&localbuf);
-      bAnswer = conn->get_answer(cmdId);
+      bAnswer = conn->GetAnswer(cmdId);
       char *namespace_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       char *class_name_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       char *class_fullname_str =
-          m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
       int assembly_id =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
       int module_id =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int type_id =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int type_id2 =
-          m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-      int token =
-          m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int type_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int type_id2 = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+      int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
 
       CordbClass *klass = new CordbClass(conn, token, module_id);
       CordbReferenceValue *refValue =
           new CordbReferenceValue(conn, type, -1, klass);
       refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
+      free(namespace_str);
+      free(class_name_str);
+      free(class_fullname_str);
     }
     if (type == ELEMENT_TYPE_SZARRAY) {
       CordbClass *klass = NULL;
       int type_id =
-          m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+          m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
       if (type_id == ELEMENT_TYPE_CLASS) {
         int klass_id =
-            m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
 
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, klass_id);
-        int cmdId = conn->send_event(MDBGPROT_CMD_SET_TYPE,
-                                     MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_TYPE,
+                                    MDBGPROT_CMD_TYPE_GET_INFO, &localbuf);
         m_dbgprot_buffer_free(&localbuf);
-        bAnswer = conn->get_answer(cmdId);
+        bAnswer = conn->GetAnswer(cmdId);
         char *namespace_str =
-            m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
         char *class_name_str =
-            m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
         char *class_fullname_str =
-            m_dbgprot_decode_string(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_string(bAnswer->p, &bAnswer->p, bAnswer->end);
         int assembly_id =
-            m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
         int module_id =
-            m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
         int type_id3 =
-            m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
         int type_id2 =
-            m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-        int token =
-            m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+            m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+        int token = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
         klass = new CordbClass(conn, token, module_id);
+        free(namespace_str);
+        free(class_name_str);
+        free(class_fullname_str);
       }
-      CordbType *cordbtype = new CordbType(
-          type, conn, NULL, new CordbType((CorElementType)type_id, conn, klass));
+      CordbType *cordbtype =
+          new CordbType(type, conn, NULL,
+                        new CordbType((CorElementType)type_id, conn, klass));
       CordbReferenceValue *refValue =
           new CordbReferenceValue(conn, type, -1, klass, cordbtype);
       refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
@@ -645,31 +668,30 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
   case ELEMENT_TYPE_I1:
   case ELEMENT_TYPE_U1:
     value.booleanValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
     break;
   case ELEMENT_TYPE_CHAR:
   case ELEMENT_TYPE_I2:
   case ELEMENT_TYPE_U2:
     value.charValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
     break;
   case ELEMENT_TYPE_I4:
   case ELEMENT_TYPE_U4:
   case ELEMENT_TYPE_R4:
     value.intValue =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
     break;
   case ELEMENT_TYPE_I8:
   case ELEMENT_TYPE_U8:
   case ELEMENT_TYPE_R8:
     value.longValue =
-        m_dbgprot_decode_long(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+        m_dbgprot_decode_long(bAnswer->p, &bAnswer->p, bAnswer->end);
     break;
   case ELEMENT_TYPE_CLASS:
   case ELEMENT_TYPE_SZARRAY:
   case ELEMENT_TYPE_STRING: {
-    int object_id =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+    int object_id = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
     CordbReferenceValue *refValue =
         new CordbReferenceValue(conn, type, object_id);
     refValue->QueryInterface(IID_ICorDebugValue, (void **)ppValue);
@@ -680,8 +702,9 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection *conn,
     return S_FALSE;
   }
 
-  *ppValue = new CordbValue(conn, type, value,
-                            convert_mono_type_2_icordbg_size(type)); //
+  *ppValue =
+      new CordbValue(conn, type, value, convert_mono_type_2_icordbg_size(type));
+  (*ppValue)->AddRef();
   return S_OK;
 }
 
@@ -754,7 +777,7 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::QueryInterface(REFIID id,
   } else if (id == IID_ICorDebugHeapValue3) {
     *pInterface = static_cast<ICorDebugHeapValue3 *>(this);
   } else if ((id == IID_ICorDebugStringValue) &&
-             (type == ELEMENT_TYPE_STRING)) {
+             (m_type == ELEMENT_TYPE_STRING)) {
     *pInterface = static_cast<ICorDebugStringValue *>(this);
   } else if (id == IID_IUnknown) {
     *pInterface =
@@ -763,17 +786,28 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::QueryInterface(REFIID id,
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
 
 CordbArrayValue::CordbArrayValue(Connection *conn, CordbType *type,
                                  int object_id, CordbClass *klass)
     : CordbBaseMono(conn) {
-  this->type = type;
-  this->object_id = object_id;
-  this->klass = klass;
+  this->m_pCordbType = type;
+  this->m_debuggerId = object_id;
+  this->m_pClass = klass;
+  if (klass)
+    klass->InternalAddRef();
+  if (m_pCordbType)
+    m_pCordbType->InternalAddRef();
 }
 
+CordbArrayValue::~CordbArrayValue() {
+  if (m_pClass)
+    m_pClass->InternalRelease();
+  if (m_pCordbType)
+    m_pCordbType->InternalRelease();
+}
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetClass(ICorDebugClass **ppClass) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbArrayValue - GetClass - NOT IMPLEMENTED\n"));
@@ -833,7 +867,7 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetSize(ULONG32 *pSize) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetAddress(CORDB_ADDRESS *pAddress) {
-  *pAddress = (CORDB_ADDRESS)&object_id;
+  *pAddress = (CORDB_ADDRESS)&m_debuggerId;
   LOG((LF_CORDB, LL_INFO100000,
        "CordbArrayValue - GetAddress - IMPLEMENTED\n"));
   return S_OK;
@@ -870,13 +904,9 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::QueryInterface(REFIID id,
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
-
+  AddRef();
   return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbArrayValue::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbArrayValue::Release(void) { return 0; }
 
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetVirtualMethodAndType(
     mdMemberRef memberRef, ICorDebugFunction **ppFunction,
@@ -927,7 +957,7 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::CreateRelocBreakpoint(
 
 HRESULT STDMETHODCALLTYPE
 CordbArrayValue::GetExactType(ICorDebugType **ppType) {
-  *ppType = static_cast<ICorDebugType *>(type);
+  m_pCordbType->QueryInterface(IID_ICorDebugType, (void **)ppType);
   LOG((LF_CORDB, LL_INFO100000,
        "CordbArrayValue - GetExactType - NOT IMPLEMENTED\n"));
   return S_OK;
@@ -1006,13 +1036,13 @@ CordbArrayValue::GetElementType(CorElementType *pType) {
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetRank(ULONG32 *pnRank) {
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, object_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ARRAY_REF,
-                               MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
+                              MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  int rank = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
   LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetRank - IMPLEMENTED\n"));
   *pnRank = rank;
   return S_OK;
@@ -1021,16 +1051,16 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetRank(ULONG32 *pnRank) {
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetCount(ULONG32 *pnCount) {
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, object_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ARRAY_REF,
-                               MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
+                              MDBGPROT_CMD_ARRAY_REF_GET_LENGTH, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  int rank = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-  count = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  int rank = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  m_nCount = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
   LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetCount - IMPLEMENTED\n"));
-  *pnCount = count;
+  *pnCount = m_nCount;
   return S_OK;
 }
 
@@ -1038,7 +1068,7 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetDimensions(ULONG32 cdim,
                                                          ULONG32 dims[]) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbArrayValue - GetDimensions - IMPLEMENTED\n"));
-  dims[0] = count;
+  dims[0] = m_nCount;
   return S_OK;
 }
 
@@ -1063,14 +1093,14 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetElement(
 
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, object_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
   m_dbgprot_buffer_add_int(&localbuf, indices[cdim - 1]);
   m_dbgprot_buffer_add_int(&localbuf, 1);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_ARRAY_REF,
-                               MDBGPROT_CMD_ARRAY_REF_GET_VALUES, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ARRAY_REF,
+                              MDBGPROT_CMD_ARRAY_REF_GET_VALUES, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
   CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
   return S_OK;
 }

@@ -27,6 +27,11 @@
 #endif
 
 
+Socket::~Socket()
+{
+    Close();
+}
+
 int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
     socketId = -1;
 
@@ -51,7 +56,7 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
         socketId = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 
         if (socketId == -1) {
-            return socketId;
+            return -1;
         }
 
         int flag = 1;

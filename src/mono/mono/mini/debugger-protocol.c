@@ -30,16 +30,16 @@ m_dbgprot_buffer_add_command_header (MdbgProtBuffer *data, int command_set, int 
 void 
 m_dbgprot_decode_command_header (MdbgProtBuffer *recvbuf, MdbgProtHeader *header)
 {
-	header->len = m_dbgprot_decode_int (recvbuf->buf, &recvbuf->buf, recvbuf->end);
-	header->id = m_dbgprot_decode_int (recvbuf->buf, &recvbuf->buf, recvbuf->end);
-	header->flags = m_dbgprot_decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+	header->len = m_dbgprot_decode_int (recvbuf->p, &recvbuf->p, recvbuf->end);
+	header->id = m_dbgprot_decode_int (recvbuf->p, &recvbuf->p, recvbuf->end);
+	header->flags = m_dbgprot_decode_byte (recvbuf->p, &recvbuf->p, recvbuf->end);
 	if (header->flags == REPLY_PACKET) {
-		header->error = m_dbgprot_decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
-		header->error_2 = m_dbgprot_decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->error = m_dbgprot_decode_byte (recvbuf->p, &recvbuf->p, recvbuf->end);
+		header->error_2 = m_dbgprot_decode_byte (recvbuf->p, &recvbuf->p, recvbuf->end);
 	}
 	else {
-		header->command_set = m_dbgprot_decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
-		header->command = m_dbgprot_decode_byte (recvbuf->buf, &recvbuf->buf, recvbuf->end);
+		header->command_set = m_dbgprot_decode_byte (recvbuf->p, &recvbuf->p, recvbuf->end);
+		header->command = m_dbgprot_decode_byte (recvbuf->p, &recvbuf->p, recvbuf->end);
 	}
 }
 

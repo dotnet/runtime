@@ -12,27 +12,27 @@
 class CordbStepper : public CordbBaseMono,
                      public ICorDebugStepper,
                      public ICorDebugStepper2 {
-  CordbThread *thread;
-  bool hasStepped;
-  int eventId;
+  CordbThread *m_pThread;
+  int m_commandId;
 
 public:
-  bool isComplete;
   CordbStepper(Connection *conn, CordbThread *thread);
-  HRESULT STDMETHODCALLTYPE IsActive(BOOL *pbActive);
-  HRESULT STDMETHODCALLTYPE Deactivate(void);
-  HRESULT STDMETHODCALLTYPE SetInterceptMask(CorDebugIntercept mask);
-  HRESULT STDMETHODCALLTYPE SetUnmappedStopMask(CorDebugUnmappedStop mask);
-  HRESULT STDMETHODCALLTYPE Step(BOOL bStepIn);
-  HRESULT STDMETHODCALLTYPE StepRange(BOOL bStepIn,
-                                      COR_DEBUG_STEP_RANGE ranges[],
-                                      ULONG32 cRangeCount);
-  HRESULT STDMETHODCALLTYPE StepOut(void);
-  HRESULT STDMETHODCALLTYPE SetRangeIL(BOOL bIL);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE SetJMC(BOOL fIsJMCStepper);
+  ~CordbStepper();
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbStepper"; }
+  HRESULT IsActive(BOOL *pbActive);
+  HRESULT Deactivate(void);
+  HRESULT SetInterceptMask(CorDebugIntercept mask);
+  HRESULT SetUnmappedStopMask(CorDebugUnmappedStop mask);
+  HRESULT Step(BOOL bStepIn);
+  HRESULT StepRange(BOOL bStepIn, COR_DEBUG_STEP_RANGE ranges[],
+                    ULONG32 cRangeCount);
+  HRESULT StepOut(void);
+  HRESULT SetRangeIL(BOOL bIL);
+  HRESULT QueryInterface(REFIID riid, void **ppvObject);
+
+  HRESULT SetJMC(BOOL fIsJMCStepper);
 };
 
 #endif

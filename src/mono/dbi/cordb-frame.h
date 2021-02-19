@@ -14,121 +14,126 @@ class CordbJITILFrame : public CordbBaseMono,
                         public ICorDebugILFrame2,
                         public ICorDebugILFrame3,
                         public ICorDebugILFrame4 {
+  int m_debuggerFrameId;
+  int m_debuggerMethodId;
+  int m_ilOffset;
+  int m_flags;
+  CordbThread *m_pThread;
+
 public:
-  int frameid;
-  int methodId;
-  int il_offset;
-  int flags;
-  CordbThread *thread;
   CordbJITILFrame(Connection *conn, int frameid, int methodId, int il_offset,
                   int flags, CordbThread *thread);
-  HRESULT STDMETHODCALLTYPE GetChain(/* [out] */ ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE GetCode(/* [out] */ ICorDebugCode **ppCode);
-  HRESULT STDMETHODCALLTYPE
-  GetFunction(/* [out] */ ICorDebugFunction **ppFunction);
-  HRESULT STDMETHODCALLTYPE GetFunctionToken(/* [out] */ mdMethodDef *pToken);
-  HRESULT STDMETHODCALLTYPE GetStackRange(/* [out] */ CORDB_ADDRESS *pStart,
-                                          /* [out] */ CORDB_ADDRESS *pEnd);
-  HRESULT STDMETHODCALLTYPE GetCaller(/* [out] */ ICorDebugFrame **ppFrame);
-  HRESULT STDMETHODCALLTYPE GetCallee(/* [out] */ ICorDebugFrame **ppFrame);
-  HRESULT STDMETHODCALLTYPE
-  CreateStepper(/* [out] */ ICorDebugStepper **ppStepper);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE
-  GetIP(/* [out] */ ULONG32 *pnOffset,
-        /* [out] */ CorDebugMappingResult *pMappingResult);
-  HRESULT STDMETHODCALLTYPE SetIP(/* [in] */ ULONG32 nOffset);
-  HRESULT STDMETHODCALLTYPE
-  EnumerateLocalVariables(/* [out] */ ICorDebugValueEnum **ppValueEnum);
-  HRESULT STDMETHODCALLTYPE GetLocalVariable(
-      /* [in] */ DWORD dwIndex, /* [out] */ ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE
-  EnumerateArguments(/* [out] */ ICorDebugValueEnum **ppValueEnum);
-  HRESULT STDMETHODCALLTYPE GetArgument(/* [in] */ DWORD dwIndex,
-                                        /* [out] */ ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetStackDepth(/* [out] */ ULONG32 *pDepth);
-  HRESULT STDMETHODCALLTYPE GetStackValue(/* [in] */ DWORD dwIndex,
-                                          /* [out] */ ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE CanSetIP(/* [in] */ ULONG32 nOffset);
-  HRESULT STDMETHODCALLTYPE RemapFunction(ULONG32 newILOffset);
-  HRESULT STDMETHODCALLTYPE
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbJITILFrame"; }
+  HRESULT GetChain(ICorDebugChain **ppChain);
+  HRESULT GetCode(ICorDebugCode **ppCode);
+  HRESULT
+  GetFunction(ICorDebugFunction **ppFunction);
+  HRESULT GetFunctionToken(mdMethodDef *pToken);
+  HRESULT GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd);
+  HRESULT GetCaller(ICorDebugFrame **ppFrame);
+  HRESULT GetCallee(ICorDebugFrame **ppFrame);
+  HRESULT
+  CreateStepper(ICorDebugStepper **ppStepper);
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+
+  HRESULT
+  GetIP(ULONG32 *pnOffset, CorDebugMappingResult *pMappingResult);
+  HRESULT SetIP(ULONG32 nOffset);
+  HRESULT
+  EnumerateLocalVariables(ICorDebugValueEnum **ppValueEnum);
+  HRESULT GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue);
+  HRESULT
+  EnumerateArguments(ICorDebugValueEnum **ppValueEnum);
+  HRESULT GetArgument(DWORD dwIndex, ICorDebugValue **ppValue);
+  HRESULT GetStackDepth(ULONG32 *pDepth);
+  HRESULT GetStackValue(DWORD dwIndex, ICorDebugValue **ppValue);
+  HRESULT CanSetIP(ULONG32 nOffset);
+  HRESULT RemapFunction(ULONG32 newILOffset);
+  HRESULT
   EnumerateTypeParameters(ICorDebugTypeEnum **ppTyParEnum);
-  HRESULT STDMETHODCALLTYPE
+  HRESULT
   GetReturnValueForILOffset(ULONG32 ILoffset, ICorDebugValue **ppReturnValue);
-  HRESULT STDMETHODCALLTYPE
+  HRESULT
   EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum);
-  HRESULT STDMETHODCALLTYPE GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex,
-                                               ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode);
+  HRESULT GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex,
+                             ICorDebugValue **ppValue);
+  HRESULT GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode);
 };
 
 class CordbNativeFrame : public CordbBaseMono,
                          public ICorDebugNativeFrame,
                          public ICorDebugNativeFrame2 {
   CordbJITILFrame *m_JITILFrame;
+  CordbThread *m_pThread;
 
 public:
-  CordbThread *thread;
   CordbNativeFrame(Connection *conn, int frameid, int methodId, int il_offset,
                    int flags, CordbThread *thread);
-  HRESULT STDMETHODCALLTYPE GetIP(ULONG32 *pnOffset);
-  HRESULT STDMETHODCALLTYPE SetIP(ULONG32 nOffset);
-  HRESULT STDMETHODCALLTYPE GetRegisterSet(ICorDebugRegisterSet **ppRegisters);
-  HRESULT STDMETHODCALLTYPE GetLocalRegisterValue(CorDebugRegister reg,
-                                                  ULONG cbSigBlob,
-                                                  PCCOR_SIGNATURE pvSigBlob,
-                                                  ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetLocalDoubleRegisterValue(
-      CorDebugRegister highWordReg, CorDebugRegister lowWordReg,
-      ULONG cbSigBlob, PCCOR_SIGNATURE pvSigBlob, ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetLocalMemoryValue(CORDB_ADDRESS address,
-                                                ULONG cbSigBlob,
-                                                PCCOR_SIGNATURE pvSigBlob,
-                                                ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetLocalRegisterMemoryValue(
-      CorDebugRegister highWordReg, CORDB_ADDRESS lowWordAddress,
-      ULONG cbSigBlob, PCCOR_SIGNATURE pvSigBlob, ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE GetLocalMemoryRegisterValue(
-      CORDB_ADDRESS highWordAddress, CorDebugRegister lowWordRegister,
-      ULONG cbSigBlob, PCCOR_SIGNATURE pvSigBlob, ICorDebugValue **ppValue);
-  HRESULT STDMETHODCALLTYPE CanSetIP(ULONG32 nOffset);
-  HRESULT STDMETHODCALLTYPE GetChain(ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE GetCode(ICorDebugCode **ppCode);
-  HRESULT STDMETHODCALLTYPE GetFunction(ICorDebugFunction **ppFunction);
-  HRESULT STDMETHODCALLTYPE GetFunctionToken(mdMethodDef *pToken);
-  HRESULT STDMETHODCALLTYPE GetStackRange(CORDB_ADDRESS *pStart,
-                                          CORDB_ADDRESS *pEnd);
-  HRESULT STDMETHODCALLTYPE GetCaller(ICorDebugFrame **ppFrame);
-  HRESULT STDMETHODCALLTYPE GetCallee(ICorDebugFrame **ppFrame);
-  HRESULT STDMETHODCALLTYPE CreateStepper(ICorDebugStepper **ppStepper);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE IsChild(BOOL *pIsChild);
-  HRESULT STDMETHODCALLTYPE IsMatchingParentFrame(
-      ICorDebugNativeFrame2 *pPotentialParentFrame, BOOL *pIsParent);
-  HRESULT STDMETHODCALLTYPE GetStackParameterSize(ULONG32 *pSize);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbNativeFrame"; }
+  ~CordbNativeFrame();
+  HRESULT GetIP(ULONG32 *pnOffset);
+  HRESULT SetIP(ULONG32 nOffset);
+  HRESULT GetRegisterSet(ICorDebugRegisterSet **ppRegisters);
+  HRESULT GetLocalRegisterValue(CorDebugRegister reg, ULONG cbSigBlob,
+                                PCCOR_SIGNATURE pvSigBlob,
+                                ICorDebugValue **ppValue);
+  HRESULT GetLocalDoubleRegisterValue(CorDebugRegister highWordReg,
+                                      CorDebugRegister lowWordReg,
+                                      ULONG cbSigBlob,
+                                      PCCOR_SIGNATURE pvSigBlob,
+                                      ICorDebugValue **ppValue);
+  HRESULT GetLocalMemoryValue(CORDB_ADDRESS address, ULONG cbSigBlob,
+                              PCCOR_SIGNATURE pvSigBlob,
+                              ICorDebugValue **ppValue);
+  HRESULT GetLocalRegisterMemoryValue(CorDebugRegister highWordReg,
+                                      CORDB_ADDRESS lowWordAddress,
+                                      ULONG cbSigBlob,
+                                      PCCOR_SIGNATURE pvSigBlob,
+                                      ICorDebugValue **ppValue);
+  HRESULT GetLocalMemoryRegisterValue(CORDB_ADDRESS highWordAddress,
+                                      CorDebugRegister lowWordRegister,
+                                      ULONG cbSigBlob,
+                                      PCCOR_SIGNATURE pvSigBlob,
+                                      ICorDebugValue **ppValue);
+  HRESULT CanSetIP(ULONG32 nOffset);
+  HRESULT GetChain(ICorDebugChain **ppChain);
+  HRESULT GetCode(ICorDebugCode **ppCode);
+  HRESULT GetFunction(ICorDebugFunction **ppFunction);
+  HRESULT GetFunctionToken(mdMethodDef *pToken);
+  HRESULT GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd);
+  HRESULT GetCaller(ICorDebugFrame **ppFrame);
+  HRESULT GetCallee(ICorDebugFrame **ppFrame);
+  HRESULT CreateStepper(ICorDebugStepper **ppStepper);
+  HRESULT QueryInterface(REFIID riid, void **ppvObject);
+
+  HRESULT IsChild(BOOL *pIsChild);
+  HRESULT IsMatchingParentFrame(ICorDebugNativeFrame2 *pPotentialParentFrame,
+                                BOOL *pIsParent);
+  HRESULT GetStackParameterSize(ULONG32 *pSize);
 };
 
 class CordbFrameEnum : public CordbBaseMono, public ICorDebugFrameEnum {
+  CordbThread *m_pThread;
+  int m_nFrames;
+  CordbNativeFrame **m_ppFrames;
+
 public:
-  CordbThread *thread;
-  int nframes;
-  CordbNativeFrame **frames;
   CordbFrameEnum(Connection *conn, CordbThread *thread);
-  HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugFrame *frames[],
-                                 ULONG *pceltFetched);
-  HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
-  HRESULT STDMETHODCALLTYPE Reset(void);
-  HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum **ppEnum);
-  HRESULT STDMETHODCALLTYPE GetCount(ULONG *pcelt);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbFrameEnum"; }
+  ~CordbFrameEnum();
+  HRESULT Next(ULONG celt, ICorDebugFrame *frames[], ULONG *pceltFetched);
+  HRESULT Skip(ULONG celt);
+  HRESULT Reset(void);
+  HRESULT Clone(ICorDebugEnum **ppEnum);
+  HRESULT GetCount(ULONG *pcelt);
+  HRESULT QueryInterface(REFIID riid, void **ppvObject);
 };
 
 #endif

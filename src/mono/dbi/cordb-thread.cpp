@@ -20,10 +20,31 @@ using namespace std;
 CordbThread::CordbThread(Connection *conn, CordbProcess *ppProcess,
                          long thread_id)
     : CordbBaseMono(conn) {
-  this->ppProcess = ppProcess;
-  this->thread_id = thread_id;
-  stepper = NULL;
-  registerset = NULL;
+  this->m_pProcess = ppProcess;
+  this->m_threadId = thread_id;
+  m_pStepper = NULL;
+  m_pRegisterSet = NULL;
+  m_pCurrentFrame = NULL;
+  m_pBlockingObject = NULL;
+  ppProcess->AddThread(this);
+}
+
+CordbThread::~CordbThread() {
+  if (m_pCurrentFrame)
+    m_pCurrentFrame->InternalRelease();
+  if (m_pBlockingObject)
+    m_pBlockingObject->InternalRelease();
+  if (m_pRegisterSet)
+    m_pRegisterSet->InternalRelease();
+  if (m_pStepper)
+    m_pStepper->InternalRelease();
+}
+
+void CordbThread::SetRegisterSet(CordbRegisterSet *rs) {
+  if (m_pRegisterSet != NULL)
+    m_pRegisterSet->InternalRelease();
+  m_pRegisterSet = rs;
+  m_pRegisterSet->InternalAddRef();
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::HasUnhandledException(void) {
@@ -33,65 +54,62 @@ HRESULT STDMETHODCALLTYPE CordbThread::HasUnhandledException(void) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetBlockingObjects(
-    /* [out] */ ICorDebugBlockingObjectEnum **ppBlockingObjectEnum) {
+    ICorDebugBlockingObjectEnum **ppBlockingObjectEnum) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - GetBlockingObjects - IMPLEMENTED\n"));
-  CordbBlockingObjectEnum *blockingObject = new CordbBlockingObjectEnum(conn);
-  *ppBlockingObjectEnum =
-      static_cast<ICorDebugBlockingObjectEnum *>(blockingObject);
-
+  if (m_pBlockingObject == NULL) {
+    m_pBlockingObject = new CordbBlockingObjectEnum(conn);
+    m_pBlockingObject->InternalAddRef();
+  }
+  m_pBlockingObject->QueryInterface(IID_ICorDebugBlockingObjectEnum,
+                                    (void **)ppBlockingObjectEnum);
   return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetCurrentCustomDebuggerNotification(
-    /* [out] */ ICorDebugValue **ppNotificationObject) {
+    ICorDebugValue **ppNotificationObject) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetCurrentCustomDebuggerNotification - NOT "
        "IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::CreateStackWalk(
-    /* [out] */ ICorDebugStackWalk **ppStackWalk) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::CreateStackWalk(ICorDebugStackWalk **ppStackWalk) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - CreateStackWalk - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetActiveInternalFrames(
-    /* [in] */ ULONG32 cInternalFrames,
-    /* [out] */ ULONG32 *pcInternalFrames,
-    /* [length_is][size_is][out][in] */
+    ULONG32 cInternalFrames, ULONG32 *pcInternalFrames,
     ICorDebugInternalFrame2 *ppInternalFrames[]) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetActiveInternalFrames - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFunctions(
-    /* [in] */ ULONG32 cFunctions,
-    /* [out] */ ULONG32 *pcFunctions,
-    /* [length_is][size_is][out][in] */ COR_ACTIVE_FUNCTION pFunctions[]) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetActiveFunctions(ULONG32 cFunctions, ULONG32 *pcFunctions,
+                                COR_ACTIVE_FUNCTION pFunctions[]) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetActiveFunctions - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetConnectionID(
-    /* [out] */ CONNID *pdwConnectionId) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetConnectionID(CONNID *pdwConnectionId) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetConnectionID - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetTaskID(
-    /* [out] */ TASKID *pTaskId) {
+HRESULT STDMETHODCALLTYPE CordbThread::GetTaskID(TASKID *pTaskId) {
   LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetTaskID - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetVolatileOSThreadID(
-    /* [out] */ DWORD *pdwTid) {
+HRESULT STDMETHODCALLTYPE CordbThread::GetVolatileOSThreadID(DWORD *pdwTid) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetVolatileOSThreadID - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
@@ -99,57 +117,54 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetVolatileOSThreadID(
 
 HRESULT STDMETHODCALLTYPE CordbThread::InterceptCurrentException(
 
-    /* [in] */ ICorDebugFrame *pFrame) {
+    ICorDebugFrame *pFrame) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - InterceptCurrentException - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetProcess(
-    /* [out] */ ICorDebugProcess **ppProcess) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetProcess(ICorDebugProcess **ppProcess) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetProcess - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+  return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetID(
-    /* [out] */ DWORD *pdwThreadId) {
-  *pdwThreadId = thread_id;
+HRESULT STDMETHODCALLTYPE CordbThread::GetID(DWORD *pdwThreadId) {
+  *pdwThreadId = GetThreadId();
   LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetID - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetHandle(
-    /* [out] */ HTHREAD *phThreadHandle) {
+HRESULT STDMETHODCALLTYPE CordbThread::GetHandle(HTHREAD *phThreadHandle) {
   LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetHandle - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetAppDomain(
-    /* [out] */ ICorDebugAppDomain **ppAppDomain) {
-  *ppAppDomain =
-      static_cast<ICorDebugAppDomain *>(this->conn->pCorDebugAppDomain);
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetAppDomain(ICorDebugAppDomain **ppAppDomain) {
+  conn->GetCurrentAppDomain()->QueryInterface(IID_ICorDebugAppDomain,
+                                              (void **)ppAppDomain);
   LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetAppDomain - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::SetDebugState(
-    /* [in] */ CorDebugThreadState state) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::SetDebugState(CorDebugThreadState state) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - SetDebugState - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetDebugState(
-    /* [out] */ CorDebugThreadState *pState) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetDebugState(CorDebugThreadState *pState) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetDebugState - NOT IMPLEMENTED\n"));
   *pState = THREAD_RUN;
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetUserState(
-    /* [out] */ CorDebugUserState *pState) {
+HRESULT STDMETHODCALLTYPE CordbThread::GetUserState(CorDebugUserState *pState) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetUserState - NOT IMPLEMENTED\n"));
 
@@ -157,8 +172,8 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetUserState(
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetCurrentException(
-    /* [out] */ ICorDebugValue **ppExceptionObject) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetCurrentException(ICorDebugValue **ppExceptionObject) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - GetCurrentException - IMPLEMENTED\n"));
 
@@ -171,96 +186,94 @@ HRESULT STDMETHODCALLTYPE CordbThread::ClearCurrentException(void) {
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::CreateStepper(
-    /* [out] */ ICorDebugStepper **ppStepper) {
-  CordbStepper *stepper = new CordbStepper(conn, this);
-  this->stepper = stepper;
-  *ppStepper = static_cast<ICorDebugStepper *>(stepper);
+HRESULT STDMETHODCALLTYPE
+CordbThread::CreateStepper(ICorDebugStepper **ppStepper) {
+  if (m_pStepper)
+    m_pStepper->InternalRelease();
+  m_pStepper = new CordbStepper(conn, this);
+  m_pStepper->InternalAddRef();
+  m_pStepper->QueryInterface(IID_ICorDebugStepper, (void **)ppStepper);
 
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - CreateStepper - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::EnumerateChains(
-    /* [out] */ ICorDebugChainEnum **ppChains) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::EnumerateChains(ICorDebugChainEnum **ppChains) {
   CordbChainEnum *pChains = new CordbChainEnum(conn, this);
+  pChains->AddRef();
   *ppChains = static_cast<ICorDebugChainEnum *>(pChains);
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - EnumerateChains - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetActiveChain(
-    /* [out] */ ICorDebugChain **ppChain) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetActiveChain(ICorDebugChain **ppChain) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbThread - GetActiveChain - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFrame(
-    /* [out] */ ICorDebugFrame **ppFrame) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetActiveFrame(ICorDebugFrame **ppFrame) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - GetActiveFrame - IMPLEMENTED\n"));
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread_id);
+  m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
   m_dbgprot_buffer_add_int(&localbuf, 0);
   m_dbgprot_buffer_add_int(&localbuf, -1);
 
-  int cmdId = this->conn->send_event(
+  int cmdId = this->conn->SendEvent(
       MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  int nframes = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  int nframes = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
   if (nframes > 0) {
-    int frameid =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int methodId =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int il_offset =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int flags =
-        m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    CordbNativeFrame *frame =
+    int frameid = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int methodId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int il_offset = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int flags = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+    if (m_pCurrentFrame)
+      m_pCurrentFrame->InternalRelease();
+    m_pCurrentFrame =
         new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, this);
-    *ppFrame = static_cast<ICorDebugFrame *>(frame);
+    m_pCurrentFrame->InternalAddRef();
+    m_pCurrentFrame->QueryInterface(IID_ICorDebugFrame, (void **)ppFrame);
   }
-  registerset = new CordbRegisteSet(conn, 0, 0);
+  SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
 
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetRegisterSet(
-    /* [out] */ ICorDebugRegisterSet **ppRegisters) {
+HRESULT STDMETHODCALLTYPE
+CordbThread::GetRegisterSet(ICorDebugRegisterSet **ppRegisters) {
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbThread - GetRegisterSet - IMPLEMENTED\n"));
 
-  if (!registerset)
-    registerset = new CordbRegisteSet(conn, 0, 0);
-
-  *ppRegisters = static_cast<ICorDebugRegisterSet *>(registerset);
+  if (!m_pRegisterSet)
+    SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
+  m_pRegisterSet->AddRef();
+  *ppRegisters = static_cast<ICorDebugRegisterSet *>(m_pRegisterSet);
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::CreateEval(
-    /* [out] */ ICorDebugEval **ppEval) {
+HRESULT STDMETHODCALLTYPE CordbThread::CreateEval(ICorDebugEval **ppEval) {
   LOG((LF_CORDB, LL_INFO1000000, "CordbThread - CreateEval - IMPLEMENTED\n"));
   CordbEval *eval = new CordbEval(this->conn, this);
   eval->QueryInterface(IID_ICorDebugEval, (void **)ppEval);
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbThread::GetObject(
-    /* [out] */ ICorDebugValue **ppObject) {
+HRESULT STDMETHODCALLTYPE CordbThread::GetObject(ICorDebugValue **ppObject) {
   LOG((LF_CORDB, LL_INFO100000, "CordbThread - GetObject - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::QueryInterface(
-    /* [in] */ REFIID id,
-    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppInterface) {
+    REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppInterface) {
   if (id == IID_ICorDebugThread) {
     *ppInterface = static_cast<ICorDebugThread *>(this);
   } else if (id == IID_ICorDebugThread2) {
@@ -276,9 +289,6 @@ HRESULT STDMETHODCALLTYPE CordbThread::QueryInterface(
     *ppInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbThread::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbThread::Release(void) { return 0; }

@@ -4,6 +4,7 @@
 // File: CORDB-EVAL.CPP
 //
 
+#include <cordb-appdomain.h>
 #include <cordb-eval.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
@@ -19,23 +20,30 @@
 
 CordbEval::CordbEval(Connection *conn, CordbThread *thread)
     : CordbBaseMono(conn) {
-  this->thread = thread;
-  ppValue = NULL;
-  cmdId = -1;
+  this->m_pThread = thread;
+  if (thread)
+    thread->InternalAddRef();
+  m_pValue = NULL;
+  m_commandId = -1;
 }
 
+CordbEval::~CordbEval() {
+  if (m_pThread)
+    m_pThread->InternalRelease();
+}
 HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
     ICorDebugFunction *pFunction, ULONG32 nTypeArgs,
     ICorDebugType *ppTypeArgs[], ULONG32 nArgs, ICorDebugValue *ppArgs[]) {
-  this->thread->ppProcess->Stop(false);
+  conn->GetProcess()->Stop(false);
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbEval - CallParameterizedFunction - IMPLEMENTED\n"));
 
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
   m_dbgprot_buffer_add_int(&localbuf, 1);
-  m_dbgprot_buffer_add_int(&localbuf, ((CordbFunction *)pFunction)->id);
+  m_dbgprot_buffer_add_int(&localbuf,
+                           ((CordbFunction *)pFunction)->GetDebuggerId());
   m_dbgprot_buffer_add_int(&localbuf, nArgs);
   for (ULONG32 i = 0; i < nArgs; i++) {
     CorElementType ty;
@@ -70,24 +78,23 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(
       m_dbgprot_buffer_add_id(&localbuf, cc->intValue);
       break;
     default:
-        return E_NOTIMPL;
+      return E_NOTIMPL;
     }
   }
-  cmdId = conn->send_event(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_INVOKE_METHOD,
-                           &localbuf);
+  m_commandId = conn->SendEvent(MDBGPROT_CMD_SET_VM,
+                                MDBGPROT_CMD_VM_INVOKE_METHOD, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
-  conn->pending_eval->Append(this);
+  conn->GetProcess()->AddPendingEval(this);
   return S_OK;
 }
 
 void CordbEval::EvalComplete(MdbgProtBuffer *bAnswer) {
 
-  m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-  CordbObjectValue::CreateCordbValue(conn, bAnswer, &ppValue);
-  conn->ppCordb->pCallback->EvalComplete(
-      static_cast<ICorDebugAppDomain*>(thread->ppProcess->appdomains->Get(0)),
-      static_cast<ICorDebugThread *>(thread),
-      static_cast<ICorDebugEval *>(this));
+  m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
+  CordbObjectValue::CreateCordbValue(conn, bAnswer, &m_pValue);
+
+  conn->GetCordb()->GetCallback()->EvalComplete(
+      conn->GetProcess()->GetCurrentAppDomain(), m_pThread, this);
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -122,16 +129,16 @@ CordbEval::NewParameterizedArray(ICorDebugType *pElementType, ULONG32 rank,
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
                                                          UINT uiLength) {
-  this->thread->ppProcess->Stop(false);
+  conn->GetProcess()->Stop(false);
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_THREAD,
-                               MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
+  m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD,
+                              MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  int domainId = m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  int domainId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
 
   LPSTR szString;
   UTF8STR(string, szString);
@@ -139,10 +146,11 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string,
   m_dbgprot_buffer_init(&localbuf, 128);
   m_dbgprot_buffer_add_id(&localbuf, domainId);
   m_dbgprot_buffer_add_string(&localbuf, szString);
-  this->cmdId =
-      conn->send_event(MDBGPROT_CMD_SET_APPDOMAIN,
-                       MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
-  conn->pending_eval->Append(this);
+  this->m_commandId =
+      conn->SendEvent(MDBGPROT_CMD_SET_APPDOMAIN,
+                      MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
+  m_dbgprot_buffer_free(&localbuf);
+  conn->GetProcess()->AddPendingEval(this);
   return S_OK;
 }
 
@@ -150,10 +158,6 @@ HRESULT STDMETHODCALLTYPE CordbEval::RudeAbort(void) {
   LOG((LF_CORDB, LL_INFO100000, "CordbEval - RudeAbort - NOT IMPLEMENTED\n"));
   return S_OK;
 }
-
-ULONG CordbEval::AddRef(void) { return 1; }
-
-ULONG CordbEval::Release(void) { return 1; }
 
 HRESULT
 CordbEval::QueryInterface(REFIID id,
@@ -168,7 +172,7 @@ CordbEval::QueryInterface(REFIID id,
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
-
+  AddRef();
   return S_OK;
 }
 
@@ -218,7 +222,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::Abort(void) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::GetResult(ICorDebugValue **ppResult) {
-  *ppResult = ppValue;
+  *ppResult = m_pValue;
   LOG((LF_CORDB, LL_INFO1000000, "CordbEval - GetResult - IMPLEMENTED\n"));
   return S_OK;
 }

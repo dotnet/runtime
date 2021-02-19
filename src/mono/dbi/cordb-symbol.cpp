@@ -21,12 +21,8 @@
 
 using namespace std;
 
-RegMeta::RegMeta(CordbAssembly *cordbAssembly, CordbModule *cordbModule) {
-  module_id = -1;
-  pCordbAssembly = cordbAssembly;
-  this->cordbModule = cordbModule;
-  token_id = 0;
-
+RegMeta::RegMeta(CordbAssembly *cordbAssembly, CordbModule *cordbModule)
+    : CordbBaseMono(NULL) {
   m_pStgdb = new CLiteWeightStgdbRW();
   ULONG32 pcchName = 0;
   cordbModule->GetName(0, &pcchName, NULL);
@@ -36,7 +32,10 @@ RegMeta::RegMeta(CordbAssembly *cordbAssembly, CordbModule *cordbModule) {
   cordbModule->GetName(pcchName, &pcchName, full_path);
 
   m_pStgdb->OpenForRead(full_path, NULL, 0, 0);
+  free(full_path);
 }
+
+RegMeta::~RegMeta() { delete m_pStgdb; }
 
 HRESULT RegMeta::EnumGenericParams(
     HCORENUM *phEnum, // [IN|OUT] Pointer to the enum.
@@ -652,12 +651,10 @@ HRESULT RegMeta::QueryInterface(REFIID riid, LPVOID *ppUnk) {
     IfFailGo(E_NOINTERFACE);
   }
 ErrExit:
+  if (hr == S_OK)
+    AddRef();
   return hr;
 }
-
-ULONG RegMeta::AddRef() { return S_OK; }
-
-ULONG RegMeta::Release() { return S_OK; }
 
 // IMetaDataImport functions
 void RegMeta::CloseEnum(HCORENUM hEnum) {

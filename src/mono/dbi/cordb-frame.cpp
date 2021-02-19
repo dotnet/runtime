@@ -16,14 +16,19 @@ using namespace std;
 
 CordbFrameEnum::CordbFrameEnum(Connection *conn, CordbThread *thread)
     : CordbBaseMono(conn) {
-  this->thread = thread;
+  this->m_pThread = thread;
+  m_nFrames = 0;
+  m_ppFrames = NULL;
 }
+
+CordbFrameEnum::~CordbFrameEnum() { Reset(); }
 
 HRESULT STDMETHODCALLTYPE CordbFrameEnum::Next(ULONG celt,
                                                ICorDebugFrame *frames[],
                                                ULONG *pceltFetched) {
-  for (int i = 0; i < nframes; i++) {
-    frames[i] = this->frames[i];
+  for (int i = 0; i < m_nFrames; i++) {
+    this->m_ppFrames[i]->QueryInterface(IID_ICorDebugFrame,
+                                        (void **)&frames[i]);
   }
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrameEnum - Next - IMPLEMENTED\n"));
   return S_OK;
@@ -35,8 +40,14 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::Skip(ULONG celt) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbFrameEnum::Reset(void) {
-  LOG((LF_CORDB, LL_INFO100000, "CordbFrameEnum - Reset - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+  for (int i = 0; i < m_nFrames; i++) {
+    this->m_ppFrames[i]->InternalRelease();
+  }
+  m_nFrames = 0;
+  if (m_ppFrames)
+    free(m_ppFrames);
+  m_ppFrames = NULL;
+  return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE CordbFrameEnum::Clone(ICorDebugEnum **ppEnum) {
@@ -45,40 +56,40 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::Clone(ICorDebugEnum **ppEnum) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG *pcelt) {
+  Reset();
+
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrameEnum - GetCount - IMPLEMENTED\n"));
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
+  m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
   m_dbgprot_buffer_add_int(&localbuf, 0);
   m_dbgprot_buffer_add_int(&localbuf, -1);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_THREAD,
-                               MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD,
+                              MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  nframes = m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-  frames = (CordbNativeFrame **)malloc(sizeof(CordbNativeFrame *) * nframes);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  m_nFrames = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+  m_ppFrames =
+      (CordbNativeFrame **)malloc(sizeof(CordbNativeFrame *) * m_nFrames);
 
-  for (int i = 0; i < nframes; i++) {
-    int frameid =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int methodId =
-        m_dbgprot_decode_id(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int il_offset =
-        m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
-    int flags =
-        m_dbgprot_decode_byte(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  for (int i = 0; i < m_nFrames; i++) {
+    int frameid = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int methodId = m_dbgprot_decode_id(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int il_offset = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
+    int flags = m_dbgprot_decode_byte(bAnswer->p, &bAnswer->p, bAnswer->end);
 
-    CordbNativeFrame *frame =
-        new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, thread);
-    frames[i] = frame;
+    CordbNativeFrame *frame = new CordbNativeFrame(conn, frameid, methodId,
+                                                   il_offset, flags, m_pThread);
+    frame->InternalAddRef();
+    m_ppFrames[i] = frame;
   }
 
-  if (!thread->registerset)
-    thread->registerset = new CordbRegisteSet(conn, 0, 0);
+  if (!m_pThread->GetStepper())
+    m_pThread->SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
 
-  *pcelt = nframes;
+  *pcelt = m_nFrames;
   return S_OK;
 }
 
@@ -89,55 +100,46 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::QueryInterface(REFIID riid,
   return E_NOTIMPL;
 }
 
-ULONG STDMETHODCALLTYPE CordbFrameEnum::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbFrameEnum::Release(void) { return 0; }
-
 CordbJITILFrame::CordbJITILFrame(Connection *conn, int frameid, int methodId,
                                  int il_offset, int flags, CordbThread *thread)
     : CordbBaseMono(conn) {
-  this->frameid = frameid;
-  this->methodId = methodId;
-  this->il_offset = il_offset;
-  this->flags = flags;
-  this->thread = thread;
+  this->m_debuggerFrameId = frameid;
+  this->m_debuggerMethodId = methodId;
+  this->m_ilOffset = il_offset;
+  this->m_flags = flags;
+  this->m_pThread = thread;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetChain(
-    /* [out] */ ICorDebugChain **ppChain) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetChain(ICorDebugChain **ppChain) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - GetChain - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCode(
-    /* [out] */ ICorDebugCode **ppCode) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCode(ICorDebugCode **ppCode) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - GetCode - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetFunction(
-    /* [out] */ ICorDebugFunction **ppFunction) {
-  CordbFunction *func = thread->ppProcess->cordb->findFunction(methodId);
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::GetFunction(ICorDebugFunction **ppFunction) {
+  CordbFunction *func = conn->GetProcess()->FindFunction(m_debuggerMethodId);
   if (!func) {
-    func = new CordbFunction(conn, 0, methodId, NULL);
-    thread->ppProcess->cordb->functions->Append(func);
+    func = new CordbFunction(conn, 0, m_debuggerMethodId, NULL);
   }
-
-  *ppFunction = static_cast<ICorDebugFunction *>(func);
+  func->QueryInterface(IID_ICorDebugFunction, (void **)ppFunction);
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrame - GetFunction - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetFunctionToken(
-    /* [out] */ mdMethodDef *pToken) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::GetFunctionToken(mdMethodDef *pToken) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - GetFunctionToken - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackRange(
-    /* [out] */ CORDB_ADDRESS *pStart,
-    /* [out] */ CORDB_ADDRESS *pEnd) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackRange(CORDB_ADDRESS *pStart,
+                                                         CORDB_ADDRESS *pEnd) {
   *pStart = 4096;
   *pEnd = 8192;
   LOG((LF_CORDB, LL_INFO100000,
@@ -145,28 +147,25 @@ HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackRange(
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCaller(
-    /* [out] */ ICorDebugFrame **ppFrame) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCaller(ICorDebugFrame **ppFrame) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - GetCaller - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCallee(
-    /* [out] */ ICorDebugFrame **ppFrame) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCallee(ICorDebugFrame **ppFrame) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - GetCallee - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::CreateStepper(
-    /* [out] */ ICorDebugStepper **ppStepper) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::CreateStepper(ICorDebugStepper **ppStepper) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - CreateStepper - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbJITILFrame::QueryInterface(
-    /* [in] */ REFIID id,
-    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface) {
+    REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface) {
   if (id == IID_ICorDebugILFrame) {
     *pInterface = static_cast<ICorDebugILFrame *>(this);
   } else if (id == IID_ICorDebugILFrame2) {
@@ -179,6 +178,7 @@ HRESULT STDMETHODCALLTYPE CordbJITILFrame::QueryInterface(
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
 
@@ -218,107 +218,99 @@ HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetLocalVariableEx(
 
 HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetCodeEx(ILCodeKind flags,
                                                      ICorDebugCode **ppCode) {
-  if (flags == ILCODE_REJIT_IL) {
+  if (flags == ILCODE_REJIT_IL)
     *ppCode = NULL;
-  } else {
-    CordbCode *code = new CordbCode(conn, NULL);
-    *ppCode = static_cast<ICorDebugCode *>(code);
+  else {
+    ICorDebugFunction *ppFunction;
+    GetFunction(&ppFunction);
+    ppFunction->GetILCode(ppCode);
+    ppFunction->Release();
   }
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbJITILFrame - GetCodeEx - IMPLEMENTED\n"));
   return S_OK;
 }
 
-ULONG STDMETHODCALLTYPE CordbJITILFrame::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbJITILFrame::Release(void) { return 0; }
-
 HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetIP(
-    /* [out] */ ULONG32 *pnOffset,
-    /* [out] */ CorDebugMappingResult *pMappingResult) {
-  *pnOffset = il_offset;
+    ULONG32 *pnOffset, CorDebugMappingResult *pMappingResult) {
+  *pnOffset = m_ilOffset;
   *pMappingResult = MAPPING_EXACT;
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrame - GetIP - IMPLEMENTED\n"));
   return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::SetIP(
-    /* [in] */ ULONG32 nOffset) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::SetIP(ULONG32 nOffset) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - SetIP - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::EnumerateLocalVariables(
-    /* [out] */ ICorDebugValueEnum **ppValueEnum) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::EnumerateLocalVariables(ICorDebugValueEnum **ppValueEnum) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - EnumerateLocalVariables - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetLocalVariable(
-    /* [in] */ DWORD dwIndex,
-    /* [out] */ ICorDebugValue **ppValue) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue) {
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
-  m_dbgprot_buffer_add_id(&localbuf, frameid);
+  m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerFrameId);
   m_dbgprot_buffer_add_int(&localbuf, 1);
   m_dbgprot_buffer_add_int(&localbuf, dwIndex);
 
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_STACK_FRAME,
-                               MDBGPROT_CMD_STACK_FRAME_GET_VALUES, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STACK_FRAME,
+                              MDBGPROT_CMD_STACK_FRAME_GET_VALUES, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
   return CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::EnumerateArguments(
-    /* [out] */ ICorDebugValueEnum **ppValueEnum) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::EnumerateArguments(ICorDebugValueEnum **ppValueEnum) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - EnumerateArguments - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetArgument(
-    /* [in] */ DWORD dwIndex,
-    /* [out] */ ICorDebugValue **ppValue) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::GetArgument(DWORD dwIndex, ICorDebugValue **ppValue) {
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
-  m_dbgprot_buffer_add_id(&localbuf, thread->thread_id);
-  m_dbgprot_buffer_add_id(&localbuf, frameid);
+  m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
+  m_dbgprot_buffer_add_id(&localbuf, m_debuggerFrameId);
 
   m_dbgprot_buffer_add_int(&localbuf, dwIndex);
-  int cmdId =
-      conn->send_event(MDBGPROT_CMD_SET_STACK_FRAME,
-                       MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENT, &localbuf);
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_STACK_FRAME,
+                              MDBGPROT_CMD_STACK_FRAME_GET_ARGUMENT, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
   LOG((LF_CORDB, LL_INFO1000000, "CordbFrame - GetArgument - IMPLEMENTED\n"));
   return CordbObjectValue::CreateCordbValue(conn, bAnswer, ppValue);
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackDepth(
-    /* [out] */ ULONG32 *pDepth) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackDepth(ULONG32 *pDepth) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - GetStackDepth - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackValue(
-    /* [in] */ DWORD dwIndex,
-    /* [out] */ ICorDebugValue **ppValue) {
+HRESULT STDMETHODCALLTYPE
+CordbJITILFrame::GetStackValue(DWORD dwIndex, ICorDebugValue **ppValue) {
   LOG((LF_CORDB, LL_INFO100000,
        "CordbFrame - GetStackValue - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbJITILFrame::CanSetIP(
-    /* [in] */ ULONG32 nOffset) {
+HRESULT STDMETHODCALLTYPE CordbJITILFrame::CanSetIP(ULONG32 nOffset) {
   LOG((LF_CORDB, LL_INFO100000, "CordbFrame - CanSetIP - NOT IMPLEMENTED\n"));
   return E_NOTIMPL;
 }
+
+CordbNativeFrame::~CordbNativeFrame() { m_JITILFrame->InternalRelease(); }
 
 CordbNativeFrame::CordbNativeFrame(Connection *conn, int frameid, int methodId,
                                    int il_offset, int flags,
@@ -326,7 +318,8 @@ CordbNativeFrame::CordbNativeFrame(Connection *conn, int frameid, int methodId,
     : CordbBaseMono(conn) {
   m_JITILFrame =
       new CordbJITILFrame(conn, frameid, methodId, il_offset, flags, thread);
-  this->thread = thread;
+  m_JITILFrame->InternalAddRef();
+  this->m_pThread = thread;
 }
 
 HRESULT STDMETHODCALLTYPE CordbNativeFrame::GetIP(ULONG32 *pnOffset) {
@@ -343,7 +336,7 @@ HRESULT STDMETHODCALLTYPE CordbNativeFrame::SetIP(ULONG32 nOffset) {
 
 HRESULT STDMETHODCALLTYPE
 CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters) {
-  return thread->GetRegisterSet(ppRegisters);
+  return m_pThread->GetRegisterSet(ppRegisters);
 }
 
 HRESULT STDMETHODCALLTYPE CordbNativeFrame::GetLocalRegisterValue(
@@ -399,8 +392,10 @@ HRESULT STDMETHODCALLTYPE CordbNativeFrame::GetChain(ICorDebugChain **ppChain) {
 }
 
 HRESULT STDMETHODCALLTYPE CordbNativeFrame::GetCode(ICorDebugCode **ppCode) {
-  CordbCode *code = new CordbCode(conn, NULL);
-  *ppCode = static_cast<ICorDebugCode *>(code);
+  ICorDebugFunction *ppFunction;
+  m_JITILFrame->GetFunction(&ppFunction);
+  ppFunction->GetILCode(ppCode);
+  ppFunction->Release();
   LOG((LF_CORDB, LL_INFO100000, "CordbJITILFrame - GetCodeEx - IMPLEMENTED\n"));
   return S_OK;
 }
@@ -465,13 +460,9 @@ HRESULT STDMETHODCALLTYPE CordbNativeFrame::QueryInterface(REFIID id,
       return E_NOINTERFACE;
     }
   }
-
+  AddRef();
   return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbNativeFrame::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbNativeFrame::Release(void) { return 0; }
 
 HRESULT STDMETHODCALLTYPE CordbNativeFrame::IsChild(BOOL *pIsChild) {
   LOG((LF_CORDB, LL_INFO100000,

@@ -4,8 +4,8 @@
 // File: CORDB-BLOCKING-OBJ.CPP
 //
 
-#include <cordb.h>
 #include <cordb-blocking-obj.h>
+#include <cordb.h>
 
 CordbBlockingObjectEnum::CordbBlockingObjectEnum(Connection *conn)
     : CordbBaseMono(conn) {}
@@ -42,12 +42,13 @@ HRESULT STDMETHODCALLTYPE CordbBlockingObjectEnum::GetCount(ULONG *pcelt) {
 }
 
 HRESULT STDMETHODCALLTYPE
-CordbBlockingObjectEnum::QueryInterface(REFIID riid, void **ppvObject) {
+CordbBlockingObjectEnum::QueryInterface(REFIID id, void **ppInterface) {
+  if (id == IID_ICorDebugBlockingObjectEnum)
+    *ppInterface = (ICorDebugBlockingObjectEnum *)this;
+  else if (id == IID_IUnknown)
+    *ppInterface = (IUnknown *)(ICorDebugBlockingObjectEnum *)this;
   LOG((LF_CORDB, LL_INFO100000,
-       "CordbBlockingObjectEnum - QueryInterface - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+       "CordbBlockingObjectEnum - QueryInterface - IMPLEMENTED\n"));
+  AddRef();
+  return S_OK;
 }
-
-ULONG STDMETHODCALLTYPE CordbBlockingObjectEnum::AddRef(void) { return 0; }
-
-ULONG STDMETHODCALLTYPE CordbBlockingObjectEnum::Release(void) { return 0; }

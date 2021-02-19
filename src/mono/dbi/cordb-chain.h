@@ -10,53 +10,53 @@
 #include <cordb.h>
 
 class CordbChainEnum : public CordbBaseMono, public ICorDebugChainEnum {
+  CordbThread *m_pThread;
+
 public:
-  CordbThread *thread;
   CordbChainEnum(Connection *conn, CordbThread *thread);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE Skip(/* [in] */ ULONG celt);
-  HRESULT STDMETHODCALLTYPE Reset(void);
-  HRESULT STDMETHODCALLTYPE Clone(/* [out] */ ICorDebugEnum **ppEnum);
-  HRESULT STDMETHODCALLTYPE GetCount(/* [out] */ ULONG *pcelt);
-  HRESULT STDMETHODCALLTYPE
-  Next(/* [in] */ ULONG celt,
-       /* [length_is][size_is][out] */ ICorDebugChain *chains[],
-       /* [out] */ ULONG *pceltFetched);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbChainEnum"; }
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+
+  HRESULT Skip(ULONG celt);
+  HRESULT Reset(void);
+  HRESULT Clone(ICorDebugEnum **ppEnum);
+  HRESULT GetCount(ULONG *pcelt);
+  HRESULT
+  Next(ULONG celt, ICorDebugChain *chains[], ULONG *pceltFetched);
 };
 
 class CordbChain : public CordbBaseMono, public ICorDebugChain {
+  CordbThread *m_pThread;
+  CorDebugChainReason m_chainReason;
+  bool m_isManaged;
+
 public:
-  CordbThread *thread;
-  CorDebugChainReason chain_reason;
-  bool is_managed;
   CordbChain(Connection *conn, CordbThread *thread,
              CorDebugChainReason chain_reason, bool is_managed);
-  HRESULT STDMETHODCALLTYPE GetThread(/* [out] */ ICorDebugThread **ppThread);
-  HRESULT STDMETHODCALLTYPE GetStackRange(/* [out] */ CORDB_ADDRESS *pStart,
-                                          /* [out] */ CORDB_ADDRESS *pEnd);
-  HRESULT STDMETHODCALLTYPE
-  GetContext(/* [out] */ ICorDebugContext **ppContext);
-  HRESULT STDMETHODCALLTYPE GetCaller(/* [out] */ ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE GetCallee(/* [out] */ ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE GetPrevious(/* [out] */ ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE GetNext(/* [out] */ ICorDebugChain **ppChain);
-  HRESULT STDMETHODCALLTYPE IsManaged(/* [out] */ BOOL *pManaged);
-  HRESULT STDMETHODCALLTYPE
-  EnumerateFrames(/* [out] */ ICorDebugFrameEnum **ppFrames);
-  HRESULT STDMETHODCALLTYPE
-  GetActiveFrame(/* [out] */ ICorDebugFrame **ppFrame);
-  HRESULT STDMETHODCALLTYPE
-  GetRegisterSet(/* [out] */ ICorDebugRegisterSet **ppRegisters);
-  HRESULT STDMETHODCALLTYPE GetReason(/* [out] */ CorDebugChainReason *pReason);
-  HRESULT STDMETHODCALLTYPE
-  QueryInterface(/* [in] */ REFIID id, /* [iid_is][out] */
-                 _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
+  ULONG AddRef(void) { return (BaseAddRef()); }
+  ULONG Release(void) { return (BaseRelease()); }
+  const char *GetClassName() { return "CordbChain"; }
+  HRESULT GetThread(ICorDebugThread **ppThread);
+  HRESULT GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd);
+  HRESULT
+  GetContext(ICorDebugContext **ppContext);
+  HRESULT GetCaller(ICorDebugChain **ppChain);
+  HRESULT GetCallee(ICorDebugChain **ppChain);
+  HRESULT GetPrevious(ICorDebugChain **ppChain);
+  HRESULT GetNext(ICorDebugChain **ppChain);
+  HRESULT IsManaged(BOOL *pManaged);
+  HRESULT
+  EnumerateFrames(ICorDebugFrameEnum **ppFrames);
+  HRESULT
+  GetActiveFrame(ICorDebugFrame **ppFrame);
+  HRESULT
+  GetRegisterSet(ICorDebugRegisterSet **ppRegisters);
+  HRESULT GetReason(CorDebugChainReason *pReason);
+  HRESULT
+  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
 };
 
 #endif

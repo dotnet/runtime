@@ -8,8 +8,9 @@
 #define __SOCKET_DBI_H__
 
 class Socket {
-    int socketId;
+    long long socketId;
 public:
+    ~Socket();
     int OpenSocketAcceptConnection(const char *address, const char *port);
     void Close();
     int Receive(char *buff, int buflen);

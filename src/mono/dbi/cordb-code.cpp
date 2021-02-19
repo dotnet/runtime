@@ -15,7 +15,7 @@ using namespace std;
 
 CordbCode::CordbCode(Connection *conn, CordbFunction *func)
     : CordbBaseMono(conn) {
-  this->func = func;
+  this->m_pFunction = func;
 }
 
 HRESULT __stdcall CordbCode::IsIL(BOOL *pbIL) {
@@ -37,14 +37,13 @@ HRESULT __stdcall CordbCode::GetSize(ULONG32 *pcBytes) {
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
 
-  m_dbgprot_buffer_add_id(&localbuf, this->func->id);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
-                               MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
+  m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD,
+                              MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  int code_size =
-      m_dbgprot_decode_int(bAnswer->buf, &bAnswer->buf, bAnswer->end);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  int code_size = m_dbgprot_decode_int(bAnswer->p, &bAnswer->p, bAnswer->end);
   *pcBytes = code_size;
   LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetSize - IMPLEMENTED\n"));
   return S_OK;
@@ -54,8 +53,7 @@ HRESULT __stdcall CordbCode::CreateBreakpoint(
     ULONG32 offset, ICorDebugFunctionBreakpoint **ppBreakpoint) {
   // add it in a list to not recreate a already created breakpoint
   CordbFunctionBreakpoint *bp = new CordbFunctionBreakpoint(conn, this, offset);
-  *ppBreakpoint = static_cast<ICorDebugFunctionBreakpoint *>(bp);
-  conn->ppCordb->breakpoints->Append(bp);
+  bp->QueryInterface(IID_ICorDebugFunctionBreakpoint, (void **)ppBreakpoint);
   LOG((LF_CORDB, LL_INFO1000000,
        "CordbCode - CreateBreakpoint - IMPLEMENTED\n"));
   return S_OK;
@@ -67,16 +65,17 @@ HRESULT __stdcall CordbCode::GetCode(ULONG32 startOffset, ULONG32 endOffset,
   MdbgProtBuffer localbuf;
   m_dbgprot_buffer_init(&localbuf, 128);
 
-  m_dbgprot_buffer_add_id(&localbuf, this->func->id);
-  int cmdId = conn->send_event(MDBGPROT_CMD_SET_METHOD,
-                               MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
+  m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
+  int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD,
+                              MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
   m_dbgprot_buffer_free(&localbuf);
 
-  MdbgProtBuffer *bAnswer = conn->get_answer(cmdId);
-  uint8_t *code = m_dbgprot_decode_byte_array(bAnswer->buf, &bAnswer->buf,
-                                             bAnswer->end, (int32_t*)pcBufferSize);
+  MdbgProtBuffer *bAnswer = conn->GetAnswer(cmdId);
+  uint8_t *code = m_dbgprot_decode_byte_array(
+      bAnswer->p, &bAnswer->p, bAnswer->end, (int32_t *)pcBufferSize);
 
   memcpy(buffer, code, *pcBufferSize);
+  free(code);
   LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetCode - IMPLEMENTED\n"));
   return S_OK;
 }
@@ -112,9 +111,6 @@ HRESULT __stdcall CordbCode::QueryInterface(REFIID id, void **pInterface) {
     *pInterface = NULL;
     return E_NOINTERFACE;
   }
+  AddRef();
   return S_OK;
 }
-
-ULONG __stdcall CordbCode::AddRef(void) { return 0; }
-
-ULONG __stdcall CordbCode::Release(void) { return 0; }
