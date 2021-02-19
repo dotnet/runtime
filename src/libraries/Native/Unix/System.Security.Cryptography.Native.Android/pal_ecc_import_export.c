@@ -579,7 +579,28 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
 
     paramSpec = (*env)->NewObject(env, g_ECParameterSpecClass, g_ECParameterSpecCtor, group, G, orderBn, cofactorInt);
 
-    keyPair = CryptoNative_CreateKeyPairFromCurveParameters(paramSpec, qx, qxLength, qy, qyLength, d, dLength);
+    if ((qx && qy) || d)
+    {
+        // If we have explicit key parameters, use those.
+        keyPair = CryptoNative_CreateKeyPairFromCurveParameters(paramSpec, qx, qxLength, qy, qyLength, d, dLength);
+    }
+    else
+    {
+        // Otherwise generate a new key pair.
+        jstring ec = JSTRING("EC");
+        jobject keyPairGenerator =
+            (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, ec);
+        (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, paramSpec);
+        if (CheckJNIExceptions(env))
+        {
+            LOG_DEBUG("Failed to create curve");
+            ReleaseLRef(env, keyPairGenerator);
+            ReleaseLRef(env, ec);
+            goto error;
+        }
+
+        keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
+    }
 
     if (!keyPair)
         goto error;
