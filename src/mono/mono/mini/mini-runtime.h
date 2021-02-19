@@ -111,6 +111,12 @@ jit_mm_for_method (MonoMethod *method)
 	return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
 }
 
+static inline MonoJitMemoryManager*
+get_default_jit_mm (void)
+{
+	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+}
+
 static inline void
 jit_mm_lock (MonoJitMemoryManager *jit_mm)
 {

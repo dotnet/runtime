@@ -1338,6 +1338,7 @@ method_not_found (void)
 gpointer
 mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
+	MonoJitMemoryManager *jit_mm;
 	gpointer tramp;
 
 	error_init (error);
@@ -1360,18 +1361,20 @@ mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *e
 		}
 	}
 
-	mono_domain_lock (domain);
-	tramp = g_hash_table_lookup (domain_jit_info (domain)->jit_trampoline_hash, method);
-	mono_domain_unlock (domain);
+	jit_mm = jit_mm_for_method (method);
+
+	jit_mm_lock (jit_mm);
+	tramp = g_hash_table_lookup (jit_mm->jit_trampoline_hash, method);
+	jit_mm_unlock (jit_mm);
 	if (tramp)
 		return tramp;
 
 	tramp = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
-	
-	mono_domain_lock (domain);
-	g_hash_table_insert (domain_jit_info (domain)->jit_trampoline_hash, method, tramp);
+
+	jit_mm_lock (jit_mm);
+	g_hash_table_insert (jit_mm->jit_trampoline_hash, method, tramp);
 	UnlockedIncrement (&jit_trampolines);
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 
 	return tramp;
 }	

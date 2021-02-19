@@ -223,9 +223,12 @@ mono_get_method_from_ip (void *ip)
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
-		mono_domain_lock (domain);
-		g_hash_table_foreach (domain_jit_info (domain)->jit_trampoline_hash, find_tramp, &user_data);
-		mono_domain_unlock (domain);
+
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+		jit_mm_lock (jit_mm);
+		g_hash_table_foreach (jit_mm->jit_trampoline_hash, find_tramp, &user_data);
+		jit_mm_unlock (jit_mm);
 		if (user_data.method) {
 			char *mname = mono_method_full_name (user_data.method, TRUE);
 			res = g_strdup_printf ("<%p - JIT trampoline for %s>", ip, mname);
@@ -312,9 +315,12 @@ mono_print_method_from_ip (void *ip)
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
-		mono_domain_lock (domain);
-		g_hash_table_foreach (domain_jit_info (domain)->jit_trampoline_hash, find_tramp, &user_data);
-		mono_domain_unlock (domain);
+
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+		jit_mm_lock (jit_mm);
+		g_hash_table_foreach (jit_mm->jit_trampoline_hash, find_tramp, &user_data);
+		jit_mm_unlock (jit_mm);
 
 		if (user_data.method) {
 			char *mname = mono_method_full_name (user_data.method, TRUE);
@@ -4052,7 +4058,6 @@ mini_create_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
 
-	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
@@ -4071,6 +4076,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->mem_manager = mem_manager;
 	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jump_target_hash = g_hash_table_new (NULL, NULL);
+	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mem_manager->runtime_info = info;
 }
