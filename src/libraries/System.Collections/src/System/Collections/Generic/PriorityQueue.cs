@@ -384,17 +384,23 @@ namespace System.Collections.Generic
 
             if (_nodes.Length < capacity)
             {
-                const int GrowthFactor = 2;
-                const int MinimumElementsToGrowBy = 4;
+                // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
+                const int MaxArraySize = 0X7FEFFFFF;
+                const int GrowFactor = 2;
+                const int MinimumGrow = 4;
 
-                int newcapacity = Math.Max(_nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
+                int newcapacity = GrowFactor * _nodes.Length;
 
-                // Use the argument value if newcapacity is not large enough or has overflown.
-                // If it exceeds the maximum array length, let Array.Resize throw OutOfMemoryException.
-                if (newcapacity < capacity)
-                {
-                    newcapacity = capacity;
-                }
+                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+                if ((uint)newcapacity > MaxArraySize) newcapacity = MaxArraySize;
+
+                // Ensure minimum growth is respected.
+                newcapacity = Math.Max(newcapacity, _nodes.Length + MinimumGrow);
+
+                // If the computed capacity is still less than specified, set to the original argument.
+                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+                if (newcapacity < capacity) newcapacity = capacity;
 
                 Array.Resize(ref _nodes, newcapacity);
             }
