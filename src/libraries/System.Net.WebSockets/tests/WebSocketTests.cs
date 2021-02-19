@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
@@ -169,6 +171,33 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(count, r.Count);
             Assert.Equal(messageType, r.MessageType);
             Assert.Equal(endOfMessage, r.EndOfMessage);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(125)]
+        [InlineData(ushort.MaxValue)]
+        [InlineData(ushort.MaxValue * 2)]
+        public async Task SendUncompressedClientMessage(int messageSize)
+        {
+            var stream = new WebSocketStream();
+            using var server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true
+            });
+            using var client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions());
+
+            var message = new byte[messageSize];
+            RandomNumberGenerator.Fill(message);
+
+            await client.SendAsync(message, WebSocketMessageType.Binary, true, default);
+
+            var buffer = new byte[messageSize];
+            var result = await server.ReceiveAsync(buffer, default);
+
+            Assert.Equal(messageSize, result.Count);
+            Assert.True(result.EndOfMessage);
+            Assert.True(message.AsSpan().SequenceEqual(buffer));
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket

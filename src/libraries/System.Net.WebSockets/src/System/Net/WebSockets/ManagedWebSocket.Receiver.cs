@@ -214,7 +214,7 @@ namespace System.Net.WebSockets
                 }
 
                 if (buffer.IsEmpty)
-                    return default;
+                    return Result(count: 0);
 
                 // The number of bytes that are copied onto the provided buffer
                 int resultByteCount = 0;
@@ -274,6 +274,7 @@ namespace System.Net.WebSockets
                         return Result(ReceiveResultType.ConnectionClose);
 
                     resultByteCount += bytesRead;
+                    _lastHeader.PayloadLength -= bytesRead;
                     ApplyMask(buffer.Span.Slice(0, bytesRead));
                 }
                 else

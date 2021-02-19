@@ -61,6 +61,11 @@ namespace System.Net.WebSockets
                     content.Span.CopyTo(_buffer.GetSpan(content.Length));
                     _buffer.Advance(content.Length);
                 }
+                else
+                {
+                    _buffer.EnsureFreeCapacity(MaxMessageHeaderLength);
+                    _buffer.Advance(MaxMessageHeaderLength);
+                }
 
                 Span<byte> payload = _buffer.WrittenSpan.Slice(MaxMessageHeaderLength);
                 int headerLength = CalculateHeaderLength(payload.Length);
