@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
         /// <param name="pdbDelta">The PDB changes to be applied.</param>
         /// <exception cref="ArgumentNullException">The assembly argument is null.</exception>
         /// <exception cref="NotSupportedException">The update could not be applied.</exception>
-        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta = default)
+        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta)
         {
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
                 throw new InvalidOperationException (SR.InvalidOperation_AssemblyNotEditable);
 
 #if !FEATURE_METADATA_UPDATE
-            throw new NotSupportedException ("Method body replacement not supported in this runtime");
+            throw new NotSupportedException (SR.NotSupported_MethodBodyReplacement);
 #else
             unsafe
             {
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        internal static void ApplyUpdateSdb(Assembly assembly, byte[] metadataDelta, byte[] ilDelta, byte[]? pdbDelta = null)
+        internal static void ApplyUpdateSdb(Assembly assembly, byte[] metadataDelta, byte[] ilDelta, byte[]? pdbDelta)
         {
             ReadOnlySpan<byte> md = metadataDelta;
             ReadOnlySpan<byte> il = ilDelta;
