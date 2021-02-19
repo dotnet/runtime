@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -193,8 +192,11 @@ namespace System.Net.WebSockets.Tests
                 }
             });
 
-            Memory<byte> testData = File.ReadAllBytes(typeof(WebSocketDeflateTests).Assembly.Location).AsMemory().TrimEnd((byte)0);
+            Memory<byte> testData = new byte[ushort.MaxValue];
             Memory<byte> receivedData = new byte[testData.Length];
+
+            // Make the data incompressible to make sure that the output is larger than the input
+            RandomNumberGenerator.Fill(testData.Span);
 
             // Test it a few times with different frame sizes
             for (var i = 0; i < 10; ++i)
@@ -212,8 +214,8 @@ namespace System.Net.WebSockets.Tests
                     position += currentFrameSize;
                 }
 
+                Assert.True(testData.Length < stream.Remote.Available, "The compressed data should be bigger.");
                 Assert.Equal(testData.Length, position);
-                Assert.True(testData.Length > stream.Remote.Available, "The data must be compressed.");
 
                 // Receive the data from the client side
                 receivedData.Span.Clear();

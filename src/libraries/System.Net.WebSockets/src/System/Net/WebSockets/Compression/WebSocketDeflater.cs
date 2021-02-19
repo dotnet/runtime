@@ -43,23 +43,36 @@ namespace System.Net.WebSockets.Compression
                 payload = payload[consumed..];
             }
 
+            // There is a catch here. If the payload we're trying to compress isn't really compressable
+            // then the resulting output will be larger. And in this case although we might have processed the input
+            // more output might be available. The only way to check for this scenario is to do another deflate
+            // attempt, but without any input this time.
+            while (true)
+            {
+                Deflate(null, output.GetSpan(), out int consumed, out int written);
+                Debug.Assert(consumed == 0);
+
+                if (written == 0)
+                    break;
+
+                output.Advance(written);
+            }
+
             // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
             // At that point there will be at most a few bits left to write.
             // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
-            Span<byte> end = stackalloc byte[6];
+            Span<byte> end = output.GetSpan(6);
             int count = Flush(end);
 
-            end = end[..count];
-            Debug.Assert(end.EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
+            Debug.Assert(end[..count].EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
             if (endOfMessage)
             {
                 // As per RFC we need to remove the flush markers
-                end = end[..^4];
+                count -= 4;
             }
 
-            end.CopyTo(output.GetSpan(end.Length));
-            output.Advance(end.Length);
+            output.Advance(count);
 
             if (endOfMessage && !_persisted)
             {
