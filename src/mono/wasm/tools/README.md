@@ -1,4 +1,4 @@
-# Install wasm workload packs 
+# Install wasm workload packs
 
 `$ dotnet build src/mono/wasm/tools/create-pack.proj /p:DotnetRoot=/usr/local/share/dotnet /p:DotnetVersion=6.0.0-dev /p:RuntimeConfig=Release`
 
