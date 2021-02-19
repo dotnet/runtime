@@ -261,7 +261,7 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         if (verbose)
                         {
-                            Console.WriteLine($"Importing {type.Name} ({i + 1}/{types.Length})");
+                            Console.WriteLine(SR.Format(SR.ImportInfo, type.Name, i + 1, types.Length));
                         }
 
                         bool isObsolete = false;
