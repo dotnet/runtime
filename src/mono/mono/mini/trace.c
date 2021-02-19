@@ -161,7 +161,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 	/* FIXME: Might be better to pass the ji itself */
 	if (!ji)
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
+		ji = mini_jit_info_table_find ((char *)MONO_RETURN_ADDRESS ());
 
 	printf ("ENTER:%c %s(", frame_kind (ji), fname);
 	g_free (fname);
@@ -335,7 +335,7 @@ mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 	/* FIXME: Might be better to pass the ji itself from the JIT */
 	if (!ji)
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
+		ji = mini_jit_info_table_find ((char *)MONO_RETURN_ADDRESS ());
 
 	printf ("LEAVE:%c %s(", frame_kind (ji), fname);
 	g_free (fname);
@@ -465,7 +465,7 @@ mono_trace_tail_method (MonoMethod *method, MonoJitInfo *ji, MonoMethod *target)
 
 	/* FIXME: Might be better to pass the ji itself from the JIT */
 	if (!ji)
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_RETURN_ADDRESS (), NULL);
+		ji = mini_jit_info_table_find ((char *)MONO_RETURN_ADDRESS ());
 
 	printf ("TAILC:%c %s->%s\n", frame_kind (ji), fname, tname);
 	fflush (stdout);
