@@ -223,15 +223,15 @@ namespace System.Net.Sockets.Tests
             {
                 await SendFileAsync(client, null, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread);
                 Fletcher32 receivedChecksum = new Fletcher32();
-                byte[] receiveBuffer = new byte[100];
+                byte[] receiveBuffer = new byte[expected.Length];
                 int receivedBytes;
                 int totalReceived = 0;
-                while (totalReceived < 100 && (receivedBytes = server.Receive(receiveBuffer)) != 0)
+                while (totalReceived < expected.Length && (receivedBytes = server.Receive(receiveBuffer)) != 0)
                 {
                     totalReceived += receivedBytes;
                     receivedChecksum.Add(receiveBuffer, 0, receivedBytes);
                 }
-                Assert.Equal(100, totalReceived);
+                Assert.Equal(expected.Length, totalReceived);
                 Assert.Equal(expectedChecksum, receivedChecksum.Sum);
             }
         }
