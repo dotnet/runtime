@@ -141,12 +141,11 @@ namespace System.Collections.Generic
         /// </summary>
         public void Enqueue(TElement element, TPriority priority)
         {
-            EnsureEnoughCapacityBeforeAddingNode();
 
             // Virtually add the node at the end of the underlying array.
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
-            _size++;
+            EnsureCapacity(++_size);
             _version++;
 
             (TElement Element, TPriority Priority) item = (element, priority);
@@ -305,13 +304,15 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
+                int i = 0;
                 foreach (TElement element in elements)
                 {
-                    EnsureEnoughCapacityBeforeAddingNode();
-                    _nodes[_size++] = (element, priority);
+                    EnsureCapacityCore(i + 1);
+                    _nodes[i++] = (element, priority);
                 }
 
-                if (_size > 1)
+                _size = i;
+                if (i > 1)
                 {
                     Heapify();
                 }
@@ -352,7 +353,8 @@ namespace System.Collections.Generic
 
             if (_nodes.Length < capacity)
             {
-                SetCapacity(Math.Max(capacity, ComputeCapacityForNextGrowth()));
+                EnsureCapacityCore(capacity);
+                _version++;
             }
 
             return _nodes.Length;
@@ -367,51 +369,35 @@ namespace System.Collections.Generic
             int threshold = (int)(_nodes.Length * 0.9);
             if (_size < threshold)
             {
-                SetCapacity(_size);
+                Array.Resize(ref _nodes, _size);
+                _version++;
             }
         }
 
         /// <summary>
-        /// Ensures the queue has enough space to add another item.
+        /// Ensures that the priority queue has the specified capacity
+        /// and resizes its underlying array if necessary.
         /// </summary>
-        private void EnsureEnoughCapacityBeforeAddingNode()
+        private void EnsureCapacityCore(int capacity)
         {
-            Debug.Assert(_size <= _nodes.Length);
-            if (_size == _nodes.Length)
+            Debug.Assert(capacity >= 0);
+
+            if (_nodes.Length < capacity)
             {
-                SetCapacity(ComputeCapacityForNextGrowth());
+                const int GrowthFactor = 2;
+                const int MinimumElementsToGrowBy = 4;
+
+                int newcapacity = Math.Max(GrowthFactor * _nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
+
+                // Use the argument value if newcapacity is not large enough or has overflown.
+                // If it exceeds the maximum array length, let Array.Resize throw OutOfMemoryException.
+                if (newcapacity < capacity)
+                {
+                    newcapacity = capacity;
+                }
+
+                Array.Resize(ref _nodes, newcapacity);
             }
-        }
-
-        /// <summary>
-        /// Determines how large to size the queue when it expands.
-        /// </summary>
-        private int ComputeCapacityForNextGrowth()
-        {
-            const int GrowthFactor = 2;
-            const int MinimumElementsToGrowBy = 4;
-            const int MaxArrayLength = 0X7FEFFFFF;
-
-            int newCapacity = Math.Max(_nodes.Length * GrowthFactor, _nodes.Length + MinimumElementsToGrowBy);
-
-            // Allow the structure to grow to maximum possible capacity (~2G elements) before encountering overflow.
-            // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast.
-
-            if ((uint)newCapacity > MaxArrayLength)
-            {
-                newCapacity = MaxArrayLength;
-            }
-
-            return newCapacity;
-        }
-
-        /// <summary>
-        /// Grows or shrinks the array holding nodes. Capacity must be >= _size.
-        /// </summary>
-        private void SetCapacity(int capacity)
-        {
-            Array.Resize(ref _nodes, capacity);
-            _version++;
         }
 
         /// <summary>
