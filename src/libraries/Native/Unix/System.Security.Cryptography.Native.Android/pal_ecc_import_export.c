@@ -192,7 +192,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
     seedArray = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetSeed);
     if (seedArray)
     {
-        seedBn = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, 1, seedArray);
+        seedBn = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, seedArray);
 
         *seed = ToGRef(env, seedBn);
         *cbSeed = CryptoNative_GetBigNumBytes(*seed);

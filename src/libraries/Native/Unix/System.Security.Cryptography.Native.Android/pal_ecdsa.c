@@ -82,6 +82,7 @@ int32_t CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uin
     jbyteArray sigArray = (*env)->NewByteArray(env, siglen);
     (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
     jboolean verified = (*env)->CallBooleanMethod(env, signatureObject, g_SignatureVerify, sigArray);
+    LOG_DEBUG("Ran verification.");
     ReleaseLRef(env, sigArray);
     ON_EXCEPTION_PRINT_AND_GOTO(error);
 

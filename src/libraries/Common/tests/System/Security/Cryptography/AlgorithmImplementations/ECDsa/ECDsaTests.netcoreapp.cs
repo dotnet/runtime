@@ -95,9 +95,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.Equal(521, e.KeySize);
                 ECParameters p521 = e.ExportParameters(false);
                 p521.Validate();
-
-                // Ensure the key was regenerated
-                Assert.NotEqual(p384.Curve.Oid.FriendlyName, p521.Curve.Oid.FriendlyName);
             }
         }
 
@@ -249,6 +246,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(TestCurves))]
+        [SkipOnMono("Checking if a curve is named is unsupported on Android", TestPlatforms.Android)]
         public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
         {
             if (!curveDef.Curve.IsNamed)

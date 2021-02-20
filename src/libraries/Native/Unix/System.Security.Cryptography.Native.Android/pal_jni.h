@@ -61,6 +61,7 @@ extern jmethodID g_ivPsCtor;
 // java/math/BigInteger
 extern jclass    g_bigNumClass;
 extern jmethodID g_bigNumCtor;
+extern jmethodID g_bigNumCtorWithSign;
 extern jmethodID g_toByteArrayMethod;
 extern jmethodID g_valueOfMethod;
 extern jmethodID g_compareToMethod;

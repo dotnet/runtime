@@ -326,7 +326,7 @@ jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
     assert(len > 0);
     jbyteArray buffArray = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
-    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, 1, buffArray);
+    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, buffArray);
     (*env)->DeleteLocalRef(env, buffArray);
     return bigNum;
 }
