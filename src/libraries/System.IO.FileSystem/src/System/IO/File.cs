@@ -755,7 +755,7 @@ namespace System.IO
 
             if (string.IsNullOrEmpty(contents))
             {
-                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose();
+                new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read).Dispose(); // await DisposeAsync
                 return Task.CompletedTask;
             }
 
@@ -795,7 +795,7 @@ namespace System.IO
             {
                 if (!returningInternalTask)
                 {
-                    fs.Dispose();
+                    fs.Dispose(); // await DisposeAsync
                 }
             }
         }
@@ -862,7 +862,7 @@ namespace System.IO
             }
             finally
             {
-                fs.Dispose();
+                fs.Dispose(); // await DisposeAsync
                 ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
@@ -996,7 +996,7 @@ namespace System.IO
             }
             finally
             {
-                sw.Dispose();
+                sw.Dispose(); // await DisposeAsync
                 if (buffer != null)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
@@ -1024,7 +1024,7 @@ namespace System.IO
             if (string.IsNullOrEmpty(contents))
             {
                 // Just to throw exception if there is a problem opening the file.
-                new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read).Dispose();
+                new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read).Dispose(); // await DisposeAsync
                 return Task.CompletedTask;
             }
 
