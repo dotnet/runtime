@@ -1008,13 +1008,14 @@ namespace System.Diagnostics
         }
 
         internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt)
+                                        IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
+            activity.IdFormat = idFormat;
 
             if (links != null)
             {

@@ -92,12 +92,13 @@ namespace System.Diagnostics
         /// <param name="parentContext">The parent <see cref="ActivityContext"/> object to initialize the created Activity object with.</param>
         /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="idFormat">The default Id format to use.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         /// <remarks>
         /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
         /// </remarks>
-        public Activity? CreateActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null)
-            => CreateActivity(name, kind, parentContext, null, tags, links, default, startIt: false);
+        public Activity? CreateActivity(string name, ActivityKind kind, ActivityContext parentContext, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+            => CreateActivity(name, kind, parentContext, null, tags, links, default, startIt: false, idFormat);
 
         /// <summary>
         /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
@@ -107,12 +108,13 @@ namespace System.Diagnostics
         /// <param name="parentId">The parent Id to initialize the created Activity object with.</param>
         /// <param name="tags">The optional tags list to initialize the created Activity object with.</param>
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
+        /// <param name="idFormat">The default Id format to use.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
         /// <remarks>
         /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
         /// </remarks>
-        public Activity? CreateActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null)
-            => CreateActivity(name, kind, default, parentId, tags, links, default, startIt: false);
+        public Activity? CreateActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+            => CreateActivity(name, kind, default, parentId, tags, links, default, startIt: false, idFormat);
 
         /// <summary>
         /// Creates and starts a new <see cref="Activity"/> object if there is any listener to the Activity, returns null otherwise.
@@ -162,7 +164,8 @@ namespace System.Diagnostics
         public Activity? StartActivity(ActivityKind kind, ActivityContext parentContext = default, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default, [CallerMemberName] string name = "")
             => CreateActivity(name, kind, parentContext, null, tags, links, startTime);
 
-        private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true)
+        private Activity? CreateActivity(string name, ActivityKind kind, ActivityContext context, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags,
+                                            IEnumerable<ActivityLink>? links, DateTimeOffset startTime, bool startIt = true, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
         {
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
@@ -178,8 +181,30 @@ namespace System.Diagnostics
 
             if (parentId != null)
             {
-                var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
-                var acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links);
+                ActivityCreationOptions<string> aco = default;
+                ActivityCreationOptions<ActivityContext> acoContext = default;
+
+                // delegate to ensure updating the trace id in other ActivityCreationOption object when a new trace Id is generated.
+                // It is important so all listeners callbacks will always see the same trace Id which the activity will get created with
+                Action<ActivityTraceId, bool> updateTraceId = (traceId, isChangedFromContext) =>
+                {
+                    if (isChangedFromContext)
+                    {
+                        aco.SetTraceId(traceId);
+                    }
+                    else
+                    {
+                        Debug.Assert(aco.IdFormat == ActivityIdFormat.W3C);
+                        acoContext.SetTraceId(traceId);
+                    }
+                };
+
+                aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links, idFormat, updateTraceId);
+                if (aco.IdFormat == ActivityIdFormat.W3C)
+                {
+                    // acoContext is used only in the Sample calls which called only when we have W3C Id format.
+                    acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links, ActivityIdFormat.W3C, updateTraceId);
+                }
 
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     SampleActivity<string>? sampleUsingParentId = listener.SampleUsingParentId;
@@ -191,14 +216,14 @@ namespace System.Diagnostics
                             result = sr;
                         }
                     }
-                    else
+                    else if (data.IdFormat == ActivityIdFormat.W3C)
                     {
                         // In case we have a parent Id and the listener not providing the SampleUsingParentId, we'll try to find out if the following conditions are true:
                         //   - The listener is providing the Sample callback
                         //   - Can convert the parent Id to a Context. ActivityCreationOptions.TraceId != default means parent id converted to a valid context.
                         // Then we can call the listener Sample callback with the constructed context.
                         SampleActivity<ActivityContext>? sample = listener.Sample;
-                        if (sample != null && data.GetContext() != default) // data.GetContext() != default means parent Id parsed correctly to a context
+                        if (sample != null)
                         {
                             ActivitySamplingResult sr = sample(ref dataWithContext);
                             if (sr > result)
@@ -231,11 +256,13 @@ namespace System.Diagnostics
                         }
                     }
                 }
+
+                idFormat = aco.IdFormat;
             }
             else
             {
                 bool useCurrentActivityContext = context == default && Activity.Current != null;
-                var aco = new ActivityCreationOptions<ActivityContext>(this, name, useCurrentActivityContext ? Activity.Current!.Context : context, kind, tags, links);
+                var aco = new ActivityCreationOptions<ActivityContext>(this, name, useCurrentActivityContext ? Activity.Current!.Context : context, kind, tags, links, idFormat);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> unused) => {
                     SampleActivity<ActivityContext>? sample = listener.Sample;
                     if (sample != null)
@@ -257,11 +284,12 @@ namespace System.Diagnostics
                 }
 
                 samplerTags = aco.GetSamplingTags();
+                idFormat = aco.IdFormat;
             }
 
             if (samplingResult != ActivitySamplingResult.None)
             {
-                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt);
+                activity = Activity.Create(this, name, kind, parentId, context, tags, links, startTime, samplerTags, samplingResult, startIt, idFormat);
             }
 
             return activity;

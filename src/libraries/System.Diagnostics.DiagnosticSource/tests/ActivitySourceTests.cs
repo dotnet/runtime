@@ -574,10 +574,14 @@ namespace System.Diagnostics.Tests
                 Activity activity = aSource.StartActivity("a2", default, ctx);
 
                 Assert.NotNull(activity);
-                Assert.NotEqual(default, ctx);
-                Assert.Equal(ctx.TraceId, activity.TraceId);
-                Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
-                Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+
+                if (activity.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.NotEqual(default, ctx);
+                    Assert.Equal(ctx.TraceId, activity.TraceId);
+                    Assert.Equal(ctx.SpanId.ToHexString(), activity.ParentSpanId.ToHexString());
+                    Assert.Equal(default(ActivitySpanId).ToHexString(), ctx.SpanId.ToHexString());
+                }
             }).Dispose();
         }
 
@@ -603,11 +607,15 @@ namespace System.Diagnostics.Tests
                 Activity activity = aSource.StartActivity("a2", default, null);
 
                 Assert.NotNull(activity);
-                Assert.NotEqual(default, ctx);
-                Assert.Equal(ctx.TraceId, activity.TraceId);
-                Assert.Equal(ctx.SpanId, activity.ParentSpanId);
-                Assert.Equal(default(ActivitySpanId), activity.ParentSpanId);
-                Assert.Equal(default(ActivitySpanId), ctx.SpanId);
+
+                if (activity.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.NotEqual(default, ctx);
+                    Assert.Equal(ctx.TraceId, activity.TraceId);
+                    Assert.Equal(ctx.SpanId, activity.ParentSpanId);
+                    Assert.Equal(default(ActivitySpanId), activity.ParentSpanId);
+                    Assert.Equal(default(ActivitySpanId), ctx.SpanId);
+                }
             }).Dispose();
         }
 
@@ -1015,34 +1023,175 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestIdFormats()
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // Here is the sequence for how we determin the IdFormat of the Activity we create using ActivitySource:
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //  - Use the IdFormat passed to the ActivitySource.Create if it is not "Unknown". Otherwise, goto next step.
+        //  - If Activity.ForceDefaultIdFormat is true, then use the value Activity.DefaultIdFormat.  Otherwise, goto next step.
+        //  - If the parentId string is null and parent ActivityContext is default and we have Activity.Current != null, then use Activity.Current.IdFormat. Otherwise, goto next step.
+        //  - If we have non default parent ActivityContext, then use W3C. Otherwise, goto next step.
+        //  - if we have non null parent id string, try to parse it to W3C. If parsing succeeded then use W3C format. otherwise use Hierarchical format.
+        // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+        //           -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //           Default Id Format, Id fromat to force, Parent id format,   parent id,  default parent context, validate trace Id,  expected create format, expected start format
+        //           -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+        [InlineData($"Unknown,          Unknown,            Unknown,            null,       true,                   false,              Default,                Default")]
+        [InlineData($"Unknown,          Unknown,            W3C,                null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,          Unknown,            Hierarchical,       null,       true,                   false,              Hierarchical,           Hierarchical")]
+
+        [InlineData($"Unknown,          Unknown,            Unknown,            NonWC3Id,   true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"Unknown,          Unknown,            Unknown,            W3C,        true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,          Unknown,            Unknown,            null,       false,                  false,              W3C,                    W3C")]
+
+        [InlineData($"W3C,              Unknown,            Unknown,            null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,     Unknown,            Unknown,            null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,              Unknown,            Hierarchical,       null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,     Unknown,            W3C,                null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,              Unknown,            Unknown,            NonW3C,     true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,     Unknown,            Unknown,            W3C,        true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,              Unknown,            Unknown,            null,       false,                  false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,     Unknown,            Unknown,            null,       false,                  false,              Hierarchical,           Hierarchical")]
+
+        [InlineData($"Unknown,          W3C,                Unknown,            null,       true,                   false,              W3C,                    Default")]
+        [InlineData($"Hierarchical,     W3C,                Unknown,            null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Unknown,          W3C,                Hierarchical,       null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,     W3C,                Hierarchical,       null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,     W3C,                Hierarchical,       NonW3C,     true,                   false,              W3C,                    Hierarchical")]
+
+        [InlineData($"Unknown,          Hierarchical,       Unknown,            null,       true,                   false,              Hierarchical,           Default")]
+        [InlineData($"W3C,              Hierarchical,       Unknown,            null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,          Hierarchical,       W3C,                null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,              Hierarchical,       Hierarchical,       null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,              Hierarchical,       Hierarchical,       W3C,        true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,          Hierarchical,       Unknown,            null,       false,                  false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,          W3C,                Unknown,            null,       false,                  false,              W3C,                    W3C")]
+
+        [InlineData($"Unknown,          W3C,                Unknown,            null,       true,                   true,               W3C,                    Default")]
+        [InlineData($"W3C,              Unknown,            Unknown,            null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,          Unknown,            W3C,                null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,          Unknown,            Unknown,            W3C,        true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,          Unknown,            Unknown,            null,       false,                  true,               W3C,                    W3C")]
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestIdFormats(string data)
         {
-            RemoteExecutor.Invoke(() => {
+            RemoteExecutor.Invoke((d) => {
+
+                //
+                // Extract the data
+                //
+                string [] parts = d.Split(',');
+
+                ActivityIdFormat defaultId = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[0].Trim());
+                ActivityIdFormat idToForce = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[1].Trim());
+                ActivityIdFormat parentFormat = (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[2].Trim());
+                string parentId = parts[3].Trim();
+                if (parentId == "null")
+                {
+                    parentId = null;
+                }
+                else if (parentId == "W3C")
+                {
+                    parentId = "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
+                }
+
+                bool defaultParentContext = bool.Parse(parts[4].Trim());
+                bool checkTraceId         = bool.Parse(parts[5].Trim());
+
+                ActivityIdFormat expectedCreateFormat = parts[6].Trim() == "Default" ? Activity.DefaultIdFormat : (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[6].Trim());
+                ActivityIdFormat expectedStartFormat  = parts[7].Trim() == "Default" ? Activity.DefaultIdFormat : (ActivityIdFormat) Enum.Parse(typeof(ActivityIdFormat), parts[7].Trim());
+
                 using ActivitySource aSource = new ActivitySource("FormatIdSource");
+                ActivityTraceId traceId = default;
+
+                //
+                //  Listener Creation
+                //
 
                 using ActivityListener listener = new ActivityListener();
                 listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
-                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
-                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllDataAndRecorded;
+                listener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
                 ActivitySource.AddActivityListener(listener);
 
-                Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
-                Activity.ForceDefaultIdFormat = true;
+                //
+                //  Set the global Default Id Format
+                //
 
-                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server))
+                if (defaultId != ActivityIdFormat.Unknown)
                 {
-                    a.Start();
-                    Assert.Equal(ActivityIdFormat.Hierarchical, a.IdFormat);
-
-                    using (Activity b = aSource.CreateActivity("b", ActivityKind.Server))
-                    {
-                        b.SetIdFormat(ActivityIdFormat.W3C).Start();
-                        Assert.Equal(ActivityIdFormat.W3C, b.IdFormat);
-                    }
+                    Activity.ForceDefaultIdFormat = true;
+                    Activity.DefaultIdFormat = defaultId;
                 }
 
-            }).Dispose();
+                //
+                // Create Parent Activity with specific Id Format
+                //
+
+                if (parentFormat != ActivityIdFormat.Unknown)
+                {
+                    Activity parent = new Activity("Root");
+                    parent.SetIdFormat(parentFormat);
+                    parent.Start();
+                }
+
+                //
+                // Initialize the paren Context
+                //
+
+                ActivityContext parentContext = defaultParentContext ? default : new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), default, default);
+
+                //
+                // Create and Test ActivitySource.CreateActivity
+                //
+
+                Activity a = parentId == null ? aSource.CreateActivity("a", ActivityKind.Server, parentContext, default, default, idToForce) :
+                                                aSource.CreateActivity("a", ActivityKind.Server, parentId, default, default, idToForce);
+
+                Assert.NotNull(a);
+                a.Start();
+
+                Assert.Equal(expectedCreateFormat, a.IdFormat);
+                if (checkTraceId)
+                {
+                    Assert.Equal(traceId, a.TraceId);
+                }
+
+                a.Stop();
+
+                //
+                // Create and Test ActivitySource.StartActivity
+                //
+
+                a = parentId == null ? aSource.StartActivity("a", ActivityKind.Server, parentContext, default, default) :
+                                       aSource.StartActivity("a", ActivityKind.Server, parentId, default, default);
+
+                Assert.NotNull(a);
+
+                Assert.Equal(expectedStartFormat, a.IdFormat);
+                if (checkTraceId)
+                {
+                    Assert.Equal(traceId, a.TraceId);
+                }
+
+                a.Stop();
+
+            }, data).Dispose();
         }
 
         public void Dispose() => Activity.Current = null;
