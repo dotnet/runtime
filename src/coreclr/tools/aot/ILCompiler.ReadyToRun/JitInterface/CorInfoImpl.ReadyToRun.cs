@@ -1334,7 +1334,7 @@ namespace Internal.JitInterface
             // Its basic meaning is that shared generic methods always need instantiating
             // stubs as the shared generic code needs the method dictionary parameter that cannot
             // be provided by other means.
-            useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
+            useInstantiatingStub = originalMethod.OwningType.IsArray || originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
 
@@ -1534,7 +1534,7 @@ namespace Internal.JitInterface
             }
 
             methodToCall = targetMethod;
-            MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc canonMethod = (targetMethod.OwningType.IsArray ? null : targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             if (directCall)
             {
@@ -1572,7 +1572,18 @@ namespace Internal.JitInterface
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
                 bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
 
-                if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
+                if (targetMethod.OwningType.IsArray && targetMethod.IsConstructor)
+                {
+                    // Constructors on arrays are special and don't actually have entrypoints.
+                    // That would be fine by itself and wouldn't need special casing. But
+                    // constructors on SzArray have a weird property that causes them not to have canonical forms.
+                    // int[][] has a .ctor(int32,int32) to construct the jagged array in one go, but its canonical
+                    // form of __Canon[] doesn't have the two-parameter constructor. The canonical form would need
+                    // to have an unlimited number of constructors to cover stuff like "int[][][][][][]..."
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                    pResult->codePointerOrStubLookup.constLookup = default;
+                }
+                else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {
