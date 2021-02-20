@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Security.Principal;
 using Xunit;
@@ -15,8 +16,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         private void RefreshContext()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            string username = "Administrator", password = "Adrumble@6";
+            string username = "Administrator", password = Environment.GetEnvironmentVariable("TESTPASSWORD");
 
             string OU = "Tests";
             string baseDomain = WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
