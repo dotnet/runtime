@@ -9,7 +9,7 @@ jobject CryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len)
     JNIEnv* env = GetJNIEnv();
     jbyteArray buffArray = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
-    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, buffArray);
+    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, 1, buffArray);
     (*env)->DeleteLocalRef(env, buffArray);
     return CheckJNIExceptions(env) ? FAIL : ToGRef(env, bigNum);
 }

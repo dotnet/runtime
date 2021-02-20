@@ -400,7 +400,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
 
     g_bigNumClass =             GetClassGRef(env, "java/math/BigInteger");
-    g_bigNumCtor =              GetMethod(env, false, g_bigNumClass, "<init>", "([B)V");
+    g_bigNumCtor =              GetMethod(env, false, g_bigNumClass, "<init>", "(I[B)V");
     g_toByteArrayMethod =       GetMethod(env, false, g_bigNumClass, "toByteArray", "()[B");
     g_valueOfMethod =           GetMethod(env, true, g_bigNumClass, "valueOf", "(J)Ljava/math/BigInteger;");
     g_intValueMethod =          GetMethod(env, false, g_bigNumClass, "intValue", "()I");

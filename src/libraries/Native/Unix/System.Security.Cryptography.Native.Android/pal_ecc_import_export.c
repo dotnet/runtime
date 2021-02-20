@@ -192,7 +192,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
     seedArray = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetSeed);
     if (seedArray)
     {
-        seedBn = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, seedArray);
+        seedBn = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, 1, seedArray);
 
         *seed = ToGRef(env, seedBn);
         *cbSeed = CryptoNative_GetBigNumBytes(*seed);
@@ -593,17 +593,19 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
         (*env)->CallVoidMethod(env, keyPairGenerator, g_keyPairGenInitializeWithParamsMethod, paramSpec);
         if (CheckJNIExceptions(env))
         {
-            LOG_DEBUG("Failed to create curve");
             ReleaseLRef(env, keyPairGenerator);
             ReleaseLRef(env, ec);
             goto error;
         }
 
-        keyPair = (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod);
+        keyPair = AddGRef(env, (*env)->CallObjectMethod(env, keyPairGenerator, g_keyPairGenGenKeyPairMethod));
     }
 
     if (!keyPair)
+    {
+        CheckJNIExceptions(env);
         goto error;
+    }
 
     // Use AddGRef here since we always delete the local ref below.
     keyInfo = CryptoNative_NewEcKey(AddGRef(env, paramSpec), keyPair);
