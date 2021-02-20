@@ -29,6 +29,8 @@ internal class Xcode
         }
     }
 
+    public bool EnableRuntimeLogging { get; set; }
+
     public string GenerateXCode(
         string projectName,
         string entryPointLib,
@@ -114,16 +116,22 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
 
-        string defines = "";
+        var defines = new StringBuilder();
         if (forceInterpreter)
         {
-            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+            defines.Append("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (forceAOT)
         {
-            defines = "add_definitions(-DFORCE_AOT=1)";
+            defines.Append("add_definitions(-DFORCE_AOT=1)");
         }
-        cmakeLists = cmakeLists.Replace("%Defines%", defines);
+
+        if (EnableRuntimeLogging)
+        {
+            defines.Append("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);

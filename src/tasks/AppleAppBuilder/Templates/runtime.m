@@ -217,28 +217,36 @@ static int32_t load_icu_data()
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
     assert (res > 0);
    
-    char *source = NULL;
+    char *icu_data = NULL;
     FILE *fp = fopen(path, "rb");
     if (fp != NULL) {
         if (fseek(fp, 0L, SEEK_END) == 0) {
             long bufsize = ftell(fp);
-            if (bufsize == -1) { /* Error */ }
 
-            source = malloc(sizeof(char) * (bufsize + 1));
+            if (bufsize == -1) {
+                 os_log_info (OS_LOG_DEFAULT, "Invalid ICU dat file");
+                 exit(1);
+            }
 
-            if (fseek(fp, 0L, SEEK_SET) != 0) { /* Error */ }
+            icu_data = malloc(sizeof(char) * (bufsize + 1));
 
-            size_t newLen = fread(source, sizeof(char), bufsize, fp);
+            if (fseek(fp, 0L, SEEK_SET) != 0) {
+                os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
+                exit(1);
+            }
+
+            size_t len = fread(icu_data, sizeof(char), bufsize, fp);
             if ( ferror( fp ) != 0 ) {
-                fputs("Error reading file", stderr);
+                os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
+                exit(1);
             }
         }
         fclose(fp);
     }
 
-    free(source);
+    free(icu_data);
 
-    return GlobalizationNative_LoadICUData(source);
+    return GlobalizationNative_LoadICUData(icu_data);
 }
 
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
@@ -249,13 +257,10 @@ void register_aot_modules (void);
 void
 mono_ios_runtime_init (void)
 {
-    // for now, only Invariant Mode is supported (FIXME: integrate ICU)
-    //setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
-    // uncomment for debug output:
-    //
-    // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
-    // setenv ("MONO_LOG_MASK", "all", TRUE);
-
+#if ENABLE_RUNTIME_LOGGING
+    setenv ("MONO_LOG_LEVEL", "debug", TRUE);
+    setenv ("MONO_LOG_MASK", "all", TRUE);
+#endif
     int32_t ret = load_icu_data ();
 
     if (ret == 0)
