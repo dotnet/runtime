@@ -4062,8 +4062,6 @@ mini_create_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
 
-	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
 	domain->runtime_info = info;
 }
 
@@ -4079,6 +4077,7 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->delegate_trampoline_hash = g_hash_table_new (class_method_pair_hash, class_method_pair_equal);
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
+	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	mono_jit_code_hash_init (&info->interp_code_hash);
 
 	mem_manager->runtime_info = info;
