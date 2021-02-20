@@ -92,7 +92,7 @@ namespace System.Xml.Serialization
 
         private static uint GetPersistentHashCode(string value)
         {
-            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+            byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
             byte[] hash = System.Security.Cryptography.SHA512.Create().ComputeHash(valueBytes);
             return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
         }
