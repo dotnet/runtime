@@ -203,48 +203,48 @@ namespace System
         public abstract FieldInfo[] GetFields(BindingFlags bindingAttr);
 
         [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.PublicEvents
-            | DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+            DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public MemberInfo[] GetMember(string name) => GetMember(name, Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.PublicEvents
-            | DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public virtual MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => GetMember(name, MemberTypes.All, bindingAttr);
 
         [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.PublicEvents
-            | DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.PublicEvents
-            | DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+            DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public MemberInfo[] GetMembers() => GetMembers(Type.DefaultLookup);
 
         [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields
-            | DynamicallyAccessedMemberTypes.PublicMethods
-            | DynamicallyAccessedMemberTypes.PublicEvents
-            | DynamicallyAccessedMemberTypes.PublicProperties
-            | DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
+            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
