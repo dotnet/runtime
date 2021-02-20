@@ -26,9 +26,10 @@ namespace System.Net.WebSockets
             set
             {
                 if (value < 9 || value > 15)
+                {
                     throw new ArgumentOutOfRangeException(nameof(ClientMaxWindowBits), value,
                         SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 9, 15));
-
+                }
                 _clientMaxWindowBits = value;
             }
         }
@@ -51,9 +52,10 @@ namespace System.Net.WebSockets
             set
             {
                 if (value < 9 || value > 15)
+                {
                     throw new ArgumentOutOfRangeException(nameof(ServerMaxWindowBits), value,
                         SR.Format(SR.net_WebSockets_ArgumentOutOfRange, 9, 15));
-
+                }
                 _serverMaxWindowBits = value;
             }
         }

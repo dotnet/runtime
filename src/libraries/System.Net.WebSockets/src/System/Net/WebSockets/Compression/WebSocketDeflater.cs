@@ -33,8 +33,9 @@ namespace System.Net.WebSockets.Compression
             Debug.Assert(!continuation || _stream is not null, "Invalid state. The stream should not be null in continuations.");
 
             if (_stream is null)
+            {
                 Initialize();
-
+            }
             while (!payload.IsEmpty)
             {
                 Deflate(payload, output.GetSpan(payload.Length), out int consumed, out int written);
@@ -53,7 +54,9 @@ namespace System.Net.WebSockets.Compression
                 Debug.Assert(consumed == 0);
 
                 if (written == 0)
+                {
                     break;
+                }
 
                 output.Advance(written);
             }

@@ -91,15 +91,18 @@ namespace System.Net.WebSockets
                     ValueTask sendTask = _stream.WriteAsync(_buffer.WrittenMemory.Slice(headerOffset), cancellationToken);
 
                     if (sendTask.IsCompleted)
+                    {
                         return sendTask;
-
+                    }
                     resetBuffer = false;
                     return WaitAsync(sendTask);
                 }
                 finally
                 {
                     if (resetBuffer)
+                    {
                         _buffer.Reset();
+                    }
                 }
             }
 
@@ -240,8 +243,9 @@ namespace System.Net.WebSockets
                 public void EnsureFreeCapacity(int sizeHint)
                 {
                     if (sizeHint == 0)
+                    {
                         sizeHint = 1;
-
+                    }
                     if (_array is null)
                     {
                         _array = _arrayPool.Rent(sizeHint);

@@ -59,8 +59,9 @@ namespace System.Net.WebSockets.Tests
                     var block = _inputQueue.Peek();
 
                     if (block is null)
+                    {
                         return default;
-
+                    }
                     return block.Available;
                 }
             }
@@ -108,8 +109,9 @@ namespace System.Net.WebSockets.Tests
             {
                 var block = _inputQueue.Peek();
                 if (block == Block.ConnectionClosed)
+                {
                     return 0;
-
+                }
                 var count = Math.Min(block.AvailableLength, buffer.Length);
 
                 block.Available.Slice(0, count).CopyTo(buffer.Span);

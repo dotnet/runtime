@@ -549,8 +549,9 @@ namespace System.Net.WebSockets
                         {
                             var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
                             if (messageOrNull is null)
+                            {
                                 ThrowIfEOFUnexpected(true);
-
+                            }
                             ControlMessage message = messageOrNull.GetValueOrDefault();
 
                             // If the header represents a ping or a pong, it's a control message meant
@@ -560,8 +561,9 @@ namespace System.Net.WebSockets
                             {
                                 // If this was a ping, send back a pong response.
                                 if (message.Opcode == MessageOpcode.Ping)
+                                {
                                     await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, message.Payload, cancellationToken).ConfigureAwait(false);
-
+                                }
                                 continue;
                             }
                             else
@@ -763,20 +765,23 @@ namespace System.Net.WebSockets
             error = null;
 
             if (buffer.Length < 2)
+            {
                 return false;
-
+            }
             // Check first for reserved bits that should always be unset
             if ((buffer[0] & 0b0011_0000) != 0)
+            {
                 return Error(ref error, SR.net_Websockets_ReservedBitsSet);
-
+            }
             header.Fin = (buffer[0] & 0x80) != 0;
             header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
             header.Compressed = (buffer[0] & 0b0100_0000) != 0;
 
             bool masked = (buffer[1] & 0x80) != 0;
             if (masked && !isServer)
+            {
                 return Error(ref error, SR.net_Websockets_ClientReceivedMaskedFrame);
-
+            }
             header.PayloadLength = buffer[1] & 0x7F;
 
             // We've consumed the first 2 bytes
@@ -787,8 +792,9 @@ namespace System.Net.WebSockets
             if (header.PayloadLength == 126)
             {
                 if (buffer.Length < 2)
+                {
                     return false;
-
+                }
                 header.PayloadLength = (buffer[0] << 8) | buffer[1];
                 buffer = buffer.Slice(2);
                 consumedBytes += 2;
@@ -796,8 +802,9 @@ namespace System.Net.WebSockets
             else if (header.PayloadLength == 127)
             {
                 if (buffer.Length < 8)
+                {
                     return false;
-
+                }
                 header.PayloadLength = 0;
                 for (int i = 0; i < 8; ++i)
                 {
@@ -810,8 +817,9 @@ namespace System.Net.WebSockets
             if (masked)
             {
                 if (buffer.Length < MaskLength)
+                {
                     return false;
-
+                }
                 header.Mask = BitConverter.ToInt32(buffer);
                 consumedBytes += MaskLength;
             }

@@ -48,8 +48,9 @@ namespace System.Net.WebSockets.Compression
         public unsafe void Inflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
         {
             if (_stream is null)
+            {
                 Initialize();
-
+            }
             fixed (byte* fixedInput = &MemoryMarshal.GetReference(input))
             fixed (byte* fixedOutput = &MemoryMarshal.GetReference(output))
             {
@@ -93,8 +94,9 @@ namespace System.Net.WebSockets.Compression
             if (output.IsEmpty)
             {
                 if (_remainingByte is not null)
+                {
                     return false;
-
+                }
                 if (IsFinished(_stream, out _remainingByte))
                 {
                     OnFinished();

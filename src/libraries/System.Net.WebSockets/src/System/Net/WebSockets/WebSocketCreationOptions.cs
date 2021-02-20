@@ -24,8 +24,9 @@ namespace System.Net.WebSockets
             set
             {
                 if (value is not null)
+                {
                     WebSocketValidate.ValidateSubprotocol(value);
-
+                }
                 _subProtocol = value;
             }
         }
@@ -40,9 +41,10 @@ namespace System.Net.WebSockets
             set
             {
                 if (!IsKeepAliveValid(value))
+                {
                     throw new ArgumentOutOfRangeException(nameof(KeepAliveInterval), value,
                         SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
-
+                }
                 _keepAliveInterval = value;
             }
         }
