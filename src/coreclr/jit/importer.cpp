@@ -20070,7 +20070,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         // have been caught in impInlineInitVars.
         if (!op1->TypeIs(lclTyp))
         {
-            if (lclTyp != TYP_BYREF) // We could have oprimized TYP_BYREF to TYP_I_IMPL.
+            //if (lclTyp != TYP_BYREF) // We could have oprimized TYP_BYREF to TYP_I_IMPL.
             {
                 op1->gtType = genActualType(lclTyp);
             }

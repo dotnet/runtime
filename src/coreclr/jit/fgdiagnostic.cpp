@@ -2266,7 +2266,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             case GT_ADDR:
             {
                 const bool stackAddr = tree->DefinesLocalAddr(this);
-                assert((!stackAddr && tree->TypeIs(TYP_BYREF)) || (stackAddr && tree->TypeIs(TYP_I_IMPL)));
+                //assert((!stackAddr && tree->TypeIs(TYP_BYREF)) || (stackAddr && tree->TypeIs(TYP_I_IMPL)));
                 assert(!op1->CanCSE());
             }
             break;
