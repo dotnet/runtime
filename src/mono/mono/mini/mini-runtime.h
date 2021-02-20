@@ -69,15 +69,20 @@ typedef struct {
 } MonoJitMemoryManager;
 
 static inline MonoJitMemoryManager*
-jit_mm_for_method (MonoMethod *method)
-{
-	return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
-}
-
-static inline MonoJitMemoryManager*
 get_default_jit_mm (void)
 {
 	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+}
+
+static inline MonoJitMemoryManager*
+jit_mm_for_method (MonoMethod *method)
+{
+	/*
+	 * Some places might not look up the correct memory manager because of generic instances/generic sharing etc.
+	 * So use the same memory manager everywhere, this is not a problem since we don't support unloading yet.
+	 */
+	//return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
+	return get_default_jit_mm ();
 }
 
 static inline void
