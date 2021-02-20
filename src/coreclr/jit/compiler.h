@@ -2745,6 +2745,8 @@ public:
                                        FieldSeqNode* fieldSeq,
                                        var_types     type = TYP_I_IMPL);
 
+    GenTree* gtNewAddrNode(GenTree* tree);
+
 #ifdef FEATURE_SIMD
     GenTreeSIMD* gtNewSIMDNode(
         var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size);

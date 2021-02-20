@@ -341,7 +341,7 @@ GenTree* Compiler::fgGetStructAsStructPtr(GenTree* tree)
             return tree;
 
         default:
-            return gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+            return gtNewAddrNode(tree);
     }
 }
 

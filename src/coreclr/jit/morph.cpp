@@ -2002,7 +2002,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         else
         {
             var_types addrType = TYP_BYREF;
-            arg                = gtNewOperNode(GT_ADDR, addrType, arg);
+            arg                = gtNewAddrNode(arg);
             addrNode           = arg;
 
 #if FEATURE_MULTIREG_ARGS
@@ -2029,7 +2029,7 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         // other targets, we pass the struct by value
         assert(varTypeIsStruct(type));
 
-        addrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, arg);
+        addrNode = gtNewAddrNode(arg);
 
         // Get a new Obj node temp to use it as a call argument.
         // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
@@ -4424,7 +4424,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 if (!actualArg->OperIs(GT_OBJ))
                 {
                     // Create an Obj of the temp to use it as a call argument.
-                    arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
+                    arg = gtNewAddrNode(arg);
                     arg = gtNewObjNode(lvaGetStruct(lcl->GetLclNum()), arg);
                 }
                 // Its fields will need to be accessed by address.
@@ -8170,7 +8170,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
             var_types tmpRetBufType = lvaGetDesc(tmpRetBufNum)->TypeGet();
 
-            retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(tmpRetBufNum, tmpRetBufType));
+            retValArg = gtNewAddrNode(gtNewLclvNode(tmpRetBufNum, tmpRetBufType));
 
             var_types callerRetBufType = lvaGetDesc(info.compRetBuffArg)->TypeGet();
 
@@ -8207,7 +8207,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
         lvaSetVarAddrExposed(newRetLcl);
 
         retValArg =
-            gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
+            gtNewAddrNode(gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
         retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
 
         if (varTypeIsStruct(origCall->gtType))
@@ -8236,7 +8236,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
         lvaSetVarAddrExposed(lvaRetAddrVar);
     }
 
-    GenTree* retAddrSlot           = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
+    GenTree* retAddrSlot           = gtNewAddrNode(gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
     callDispatcherNode->gtCallArgs = gtPrependNewCallArg(retAddrSlot, callDispatcherNode->gtCallArgs);
 
     GenTree* finalTree = callDispatcherNode;
@@ -9170,7 +9170,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
                     retValTmpNum = lvaGrabTemp(true DEBUGARG("substitute local for ret buff arg"));
                     lvaSetStruct(retValTmpNum, structHnd, true);
-                    dest = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(retValTmpNum, TYP_STRUCT));
+                    dest = gtNewAddrNode(gtNewLclvNode(retValTmpNum, TYP_STRUCT));
                 }
             }
         }
@@ -9276,7 +9276,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     if (origDest != nullptr)
     {
-        GenTree* retValVarAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(retValTmpNum, TYP_STRUCT));
+        GenTree* retValVarAddr = gtNewAddrNode(gtNewLclvNode(retValTmpNum, TYP_STRUCT));
         // If the origDest expression was an assignment to a variable, it might be to an otherwise-unused
         // var, which would allow the whole assignment to be optimized away to a NOP.  So in that case, make the
         // origDest into a comma that uses the var.  Note that the var doesn't have to be a temp for this to
@@ -9936,7 +9936,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
                 if (dest == destLclVarTree)
                 {
-                    GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+                    GenTree* addr = gtNewAddrNode(dest);
                     dest          = gtNewIndir(asgType, addr);
                 }
             }
@@ -10001,7 +10001,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                     GenTree* srcAddr;
                     if (src == srcLclVarTree)
                     {
-                        srcAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, src);
+                        srcAddr = gtNewAddrNode(src);
                         src     = gtNewOperNode(GT_IND, asgType, srcAddr);
                     }
                     else
@@ -10435,7 +10435,7 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
             {
                 tree->ChangeOper(GT_IND);
             }
-            addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+            addr = gtNewAddrNode(tree);
         }
     }
     else if (tree->gtOper == GT_COMMA)
@@ -10454,7 +10454,7 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
             case GT_INDEX:
             case GT_FIELD:
             case GT_ARR_ELEM:
-                addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+                addr = gtNewAddrNode(tree);
                 break;
             case GT_INDEX_ADDR:
                 addr = tree;
@@ -10515,7 +10515,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
 
         GenTree* lastComma = commas.Top();
         noway_assert(lastComma->gtGetOp2() == effectiveVal);
-        GenTree* effectiveValAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+        GenTree* effectiveValAddr = gtNewAddrNode(effectiveVal);
 #ifdef DEBUG
         effectiveValAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -10666,7 +10666,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             }
             else
             {
-                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+                GenTree* addr = gtNewAddrNode(effectiveVal);
                 effectiveVal  = gtNewIndir(asgType, addr);
             }
         }
@@ -10736,7 +10736,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
             else
             {
                 GenTree* newTree;
-                GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+                GenTree* addr = gtNewAddrNode(effectiveVal);
                 if (isBlkReqd)
                 {
                     CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleIfPresent(effectiveVal);
@@ -10912,7 +10912,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 assert(dest->TypeGet() != TYP_STRUCT);
                 assert(dest->gtOper == GT_LCL_FLD);
                 blockWidth = genTypeSize(dest->TypeGet());
-                destAddr   = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+                destAddr   = gtNewAddrNode(dest);
                 destFldSeq = dest->AsLclFld()->GetFieldSeq();
             }
         }
@@ -11314,7 +11314,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 dest->SetOper(GT_IND);
                 dest->gtType = TYP_STRUCT;
             }
-            destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+            destAddr = gtNewAddrNode(dest);
         }
 
         if (destDoFldAsg)
@@ -14667,7 +14667,7 @@ DONE_MORPHING_CHILDREN:
                     commaOp2->gtFlags |= (commaOp2->AsOp()->gtOp1->gtFlags & GTF_EXCEPT);
                 }
 
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, commaOp2);
+                op1 = gtNewAddrNode(commaOp2);
 
                 if (isZeroOffset)
                 {

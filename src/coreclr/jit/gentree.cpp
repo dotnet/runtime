@@ -6419,6 +6419,36 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
+GenTree* Compiler::gtNewAddrNode(GenTree* tree)
+{
+    var_types addrType;
+    if (tree->IsLocal())
+    {
+        // When the address points to the stack
+        // we use TYP_I_IMPL, so if we create a LCL_VAR from it
+        // it does not need to be zero-init.
+        addrType = TYP_BYREF;
+    }
+    else if (tree->OperIs(GT_FIELD))
+    {
+        const GenTree* fldObj = tree->AsField()->gtFldObj;
+        assert((fldObj == nullptr) || fldObj->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT));
+        if ((fldObj != nullptr) && fldObj->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            addrType = TYP_BYREF;
+        }
+        else
+        {
+            addrType = TYP_BYREF;
+        }
+    }
+    else
+    {
+        addrType = TYP_BYREF;
+    }
+    return gtNewOperNode(GT_ADDR, addrType, tree);
+}
+
 GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags)
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
@@ -7438,7 +7468,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 {
                     return nullptr;
                 }
-                copy = gtNewOperNode(GT_ADDR, tree->TypeGet(), op1);
+                copy = gtNewAddrNode(op1);
             }
             else
             {
@@ -13728,11 +13758,11 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         asg->gtBashToNOP();
 
         // Update the copy from the value to be boxed to the box temp
-        GenTree* newDst        = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(boxTempLcl, boxTempType));
+        GenTree* newDst        = gtNewAddrNode(gtNewLclvNode(boxTempLcl, boxTempType));
         copyDst->AsOp()->gtOp1 = newDst;
 
         // Return the address of the now-struct typed box temp
-        GenTree* retValue = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(boxTempLcl, boxTempType));
+        GenTree* retValue = gtNewAddrNode(gtNewLclvNode(boxTempLcl, boxTempType));
 
         return retValue;
     }

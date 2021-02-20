@@ -558,7 +558,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
 
     // Add a pseudo-field for the method table pointer and initialize it
-    tree = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+    tree = comp->gtNewAddrNode(tree);
     tree = comp->gtNewFieldRef(TYP_I_IMPL, FieldSeqStore::FirstElemPseudoField, tree, 0);
     tree = comp->gtNewAssignNode(tree, allocObj->gtGetOp1());
 
@@ -892,7 +892,7 @@ void ObjectAllocator::RewriteUses()
                 {
                     newType = TYP_I_IMPL;
                     tree =
-                        m_compiler->gtNewOperNode(GT_ADDR, newType, m_compiler->gtNewLclvNode(newLclNum, TYP_STRUCT));
+                        m_compiler->gtNewAddrNode(m_compiler->gtNewLclvNode(newLclNum, TYP_STRUCT));
                     *use = tree;
                 }
                 else
