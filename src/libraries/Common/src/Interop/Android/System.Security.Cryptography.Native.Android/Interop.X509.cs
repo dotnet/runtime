@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -20,11 +21,41 @@ internal static partial class Interop
             return Crypto.GetDynamicBuffer((ptr, buf, i) => EncodeX509(ptr, buf, i), x);
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetNotAfter")]
-        internal static extern ulong X509GetNotAfter(SafeX509Handle x509);
+        internal struct X509BasicInformation
+        {
+            public int Version { get; }
+            public DateTime NotAfter { get; }
+            public DateTime NotBefore { get; }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetNotBefore")]
-        internal static extern ulong X509GetNotBefore(SafeX509Handle x509);
+            public X509BasicInformation(int version, DateTime notAfter, DateTime notBefore)
+            {
+                Version = version;
+                NotAfter = notAfter;
+                NotBefore = notBefore;
+            }
+
+            internal struct Interop
+            {
+                public int Version;
+                public long NotAfter;     // In milliseconds since Unix epoch
+                public long NotBefore;    // In milliseconds since Unix epoch
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetBasicInformation")]
+        private static extern byte X509GetBasicInformationImpl(SafeX509Handle x509, out X509BasicInformation.Interop info);
+        internal static X509BasicInformation X509GetBasicInformation(SafeX509Handle x509)
+        {
+            X509BasicInformation.Interop info;
+            byte success = X509GetBasicInformationImpl(x509, out info);
+            if (success == 0 || info.Version < 1)
+                throw new CryptographicException();
+
+            return new X509BasicInformation(
+                info.Version,
+                DateTime.UnixEpoch.AddMilliseconds(info.NotAfter),
+                DateTime.UnixEpoch.AddMilliseconds(info.NotBefore));
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetPublicKeyAlgorithm")]
         private static extern int X509GetPublicKeyAlgorithm(SafeX509Handle x509, byte[]? buf, int len);
@@ -77,9 +108,6 @@ internal static partial class Interop
         {
             return Crypto.GetDynamicBuffer((handle, buf, i) => X509GetThumbprint(handle, buf, i), x509);
         }
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetVersion")]
-        internal static extern int X509GetVersion(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetIssuerNameBytes")]
         internal static extern int X509GetIssuerNameBytes(SafeX509Handle x509, byte[]? buf, int len);

@@ -21,7 +21,6 @@
     } \
 } \
 
-#define VALUE_FAIL -1
 #define BUFFER_FAIL FAIL
 
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len);
@@ -31,7 +30,7 @@ static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t l
 jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, int32_t len)
 {
     assert(buf != NULL && len > 0);
-    JNIEnv* env = GetJNIEnv();
+    JNIEnv *env = GetJNIEnv();
 
     jobject ret = NULL;
     INIT_LOCALS(loc, bytes, stream, certType, certFactory)
@@ -69,7 +68,7 @@ int32_t AndroidCryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t
 
     // byte[] encoded = cert.getEncoded();
     // return encoded.length
-    jbyteArray encoded =  (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
+    jbyteArray encoded = (*env)->CallObjectMethod(env, cert, g_X509CertGetEncoded);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     ret = PopulateByteArray(env, encoded, buf, len);
 
@@ -88,39 +87,41 @@ jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certificate*/ c
     return AddGRef(GetJNIEnv(), cert);
 }
 
-int64_t AndroidCryptoNative_X509GetNotAfter(jobject /*X509Certificate*/ cert)
+bool AndroidCryptoNative_X509GetBasicInformation(jobject /*X509Certificate*/ cert, struct X509BasicInformation *info)
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
-    int64_t ret = VALUE_FAIL;
+
+    bool success = false;
+    INIT_LOCALS(loc, notAfter, notBefore)
+
+    // int version = cert.getVersion();
+    jint ver = (*env)->CallIntMethod(env, cert, g_X509CertGetVersion);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    int32_t version = (int32_t)ver;
 
     // Date notAfter = cert.getNotAfter()
-    // return notAfter.getTime()
-    jobject notAfter = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
+    // long notAfterTime = notAfter.getTime()
+    loc[notAfter] = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotAfter);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = (int64_t)(*env)->CallLongMethod(env, notAfter, g_DateGetTime);
-
-cleanup:
-    (*env)->DeleteLocalRef(env, notAfter);
-    return ret;
-}
-
-int64_t AndroidCryptoNative_X509GetNotBefore(jobject /*X509Certificate*/ cert)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-    int64_t ret = VALUE_FAIL;
+    int64_t notAfterTime = (int64_t)(*env)->CallLongMethod(env, loc[notAfter], g_DateGetTime);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // Date notBefore = cert.getNotBefore()
-    // return notBefore.getTime()
-    jobject notBefore = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
+    // long notBeforeTime = notBefore.getTime()
+    loc[notBefore] = (*env)->CallObjectMethod(env, cert, g_X509CertGetNotBefore);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    ret = (int64_t)(*env)->CallLongMethod(env, notBefore, g_DateGetTime);
+    int64_t notBeforeTime = (int64_t)(*env)->CallLongMethod(env, loc[notBefore], g_DateGetTime);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
+    info->Version = version;
+    info->NotAfter = notAfterTime;
+    info->NotBefore = notBeforeTime;
+    success = true;
+
 cleanup:
-    (*env)->DeleteLocalRef(env, notBefore);
-    return ret;
+    RELEASE_LOCALS(loc, env)
+    return success;
 }
 
 int32_t AndroidCryptoNative_X509GetPublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len)
@@ -245,16 +246,6 @@ int32_t AndroidCryptoNative_X509GetThumbprint(jobject /*X509Certificate*/ cert, 
 cleanup:
     RELEASE_LOCALS(loc, env)
     return ret;
-}
-
-int32_t AndroidCryptoNative_X509GetVersion(jobject /*X509Certificate*/ cert)
-{
-    assert(cert != NULL);
-    JNIEnv *env = GetJNIEnv();
-
-    // return cert.getVersion();
-    jint ver = (*env)->CallIntMethod(env, cert, g_X509CertGetVersion);
-    return CheckJNIExceptions(env) ? VALUE_FAIL : (int32_t)ver;
 }
 
 static int32_t GetNameBytes(JNIEnv *env, jobject /*X500Principal*/ name, uint8_t *buf, int32_t len)

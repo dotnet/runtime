@@ -25,6 +25,7 @@ namespace Internal.Cryptography.Pal
         private X500DistinguishedName? _issuerName;
         private string? _subject;
         private string? _issuer;
+        private Interop.AndroidCrypto.X509BasicInformation _basicInformation;
 
         public static ICertificatePal FromHandle(IntPtr handle)
         {
@@ -171,7 +172,8 @@ namespace Internal.Cryptography.Pal
 
         public string LegacySubject => SubjectName.Decode(X500DistinguishedNameFlags.None);
 
-        public byte[] Thumbprint => Interop.AndroidCrypto.X509GetThumbprint(_cert);
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
+        public byte[] Thumbprint => SHA1.HashData(RawData);
 
         public string KeyAlgorithm => new Oid(Interop.AndroidCrypto.X509GetPublicKeyAlgorithm(_cert)).Value!;
 
@@ -195,8 +197,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                ulong msFromUnixEpoch = Interop.AndroidCrypto.X509GetNotAfter(_cert);
-                return DateTime.UnixEpoch.AddMilliseconds(msFromUnixEpoch).ToLocalTime();
+                EnsureBasicInformation();
+                return _basicInformation.NotAfter;
             }
         }
 
@@ -204,8 +206,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                ulong msFromUnixEpoch = Interop.AndroidCrypto.X509GetNotBefore(_cert);
-                return DateTime.UnixEpoch.AddMilliseconds(msFromUnixEpoch).ToLocalTime();
+                EnsureBasicInformation();
+                return _basicInformation.NotBefore;
             }
         }
 
@@ -215,13 +217,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int version = Interop.AndroidCrypto.X509GetVersion(_cert);
-                if (version < 1)
-                {
-                    throw new CryptographicException();
-                }
-
-                return version;
+                EnsureBasicInformation();
+                return _basicInformation.Version;
             }
         }
 
@@ -276,26 +273,33 @@ namespace Internal.Cryptography.Pal
         {
             ref PolicyData policyData = ref Unsafe.As<byte, PolicyData>(ref *(byte*)context);
             string oidStr = Encoding.UTF8.GetString(oid, oidLen);
-            byte[] rawData = AsnDecoder.ReadOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out _);
+
+            ReadOnlySpan<byte> rawData;
+            if (!AsnDecoder.TryReadPrimitiveOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out rawData, out _))
+            {
+                Debug.Fail($"{nameof(AsnDecoder.TryReadPrimitiveOctetString)} can't return false for DER inputs");
+                return;
+            }
+
             switch (oidStr)
             {
                 case Oids.ApplicationCertPolicies:
-                    policyData.ApplicationCertPolicies = rawData;
+                    policyData.ApplicationCertPolicies = rawData.ToArray();
                     break;
                 case Oids.CertPolicies:
-                    policyData.CertPolicies = rawData;
+                    policyData.CertPolicies = rawData.ToArray();
                     break;
                 case Oids.CertPolicyMappings:
-                    policyData.CertPolicyMappings = rawData;
+                    policyData.CertPolicyMappings = rawData.ToArray();
                     break;
                 case Oids.CertPolicyConstraints:
-                    policyData.CertPolicyConstraints = rawData;
+                    policyData.CertPolicyConstraints = rawData.ToArray();
                     break;
                 case Oids.EnhancedKeyUsage:
-                    policyData.EnhancedKeyUsage = rawData;
+                    policyData.EnhancedKeyUsage = rawData.ToArray();
                     break;
                 case Oids.InhibitAnyPolicyExtension:
-                    policyData.InhibitAnyPolicyExtension = rawData;
+                    policyData.InhibitAnyPolicyExtension = rawData.ToArray();
                     break;
             }
         }
@@ -326,6 +330,8 @@ namespace Internal.Cryptography.Pal
             callbackContext.Results.Add(new X509Extension(new Oid(oidStr), rawData, critical));
         }
 
+        // TODO: [AndroidCrypto] This is returning critical exceptions followed by non-critical, rather than in their declared order.
+        // Might have to switch to using CertificateAsn for parsing the raw data.
         public IEnumerable<X509Extension> Extensions
         {
             get
@@ -487,6 +493,14 @@ namespace Internal.Cryptography.Pal
         internal static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
         {
             throw new NotImplementedException(nameof(ExtractValidityDateTime));
+        }
+
+        private void EnsureBasicInformation()
+        {
+            if (!_basicInformation.Equals(default(Interop.AndroidCrypto.X509BasicInformation)))
+                return;
+
+            _basicInformation = Interop.AndroidCrypto.X509GetBasicInformation(_cert);
         }
     }
 }
