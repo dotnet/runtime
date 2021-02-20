@@ -74,7 +74,7 @@ namespace System.Threading.Tasks
             //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
             //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
             // Used to "cast" from Task<Task> to Task<Task<TResult>>.
-            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result;
+            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result; // await completed
         }
 
         // Construct a promise-style task without any options.
