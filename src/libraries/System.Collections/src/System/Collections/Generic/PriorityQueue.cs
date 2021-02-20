@@ -272,6 +272,7 @@ namespace System.Collections.Generic
             if (_size == 0)
             {
                 _nodes = EnumerableHelpers.ToArray(items, out _size);
+                _version++;
 
                 if (_size > 1)
                 {
@@ -307,6 +308,8 @@ namespace System.Collections.Generic
                 }
 
                 _size = i;
+                _version++;
+
                 if (i > 1)
                 {
                     Heapify();
