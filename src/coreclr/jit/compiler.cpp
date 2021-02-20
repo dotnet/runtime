@@ -5587,7 +5587,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
         // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)info.compCompHnd->getAssemblyName(info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        (void)info.compCompHnd->getAssemblyName(
+            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
     }
 #endif // DEBUG
 
