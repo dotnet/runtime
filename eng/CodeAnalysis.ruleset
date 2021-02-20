@@ -1,6 +1,13 @@
 ﻿<RuleSet Name="Microsoft.Analyzers.ManagedCodeAnalysis" Description="Microsoft.Analyzers.ManagedCodeAnalysis" ToolsVersion="14.0">
   <Rules AnalyzerId="Microsoft.VisualStudio.Threading.Analyzers" RuleNamespace="Microsoft.VisualStudio.Threading.Analyzers">
-    <Rule Id="VSTHRD103" Action="None" />
+    <Rule Id="VSTHRD200" Action="None" />
+    <Rule Id="VSTHRD003" Action="None" />
+    <Rule Id="VSTHRD001" Action="None" />
+    <Rule Id="VSTHRD002" Action="None" />
+    <Rule Id="VSTHRD110" Action="None" />
+    <Rule Id="VSTHRD114" Action="None" />
+    <Rule Id="VSTHRD100" Action="None" />
+    <Rule Id="VSTHRD103" Action="Warning" />
   </Rules>
   <Rules AnalyzerId="Microsoft.DotNet.CodeAnalysis" RuleNamespace="Microsoft.DotNet.CodeAnalysis.Analyzers">
     <Rule Id="BCL0001" Action="Warning" />      <!-- Ensure minimum API surface is respected -->
