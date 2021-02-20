@@ -52,8 +52,8 @@ namespace Tracing.Tests
                 {
                     tasks[i] = Task.Run(() => { someNumber += 1; });
                 }
+
                 Task.WaitAll(tasks);
-                Thread.Sleep(3000);
 
                 if (listener.TPWorkerThreadStartCount > 0 ||
                     listener.TPWorkerThreadStopCount > 0 ||
