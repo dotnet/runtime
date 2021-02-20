@@ -1,4 +1,7 @@
 ﻿<RuleSet Name="Microsoft.Analyzers.ManagedCodeAnalysis" Description="Microsoft.Analyzers.ManagedCodeAnalysis" ToolsVersion="14.0">
+  <Rules AnalyzerId="Microsoft.VisualStudio.Threading.Analyzers" RuleNamespace="Microsoft.VisualStudio.Threading.Analyzers">
+    <Rule Id="VSTHRD103" Action="None" />
+  </Rules>
   <Rules AnalyzerId="Microsoft.DotNet.CodeAnalysis" RuleNamespace="Microsoft.DotNet.CodeAnalysis.Analyzers">
     <Rule Id="BCL0001" Action="Warning" />      <!-- Ensure minimum API surface is respected -->
     <Rule Id="BCL0010" Action="Warning" />      <!-- AppContext default value expected to be true -->
