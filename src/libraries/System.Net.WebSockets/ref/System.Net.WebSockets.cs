@@ -135,20 +135,18 @@ namespace System.Net.WebSockets
         Closed = 5,
         Aborted = 6,
     }
-
-    public sealed class WebSocketCreationOptions
+    public sealed partial class WebSocketCreationOptions
     {
-        public bool IsServer { get; set; }
-        public string? SubProtocol { get; set; }
-        public TimeSpan KeepAliveInterval { get; set; }
-        public WebSocketDeflateOptions? DeflateOptions { get; set; }
+        public bool IsServer { get { throw null; } set { } }
+        public string? SubProtocol { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
+        public System.Net.WebSockets.WebSocketDeflateOptions? DeflateOptions { get { throw null; } set { } }
     }
-
-    public sealed class WebSocketDeflateOptions
+    public sealed partial class WebSocketDeflateOptions
     {
-        public int ClientMaxWindowBits { get; set; }
-        public bool ClientContextTakeover { get; set; }
-        public int ServerMaxWindowBits { get; set; }
-        public bool ServerContextTakeover { get; set; }
+        public int ClientMaxWindowBits { get { throw null; } set { } }
+        public bool ClientContextTakeover { get { throw null; } set { } }
+        public int ServerMaxWindowBits { get { throw null; } set { } }
+        public bool ServerContextTakeover { get { throw null; } set { } }
     }
 }
