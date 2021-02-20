@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace System.Xml.Serialization
 {
@@ -93,8 +94,11 @@ namespace System.Xml.Serialization
         private static uint GetPersistentHashCode(string value)
         {
             byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
-            byte[] hash = System.Security.Cryptography.SHA512.Create().ComputeHash(valueBytes);
-            return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
+            using (SHA512 sha512 = SHA512.Create())
+            {
+                byte[] hash = sha512.ComputeHash(valueBytes);
+                return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
+            }
         }
     }
 }
