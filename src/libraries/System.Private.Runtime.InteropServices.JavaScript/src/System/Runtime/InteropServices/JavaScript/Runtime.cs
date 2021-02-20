@@ -318,7 +318,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static unsafe int MakeMarshalSignatureInfo (RuntimeTypeHandle classPtr, IntPtr methodHandle, out MarshalSignatureInfo result, int resultSize) {
             result = default(MarshalSignatureInfo);
-
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 

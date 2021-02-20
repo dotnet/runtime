@@ -124,7 +124,7 @@ var BindingSupportLib = {
 
 			// HACK: This method needs to be the absolute first one we bind, because
 			//  the process of binding other methods relies on it.
-			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iii");
+			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
 
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
