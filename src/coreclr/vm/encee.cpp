@@ -58,7 +58,7 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken module
 // in a state where Destruct() can be safely called.
 //
 /*virtual*/
-void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
+void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACTL
     {
@@ -69,7 +69,7 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
     CONTRACTL_END
 
     LOG((LF_ENC,LL_INFO100,"EACM::Initialize 0x%x\n", this));
-    Module::Initialize(pamTracker);
+    Module::Initialize(pamTracker, szName);
 }
 
 // Called when the module is being destroyed (eg. AD unload time)
@@ -1094,7 +1094,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // Create a new EnCAddedField instance
     EnCAddedField *pEntry = new EnCAddedField;
@@ -1241,7 +1241,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
@@ -1315,7 +1315,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
     // if the field doesn't yet have available storage, we'll have to allocate it.
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
