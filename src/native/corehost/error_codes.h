@@ -51,6 +51,8 @@ enum StatusCode
     HostPropertyNotFound                = 0x800080a4,
     CoreHostIncompatibleConfig          = 0x800080a5,
     HostApiUnsupportedScenario          = 0x800080a6,
+    CorehostMustRunAsArchX64            = 0x800080a7,
+    CorehostMustRunAsArchArm64          = 0x800080a8,
 };
 
 #define STATUS_CODE_SUCCEEDED(status_code) ((static_cast<int>(static_cast<StatusCode>(status_code))) >= 0)

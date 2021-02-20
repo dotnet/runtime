@@ -10,6 +10,13 @@
 #include "utils.h"
 #include "hostfxr_resolver.h"
 
+#if !defined(FEATURE_APPHOST) && defined(TARGET_OSX)
+#include <spawn.h>
+#include <sys/sysctl.h>
+
+extern char **environ;
+#endif // !defined(FEATURE_APPHOST) && defined(TARGET_OSX)
+
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"
 
@@ -92,6 +99,44 @@ void need_newer_framework_error()
 }
 
 #if defined(CURHOST_EXE)
+
+int try_run_as_arch(const pal::char_t *path, int rc, const int argc, const pal::char_t* argv[])
+{
+    assert((rc == StatusCode::CorehostMustRunAsArchArm64) || (rc == StatusCode::CorehostMustRunAsArchX64));
+#if !defined(FEATURE_APPHOST) && defined(TARGET_OSX)
+
+    trace::verbose(_X("Restarting process in arch %s."), (rc == CorehostMustRunAsArchArm64) ? _X("Arm64") : _X("x64"));
+
+    posix_spawnattr_t attr;
+    int result = 0;
+    size_t size;
+
+    int curproc_arch_affinity = (rc == CorehostMustRunAsArchArm64) ? 0 : 1;
+    size = sizeof(curproc_arch_affinity);
+    sysctlbyname("kern.curproc_arch_affinity", NULL, NULL, &curproc_arch_affinity, size);
+    // kern.curproc_arch_affinity set ignore errors (not available on x64 platform)
+
+    result = posix_spawnattr_init(&attr);
+
+    if (result == 0)
+        result = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
+
+    if (result == 0)
+    {
+        cpu_type_t cpu_pref = (rc == CorehostMustRunAsArchArm64) ? CPU_TYPE_ARM64 : CPU_TYPE_X86_64;
+        result = posix_spawnattr_setbinpref_np(&attr, 1, &cpu_pref, &size);
+    }
+
+    if (result == 0)
+        result = posix_spawn(NULL, path, NULL, &attr, (pal::char_t * const *)argv, environ);
+
+    trace::error(_X("try_run_as_arch(%s) failed: %s"), path, strerror(errno));
+#else // !defined(FEATURE_APPHOST) && defined(TARGET_OSX)
+    trace::error(_X("try_run_as_arch() unsuppported"), path);
+#endif // !defined(FEATURE_APPHOST) && defined(TARGET_OSX)
+
+    return rc;
+}
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
@@ -210,7 +255,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         {
             // The host components will be statically linked with the app-host: https://github.com/dotnet/runtime/issues/32823
             // Once this work is completed, an outdated hostfxr can only be found for framework-related apps.
-            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
+            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());
             need_newer_framework_error();
             rc = StatusCode::FrameworkMissingFailure;
         }
@@ -235,7 +280,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = hostfxr_main_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection. 
+            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection.
             if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && set_error_writer == nullptr)
             {
                 need_newer_framework_error();
@@ -271,6 +316,11 @@ int exe_start(const int argc, const pal::char_t* argv[])
             }
         }
 #endif // defined(FEATURE_STATIC_HOST)
+
+        if ((rc == StatusCode::CorehostMustRunAsArchArm64) || (rc == StatusCode::CorehostMustRunAsArchX64))
+        {
+            try_run_as_arch(host_path.c_str(), rc, argc, argv);
+        }
     }
 
     return rc;

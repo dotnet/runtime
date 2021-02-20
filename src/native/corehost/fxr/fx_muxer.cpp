@@ -1101,7 +1101,8 @@ int fx_muxer_t::handle_cli(
             nullptr/*required_buffer_size*/);
     }
 
-    if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+    if ((pal::strcasecmp(_X("--info"), argv[1]) == 0) &&
+        !((result == StatusCode::CorehostMustRunAsArchArm64) || (result == StatusCode::CorehostMustRunAsArchX64)))
     {
         command_line::print_muxer_info(host_info.dotnet_root);
     }

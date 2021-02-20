@@ -4,6 +4,9 @@
 #include "fx_resolver.h"
 #include "host_startup_info.h"
 #include "trace.h"
+#ifdef TARGET_OSX
+#include <sys/sysctl.h>
+#endif //  TARGET_OSX
 
 namespace
 {
@@ -285,6 +288,58 @@ namespace
 
         return new fx_definition_t(fx_ref.get_fx_name(), selected_fx_dir, oldest_requested_version, selected_fx_version);
     }
+
+#ifdef TARGET_OSX
+    bool isRunningOnArm64()
+    {
+        int value = 0;
+        size_t len = sizeof(value);
+        int result = sysctlbyname("hw.optional.arm64", &value, &len, nullptr, 0);
+
+        return (result == 0) && (value != 0);
+    }
+#endif // TARGET_OSX
+
+    StatusCode check_framework_references_arch_compatible(
+        const fx_name_to_fx_reference_map_t& references)
+    {
+        StatusCode rc = StatusCode::Success;
+
+#ifdef TARGET_OSX
+        auto runtime_ref = references.find("Microsoft.NETCore.App");
+        assert(runtime_ref != references.end());
+
+        fx_ver_t ver;
+        bool result = fx_ver_t::parse(runtime_ref->second.get_fx_version().c_str(), &ver, false);
+        assert(result);
+
+#    if defined(TARGET_ARM64)
+        // We are running on macos arm64
+        // If target runtime < .NET 6 we have to run as x64 using Rosetta
+        if (ver.get_major() < 6)
+        {
+            trace::verbose(
+                _X("Target runtime %s must run as x64"),
+                runtime_ref->second.get_fx_version().c_str());
+            return StatusCode::CorehostMustRunAsArchX64;
+        }
+#    elif defined(TARGET_AMD64)
+        // If we are running on macos arm64 under Rosetta
+        // We only want to run as x64 for runtimes < .NET 6
+        if (isRunningOnArm64() && (ver.get_major() >= 6))
+        {
+            trace::verbose(
+                _X("Target runtime %s must run as arm64"),
+                runtime_ref->second.get_fx_version().c_str());
+            return StatusCode::CorehostMustRunAsArchArm64;
+        }
+#    else
+#       error unexpected TARGET architecture for macos
+#    endif
+#endif // TARGET_OSX
+
+        return rc;
+    }
 }
 
 StatusCode fx_resolver_t::reconcile_fx_references_helper(
@@ -518,6 +573,11 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     } while (rc == StatusCode::FrameworkCompatRetry && retry_count++ < Max_Framework_Resolve_Retries);
 
     assert(retry_count < Max_Framework_Resolve_Retries);
+
+    if (rc == StatusCode::Success)
+    {
+        rc = check_framework_references_arch_compatible(resolver.m_effective_fx_references);
+    }
 
     if (rc == StatusCode::Success)
     {
