@@ -5237,7 +5237,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     }
 }
 
-BOOL Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)
+bool Compiler::verMergeEntryStates(BasicBlock* block, bool* changed)
 {
     unsigned i;
 
@@ -5519,7 +5519,7 @@ typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd, bool bashStructT
 }
 
 /******************************************************************************/
-BOOL Compiler::verIsSDArray(const typeInfo& ti)
+bool Compiler::verIsSDArray(const typeInfo& ti)
 {
     if (ti.IsNullObjRef())
     { // nulls are SD arrays
@@ -5580,7 +5580,7 @@ typeInfo Compiler::verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_L
     return verMakeTypeInfo(ciType, classHandle);
 }
 
-BOOL Compiler::verIsByRefLike(const typeInfo& ti)
+bool Compiler::verIsByRefLike(const typeInfo& ti)
 {
     if (ti.IsByRef())
     {
@@ -5593,7 +5593,7 @@ BOOL Compiler::verIsByRefLike(const typeInfo& ti)
     return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_CONTAINS_STACK_PTR;
 }
 
-BOOL Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
+bool Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
 {
     if (ti.IsPermanentHomeByRef())
     {
@@ -5605,7 +5605,7 @@ BOOL Compiler::verIsSafeToReturnByRef(const typeInfo& ti)
     }
 }
 
-BOOL Compiler::verIsBoxable(const typeInfo& ti)
+bool Compiler::verIsBoxable(const typeInfo& ti)
 {
     return (ti.IsPrimitiveType() || ti.IsObjRef() // includes boxed generic type variables
             || ti.IsUnboxedGenericTypeVar() ||
@@ -6120,7 +6120,7 @@ DONE_ARGS:
  *  targetMemberRef is validated iff verificationNeeded.
  */
 
-BOOL Compiler::verCheckDelegateCreation(const BYTE*  delegateCreateStart,
+bool Compiler::verCheckDelegateCreation(const BYTE*  delegateCreateStart,
                                         const BYTE*  codeAddr,
                                         mdMemberRef& targetMemberRef)
 {
@@ -6315,7 +6315,7 @@ void Compiler::verVerifyThisPtrInitialised()
     }
 }
 
-BOOL Compiler::verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target)
+bool Compiler::verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target)
 {
     // Either target == context, in this case calling an alternate .ctor
     // Or target is the immediate parent of context
@@ -18921,7 +18921,7 @@ bool Compiler::impIsValueType(typeInfo* pTypeInfo)
 
  */
 
-BOOL Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
+bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
     if (tree->gtOper != GT_ADDR)
     {
@@ -20238,7 +20238,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
  worry about it.
 */
 
-BOOL Compiler::impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo)
+bool Compiler::impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo)
 {
     assert(compIsForInlining());
     return (tree->gtOper == GT_LCL_VAR && tree->AsLclVarCommon()->GetLclNum() == inlArgInfo[0].argTmpNum);
@@ -20264,7 +20264,7 @@ BOOL Compiler::impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo)
 //    statement list and have to be checked for side effects may be provided via
 //    additionalTree and additionalCallArgs.
 //
-BOOL Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
+bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
                                                                   GenTreeCall::Use* additionalCallArgs,
                                                                   GenTree*          dereferencedAddress,
                                                                   InlArgInfo*       inlArgInfo)
