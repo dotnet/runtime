@@ -4128,34 +4128,8 @@ mini_free_jit_domain_info (MonoDomain *domain)
 {
 	MonoJitDomainInfo *info = domain_jit_info (domain);
 
-	g_hash_table_foreach (info->jump_target_hash, delete_jump_list, NULL);
-	g_hash_table_destroy (info->jump_target_hash);
-	if (info->jump_target_got_slot_hash) {
-		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_got_slot_list, NULL);
-		g_hash_table_destroy (info->jump_target_got_slot_hash);
-	}
-	if (info->dynamic_code_hash) {
-		g_hash_table_foreach (info->dynamic_code_hash, dynamic_method_info_free, NULL);
-		g_hash_table_destroy (info->dynamic_code_hash);
-	}
-	g_hash_table_destroy (info->method_code_hash);
-	g_hash_table_destroy (info->jit_trampoline_hash);
-	g_hash_table_destroy (info->delegate_trampoline_hash);
-	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
-	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->method_rgctx_hash);
-	g_hash_table_destroy (info->interp_method_pointer_hash);
-	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
-	g_hash_table_destroy (info->seq_points);
-	g_hash_table_destroy (info->arch_seq_points);
 	if (info->agent_info)
 		mini_get_dbg_callbacks ()->free_domain_info (domain);
-	g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
-	if (info->llvm_jit_callees) {
-		g_hash_table_foreach (info->llvm_jit_callees, free_jit_callee_list, NULL);
-		g_hash_table_destroy (info->llvm_jit_callees);
-	}
-	mono_internal_hash_table_destroy (&info->interp_code_hash);
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
