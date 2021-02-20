@@ -441,7 +441,7 @@ namespace System.IO
                 t = _lastSynchronouslyCompletedTask;
                 Debug.Assert(t == null || t.IsCompletedSuccessfully, "Cached task should have completed successfully");
 
-                if (t == null || t.Result != synchronousResult)
+                if (t == null || t.Result != synchronousResult) // await t
                 {
                     _lastSynchronouslyCompletedTask = t = Task.FromResult(synchronousResult);
                 }

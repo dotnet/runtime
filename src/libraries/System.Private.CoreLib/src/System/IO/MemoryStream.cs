@@ -392,7 +392,7 @@ namespace System.IO
                 Task<int>? t = _lastReadTask;
                 Debug.Assert(t == null || t.Status == TaskStatus.RanToCompletion,
                     "Expected that a stored last task completed successfully");
-                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n));
+                return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<int>(n)); // await t
             }
             catch (OperationCanceledException oce)
             {
@@ -516,7 +516,7 @@ namespace System.IO
             try
             {
                 // If destination is a MemoryStream, CopyTo synchronously:
-                memStrDest.Write(_buffer, pos, n);
+                memStrDest.Write(_buffer, pos, n); // await WriteAsync
                 return Task.CompletedTask;
             }
             catch (Exception ex)

@@ -584,7 +584,7 @@ namespace System.IO
             Task<int>? t = _lastSyncCompletedReadTask;
             Debug.Assert(t == null || t.IsCompletedSuccessfully);
 
-            if (t != null && t.Result == val)
+            if (t != null && t.Result == val) // await t
                 return t;
 
             t = Task.FromResult<int>(val);

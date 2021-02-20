@@ -793,7 +793,7 @@ namespace System.IO
                 if (destination.Length < _bufferLength)
                 {
                     Task<int> readTask = ReadNativeAsync(new Memory<byte>(GetBuffer()), 0, cancellationToken);
-                    _readLength = readTask.GetAwaiter().GetResult();
+                    _readLength = readTask.GetAwaiter().GetResult(); // await readTask
                     int n = Math.Min(_readLength, destination.Length);
                     new Span<byte>(GetBuffer(), 0, n).CopyTo(destination.Span);
                     _readPos = n;
@@ -1452,7 +1452,7 @@ namespace System.IO
             finally
             {
                 // Cleanup from the whole copy operation
-                cancellationReg.Dispose();
+                cancellationReg.Dispose(); // await DisposeAsync
                 awaitableOverlapped.Dispose();
 
                 ArrayPool<byte>.Shared.Return(copyBuffer);
