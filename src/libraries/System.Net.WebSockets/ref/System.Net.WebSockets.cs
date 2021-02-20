@@ -32,7 +32,7 @@ namespace System.Net.WebSockets
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string? subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, WebSocketCreationOptions options) { throw null; }
+        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, System.Net.WebSockets.WebSocketCreationOptions options) { throw null; }
         public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { throw null; }
         public abstract void Dispose();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
