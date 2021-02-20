@@ -316,15 +316,15 @@ namespace System.Runtime.InteropServices.JavaScript
             public MarshalTypeRecord FirstParameterType;
         }
 
-        public static unsafe void MakeMarshalSignatureInfo (IntPtr methodHandle, out MarshalSignatureInfo result, int resultSize) {
+        public static unsafe int MakeMarshalSignatureInfo (RuntimeTypeHandle classPtr, IntPtr methodHandle, out MarshalSignatureInfo result, int resultSize) {
             result = default(MarshalSignatureInfo);
 
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodHandle;
 
-            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle, classPtr);
             if (mb == null)
-                return;
+                return 1;
 
             MakeMarshalTypeRecord(
                 (mb as MethodInfo)?.ReturnType ?? typeof(void),
@@ -334,14 +334,23 @@ namespace System.Runtime.InteropServices.JavaScript
             ParameterInfo[] parms = mb.GetParameters();
             result.ParameterCount = parms.Length;
             if (result.ParameterCount <= 0)
-                return;
+                return 0;
 
-            fixed (MarshalTypeRecord* pRecords = &result.FirstParameterType) {
+            fixed (MarshalSignatureInfo* pResult = &result) {
+                MarshalTypeRecord* pParameters = &pResult->FirstParameterType;
+                void* pEnd = ((byte*)pResult) + resultSize -
+                    (((byte*)&pParameters[1]) - (byte*)pParameters);
+
                 for (int i = 0; i < result.ParameterCount; i++)
                 {
-                    MakeMarshalTypeRecord(parms[i].ParameterType, out pRecords[i]);
+                    var ptr = &pParameters[i];
+                    if (ptr >= pEnd)
+                        return 2;
+                    MakeMarshalTypeRecord(parms[i].ParameterType, out *ptr);
                 }
             }
+
+            return 0;
         }
 
         public static void MakeMarshalTypeRecord (Type type, out MarshalTypeRecord result) {

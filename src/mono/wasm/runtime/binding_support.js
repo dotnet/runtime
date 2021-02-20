@@ -122,10 +122,13 @@ var BindingSupportLib = {
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
+			// HACK: This method needs to be the absolute first one we bind, because
+			//  the process of binding other methods relies on it.
+			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iii");
+
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
 			//  break in a more understandable way.
-
 			this._bind_js_obj = bind_runtime_method ("BindJSObject", "iii");
 			this._bind_core_clr_obj = bind_runtime_method ("BindCoreCLRObject", "ii");
 			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
@@ -992,6 +995,11 @@ var BindingSupportLib = {
 		},
 
 		get_method_signature_info: function (classPtr, methodPtr) {
+			// MakeMarshalSignatureInfo is a managed method, so we'll get called
+			//  during the process of binding it
+			if (!this.make_marshal_signature_info)
+				return null;
+
 			if (!classPtr)
 				throw new Error("Class ptr not provided");
 			if (!methodPtr)
@@ -1002,44 +1010,40 @@ var BindingSupportLib = {
 			var result = this._method_signature_info_table.get (methodPtr);
 			var classMismatch = !!result && (result.classPtr !== classPtr);
 			if (!result) {
-				infoPtr = this.mono_wasm_create_method_signature_info (classPtr, methodPtr);
+				const bufferSize = 1024;
+				var infoPtr = Module._malloc(bufferSize);
+				console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr} and methodPtr ${methodPtr}`);
+				var err = this.make_marshal_signature_info (classPtr, methodPtr, infoPtr, bufferSize);
+				if (err !== 0)
+					throw new Error (`MakeMarshalSignatureInfo failed with code ${err}`);
 
-/*
-typedef struct wasm_method_signature_info {
-	int result_marshal_type;
-	MonoClass* result_class;
-	int parameter_count;
-	int* parameter_marshal_types;
-	MonoClass** parameter_classes;
-} wasm_method_signature_info;
-*/
 				var off32 = infoPtr >> 2;
-				var pcount = Module.HEAPU32[off32 + 2],
-					pmtypesPtr = Module.HEAPU32[off32 + 3] >> 2,
-					pclassesPtr = Module.HEAPU32[off32 + 4] >> 2;
+				var pcount = Module.HEAPU32[off32 + 0];
+
+				var decode = function (offset32) {
+					return {
+						"marshalType": Module.HEAPU32[offset32 + 0],
+						"class": Module.HEAPU32[offset32 + 1]
+					};
+				};				
 
 				var parms = new Array(pcount);
 				for (var i = 0; i < pcount; i++)
-					parms[i] = { 
-						"marshalType": Module.HEAPU32[pmtypesPtr + i], 
-						"class": Module.HEAPU32[pclassesPtr + i]
-					};
+					parms[i] = decode(off32 + 1 + 2 + (i * 2));
 
 				result = {
-					"result": {
-						"marshalType": Module.HEAPU32[off32 + 0], 
-						"class": Module.HEAPU32[off32 + 1] 
-					},
+					"result": decode(off32 + 1),
 					"parameters": parms,
 					"classPtr": classPtr
 				};
+
+				console.log(methodPtr, JSON.stringify(result));
 
 				Module._free (infoPtr);
 				if (classMismatch)
 					console.log("WARNING: Class ptr mismatch for signature info, so caching is disabled");
 				else
 					this._method_signature_info_table.set (methodPtr, result);
-				// console.log(methodPtr, JSON.stringify(result));
 			}
 			return result;
 		},
