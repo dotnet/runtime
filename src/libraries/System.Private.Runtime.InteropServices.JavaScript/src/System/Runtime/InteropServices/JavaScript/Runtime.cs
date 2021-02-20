@@ -303,6 +303,52 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MarshalTypeRecord {
+            public MarshalType MarshalType;
+            public IntPtr TypeHandle;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MarshalSignatureInfo {
+            public int ParameterCount;
+            public MarshalTypeRecord ReturnType;
+            public MarshalTypeRecord FirstParameterType;
+        }
+
+        public static unsafe void MakeMarshalSignatureInfo (IntPtr methodHandle, out MarshalSignatureInfo result, int resultSize) {
+            result = default(MarshalSignatureInfo);
+
+            IntPtrAndHandle tmp = default(IntPtrAndHandle);
+            tmp.ptr = methodHandle;
+
+            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
+            if (mb == null)
+                return;
+
+            MakeMarshalTypeRecord(
+                (mb as MethodInfo)?.ReturnType ?? typeof(void),
+                out result.ReturnType
+            );
+
+            ParameterInfo[] parms = mb.GetParameters();
+            result.ParameterCount = parms.Length;
+            if (result.ParameterCount <= 0)
+                return;
+
+            fixed (MarshalTypeRecord* pRecords = &result.FirstParameterType) {
+                for (int i = 0; i < result.ParameterCount; i++)
+                {
+                    MakeMarshalTypeRecord(parms[i].ParameterType, out pRecords[i]);
+                }
+            }
+        }
+
+        public static void MakeMarshalTypeRecord (Type type, out MarshalTypeRecord result) {
+            result.MarshalType = GetMarshalTypeFromType(type);
+            result.TypeHandle = type.TypeHandle.Value;
+        }
+
         public static MarshalType GetMarshalTypeFromType (Type type) {
             if (type == null)
                 return MarshalType.VOID;
