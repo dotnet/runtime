@@ -1576,14 +1576,6 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
 
-typedef enum {
-	MONO_UNHANDLED_POLICY_LEGACY,
-	MONO_UNHANDLED_POLICY_CURRENT
-} MonoRuntimeUnhandledExceptionPolicy;
-
-MonoRuntimeUnhandledExceptionPolicy
-mono_runtime_unhandled_exception_policy_get (void);
-
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
 
