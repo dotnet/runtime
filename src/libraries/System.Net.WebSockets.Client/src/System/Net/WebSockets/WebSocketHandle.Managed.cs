@@ -183,7 +183,7 @@ namespace System.Net.WebSockets
                 {
                     foreach (ReadOnlySpan<char> extension in extensions)
                     {
-                        if (extension.TrimStart().StartsWith("permessage-deflate"))
+                        if (extension.TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
                         {
                             deflateOptions = ParseDeflateOptions(extension, options.DeflateOptions);
                             break;
@@ -247,23 +247,37 @@ namespace System.Net.WebSockets
 
                 if (!value.IsEmpty)
                 {
-                    if (value == "client_no_context_takeover")
+                    if (value == ClientWebSocketDeflateConstants.ClientNoContextTakeover)
                     {
                         options.ClientContextTakeover = false;
                     }
-                    else if (value == "server_no_context_takeover")
+                    else if (value == ClientWebSocketDeflateConstants.ServerNoContextTakeover)
                     {
                         options.ServerContextTakeover = false;
                     }
-                    else if (value.StartsWith("client_max_window_bits="))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ClientMaxWindowBits))
                     {
-                        options.ClientMaxWindowBits = int.Parse(value["client_max_window_bits=".Length..],
-                                                                provider: CultureInfo.InvariantCulture);
+                        options.ClientMaxWindowBits = ParseWindowBits(value);
                     }
-                    else if (value.StartsWith("server_max_window_bits="))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ServerMaxWindowBits))
                     {
-                        options.ServerMaxWindowBits = int.Parse(value["server_max_window_bits=".Length..],
-                                                                provider: CultureInfo.InvariantCulture);
+                        options.ServerMaxWindowBits = ParseWindowBits(value);
+                    }
+
+                    static int ParseWindowBits(ReadOnlySpan<char> value)
+                    {
+                        var startIndex = value.IndexOf('=');
+
+                        if (startIndex < 0 ||
+                            !int.TryParse(value.Slice(startIndex + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int windowBits) ||
+                            windowBits < 9 ||
+                            windowBits > 15)
+                        {
+                            throw new WebSocketException(WebSocketError.HeaderError,
+                                SR.Format(SR.net_WebSockets_InvalidResponseHeader, ClientWebSocketDeflateConstants.Extension, value.ToString()));
+                        }
+
+                        return windowBits;
                     }
                 }
 
@@ -308,33 +322,37 @@ namespace System.Net.WebSockets
 
                 static IEnumerable<string> GetDeflateOptions(WebSocketDeflateOptions options)
                 {
-                    yield return "permessage-deflate";
+                    yield return ClientWebSocketDeflateConstants.Extension;
 
                     if (options.ClientMaxWindowBits != 15)
                     {
-                        yield return "client_max_window_bits=" + options.ClientMaxWindowBits;
+                        yield return $"{ClientWebSocketDeflateConstants.ClientMaxWindowBits}={options.ClientMaxWindowBits}";
                     }
                     else
                     {
                         // Advertise that we support this option
-                        yield return "client_max_window_bits";
+                        yield return ClientWebSocketDeflateConstants.ClientMaxWindowBits;
                     }
 
                     if (options.ServerMaxWindowBits != 15)
                     {
-                        yield return "server_max_window_bits=" + options.ServerMaxWindowBits;
+                        yield return $"{ClientWebSocketDeflateConstants.ServerMaxWindowBits}={options.ServerMaxWindowBits}";
                     }
                     else
                     {
                         // Advertise that we support this option
-                        yield return "server_max_window_bits";
+                        yield return ClientWebSocketDeflateConstants.ServerMaxWindowBits;
                     }
 
                     if (!options.ServerContextTakeover)
-                        yield return "server_no_context_takeover";
+                    {
+                        yield return ClientWebSocketDeflateConstants.ServerNoContextTakeover;
+                    }
 
                     if (!options.ClientContextTakeover)
-                        yield return "client_no_context_takeover";
+                    {
+                        yield return ClientWebSocketDeflateConstants.ClientNoContextTakeover;
+                    }
                 }
             }
         }
