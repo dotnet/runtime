@@ -51,7 +51,7 @@
 
   <Target Name="BuildCoreHostWindows"
           Condition="'$(TargetOS)' == 'windows'"
-          DependsOnTargets="$(GenerateNativeVersionFileDependsOn)">
+          DependsOnTargets="$(BuildCoreHostDependsOn)">
 
     <!-- Generate Version files -->
     <ItemGroup>
