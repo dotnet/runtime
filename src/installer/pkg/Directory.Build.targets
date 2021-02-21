@@ -54,13 +54,6 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Ensure the deb tool is built. -->
-  <Target Name="InitializeDotnetDebTool">
-    <MSBuild
-      Projects="$(DotnetDebToolSourceDir)dotnet-deb-tool.csproj"
-      Targets="Restore;Build" />
-  </Target>
-
   <!--
     Check if the deb package build tool prereq is available.
     This issue tracks adding a way to raise this as a build error: https://github.com/dotnet/core-setup/issues/5396
