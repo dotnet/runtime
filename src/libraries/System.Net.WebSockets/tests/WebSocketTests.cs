@@ -261,6 +261,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal("Yeet", server.CloseStatusDescription);
             Assert.Equal(WebSocketCloseStatus.PolicyViolation, server.CloseStatus);
 
+            await server.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancellation.Token);
             await clientClose;
 
             Assert.Equal(WebSocketState.Closed, server.State);
