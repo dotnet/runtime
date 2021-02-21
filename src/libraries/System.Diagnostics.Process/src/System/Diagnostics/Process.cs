@@ -179,7 +179,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_exited)
                 {
                     EnsureState(State.Associated);
@@ -198,7 +197,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_startTime.HasValue)
                 {
                     _startTime = StartTimeCore;
@@ -216,7 +214,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_haveExitTime)
                 {
                     EnsureState(State.Exited);
@@ -265,7 +262,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
@@ -274,7 +270,6 @@ namespace System.Diagnostics
             [SupportedOSPlatform("freebsd")]
             set
             {
-                CheckDisposed();
                 SetWorkingSetLimits(null, value);
             }
         }
@@ -287,7 +282,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
@@ -296,7 +290,6 @@ namespace System.Diagnostics
             [SupportedOSPlatform("freebsd")]
             set
             {
-                CheckDisposed();
                 SetWorkingSetLimits(value, null);
             }
         }
@@ -305,7 +298,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (_modules == null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
@@ -329,7 +321,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PoolNonPagedBytes);
             }
@@ -444,7 +435,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_havePriorityBoostEnabled)
                 {
                     _priorityBoostEnabled = PriorityBoostEnabledCore;
@@ -454,7 +444,6 @@ namespace System.Diagnostics
             }
             set
             {
-                CheckDisposed();
                 PriorityBoostEnabledCore = value;
                 _priorityBoostEnabled = value;
                 _havePriorityBoostEnabled = true;
@@ -471,7 +460,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_havePriorityClass)
                 {
                     _priorityClass = PriorityClassCore;
@@ -481,7 +469,6 @@ namespace System.Diagnostics
             }
             set
             {
-                CheckDisposed();
                 if (!Enum.IsDefined(typeof(ProcessPriorityClass), value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessPriorityClass));
@@ -537,7 +524,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (!_haveProcessorAffinity)
                 {
                     _processorAffinity = ProcessorAffinityCore;
@@ -547,7 +533,6 @@ namespace System.Diagnostics
             }
             set
             {
-                CheckDisposed();
                 ProcessorAffinityCore = value;
                 _processorAffinity = value;
                 _haveProcessorAffinity = true;
@@ -572,7 +557,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (_startInfo == null)
                 {
                     if (Associated)
@@ -586,7 +570,6 @@ namespace System.Diagnostics
             }
             set
             {
-                CheckDisposed();
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(value));
@@ -611,7 +594,6 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 if (_threads == null)
                 {
                     EnsureState(State.HaveProcessInfo);
@@ -671,12 +653,10 @@ namespace System.Diagnostics
         {
             get
             {
-                CheckDisposed();
                 return _watchForExit;
             }
             set
             {
-                CheckDisposed();
                 if (value != _watchForExit)
                 {
                     if (Associated)
@@ -936,7 +916,6 @@ namespace System.Diagnostics
         /// <internalonly/>
         private void EnsureState(State state)
         {
-            CheckDisposed();
             if ((state & State.Associated) != (State)0)
                 if (!Associated)
                     throw new InvalidOperationException(SR.NoAssociatedProcess);
@@ -1380,7 +1359,6 @@ namespace System.Diagnostics
         /// </devdoc>
         public void WaitForExit()
         {
-            CheckDisposed();
             WaitForExit(Timeout.Infinite);
         }
 
@@ -1390,7 +1368,6 @@ namespace System.Diagnostics
         /// </summary>
         public bool WaitForExit(int milliseconds)
         {
-            CheckDisposed();
             bool exited = WaitForExitCore(milliseconds);
             if (exited && _watchForExit)
             {
@@ -1531,7 +1508,6 @@ namespace System.Diagnostics
         /// </devdoc>
         public void BeginOutputReadLine()
         {
-            CheckDisposed();
             if (_outputStreamReadMode == StreamReadMode.Undefined)
             {
                 _outputStreamReadMode = StreamReadMode.AsyncMode;
@@ -1570,7 +1546,6 @@ namespace System.Diagnostics
         /// </devdoc>
         public void BeginErrorReadLine()
         {
-            CheckDisposed();
             if (_errorStreamReadMode == StreamReadMode.Undefined)
             {
                 _errorStreamReadMode = StreamReadMode.AsyncMode;
