@@ -8,7 +8,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
-    <GenerateNativeVersionFileDependsOn Condition="'$(DisableSourceLink)' != 'true'">InitializeSourceControlInformationFromSourceControlManager</GenerateNativeVersionFileDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(DisableSourceLink)' != 'true'">InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
@@ -25,7 +25,7 @@
 
   <Target Name="BuildCoreHostUnix"
           Condition="'$(TargetOS)' != 'windows'"
-          DependsOnTargets="$(GenerateNativeVersionFileDependsOn);GenerateNativeVersionFile">
+          DependsOnTargets="$(BuildCoreHostDependsOn);GenerateNativeVersionFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
 

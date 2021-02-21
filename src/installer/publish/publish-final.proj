@@ -26,11 +26,11 @@
   </Target>
 
   <PropertyGroup>
-    <GenerateNativeVersionFileDependsOn Condition="'$(DisableSourceLink)' != 'true'">InitializeSourceControlInformationFromSourceControlManager</GenerateNativeVersionFileDependsOn>
+    <FinalizeBuildInAzureDependsOn Condition="'$(DisableSourceLink)' != 'true'">InitializeSourceControlInformationFromSourceControlManager</FinalizeBuildInAzureDependsOn>
   </PropertyGroup>
 
   <Target Name="FinalizeBuildInAzure"
-          DependsOnTargets="GetProductVersions;$(GenerateNativeVersionFileDependsOn)">
+          DependsOnTargets="GetProductVersions;$(FinalizeBuildInAzureDependsOn)">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
