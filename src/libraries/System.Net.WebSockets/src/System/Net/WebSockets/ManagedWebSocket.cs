@@ -672,7 +672,7 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;
 
-            if (!_isServer)
+            if (!_isServer && _sentCloseFrame)
             {
                 await _receiver.WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
