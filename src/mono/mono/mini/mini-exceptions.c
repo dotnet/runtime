@@ -207,7 +207,7 @@ static int
 mono_get_seq_point_for_native_offset (MonoMethod *method, gint32 native_offset)
 {
 	SeqPoint sp;
-	if (mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, native_offset, NULL, &sp))
+	if (mono_find_prev_seq_point_for_native_offset (method, native_offset, NULL, &sp))
 		return sp.il_offset;
 	return -1;
 }
@@ -1124,7 +1124,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			sf->il_offset = location->il_offset;
 		} else {
 			SeqPoint sp;
-			if (mono_find_prev_seq_point_for_native_offset (domain, jinfo_get_method (ji), sf->native_offset, NULL, &sp))
+			if (mono_find_prev_seq_point_for_native_offset (jinfo_get_method (ji), sf->native_offset, NULL, &sp))
 				sf->il_offset = sp.il_offset;
 			else
 				sf->il_offset = -1;
@@ -1343,7 +1343,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 				if (crash_context)
 					seq_points = (MonoSeqPointInfo *) frame.ji->seq_points;
 				else
-					seq_points = mono_get_seq_points (domain, jinfo_get_method (frame.ji));
+					seq_points = mono_get_seq_points (jinfo_get_method (frame.ji));
 
 				SeqPoint sp;
 				if (seq_points && mono_seq_point_find_prev_by_native_offset (seq_points, frame.native_offset, &sp))

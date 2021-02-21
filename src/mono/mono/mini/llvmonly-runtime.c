@@ -451,10 +451,10 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	/* Same as in common_call_trampoline () */
 
 	/* Avoid loading metadata or creating a generic vtable if possible */
-	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
+	addr = mono_aot_get_method_from_vt_slot (vt, slot, error);
 	return_val_if_nok (error, NULL);
 	if (addr && !m_class_is_valuetype (vt->klass))
-		return mono_create_ftnptr (mono_domain_get (), addr);
+		return mono_create_ftnptr (addr);
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
 

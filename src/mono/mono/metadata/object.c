@@ -790,12 +790,11 @@ mono_runtime_create_delegate_trampoline (MonoClass *klass)
 	MONO_REQ_GC_NEUTRAL_MODE
 
 	g_assert (callbacks.create_delegate_trampoline);
-	return callbacks.create_delegate_trampoline (mono_domain_get (), klass);
+	return callbacks.create_delegate_trampoline (klass);
 }
 
 /**
  * mono_runtime_free_method:
- * \param domain domain where the method is hosted
  * \param method method to release
  * This routine is invoked to free the resources associated with
  * a method that has been JIT compiled.  This is used to discard
@@ -807,7 +806,7 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 	MONO_REQ_GC_NEUTRAL_MODE
 
 	if (callbacks.free_method)
-		callbacks.free_method (domain, method);
+		callbacks.free_method (method);
 
 	mono_method_clear_object (domain, method);
 
@@ -2167,7 +2166,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 			cm = m_class_get_vtable (klass) [i];
 			if (cm) {
-				vt->vtable [i] = callbacks.create_jit_trampoline (domain, cm, error);
+				vt->vtable [i] = callbacks.create_jit_trampoline (cm, error);
 				if (!is_ok (error)) {
 					mono_loader_unlock ();
 					MONO_PROFILER_RAISE (vtable_failed, (vt));
@@ -7615,9 +7614,9 @@ mono_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer
  * This is only needed on some platforms.
  */
 gpointer
-mono_create_ftnptr (MonoDomain *domain, gpointer addr)
+mono_create_ftnptr (gpointer addr)
 {
-	return callbacks.create_ftnptr (domain, addr);
+	return callbacks.create_ftnptr (addr);
 }
 
 /*

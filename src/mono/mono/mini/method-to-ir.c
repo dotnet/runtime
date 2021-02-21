@@ -3645,9 +3645,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
 		if (virtual_)
-			trampoline = mono_create_delegate_virtual_trampoline (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_virtual_trampoline (klass, method);
 		else
-			trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_trampoline_info (klass, method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
 
@@ -6156,7 +6156,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (cfg->domain, method)) {
+	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
 		dont_verify = TRUE;
 		dont_verify_stloc = TRUE;
 	}
