@@ -790,6 +790,29 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
                 break;
         }
     }
+    else // must be a VNF_ function
+    {
+        if (hasNanArg)
+        {
+            // unordered comparisons with NaNs always return true
+            return true;
+        }
+
+        switch (vnf)
+        {
+            case VNF_GT_UN:
+                return v0 > v1;
+            case VNF_GE_UN:
+                return v0 >= v1;
+            case VNF_LT_UN:
+                return v0 < v1;
+            case VNF_LE_UN:
+                return v0 <= v1;
+            default:
+                // For any other value of 'vnf', we will assert below
+                break;
+        }
+    }
     noway_assert(!"Unhandled operation in EvalComparison<double>");
     return 0;
 }
@@ -835,8 +858,8 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
     {
         if (hasNanArg)
         {
-            // always returns true
-            return false;
+            // unordered comparisons with NaNs always return true
+            return true;
         }
 
         switch (vnf)
