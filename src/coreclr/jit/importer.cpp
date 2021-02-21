@@ -20975,7 +20975,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        JITDUMP("Considering guarded devirt...\n");
+        JITDUMP("Considering guarded devirt (interface)...\n");
 
         // See if the runtime can provide a class to guess for.
         //
@@ -20990,12 +20990,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             JITDUMP("No likely implementor of interface %p (%s), sorry\n", dspPtr(objClass), objClassName);
             return;
         }
-        else
-        {
-            JITDUMP("Likely implementor of interface %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n",
-                    dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood,
-                    numberOfClasses);
-        }
+
+        JITDUMP("Likely implementor of interface %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n",
+                dspPtr(objClass), objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
 
         // Todo: a more advanced heuristic using likelihood, number of
         // classes, and the profile count for this block.
@@ -21138,47 +21135,24 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        JITDUMP("Consdering guarded devirt...\n");
+        JITDUMP("Consdering guarded devirt (virtual)...\n");
 
         // See if there's a likely guess for the class.
         //
-        const unsigned likelihoodThreshold = isInterface ? 25 : 30;
-        unsigned       likelihood          = 0;
-        unsigned       numberOfClasses     = 0;
-
+        const unsigned       likelihoodThreshold = isInterface ? 25 : 30;
+        unsigned             likelihood          = 0;
+        unsigned             numberOfClasses     = 0;
         CORINFO_CLASS_HANDLE likelyClass =
             info.compCompHnd->getLikelyClass(info.compMethodHnd, baseClass, ilOffset, &likelihood, &numberOfClasses);
 
-        if (likelyClass != NO_CLASS_HANDLE)
+        if (likelyClass == NO_CLASS_HANDLE)
         {
-            JITDUMP("Likely class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", dspPtr(objClass),
-                    objClassName, likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
+            JITDUMP("No likely class, sorry\n");
+            return;
         }
-        else if (derivedMethod != nullptr)
-        {
-            // If we have a derived method we can optionally guess for
-            // the class that introduces the method.
-            //
-            bool guessJitBestClass = true;
-            INDEBUG(guessJitBestClass = (JitConfig.JitGuardedDevirtualizationGuessBestClass() > 0););
 
-            if (!guessJitBestClass)
-            {
-                JITDUMP("No guarded devirt: no likely class and guessing for jit best class disabled\n");
-                return;
-            }
-
-            // We will use the class that introduced the method as our guess
-            // for the runtime class of the object.
-            //
-            // We don't know now likely this is; just choose a value that gets
-            // us past the threshold.
-            likelyClass = info.compCompHnd->getMethodClass(derivedMethod);
-            likelihood  = likelihoodThreshold;
-
-            JITDUMP("Will guess implementing class for class %p (%s) is %p (%s)!\n", dspPtr(objClass), objClassName,
-                    likelyClass, eeGetClassName(likelyClass));
-        }
+        JITDUMP("Likely class for %p (%s) is %p (%s) [likelihood:%u classes seen:%u]\n", dspPtr(objClass), objClassName,
+                likelyClass, eeGetClassName(likelyClass), likelihood, numberOfClasses);
 
         // Todo: a more advanced heuristic using likelihood, number of
         // classes, and the profile count for this block.
