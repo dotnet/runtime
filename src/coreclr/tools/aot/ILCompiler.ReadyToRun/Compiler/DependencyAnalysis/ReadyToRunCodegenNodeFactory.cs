@@ -358,11 +358,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithToken method = key.Method;
             bool isInstantiatingStub = key.IsInstantiatingStub;
             bool isPrecodeImportRequired = key.IsPrecodeImportRequired;
-            MethodDesc compilableMethod = method.Method;
-            if (!compilableMethod.OwningType.IsArray)
-            {
-                compilableMethod = compilableMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            }
+            MethodDesc compilableMethod = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             MethodWithGCInfo methodWithGCInfo = null;
 
             if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))

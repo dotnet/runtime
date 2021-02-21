@@ -1534,7 +1534,8 @@ namespace Internal.JitInterface
             }
 
             methodToCall = targetMethod;
-            MethodDesc canonMethod = (targetMethod.OwningType.IsArray ? null : targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            bool isArrayConstructor = targetMethod.OwningType.IsArray && targetMethod.IsConstructor;
+            MethodDesc canonMethod = (isArrayConstructor ? null : targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             if (directCall)
             {
@@ -1572,7 +1573,7 @@ namespace Internal.JitInterface
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
                 bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
 
-                if (targetMethod.OwningType.IsArray && targetMethod.IsConstructor)
+                if (isArrayConstructor)
                 {
                     // Constructors on arrays are special and don't actually have entrypoints.
                     // That would be fine by itself and wouldn't need special casing. But
@@ -1581,7 +1582,6 @@ namespace Internal.JitInterface
                     // form of __Canon[] doesn't have the two-parameter constructor. The canonical form would need
                     // to have an unlimited number of constructors to cover stuff like "int[][][][][][]..."
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
-                    pResult->codePointerOrStubLookup.constLookup = default;
                 }
                 else if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                 {
@@ -1835,12 +1835,19 @@ namespace Internal.JitInterface
                             nonUnboxingMethod = rawPinvoke.Target;
                         }
 
-                        // READYTORUN: FUTURE: Direct calls if possible
-                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.MethodEntrypoint(
-                                ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
-                                isInstantiatingStub: useInstantiatingStub,
-                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                        if (methodToCall.OwningType.IsArray && methodToCall.IsConstructor)
+                        {
+                            pResult->codePointerOrStubLookup.constLookup = default;
+                        }
+                        else
+                        {
+                            // READYTORUN: FUTURE: Direct calls if possible
+                            pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                                _compilation.NodeFactory.MethodEntrypoint(
+                                    ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                    isInstantiatingStub: useInstantiatingStub,
+                                    isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                        }
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
                         UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
