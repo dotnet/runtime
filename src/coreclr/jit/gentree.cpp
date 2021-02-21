@@ -6427,7 +6427,7 @@ GenTree* Compiler::gtNewAddrNode(GenTree* tree)
         // When the address points to the stack
         // we use TYP_I_IMPL, so if we create a LCL_VAR from it
         // it does not need to be zero-init.
-        addrType = TYP_BYREF;
+        addrType = TYP_I_IMPL;
     }
     else if (tree->OperIs(GT_FIELD))
     {
@@ -6439,7 +6439,7 @@ GenTree* Compiler::gtNewAddrNode(GenTree* tree)
         }
         else
         {
-            addrType = TYP_BYREF;
+            addrType = TYP_I_IMPL;
         }
     }
     else
