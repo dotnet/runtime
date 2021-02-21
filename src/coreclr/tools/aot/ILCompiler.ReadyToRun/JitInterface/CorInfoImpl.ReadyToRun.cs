@@ -1548,7 +1548,7 @@ namespace Internal.JitInterface
 
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
-                if (!allowInstParam && canonMethod.RequiresInstArg())
+                if (!allowInstParam && canonMethod != null && canonMethod.RequiresInstArg())
                 {
                     useInstantiatingStub = true;
                 }
@@ -1608,7 +1608,7 @@ namespace Internal.JitInterface
                     if (allowInstParam)
                     {
                         useInstantiatingStub = false;
-                        methodToCall = canonMethod;
+                        methodToCall = canonMethod ?? methodToCall;
                     }
 
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
