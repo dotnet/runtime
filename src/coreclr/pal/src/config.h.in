@@ -89,6 +89,7 @@
 #cmakedefine01 HAVE_PTHREAD_RWLOCK_T
 #cmakedefine01 HAVE_PRWATCH_T
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+#cmakedefine SIZEOF_TIME_T @SIZEOF_TIME_T@
 #cmakedefine01 HAVE_DIRENT_D_TYPE
 #cmakedefine01 HAVE_FPREGS_WITH_CW
 

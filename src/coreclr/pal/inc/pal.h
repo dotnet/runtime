@@ -324,7 +324,7 @@ PAL_IsDebuggerPresent();
 
 #ifndef PAL_STDCPP_COMPAT
 
-#if HOST_64BIT || _MSC_VER >= 1400
+#if HOST_64BIT || SIZEOF_TIME_T == 8
 typedef __int64 time_t;
 #else
 typedef long time_t;

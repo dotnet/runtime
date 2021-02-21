@@ -54,11 +54,9 @@ case "$CPUName" in
 
     armv7l)
         if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
-            __BuildArch=armel
-            __HostArch=armel
+            arch=armel
         else
-            __BuildArch=arm
-            __HostArch=arm
+            arch=arm
         fi
         ;;
 

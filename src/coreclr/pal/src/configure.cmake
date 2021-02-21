@@ -173,6 +173,7 @@ set(CMAKE_EXTRA_INCLUDE_FILE procfs.h)
 check_type_size(prwatch_t PRWATCH_T)
 set(CMAKE_EXTRA_INCLUDE_FILE)
 check_type_size(off_t SIZEOF_OFF_T)
+check_type_size(time_t SIZEOF_TIME_T)
 
 check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)

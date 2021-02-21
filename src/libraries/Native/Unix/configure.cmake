@@ -345,6 +345,8 @@ check_type_size(
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /statfs
 
+check_type_size(time_t SIZEOF_TIME_T)
+
 check_c_source_compiles(
     "
     #include <string.h>

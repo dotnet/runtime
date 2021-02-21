@@ -35,7 +35,11 @@ void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int3
 
     if (!sInitializedMRand)
     {
+#if defined(TARGET_32BIT) && SIZEOF_TIME_T == 8
+        srand48((int32_t)time(NULL));
+#else
         srand48(time(NULL));
+#endif
         sInitializedMRand = true;
     }
 
