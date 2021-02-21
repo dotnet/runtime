@@ -352,11 +352,13 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
-                [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
             const string username = "testForDotnetRuntime";
-            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
+            var bytes = new byte[33];
+            RandomNumberGenerator.Fill(bytes);
+            string password = Convert.ToBase64String(bytes) + "_-As@!%*(1)4#2";
             try
             {
                 Interop.NetUserAdd(username, password);
