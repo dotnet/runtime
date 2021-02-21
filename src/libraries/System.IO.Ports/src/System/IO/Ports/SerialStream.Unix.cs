@@ -564,7 +564,17 @@ namespace System.IO.Ports
                     throw new ArgumentException();
                 }
 
-                DtrEnable = dtrEnable;
+                try
+                {
+                    DtrEnable = dtrEnable;
+                }
+                catch (IOException ex)
+                {
+                    // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
+                    // the required termios command for setting DtrEnable, but it still works without setting the value
+                    // so we ignore this error in the constructor but still throw when setting the property manually
+                }
+
                 BaudRate = baudRate;
 
                 // now set this.RtsEnable to the specified value.
@@ -572,10 +582,19 @@ namespace System.IO.Ports
                 // handshake is either RequestToSend or RequestToSendXOnXOff
                 if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
                 {
-                    // query and cache the initial RtsEnable value
-                    // so that set_RtsEnable can do the (value != rtsEnable) optimization
-                    _rtsEnable = RtsEnabledNative();
-                    RtsEnable = rtsEnable;
+                    try
+                    {
+                        // query and cache the initial RtsEnable value
+                        // so that set_RtsEnable can do the (value != rtsEnable) optimization
+                        _rtsEnable = RtsEnabledNative();
+                        RtsEnable = rtsEnable;
+                    }
+                    catch (IOException ex)
+                    {
+                        // An IOException can be thrown when using a virtual port from eg. socat, which doesn't implement
+                        // the required termios command for setting RtsEnable, but it still works without setting the value
+                        // so we ignore this error in the constructor but still throw when setting the property manually
+                    }
                 }
             }
             catch
