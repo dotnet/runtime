@@ -15,15 +15,6 @@
 #include "mini.h"
 #include "ee.h"
 
-/* Per-domain information maintained by the JIT */
-typedef struct
-{
-	/* Debugger agent data */
-	gpointer agent_info;
-} MonoJitDomainInfo;
-
-#define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
-
 /*
  * Per-memory manager information maintained by the JIT.
  */

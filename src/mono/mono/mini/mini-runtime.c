@@ -4058,14 +4058,6 @@ class_method_pair_hash (gconstpointer data)
 }
 
 static void
-mini_create_jit_domain_info (MonoDomain *domain)
-{
-	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
-
-	domain->runtime_info = info;
-}
-
-static void
 init_jit_mem_manager (MonoMemoryManager *mem_manager)
 {
 	MonoJitMemoryManager *info = g_new0 (MonoJitMemoryManager, 1);
@@ -4124,18 +4116,6 @@ free_jit_callee_list (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-mini_free_jit_domain_info (MonoDomain *domain)
-{
-	MonoJitDomainInfo *info = domain_jit_info (domain);
-
-	if (info->agent_info)
-		mini_get_dbg_callbacks ()->free_domain_info (domain);
-
-	g_free (domain->runtime_info);
-	domain->runtime_info = NULL;
-}
-
-static void
 free_jit_mem_manager (MonoMemoryManager *mem_manager)
 {
 	MonoJitMemoryManager *info = (MonoJitMemoryManager*)mem_manager->runtime_info;
@@ -4161,10 +4141,8 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);
-#if 0
 	if (info->agent_info)
-		mini_get_dbg_callbacks ()->free_domain_info (domain);
-#endif
+		mini_get_dbg_callbacks ()->free_mem_manager (info);
 	g_hash_table_destroy (info->gsharedvt_arg_tramp_hash);
 	if (info->llvm_jit_callees) {
 		g_hash_table_foreach (info->llvm_jit_callees, free_jit_callee_list, NULL);
@@ -4457,10 +4435,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
-#ifdef JIT_TRAMPOLINES_WORK
-	mono_install_create_domain_hook (mini_create_jit_domain_info);
-	mono_install_free_domain_hook (mini_free_jit_domain_info);
-#endif
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
