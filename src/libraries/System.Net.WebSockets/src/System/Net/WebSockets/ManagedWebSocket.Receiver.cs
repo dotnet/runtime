@@ -21,6 +21,7 @@ namespace System.Net.WebSockets
             HeaderError
         }
 
+        [StructLayout(LayoutKind.Auto)]
         private readonly struct ReceiveResult
         {
             public int Count { get; init; }
@@ -414,7 +415,7 @@ namespace System.Net.WebSockets
 
                 public Buffer(int capacity)
                 {
-                    _bytes = new byte[capacity];
+                    _bytes = GC.AllocateUninitializedArray<byte>(capacity, pinned: true);
                     _position = 0;
                     _consumed = 0;
                 }
