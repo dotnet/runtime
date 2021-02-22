@@ -1523,12 +1523,9 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 
     switch (genActualType(varDsc->TypeGet()))
     {
-#if CPU_HAS_FP_SUPPORT
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return !compiler->opts.compDbgCode;
-
-#endif // CPU_HAS_FP_SUPPORT
 
         case TYP_INT:
         case TYP_LONG:

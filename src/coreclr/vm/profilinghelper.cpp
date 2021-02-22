@@ -701,14 +701,22 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER, &wszClsid));
 
-#ifdef TARGET_64BIT
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
-#else
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
+#if defined(TARGET_ARM64)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM64, &wszProfilerDLL));
+#elif defined(TARGET_ARM)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM32, &wszProfilerDLL));
 #endif
     if(wszProfilerDLL == NULL)
     {
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+#ifdef TARGET_64BIT
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
+#else
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
+#endif
+        if(wszProfilerDLL == NULL)
+        {
+            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+        }
     }
 
     // If the environment variable doesn't exist, profiling is not enabled.

@@ -8,7 +8,7 @@
     <OverridePackageId>Microsoft.NETCore.App.Runtime.AOT.$(RuntimeIdentifier).Cross.$(TargetCrossRid)</OverridePackageId>
     <ArchiveName>dotnet-monocrossaot</ArchiveName>
     <SharedFrameworkHostFileNameOverride>monocrossaot</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;osx-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;osx-x64;win-x64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <PublishReadyToRun>false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <NativeRuntimeAsset Include="$(MonoCrossAOTDir)$(TargetCrossRid)\**" TargetPath="tools/" />
+    <NativeRuntimeAsset Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.Sdk.props" TargetPath="Sdk/Sdk.props" />
   </ItemGroup>
 
   <Target Name="ValidateProperties" BeforeTargets="GenerateNuspec">

@@ -239,7 +239,7 @@ collect_parser = subparsers.add_parser("collect", description=collect_descriptio
 
 # Add required arguments
 collect_parser.add_argument("collection_command", nargs='?', help=superpmi_collect_help)
-collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command.")
+collect_parser.add_argument("collection_args", nargs='?', help="Arguments to pass to the SuperPMI collect command. This is a single string; quote it if necessary if the arguments contain spaces.")
 
 collect_parser.add_argument("--pmi", action="store_true", help="Run PMI on a set of directories or assemblies.")
 collect_parser.add_argument("--crossgen", action="store_true", help="Run crossgen on a set of directories or assemblies.")
@@ -543,12 +543,13 @@ class TempDir:
 
         Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
         change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
+        directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, skip_cleanup=False):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
@@ -557,10 +558,7 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
+        if not self._skip_cleanup:
             shutil.rmtree(self.mydir)
 
 
@@ -758,7 +756,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -1287,6 +1285,8 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         logging.warning("Compilation failures")
     elif return_code == 2:
         logging.warning("Asm diffs found")
+    elif return_code == 3:
+        logging.warning("SuperPMI missing data encountered")
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1389,7 +1389,7 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ew",  # only display errors and warnings
+                "-v", "ewmi",  # display errors, warnings, missing, jit info
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
@@ -1573,7 +1573,7 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
-        with TempDir(self.coreclr_args.temp_dir) as temp_location:
+        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
@@ -1599,7 +1599,7 @@ class SuperPMIReplayAsmDiffs:
                 else:
                     flags = [
                         "-a",  # Asm diffs
-                        "-v", "ew",  # only display errors and warnings
+                        "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
@@ -2972,8 +2972,8 @@ def setup_args(args):
 
         coreclr_args.verify(args,
                             "collection_command",
-                            lambda command: command is None or os.path.isfile(command),
-                            "Unable to find script.")
+                            lambda unused: True,
+                            "Unable to set collection_command.")
 
         coreclr_args.verify(args,
                             "collection_args",
@@ -3107,6 +3107,18 @@ def setup_args(args):
         if coreclr_args.temp_dir is not None:
             coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
             logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+
+        if coreclr_args.collection_command is not None:
+            if os.path.isfile(coreclr_args.collection_command):
+                coreclr_args.collection_command = os.path.abspath(coreclr_args.collection_command)
+            else:
+                # Look on path and in Core_Root. Searching Core_Root is useful so you can just specify "corerun.exe" as the collection command in it can be found.
+                collection_tool_path = find_tool(coreclr_args, coreclr_args.collection_command, search_core_root=True, search_product_location=False, search_path=True, throw_on_not_found=False)
+                if collection_tool_path is None:
+                    print("Couldn't find collection command \"{}\"".format(coreclr_args.collection_command))
+                    sys.exit(1)
+                coreclr_args.collection_command = collection_tool_path
+                logging.info("Using collection command from PATH: \"%s\"", coreclr_args.collection_command)
 
     elif coreclr_args.mode == "replay":
 

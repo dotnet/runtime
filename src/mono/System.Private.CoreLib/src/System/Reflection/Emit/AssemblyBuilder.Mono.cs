@@ -34,11 +34,11 @@
 //
 
 #if MONO_FEATURE_SRE
-using System.IO;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -171,7 +171,7 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class AssemblyBuilder : Assembly
+    public sealed partial class AssemblyBuilder : Assembly
     {
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
@@ -229,27 +229,6 @@ namespace System.Reflection.Emit
             modules = new ModuleBuilder[] { manifest_module };
         }
 
-        public override string? CodeBase
-        {
-            get { throw not_supported(); }
-        }
-
-        public override MethodInfo? EntryPoint
-        {
-            get
-            {
-                return null;
-            }
-        }
-
-        public override string Location
-        {
-            get
-            {
-                throw not_supported();
-            }
-        }
-
         public override bool ReflectionOnly
         {
             get { return base.ReflectionOnly; }
@@ -275,10 +254,7 @@ namespace System.Reflection.Emit
             return ab;
         }
 
-        public ModuleBuilder DefineDynamicModule(string name)
-        {
-            return DefineDynamicModule(name, false);
-        }
+        public ModuleBuilder DefineDynamicModule(string name) => DefineDynamicModule(name, false);
 
         public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
         {
@@ -309,49 +285,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
-        public override Type[] GetExportedTypes()
-        {
-            throw not_supported();
-        }
-
-        public override FileStream GetFile(string name)
-        {
-            throw not_supported();
-        }
-
-        public override FileStream[] GetFiles(bool getResourceModules)
-        {
-            throw not_supported();
-        }
-
-        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
-        {
-            throw not_supported();
-        }
-
-        public override string[] GetManifestResourceNames()
-        {
-            throw not_supported();
-        }
-
-        public override Stream? GetManifestResourceStream(string name)
-        {
-            throw not_supported();
-        }
-
-        public override Stream? GetManifestResourceStream(Type type, string name)
-        {
-            throw not_supported();
-        }
-
-        public override bool IsCollectible
-        {
-            get
-            {
-                return access == (uint)AssemblyBuilderAccess.RunAndCollect;
-            }
-        }
+        public override bool IsCollectible => access == (uint)AssemblyBuilderAccess.RunAndCollect;
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
@@ -385,17 +319,9 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private static Exception not_supported()
-        {
-            // Strange message but this is what MS.NET prints...
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
-        }
-
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/
-        internal static Type MakeGenericType(Type gtd, Type[] typeArguments)
-        {
-            return new TypeBuilderInstantiation(gtd, typeArguments);
-        }
+        internal static Type MakeGenericType(Type gtd, Type[] typeArguments) =>
+            new TypeBuilderInstantiation(gtd, typeArguments);
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
@@ -434,97 +360,40 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        public override Module[] GetModules(bool getResourceModules)
-        {
-            return (Module[])modules.Clone();
-        }
+        public override Module[] GetModules(bool getResourceModules) => (Module[])modules.Clone();
 
-        public override AssemblyName GetName(bool copiedName)
-        {
-            return AssemblyName.Create(_mono_assembly, null);
-        }
+        public override AssemblyName GetName(bool copiedName) => AssemblyName.Create(_mono_assembly, null);
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
-        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies (this);
+        public override AssemblyName[] GetReferencedAssemblies() => RuntimeAssembly.GetReferencedAssemblies(this);
 
-        public override Module[] GetLoadedModules(bool getResourceModules)
-        {
-            return GetModules(getResourceModules);
-        }
+        public override Module[] GetLoadedModules(bool getResourceModules) => GetModules(getResourceModules);
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public override Assembly GetSatelliteAssembly(CultureInfo culture)
-        {
-            return GetSatelliteAssembly(culture, null);
-        }
+        public override Assembly GetSatelliteAssembly(CultureInfo culture) => GetSatelliteAssembly(culture, null);
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
-        {
-            return RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
-        }
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) =>
+            RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
 
-        public override Module ManifestModule
-        {
-            get
-            {
-                return manifest_module;
-            }
-        }
+        public override Module ManifestModule => manifest_module;
+        public override string? FullName => aname.ToString();
 
-        [Obsolete(Obsoletions.GlobalAssemblyCacheMessage, DiagnosticId = Obsoletions.GlobalAssemblyCacheDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public override bool GlobalAssemblyCache
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool Equals(object? obj) => base.Equals(obj);
 
-        public override bool IsDynamic
-        {
-            get { return true; }
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool Equals(object? obj)
-        {
-            return base.Equals(obj);
-        }
+        public override bool IsDefined(Type attributeType, bool inherit) =>
+            CustomAttribute.IsDefined(this, attributeType, inherit);
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override object[] GetCustomAttributes(bool inherit) => CustomAttribute.GetCustomAttributes(this, inherit);
 
-        public override bool IsDefined(Type attributeType, bool inherit)
-        {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
-        }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
+            CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override object[] GetCustomAttributes(bool inherit)
-        {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
-        }
-
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
-        }
-
-        public override IList<CustomAttributeData> GetCustomAttributesData()
-        {
-            return CustomAttributeData.GetCustomAttributes(this);
-        }
-
-        public override string? FullName
-        {
-            get
-            {
-                return aname.ToString();
-            }
-        }
+        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributeData.GetCustomAttributes(this);
     }
 }
 #endif

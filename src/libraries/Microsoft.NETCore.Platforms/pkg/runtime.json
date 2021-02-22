@@ -770,6 +770,17 @@
         "debian-x86"
       ]
     },
+    "exherbo": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "exherbo-x64": {
+      "#import": [
+        "exherbo",
+        "linux-x64"
+      ]
+    },
     "fedora": {
       "#import": [
         "linux"

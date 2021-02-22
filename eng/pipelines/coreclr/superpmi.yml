@@ -101,6 +101,28 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      collectionType: pmi
+      collectionName: tests
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
     # TODO: Linux crossgen2 jobs crash during collection, and need to be investigated.
     # - Linux_arm
     # - Linux_arm64
@@ -123,8 +145,9 @@ jobs:
     platforms:
     # Linux tests are built on the OSX machines.
     # - OSX_x64
-    - Linux_arm
-    - Linux_arm64
+    #TODO: Need special handling of running "benchmark build" from inside TMP folder on helix machine.
+    # - Linux_arm
+    # - Linux_arm64
     - Linux_x64
     - windows_x64
     - windows_x86
@@ -135,6 +158,5 @@ jobs:
     jobParameters:
       testGroup: outerloop
       liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: tests
-
+      collectionType: run
+      collectionName: benchmarks

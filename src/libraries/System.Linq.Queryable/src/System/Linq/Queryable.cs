@@ -10,6 +10,9 @@ namespace System.Linq
 {
     public static class Queryable
     {
+        internal const string InMemoryQueryableExtensionMethodsRequiresUnreferencedCode = "Enumerating in-memory collections as IQueryable can require unreferenced code because expressions referencing IQueryable extension methods can get rebound to IEnumerable extension methods. The IEnumerable extension methods could be trimmed causing the application to fail at runtime.";
+
+        [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
             if (source == null)
@@ -17,6 +20,7 @@ namespace System.Linq
             return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
+        [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             if (source == null)
@@ -611,6 +615,19 @@ namespace System.Linq
                     null,
                     CachedReflectionInfo.Distinct_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
+                    ));
+        }
+
+        [DynamicDependency("Chunk`1", typeof(Enumerable))]
+        public static IQueryable<TSource[]> Chunk<TSource>(this IQueryable<TSource> source, int size)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource[]>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Chunk_TSource_1(typeof(TSource)),
+                    source.Expression, Expression.Constant(size)
                     ));
         }
 

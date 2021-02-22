@@ -51,7 +51,6 @@
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
@@ -202,11 +201,11 @@ create_domain_objects (MonoDomain *domain)
 	 * Initialize String.Empty. This enables the removal of
 	 * the static cctor of the String class.
 	 */
-	string_vt = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
+	string_vt = mono_class_vtable_checked (mono_defaults.string_class, error);
 	mono_error_assert_ok (error);
 	string_empty_fld = mono_class_get_field_from_name_full (mono_defaults.string_class, "Empty", NULL);
 	g_assert (string_empty_fld);
-	MonoStringHandle empty_str = mono_string_new_handle (domain, "", error);
+	MonoStringHandle empty_str = mono_string_new_handle ("", error);
 	mono_error_assert_ok (error);
 	empty_str = mono_string_intern_checked (empty_str, error);
 	mono_error_assert_ok (error);
@@ -216,7 +215,7 @@ create_domain_objects (MonoDomain *domain)
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
-	arg = mono_string_new_handle (domain, "Out of memory", error);
+	arg = mono_string_new_handle ("Out of memory", error);
 	mono_error_assert_ok (error);
 	domain->out_of_memory_ex = MONO_HANDLE_RAW (mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL_HANDLE_STRING, error));
 	mono_error_assert_ok (error);
@@ -225,17 +224,17 @@ create_domain_objects (MonoDomain *domain)
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
-	arg = mono_string_new_handle (domain, "A null value was found where an object instance was required", error);
+	arg = mono_string_new_handle ("A null value was found where an object instance was required", error);
 	mono_error_assert_ok (error);
 	domain->null_reference_ex = MONO_HANDLE_RAW (mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL_HANDLE_STRING, error));
 	mono_error_assert_ok (error);
-	arg = mono_string_new_handle (domain, "The requested operation caused a stack overflow.", error);
+	arg = mono_string_new_handle ("The requested operation caused a stack overflow.", error);
 	mono_error_assert_ok (error);
 	domain->stack_overflow_ex = MONO_HANDLE_RAW (mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL_HANDLE_STRING, error));
 	mono_error_assert_ok (error);
 
 	/*The ephemeron tombstone i*/
-	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (domain, mono_defaults.object_class, error));
+	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (mono_defaults.object_class, error));
 	mono_error_assert_ok (error);
 
 	if (domain != old_domain)
@@ -298,7 +297,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 		klass = mono_class_get_appdomain_class ();
 
-		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (domain, klass, error));
+		ad = MONO_HANDLE_CAST (MonoAppDomain, mono_object_new_pinned_handle (klass, error));
 		goto_if_nok (error, exit);
 
 		domain->domain = MONO_HANDLE_RAW (ad);
@@ -321,8 +320,6 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	if (!mono_runtime_get_no_exec ())
 		mono_runtime_install_appctx_properties ();
-
-	mono_attach_init ();
 
 	mono_locks_tracer_init ();
 
@@ -452,7 +449,7 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 		goto exit;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (domain, klass, error));
+	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (klass, error));
 	goto_if_nok (error, exit);
 
 	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);
@@ -476,8 +473,6 @@ exit:
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	mono_attach_cleanup ();
-
 	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();
 
@@ -587,7 +582,7 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *typebu
 
 	// This will not work correctly on netcore
 	if (name) {
-		MonoStringHandle name_handle = mono_string_new_handle (mono_domain_get (), name, error);
+		MonoStringHandle name_handle = mono_string_new_handle (name, error);
 		goto_if_nok (error, exit);
 		ret = mono_domain_try_type_resolve_name (domain, NULL, name_handle, error);
 	} else {
@@ -696,7 +691,7 @@ get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
 
 	assemblies = mono_domain_get_assemblies (domain);
 
-	MonoArrayHandle res = mono_array_new_handle (domain, mono_class_get_assembly_class (), assemblies->len, error);
+	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
 	goto_if_nok (error, leave);
 	for (i = 0; i < assemblies->len; ++i) {
 		if (!add_assembly_to_array (domain, res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
@@ -721,7 +716,7 @@ mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname_raw, 
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoAssembly *result = NULL;
-	MonoStringHandle fname = mono_string_new_handle (mono_alc_domain (alc), fname_raw, error);
+	MonoStringHandle fname = mono_string_new_handle (fname_raw, error);
 	goto_if_nok (error, leave);
 	result = mono_try_assembly_resolve_handle (alc, fname, requesting, error);
 leave:

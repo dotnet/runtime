@@ -138,6 +138,15 @@ namespace System.Text.Json
         {
             T value = Get!(obj);
 
+            if (Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                !Converter.IsValueType && value != null &&
+                state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
+            {
+                // If a reference cycle is detected, treat value as null.
+                value = default!;
+                Debug.Assert(value == null);
+            }
+
             if (IgnoreDefaultValuesOnWrite)
             {
                 // If value is null, it is a reference type or nullable<T>.

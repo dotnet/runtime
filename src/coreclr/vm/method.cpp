@@ -2965,10 +2965,10 @@ FixupSignatureContainingInternalTypesParseType(
             bool needsRestore = FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 if (FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly))
                 {
@@ -3016,7 +3016,7 @@ FixupSignatureContainingInternalTypes(
     }
     CONTRACTL_END;
 
-    ULONG nArgs;
+    uint32_t nArgs;
     bool needsRestore = false;
 
     SigPointer psig(pSig, cSig);
@@ -3041,7 +3041,7 @@ FixupSignatureContainingInternalTypes(
 
     nArgs++;  // be sure to handle the return type
 
-    for (ULONG i = 0; i < nArgs; i++)
+    for (uint32_t i = 0; i < nArgs; i++)
     {
         if (FixupSignatureContainingInternalTypesParseType(image, pSig, psig, checkOnly))
         {
@@ -3093,10 +3093,10 @@ RestoreSignatureContainingInternalTypesParseType(
             RestoreSignatureContainingInternalTypesParseType(psig);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 RestoreSignatureContainingInternalTypesParseType(psig);
             }
@@ -3138,7 +3138,7 @@ RestoreSignatureContainingInternalTypes(
     Volatile<BYTE> * pVolatileSig = (Volatile<BYTE> *)pSig;
     if (*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE)
     {
-        ULONG nArgs;
+        uint32_t nArgs;
         SigPointer psig(pSig, cSig);
 
         // Skip calling convention
@@ -5743,12 +5743,12 @@ void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParamete
     }
     CONTRACTL_END;
 
-    ULONG numArgs = 0;
+    uint32_t numArgs = 0;
     Module *pModule = this->GetModule();
     SigPointer ptr = this->GetSigPointer();
 
     // skip over calling convention.
-    ULONG         callConv = 0;
+    uint32_t         callConv = 0;
     IfFailThrowBF(ptr.GetCallingConvInfo(&callConv), BFA_BAD_SIGNATURE, pModule);
 
     // If calling convention is generic, skip GenParamCount
