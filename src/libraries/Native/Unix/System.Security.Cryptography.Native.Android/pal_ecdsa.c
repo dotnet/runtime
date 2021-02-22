@@ -7,7 +7,7 @@
 
 static jobject CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
 {
-    jstring algorithmName = JSTRING("SHA1withECDSA");
+    jstring algorithmName = JSTRING("NONEwithECDSA");
     jobject signatureObject =
         (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, algorithmName);
     (*env)->DeleteLocalRef(env, algorithmName);
