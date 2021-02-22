@@ -9067,7 +9067,7 @@ calli_end:
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, m_class_get_image (klass), m_class_get_type_token (klass), generic_context);
 						} else {
 							MonoType *klass_type = m_class_get_byval_arg (klass);
-							MonoReflectionType* reflection_type = mono_type_get_object_checked (cfg->domain, klass_type, cfg->error);
+							MonoReflectionType* reflection_type = mono_type_get_object_checked (klass_type, cfg->error);
 							EMIT_NEW_PCONST (cfg, ins, reflection_type);
 						}
 						ins->type = STACK_OBJ;
@@ -10219,7 +10219,7 @@ field_access_end:
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 						}
 					} else {
-						MonoReflectionType *rt = mono_type_get_object_checked (cfg->domain, (MonoType *)handle, cfg->error);
+						MonoReflectionType *rt = mono_type_get_object_checked ((MonoType *)handle, cfg->error);
 						CHECK_CFG_ERROR;
 						EMIT_NEW_PCONST (cfg, ins, rt);
 					}

@@ -7232,12 +7232,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
-get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf, MonoError *error)
+get_assembly_object_command (MonoAssembly *ass, Buffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	ErrorCode err = ERR_NONE;
 	error_init (error);
-	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
+	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (ass, error);
 	if (MONO_HANDLE_IS_NULL (o)) {
 		err = ERR_INVALID_OBJECT;
 		goto leave;
@@ -7290,7 +7290,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
 		ERROR_DECL (error);
-		err = get_assembly_object_command (domain, ass, buf, error);
+		err = get_assembly_object_command (ass, buf, error);
 		mono_error_cleanup (error);
 		return err;
 	}
@@ -7874,7 +7874,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoObject *o = (MonoObject*)mono_type_get_object_checked (m_class_get_byval_arg (klass), error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			goto invalid_object;

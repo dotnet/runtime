@@ -1556,7 +1556,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		mono_class_init_internal (handle_class);
 		mono_class_init_internal (mono_class_from_mono_type_internal ((MonoType *)handle));
 
-		target = mono_type_get_object_checked (domain, (MonoType *)handle, error);
+		target = mono_type_get_object_checked ((MonoType *)handle, error);
 		if (!is_ok (error))
 			return NULL;
 		break;

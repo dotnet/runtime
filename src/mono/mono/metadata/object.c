@@ -2189,7 +2189,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
 	if (klass != mono_defaults.runtimetype_class) {
-		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
@@ -2219,7 +2219,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	mono_class_set_runtime_vtable (klass, vt);
 
 	if (klass == mono_defaults.runtimetype_class) {
-		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_loader_unlock ();
@@ -3080,7 +3080,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		}
 
 		args [0] = ptr;
-		args [1] = mono_type_get_object_checked (mono_domain_get (), type, error);
+		args [1] = mono_type_get_object_checked (type, error);
 		goto_if_nok (error, return_null);
 
 		o = mono_runtime_invoke_checked (m, NULL, args, error);
@@ -4931,11 +4931,11 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
 				tmpret->byref = FALSE;
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (mono_domain_get (), tmpret, error);
+				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 				mono_metadata_free_type (tmpret);
 			} else {
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (mono_domain_get (), sig->ret, error);
+				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (sig->ret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 			}
 			goto_if_nok (error, exit_null);
@@ -5187,7 +5187,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 			vtable->domain->create_proxy_for_type_method = im;
 		}
 	
-		pa [0] = mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error);
+		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
 		if (!is_ok (error))
 			return NULL;
 
@@ -5234,7 +5234,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 		}
 
 		// FIXMEcoop
-		gpointer pa[ ] = { mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error) };
+		gpointer pa[ ] = { mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error) };
 		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 
 		// FIXMEcoop

@@ -1104,7 +1104,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			MONO_OBJECT_SETREF_INTERNAL (sf, internal_method_name, name);
 		}
 		else {
-			MonoReflectionMethod *rm = mono_method_get_object_checked (domain, method, NULL, error);
+			MonoReflectionMethod *rm = mono_method_get_object_checked (method, NULL, error);
 			if (!is_ok (error))
 				goto fail;
 			MONO_OBJECT_SETREF_INTERNAL (sf, method, rm);
@@ -1903,7 +1903,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		}
 	}
 
-	MonoReflectionMethod *rm = mono_method_get_object_checked (domain, actual_method, NULL, error);
+	MonoReflectionMethod *rm = mono_method_get_object_checked (actual_method, NULL, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return FALSE;

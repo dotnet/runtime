@@ -5974,7 +5974,7 @@ mono_marshal_get_type_object (MonoClass *klass)
 {
 	ERROR_DECL (error);
 	MonoType *type = m_class_get_byval_arg (klass);
-	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+	MonoObject *result = (MonoObject*)mono_type_get_object_checked (type, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }

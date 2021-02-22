@@ -2155,7 +2155,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_TYPE:
 		return data;
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: {
-		MonoReflectionType *ret = mono_type_get_object_checked (domain, (MonoType *)data, error);
+		MonoReflectionType *ret = mono_type_get_object_checked ((MonoType *)data, error);
 
 		return ret;
 	}
