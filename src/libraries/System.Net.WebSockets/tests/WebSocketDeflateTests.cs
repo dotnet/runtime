@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -196,13 +195,13 @@ namespace System.Net.WebSockets.Tests
             Memory<byte> receivedData = new byte[testData.Length];
 
             // Make the data incompressible to make sure that the output is larger than the input
-            RandomNumberGenerator.Fill(testData.Span);
+            var rng = new Random(0);
+            rng.NextBytes(testData.Span);
 
             // Test it a few times with different frame sizes
             for (var i = 0; i < 10; ++i)
             {
-                // Use a timeout cancellation token in case something doesn't work right
-                var frameSize = RandomNumberGenerator.GetInt32(1024, 2048);
+                var frameSize = rng.Next(1024, 2048);
                 var position = 0;
 
                 while (position < testData.Length)

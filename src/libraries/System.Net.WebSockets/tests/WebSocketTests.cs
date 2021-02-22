@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -189,7 +188,7 @@ namespace System.Net.WebSockets.Tests
             using var client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions());
 
             var message = new byte[messageSize];
-            RandomNumberGenerator.Fill(message);
+            new Random(0).NextBytes(message);
 
             await client.SendAsync(message, WebSocketMessageType.Binary, true, default);
 
