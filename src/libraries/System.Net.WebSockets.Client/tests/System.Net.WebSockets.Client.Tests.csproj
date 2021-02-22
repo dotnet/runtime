@@ -38,6 +38,7 @@
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
     <Compile Include="ConnectTest.cs" />
+    <Compile Include="DeflateTests.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />

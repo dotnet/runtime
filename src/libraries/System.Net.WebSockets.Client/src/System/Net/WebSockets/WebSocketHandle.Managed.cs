@@ -191,6 +191,11 @@ namespace System.Net.WebSockets
                     }
                 }
 
+                // Store the negotiated deflate options in the original options, because
+                // otherwise there is now way of clients to actually check whether we are using
+                // per message deflate or not.
+                options.DeflateOptions = deflateOptions;
+
                 if (response.Content is null)
                 {
                     throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
@@ -247,19 +252,19 @@ namespace System.Net.WebSockets
 
                 if (!value.IsEmpty)
                 {
-                    if (value == ClientWebSocketDeflateConstants.ClientNoContextTakeover)
+                    if (value.Equals(ClientWebSocketDeflateConstants.ClientNoContextTakeover, StringComparison.Ordinal))
                     {
                         options.ClientContextTakeover = false;
                     }
-                    else if (value == ClientWebSocketDeflateConstants.ServerNoContextTakeover)
+                    else if (value.Equals(ClientWebSocketDeflateConstants.ServerNoContextTakeover, StringComparison.Ordinal))
                     {
                         options.ServerContextTakeover = false;
                     }
-                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ClientMaxWindowBits))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ClientMaxWindowBits, StringComparison.Ordinal))
                     {
                         options.ClientMaxWindowBits = ParseWindowBits(value);
                     }
-                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ServerMaxWindowBits))
+                    else if (value.StartsWith(ClientWebSocketDeflateConstants.ServerMaxWindowBits, StringComparison.Ordinal))
                     {
                         options.ServerMaxWindowBits = ParseWindowBits(value);
                     }
@@ -334,6 +339,11 @@ namespace System.Net.WebSockets
                         yield return ClientWebSocketDeflateConstants.ClientMaxWindowBits;
                     }
 
+                    if (!options.ClientContextTakeover)
+                    {
+                        yield return ClientWebSocketDeflateConstants.ClientNoContextTakeover;
+                    }
+
                     if (options.ServerMaxWindowBits != 15)
                     {
                         yield return $"{ClientWebSocketDeflateConstants.ServerMaxWindowBits}={options.ServerMaxWindowBits}";
@@ -347,11 +357,6 @@ namespace System.Net.WebSockets
                     if (!options.ServerContextTakeover)
                     {
                         yield return ClientWebSocketDeflateConstants.ServerNoContextTakeover;
-                    }
-
-                    if (!options.ClientContextTakeover)
-                    {
-                        yield return ClientWebSocketDeflateConstants.ClientNoContextTakeover;
                     }
                 }
             }
