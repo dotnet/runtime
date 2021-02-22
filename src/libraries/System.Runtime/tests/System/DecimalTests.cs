@@ -1500,6 +1500,14 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
+        [Theory]
+        [InlineData("3.00")]
+        public void TestRoundTripDecimalToString(string input)
+        {
+            decimal d = Decimal.Parse(input);
+            string dString = d.ToString();
+            Assert.Equal(input, dString);
+        }
         public static IEnumerable<object[]> Truncate_TestData()
         {
             yield return new object[] { 123m, 123m };
