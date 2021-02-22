@@ -67,7 +67,7 @@ namespace System.Diagnostics.Tests
 
                 EventLog.CreateEventSource(log);
                 string message = $"Hello {Guid.NewGuid()}";
-                EventLog.WriteEntry(log.Source, message);
+                Helpers.Retry(() => EventLog.WriteEntry(log.Source, message));
 
                 using (EventLogReader reader = new EventLogReader(new EventLogQuery("Application", PathType.LogName, $"*[System/Provider/@Name=\"{log.Source}\"]")))
                 {

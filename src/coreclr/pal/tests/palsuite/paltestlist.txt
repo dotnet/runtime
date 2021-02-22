@@ -148,9 +148,9 @@ c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
 c_runtime/rand_srand/test1/paltest_rand_srand_test1
 c_runtime/realloc/test1/paltest_realloc_test1
-c_runtime/scalbn/test1/paltest_scalbn_test1
-c_runtime/scalbnf/test1/paltest_scalbnf_test1
 c_runtime/sin/test1/paltest_sin_test1
+c_runtime/sincos/test1/paltest_sincos_test1
+c_runtime/sincosf/test1/paltest_sincosf_test1
 c_runtime/sinf/test1/paltest_sinf_test1
 c_runtime/sinh/test1/paltest_sinh_test1
 c_runtime/sinhf/test1/paltest_sinhf_test1
@@ -679,6 +679,7 @@ threading/SetEvent/test1/paltest_setevent_test1
 threading/SetEvent/test2/paltest_setevent_test2
 threading/SetEvent/test3/paltest_setevent_test3
 threading/SetEvent/test4/paltest_setevent_test4
+threading/SetThreadDescription/test1/paltest_setthreaddescription_test1
 threading/SwitchToThread/test1/paltest_switchtothread_test1
 threading/ThreadPriority/test1/paltest_threadpriority_test1
 threading/WaitForMultipleObjects/test1/paltest_waitformultipleobjects_test1

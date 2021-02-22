@@ -250,6 +250,17 @@ class ZapInfo
                           CORINFO_ACCESS_FLAGS accessFlags,
                           BOOL fAllowThunk);
 
+    struct ProfileDataResults
+    {
+        ProfileDataResults(CORINFO_METHOD_HANDLE ftn) : m_ftn(ftn) {}
+        ProfileDataResults* m_next = nullptr;
+        CORINFO_METHOD_HANDLE m_ftn;
+        SArray<PgoInstrumentationSchema> m_schema;
+        BYTE *pInstrumentationData = nullptr;
+        HRESULT m_hr = E_FAIL;
+    };
+    ProfileDataResults *m_pgoResults = nullptr;
+
 public:
     ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle, CORINFO_MODULE_HANDLE module, unsigned methodProfilingDataFlags);
     ~ZapInfo();
@@ -271,10 +282,7 @@ public:
     int  canHandleException(struct _EXCEPTION_POINTERS *pExceptionPointers);
     void * getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
                                     void **ppIndirection);
-        ZapImport * GetProfilingHandleImport();
-
-
-
+    ZapImport * GetProfilingHandleImport();
 };
 
 #endif // __ZAPINFO_H__

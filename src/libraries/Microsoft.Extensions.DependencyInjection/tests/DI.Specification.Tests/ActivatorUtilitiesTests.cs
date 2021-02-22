@@ -12,6 +12,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
     [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public abstract partial class DependencyInjectionSpecificationTests
     {
+        // for most DI providers, the structs default constructor shouldn't run when creating an instance of ClassWithOptionalArgsCtorWithStructs
+        public virtual bool ExpectStructWithPublicDefaultConstructorInvoked => false;
+
         public delegate object CreateInstanceFunc(IServiceProvider provider, Type type, object[] args);
 
         private static object CreateInstanceDirectly(IServiceProvider provider, Type type, object[] args)
@@ -117,6 +120,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(anotherClass.ColorNull);
             Assert.Equal(12, anotherClass.Integer);
             Assert.Null(anotherClass.IntegerNull);
+            Assert.Equal(ExpectStructWithPublicDefaultConstructorInvoked, anotherClass.StructWithConstructor.ConstructorInvoked);
         }
 
         [Theory]
@@ -150,7 +154,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Arrange
             var expectedMessage = $"A suitable constructor for type '{type}' could not be located. " +
-                "Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                "Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
 
             // Act and Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -165,7 +169,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Arrange
             var expectedMessage = $"A suitable constructor for type '{typeof(AnotherClassAcceptingData).FullName}' could not be located. " +
-                "Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+                "Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
             var serviceCollection = new TestServiceCollection()
                 .AddTransient<IFakeService, FakeService>();
             var serviceProvider = CreateServiceProvider(serviceCollection);
@@ -373,7 +377,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             // Act & Assert
             var ex = Assert.Throws<InvalidOperationException>(() => ActivatorUtilities.CreateInstance(default(IServiceProvider), typeof(AbstractFoo)));
-            var msg = "A suitable constructor for type 'Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests+AbstractFoo' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
+            var msg = "A suitable constructor for type 'Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests+AbstractFoo' could not be located. Ensure the type is concrete and all parameters of a public constructor are either registered as services or passed as arguments. Also ensure no extraneous arguments are provided.";
             Assert.Equal(msg, ex.Message);
         }
 

@@ -12,6 +12,9 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.c
     pal_bignum.c
     pal_ssl.c
+    pal_rsa.c
+    pal_err.c
+    pal_sslstream.c
 )
 
 add_library(System.Security.Cryptography.Native.Android

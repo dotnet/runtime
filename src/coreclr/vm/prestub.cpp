@@ -361,6 +361,33 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+    bool shouldTier = false;
+#if defined(FEATURE_TIERED_COMPILATION)
+    shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
+    // If the method is eligible for tiering but is being
+    // called from a Preemptive GC Mode thread or the method
+    // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
+    // should be disabled.
+    if (shouldTier
+        && (pConfig->GetCallerGCMode() == CallerGCMode::Preemptive
+            || (pConfig->GetCallerGCMode() == CallerGCMode::Unknown
+                && HasUnmanagedCallersOnlyAttribute())))
+    {
+        NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+        if (codeVersion.IsDefaultVersion())
+        {
+            pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+        }
+        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        {
+            codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+        }
+        pConfig->SetWasTieringDisabledBeforeJitting();
+        shouldTier = false;
+    }
+#endif // FEATURE_TIERED_COMPILATION
+
     if (pConfig->MayUsePrecompiledCode())
     {
 #ifdef FEATURE_READYTORUN
@@ -393,7 +420,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 #endif // FEATURE_READYTORUN
 
         if (pCode == NULL)
-            pCode = GetPrecompiledCode(pConfig);
+        {
+            pCode = GetPrecompiledCode(pConfig, shouldTier);
+        }
 
 #ifdef FEATURE_PERFMAP
         if (pCode != NULL)
@@ -418,7 +447,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
-PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
+PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -440,30 +469,6 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         if (pCode != NULL)
         {
             LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-            bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
-#if !defined(TARGET_X86)
-            CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
-            // If the method is eligible for tiering but is being
-            // called from a Preemptive GC Mode thread or the method
-            // has the UnmanagedCallersOnlyAttribute then the Tiered Compilation
-            // should be disabled.
-            if (shouldTier
-                && (callerGcMode == CallerGCMode::Preemptive
-                    || (callerGcMode == CallerGCMode::Unknown
-                        && HasUnmanagedCallersOnlyAttribute())))
-            {
-                NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
-                if (codeVersion.IsDefaultVersion())
-                {
-                    pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-                }
-                codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-                shouldTier = false;
-            }
-#endif  // !TARGET_X86
-#endif // FEATURE_TIERED_COMPILATION
 
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
@@ -1153,6 +1158,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_generatedOrLoadedNewCode(false),
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
+    m_wasTieringDisabledBeforeJitting(false),
     m_shouldCountCalls(false),
 #endif
     m_jitSwitchedToMinOpt(false),
@@ -1240,7 +1246,7 @@ CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
         flags = pResolver->GetJitFlags();
     }
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
     return flags;
 }
@@ -1418,7 +1424,7 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
 #endif
 
 #ifdef FEATURE_TIERED_COMPILATION
-    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+    flags.Add(TieredCompilationManager::GetJitFlags(this));
 #endif
 
     return flags;
@@ -1513,10 +1519,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
                     pTargetMD->GetSignature(),
                     &typeContext,
                     pTargetMD,
-                    TRUE,           // fTargetHasThis
-                    TRUE,           // fStubHasThis
-                    FALSE           // fIsNDirectStub
-                    );
+                    (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
@@ -1616,14 +1619,13 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     }
 
     MetaSig msig(pTargetMD);
-
     ILStubLinker sl(pTargetMD->GetModule(),
                     pTargetMD->GetSignature(),
                     &typeContext,
                     pTargetMD,
-                    msig.HasThis(), // fTargetHasThis
-                    msig.HasThis(), // fStubHasThis
-                    FALSE           // fIsNDirectStub
+                    msig.HasThis()
+                        ? (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
+                        : (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE
                     );
 
     ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
@@ -1919,10 +1921,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     // Attempt to check what GC mode we are running under.
@@ -1992,7 +1990,13 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+            auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
+            pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+        }
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -3081,7 +3085,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
                 pResult->indirectFirstOffset = 1;
             }
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
 
@@ -3093,7 +3097,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
 
-            ULONG data;
+            uint32_t data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[2] = sizeof(TypeHandle) * data;
 

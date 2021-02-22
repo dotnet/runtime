@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -66,7 +67,7 @@ namespace System.Globalization
             return new ReadOnlySpan<byte>(key1Data).SequenceCompareTo(key2Data);
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is SortKey other
                 && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);

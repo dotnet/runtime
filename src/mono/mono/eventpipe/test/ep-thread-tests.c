@@ -119,8 +119,8 @@ test_get_or_create_thread (void)
 
 	test_location = 3;
 
-	if (ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)ep_thread_get_ref_count_ref (thread)) != 1) {
-		result = FAILED ("thread ref count should be 1");
+	if (ep_rt_volatile_load_uint32_t ((const volatile uint32_t *)ep_thread_get_ref_count_ref (thread)) == 0) {
+		result = FAILED ("thread ref count should not be 0");
 		ep_raise_error ();
 	}
 

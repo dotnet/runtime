@@ -43,6 +43,12 @@ namespace System
           1E9, 1E10, 1E11, 1E12, 1E13, 1E14, 1E15
         };
 
+        private const double SCALEB_C1 = 8.98846567431158E+307; // 0x1p1023
+
+        private const double SCALEB_C2 = 2.2250738585072014E-308; // 0x1p-1022
+
+        private const double SCALEB_C3 = 9007199254740992; // 0x1p53
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -73,6 +79,23 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Abs(long value)
+        {
+            if (value < 0)
+            {
+                value = -value;
+                if (value < 0)
+                {
+                    ThrowAbsOverflow();
+                }
+            }
+            return value;
+        }
+
+        /// <summary>Returns the absolute value of a native signed integer.</summary>
+        /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
+        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint Abs(nint value)
         {
             if (value < 0)
             {
@@ -134,6 +157,11 @@ namespace System
                 low = tmp;
                 return high;
             }
+            else if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
 
             return SoftwareFallback(a, b, out low);
 
@@ -168,6 +196,12 @@ namespace System
         /// <returns>The high 64-bit of the product of the specied numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
+            if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
+
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
@@ -522,6 +556,41 @@ namespace System
             return value;
         }
 
+        /// <summary>Returns <paramref name="value" /> clamped to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</summary>
+        /// <param name="value">The value to be clamped.</param>
+        /// <param name="min">The lower bound of the result.</param>
+        /// <param name="max">The upper bound of the result.</param>
+        /// <returns>
+        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="min" /> if <paramref name="value" /> &lt; <paramref name="min" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="max" /> if <paramref name="max" /> &lt; <paramref name="value" />.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint Clamp(nint value, nint min, nint max)
+        {
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
+
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+
+            return value;
+        }
+
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte Clamp(sbyte value, sbyte min, sbyte max)
@@ -608,6 +677,42 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max)
+        {
+            if (min > max)
+            {
+                ThrowMinMaxException(min, max);
+            }
+
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+
+            return value;
+        }
+
+        /// <summary>Returns <paramref name="value" /> clamped to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</summary>
+        /// <param name="value">The value to be clamped.</param>
+        /// <param name="min">The lower bound of the result.</param>
+        /// <param name="max">The upper bound of the result.</param>
+        /// <returns>
+        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="min" /> if <paramref name="value" /> &lt; <paramref name="min" />.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="max" /> if <paramref name="max" /> &lt; <paramref name="value" />.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint Clamp(nuint value, nuint min, nuint max)
         {
             if (min > max)
             {
@@ -760,6 +865,16 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        /// <summary>Returns the larger of two native signed integers.</summary>
+        /// <param name="val1">The first of two native signed integers to compare.</param>
+        /// <param name="val2">The second of two native signed integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [NonVersionable]
+        public static nint Max(nint val1, nint val2)
+        {
+            return (val1 >= val2) ? val1 : val2;
+        }
+
         [CLSCompliant(false)]
         [NonVersionable]
         public static sbyte Max(sbyte val1, sbyte val2)
@@ -806,6 +921,17 @@ namespace System
         [CLSCompliant(false)]
         [NonVersionable]
         public static ulong Max(ulong val1, ulong val2)
+        {
+            return (val1 >= val2) ? val1 : val2;
+        }
+
+        /// <summary>Returns the larger of two native unsigned integers.</summary>
+        /// <param name="val1">The first of two native unsigned integers to compare.</param>
+        /// <param name="val2">The second of two native unsigned integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is larger.</returns>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static nuint Max(nuint val1, nuint val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
@@ -881,6 +1007,16 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        /// <summary>Returns the smaller of two native signed integers.</summary>
+        /// <param name="val1">The first of two native signed integers to compare.</param>
+        /// <param name="val2">The second of two native signed integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [NonVersionable]
+        public static nint Min(nint val1, nint val2)
+        {
+            return (val1 <= val2) ? val1 : val2;
+        }
+
         [CLSCompliant(false)]
         [NonVersionable]
         public static sbyte Min(sbyte val1, sbyte val2)
@@ -926,6 +1062,17 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        /// <summary>Returns the smaller of two native unsigned integers.</summary>
+        /// <param name="val1">The first of two native unsigned integers to compare.</param>
+        /// <param name="val2">The second of two native unsigned integers to compare.</param>
+        /// <returns>Parameter <paramref name="val1" /> or <paramref name="val2" />, whichever is smaller.</returns>
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static nuint Min(nuint val1, nuint val2)
+        {
+            return (val1 <= val2) ? val1 : val2;
+        }
+
         public static double MinMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function
@@ -948,6 +1095,50 @@ namespace System
             }
 
             return y;
+        }
+
+        /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
+        /// <param name="d">The number whose reciprocal is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="d" />.</returns>
+        /// <remarks>
+        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / d</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / d;
+            }
+        }
+
+        /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
+        /// <param name="d">The number whose reciprocal square root is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal square root <paramref name="d" />.</returns>
+        /// <remarks>
+        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(d)</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReciprocalSqrtEstimate(double d)
+        {
+            // x86 doesn't provide an estimate instruction for double-precision reciprocal square root
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalar(d)).ToScalar();
+            }
+            else
+            {
+                return 1.0 / Sqrt(d);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1165,6 +1356,15 @@ namespace System
             return unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
         }
 
+        public static int Sign(nint value)
+        {
+#if TARGET_64BIT
+            return unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
+#else
+            return unchecked((int)(value >> 31) | (int)((uint)-value >> 31));
+#endif
+        }
+
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Sign(sbyte value)
@@ -1206,6 +1406,48 @@ namespace System
         private static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
+        }
+
+        public static double ScaleB(double x, int n)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalbln.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a double from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (1023) or less than
+            // the minimum exponent (-1022), adjust x and n to compute correct result.
+
+            double y = x;
+            if (n > 1023)
+            {
+                y *= SCALEB_C1;
+                n -= 1023;
+                if (n > 1023)
+                {
+                    y *= SCALEB_C1;
+                    n -= 1023;
+                    if (n > 1023)
+                    {
+                        n = 1023;
+                    }
+                }
+            }
+            else if (n < -1022)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 1022 - 53;
+                if (n < -1022)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 1022 - 53;
+                    if (n < -1022)
+                    {
+                        n = -1022;
+                    }
+                }
+            }
+
+            double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
+            return y * u;
         }
     }
 }

@@ -63,7 +63,7 @@ class CodeGenInterface
 
 public:
     CodeGenInterface(Compiler* theCompiler);
-    virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode) = 0;
+    virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode) = 0;
 
     Compiler* GetCompiler() const
     {
@@ -311,6 +311,7 @@ public:
 
     instruction ins_Load(var_types srcType, bool aligned = false);
     instruction ins_Store(var_types dstType, bool aligned = false);
+    instruction ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned = false);
     static instruction ins_FloatLoad(var_types type = TYP_DOUBLE);
 
     // Methods for spilling - used by RegSet

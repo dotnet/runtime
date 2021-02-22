@@ -29,6 +29,8 @@
 #include "prettyprintsig.h"
 #include "formattype.h"
 #include "fieldmarshaler.h"
+#include "versionresilienthashcode.h"
+#include "typehashingalgorithms.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -139,10 +141,10 @@ SIZE_T MethodDesc::SizeOf()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & 
-        (mdcClassification 
-        | mdcHasNonVtableSlot 
-        | mdcMethodImpl 
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags &
+        (mdcClassification
+        | mdcHasNonVtableSlot
+        | mdcMethodImpl
 #ifdef FEATURE_COMINTEROP
         | mdcHasComPlusCallInfo
 #endif
@@ -151,7 +153,7 @@ SIZE_T MethodDesc::SizeOf()
 #ifdef FEATURE_PREJIT
     if (HasNativeCodeSlot())
     {
-        size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ? 
+        size += (*dac_cast<PTR_TADDR>(GetAddrOfNativeCodeSlot()) & FIXUP_LIST_MASK) ?
             sizeof(FixupListSlot) : 0;
     }
 #endif
@@ -650,15 +652,11 @@ PTR_MethodDesc MethodDesc::GetDeclMethodDesc(UINT32 slotNumber)
 //*******************************************************************************
 // Returns a hash for the method.
 // The hash will be the same for the method across multiple process runs.
+#ifndef DACCESS_COMPILE
 COUNT_T MethodDesc::GetStableHash()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsRestored_NoLogging());
-    DefineFullyQualifiedNameForClass();
-
-    const char *  moduleName = GetModule()->GetSimpleName();
-    const char *  className;
-    const char *  methodName = GetName();
+    const char *  className = NULL;
 
     if (IsLCGMethod())
     {
@@ -668,62 +666,18 @@ COUNT_T MethodDesc::GetStableHash()
     {
         className = ILStubResolver::GetStubClassName(this);
     }
+
+    if (className == NULL)
+    {
+        return GetVersionResilientMethodHashCode(this);
+    }
     else
     {
-#if defined(_DEBUG)
-        // Calling _GetFullyQualifiedNameForClass in chk build is very expensive
-        // since it construct the class name everytime we call this method. In chk
-        // builds we already have a cheaper way to get the class name -
-        // GetDebugClassName - which doesn't calculate the class name everytime.
-        // This results in huge saving in Ngen time for checked builds.
-        className = m_pszDebugClassName;
-#else // !_DEBUG
-        // since this is for diagnostic purposes only,
-        // give up on the namespace, as we don't have a buffer to concat it
-        // also note this won't show array class names.
-        LPCUTF8       nameSpace;
-        MethodTable * pMT = GetMethodTable();
-
-        className = pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
+        int typeHash = ComputeNameHashCode("", className);
+        return typeHash ^ ComputeNameHashCode(GetName());
     }
-
-    COUNT_T hash = HashStringA(moduleName);             // Start the hash with the Module name
-    hash = HashCOUNT_T(hash, HashStringA(className));   // Hash in the name of the Class name
-    hash = HashCOUNT_T(hash, HashStringA(methodName));  // Hash in the name of the Method name
-
-    // Handle Generic Types and Generic Methods
-    //
-    if (HasClassInstantiation() && !GetMethodTable()->IsGenericTypeDefinition())
-    {
-        Instantiation classInst = GetClassInstantiation();
-        for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
-        {
-            MethodTable * pMT = classInst[i].GetMethodTable();
-            // pMT can be NULL for TypeVarTypeDesc
-            // @TODO: Implement TypeHandle::GetStableHash instead of
-            // checking pMT==NULL
-            if (pMT)
-                hash = HashCOUNT_T(hash, HashStringA(GetFullyQualifiedNameForClass(pMT)));
-        }
-    }
-
-    if (HasMethodInstantiation() && !IsGenericMethodDefinition())
-    {
-        Instantiation methodInst = GetMethodInstantiation();
-        for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-        {
-            MethodTable * pMT = methodInst[i].GetMethodTable();
-            // pMT can be NULL for TypeVarTypeDesc
-            // @TODO: Implement TypeHandle::GetStableHash instead of
-            // checking pMT==NULL
-            if (pMT)
-                hash = HashCOUNT_T(hash, HashStringA(GetFullyQualifiedNameForClass(pMT)));
-        }
-    }
-
-    return hash;
 }
+#endif // DACCESS_COMPILE
 
 //*******************************************************************************
 // Get the number of type parameters to a generic method
@@ -3011,10 +2965,10 @@ FixupSignatureContainingInternalTypesParseType(
             bool needsRestore = FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 if (FixupSignatureContainingInternalTypesParseType(image, pOriginalSig, psig, checkOnly))
                 {
@@ -3062,7 +3016,7 @@ FixupSignatureContainingInternalTypes(
     }
     CONTRACTL_END;
 
-    ULONG nArgs;
+    uint32_t nArgs;
     bool needsRestore = false;
 
     SigPointer psig(pSig, cSig);
@@ -3087,7 +3041,7 @@ FixupSignatureContainingInternalTypes(
 
     nArgs++;  // be sure to handle the return type
 
-    for (ULONG i = 0; i < nArgs; i++)
+    for (uint32_t i = 0; i < nArgs; i++)
     {
         if (FixupSignatureContainingInternalTypesParseType(image, pSig, psig, checkOnly))
         {
@@ -3139,10 +3093,10 @@ RestoreSignatureContainingInternalTypesParseType(
             RestoreSignatureContainingInternalTypesParseType(psig);
 
             // Get generic arg count
-            ULONG nArgs;
+            uint32_t nArgs;
             IfFailThrow(psig.GetData(&nArgs));
 
-            for (ULONG i = 0; i < nArgs; i++)
+            for (uint32_t i = 0; i < nArgs; i++)
             {
                 RestoreSignatureContainingInternalTypesParseType(psig);
             }
@@ -3184,7 +3138,7 @@ RestoreSignatureContainingInternalTypes(
     Volatile<BYTE> * pVolatileSig = (Volatile<BYTE> *)pSig;
     if (*pVolatileSig & IMAGE_CEE_CS_CALLCONV_NEEDSRESTORE)
     {
-        ULONG nArgs;
+        uint32_t nArgs;
         SigPointer psig(pSig, cSig);
 
         // Skip calling convention
@@ -5277,7 +5231,7 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 #ifndef CROSSGEN_COMPILE
 
 #ifdef TARGET_WINDOWS
-FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName) const
+FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName)
 {
     CONTRACTL
     {
@@ -5298,12 +5252,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
     if (IsStdCall())
     {
-        if (GetModule()->IsReadyToRun())
-        {
-            // Computing if marshalling is required also computes the required stack size. We need the stack size to correctly form the
-            // name of the import pinvoke function on x86
-            ((NDirectMethodDesc*)this)->MarshalingRequired();
-        }
+        EnsureStackArgumentSize();
 
         DWORD probedEntrypointNameLength = (DWORD)(strlen(entryPointName) + 1); // 1 for null terminator
         int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 10)); // 10 for stdcall mangling
@@ -5323,7 +5272,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     return pFunc;
 }
 
-FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix) const
+FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName, char suffix)
 {
     // Allocate space for a copy of the entry point name.
     DWORD entryPointWithSuffixLen = (DWORD)(strlen(entryPointName) + 1); // +1 for charset decorations
@@ -5342,7 +5291,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithSuffix(NATIVE_LIBRARY_HANDLE hMod, 
 #endif
 
 //*******************************************************************************
-LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
+LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod)
 {
     CONTRACTL
     {
@@ -5390,6 +5339,26 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     return reinterpret_cast<LPVOID>(pFunc);
 #endif
 }
+
+#if defined(TARGET_X86)
+//*******************************************************************************
+void NDirectMethodDesc::EnsureStackArgumentSize()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (ndirect.m_cbStackArgumentSize == 0xFFFF)
+    {
+        // Marshalling required check sets the stack size as side-effect when marshalling is not required.
+        if (MarshalingRequired())
+        {
+            // Generating interop stub sets the stack size as side-effect in all cases
+            MethodDesc* pStubMD;
+            GetStubForInteropMethod(this, NDIRECTSTUB_FL_FOR_NUMPARAMBYTES, &pStubMD);
+        }
+    }
+}
+#endif
+
 #endif // CROSSGEN_COMPILE
 
 #if !defined(CROSSGEN_COMPILE)
@@ -5774,12 +5743,12 @@ void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParamete
     }
     CONTRACTL_END;
 
-    ULONG numArgs = 0;
+    uint32_t numArgs = 0;
     Module *pModule = this->GetModule();
     SigPointer ptr = this->GetSigPointer();
 
     // skip over calling convention.
-    ULONG         callConv = 0;
+    uint32_t         callConv = 0;
     IfFailThrowBF(ptr.GetCallingConvInfo(&callConv), BFA_BAD_SIGNATURE, pModule);
 
     // If calling convention is generic, skip GenParamCount

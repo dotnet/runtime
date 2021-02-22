@@ -373,9 +373,6 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
 	mono_domain_lock (domain);
 	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
 	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
@@ -649,8 +646,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -1167,7 +1166,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, 0);
+	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
 }
 
 /*

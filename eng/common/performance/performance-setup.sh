@@ -29,7 +29,7 @@ using_wasm=false
 use_latest_dotnet=false
 
 while (($# > 0)); do
-  lowerI="$(echo $1 | awk '{print tolower($0)}')"
+  lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
   case $lowerI in
     --sourcedirectory)
       source_directory=$2
@@ -88,6 +88,10 @@ while (($# > 0)); do
       internal=true
       shift 1
       ;;
+    --alpine)
+      alpine=true
+      shift 1
+      ;;
     --llvm)
       llvm=true
       shift 1
@@ -143,6 +147,7 @@ while (($# > 0)); do
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --alpine                       Set for runs on Alpine"
       echo ""
       exit 0
       ;;
@@ -198,11 +203,19 @@ if [[ "$internal" == true ]]; then
     else
         queue=Ubuntu.1804.Amd64.Tiger.Perf
     fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
+    fi
 else
     if [[ "$architecture" = "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
         queue=Ubuntu.1804.Amd64.Open
+    fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
     fi
 fi
 

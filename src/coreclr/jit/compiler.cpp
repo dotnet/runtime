@@ -560,6 +560,35 @@ bool Compiler::isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const
 }
 #endif // TARGET_X86
 
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    clsHnd - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
+bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
+{
+    if (!isIntrinsicType(clsHnd))
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is is used for a struct
@@ -1013,14 +1042,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         }
     }
 #elif UNIX_X86_ABI
-    if (callConv != CorInfoCallConvExtension::Managed)
+    if (callConv != CorInfoCallConvExtension::Managed && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(callConv))
+    if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
@@ -2308,7 +2337,7 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV                = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
@@ -2571,6 +2600,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS));
     }
 
     opts.jitFlags  = jitFlags;
@@ -2614,6 +2644,29 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compDbgCode = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE);
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
+
+#ifdef DEBUG
+    opts.compJitAlignLoopAdaptive       = JitConfig.JitAlignLoopAdaptive() == 1;
+    opts.compJitAlignLoopBoundary       = (unsigned short)JitConfig.JitAlignLoopBoundary();
+    opts.compJitAlignLoopMinBlockWeight = (unsigned short)JitConfig.JitAlignLoopMinBlockWeight();
+
+    opts.compJitAlignLoopForJcc      = JitConfig.JitAlignLoopForJcc() == 1;
+    opts.compJitAlignLoopMaxCodeSize = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
+#else
+    opts.compJitAlignLoopAdaptive       = true;
+    opts.compJitAlignLoopBoundary       = DEFAULT_ALIGN_LOOP_BOUNDARY;
+    opts.compJitAlignLoopMinBlockWeight = DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT;
+#endif
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
+    }
+    else
+    {
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
+    }
+
+    assert(isPow2(opts.compJitAlignLoopBoundary));
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
@@ -2823,43 +2876,42 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgBlockCounts                = nullptr;
+    fgPgoSchema                  = nullptr;
+    fgPgoData                    = nullptr;
+    fgPgoSchemaCount             = 0;
+    fgPgoQueryResult             = E_FAIL;
     fgProfileData_ILSizeMismatch = false;
-    fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        HRESULT hr;
-        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
-                                                    &fgNumProfileRuns);
+        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
+                                                                          &fgPgoSchemaCount, &fgPgoData);
 
-        JITDUMP("BBOPT set -- VM query for profile data for %s returned: hr=%0x; counts at %p, %d blocks, %d runs\n",
-                info.compFullName, hr, fgBlockCounts, fgBlockCountsCount, fgNumProfileRuns);
-
-        // a failed result that also has a non-NULL fgBlockCounts
+        // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
         // the ILSize for the method when profile data was collected.
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(hr) && (fgBlockCounts != nullptr))
+        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
         {
             fgProfileData_ILSizeMismatch = true;
-            fgBlockCounts                = nullptr;
+            fgPgoData                    = nullptr;
+            fgPgoSchema                  = nullptr;
         }
 #ifdef DEBUG
-        // A successful result implies a non-NULL fgBlockCounts
+        // A successful result implies a non-NULL fgPgoSchema
         //
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(fgPgoQueryResult))
         {
-            assert(fgBlockCounts != nullptr);
+            assert(fgPgoSchema != nullptr);
         }
 
-        // A failed result implies a NULL fgBlockCounts
+        // A failed result implies a NULL fgPgoSchema
         //   see implementation of Compiler::fgHaveProfileData()
         //
-        if (FAILED(hr))
+        if (FAILED(fgPgoQueryResult))
         {
-            assert(fgBlockCounts == nullptr);
+            assert(fgPgoSchema == nullptr);
         }
 #endif
     }
@@ -3913,21 +3965,28 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
         {
-            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
-
-            // The zapper doesn't set JitFlags::JIT_FLAG_ALIGN_LOOPS, and there is
-            // no reason for it to set it as the JIT doesn't currently support loop alignment
-            // for prejitted images. (The JIT doesn't know the final address of the code, hence
+            // The JIT doesn't currently support loop alignment for prejitted images.
+            // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
-            assert(!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+
+            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
         }
         else
         {
-            codeGen->SetAlignLoops(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALIGN_LOOPS));
+            codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
+
+#if TARGET_ARM
+    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
+    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
+    //
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
+#else
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
+#endif
 
     fgCanRelocateEHRegions = true;
 }
@@ -4319,7 +4378,7 @@ void Compiler::EndPhase(Phases phase)
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
-void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
+void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
     // Prepare for importation
     //
@@ -4346,9 +4405,31 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     compFunctionTraceStart();
 
+    // Incorporate profile data.
+    //
+    // Note: the importer is sensitive to block weights, so this has
+    // to happen before importation.
+    //
+    DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+
+    // If we're going to instrument code, we may need to prepare before
+    // we import.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
+
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
+
+    // If instrumenting, add block and class probes.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
+    }
 
     // Transform indirect calls that require control flow expansion.
     //
@@ -4423,11 +4504,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
     fgRemoveEH();
 #endif // !FEATURE_EH
-
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
-    }
 
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.
@@ -4762,19 +4838,23 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
         // Compute reachability sets and dominators.
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Perform loop inversion (i.e. transform "while" loops into
-        // "repeat" loops) and discover and classify natural loops
+        // Discover and classify natural loops
         // (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels
         //
-        DoPhase(this, PHASE_OPTIMIZE_LOOPS, &Compiler::optOptimizeLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
         // choose the one based on dynamic condition evaluation.
@@ -5223,10 +5303,8 @@ void Compiler::RecomputeLoopInfo()
         block->bbFlags &= ~BBF_LOOP_FLAGS;
     }
     fgComputeReachability();
-    // Rebuild the loop tree annotations themselves.  Since this is performed as
-    // part of 'optOptimizeLoops', this will also re-perform loop rotation, but
-    // not other optimizations, as the others are not part of 'optOptimizeLoops'.
-    optOptimizeLoops();
+    // Rebuild the loop tree annotations themselves
+    optFindLoops();
 }
 
 /*****************************************************************************/
@@ -5359,7 +5437,7 @@ bool Compiler::skipMethod()
 
 int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
                           void**                methodCodePtr,
-                          ULONG*                methodCodeSize,
+                          uint32_t*             methodCodeSize,
                           JitFlags*             compileFlags)
 {
     // compInit should have set these already.
@@ -5377,7 +5455,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // Call into VM to get the config strings. FEATURE_JIT_METHOD_PERF is enabled for
         // retail builds. Do not call the regular Config helper here as it would pull
         // in a copy of the config parser into the clrjit.dll.
-        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, info.compCompHnd->getJitTimeLogFilename(), NULL);
+        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename,
+                                    (LPCWSTR)info.compCompHnd->getJitTimeLogFilename(), NULL);
 
         // At a process or module boundary clear the file and start afresh.
         JitTimer::PrintCsvHeader();
@@ -5447,7 +5526,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
@@ -5504,6 +5583,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        // Get the assembly name, to aid finding any particular SuperPMI method context function
+        (void)info.compCompHnd->getAssemblyName(
+            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+    }
+#endif // DEBUG
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -5553,7 +5641,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
 
         int result;
@@ -5730,8 +5818,19 @@ void Compiler::compCompileFinish()
         unsigned profCallCount = 0;
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
-            assert(fgBlockCounts[0].ILOffset == 0);
-            profCallCount = fgBlockCounts[0].ExecutionCount;
+            bool foundEntrypointBasicBlockCount = false;
+            for (UINT32 iSchema = 0; iSchema < fgPgoSchemaCount; iSchema++)
+            {
+                if ((fgPgoSchema[iSchema].InstrumentationKind ==
+                     ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) &&
+                    (fgPgoSchema[iSchema].ILOffset == 0))
+                {
+                    foundEntrypointBasicBlockCount = true;
+                    profCallCount                  = *(uint32_t*)(fgPgoData + fgPgoSchema[iSchema].Offset);
+                    break;
+                }
+            }
+            assert(foundEntrypointBasicBlockCount);
         }
 
         static bool headerPrinted = false;
@@ -5967,7 +6066,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 COMP_HANDLE           compHnd,
                                 CORINFO_METHOD_INFO*  methodInfo,
                                 void**                methodCodePtr,
-                                ULONG*                methodCodeSize,
+                                uint32_t*             methodCodeSize,
                                 JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
@@ -6104,10 +6203,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         bool unused;
         info.compCallConv = info.compCompHnd->getUnmanagedCallConv(methodInfo->ftn, nullptr, &unused);
+        info.compArgOrder = Target::g_tgtUnmanagedArgOrder;
     }
     else
     {
         info.compCallConv = CorInfoCallConvExtension::Managed;
+        info.compArgOrder = Target::g_tgtArgOrder;
     }
 
     info.compIsVarArgs = false;
@@ -6811,7 +6912,7 @@ int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                   COMP_HANDLE           compHnd,
                   CORINFO_METHOD_INFO*  methodInfo,
                   void**                methodCodePtr,
-                  ULONG*                methodCodeSize,
+                  uint32_t*             methodCodeSize,
                   JitFlags*             compileFlags,
                   void*                 inlineInfoPtr)
 {
@@ -6855,7 +6956,7 @@ START:
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
         InlineInfo*           inlineInfo;
 #if MEASURE_CLRAPI_CALLS

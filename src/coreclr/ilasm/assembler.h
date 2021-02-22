@@ -756,7 +756,6 @@ public:
     BOOL    m_fReportProgress;
     BOOL    m_fIsMscorlib;
     BOOL    m_fTolerateDupMethods;
-    BOOL    m_fENCMode;
     BOOL    m_fOptimize;
     mdToken m_tkSysObject;
     mdToken m_tkSysString;
@@ -803,8 +802,6 @@ public:
     // moved to Class
     //MethodList  m_MethodList;
 
-    BOOL    m_fCPlusPlus;
-    BOOL    m_fWindowsCE;
     BOOL    m_fDLL;
     BOOL    m_fOBJ;
     BOOL    m_fEntryPointPresent;
@@ -1223,11 +1220,6 @@ public:
     void SetCodePage(unsigned val) { g_uCodePage = val; };
     Clockwork* bClock;
     void SetClock(Clockwork* val) { bClock = val; };
-    // ENC paraphernalia
-    HRESULT InitMetaDataForENC(__in __nullterminated WCHAR* wzOrigFileName, BOOL generatePdb);
-    BOOL EmitFieldsMethodsENC(Class* pClass);
-    BOOL EmitEventsPropsENC(Class* pClass);
-    HRESULT CreateDeltaFiles(__in __nullterminated WCHAR *pwzOutputFilename);
 
     // Syntactic sugar paraphernalia
 private:

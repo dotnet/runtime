@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                             break;
 
                         case XmlNodeType.EndElement:
-                            if (prefixStack.Any())
+                            if (prefixStack.Count != 0)
                             {
                                 // If this EndElement node comes right after an Element node,
                                 // it means there is no text/CDATA node in current element
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             }
 
             // If current element is not root element
-            if (prefixStack.Any())
+            if (prefixStack.Count != 0)
             {
                 string lastPrefix = prefixStack.Pop();
                 prefixStack.Push(ConfigurationPath.Combine(lastPrefix, reader.Value));

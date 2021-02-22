@@ -19,6 +19,9 @@ trigger:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 jobs:
 
 # build coreclr and libraries
@@ -31,6 +34,7 @@ jobs:
     - windows_x64
     - windows_x86
     - Linux_arm64
+    - Linux_musl_x64
     jobParameters:
       testGroup: perf
 
@@ -45,7 +49,7 @@ jobs:
     jobParameters:
       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
       nameSuffix: wasm
-      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      isOfficialBuild: false
       extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
       extraStepsParameters:
         rootFolder: '$(Build.SourcesDirectory)/artifacts/'
@@ -126,6 +130,7 @@ jobs:
     - windows_x64
     - windows_x86
     - Linux_arm64
+    - Linux_musl_x64
     jobParameters:
       testGroup: perf
       liveLibrariesBuildConfig: Release

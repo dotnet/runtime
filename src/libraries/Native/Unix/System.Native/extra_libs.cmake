@@ -10,7 +10,11 @@ macro(append_extra_system_libs NativeLibsExtra)
         list(APPEND ${NativeLibsExtra} socket)
     endif ()
     
-    if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         list(APPEND ${NativeLibsExtra} "-framework Foundation")
+    endif ()
+
+    if (CLR_CMAKE_TARGET_LINUX AND HAVE_GETADDRINFO_A)
+        list(APPEND ${NativeLibsExtra} anl)
     endif ()
 endmacro()

@@ -102,9 +102,9 @@ inline void FATAL_GC_ERROR()
 
 // Temporarily disabling using the mark list for regions. We would need to have 
 // each region find their starting and ending positions on the sorted mark list.
-#ifndef USE_REGIONS
+//#ifndef USE_REGIONS
 #define MARK_LIST         //used sorted list to speed up plan phase
-#endif //!USE_REGIONS
+//#endif //!USE_REGIONS
 
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
@@ -124,7 +124,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 #ifdef BACKGROUND_GC
 #define BGC_SERVO_TUNING
@@ -1214,6 +1214,14 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
+    void verify_regions (int gen_number);
+    PER_HEAP
+    void verify_regions();
+    PER_HEAP_ISOLATED
+    void enter_gc_lock_for_verify_heap();
+    PER_HEAP_ISOLATED
+    void leave_gc_lock_for_verify_heap();
+    PER_HEAP
     void verify_heap (BOOL begin_gc_p);
     PER_HEAP
     BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards, 
@@ -1307,6 +1315,16 @@ public:
     void thread_rest_of_generation (generation* gen, heap_segment* region);
     PER_HEAP
     heap_segment* get_new_region (int gen_number);
+    // This allocates one from region allocator and commit the mark array if needed.
+    PER_HEAP_ISOLATED
+    heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p);
+    // When we delete a region we need to update start and tail region
+    // if needed.
+    PER_HEAP
+    void update_start_tail_regions (generation* gen,
+                                    heap_segment* region_to_delete, 
+                                    heap_segment* prev_region, 
+                                    heap_segment* next_region);
 #endif //USE_REGIONS
 
     static
@@ -3070,6 +3088,8 @@ protected:
     PER_HEAP
     size_t estimated_reclaim (int gen_number);
     PER_HEAP
+    bool is_full_compacting_gc_productive();
+    PER_HEAP
     BOOL decide_on_compacting (int condemned_gen_number,
                                size_t fragmentation,
                                BOOL& should_expand);
@@ -3118,6 +3138,11 @@ protected:
 #ifdef MARK_LIST
     PER_HEAP_ISOLATED
     void grow_mark_list();
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
 #ifdef BACKGROUND_GC
@@ -3363,6 +3388,12 @@ public:
 
     PER_HEAP
     int num_free_large_regions;
+
+    PER_HEAP
+    int num_free_large_regions_added;
+
+    PER_HEAP
+    int num_free_large_regions_removed;
 
     PER_HEAP
     size_t committed_in_free;
@@ -4105,7 +4136,14 @@ protected:
     uint8_t** g_mark_list_copy;
     PER_HEAP
     uint8_t*** mark_list_piece_start;
+    PER_HEAP
     uint8_t*** mark_list_piece_end;
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED
+    uint8_t*** g_mark_list_piece;
+#endif //USE_REGIONS
 #endif //MARK_LIST
 
     PER_HEAP
@@ -5423,6 +5461,7 @@ inline gc_oh_num heap_segment_oh (heap_segment * inst)
     }
 }
 
+#ifdef BACKGROUND_GC
 #ifdef USE_REGIONS
 inline
 bool heap_segment_overflow_p (heap_segment* inst)
@@ -5431,7 +5470,6 @@ bool heap_segment_overflow_p (heap_segment* inst)
 }
 #endif //USE_REGIONS
 
-#ifdef BACKGROUND_GC
 inline
 BOOL heap_segment_decommitted_p (heap_segment * inst)
 {

@@ -225,12 +225,6 @@ void
 mono_error_set_invalid_cast (MonoError *oerror);
 
 static inline void
-mono_error_set_remoting (MonoError *error, const char *message)
-{
-	mono_error_set_generic_error (error, "System.Runtime.Remoting", "RemotingException", "%s", message);
-}
-
-static inline void
 mono_error_set_divide_by_zero (MonoError *error)
 {
 	mono_error_set_generic_error (error, "System", "DivideByZeroException", NULL);

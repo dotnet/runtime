@@ -28,7 +28,7 @@ function(create_standalone_jit)
 
   if(TARGETDETAILS_ARCH STREQUAL "x64")
     set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
-  elseif(TARGETDETAILS_ARCH STREQUAL "arm")
+  elseif((TARGETDETAILS_ARCH STREQUAL "arm") OR (TARGETDETAILS_ARCH STREQUAL "armel"))
     set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
   elseif(TARGETDETAILS_ARCH STREQUAL "x86")
     set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
@@ -87,6 +87,14 @@ set( JIT_SOURCES
   eeinterface.cpp
   emit.cpp
   error.cpp
+  fgbasic.cpp
+  fgdiagnostic.cpp
+  fgehopt.cpp
+  fgflow.cpp
+  fginline.cpp
+  fgopt.cpp
+  fgprofile.cpp
+  fgstmt.cpp
   flowgraph.cpp
   gcdecode.cpp
   gcencode.cpp
@@ -340,14 +348,14 @@ else()
   clr_unknown_arch()
 endif()
 
-set(SOURCES
+set(JIT_CORE_SOURCES
   ${JIT_SOURCES}
   ${JIT_HEADERS}
-  ${JIT_RESOURCES}
 )
 
-convert_to_absolute_path(SOURCES ${SOURCES})
+convert_to_absolute_path(JIT_CORE_SOURCES ${JIT_CORE_SOURCES})
 convert_to_absolute_path(JIT_ARCH_SOURCES ${JIT_ARCH_SOURCES})
+convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
 
 # Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
 
@@ -363,7 +371,6 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  set(JIT_CORE_SOURCES ${SOURCES})
   set(JIT_DEF_FILE ${JIT_EXPORTS_FILE})
 else()
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
@@ -378,7 +385,6 @@ else()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})
   set(JIT_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
-  set(JIT_CORE_SOURCES ${SOURCES})
 endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
@@ -424,6 +430,7 @@ function(add_jit jitName)
     add_library_clr(${jitName}
         SHARED
         ${JIT_CORE_SOURCES}
+        ${JIT_RESOURCES}
         ${JIT_ARCH_SOURCES}
         ${JIT_DEF_FILE}
         ${JIT_DLL_MAIN_FILE}
@@ -472,13 +479,6 @@ create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME
 # Enable profile guided optimization
 add_pgo(clrjit)
 
-
-if (CLR_CMAKE_HOST_ARCH_I386)
-     # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
-  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH arm)
-  target_compile_definitions(clrjit_unix_armel_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP)
-endif ()
-
 if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
@@ -488,6 +488,7 @@ if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
     create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
   endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
+  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH armel)
   create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
   create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
@@ -496,3 +497,12 @@ else()
     create_standalone_jit(TARGET clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
   endif(CLR_CMAKE_TARGET_UNIX)
 endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
+
+
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
+  # Copy PGO dependency to target dir
+  set(PGORT_DLL "pgort140.dll")
+  find_path(PGORT_DIR ${PGORT_DLL} REQUIRED)
+  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX})
+  _install(FILES "${PGORT_DIR}/${PGORT_DLL}" DESTINATION ${CMAKE_INSTALL_PREFIX}/sharedFramework)
+endif ()

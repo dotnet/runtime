@@ -2211,7 +2211,7 @@ STDMETHODIMP RegMeta::DefineDocument(       // S_OK or error.
     _ASSERTE(docNameBlobSize <= docNameBlobMaxSize);
 
     // Add record
-    ULONG docRecord;
+    RID docRecord;
     DocumentRec* pDocument;
     IfFailGo(m_pStgdb->m_MiniMd.AddDocumentRecord(&pDocument, &docRecord));
     // Name column
@@ -2261,7 +2261,7 @@ STDMETHODIMP RegMeta::DefineSequencePoints(     // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
-    ULONG methodDbgInfoRec;
+    RID methodDbgInfoRec;
     MethodDebugInformationRec* pMethodDbgInfo;
     IfFailGo(m_pStgdb->m_MiniMd.AddMethodDebugInformationRecord(&pMethodDbgInfo, &methodDbgInfoRec));
     // Document column
@@ -2304,7 +2304,7 @@ STDMETHODIMP RegMeta::DefineLocalScope(     // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
-    ULONG localScopeRecord;
+    RID localScopeRecord;
     LocalScopeRec* pLocalScope;
     IfFailGo(m_pStgdb->m_MiniMd.AddLocalScopeRecord(&pLocalScope, &localScopeRecord));
     IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_LocalScope, LocalScopeRec::COL_Method, pLocalScope, methodDefRid));
@@ -2348,7 +2348,7 @@ STDMETHODIMP RegMeta::DefineLocalVariable(      // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
-    ULONG localVariableRecord;
+    RID localVariableRecord;
     LocalVariableRec* pLocalVariable;
     IfFailGo(m_pStgdb->m_MiniMd.AddLocalVariableRecord(&pLocalVariable, &localVariableRecord));
     IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_LocalVariable, LocalVariableRec::COL_Name, pLocalVariable, name));
@@ -2624,7 +2624,7 @@ HRESULT RegMeta::_DefinePinvokeMap(     // Return hresult.
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     ImplMapRec  *pRecord;
-    ULONG       iRecord;
+    RID         iRecord;
     bool        bDupFound = false;
     HRESULT     hr = S_OK;
 
@@ -2720,7 +2720,7 @@ STDMETHODIMP RegMeta::SetPinvokeMap(          // Return code.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     ImplMapRec  *pRecord;
-    ULONG       iRecord;
+    RID         iRecord;
 
     LOG((LOGMD, "MD RegMeta::SetPinvokeMap(0x%08x, 0x%08x, %S, 0x%08x)\n",
         tk, dwMappingFlags, MDSTR(szImportName), mrImportDLL));

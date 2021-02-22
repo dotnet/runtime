@@ -41,6 +41,27 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
+CONFIG_INTEGER(JitAlignLoopMinBlockWeight,
+               W("JitAlignLoopMinBlockWeight"),
+               DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT) // Minimum weight needed for the first block of a loop to make it a
+                                                    // candidate for alignment.
+CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
+               W("JitAlignLoopMaxCodeSize"),
+               DEFAULT_MAX_LOOPSIZE_FOR_ALIGN) // For non-adaptive alignment, minimum loop size (in bytes) for which
+                                               // alignment will be done.
+                                               // Defaults to 3 blocks of 32 bytes chunks = 96 bytes.
+CONFIG_INTEGER(JitAlignLoopBoundary,
+               W("JitAlignLoopBoundary"),
+               DEFAULT_ALIGN_LOOP_BOUNDARY) // For non-adaptive alignment, address boundary (power of 2) at which loop
+                                            // alignment should be done. By default, 32B.
+CONFIG_INTEGER(JitAlignLoopForJcc,
+               W("JitAlignLoopForJcc"),
+               0) // If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.
+
+CONFIG_INTEGER(JitAlignLoopAdaptive,
+               W("JitAlignLoopAdaptive"),
+               1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps
@@ -201,6 +222,12 @@ CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
 #endif                                                                     // defined(DEBUG)
+
+#if FEATURE_LOOP_ALIGN
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 1) // If set, align inner loops
+#else
+CONFIG_INTEGER(JitAlignLoops, W("JitAlignLoops"), 0)
+#endif
 
 ///
 /// JIT
@@ -418,9 +445,6 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
-CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
@@ -431,6 +455,11 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
+
+// Control when Virtual Calls are expanded
+CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
+                                                                 // phase)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

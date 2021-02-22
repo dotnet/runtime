@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.ComponentModel;
@@ -456,8 +457,8 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test dummy credentials.")]
-            const string username = "testForDotnetRuntime", password = "PassWord123!!";
+            const string username = "testForDotnetRuntime";
+            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
 
             uint removalResult = Interop.NetUserDel(null, username);
             Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
@@ -472,8 +473,11 @@ namespace System.Diagnostics.Tests
             {
                 p = CreateProcessLong();
 
-                // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Allow);
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                {
+                    // ensure the new user can access the .exe (otherwise you get Access is denied exception)
+                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
@@ -500,10 +504,6 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                SetAccessControl(username, p.StartInfo.FileName, AccessControlType.Deny); // revoke the access
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
-
                 if (handle != null)
                     handle.Dispose();
 
@@ -513,14 +513,31 @@ namespace System.Diagnostics.Tests
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
+
+                if (PlatformDetection.IsNotWindowsServerCore)
+                {
+                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                }
+
+                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, AccessControlType accessControlType)
+        private static void SetAccessControl(string userName, string filePath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
             FileSecurity accessControl = fileInfo.GetAccessControl();
-            accessControl.AddAccessRule(new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, accessControlType));
+            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+
+            if (add)
+            {
+                accessControl.AddAccessRule(fileSystemAccessRule);
+            }
+            else
+            {
+                accessControl.RemoveAccessRule(fileSystemAccessRule);
+            }
+
             fileInfo.SetAccessControl(accessControl);
         }
 

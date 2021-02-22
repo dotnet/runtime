@@ -37,7 +37,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Assert.False(chain.Build(endEntity));
-                Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.PartialChain), "expected partial chain");
+                X509ChainStatusFlags chainFlags = chain.AllStatusFlags();
+                Assert.True(chainFlags.HasFlag(X509ChainStatusFlags.PartialChain), $"expected partial chain flags, got {chainFlags}");
             }
         }
 
@@ -64,6 +65,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 cuCaStore.Open(OpenFlags.ReadWrite);
 
                 X509Chain chain = holder.Chain;
+
+                // macOS combines revocation and AIA fetching in to a single flag. Both need to be disabled
+                // to prevent AIA fetches.
+                if (PlatformDetection.IsOSX)
+                {
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                }
+
                 chain.ChainPolicy.DisableCertificateDownloads = true;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -100,12 +109,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.Equal(1, chain.ChainElements.Count);
                 Assert.Contains(X509ChainStatusFlags.PartialChain, chain.ChainStatus.Select(s => s.Status));
                 holder.DisposeChainElements();
-
-                // macOS doesn't like our revocation responder, so disable revocation checks there.
-                if (PlatformDetection.IsOSX)
-                {
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                }
 
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 Assert.True(chain.Build(endEntity), "Chain build with intermediate, AIA disabled");

@@ -100,8 +100,6 @@
              Link="Common\System\Diagnostics\NetFrameworkUtils.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Specialized" />
@@ -126,7 +124,11 @@
   <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
-
+  <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp2.0')) or $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
+  </ItemGroup>
+  
   <!-- Ensure we run ResolveProjectReferences to add the message DLL to the package.
        We do this here rather than in the pkgproj to ensure the package paths are in sync -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

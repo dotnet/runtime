@@ -61,7 +61,15 @@ mono_llvm_dump_module (LLVMModuleRef module)
 {
 	/* Same as LLVMDumpModule (), but print to stdout */
 	fflush (stdout);
-	outs () << (*unwrap (module));
+	outs () << (*unwrap (module)) << "\n";
+	outs ().flush ();
+}
+
+void
+mono_llvm_dump_type (LLVMTypeRef type)
+{
+	fflush (stdout);
+	outs () << (*unwrap (type)) << "\n";
 	outs ().flush ();
 }
 
@@ -315,7 +323,6 @@ mono_llvm_set_func_nonnull_arg (LLVMValueRef func, int argNo)
 gboolean
 mono_llvm_can_be_gep (LLVMValueRef base, LLVMValueRef* gep_base, LLVMValueRef* gep_offset)
 {
-#ifdef ENABLE_NETCORE
 	// Look for a pattern like this:
 	//   %1 = ptrtoint i8* %gep_base to i64
 	//   %2 = add i64 %1, %gep_offset
@@ -330,7 +337,6 @@ mono_llvm_can_be_gep (LLVMValueRef base, LLVMValueRef* gep_base, LLVMValueRef* g
 			}
 		}
 	}
-#endif
 	return FALSE;
 }
 
@@ -627,7 +633,9 @@ get_intrins_id (IntrinsicId id)
 	Intrinsic::ID intrins_id = Intrinsic::ID::not_intrinsic;
 	switch (id) {
 #define INTRINS(id, llvm_id) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR(id, llvm_id) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -640,7 +648,9 @@ is_overloaded_intrins (IntrinsicId id)
 {
 	switch (id) {
 #define INTRINS(id, llvm_id)
-#define INTRINS_OVR(id, llvm_id) case INTRINS_ ## id: return true;
+#define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: return true;
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -689,4 +699,9 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 		arr [i] = unwrap (types [i]);
     auto f = Intrinsic::getDeclaration (unwrap (module), intrins_id, { arr, (size_t)ntypes });
     return wrap (f);
+}
+
+unsigned int
+mono_llvm_get_prim_size_bits (LLVMTypeRef type) {
+	return unwrap (type)->getPrimitiveSizeInBits ();
 }

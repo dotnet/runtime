@@ -78,40 +78,6 @@ namespace System.Linq.Tests
             Assert.Equal(2, i);
         }
 
-        /// <summary>
-        /// Verifies that all the Queryable methods contain a DynamicDependency
-        /// to the corresponding Enumerable method. This ensures the ILLinker will
-        /// preserve the corresponding Enumerable method when trimming.
-        /// </summary>
-        [Fact]
-        public static void QueryableMethodsContainCorrectDynamicDependency()
-        {
-            IEnumerable<MethodInfo> dependentMethods =
-                typeof(Queryable)
-                    .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .Where(m => m.Name != "AsQueryable");
-
-            foreach (MethodInfo method in dependentMethods)
-            {
-                DynamicDependencyAttribute dependency = method.GetCustomAttribute<DynamicDependencyAttribute>();
-                Assert.NotNull(dependency);
-                Assert.Equal(typeof(Enumerable), dependency.Type);
-
-                int genericArgCount = 0;
-                string methodName = dependency.MemberSignature;
-
-                int genericSeparator = methodName.IndexOf('`');
-                if (genericSeparator != -1)
-                {
-                    genericArgCount = int.Parse(methodName.Substring(genericSeparator + 1));
-                    methodName = methodName.Substring(0, genericSeparator);
-                }
-
-                Assert.Equal(method.GetGenericArguments().Length, genericArgCount);
-                Assert.Equal(method.Name, methodName);
-            }
-        }
-
         [Fact]
         public static void MatchSequencePattern()
         {
@@ -121,16 +87,17 @@ namespace System.Linq.Tests
                 typeof(Enumerable),
                 typeof(Queryable),
                  new [] {
-                     "ToLookup",
-                     "ToDictionary",
-                     "ToArray",
-                     "AsEnumerable",
-                     "ToList",
+                     nameof(Enumerable.ToLookup),
+                     nameof(Enumerable.ToDictionary),
+                     nameof(Enumerable.ToArray),
+                     nameof(Enumerable.AsEnumerable),
+                     nameof(Enumerable.ToList),
+                     nameof(Enumerable.Append),
+                     nameof(Enumerable.Prepend),
+                     nameof(Enumerable.ToHashSet),
+                     nameof(Enumerable.TryGetNonEnumeratedCount),
                      "Fold",
                      "LeftJoin",
-                     "Append",
-                     "Prepend",
-                     "ToHashSet"
                  }
                 );
 
@@ -140,7 +107,7 @@ namespace System.Linq.Tests
                 typeof(Queryable),
                 typeof(Enumerable),
                  new [] {
-                     "AsQueryable"
+                     nameof(Queryable.AsQueryable)
                  }
                 );
 

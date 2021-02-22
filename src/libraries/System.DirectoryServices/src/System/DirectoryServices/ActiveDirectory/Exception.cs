@@ -59,6 +59,20 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             base.GetObjectData(serializationInfo, streamingContext);
         }
+
+        public override string Message
+        {
+            get
+            {
+                string s = base.Message;
+                if (!string.IsNullOrEmpty(Name))
+                {
+                    s += " " + Name;
+                }
+
+                return s;
+            }
+        }
     }
 
     [Serializable]

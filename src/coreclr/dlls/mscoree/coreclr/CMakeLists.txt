@@ -1,3 +1,10 @@
+
+# we need to define this library before adding .def fiels to sources.
+add_library_clr(coreclr_static
+    STATIC
+    ${CLR_SOURCES}
+)
+
 if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
@@ -64,18 +71,11 @@ add_library_clr(coreclr
     ${CLR_SOURCES}
 )
 
-add_library_clr(coreclr_static
-    STATIC
-    ${CLR_SOURCES}
-)
-
 add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
 add_custom_target(coreclr_def DEPENDS ${DEF_FILE})
 
 add_dependencies(coreclr coreclr_def)
 add_dependencies(coreclr coreclr_exports)
-add_dependencies(coreclr_static coreclr_def)
-add_dependencies(coreclr_static coreclr_exports)
 
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
@@ -223,9 +223,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
-
-# publish coreclr_static lib
-_install(TARGETS coreclr_static DESTINATION lib)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

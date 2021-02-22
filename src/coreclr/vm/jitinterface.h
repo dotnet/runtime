@@ -20,7 +20,7 @@
 #else // !TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
 #endif // !TARGET_UNIX
-
+#include "pgo.h"
 
 enum StompWriteBarrierCompletionAction
 {
@@ -420,7 +420,7 @@ class CEEInfo : public ICorJitInfo
 
 public:
 #include "icorjitinfoimpl_generated.h"
-    DWORD getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
+    uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
 
     static unsigned getClassAlignmentRequirementStatic(TypeHandle clsHnd);
 
@@ -451,6 +451,10 @@ public:
             );
 
     bool resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info);
+
+    CORINFO_CLASS_HANDLE getDefaultComparerClassHelper(
+        CORINFO_CLASS_HANDLE elemType
+        );
 
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClassHelper(
         CORINFO_CLASS_HANDLE elemType
@@ -633,25 +637,25 @@ public:
     // ICorJitInfo stuff
 
     void allocMem (
-            ULONG               hotCodeSize,    /* IN */
-            ULONG               coldCodeSize,   /* IN */
-            ULONG               roDataSize,     /* IN */
-            ULONG               xcptnsCount,    /* IN */
+            uint32_t            hotCodeSize,    /* IN */
+            uint32_t            coldCodeSize,   /* IN */
+            uint32_t            roDataSize,     /* IN */
+            uint32_t            xcptnsCount,    /* IN */
             CorJitAllocMemFlag  flag,           /* IN */
             void **             hotCodeBlock,   /* OUT */
             void **             coldCodeBlock,  /* OUT */
             void **             roDataBlock     /* OUT */
             ) override final;
 
-    void reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize) override final;
+    void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override final;
 
     void allocUnwindInfo (
-            BYTE * pHotCode,              /* IN */
-            BYTE * pColdCode,             /* IN */
-            ULONG  startOffset,           /* IN */
-            ULONG  endOffset,             /* IN */
-            ULONG  unwindSize,            /* IN */
-            BYTE * pUnwindBlock,          /* IN */
+            uint8_t * pHotCode,              /* IN */
+            uint8_t * pColdCode,             /* IN */
+            uint32_t  startOffset,           /* IN */
+            uint32_t  endOffset,             /* IN */
+            uint32_t  unwindSize,            /* IN */
+            uint8_t * pUnwindBlock,          /* IN */
             CorJitFuncKind funcKind       /* IN */
             ) override final;
 
@@ -669,29 +673,30 @@ public:
             CORINFO_EH_CLAUSE* clause               /* OUT */
             ) override final;
 
+    HRESULT allocPgoInstrumentationBySchema(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema* pSchema, /* IN/OUT */
+            uint32_t countSchemaItems, /* IN */
+            uint8_t** pInstrumentationData /* OUT */
+            ) override final;
 
-    HRESULT allocMethodBlockCounts (
-        UINT32                        count,         // the count of <ILOffset, ExecutionCount> tuples
-        ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
-    ) override final;
-
-    HRESULT getMethodBlockCounts(
-        CORINFO_METHOD_HANDLE         ftnHnd,
-        UINT32 *                      pCount,        // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
-        UINT32 *                      pNumRuns
-    ) override final;
+    HRESULT getPgoInstrumentationResults(
+            CORINFO_METHOD_HANDLE ftnHnd, /* IN */
+            PgoInstrumentationSchema** pSchema, /* OUT */
+            uint32_t* pCountSchemaItems, /* OUT */
+            uint8_t**pInstrumentationData /* OUT */
+            ) override final;
 
     CORINFO_CLASS_HANDLE getLikelyClass(
             CORINFO_METHOD_HANDLE ftnHnd,
             CORINFO_CLASS_HANDLE  baseHnd,
-            UINT32                ilOffset,
-            UINT32 *              pLikelihood,
-            UINT32 *              pNumberOfClasses
+            uint32_t              ilOffset,
+            uint32_t *            pLikelihood,
+            uint32_t *            pNumberOfClasses
             ) override final;
 
     void recordCallSite(
-            ULONG                     instrOffset,  /* IN */
+            uint32_t                     instrOffset,  /* IN */
             CORINFO_SIG_INFO *        callSig,      /* IN */
             CORINFO_METHOD_HANDLE     methodHandle  /* IN */
             ) override final;
@@ -699,13 +704,13 @@ public:
     void recordRelocation(
             void                    *location,
             void                    *target,
-            WORD                     fRelocType,
-            WORD                     slot,
-            INT32                    addlDelta) override final;
+            uint16_t                 fRelocType,
+            uint16_t                 slot,
+            int32_t                  addlDelta) override final;
 
-    WORD getRelocTypeHint(void * target) override final;
+    uint16_t getRelocTypeHint(void * target) override final;
 
-    DWORD getExpectedTargetArchitecture() override final;
+    uint32_t getExpectedTargetArchitecture() override final;
 
     CodeHeader* GetCodeHeader()
     {
@@ -884,7 +889,18 @@ public:
         if (m_pPatchpointInfoFromJit != NULL)
             delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 #endif
-
+#ifdef FEATURE_PGO
+        if (m_foundPgoData != NULL)
+        {
+            ComputedPgoData* current = m_foundPgoData;
+            while (current != NULL)
+            {
+                ComputedPgoData* next = current->m_next;
+                delete current;
+                current = next;
+            }
+        }
+#endif
     }
 
     // ICorDebugInfo stuff.
@@ -924,13 +940,32 @@ public:
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override final;
 
 protected :
+
+#ifdef FEATURE_PGO
+    // PGO data
+    struct ComputedPgoData
+    {
+        ComputedPgoData(MethodDesc* pMD) : m_pMD(pMD) {}
+
+        ComputedPgoData* m_next = nullptr;
+        MethodDesc *m_pMD;
+        NewArrayHolder<BYTE> m_allocatedData;
+        PgoInstrumentationSchema* m_schema = nullptr;
+        UINT32 m_cSchemaElems;
+        BYTE *m_pInstrumentationData = nullptr;
+        HRESULT m_hr = E_NOTIMPL;
+    };
+    ComputedPgoData*        m_foundPgoData = nullptr;
+#endif
+
+
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
     COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
 #ifdef FEATURE_EH_FUNCLETS
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
-    ULONG                   m_usedUnwindSize;   // used space in m_theUnwindBlock
+    uint32_t                m_usedUnwindSize;   // used space in m_theUnwindBlock
     BYTE *                  m_theUnwindBlock;   // start of the unwind memory block
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;

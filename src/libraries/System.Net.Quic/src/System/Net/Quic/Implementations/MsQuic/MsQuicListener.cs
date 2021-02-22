@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
@@ -49,8 +48,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _options = options;
             _sslOptions = options.ServerAuthenticationOptions!;
             _listenEndPoint = options.ListenEndPoint!;
-
-            SetIdleTimeout(options.IdleTimeout);
 
             _ptr = _session.ListenerOpen(options);
         }
@@ -141,11 +138,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             SetListenPort();
         }
 
-        private void SetIdleTimeout(TimeSpan timeout)
-        {
-            MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
-        }
-
         internal override void Close()
         {
             ThrowIfDisposed();
@@ -173,7 +165,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                             IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.LocalAddress);
                             IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.RemoteAddress);
 
-                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, evt.Data.NewConnection.Connection);
+                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, evt.Data.NewConnection.Connection, _options.IdleTimeout);
                             msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
 
                             _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);

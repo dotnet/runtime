@@ -7,7 +7,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeLsaPolicyHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private SafeLsaPolicyHandle() : base(true) { }
+        public SafeLsaPolicyHandle() : base(true) { }
 
         // 0 is an Invalid Handle
         internal SafeLsaPolicyHandle(IntPtr handle) : base(true)
