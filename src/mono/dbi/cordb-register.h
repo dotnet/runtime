@@ -9,26 +9,35 @@
 
 #include <cordb.h>
 
-class CordbRegisterSet : public CordbBaseMono, public ICorDebugRegisterSet {
-  uint8_t *m_pCtx;
-  uint32_t m_ctxLen;
+class CordbRegisterSet : public CordbBaseMono, public ICorDebugRegisterSet
+{
+    uint8_t* m_pCtx;
+    uint32_t m_ctxLen;
 
 public:
-  CordbRegisterSet(Connection *conn, uint8_t *ctx, uint32_t ctx_len);
-  ULONG AddRef(void) { return (BaseAddRef()); }
-  ULONG Release(void) { return (BaseRelease()); }
-  const char *GetClassName() { return "CordbRegisterSet"; }
-  HRESULT
-  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+    CordbRegisterSet(Connection* conn, uint8_t* ctx, uint32_t ctx_len);
+    ULONG AddRef(void)
+    {
+        return (BaseAddRef());
+    }
+    ULONG Release(void)
+    {
+        return (BaseRelease());
+    }
+    const char* GetClassName()
+    {
+        return "CordbRegisterSet";
+    }
+    HRESULT
+    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
-  HRESULT
-  GetRegistersAvailable(ULONG64 *pAvailable);
-  HRESULT
-  GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[]);
-  HRESULT SetRegisters(ULONG64 mask, ULONG32 regCount,
-                       CORDB_REGISTER regBuffer[]);
-  HRESULT GetThreadContext(ULONG32 contextSize, BYTE context[]);
-  HRESULT SetThreadContext(ULONG32 contextSize, BYTE context[]);
+    HRESULT
+    GetRegistersAvailable(ULONG64* pAvailable);
+    HRESULT
+    GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[]);
+    HRESULT SetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[]);
+    HRESULT GetThreadContext(ULONG32 contextSize, BYTE context[]);
+    HRESULT SetThreadContext(ULONG32 contextSize, BYTE context[]);
 };
 
 #endif

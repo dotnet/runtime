@@ -12,180 +12,188 @@
 
 using namespace std;
 
-CordbFunction::CordbFunction(Connection *conn, mdToken token, int id,
-                             CordbModule *module)
-    : CordbBaseMono(conn) {
-  this->m_metadataToken = token;
-  this->m_debuggerId = id;
-  m_pCode = NULL;
-  this->m_pModule = module;
-  if (module)
-    module->InternalAddRef();
-  conn->GetProcess()->AddFunction(this);
+CordbFunction::CordbFunction(Connection* conn, mdToken token, int id, CordbModule* module) : CordbBaseMono(conn)
+{
+    this->m_metadataToken = token;
+    this->m_debuggerId    = id;
+    m_pCode               = NULL;
+    this->m_pModule       = module;
+    if (module)
+        module->InternalAddRef();
+    conn->GetProcess()->AddFunction(this);
 }
 
-CordbFunction::~CordbFunction() {
-  if (m_pCode)
-    m_pCode->InternalRelease();
-  if (m_pModule)
-    m_pModule->InternalRelease();
-}
-
-HRESULT __stdcall CordbFunction::QueryInterface(REFIID id, void **pInterface) {
-  if (id == IID_ICorDebugFunction) {
-    *pInterface = static_cast<ICorDebugFunction *>(this);
-  } else if (id == IID_ICorDebugFunction2) {
-    *pInterface = static_cast<ICorDebugFunction2 *>(this);
-  } else if (id == IID_ICorDebugFunction3) {
-    *pInterface = static_cast<ICorDebugFunction3 *>(this);
-  } else if (id == IID_ICorDebugFunction4) {
-    *pInterface = static_cast<ICorDebugFunction4 *>(this);
-  } else if (id == IID_IUnknown) {
-    *pInterface =
-        static_cast<IUnknown *>(static_cast<ICorDebugFunction *>(this));
-  } else {
-    *pInterface = NULL;
-    return E_NOINTERFACE;
-  }
-  AddRef();
-  return S_OK;
-}
-
-HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule **ppModule) {
-  LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetModule - IMPLEMENTED\n"));
-  MdbgProtBuffer localbuf;
-  if (!m_pModule) {
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD,
-                                MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
-
-    ReceivedReplyPacket *received_reply_packet =
-        conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
-
-    int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-    m_pModule = conn->GetProcess()->GetModule(module_id);
+CordbFunction::~CordbFunction()
+{
+    if (m_pCode)
+        m_pCode->InternalRelease();
     if (m_pModule)
-      m_pModule->InternalAddRef();
-  }
-
-  if (!m_pModule)
-    return S_FALSE;
-
-  m_pModule->AddRef();
-  *ppModule = static_cast<ICorDebugModule *>(m_pModule);
-  return S_OK;
+        m_pModule->InternalRelease();
 }
 
-HRESULT __stdcall CordbFunction::GetClass(ICorDebugClass **ppClass) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - GetClass - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::QueryInterface(REFIID id, void** pInterface)
+{
+    if (id == IID_ICorDebugFunction)
+    {
+        *pInterface = static_cast<ICorDebugFunction*>(this);
+    }
+    else if (id == IID_ICorDebugFunction2)
+    {
+        *pInterface = static_cast<ICorDebugFunction2*>(this);
+    }
+    else if (id == IID_ICorDebugFunction3)
+    {
+        *pInterface = static_cast<ICorDebugFunction3*>(this);
+    }
+    else if (id == IID_ICorDebugFunction4)
+    {
+        *pInterface = static_cast<ICorDebugFunction4*>(this);
+    }
+    else if (id == IID_IUnknown)
+    {
+        *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugFunction*>(this));
+    }
+    else
+    {
+        *pInterface = NULL;
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetToken(mdMethodDef *pMethodDef) {
-  if (this->GetMetadataToken() == 0) {
-    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetToken - IMPLEMENTED\n"));
+HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule** ppModule)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetModule - IMPLEMENTED\n"));
     MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD,
-                                MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+    if (!m_pModule)
+    {
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    ReceivedReplyPacket *received_reply_packet =
-        conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer *pReply = received_reply_packet->Buffer();
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-    this->m_metadataToken =
-        m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-  }
-  *pMethodDef = this->GetMetadataToken();
-  return S_OK;
+        int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+        m_pModule     = conn->GetProcess()->GetModule(module_id);
+        if (m_pModule)
+            m_pModule->InternalAddRef();
+    }
+
+    if (!m_pModule)
+        return S_FALSE;
+
+    m_pModule->AddRef();
+    *ppModule = static_cast<ICorDebugModule*>(m_pModule);
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetILCode(ICorDebugCode **ppCode) {
-  if (m_pCode == NULL) {
-    m_pCode = new CordbCode(conn, this);
-    m_pCode->InternalAddRef();
-  }
-  m_pCode->QueryInterface(IID_ICorDebugCode, (void **)ppCode);
-  LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetILCode - IMPLEMENTED\n"));
-  return S_OK;
+HRESULT __stdcall CordbFunction::GetClass(ICorDebugClass** ppClass)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetClass - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetNativeCode(ICorDebugCode **ppCode) {
-  if (m_pCode == NULL) {
-    m_pCode = new CordbCode(conn, this);
-    m_pCode->InternalAddRef();
-  }
-  m_pCode->QueryInterface(IID_ICorDebugCode, (void **)ppCode);
-  LOG((LF_CORDB, LL_INFO1000000,
-       "CordbFunction - GetNativeCode - IMPLEMENTED\n"));
-  return S_OK;
+HRESULT __stdcall CordbFunction::GetToken(mdMethodDef* pMethodDef)
+{
+    if (this->GetMetadataToken() == 0)
+    {
+        LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetToken - IMPLEMENTED\n"));
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        this->m_metadataToken = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    }
+    *pMethodDef = this->GetMetadataToken();
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::CreateBreakpoint(
-    ICorDebugFunctionBreakpoint **ppBreakpoint) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::GetILCode(ICorDebugCode** ppCode)
+{
+    if (m_pCode == NULL)
+    {
+        m_pCode = new CordbCode(conn, this);
+        m_pCode->InternalAddRef();
+    }
+    m_pCode->QueryInterface(IID_ICorDebugCode, (void**)ppCode);
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetILCode - IMPLEMENTED\n"));
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetLocalVarSigToken(mdSignature *pmdSig) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - GetLocalVarSigToken - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::GetNativeCode(ICorDebugCode** ppCode)
+{
+    if (m_pCode == NULL)
+    {
+        m_pCode = new CordbCode(conn, this);
+        m_pCode->InternalAddRef();
+    }
+    m_pCode->QueryInterface(IID_ICorDebugCode, (void**)ppCode);
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetNativeCode - IMPLEMENTED\n"));
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetCurrentVersionNumber(
-    ULONG32 *pnCurrentVersion) {
-  *pnCurrentVersion = 1;
-  LOG((LF_CORDB, LL_INFO1000000,
-       "CordbFunction - GetCurrentVersionNumber - IMPLEMENTED\n"));
-  return S_OK;
+HRESULT __stdcall CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::SetJMCStatus(BOOL bIsJustMyCode) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - SetJMCStatus - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::GetLocalVarSigToken(mdSignature* pmdSig)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetLocalVarSigToken - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetJMCStatus(BOOL *pbIsJustMyCode) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - GetJMCStatus - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::GetCurrentVersionNumber(ULONG32* pnCurrentVersion)
+{
+    *pnCurrentVersion = 1;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetCurrentVersionNumber - IMPLEMENTED\n"));
+    return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::EnumerateNativeCode(
-    ICorDebugCodeEnum **ppCodeEnum) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - EnumerateNativeCode - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::SetJMCStatus(BOOL bIsJustMyCode)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - SetJMCStatus - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetVersionNumber(ULONG32 *pnVersion) {
-  *pnVersion = 1;
-  LOG((LF_CORDB, LL_INFO1000000,
-       "CordbFunction - GetVersionNumber - IMPLEMENTED\n"));
-  return S_OK;
+HRESULT __stdcall CordbFunction::GetJMCStatus(BOOL* pbIsJustMyCode)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetJMCStatus - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetActiveReJitRequestILCode(
-    ICorDebugILCode **ppReJitedILCode) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - GetActiveReJitRequestILCode - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::EnumerateNativeCode(ICorDebugCodeEnum** ppCodeEnum)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - EnumerateNativeCode - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::CreateNativeBreakpoint(
-    ICorDebugFunctionBreakpoint **ppBreakpoint) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbFunction - CreateNativeBreakpoint - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbFunction::GetVersionNumber(ULONG32* pnVersion)
+{
+    *pnVersion = 1;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetVersionNumber - IMPLEMENTED\n"));
+    return S_OK;
+}
+
+HRESULT __stdcall CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode** ppReJitedILCode)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetActiveReJitRequestILCode - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
+}
+
+HRESULT __stdcall CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - CreateNativeBreakpoint - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }

@@ -9,20 +9,28 @@
 
 #include <cordb.h>
 
-class CordbBlockingObjectEnum : public CordbBaseMono,
-                                public ICorDebugBlockingObjectEnum {
+class CordbBlockingObjectEnum : public CordbBaseMono, public ICorDebugBlockingObjectEnum
+{
 public:
-  CordbBlockingObjectEnum(Connection *conn);
-  ULONG AddRef(void) { return (BaseAddRef()); }
-  ULONG Release(void) { return (BaseRelease()); }
-  const char *GetClassName() { return "CordbBlockingObjectEnum"; }
-  HRESULT Next(ULONG celt, CorDebugBlockingObject values[],
-               ULONG *pceltFetched);
-  HRESULT Skip(ULONG celt);
-  HRESULT Reset(void);
-  HRESULT Clone(ICorDebugEnum **ppEnum);
-  HRESULT GetCount(ULONG *pcelt);
-  HRESULT QueryInterface(REFIID riid, void **ppvObject);
+    CordbBlockingObjectEnum(Connection* conn);
+    ULONG AddRef(void)
+    {
+        return (BaseAddRef());
+    }
+    ULONG Release(void)
+    {
+        return (BaseRelease());
+    }
+    const char* GetClassName()
+    {
+        return "CordbBlockingObjectEnum";
+    }
+    HRESULT Next(ULONG celt, CorDebugBlockingObject values[], ULONG* pceltFetched);
+    HRESULT Skip(ULONG celt);
+    HRESULT Reset(void);
+    HRESULT Clone(ICorDebugEnum** ppEnum);
+    HRESULT GetCount(ULONG* pcelt);
+    HRESULT QueryInterface(REFIID riid, void** ppvObject);
 };
 
 #endif

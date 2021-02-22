@@ -9,34 +9,47 @@
 
 #include <cordb.h>
 
-class CordbCode : public CordbBaseMono, public ICorDebugCode {
-  CordbFunction *m_pFunction;
+class CordbCode : public CordbBaseMono, public ICorDebugCode
+{
+    CordbFunction* m_pFunction;
 
 public:
-  CordbCode(Connection *conn, CordbFunction *func);
-  ULONG AddRef(void) { return (BaseAddRef()); }
-  ULONG Release(void) { return (BaseRelease()); }
-  const char *GetClassName() { return "CordbCode"; }
-  HRESULT IsIL(BOOL *pbIL);
-  HRESULT
-  GetFunction(ICorDebugFunction **ppFunction);
-  HRESULT GetAddress(CORDB_ADDRESS *pStart);
-  HRESULT GetSize(ULONG32 *pcBytes);
-  HRESULT
-  CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint **ppBreakpoint);
-  HRESULT GetCode(ULONG32 startOffset, ULONG32 endOffset, ULONG32 cBufferAlloc,
-                  BYTE buffer[], ULONG32 *pcBufferSize);
-  HRESULT GetVersionNumber(ULONG32 *nVersion);
-  HRESULT
-  GetILToNativeMapping(ULONG32 cMap, ULONG32 *pcMap,
+    CordbCode(Connection* conn, CordbFunction* func);
+    ULONG AddRef(void)
+    {
+        return (BaseAddRef());
+    }
+    ULONG Release(void)
+    {
+        return (BaseRelease());
+    }
+    const char* GetClassName()
+    {
+        return "CordbCode";
+    }
+    HRESULT IsIL(BOOL* pbIL);
+    HRESULT
+    GetFunction(ICorDebugFunction** ppFunction);
+    HRESULT GetAddress(CORDB_ADDRESS* pStart);
+    HRESULT GetSize(ULONG32* pcBytes);
+    HRESULT
+    CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint** ppBreakpoint);
+    HRESULT GetCode(ULONG32 startOffset, ULONG32 endOffset, ULONG32 cBufferAlloc, BYTE buffer[], ULONG32* pcBufferSize);
+    HRESULT GetVersionNumber(ULONG32* nVersion);
+    HRESULT
+    GetILToNativeMapping(ULONG32  cMap,
+                         ULONG32* pcMap,
 
-                       COR_DEBUG_IL_TO_NATIVE_MAP map[]);
-  HRESULT
-  GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32 *pcMap, ULONG32 offsets[]);
-  HRESULT
-  QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *pInterface);
+                         COR_DEBUG_IL_TO_NATIVE_MAP map[]);
+    HRESULT
+    GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32* pcMap, ULONG32 offsets[]);
+    HRESULT
+    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
-  CordbFunction *GetFunction() const { return m_pFunction; }
+    CordbFunction* GetFunction() const
+    {
+        return m_pFunction;
+    }
 };
 
 #endif

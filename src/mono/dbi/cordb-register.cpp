@@ -10,50 +10,44 @@
 
 using namespace std;
 
-HRESULT __stdcall CordbRegisterSet::GetRegistersAvailable(ULONG64 *pAvailable) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - GetRegistersAvailable - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetRegistersAvailable - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-CordbRegisterSet::CordbRegisterSet(Connection *conn, uint8_t *ctx,
-                                   uint32_t ctx_len)
-    : CordbBaseMono(conn) {
-  this->m_pCtx = ctx;
-  this->m_ctxLen = ctx_len;
+CordbRegisterSet::CordbRegisterSet(Connection* conn, uint8_t* ctx, uint32_t ctx_len) : CordbBaseMono(conn)
+{
+    this->m_pCtx   = ctx;
+    this->m_ctxLen = ctx_len;
 }
 
-HRESULT __stdcall CordbRegisterSet::QueryInterface(REFIID id,
-                                                   void **pInterface) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - QueryInterface - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbRegisterSet::QueryInterface(REFIID id, void** pInterface)
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - QueryInterface - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
-                                                 CORDB_REGISTER regBuffer[]) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - GetRegisters - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT __stdcall CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[])
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetRegisters - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbRegisterSet::SetRegisters(
-    ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[]) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - SetRegisters - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT STDMETHODCALLTYPE CordbRegisterSet::SetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[])
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - SetRegisters - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[]) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - GetThreadContext - NOT IMPLEMENTED\n"));
-  return S_OK;
+HRESULT STDMETHODCALLTYPE CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetThreadContext - NOT IMPLEMENTED\n"));
+    return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE
-CordbRegisterSet::SetThreadContext(ULONG32 contextSize, BYTE context[]) {
-  LOG((LF_CORDB, LL_INFO100000,
-       "CordbRegisterSet - SetThreadContext - NOT IMPLEMENTED\n"));
-  return E_NOTIMPL;
+HRESULT STDMETHODCALLTYPE CordbRegisterSet::SetThreadContext(ULONG32 contextSize, BYTE context[])
+{
+    LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - SetThreadContext - NOT IMPLEMENTED\n"));
+    return E_NOTIMPL;
 }

@@ -13,6 +13,18 @@ set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 set(CLR_CMAKE_HOST_ARCH ${CMAKE_GENERATOR_PLATFORM})
 
+if(HOST_WIN32)
+    if(HOST_X86)
+        set(CLR_CMAKE_HOST_ARCH x86)
+    elseif(HOST_ARM64)
+        set(CLR_CMAKE_HOST_ARCH arm64)
+    elseif(HOST_ARM)
+        set(CLR_CMAKE_HOST_ARCH arm)
+    elseif(HOST_AMD64)
+        set(CLR_CMAKE_HOST_ARCH x64)
+    endif()        
+endif()
+
 add_definitions(-DDBI_COMPONENT_MONO)
 
 include_directories(
@@ -54,8 +66,6 @@ set(mscorbi_sources_base
     cordb-register.h
     cordb-stepper.cpp
     cordb-stepper.h
-    cordb-symbol.cpp
-    cordb-symbol.h
     cordb-thread.cpp
     cordb-thread.h
     cordb-type.cpp
