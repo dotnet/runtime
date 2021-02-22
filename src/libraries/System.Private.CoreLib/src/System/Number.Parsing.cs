@@ -358,7 +358,7 @@ namespace System
                         {
                             number.Scale++;
                         }
-                        else if (digCount < maxDigCount)
+                        else if (digCount < maxDigCount && number.Kind == NumberBufferKind.FloatingPoint)
                         {
                             // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
                             if (ch == '0')
@@ -402,7 +402,7 @@ namespace System
             }
             else
             {
-                // We have trailing 0s in the fractional part. We can strip it all out
+                // If we have trailing 0s in the fractional part, we can strip it out
                 number.DigitsCount = digEnd - numberOfTrailingZeros;
             }
             number.Digits[number.DigitsCount] = (byte)('\0');
