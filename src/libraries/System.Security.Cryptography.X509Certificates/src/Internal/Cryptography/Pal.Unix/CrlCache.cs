@@ -218,9 +218,9 @@ namespace Internal.Cryptography.Pal
             // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).
             ReadOnlySpan<byte> utf16Url = MemoryMarshal.AsBytes(crlUrl.AsSpan());
 
-            if (!SHA256.TryHashData(utf16Url, hash, out int written) || written != hash.Length)
+            if (SHA256.HashData(utf16Url, hash) != hash.Length)
             {
-                Debug.Fail("TryHashData failed or produced an incorrect length output");
+                Debug.Fail("HashData failed or produced an incorrect length output");
                 throw new CryptographicException();
             }
 
