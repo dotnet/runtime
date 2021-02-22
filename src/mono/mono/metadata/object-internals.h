@@ -637,6 +637,8 @@ typedef struct {
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
+	void (*init_mem_manager)(MonoMemoryManager*);
+	void (*free_mem_manager)(MonoMemoryManager*);
 #ifdef ENABLE_METADATA_UPDATE
 	void     (*metadata_update_init) (MonoError *error);
 	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);

@@ -287,7 +287,7 @@ static MonoLLVMModule aot_module;
 static GHashTable *intrins_id_to_intrins;
 static LLVMTypeRef sse_i1_t, sse_i2_t, sse_i4_t, sse_i8_t, sse_r4_t, sse_r8_t;
 
-static void init_jit_module (MonoDomain *domain);
+static MonoLLVMModule *init_jit_module (void);
 
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
 static void emit_default_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder);
@@ -9575,8 +9575,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			method_name = mono_aot_get_method_name (cfg);
 		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
-		init_jit_module (cfg->domain);
-		ctx->module = (MonoLLVMModule*)domain_jit_info (cfg->domain)->llvm_module;
+		ctx->module = init_jit_module ();
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
@@ -10592,10 +10591,9 @@ mono_llvm_cleanup (void)
 }
 
 void
-mono_llvm_free_domain_info (MonoDomain *domain)
+mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
-	MonoJitDomainInfo *info = domain_jit_info (domain);
-	MonoLLVMModule *module = (MonoLLVMModule*)info->llvm_module;
+	MonoLLVMModule *module = (MonoLLVMModule*)mem_manager->llvm_module;
 	int i;
 
 	if (!module)
@@ -10614,7 +10612,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 
 	g_free (module);
 
-	info->llvm_module = NULL;
+	mem_manager->llvm_module = NULL;
 }
 
 void
@@ -11646,7 +11644,7 @@ mono_llvm_cleanup (void)
 }
 
 void
-mono_llvm_free_domain_info (MonoDomain *domain)
+mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
 }
 
@@ -11750,27 +11748,26 @@ decode_llvm_eh_info (EmitContext *ctx, gpointer eh_frame)
 	}
 }
 
-static void
-init_jit_module (MonoDomain *domain)
+static MonoLLVMModule*
+init_jit_module (void)
 {
-	MonoJitDomainInfo *dinfo;
+	MonoJitMemoryManager *jit_mm;
 	MonoLLVMModule *module;
-	char *name;
 
-	dinfo = domain_jit_info (domain);
-	if (dinfo->llvm_module)
-		return;
+	// FIXME:
+	jit_mm = get_default_jit_mm ();
+	if (jit_mm->llvm_module)
+		return (MonoLLVMModule*)jit_mm->llvm_module;
 
 	mono_loader_lock ();
 
-	if (dinfo->llvm_module) {
+	if (jit_mm->llvm_module) {
 		mono_loader_unlock ();
-		return;
+		return (MonoLLVMModule*)jit_mm->llvm_module;
 	}
 
 	module = g_new0 (MonoLLVMModule, 1);
 
-	name = g_strdup_printf ("mono-%s", domain->friendly_name);
 	module->context = LLVMGetGlobalContext ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
 
@@ -11785,17 +11782,17 @@ init_jit_module (MonoDomain *domain)
 
 	mono_memory_barrier ();
 
-	dinfo->llvm_module = module;
+	jit_mm->llvm_module = module;
 
 	mono_loader_unlock ();
+
+	return (MonoLLVMModule*)jit_mm->llvm_module;
 }
 
 static void
 llvm_jit_finalize_method (EmitContext *ctx)
 {
 	MonoCompile *cfg = ctx->cfg;
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitDomainInfo *domain_info;
 	int nvars = g_hash_table_size (ctx->jit_callees);
 	LLVMValueRef *callee_vars = g_new0 (LLVMValueRef, nvars); 
 	gpointer *callee_addrs = g_new0 (gpointer, nvars);
@@ -11832,25 +11829,27 @@ llvm_jit_finalize_method (EmitContext *ctx)
 
 	decode_llvm_eh_info (ctx, eh_frame);
 
-	mono_domain_lock (domain);
-	domain_info = domain_jit_info (domain);
-	if (!domain_info->llvm_jit_callees)
-		domain_info->llvm_jit_callees = g_hash_table_new (NULL, NULL);
+	// FIXME:
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->llvm_jit_callees)
+		jit_mm->llvm_jit_callees = g_hash_table_new (NULL, NULL);
 	g_hash_table_iter_init (&iter, ctx->jit_callees);
 	i = 0;
 	while (g_hash_table_iter_next (&iter, (void**)&callee, (void**)&var)) {
-		GSList *addrs = (GSList*)g_hash_table_lookup (domain_info->llvm_jit_callees, callee);
+		GSList *addrs = (GSList*)g_hash_table_lookup (jit_mm->llvm_jit_callees, callee);
 		addrs = g_slist_prepend (addrs, callee_addrs [i]);
-		g_hash_table_insert (domain_info->llvm_jit_callees, callee, addrs);
+		g_hash_table_insert (jit_mm->llvm_jit_callees, callee, addrs);
 		i ++;
 	}
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 }
 
 #else
 
-static void
-init_jit_module (MonoDomain *domain)
+static MonoLLVMModule*
+init_jit_module (void)
 {
 	g_assert_not_reached ();
 }
