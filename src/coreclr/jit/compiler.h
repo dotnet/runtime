@@ -3544,7 +3544,7 @@ public:
     bool lvaIsParameter(unsigned varNum);
     bool lvaIsRegArgument(unsigned varNum);
     bool lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
-    bool lvaIsOriginalThisReadOnly();           // return TRUE if there is no place in the code
+    bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
     // For x64 this is 3, 5, 6, 7, >8 byte structs that are passed by reference.

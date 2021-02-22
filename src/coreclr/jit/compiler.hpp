@@ -2269,7 +2269,7 @@ inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    BOOL isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
+    bool isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
 
 #ifdef DEBUG
     if (isOriginalThisArg)
