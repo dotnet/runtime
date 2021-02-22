@@ -284,23 +284,27 @@ namespace System.Xml
                 return GetIDInfoByElement_(eleName);
         }
 
-        private WeakReference? GetElement(ArrayList elementList, XmlElement elem)
+        private WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
         {
             ArrayList gcElemRefs = new ArrayList();
-            foreach (WeakReference elemRef in elementList)
+            foreach (WeakReference<XmlElement> elemRef in elementList)
             {
-                if (!elemRef.IsAlive)
+                if (!elemRef.TryGetTarget(out XmlElement? target))
+                {
                     //take notes on the garbage collected nodes
                     gcElemRefs.Add(elemRef);
+                }
                 else
                 {
-                    if ((XmlElement?)(elemRef.Target) == elem)
+                    if (target == elem)
                         return elemRef;
                 }
             }
+
             //Clear out the gced elements
-            foreach (WeakReference elemRef in gcElemRefs)
+            foreach (WeakReference<XmlElement> elemRef in gcElemRefs)
                 elementList.Remove(elemRef);
+
             return null;
         }
 
@@ -311,7 +315,7 @@ namespace System.Xml
                 if (_htElementIdMap == null)
                     _htElementIdMap = new Hashtable();
                 ArrayList elementList = new ArrayList();
-                elementList.Add(new WeakReference(elem));
+                elementList.Add(new WeakReference<XmlElement>(elem));
                 _htElementIdMap.Add(id, elementList);
             }
             else
@@ -319,7 +323,7 @@ namespace System.Xml
                 // there are other element(s) that has the same id
                 ArrayList elementList = (ArrayList)(_htElementIdMap[id]!);
                 if (GetElement(elementList, elem) == null)
-                    elementList.Add(new WeakReference(elem));
+                    elementList.Add(new WeakReference<XmlElement>(elem));
             }
         }
 
@@ -328,7 +332,7 @@ namespace System.Xml
             if (_htElementIdMap != null && _htElementIdMap.Contains(id))
             {
                 ArrayList elementList = (ArrayList)(_htElementIdMap[id]!);
-                WeakReference? elemRef = GetElement(elementList, elem);
+                WeakReference<XmlElement>? elemRef = GetElement(elementList, elem);
                 if (elemRef != null)
                 {
                     elementList.Remove(elemRef);
@@ -951,11 +955,9 @@ namespace System.Xml
                 ArrayList? elementList = (ArrayList?)(_htElementIdMap[elementId]);
                 if (elementList != null)
                 {
-                    foreach (WeakReference elemRef in elementList)
+                    foreach (WeakReference<XmlElement> elemRef in elementList)
                     {
-                        XmlElement? elem = (XmlElement?)elemRef.Target;
-                        if (elem != null
-                            && elem.IsConnected())
+                        if (elemRef.TryGetTarget(out XmlElement? elem) && elem.IsConnected())
                             return elem;
                     }
                 }
