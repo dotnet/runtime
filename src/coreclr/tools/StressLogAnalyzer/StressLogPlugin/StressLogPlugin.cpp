@@ -25,6 +25,7 @@ class MapViewHolder
 
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
+typedef long long int64_t;
 typedef size_t uint64_t;
 
 bool IsInCantAllocStressLogRegion()
@@ -83,43 +84,62 @@ struct CorClrData : IDebugDataSpaces
 };
 
 const int MAX_NUMBER_OF_HEAPS = 1024;
-static volatile size_t s_maxHeapNumberSeen = 0;
-static volatile uint64_t s_threadIdOfHeap[MAX_NUMBER_OF_HEAPS];
+static volatile int64_t s_maxHeapNumberSeen = -1;
+static volatile uint64_t s_threadIdOfHeap[MAX_NUMBER_OF_HEAPS][2];
 
-int HeapNumberOfThreadId(uint64_t threadId)
+enum GcThreadKind
+{
+    GC_THREAD_FG,
+    GC_THREAD_BG,
+};
+
+struct GcThread
+{
+    GcThreadKind    kind;
+    int             heapNumber;
+};
+
+bool LookupGcThread(uint64_t threadId, GcThread *gcThread)
 {
     for (int i = 0; i <= s_maxHeapNumberSeen; i++)
     {
-        if (s_threadIdOfHeap[i] == threadId)
-            return i;
+        if (s_threadIdOfHeap[i][GC_THREAD_FG] == threadId)
+        {
+            gcThread->heapNumber = i;
+            gcThread->kind = GC_THREAD_FG;
+            return true;
+        }
+        if (s_threadIdOfHeap[i][GC_THREAD_BG] == threadId)
+        {
+            gcThread->heapNumber = i;
+            gcThread->kind = GC_THREAD_BG;
+            return true;
+        }
     }
-    return -1;
+    return false;
 }
 
 #define InterestingStrings \
 d(IS_UNKNOWN,                   "")                                                                                         \
-d(IS_THREAD_WAIT,               "%d gc thread waiting...")                                                                  \
-d(IS_THREAD_WAIT_DONE,          "%d gc thread waiting... Done")                                                             \
-d(IS_GCSTART,                   "*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)")                                                 \
-d(IS_GCEND,                     "*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)")                                     \
-d(IS_MARK_START,                "---- Mark Phase condemning %d ----")                                                       \
-d(IS_PLAN_START,                "---- Plan Phase ---- Condemned generation %d, promotion: %d")                              \
-d(IS_RELOCATE_START,            "---- Relocate phase -----")                                                                \
-d(IS_RELOCATE_END,              "---- End of Relocate phase ----")                                                          \
-d(IS_COMPACT_START,             "---- Compact Phase: %Ix(%Ix)----")                                                         \
-d(IS_COMPACT_END,               "---- End of Compact phase ----")                                                           \
-d(IS_JOIN_WAIT,                 "join%d(%d): Join() Waiting...join_lock is now %d")                                         \
-d(IS_JOIN_LAST,                 "join%d(%d): Last thread to complete the join, setting id")                                 \
-d(IS_EQUALIZE_MARK_LIST,        "equalize_mark_lists took %Id microseconds to equalize %Id mark list items")                \
-d(IS_SORT_MARK_LIST,            "sorting mark list took %Id microseconds to sort %Id mark list items")                      \
+d(IS_THREAD_WAIT,               ThreadStressLog::gcServerThread0StartMsg())                                                 \
+d(IS_THREAD_WAIT_DONE,          ThreadStressLog::gcServerThreadNStartMsg())                                                 \
+d(IS_GCSTART,                   ThreadStressLog::gcDetailedStartMsg())                                                      \
+d(IS_GCEND,                     ThreadStressLog::gcDetailedEndMsg())                                                        \
+d(IS_MARK_START,                ThreadStressLog::gcStartMarkMsg())                                                          \
+d(IS_PLAN_START,                ThreadStressLog::gcStartPlanMsg())                                                          \
+d(IS_RELOCATE_START,            ThreadStressLog::gcStartRelocateMsg())                                                      \
+d(IS_RELOCATE_END,              ThreadStressLog::gcEndRelocateMsg())                                                        \
+d(IS_COMPACT_START,             ThreadStressLog::gcStartCompactMsg())                                                       \
+d(IS_COMPACT_END,               ThreadStressLog::gcEndCompactMsg())                                                         \
 d(IS_GCROOT,                    ThreadStressLog::gcRootMsg())                                                               \
 d(IS_PLUG_MOVE,                 ThreadStressLog::gcPlugMoveMsg())                                                           \
-d(IS_GCMEMCOPY,                 " mc: [%Ix->%Ix, %Ix->%Ix[")                                                                \
+d(IS_GCMEMCOPY,                 ThreadStressLog::gcMemCopyMsg())                                                            \
 d(IS_GCROOT_PROMOTE,            ThreadStressLog::gcRootPromoteMsg())                                                        \
-d(IS_PLAN_PLUG,                 "(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)")                                \
-d(IS_PLAN_PINNED_PLUG,          "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)")                                                            \
-d(IS_DESIRED_NEW_ALLOCATION,    "h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id")    \
-d(IS_MAKE_UNUSED_ARRAY,         "Making unused array [%Ix, %Ix[")                                                           \
+d(IS_PLAN_PLUG,                 ThreadStressLog::gcPlanPlugMsg())                                                           \
+d(IS_PLAN_PINNED_PLUG,          ThreadStressLog::gcPlanPinnedPlugMsg())                                                     \
+d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())                                               \
+d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
+d(IS_START_BGC_THREAD,          ThreadStressLog::gcStartBgcThread())                                                        \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -218,7 +238,7 @@ const int MAX_THREAD_FILTERS = 1024;
 static int s_threadFilterCount;
 static uint64_t s_threadFilter[MAX_THREAD_FILTERS];
 
-static bool s_gcThreadFilter[MAX_NUMBER_OF_HEAPS];
+static bool s_gcThreadFilter[MAX_NUMBER_OF_HEAPS][2];
 static bool s_hadGcThreadFilters;
 
 static bool s_printHexTidForGcThreads;
@@ -228,22 +248,22 @@ static uint32_t s_facilityIgnore;
 static bool s_printEarliestMessages;
 static int s_printEarliestMessageFromThreadCount;
 static uint64_t s_printEarliestMessageFromThread[MAX_THREAD_FILTERS];
-static bool s_printEarliestMessageFromGcThread[MAX_NUMBER_OF_HEAPS];
+static bool s_printEarliestMessageFromGcThread[MAX_NUMBER_OF_HEAPS][2];
 
 static bool FilterThread(ThreadStressLog* tsl)
 {
     //    return tsl->threadId == 0x6ff8;
     if (s_hadGcThreadFilters)
     {
-        int heapNumber = HeapNumberOfThreadId(tsl->threadId);
-        if (heapNumber < 0)
+        GcThread gcThread;
+        if (!LookupGcThread(tsl->threadId, &gcThread))
         {
             // this may or may not be a GC thread - we don't know yet
             // include its messages to be conservative - we will have
             // a filter later to remove these messages
             return true;
         }
-        return s_gcThreadFilter[heapNumber];
+        return s_gcThreadFilter[gcThread.heapNumber][gcThread.kind];
     }
     else
     {
@@ -267,6 +287,27 @@ int GcLogLevel(uint32_t facility)
         return (facility >> 16) & 0x7fff;
     }
     return 0;
+}
+
+static void RememberThreadForHeap(uint64_t threadId, int64_t heapNumber, GcThreadKind threadKind)
+{
+    if (s_maxHeapNumberSeen == -1 && heapNumber == 0)
+    {
+        // we don't want to remember these associations for WKS GC,
+        // which can execute on any thread - as soon as we see
+        // a heap number != 0, we assume SVR GC and remember it
+        return;
+    }
+
+    if (heapNumber < MAX_NUMBER_OF_HEAPS)
+    {
+        s_threadIdOfHeap[heapNumber][threadKind] = threadId;
+        int64_t maxHeapNumberSeen = s_maxHeapNumberSeen;
+        while (maxHeapNumberSeen < heapNumber)
+        {
+            maxHeapNumberSeen = InterlockedCompareExchange64((volatile LONG64*)&s_maxHeapNumberSeen, heapNumber, maxHeapNumberSeen);
+        }
+    }
 }
 
 bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32_t facility, char* format, double deltaTime, int argCount, void** args)
@@ -306,17 +347,17 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     {
     case    IS_THREAD_WAIT:
     case    IS_THREAD_WAIT_DONE:
+        RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
+        break;
+
     case    IS_DESIRED_NEW_ALLOCATION:
     {
-        uint64_t heapNumber = (uint64_t)args[0];
-        if (heapNumber < MAX_NUMBER_OF_HEAPS)
+        int genNumber = (int)(int64_t)args[1];
+        if (genNumber <= 1)
         {
-            s_threadIdOfHeap[heapNumber] = tsl->threadId;
-            uint64_t maxHeapNumberSeen = s_maxHeapNumberSeen;
-            while (maxHeapNumberSeen < heapNumber)
-            {
-                maxHeapNumberSeen = InterlockedCompareExchange64((volatile LONG64*)&s_maxHeapNumberSeen, heapNumber, maxHeapNumberSeen);
-            }
+            // do this only for gen 0 and 1, because otherwise it
+            // may be background GC
+            RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
         }
         break;
     }
@@ -347,6 +388,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_RELOCATE_END:
     case    IS_COMPACT_START:
     case    IS_COMPACT_END:
+        RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
         return true;
 
     case    IS_PLAN_PLUG:
@@ -369,9 +411,6 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
             }
         }
         break;
-        //    case    IS_JOIN_WAIT:
-        //    case    IS_JOIN_LAST:
-        //        return (args[0] == 0 && (args[1] == (void*)9 || args[1] == (void*)10));
 
     case    IS_GCMEMCOPY:
         if (s_valueFilterCount > 0)
@@ -412,12 +451,14 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         }
         break;
 
-    case    IS_EQUALIZE_MARK_LIST:
-    case    IS_SORT_MARK_LIST:
     case    IS_GCROOT:
     case    IS_PLUG_MOVE:
     case    IS_GCROOT_PROMOTE:
     case    IS_INTERESTING:
+        break;
+
+    case    IS_START_BGC_THREAD:
+        RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_BG);
         break;
     }
     return fLevelFilter || s_interestingStringFilter[isd];
@@ -513,9 +554,17 @@ void Usage()
     printf("\n");
     printf(" -tid: print hex thread ids, e.g. 2a08 instead of GC12\n");
     printf(" -tid:<thread id1>,<thread id2>,...: only print messages from the listed\n");
-    printf("     threads. Thread ids are either in hex or given as GC<decimal heap number>,\n");
-    printf("     e.g. '-tid:2bc8,GC3' would print messages from thread 2bc8 and the thread\n");
-    printf("     associated with heap 3\n");
+    printf("     threads. Thread ids are in hex, given as GC<decimal heap number>,\n");
+    printf("     or BG<decimal heap number>\n");
+    printf("     e.g. '-tid:2bc8,GC3,BG14' would print messages from thread 2bc8, the gc thread\n");
+    printf("     associated with heap 3, and the background GC thread for heap 14\n");
+    printf("\n");
+    printf(" -e: printf earliest messages from all threads\n");
+    printf(" -e:<thread id1>,<thread id2>,...: print earliest messages from the listed\n");
+    printf("     threads. Thread ids are in hex, given as GC<decimal heap number>,\n");
+    printf("     or BG<decimal heap number>\n");
+    printf("     e.g. '-e:2bc8,GC3,BG14' would print the earliest messages from thread 2bc8,\n");
+    printf("     the gc thread associated with heap 3, and the background GC thread for heap 14\n");
     printf("\n");
 }
 
@@ -633,12 +682,13 @@ bool ParseOptions(int argc, wchar_t* argv[])
                             return false;
                         }
                         wchar_t* end = nullptr;
-                        if (_wcsnicmp(arg, L"gc", 2) == 0)
+                        if (_wcsnicmp(arg, L"gc", 2) == 0 || _wcsnicmp(arg, L"bg", 2) == 0)
                         {
                             int gcHeapNumber = wcstol(arg+2, &end, 10);
+                            GcThreadKind kind = _wcsnicmp(arg, L"gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
-                                s_gcThreadFilter[gcHeapNumber] = true;
+                                s_gcThreadFilter[gcHeapNumber][kind] = true;
                                 s_hadGcThreadFilters = true;
                             }
                             else
@@ -847,12 +897,13 @@ bool ParseOptions(int argc, wchar_t* argv[])
                             return false;
                         }
                         wchar_t* end = nullptr;
-                        if (_wcsnicmp(arg, L"gc", 2) == 0)
+                        if (_wcsnicmp(arg, L"gc", 2) == 0 || _wcsnicmp(arg, L"bg", 2) == 0)
                         {
                             int gcHeapNumber = wcstol(arg + 2, &end, 10);
+                            GcThreadKind kind = _wcsnicmp(arg, L"gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
-                                s_printEarliestMessageFromGcThread[gcHeapNumber] = true;
+                                s_printEarliestMessageFromGcThread[gcHeapNumber][kind] = true;
                             }
                             else
                             {
@@ -1090,9 +1141,15 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
     double deltaTime = ((double)(msg->timeStamp - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
     if (!s_printHexTidForGcThreads)
     {
-        int heapNumber = HeapNumberOfThreadId(threadId);
-        if (heapNumber >= 0)
-            threadId = 0x8000000000000000 | heapNumber;
+        GcThread gcThread;
+        if (LookupGcThread(threadId, &gcThread))
+        {
+            threadId = gcThread.heapNumber;
+            if (gcThread.kind == GC_THREAD_FG)
+                threadId |= 0x8000000000000000;
+            else
+                threadId |= 0x4000000000000000;
+        }
     }
     formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->facility, argBuffer, s_fPrintFormatStrings);
 }
@@ -1192,26 +1249,29 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
 
     if (s_hadGcThreadFilters)
     {
-        for (int heap = 0; heap <= s_maxHeapNumberSeen; heap++)
+        for (int k = GC_THREAD_FG; k <= GC_THREAD_BG; k++)
         {
-            if (s_gcThreadFilter[heap])
+            for (int heap = 0; heap <= s_maxHeapNumberSeen; heap++)
             {
-                uint64_t threadId = s_threadIdOfHeap[heap];
-                if (threadId != 0)
+                if (s_gcThreadFilter[heap][k])
                 {
-                    if (s_threadFilterCount < MAX_THREAD_FILTERS)
+                    uint64_t threadId = s_threadIdOfHeap[heap][k];
+                    if (threadId != 0)
                     {
-                        int i = s_threadFilterCount++;
-                        s_threadFilter[i] = threadId;
+                        if (s_threadFilterCount < MAX_THREAD_FILTERS)
+                        {
+                            int i = s_threadFilterCount++;
+                            s_threadFilter[i] = threadId;
+                        }
+                        else
+                        {
+                            printf("too many thread filters, max = %d\n", MAX_THREAD_FILTERS);
+                        }
                     }
                     else
                     {
-                        printf("too many thread filters, max = %d\n", MAX_THREAD_FILTERS);
+                        printf("don't know thread id for GC%d, ignoring\n", heap);
                     }
-                }
-                else
-                {
-                    printf("don't know thread id for GC%d, ignoring\n", heap);
                 }
             }
         }
@@ -1260,27 +1320,30 @@ extern "C" int __declspec(dllexport) ProcessStresslog(void* baseAddress, int arg
         PrintMessage(corClrData, outputFile, threadId, msg);
     }
 
-    for (int heap = 0; heap <= s_maxHeapNumberSeen; heap++)
+    for (int k = GC_THREAD_FG; k <= GC_THREAD_BG; k++)
     {
-        uint64_t threadId = s_threadIdOfHeap[heap];
-        if (threadId != 0)
+        for (int heap = 0; heap <= s_maxHeapNumberSeen; heap++)
         {
-            if (s_printEarliestMessageFromGcThread[heap])
+            uint64_t threadId = s_threadIdOfHeap[heap][k];
+            if (threadId != 0)
             {
-                if (s_printEarliestMessageFromThreadCount < MAX_THREAD_FILTERS)
+                if (s_printEarliestMessageFromGcThread[heap][k])
                 {
-                    int i = s_printEarliestMessageFromThreadCount++;
-                    s_printEarliestMessageFromThread[i] = threadId;
-                }
-                else
-                {
-                    printf("too many threads, max = %d\n", MAX_THREAD_FILTERS);
+                    if (s_printEarliestMessageFromThreadCount < MAX_THREAD_FILTERS)
+                    {
+                        int i = s_printEarliestMessageFromThreadCount++;
+                        s_printEarliestMessageFromThread[i] = threadId;
+                    }
+                    else
+                    {
+                        printf("too many threads, max = %d\n", MAX_THREAD_FILTERS);
+                    }
                 }
             }
-        }
-        else
-        {
-            printf("don't know thread id for GC%d, ignoring\n", heap);
+            else
+            {
+                printf("don't know thread id for GC%d, ignoring\n", heap);
+            }
         }
     }
 
