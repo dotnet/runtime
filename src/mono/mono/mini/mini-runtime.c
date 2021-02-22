@@ -898,8 +898,7 @@ mono_thread_abort (MonoObject *obj)
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
 
-	if ((mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_LEGACY) ||
-			(obj->vtable->klass == mono_defaults.threadabortexception_class) ||
+	if ((obj->vtable->klass == mono_defaults.threadabortexception_class) ||
 			((obj->vtable->klass) == mono_class_try_get_appdomain_unloaded_exception_class () &&
 			mono_thread_info_current ()->runtime_thread)) {
 		mono_thread_exit ();

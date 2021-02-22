@@ -25,12 +25,12 @@
     <Message Importance="High" Text="%(NupkgToPublishFile.Filename)" />
   </Target>
 
-  <Target Name="FinalizeBuildInAzure"
-          DependsOnTargets="
-            GetProductVersions;
-            GetLatestCommitHash">
-    <Error Condition="'$(LatestCommit)' == ''" Text="Missing required property 'LatestCommit'" />
+  <PropertyGroup>
+    <FinalizeBuildInAzureDependsOn Condition="'$(DisableSourceLink)' != 'true'">InitializeSourceControlInformationFromSourceControlManager</FinalizeBuildInAzureDependsOn>
+  </PropertyGroup>
 
+  <Target Name="FinalizeBuildInAzure"
+          DependsOnTargets="GetProductVersions;$(FinalizeBuildInAzureDependsOn)">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
@@ -46,7 +46,7 @@
       SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
       SharedHostNuGetVersion="$(HostVersion)"
       ProductVersion="$(ProductVersion)"
-      CommitHash="$(LatestCommit)"
+      CommitHash="$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))"
       FinalizeContainer="Runtime/$(SharedFrameworkNugetVersion)"
       ForcePublish="true" />
 
@@ -65,7 +65,7 @@
       SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
       SharedHostNuGetVersion="$(HostVersion)"
       ProductVersion="$(ProductVersion)"
-      CommitHash="$(LatestCommit)"
+      CommitHash="$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))"
       FinalizeContainer="Runtime/$(SharedFrameworkNugetVersion)"
       ForcePublish="true" />
   </Target>

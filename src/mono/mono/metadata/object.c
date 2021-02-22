@@ -4178,20 +4178,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 	}
 }
 
-static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
-
-/**
- * mono_runtime_unhandled_exception_policy_get:
- *
- * This is a VM internal routine.
- *
- * Gets the runtime policy for handling unhandled exceptions.
- */
-MonoRuntimeUnhandledExceptionPolicy
-mono_runtime_unhandled_exception_policy_get (void)
-{
-	return runtime_unhandled_exception_policy;
-}
 
 void
 mono_unhandled_exception_internal (MonoObject *exc_raw)
@@ -4379,12 +4365,8 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 leave:
 
-	/* set exitcode only if we will abort the process */
-	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
-		 || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
-	{
-		mono_environment_exitcode_set (1);
-	}
+	/* set exitcode if we will abort the process */
+        mono_environment_exitcode_set (1);
 }
 
 /**

@@ -3976,7 +3976,7 @@ call:
 
 #define BRELOP_CAST(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
-		gint32 br_offset = (gint32) ip [1]; \
+		gint32 br_offset = (gint32)READ32(ip + 3); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		ip += br_offset; \
 	} else \

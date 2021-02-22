@@ -16,10 +16,6 @@
 #include <mdlog.h>
 #include <mdcommon.h>
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
 //*****************************************************************************
 // Ctor.
 //*****************************************************************************
@@ -94,54 +90,6 @@ Disp::DefineScope(
         // If it is a version we don't understand, then we cannot continue.
         IfFailGo(CLDB_E_FILE_OLDVER);
     }
-
-#ifdef ENC_DELTA_HACK
-// Testers need this flag for their tests.
-
-    DWORD len;
-    EX_TRY{
-    len = WszGetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), szFileNameSuffix);
-    szFileName.Append(szFileNameSuffix);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (len > 0)
-    {
-        // _ASSERTE(!"ENC override on DefineScope");
-//        m_OptionValue.m_UpdateMode = MDUpdateENC;
-//        m_OptionValue.m_ErrorIfEmitOutOfOrder = MDErrorOutOfOrderDefault;
-//        hr = OpenScope(szFileName, ofWrite, riid, ppIUnk);
-
-        IMetaDataEmit *pMetaEmit;
-        hr = OpenScope(szFileName, ofWrite, IID_IMetaDataEmit, (IUnknown **)&pMetaEmit);
-        DWORD cb;
-        CQuickBytes pbMetadata;
-        hr = pMetaEmit->GetSaveSize(cssAccurate,&cb);
-        _ASSERTE(SUCCEEDED(hr));
-
-        IfFailGo(pbMetadata.ReSizeNoThrow(cb));
-
-        hr = pMetaEmit->SaveToMemory(pbMetadata.Ptr(),cb);
-        _ASSERTE(SUCCEEDED(hr));
-//        hr = OpenScopeOnMemory( pbMetadata.Ptr(), cb, ofWrite|MDUpdateENC|MDUpdateDelta, riid, ppIUnk);
-
-
-        VARIANT encOption;
-        V_VT(&encOption) = VT_UI4;
-        V_UI4(&encOption) = MDUpdateENC;
-        SetOption(MetaDataSetENC, &encOption);
-        V_UI4(&encOption) = MDErrorOutOfOrderDefault;
-        SetOption(MetaDataErrorIfEmitOutOfOrder, &encOption);
-        hr = OpenScopeOnMemory( pbMetadata.Ptr(), cb, ofWrite, riid, ppIUnk);
-        _ASSERTE(SUCCEEDED(hr));
-        BOOL fResult = SUCCEEDED(hr);
-        // print out a message so people know what's happening
-        printf("Defining scope for EnC using %S %s\n",
-                            static_cast<LPCWSTR>(szFileNameSuffix), fResult ? "succeeded" : "failed");
-
-        goto ErrExit;
-    }
-#endif // ENC_DELTA_HACK
 
     // Create a new coclass for this.
     pMeta = new (nothrow) RegMeta();

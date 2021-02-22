@@ -238,7 +238,7 @@
     <value>The LDAP connection cannot retrieve a partial result set.</value>
   </data>
   <data name="DefaultLdapError" xml:space="preserve">
-    <value>The LDAP server returned an unknown error.</value>
+    <value>The LDAP server returned an unknown error: {0}</value>
   </data>
   <data name="LDAP_PARTIAL_RESULTS" xml:space="preserve">
     <value>Only partial results and referrals were received.</value>
