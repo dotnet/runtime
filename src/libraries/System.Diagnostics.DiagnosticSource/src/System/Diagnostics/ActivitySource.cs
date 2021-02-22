@@ -184,26 +184,11 @@ namespace System.Diagnostics
                 ActivityCreationOptions<string> aco = default;
                 ActivityCreationOptions<ActivityContext> acoContext = default;
 
-                // delegate to ensure updating the trace id in other ActivityCreationOption object when a new trace Id is generated.
-                // It is important so all listeners callbacks will always see the same trace Id which the activity will get created with
-                Action<ActivityTraceId, bool> updateTraceId = (traceId, isChangedFromContext) =>
-                {
-                    if (isChangedFromContext)
-                    {
-                        aco.SetTraceId(traceId);
-                    }
-                    else
-                    {
-                        Debug.Assert(aco.IdFormat == ActivityIdFormat.W3C);
-                        acoContext.SetTraceId(traceId);
-                    }
-                };
-
-                aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links, idFormat, updateTraceId);
+                aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links, idFormat);
                 if (aco.IdFormat == ActivityIdFormat.W3C)
                 {
                     // acoContext is used only in the Sample calls which called only when we have W3C Id format.
-                    acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links, ActivityIdFormat.W3C, updateTraceId);
+                    acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links, ActivityIdFormat.W3C);
                 }
 
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
@@ -234,10 +219,18 @@ namespace System.Diagnostics
                     }
                 }, ref aco, ref samplingResult, ref acoContext);
 
-                if (context == default && aco.GetContext() != default)
+                if (context == default)
                 {
-                    context = aco.GetContext();
-                    parentId = null;
+                    if (aco.GetContext() != default)
+                    {
+                        context = aco.GetContext();
+                        parentId = null;
+                    }
+                    else if (acoContext.GetContext() != default)
+                    {
+                        context = acoContext.GetContext();
+                        parentId = null;
+                    }
                 }
 
                 samplerTags = aco.GetSamplingTags();

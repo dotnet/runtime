@@ -1029,49 +1029,51 @@ namespace System.Diagnostics.Tests
         //  - Use the IdFormat passed to the ActivitySource.Create if it is not "Unknown". Otherwise, goto next step.
         //  - If Activity.ForceDefaultIdFormat is true, then use the value Activity.DefaultIdFormat.  Otherwise, goto next step.
         //  - If the parentId string is null and parent ActivityContext is default and we have Activity.Current != null, then use Activity.Current.IdFormat. Otherwise, goto next step.
+        //  - If the parentId string is null and parent ActivityContext is default and we have Activity.Current == null, then use Activity.DefaultIdFormat. Otherwise, goto next step.
         //  - If we have non default parent ActivityContext, then use W3C. Otherwise, goto next step.
         //  - if we have non null parent id string, try to parse it to W3C. If parsing succeeded then use W3C format. otherwise use Hierarchical format.
         // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        //           -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-        //           Default Id Format, Id fromat to force, Parent id format,   parent id,  default parent context, validate trace Id,  expected create format, expected start format
-        //           -----------------------------------------------------------------------------------------------------------------------------------------------------------------
-        [InlineData($"Unknown,          Unknown,            Unknown,            null,       true,                   false,              Default,                Default")]
-        [InlineData($"Unknown,          Unknown,            W3C,                null,       true,                   false,              W3C,                    W3C")]
-        [InlineData($"Unknown,          Unknown,            Hierarchical,       null,       true,                   false,              Hierarchical,           Hierarchical")]
+        //           --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        //           Activity.DefaultIdFormat, Activity.Create(idFormat),   Activity.Current.IdFormat,      parent id,  default parent context, validate trace Id,  expected create format, expected start format
+        //           --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       true,                   false,              Default,                Default")]
+        [InlineData($"Unknown,                  Unknown,                    W3C,                            null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Hierarchical,                   null,       true,                   false,              Hierarchical,           Hierarchical")]
 
-        [InlineData($"Unknown,          Unknown,            Unknown,            NonWC3Id,   true,                   false,              Hierarchical,           Hierarchical")]
-        [InlineData($"Unknown,          Unknown,            Unknown,            W3C,        true,                   false,              W3C,                    W3C")]
-        [InlineData($"Unknown,          Unknown,            Unknown,            null,       false,                  false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        NonWC3,     true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        W3C,        true,                   false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       false,                  false,              W3C,                    W3C")]
 
-        [InlineData($"W3C,              Unknown,            Unknown,            null,       true,                   false,              W3C,                    W3C")]
-        [InlineData($"Hierarchical,     Unknown,            Unknown,            null,       true,                   false,              Hierarchical,           Hierarchical")]
-        [InlineData($"W3C,              Unknown,            Hierarchical,       null,       true,                   false,              W3C,                    W3C")]
-        [InlineData($"Hierarchical,     Unknown,            W3C,                null,       true,                   false,              Hierarchical,           Hierarchical")]
-        [InlineData($"W3C,              Unknown,            Unknown,            NonW3C,     true,                   false,              W3C,                    W3C")]
-        [InlineData($"Hierarchical,     Unknown,            Unknown,            W3C,        true,                   false,              Hierarchical,           Hierarchical")]
-        [InlineData($"W3C,              Unknown,            Unknown,            null,       false,                  false,              W3C,                    W3C")]
-        [InlineData($"Hierarchical,     Unknown,            Unknown,            null,       false,                  false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Hierarchical,                   null,       true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    W3C,                            null,       true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        NonW3C,     true,                   false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        W3C,        true,                   false,              Hierarchical,           Hierarchical")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       false,                  false,              W3C,                    W3C")]
+        [InlineData($"Hierarchical,             Unknown,                    Unknown,                        null,       false,                  false,              Hierarchical,           Hierarchical")]
 
-        [InlineData($"Unknown,          W3C,                Unknown,            null,       true,                   false,              W3C,                    Default")]
-        [InlineData($"Hierarchical,     W3C,                Unknown,            null,       true,                   false,              W3C,                    Hierarchical")]
-        [InlineData($"Unknown,          W3C,                Hierarchical,       null,       true,                   false,              W3C,                    Hierarchical")]
-        [InlineData($"Hierarchical,     W3C,                Hierarchical,       null,       true,                   false,              W3C,                    Hierarchical")]
-        [InlineData($"Hierarchical,     W3C,                Hierarchical,       NonW3C,     true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       true,                   false,              W3C,                    Default")]
+        [InlineData($"Hierarchical,             W3C,                        Unknown,                        null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Unknown,                  W3C,                        Hierarchical,                   null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,             W3C,                        Hierarchical,                   null,       true,                   false,              W3C,                    Hierarchical")]
+        [InlineData($"Hierarchical,             W3C,                        Hierarchical,                   NonW3C,     true,                   false,              W3C,                    Hierarchical")]
 
-        [InlineData($"Unknown,          Hierarchical,       Unknown,            null,       true,                   false,              Hierarchical,           Default")]
-        [InlineData($"W3C,              Hierarchical,       Unknown,            null,       true,                   false,              Hierarchical,           W3C")]
-        [InlineData($"Unknown,          Hierarchical,       W3C,                null,       true,                   false,              Hierarchical,           W3C")]
-        [InlineData($"W3C,              Hierarchical,       Hierarchical,       null,       true,                   false,              Hierarchical,           W3C")]
-        [InlineData($"W3C,              Hierarchical,       Hierarchical,       W3C,        true,                   false,              Hierarchical,           W3C")]
-        [InlineData($"Unknown,          Hierarchical,       Unknown,            null,       false,                  false,              Hierarchical,           W3C")]
-        [InlineData($"Unknown,          W3C,                Unknown,            null,       false,                  false,              W3C,                    W3C")]
+        [InlineData($"Unknown,                  Hierarchical,               Unknown,                        null,       true,                   false,              Hierarchical,           Default")]
+        [InlineData($"W3C,                      Hierarchical,               Unknown,                        null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  Hierarchical,               W3C,                            null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,                      Hierarchical,               Hierarchical,                   null,       true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"W3C,                      Hierarchical,               Hierarchical,                   W3C,        true,                   false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  Hierarchical,               Unknown,                        null,       false,                  false,              Hierarchical,           W3C")]
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       false,                  false,              W3C,                    W3C")]
 
-        [InlineData($"Unknown,          W3C,                Unknown,            null,       true,                   true,               W3C,                    Default")]
-        [InlineData($"W3C,              Unknown,            Unknown,            null,       true,                   true,               W3C,                    W3C")]
-        [InlineData($"Unknown,          Unknown,            W3C,                null,       true,                   true,               W3C,                    W3C")]
-        [InlineData($"Unknown,          Unknown,            Unknown,            W3C,        true,                   true,               W3C,                    W3C")]
-        [InlineData($"Unknown,          Unknown,            Unknown,            null,       false,                  true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  W3C,                        Unknown,                        null,       true,                   true,               W3C,                    Default")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    W3C,                            null,       true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        W3C,        true,                   true,               W3C,                    W3C")]
+        [InlineData($"Unknown,                  Unknown,                    Unknown,                        null,       false,                  true,               W3C,                    W3C")]
+        [InlineData($"W3C,                      Unknown,                    Unknown,                        NonW3C,     true,                   true,               W3C,                    W3C")]
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestIdFormats(string data)
@@ -1104,6 +1106,7 @@ namespace System.Diagnostics.Tests
 
                 using ActivitySource aSource = new ActivitySource("FormatIdSource");
                 ActivityTraceId traceId = default;
+                bool sampleCallbackIsInvoked = false;
 
                 //
                 //  Listener Creation
@@ -1128,6 +1131,21 @@ namespace System.Diagnostics.Tests
                 };
 
                 ActivitySource.AddActivityListener(listener);
+
+                // Creating another listener which provides Sample callback but not providing SampleUsingParentId callback.
+                // This listener will confirm when creating activities with WC3 Ids, the Sample callback will always get called.
+                using ActivityListener listener1 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener1.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) =>
+                {
+                    sampleCallbackIsInvoked = true;
+                    if (checkTraceId)
+                        traceId = activityOptions.TraceId;
+
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                ActivitySource.AddActivityListener(listener1);
 
                 //
                 //  Set the global Default Id Format
@@ -1170,6 +1188,11 @@ namespace System.Diagnostics.Tests
                 if (checkTraceId)
                 {
                     Assert.Equal(traceId, a.TraceId);
+                }
+
+                if (a.IdFormat == ActivityIdFormat.W3C)
+                {
+                    Assert.True(sampleCallbackIsInvoked);
                 }
 
                 a.Stop();
