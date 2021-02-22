@@ -25,18 +25,18 @@ variables:
 jobs:
 
 # build coreclr and libraries
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-#     buildConfig: release
-#     platforms:
-#     - Linux_x64
-#     - windows_x64
-#     - windows_x86
-#     - Linux_arm64
-#     - Linux_musl_x64
-#     jobParameters:
-#       testGroup: perf
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: release
+    platforms:
+    # - Linux_x64
+    # - windows_x64
+    # - windows_x86
+    - Linux_arm64
+    # - Linux_musl_x64
+    jobParameters:
+      testGroup: perf
 
 # build mono on wasm
 # - template: /eng/pipelines/common/platform-matrix.yml
