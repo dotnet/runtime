@@ -83,17 +83,9 @@ namespace System.Net.Sockets
             }
             isSocket = (stat.Mode & Interop.Sys.FileTypes.S_IFSOCK) == Interop.Sys.FileTypes.S_IFSOCK;
 
-            // If it is not a socket, treat it like a pipe.
-            handle.IsPipe = !isSocket;
+            handle.IsSocket = isSocket;
 
-            if (handle.IsPipe)
-            {
-                addressFamily = AddressFamily.Unknown;
-                socketType = SocketType.Unknown;
-                protocolType = ProtocolType.Unknown;
-                isListening = false;
-            }
-            else
+            if (isSocket)
             {
                 // On Linux, GetSocketType will be able to query SO_DOMAIN, SO_TYPE, and SO_PROTOCOL to get the
                 // address family, socket type, and protocol type, respectively.  On macOS, this will only succeed
@@ -101,6 +93,13 @@ namespace System.Net.Sockets
                 // can use getsockname to retrieve the address family as part of trying to get the local end point.
                 Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
                 Debug.Assert(e == Interop.Error.SUCCESS, e.ToString());
+            }
+            else
+            {
+                addressFamily = AddressFamily.Unknown;
+                socketType = SocketType.Unknown;
+                protocolType = ProtocolType.Unknown;
+                isListening = false;
             }
 
             // Get whether the socket is in non-blocking mode.  On Unix, we automatically put the underlying

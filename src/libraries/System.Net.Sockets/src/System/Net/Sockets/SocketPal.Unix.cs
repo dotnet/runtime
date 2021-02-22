@@ -106,7 +106,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             int received = 0;
 
@@ -130,7 +130,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
@@ -195,7 +195,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             int sent;
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
@@ -220,7 +220,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             int sent;
             fixed (byte* sockAddr = socketAddress)
@@ -262,7 +262,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysSend(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[]? socketAddress, int socketAddressLen, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
@@ -358,7 +358,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceive(SafeSocketHandle socket, SocketFlags flags, IList<ArraySegment<byte>> buffers, byte[]? socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
 
             int maxBuffers = buffers.Count;
             bool allocOnStack = maxBuffers <= IovStackThreshold;
@@ -459,7 +459,7 @@ namespace System.Net.Sockets
 
         private static unsafe int SysReceiveMessageFrom(SafeSocketHandle socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
@@ -513,7 +513,7 @@ namespace System.Net.Sockets
             byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6,
             out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
         {
-            Debug.Assert(!socket.IsPipe);
+            Debug.Assert(socket.IsSocket);
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
 
             int buffersCount = buffers.Count;
@@ -727,7 +727,7 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 int received;
 
-                if (socket.IsPipe)
+                if (!socket.IsSocket)
                 {
                     Debug.Assert(flags == SocketFlags.None);
                     received = SysRead(socket, buffer, out errno);
@@ -786,7 +786,7 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 int received;
 
-                if (socket.IsPipe)
+                if (!socket.IsSocket)
                 {
                     Debug.Assert(flags == SocketFlags.None);
                     Debug.Assert(buffers == null);
@@ -916,7 +916,7 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 try
                 {
-                    if (socket.IsPipe)
+                    if (!socket.IsSocket)
                     {
                         Debug.Assert(flags == SocketFlags.None);
                         Debug.Assert(buffers == null);

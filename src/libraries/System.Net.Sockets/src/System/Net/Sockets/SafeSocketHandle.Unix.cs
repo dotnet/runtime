@@ -23,7 +23,7 @@ namespace System.Net.Sockets
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
         internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
-        internal bool IsPipe { get; set; } // (ab)use Socket class for performing async I/O on pipes.
+        internal bool IsSocket { get; set; } = true; // (ab)use Socket class for performing async I/O on non-socket fds.
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -44,7 +44,7 @@ namespace System.Net.Sockets
             target.LastConnectFailed = LastConnectFailed;
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
-            target.IsPipe = IsPipe;
+            target.IsSocket = IsSocket;
         }
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
@@ -240,7 +240,7 @@ namespace System.Net.Sockets
         {
             Interop.Error errorCode = Interop.Error.SUCCESS;
 
-            if (IsPipe)
+            if (!IsSocket)
             {
                 return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
             }
