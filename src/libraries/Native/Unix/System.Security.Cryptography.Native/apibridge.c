@@ -788,4 +788,101 @@ int local_BIO_up_ref(BIO *bio)
 
     return CRYPTO_add_lock(&bio->references, 1, CRYPTO_LOCK_BIO, __FILE__, __LINE__) > 1;
 }
+
+static int CheckRsa(RSA* toCheck)
+{
+    assert(toCheck != NULL);
+
+    // This is shared and should not be freed.
+    const RSA_METHOD* meth = RSA_get_method(toCheck);
+
+    // The method has not descibed itself as having the private key external to the structure,
+    // call the validator with no extra work
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if ((RSA_meth_get_flags((RSA_METHOD*)meth) & RSA_FLAG_EXT_PKEY) == 0)
+#pragma clang diagnostic pop
+    {
+        return RSA_check_key(toCheck);
+    }
+
+    // CheckRsa is only called when we're importing a key (RSAParameters, RSAPrivateKey, PKCS#8)
+    // If we get here that means that the default RSA provider for EVP_PKEY uses an implementation
+    // that won't give us (or RSA_check_key) access to BN values for the key parameters.
+    //
+    // It's also only called when we're on 1.0.x and there's not a provider built-in model for this.
+    //
+    // Possible paths: Claim success, claim failure, try some heroics to turn a key we don't understand
+    // into one we do.
+    //
+    // The heroics route would be a lot of essentially untested code for a small scenario, so eliminate that.
+    //
+    // Absent data that this is not all that rare, fail closed.
+    return -2;
+}
+
+int32_t local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
+{
+    // 1 is success,
+    // -2 is "algorithm does not support checking"
+    // any other value is generic failure.
+    if (ctx == NULL)
+    {
+        return -2;
+    }
+
+    EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (pkey == NULL)
+    {
+        return -2;
+    }
+
+    switch (EVP_PKEY_base_id(pkey))
+    {
+        case NID_rsaEncryption:
+        {
+            RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+            if (rsa != NULL)
+            {
+                return CheckRsa(rsa);
+            }
+
+            break;
+        }
+    }
+
+    (void)ctx;
+    return -2;
+}
+
+RSA* local_EVP_PKEY_get0_RSA(EVP_PKEY* pkey)
+{
+    RSA* rsa = EVP_PKEY_get1_RSA(pkey);
+
+    // If we got one, it got up-ref'd.  So down-ref it.
+    if (rsa != NULL)
+    {
+        RSA_free(rsa);
+    }
+
+    return rsa;
+}
+
+int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2)
+{
+    if (ctx != NULL)
+    {
+        EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+        if (EVP_PKEY_base_id(pkey) != NID_rsaEncryption)
+        {
+            return -1;
+        }
+    }
+
+    return EVP_PKEY_CTX_ctrl(ctx, -1, optype, cmd, p1, p2);
+}
+
 #endif
