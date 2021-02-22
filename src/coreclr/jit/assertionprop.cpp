@@ -4651,20 +4651,19 @@ public:
     void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
         ASSERT_TP pAssertionOut;
-        if (dupCount == 2)
-        {
-            assert((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block) &&
-                   (predBlock->bbNext == block));
-            pAssertionOut = mJumpDestOut[predBlock->bbNum];
-            BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
-        }
-        else if ((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block))
+
+        if (predBlock->bbJumpKind == BBJ_COND && (predBlock->bbJumpDest == block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
+
+            if (dupCount > 1)
+            {
+                assert(predBlock->bbNext == block);
+                BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
+            }
         }
         else
         {
-            assert(dupCount == 1);
             pAssertionOut = predBlock->bbAssertionOut;
         }
 
