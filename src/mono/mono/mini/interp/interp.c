@@ -7201,11 +7201,11 @@ invalidate_transform (gpointer imethod_)
 static void
 copy_imethod_for_frame (MonoDomain *domain, InterpFrame *frame)
 {
-	InterpMethod *copy = (InterpMethod *) mono_domain_alloc0 (domain, sizeof (InterpMethod));
+	InterpMethod *copy = (InterpMethod *) m_method_alloc0 (frame->imethod->method, sizeof (InterpMethod));
 	memcpy (copy, frame->imethod, sizeof (InterpMethod));
 	copy->next_jit_code_hash = NULL; /* we don't want that in our copy */
 	frame->imethod = copy;
-	/* Note: The copy will be around until the domain is unloading. Ideally we
+	/* Note: The copy will be around until the method is unloaded. Ideally we
 	 * would reclaim its memory when the corresponding InterpFrame is popped.
 	 */
 }
@@ -7223,7 +7223,7 @@ metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpF
 {
 	while (frame) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
-		copy_imethod_for_frame (domain, frame);
+		copy_imethod_for_frame (frame);
 		frame = frame->parent;
 	}
 }

@@ -476,7 +476,7 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 {
 	MonoJitInfo *ji;
 
-	ji = (MonoJitInfo *)mono_domain_alloc0 (domain, mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
+	ji = (MonoJitInfo *)mono_mem_manager_alloc0 (get_default_mem_manager (), mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
 	mono_jit_info_init (ji, NULL, (guint8*)MINI_FTNPTR_TO_ADDR (info->code), info->code_size, (MonoJitInfoFlags)0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
@@ -504,10 +504,12 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 	if (!domain)
 		domain = mono_get_root_domain ();
 
-	if (domain)
-		copy = mono_domain_alloc0 (domain, sizeof (MonoTrampInfo));
-	else
+	// domain might be unset during startup
+	if (domain) {
+		copy = mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (MonoTrampInfo));
+	} else {
 		copy = g_new0 (MonoTrampInfo, 1);
+	}
 
 	copy->code = info->code;
 	copy->code_size = info->code_size;
@@ -520,7 +522,7 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 		if (domain) {
 			/* Move unwind info into the domain's memory pool so that it is removed once the domain is released. */
 			guint8 *temp = copy->uw_info;
-			copy->uw_info = mono_domain_alloc (domain, copy->uw_info_len);
+			copy->uw_info = mono_mem_manager_alloc (get_default_mem_manager (), copy->uw_info_len);
 			memcpy (copy->uw_info, temp, copy->uw_info_len);
 			g_free (temp);
 		}
@@ -1433,7 +1435,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 			jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
 		code_slot = g_hash_table_lookup (jit_mm->method_code_hash, patch_info->data.method);
 		if (!code_slot) {
-			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
+			code_slot = mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
 			g_hash_table_insert (jit_mm->method_code_hash, patch_info->data.method, code_slot);
 		}
 		jit_mm_unlock (jit_mm);
@@ -1441,7 +1443,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
-		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		target = mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (gpointer));
 		break;
 	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
@@ -1663,7 +1665,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		break;
 	}
 	case MONO_PATCH_INFO_CASTCLASS_CACHE: {
-		target = mono_domain_alloc0 (domain, sizeof (gpointer));
+		target = mono_mem_manager_alloc0 (get_default_mem_manager (), sizeof (gpointer));
 		break;
 	}
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: {
@@ -1675,7 +1677,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		char *s;
 
 		len = strlen ((const char *)patch_info->data.target);
-		s = (char *)mono_domain_alloc0 (domain, len + 1);
+		s = (char *)mono_mem_manager_alloc0 (get_default_mem_manager (), len + 1);
 		memcpy (s, patch_info->data.target, len);
 		target = s;
 
@@ -1718,7 +1720,6 @@ mini_register_jump_site (MonoMethod *method, gpointer ip)
 {
 	MonoJumpList *jlist;
 	MonoJitMemoryManager *jit_mm;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	MonoMethod *shared_method = mini_method_to_shared (method);
 	method = shared_method ? shared_method : method;
@@ -1728,7 +1729,7 @@ mini_register_jump_site (MonoMethod *method, gpointer ip)
 	jit_mm_lock (jit_mm);
 	jlist = (MonoJumpList *)g_hash_table_lookup (jit_mm->jump_target_hash, method);
 	if (!jlist) {
-		jlist = (MonoJumpList *)mono_domain_alloc0 (domain, sizeof (MonoJumpList));
+		jlist = (MonoJumpList *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoJumpList));
 		g_hash_table_insert (jit_mm->jump_target_hash, method, jlist);
 	}
 	jlist->list = g_slist_prepend (jlist->list, ip);
@@ -2328,7 +2329,6 @@ unregister_method_for_compile (MonoMethod *method)
 static MonoJitInfo*
 create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoJitInfo *jinfo;
 	guint8 *uw_info;
 	guint32 info_len;
@@ -2340,7 +2340,7 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
 	}
 
-	jinfo = (MonoJitInfo *)mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
+	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (get_default_mem_manager (), MONO_SIZEOF_JIT_INFO);
 	jinfo->d.method = wrapper;
 	jinfo->code_start = MINI_FTNPTR_TO_ADDR (info->code);
 	jinfo->code_size = info->code_size;
@@ -3970,12 +3970,13 @@ mini_create_ftnptr (gpointer addr)
 {
 #if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	gpointer* desc = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
+	// FIXME:
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	if ((desc = (gpointer*)g_hash_table_lookup (domain->ftnptrs_hash, addr)))
 		return desc;
 #if defined(__mono_ppc64__)
-	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
+	desc = mono_mem_manager_alloc0 (jit_mm->mem_manager, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
 	desc [1] = NULL;

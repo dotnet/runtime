@@ -65,6 +65,13 @@ get_default_jit_mm (void)
 	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
 }
 
+// FIXME: Review uses and change them to a more specific mem manager
+static inline MonoMemoryManager*
+get_default_mem_manager (void)
+{
+	return get_default_jit_mm ()->mem_manager;
+}
+
 static inline MonoJitMemoryManager*
 jit_mm_for_method (MonoMethod *method)
 {

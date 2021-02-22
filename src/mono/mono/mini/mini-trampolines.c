@@ -1385,10 +1385,9 @@ gpointer
 mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 {
 	gpointer tramp;
-	MonoDomain *domain = mono_get_root_domain ();
 	guint8 *buf, *start;
 
-	buf = start = (guint8 *)mono_domain_alloc0 (domain, 2 * sizeof (gpointer));
+	buf = start = (guint8 *)mono_image_alloc0 (image, 2 * sizeof (gpointer));
 
 	*(gpointer*)buf = image;
 	buf += sizeof (gpointer);
@@ -1416,7 +1415,6 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	MonoClassMethodPair pair, *dpair;
 	guint32 code_size = 0;
 	MonoJitMemoryManager *jit_mm;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	pair.klass = klass;
 	pair.method = method;
@@ -1432,7 +1430,7 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
-	tramp_info = (MonoDelegateTrampInfo *)mono_domain_alloc0 (domain, sizeof (MonoDelegateTrampInfo));
+	tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
 	tramp_info->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), TRUE);
@@ -1446,7 +1444,7 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	tramp_info->invoke_impl = mono_create_specific_trampoline (tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
 	g_assert (code_size);
 
-	dpair = (MonoClassMethodPair *)mono_domain_alloc0 (domain, sizeof (MonoClassMethodPair));
+	dpair = (MonoClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));
 
 	/* store trampoline address */
