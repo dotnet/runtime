@@ -699,7 +699,7 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
-if (NOT HOST_IOS AND NOT HOST_ANDROID AND NOT HOST_BROWSER AND NOT HOST_MACCATALYST)
+if (NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
   add_subdirectory(dbi)
 endif()
 
