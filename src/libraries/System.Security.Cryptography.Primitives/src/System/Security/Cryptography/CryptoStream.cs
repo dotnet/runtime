@@ -658,7 +658,7 @@ namespace System.Security.Cryptography
             }
             return;
 
-            private unsafe static int TransformBlock(ICryptoTransform transform, ReadOnlyMemory<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
+            unsafe static int TransformBlock(ICryptoTransform transform, ReadOnlyMemory<byte> inputBuffer, byte[] outputBuffer, int outputOffset)
             {
                 if (MemoryMarshal.TryGetArray(inputBuffer, out ArraySegment<byte> segment))
                 {
