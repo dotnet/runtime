@@ -47,7 +47,7 @@ mini_llvmonly_load_method_ftndesc (MonoMethod *method, gboolean caller_gsharedvt
 		gpointer arg = NULL;
 		addr = mini_llvmonly_add_method_wrappers (method, (gpointer)addr, caller_gsharedvt, need_unbox, &arg);
 		// FIXME: Cache this
-		return mini_llvmonly_create_ftndesc (mono_domain_get (), addr, arg);
+		return mini_llvmonly_create_ftndesc (method, addr, arg);
 	} else {
 		MonoFtnDesc *ftndesc = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (method, need_unbox, error);
 		return_val_if_nok (error, NULL);
@@ -110,11 +110,12 @@ mini_llvmonly_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
  * This is used for:
  * - generic sharing (ARG is the rgctx)
  * - gsharedvt signature wrappers (ARG is a function descriptor)
+ * 
  */
 MonoFtnDesc*
-mini_llvmonly_create_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg)
+mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
 {
-	MonoFtnDesc *ftndesc = (MonoFtnDesc*)mono_domain_alloc0 (mono_domain_get (), 2 * sizeof (gpointer));
+	MonoFtnDesc *ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, 2 * sizeof (gpointer));
 	ftndesc->addr = addr;
 	ftndesc->arg = arg;
 
@@ -190,7 +191,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		/*
 		 * This is a gsharedvt in wrapper, it gets passed a ftndesc for the gsharedvt method as an argument.
 		 */
-		*out_arg = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, mini_method_get_rgctx (m));
+		*out_arg = mini_llvmonly_create_ftndesc (m, addr, mini_method_get_rgctx (m));
 		addr = wrapper_addr;
 		//printf ("IN: %s\n", mono_method_full_name (m, TRUE));
 	}
@@ -203,7 +204,7 @@ mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboo
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
 		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature_internal (m), NULL, -1, FALSE);
-		MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, *out_arg);
+		MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (m, addr, *out_arg);
 
 		addr = out_wrapper;
 		*out_arg = out_wrapper_arg;
@@ -497,7 +498,7 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 
 	if (!gsharedvt && generic_virtual) {
 		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
-		MonoFtnDesc *ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, out_arg);
+		MonoFtnDesc *ftndesc = mini_llvmonly_create_ftndesc (m, addr, out_arg);
 
 		mono_method_add_generic_virtual_invocation (mono_domain_get (),
 													vt, vt->vtable + slot,
@@ -634,7 +635,7 @@ mini_llvmonly_init_vtable_slot (MonoVTable *vtable, int slot)
 	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE, error);
 	if (mono_error_set_pending_exception (error))
 		return NULL;
-	ftnptr = mono_domain_alloc0 (vtable->domain, 2 * sizeof (gpointer));
+	ftnptr = m_class_alloc0 (vtable->klass, 2 * sizeof (gpointer));
 	ftnptr [0] = addr;
 	ftnptr [1] = arg;
 	mono_memory_barrier ();
@@ -675,7 +676,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del)
 		gpointer addr = mini_llvmonly_load_method_delegate (m, FALSE, need_unbox, &arg, error);
 		if (mono_error_set_pending_exception (error))
 			return;
-		ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), addr, arg);
+		ftndesc = mini_llvmonly_create_ftndesc (m, addr, arg);
 		mono_memory_barrier ();
 		*del->method_code = (guint8*)ftndesc;
 	}
