@@ -28,6 +28,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 Type parameterType = parameters[i].ParameterType;
+                Debug.WriteLine($"[EPPayloadDecoder] parameterType: {parameterType.ToString()}");
                 if (parameterType == typeof(IntPtr))
                 {
                     if (IntPtr.Size == 8)
