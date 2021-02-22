@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.IO;
-
 namespace System.Security.Cryptography
 {
     public abstract partial class AsymmetricAlgorithm : System.IDisposable
