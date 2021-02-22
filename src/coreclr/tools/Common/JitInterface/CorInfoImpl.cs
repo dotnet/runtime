@@ -1659,20 +1659,10 @@ namespace Internal.JitInterface
             return (CORINFO_ASSEMBLY_STRUCT_*)ObjectToHandle(assembly);
         }
 
-        private Dictionary<string, IntPtr> _assemblyNameCache = new Dictionary<string, IntPtr>();
-        private UTF8Encoding _assemblyNameEncoding = new UTF8Encoding();
-
         private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
         {
             IAssemblyDesc assembly = (IAssemblyDesc)HandleToObject((IntPtr)assem);
-            string assemblyName = assembly.GetName().Name;
-            if (!_assemblyNameCache.TryGetValue(assemblyName, out IntPtr pinnedAssemblyName))
-            {
-                byte[] encodedName = _assemblyNameEncoding.GetBytes(assemblyName);
-                pinnedAssemblyName = GetPin(encodedName);
-                _assemblyNameCache.Add(assemblyName, pinnedAssemblyName);
-            }
-            return (byte *)pinnedAssemblyName;
+            return (byte *)GetPin(StringToUTF8(assembly.GetName().Name));
         }
 
         private void* LongLifetimeMalloc(UIntPtr sz)
