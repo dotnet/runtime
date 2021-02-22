@@ -22,7 +22,7 @@ if(HOST_WIN32)
         set(CLR_CMAKE_HOST_ARCH arm)
     elseif(HOST_AMD64)
         set(CLR_CMAKE_HOST_ARCH x64)
-    endif()        
+    endif()
 endif()
 
 add_definitions(-DDBI_COMPONENT_MONO)
@@ -96,7 +96,7 @@ if (CLR_CMAKE_HOST_UNIX)
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
 
-  append("-Wno-missing-prototypes  -Wno-pointer-arith" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  append("-Wno-missing-prototypes  -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/pal pal)
 
   include_directories("../../coreclr/pal/inc/rt/cpp")
