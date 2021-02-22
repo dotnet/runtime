@@ -1504,7 +1504,7 @@ namespace System.Tests
         [InlineData("3.00")]
         public void TestRoundTripDecimalToString(string input)
         {
-            decimal d = Decimal.Parse(input);
+            decimal d = Decimal.Parse(input, NumberStyles.Number, NumberFormatInfo.InvariantInfo);
             string dString = d.ToString();
             Assert.Equal(input, dString);
         }
