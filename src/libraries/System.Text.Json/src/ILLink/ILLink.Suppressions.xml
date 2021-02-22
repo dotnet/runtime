@@ -67,5 +67,35 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Text.Json.Serialization.IEnumerableConverterFactoryHelpers.GetImmutableEnumerableCreateRangeMethod(System.Type,System.Type)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2077</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.&lt;&gt;c__DisplayClass0_0.&lt;CreateConstructor&gt;b__0</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateConstructor(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateAddMethodDelegate``1</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateParameterizedConstructor``1(System.Reflection.ConstructorInfo)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateParameterizedConstructor``5(System.Reflection.ConstructorInfo)</property>
+    </attribute>
   </assembly>
 </linker>

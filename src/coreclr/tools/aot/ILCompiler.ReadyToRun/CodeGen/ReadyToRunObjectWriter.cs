@@ -101,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         private string _perfMapPath;
 
         /// <summary>
+        /// MVID of the input managed module to embed in the perfmap file name.
+        /// </summary>
+        private Guid? _perfMapMvid;
+
+        /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
         /// This is used to support loading via large pages on Linux.
         /// </summary>
@@ -135,6 +140,7 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            Guid? perfMapMvid,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
             int customPESectionAlignment)
@@ -150,6 +156,7 @@ namespace ILCompiler.DependencyAnalysis
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapMvid = perfMapMvid;
 
             bool generateMap = (generateMapFile || generateMapCsvFile);
             bool generateSymbols = (generatePdbFile || generatePerfMapFile);
@@ -358,7 +365,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath);
+                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath, _perfMapMvid);
                     }
 
                     if (_profileFileBuilder != null)
@@ -435,6 +442,7 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            Guid? perfMapMvid,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
             int customPESectionAlignment)
@@ -451,6 +459,7 @@ namespace ILCompiler.DependencyAnalysis
                 pdbPath: pdbPath,
                 generatePerfMapFile: generatePerfMapFile,
                 perfMapPath: perfMapPath,
+                perfMapMvid: perfMapMvid,
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
                 customPESectionAlignment);

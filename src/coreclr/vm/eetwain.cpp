@@ -1346,6 +1346,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                     // points to will be zeroed out
                     // ...
                 }
+                __fallthrough;
 
             case ICorDebugInfo::VLT_STK:
             case ICorDebugInfo::VLT_STK2:

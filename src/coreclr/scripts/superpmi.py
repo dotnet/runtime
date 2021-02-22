@@ -1285,6 +1285,8 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         logging.warning("Compilation failures")
     elif return_code == 2:
         logging.warning("Asm diffs found")
+    elif return_code == 3:
+        logging.warning("SuperPMI missing data encountered")
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1387,7 +1389,7 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ew",  # only display errors and warnings
+                "-v", "ewmi",  # display errors, warnings, missing, jit info
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
@@ -1597,7 +1599,7 @@ class SuperPMIReplayAsmDiffs:
                 else:
                     flags = [
                         "-a",  # Asm diffs
-                        "-v", "ew",  # only display errors and warnings
+                        "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files

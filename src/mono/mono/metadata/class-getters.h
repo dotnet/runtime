@@ -69,7 +69,7 @@ MONO_CLASS_GETTER(m_class_get_methods, MonoMethod **, ,  MonoClass, methods)
 MONO_CLASS_GETTER(m_class_get_this_arg, MonoType*, &, MonoClass, this_arg)
 MONO_CLASS_GETTER(m_class_get_byval_arg, MonoType*, &, MonoClass, _byval_arg)
 MONO_CLASS_GETTER(m_class_get_gc_descr, MonoGCDescriptor, , MonoClass, gc_descr)
-MONO_CLASS_GETTER(m_class_get_runtime_info, MonoClassRuntimeInfo *, , MonoClass, runtime_info)
+MONO_CLASS_GETTER(m_class_get_runtime_vtable, MonoVTable*, , MonoClass, runtime_vtable)
 MONO_CLASS_GETTER(m_class_get_vtable, MonoMethod **, , MonoClass, vtable)
 MONO_CLASS_GETTER(m_class_get_infrequent_data, MonoPropertyBag*, &, MonoClass, infrequent_data)
 
