@@ -305,7 +305,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+publish+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
   </ItemGroup>
 
   <!-- Utility -->
