@@ -78,7 +78,7 @@ const char *getFacilityName(DWORD_PTR lf)
     #define DEFINE_LOG_FACILITY(logname, value) {logname, #logname},
     static FacilityName_t facilities[] =
     {
-        #include "loglf.h"
+        #include "../../../inc/loglf.h"
         { LF_ALWAYS, "LF_ALWAYS" }
     };
     static char buff[1024] = "`";
