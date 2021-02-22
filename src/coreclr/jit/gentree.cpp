@@ -6421,32 +6421,49 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
 
 GenTree* Compiler::gtNewAddrNode(GenTree* tree)
 {
-    var_types addrType;
+    bool pointsStack;
     if (tree->IsLocal())
     {
-        // When the address points to the stack
-        // we use TYP_I_IMPL, so if we create a LCL_VAR from it
-        // it does not need to be zero-init.
-        addrType = TYP_I_IMPL;
+        pointsStack = true;
     }
     else if (tree->OperIs(GT_FIELD))
     {
         const GenTree* fldObj = tree->AsField()->gtFldObj;
-        assert((fldObj == nullptr) || fldObj->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT));
-        if ((fldObj != nullptr) && fldObj->TypeIs(TYP_REF, TYP_BYREF))
+        assert((fldObj == nullptr) || fldObj->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT, TYP_I_IMPL));
+        if (fldObj == nullptr)
         {
-            addrType = TYP_BYREF;
+            // static field, no need for a barrier, rename the flag?
+            pointsStack = true;
+        }
+        else if (fldObj->OperIs(GT_LCL_VAR))
+        {
+            pointsStack = true;
+        }
+        else if (fldObj->OperIs(GT_ADDR) && ((fldObj->gtFlags & GTF_ADDR_STACK) != 0))
+        {
+            pointsStack = true;
         }
         else
         {
-            addrType = TYP_I_IMPL;
+            // fldObj can be I_IMPL, like:
+            // AA:get_pb_i(long):long:
+            //  [ 0]   0 (0x000) ldarg.0
+            //  [ 1]   1 (0x001) ldflda 04000004
+            //  it would be marked as stack addr in the past,
+            // but it was incorrect?
+            pointsStack = false;
         }
     }
     else
     {
-        addrType = TYP_BYREF;
+        pointsStack = false;
     }
-    return gtNewOperNode(GT_ADDR, addrType, tree);
+    GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
+    if (pointsStack)
+    {
+        addr->gtFlags |= GTF_ADDR_STACK;
+    }
+    return addr;
 }
 
 GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, unsigned __int64 bbFlags)

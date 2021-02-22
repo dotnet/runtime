@@ -1146,15 +1146,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     // If the types are different then bail */
                     if (lclVar->lvType != lclVar2->lvType)
                     {
-                        if ((lclVar->lvType == TYP_BYREF || lclVar->lvType == TYP_I_IMPL)
-                            && (lclVar2->lvType == TYP_BYREF || lclVar2->lvType == TYP_I_IMPL))
-                        {
-                            // tolerate this.
-                        }
-                        else
-                        {
-                            goto DONE_ASSERTION; // Don't make an assertion
-                        }
+                        goto DONE_ASSERTION; // Don't make an assertion
                     }
 
                     // If we're making a copy of a "normalize on load" lclvar then the destination

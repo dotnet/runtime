@@ -373,7 +373,8 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         oper->gtType    = srcType;
 
         // do the real cast
-        GenTree* cast = gtNewCastNode(tree->TypeGet(), gtNewLclvNode(lclNum, TYP_I_IMPL), false, dstType);
+        GenTree* lclVar = gtNewLclvNode(lclNum, TYP_I_IMPL);
+        GenTree* cast   = gtNewCastNode(tree->TypeGet(), lclVar, false, dstType);
 
         // Generate the comma tree
         oper = gtNewOperNode(GT_COMMA, tree->TypeGet(), asg, cast);
@@ -2965,12 +2966,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         fgArgTabEntry* argEntry = nullptr;
 
-        // Change the node to TYP_I_IMPL so we don't report GC info
-        // NOTE: We deferred this from the importer because of the inliner.
-
-        if (argx->IsLocalAddrExpr() != nullptr)
+        if (argx->OperIs(GT_ADDR) && (argx->IsLocalAddrExpr() != nullptr))
         {
-            argx->gtType = TYP_I_IMPL;
+            argx->gtFlags |= GTF_ADDR_STACK;
         }
 
         // We should never have any ArgPlaceHolder nodes at this point.
@@ -8206,9 +8204,8 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         lvaSetVarAddrExposed(newRetLcl);
 
-        retValArg =
-            gtNewAddrNode(gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
-        retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
+        retValArg = gtNewAddrNode(gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
+        retVal    = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
 
         if (varTypeIsStruct(origCall->gtType))
         {

@@ -639,6 +639,16 @@ void GCInfo::gcRegPtrSetInit()
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
     assert(tgtAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
+
+    if (tgtAddr->OperIs(GT_ADDR))
+    {
+        const bool stackAddrFlag = ((tgtAddr->gtFlags & GTF_ADDR_STACK) != 0);
+        if (stackAddrFlag)
+        {
+            return GCInfo::WBF_NoBarrier;
+        }
+    }
+
     bool simplifiedExpr = true;
     while (simplifiedExpr)
     {

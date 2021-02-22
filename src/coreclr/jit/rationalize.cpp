@@ -533,8 +533,7 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
 #endif // DEBUG
 
         location->SetOper(addrForm(locationOp));
-        location->gtType = TYP_I_IMPL;
-        //assert(address->TypeIs(TYP_I_IMPL));
+        location->ChangeType(address->TypeGet());
         copyFlags(location, address, GTF_ALL_EFFECT);
 
         use.ReplaceWith(comp, location);
