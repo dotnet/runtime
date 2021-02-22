@@ -39,6 +39,7 @@ target_link_libraries(
     "-framework Security"
     "-framework UIKit"
     %FrameworksToLink%
+    "-lz"
     "-lc++"
     "-liconv"
 %NativeLibrariesToLink%
