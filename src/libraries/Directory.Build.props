@@ -9,6 +9,10 @@
     <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$(_sepChar)ref</OutDirName>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RunDisablediOSTests>true</RunDisablediOSTests>
+  </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.props" />
   <Import Project="NetCoreAppLibrary.props" />
 
