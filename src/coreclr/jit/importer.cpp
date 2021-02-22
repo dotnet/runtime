@@ -3158,15 +3158,15 @@ CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 /* static */
 void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1->IsLocalAddrExpr() != nullptr)
-    {
-        tree1->gtType = TYP_I_IMPL;
-    }
+    // if (tree1->IsLocalAddrExpr() != nullptr)
+    //{
+    //    tree1->gtType = TYP_I_IMPL;
+    //}
 
-    if (tree2 && (tree2->IsLocalAddrExpr() != nullptr))
-    {
-        tree2->gtType = TYP_I_IMPL;
-    }
+    // if (tree2 && (tree2->IsLocalAddrExpr() != nullptr))
+    //{
+    //    tree2->gtType = TYP_I_IMPL;
+    //}
 }
 
 /*****************************************************************************
@@ -14395,8 +14395,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         // Obtain the address of the temp
-                        newObjThisPtr =
-                            gtNewAddrNode(gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
+                        newObjThisPtr = gtNewAddrNode(gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
                     }
                     else
                     {
@@ -20064,7 +20063,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         // have been caught in impInlineInitVars.
         if (!op1->TypeIs(lclTyp))
         {
-            //if (lclTyp != TYP_BYREF) // We could have oprimized TYP_BYREF to TYP_I_IMPL.
+            // if (lclTyp != TYP_BYREF) // We could have oprimized TYP_BYREF to TYP_I_IMPL.
             {
                 op1->gtType = genActualType(lclTyp);
             }

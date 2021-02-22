@@ -879,6 +879,8 @@ public:
 #define GTF_ADDRMODE_NO_CSE         0x80000000 // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                                //                         addressing mode
 
+#define GTF_ADDR_STACK              0x8000000 // GT_ARRD - the address point to stack.
+
 #define GTF_MUL_64RSLT              0x40000000 // GT_MUL     -- produce 64-bit result
 
 #define GTF_RELOP_NAN_UN            0x80000000 // GT_<relop> -- Is branch taken if ops are NaN?
