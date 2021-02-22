@@ -4648,14 +4648,29 @@ public:
     }
 
     // During merge, perform the actual merging of the predecessor's (since this is a forward analysis) dataflow flags.
-    void Merge(BasicBlock* block, BasicBlock* predBlock, flowList* preds)
+    void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
-        ASSERT_TP pAssertionOut = ((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block))
-                                      ? mJumpDestOut[predBlock->bbNum]
-                                      : predBlock->bbAssertionOut;
+        ASSERT_TP pAssertionOut;
+        if (dupCount == 2)
+        {
+            assert((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block) &&
+                   (predBlock->bbNext == block));
+            pAssertionOut = mJumpDestOut[predBlock->bbNum];
+            BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
+        }
+        else if ((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block))
+        {
+            pAssertionOut = mJumpDestOut[predBlock->bbNum];
+        }
+        else
+        {
+            assert(dupCount == 1);
+            pAssertionOut = predBlock->bbAssertionOut;
+        }
+
         JITDUMP("AssertionPropCallback::Merge     : " FMT_BB " in -> %s, predBlock " FMT_BB " out -> %s\n",
                 block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
+                BitVecOps::ToString(apTraits, pAssertionOut));
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 
