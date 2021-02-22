@@ -3068,6 +3068,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 		if (!rgctx) {
 			class_vtable->runtime_generic_context = new_rgctx;
 			UnlockedIncrement (&rgctx_num_allocated);
+			rgctx = new_rgctx;
 		}
 		jit_mm_unlock (jit_mm);
 	}
