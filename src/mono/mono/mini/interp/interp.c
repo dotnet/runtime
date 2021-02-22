@@ -7199,7 +7199,7 @@ invalidate_transform (gpointer imethod_)
 }
 
 static void
-copy_imethod_for_frame (MonoDomain *domain, InterpFrame *frame)
+copy_imethod_for_frame (InterpFrame *frame)
 {
 	InterpMethod *copy = (InterpMethod *) m_method_alloc0 (frame->imethod->method, sizeof (InterpMethod));
 	memcpy (copy, frame->imethod, sizeof (InterpMethod));
