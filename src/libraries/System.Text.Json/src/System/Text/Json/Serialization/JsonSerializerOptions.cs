@@ -336,7 +336,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Determines whether fields are handled during serialization and deserialization.
+        /// Determines whether fields are handled on serialization and deserialization.
         /// The default value is false.
         /// </summary>
         /// <exception cref="InvalidOperationException">
