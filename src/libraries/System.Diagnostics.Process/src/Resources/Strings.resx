@@ -332,7 +332,4 @@
   <data name="InvalidSysctl" xml:space="preserve">
     <value>sysctl {0} failed with {1} error.</value>
   </data>
-  <data name="ProcessDisposed" xml:space="preserve">
-    <value>The Process object has been disposed.</value>
-  </data>
 </root>

@@ -1661,7 +1661,7 @@ namespace System.Diagnostics
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(Process), SR.ProcessDisposed);
+                throw new ObjectDisposedException(GetType().Name);
             }
         }
 
