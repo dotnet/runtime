@@ -25,7 +25,9 @@
 #include <sys/sockio.h>
 #endif
 #include <sys/un.h>
+#if defined(__APPLE__)
 #include <sys/socketvar.h>
+#endif
 #include <errno.h>
 #include <stdio.h>
 #endif
