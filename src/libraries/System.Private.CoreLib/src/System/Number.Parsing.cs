@@ -358,7 +358,7 @@ namespace System
                         {
                             number.Scale++;
                         }
-                        else if (digCount < maxDigCount && number.Kind == NumberBufferKind.FloatingPoint)
+                        else if (digCount < maxDigCount)
                         {
                             // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part, so we keep a count of the number of trailing zeros and update digCount later
                             if (ch == '0')
@@ -395,6 +395,11 @@ namespace System
             }
 
             bool negExp = false;
+            if (number.Kind != NumberBufferKind.FloatingPoint)
+            {
+                numberOfTrailingZeros = 0;
+            }
+
             if (digEnd == maxDigCount && numberOfTrailingZeros > 0 && number.HasNonZeroTail)
             {
                 // We have a non-zero digit in the input past maxDigitCount. We already handle this properly.
@@ -2025,7 +2030,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
         {
-            char *ret = MatchChars(p, pEnd, info.NegativeSign);
+            char* ret = MatchChars(p, pEnd, info.NegativeSign);
             if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
             {
                 ret = p + 1;
