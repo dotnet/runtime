@@ -2989,17 +2989,25 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
             }
             else
             {
-#ifndef MULTIPLE_HEAPS
                 if (gen_number == max_generation)
                 {
                     float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
-                    if (frag_ratio > 0.65)
+                    int conserve_mem_setting = (int)GCConfig::GetGCConserveMem();
+                    if (conserve_mem_setting < 0)
+                        conserve_mem_setting = 0;
+                    if (conserve_mem_setting > 9)
+                        conserve_mem_setting = 9;
+                    float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
+#ifndef MULTIPLE_HEAPS
+                    if (conserve_mem_setting == 0)
+                        frag_limit = 0.65f;
+#endif //!MULTIPLE_HEAPS
+                    if (frag_ratio > frag_limit)
                     {
                         dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
                         return TRUE;
                     }
                 }
-#endif //!MULTIPLE_HEAPS
                 size_t fr = generation_unusable_fragmentation (generation_of (gen_number));
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
