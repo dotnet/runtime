@@ -190,14 +190,6 @@ namespace System.Net.WebSockets
 
         public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
-            {
-                throw new ArgumentException(SR.Format(
-                    SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
-                    nameof(messageType));
-            }
-
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             return SendPrivateAsync(buffer, messageType, endOfMessage, cancellationToken).AsTask();
