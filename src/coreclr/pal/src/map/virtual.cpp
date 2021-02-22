@@ -1764,9 +1764,6 @@ ExitVirtualProtect:
 bool
 PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
 {
-#ifdef DBI_COMPONENT_MONO
-    return false;
-#else
     // Use a thread local to track per thread JIT Write enable state
     // Initialize threads to start with MAP_JIT pages readable and executable (R-X) by default.
     thread_local bool enabled = (pthread_jit_write_protect_np(1), false);
@@ -1777,7 +1774,6 @@ PAL_JITWriteEnableHolder::JITWriteEnable(bool writeEnable)
         enabled = writeEnable;
     }
     return result;
-#endif
 }
 #endif
 
