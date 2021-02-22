@@ -7,6 +7,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GithHub_47236.cs" />
+    <Compile Include="GitHub_47236.cs" />
   </ItemGroup>
 </Project>
