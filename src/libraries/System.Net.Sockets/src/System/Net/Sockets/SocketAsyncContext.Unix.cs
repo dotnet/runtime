@@ -789,15 +789,10 @@ namespace System.Net.Sockets
 
                 if (!context.IsRegistered)
                 {
-                    // TryRegister throws for fatal errors.
-                    // When it returns false the registration failed because the peer has closed.
-                    // We'll retry the operation, and abort when it fails to complete.
-                    if (!context.TryRegister())
+                    if (!context.TryRegister(out Interop.Error error))
                     {
-                        if (!operation.TryComplete(context))
-                        {
-                            operation.DoAbort();
-                        }
+                        HandleFailedRegistration(context, operation, error);
+
                         Trace(context, $"Leave, not registered");
                         return false;
                     }
@@ -876,6 +871,30 @@ namespace System.Net.Sockets
                     {
                         Trace(context, $"Leave, retry succeeded");
                         return false;
+                    }
+                }
+
+                static void HandleFailedRegistration(SocketAsyncContext context, TOperation operation, Interop.Error error)
+                {
+                    Debug.Assert(error != Interop.Error.SUCCESS);
+
+                    // macOS: kevent returns EPIPE when adding pipe fd for which the other end is closed.
+                    if (error == Interop.Error.EPIPE)
+                    {
+                        // Retry the operation.
+                        if (operation.TryComplete(context))
+                        {
+                            return;
+                        }
+                    }
+
+                    if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+                    {
+                        throw new OutOfMemoryException();
+                    }
+                    else
+                    {
+                        throw new InternalException(error);
                     }
                 }
             }
@@ -1235,7 +1254,7 @@ namespace System.Net.Sockets
             get => _socket.PreferInlineCompletions;
         }
 
-        private bool TryRegister()
+        private bool TryRegister(out Interop.Error error)
         {
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
@@ -1247,7 +1266,7 @@ namespace System.Net.Sockets
                     {
                         _socket.DangerousAddRef(ref addedRef);
                         IntPtr handle = _socket.DangerousGetHandle();
-                        if (SocketAsyncEngine.TryRegisterSocket(handle, this, out SocketAsyncEngine? engine))
+                        if (SocketAsyncEngine.TryRegisterSocket(handle, this, out SocketAsyncEngine? engine, out error))
                         {
                             Volatile.Write(ref _asyncEngine, engine);
 
@@ -1268,6 +1287,7 @@ namespace System.Net.Sockets
                         }
                     }
                 }
+                error = Interop.Error.SUCCESS;
                 return true;
             }
         }
