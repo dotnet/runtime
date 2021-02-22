@@ -44,21 +44,11 @@ namespace System.Net.WebSockets
             private bool _inflateFinished = true;
 
             /// <summary>
-            /// If we have a decoder we cannot use the buffer provided from clients because
+            /// If we have compression we cannot use the buffer provided from clients because
             /// we cannot guarantee that the decoding can happen in place. This buffer is rent'ed
             /// and returned when consumed.
             /// </summary>
-            private byte[]? _decoderInputBuffer;
-
-            /// <summary>
-            /// The next index that needs to be consumed from the decoder's input buffer.
-            /// </summary>
-            private int _decoderInputPosition;
-
-            /// <summary>
-            /// The number of usable bytes in the decoder's buffer.
-            /// </summary>
-            private int _decoderInputCount;
+            private Memory<byte> _inflateBuffer;
 
             /// <summary>
             /// The last header received in a ReceiveAsync. If ReceiveAsync got a header but then
@@ -114,12 +104,7 @@ namespace System.Net.WebSockets
             public void Dispose()
             {
                 _inflater?.Dispose();
-
-                if (_decoderInputBuffer is not null)
-                {
-                    ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
-                    _decoderInputBuffer = null;
-                }
+                ReturnInflateBuffer();
             }
 
             public string? GetHeaderError() => _headerError;
@@ -189,7 +174,7 @@ namespace System.Net.WebSockets
                 return new ControlMessage(_lastHeader.Opcode, payload);
             }
 
-            public async ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            public async ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> output, CancellationToken cancellationToken)
             {
                 // When there's nothing left over to receive, start a new
                 if (_lastHeader.PayloadLength == 0)
@@ -197,15 +182,14 @@ namespace System.Net.WebSockets
                     if (!_inflateFinished)
                     {
                         Debug.Assert(_inflater is not null);
-                        _inflateFinished = _inflater.Finish(buffer.Span, out int written);
+                        _inflateFinished = _inflater.Finish(output.Span, out int written);
 
                         return Result(written);
                     }
 
                     _readBuffer.DiscardConsumed();
-                    bool success = await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false);
 
-                    if (!success)
+                    if (!await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false))
                     {
                         return Result(_headerError is not null ? ReceiveResultType.HeaderError : ReceiveResultType.ConnectionClose);
                     }
@@ -217,116 +201,88 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                if (buffer.IsEmpty)
+                if (output.IsEmpty)
                 {
                     return Result(count: 0);
                 }
-                // The number of bytes that are copied onto the provided buffer
-                int resultByteCount = 0;
+                // The number of bytes that are written to the output buffer
+                int outputByteCount = 0;
 
                 if (_readBuffer.AvailableLength > 0)
                 {
-                    int consumed, written;
-                    int available = (int)Math.Min(_readBuffer.AvailableLength, _lastHeader.PayloadLength);
-
-                    if (_lastHeader.Compressed)
+                    if (!ConsumeReadBuffer(output.Span, out int written))
                     {
-                        Debug.Assert(_inflater is not null);
-                        _inflater.Inflate(input: _readBuffer.AvailableSpan.Slice(0, available),
-                                          output: buffer.Span, out consumed, out written);
+                        return Result(written);
                     }
-                    else
-                    {
-                        written = Math.Min(available, buffer.Length);
-                        consumed = written;
-                        _readBuffer.AvailableSpan.Slice(0, written).CopyTo(buffer.Span);
-                    }
-
-                    _readBuffer.Consume(consumed);
-                    _lastHeader.PayloadLength -= consumed;
-
-                    resultByteCount += written;
-
-                    if (_lastHeader.PayloadLength == 0 || buffer.Length == written)
-                    {
-                        // We have either received everything or the buffer is full.
-                        if (_inflater is not null && _lastHeader.PayloadLength == 0 && _lastHeader.Fin)
-                        {
-                            _inflateFinished = _inflater.Finish(buffer.Span.Slice(written), out written);
-                            resultByteCount += written;
-                        }
-
-                        return Result(resultByteCount);
-                    }
-
-                    buffer = buffer[written..];
+                    outputByteCount += written;
+                    output = output[written..];
                 }
 
-                // At this point we should have consumed everything from the buffer
+                // At this point we should have consumed everything from the read buffer
                 // and should start issuing reads on the stream.
                 Debug.Assert(_readBuffer.AvailableLength == 0 && _lastHeader.PayloadLength > 0);
 
-                if (_inflater is null)
-                {
-                    if (buffer.Length > _lastHeader.PayloadLength)
-                    {
-                        // We don't want to receive more than we need
-                        buffer = buffer.Slice(0, (int)_lastHeader.PayloadLength);
-                    }
+                int receivedByteCount = _lastHeader.Compressed ?
+                    await ReceiveCompressedAsync(output, cancellationToken).ConfigureAwait(false) :
+                    await ReceiveUncompressedAsync(output, cancellationToken).ConfigureAwait(false);
 
-                    int bytesRead = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-                    if (bytesRead <= 0)
-                    {
-                        return Result(ReceiveResultType.ConnectionClose);
-                    }
-                    resultByteCount += bytesRead;
+                if (receivedByteCount == 0)
+                {
+                    return Result(ReceiveResultType.ConnectionClose);
+                }
+
+                return Result(outputByteCount + receivedByteCount);
+            }
+
+            private async ValueTask<int> ReceiveUncompressedAsync(Memory<byte> output, CancellationToken cancellationToken)
+            {
+                Debug.Assert(!_lastHeader.Compressed);
+
+                if (output.Length > _lastHeader.PayloadLength)
+                {
+                    // We don't want to receive more than we need
+                    output = output.Slice(0, (int)_lastHeader.PayloadLength);
+                }
+
+                int bytesRead = await _stream.ReadAsync(output, cancellationToken).ConfigureAwait(false);
+                if (bytesRead > 0)
+                {
                     _lastHeader.PayloadLength -= bytesRead;
-                    ApplyMask(buffer.Span.Slice(0, bytesRead));
+                    ApplyMask(output.Span.Slice(0, bytesRead));
                 }
-                else
+
+                return bytesRead;
+            }
+
+            private async ValueTask<int> ReceiveCompressedAsync(Memory<byte> output, CancellationToken cancellationToken)
+            {
+                Debug.Assert(_lastHeader.Compressed);
+                Debug.Assert(_inflater is not null);
+
+                if (_inflateBuffer.IsEmpty)
                 {
-                    if (_decoderInputBuffer is null)
+                    if (!await LoadInflateBufferAsync(cancellationToken).ConfigureAwait(false))
                     {
-                        // Rent a buffer but restrict it's max size to 1MB
-                        int decoderBufferLength = (int)Math.Min(_lastHeader.PayloadLength, 1_000_000);
-
-                        _decoderInputBuffer = ArrayPool<byte>.Shared.Rent(decoderBufferLength);
-                        _decoderInputCount = await _stream.ReadAsync(_decoderInputBuffer.AsMemory(0, decoderBufferLength), cancellationToken).ConfigureAwait(false);
-                        _decoderInputPosition = 0;
-
-                        if (_decoderInputCount <= 0)
-                        {
-                            ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
-                            _decoderInputBuffer = null;
-
-                            return Result(ReceiveResultType.ConnectionClose);
-                        }
-
-                        ApplyMask(_decoderInputBuffer.AsSpan(0, _decoderInputCount));
-                    }
-
-                    _inflater.Inflate(input: _decoderInputBuffer.AsSpan(_decoderInputPosition, _decoderInputCount),
-                                      output: buffer.Span, out int consumed, out int written);
-
-                    resultByteCount += written;
-                    _decoderInputPosition += consumed;
-                    _decoderInputCount -= consumed;
-                    _lastHeader.PayloadLength -= consumed;
-
-                    if (_decoderInputCount == 0)
-                    {
-                        ArrayPool<byte>.Shared.Return(_decoderInputBuffer);
-                        _decoderInputBuffer = null;
-
-                        if (_lastHeader.PayloadLength == 0 && _lastHeader.Fin)
-                        {
-                            _inflateFinished = _inflater.Finish(buffer.Span[written..], out written);
-                            resultByteCount += written;
-                        }
+                        return 0;
                     }
                 }
 
-                return Result(resultByteCount);
+                _inflater.Inflate(_inflateBuffer.Span, output.Span, out int consumed, out int outputByteCount);
+                _lastHeader.PayloadLength -= consumed;
+                _inflateBuffer = _inflateBuffer.Slice(consumed);
+
+                if (_inflateBuffer.IsEmpty)
+                {
+                    ReturnInflateBuffer();
+
+                    if (_lastHeader.PayloadLength == 0 && _lastHeader.Fin)
+                    {
+                        _inflateFinished = _inflater.Finish(output.Span.Slice(outputByteCount), out var written);
+                        outputByteCount += written;
+                    }
+                }
+
+                return outputByteCount;
             }
 
             private async ValueTask<bool> ReceiveHeaderAsync(CancellationToken cancellationToken)
@@ -403,6 +359,86 @@ namespace System.Net.WebSockets
                 if (_isServer)
                 {
                     _receivedMaskOffset = ManagedWebSocket.ApplyMask(input, _lastHeader.Mask, _receivedMaskOffset);
+                }
+            }
+
+            /// <summary>
+            /// Tries to consume anything remaining in _readBuffer for the current message.s
+            /// </summary>
+            /// <returns>
+            /// True when the read buffer is consumed and there's more to be processed,
+            /// and the output buffer is not full.
+            /// </returns>
+            private bool ConsumeReadBuffer(Span<byte> output, out int outputByteCount)
+            {
+                Debug.Assert(_readBuffer.AvailableLength > 0);
+
+                int consumed, written;
+                int available = (int)Math.Min(_readBuffer.AvailableLength, _lastHeader.PayloadLength);
+
+                if (_lastHeader.Compressed)
+                {
+                    Debug.Assert(_inflater is not null);
+                    _inflater.Inflate(input: _readBuffer.AvailableSpan.Slice(0, available),
+                                      output, out consumed, out written);
+                }
+                else
+                {
+                    // We can copy directly to output
+                    written = Math.Min(available, output.Length);
+                    consumed = written;
+                    _readBuffer.AvailableSpan.Slice(0, written).CopyTo(output);
+                }
+
+                _readBuffer.Consume(consumed);
+                _lastHeader.PayloadLength -= consumed;
+
+                outputByteCount = written;
+
+                if (_lastHeader.PayloadLength == 0 || output.Length == written)
+                {
+                    // We have either consumed everything or the output is full.
+                    // In this case we try to finish inflating if needed and return.
+                    if (_inflater is not null && _lastHeader.Compressed && _lastHeader.PayloadLength == 0 && _lastHeader.Fin)
+                    {
+                        _inflateFinished = _inflater.Finish(output.Slice(written), out written);
+                        outputByteCount += written;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            private async ValueTask<bool> LoadInflateBufferAsync(CancellationToken cancellationToken)
+            {
+                // Rent a buffer but restrict it's max size to 1MB
+                int decoderBufferLength = (int)Math.Min(_lastHeader.PayloadLength, 1_000_000);
+
+                _inflateBuffer = ArrayPool<byte>.Shared.Rent(decoderBufferLength);
+                int byteCount = await _stream.ReadAsync(_inflateBuffer, cancellationToken).ConfigureAwait(false);
+
+                if (byteCount <= 0)
+                {
+                    ReturnInflateBuffer();
+                    return false;
+                }
+
+                _inflateBuffer = _inflateBuffer.Slice(0, byteCount);
+                ApplyMask(_inflateBuffer.Span);
+
+                return true;
+            }
+
+            private void ReturnInflateBuffer()
+            {
+                if (MemoryMarshal.TryGetArray(_inflateBuffer, out ArraySegment<byte> arraySegment)
+                    && arraySegment.Array!.Length > 0)
+                {
+                    Debug.Assert(arraySegment.Array is not null);
+                    ArrayPool<byte>.Shared.Return(arraySegment.Array);
+                    _inflateBuffer = null;
                 }
             }
 
