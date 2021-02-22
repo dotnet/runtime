@@ -4,7 +4,6 @@
 using System;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {

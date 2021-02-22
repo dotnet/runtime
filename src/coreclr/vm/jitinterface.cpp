@@ -9230,10 +9230,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle nullableComparer = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
-        if (nullableInst[0].CanCastTo(nullableComparer))
+        TypeHandle iequatable = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
+        if (nullableInst[0].CanCastTo(iequatable))
         {
-            return CORINFO_CLASS_HANDLE(nullableComparer.GetMethodTable());
+            TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_EQUALITYCOMPARER)).Instantiate(nullableInst);
+            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
         }
     }
 

@@ -120,8 +120,10 @@
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
-    <Compile Include="Interop\Unix\Interop.Termios.cs" />
-    <Compile Include="Interop\Unix\Interop.Serial.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"
+             Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Termios.cs"/>
+    <Compile Include="$(CommonPath)Interop\Unix\System.IO.Ports.Native\Interop.Serial.cs"
+             Link="Common\Interop\Unix\System.IO.Ports.Native\Interop.Serial.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"

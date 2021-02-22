@@ -1340,9 +1340,7 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
-                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
-                // side effect free leaf nodes that like constant can be evaluated at any point.
-                if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
+                if (!prevArgTabEntry->GetNode()->IsInvariant())
                 {
                     prevArgTabEntry->needTmp = true;
                     needsTemps               = true;

@@ -2,6 +2,13 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_definitions(-DFEATURE_NO_HOST)
 
+# Enable ENC subset for hot reload on Linux/MacOS x64, exclude arm & arm64
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+        add_compile_definitions($<$<AND:$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:EnC_SUPPORTED>)
+    endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+endif(NOT CLR_CMAKE_TARGET_WIN32)
+
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})

@@ -4841,11 +4841,6 @@ call:
 			ip += 4;;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
-			LOCAL_VAR (ip [1], gpointer) = *LOCAL_VAR (ip [2], gpointer*);
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET) {
 			LOCAL_VAR (ip [1], gpointer) = LOCAL_VAR (ip [2], guint8*) + LOCAL_VAR (ip [3], mono_u);
 			ip += 4;
@@ -7169,7 +7164,13 @@ interp_add_imethod (gpointer method)
 static int
 imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 {
-	return (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
+	long diff = (*(InterpMethod**)m2)->opcounts > (*(InterpMethod**)m1)->opcounts;
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+	else
+		return 0;
 }
 
 static void
