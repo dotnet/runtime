@@ -17,14 +17,14 @@ namespace System.IO
             switch (isAsync)
             {
                 case true:
-                    return new WindowsFileStreamStrategy(fileStream, handle, access, bufferSize, true);
+                    return new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, true);
                 case false:
-                    return new WindowsFileStreamStrategy(fileStream, handle, access, bufferSize, false);
+                    return new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, false);
             }
         }
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new WindowsFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
+            => new LegacyFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
             => CreateFileOpenHandle(path, mode, access, share, options);

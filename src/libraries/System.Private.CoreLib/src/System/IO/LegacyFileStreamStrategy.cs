@@ -9,30 +9,30 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    // This type exist so we can avoid code duplication between UnixFileStreamStrategy and WindowsFileStreamStrategy.
+    // This type exist so we can avoid code duplication between LegacyFileStreamStrategy and LegacyFileStreamStrategy.
     // As of now, it implements the Template pattern and defines multiple virtual methods, but in the future when we
-    // separate WindowsFileStreamStrategy into two separate strategies (Sync and Async),
+    // separate LegacyFileStreamStrategy into two separate strategies (Sync and Async),
     // it should be just defining fields present in all implementations (and the non-virtual methods that use them)
-    internal abstract class FileStreamStrategyBase : FileStreamStrategy
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
-        protected byte[]? _buffer;
-        protected readonly int _bufferLength;
-        protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
+        private byte[]? _buffer;
+        private readonly int _bufferLength;
+        private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        protected readonly FileAccess _access;
+        private readonly FileAccess _access;
 
         /// <summary>The path to the opened file.</summary>
-        protected readonly string? _path;
+        private readonly string? _path;
 
         /// <summary>The next available byte to be read from the _buffer.</summary>
-        protected int _readPos;
+        private int _readPos;
 
         /// <summary>The number of valid bytes in _buffer.</summary>
-        protected int _readLength;
+        private int _readLength;
 
         /// <summary>The next location in which a write should occur to the buffer.</summary>
-        protected int _writePos;
+        private int _writePos;
 
         /// <summary>
         /// Whether asynchronous read/write/flush operations should be performed using async I/O.
@@ -49,22 +49,22 @@ namespace System.IO
         /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
         /// a semaphore to coordinate both sync and async operations.
         /// </summary>
-        protected readonly bool _useAsyncIO;
+        private readonly bool _useAsyncIO;
 
         /// <summary>cached task for read ops that complete synchronously</summary>
-        protected Task<int>? _lastSynchronouslyCompletedTask;
+        private Task<int>? _lastSynchronouslyCompletedTask;
 
         /// <summary>
         /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
         /// and should only ever be out of sync if another stream with access to this same file manipulates it, at which
         /// point we attempt to error out.
         /// </summary>
-        protected long _filePosition;
+        private long _filePosition;
 
         /// <summary>Whether the file stream's handle has been exposed.</summary>
-        protected bool _exposedHandle;
+        private bool _exposedHandle;
 
-        protected FileStreamStrategyBase(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
+        internal LegacyFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -81,7 +81,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        protected FileStreamStrategyBase(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
+        internal LegacyFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -108,38 +108,12 @@ namespace System.IO
             }
         }
 
-        ~FileStreamStrategyBase()
+        ~LegacyFileStreamStrategy()
         {
             // it looks like having this finalizer is mandatory,
             // as we can not guarantee that the Strategy won't be null in FileStream finalizer
             Dispose(false);
         }
-
-        protected abstract void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO);
-
-        protected abstract void Init(FileMode mode, FileShare share, string originalPath, FileOptions options);
-
-        protected abstract void FlushWriteBuffer(bool calledFromFinalizer = false);
-
-        protected abstract void FlushOSBuffer();
-
-        protected virtual void OnBufferAllocated()
-        {
-        }
-
-        protected abstract int FillReadBufferForReadByte();
-
-        protected abstract void FlushWriteBufferForWriteByte();
-
-        protected abstract int ReadSpan(Span<byte> destination);
-
-        protected abstract void WriteSpan(ReadOnlySpan<byte> source);
-
-        protected abstract Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult);
-
-        protected abstract ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken);
-
-        protected abstract long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false);
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
@@ -337,7 +311,7 @@ namespace System.IO
         /// This will fail if someone else moved the UnixFileStream's handle or if
         /// our position updating code is incorrect.
         /// </summary>
-        protected void VerifyOSHandlePosition()
+        private void VerifyOSHandlePosition()
         {
             bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
 #if DEBUG
@@ -364,7 +338,7 @@ namespace System.IO
 
         /// <summary>Verifies that state relating to the read/write buffer is consistent.</summary>
         [Conditional("DEBUG")]
-        protected void AssertBufferInvariants()
+        private void AssertBufferInvariants()
         {
             // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
             Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
@@ -377,7 +351,7 @@ namespace System.IO
         }
 
         /// <summary>Validates that we're ready to read from the stream.</summary>
-        protected void PrepareForReading()
+        private void PrepareForReading()
         {
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -412,7 +386,7 @@ namespace System.IO
 
         internal override bool IsClosed => _fileHandle.IsClosed;
 
-        protected static bool IsIoRelatedException(Exception e) =>
+        private static bool IsIoRelatedException(Exception e) =>
             // These all derive from IOException
             //     DirectoryNotFoundException
             //     DriveNotFoundException
@@ -433,7 +407,7 @@ namespace System.IO
         /// If the array hasn't been allocated, this will lazily allocate it.
         /// </summary>
         /// <returns>The buffer.</returns>
-        protected byte[] GetBuffer()
+        private byte[] GetBuffer()
         {
             Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
             if (_buffer == null)
@@ -451,7 +425,7 @@ namespace System.IO
         /// reading from the stream, the data is dumped and our position in the underlying file
         /// is rewound as necessary.  This does not flush the OS buffer.
         /// </summary>
-        protected void FlushInternalBuffer()
+        private void FlushInternalBuffer()
         {
             AssertBufferInvariants();
             if (_writePos > 0)
@@ -465,7 +439,7 @@ namespace System.IO
         }
 
         /// <summary>Dumps any read data in the buffer and rewinds our position in the stream, accordingly, as necessary.</summary>
-        protected void FlushReadBuffer()
+        private void FlushReadBuffer()
         {
             // Reading is done by blocks from the file, but someone could read
             // 1 byte from the buffer then write.  At that point, the OS's file
@@ -528,7 +502,7 @@ namespace System.IO
         /// Validates that we're ready to write to the stream,
         /// including flushing a read buffer if necessary.
         /// </summary>
-        protected void PrepareForWriting()
+        private void PrepareForWriting()
         {
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
@@ -543,6 +517,8 @@ namespace System.IO
                 Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
             }
         }
+
+        partial void OnBufferAllocated();
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed partial class UnixFileStreamStrategy : FileStreamStrategyBase
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         /// <summary>File mode.</summary>
         private FileMode _mode;
@@ -34,13 +34,12 @@ namespace System.IO
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
-        internal UnixFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            : base(fileStream, handle, access, bufferSize, isAsync)
-        {
-        }
-
-        internal UnixFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            : base(fileStream, path, mode, access, share, bufferSize, options)
+        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
+        /// <param name="mode">How the file should be opened.</param>
+        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
+        /// <param name="originalPath">The original path specified for the FileStream.</param>
+        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -50,15 +49,7 @@ namespace System.IO
 
             if (_useAsyncIO)
                 _asyncState = new AsyncState();
-        }
 
-        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
-        /// <param name="mode">How the file should be opened.</param>
-        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
-        /// <param name="originalPath">The original path specified for the FileStream.</param>
-        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
-        protected override void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
-        {
             _fileHandle.IsAsync = _useAsyncIO;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
@@ -115,7 +106,7 @@ namespace System.IO
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
-        protected override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
             if (useAsyncIO)
                 _asyncState = new AsyncState();
@@ -233,7 +224,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(static s => ((UnixFileStreamStrategy)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((LegacyFileStreamStrategy)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -241,7 +232,7 @@ namespace System.IO
         }
 
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
-        protected override void FlushOSBuffer()
+        private void FlushOSBuffer()
         {
             if (Interop.Sys.FSync(_fileHandle) < 0)
             {
@@ -260,7 +251,7 @@ namespace System.IO
             }
         }
 
-        protected override void FlushWriteBufferForWriteByte()
+        private void FlushWriteBufferForWriteByte()
         {
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
@@ -270,7 +261,7 @@ namespace System.IO
         }
 
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
-        protected override void FlushWriteBuffer(bool calledFromFinalizer = false)
+        private void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             AssertBufferInvariants();
             if (_writePos > 0)
@@ -303,7 +294,7 @@ namespace System.IO
         }
 
         /// <summary>Reads a block of bytes from the stream and writes the data in a given buffer.</summary>
-        protected override int ReadSpan(Span<byte> destination)
+        private int ReadSpan(Span<byte> destination)
         {
             PrepareForReading();
 
@@ -397,7 +388,7 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <param name="synchronousResult">If the operation completes synchronously, the number of bytes read.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        protected override Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
+        private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
             Debug.Assert(_asyncState != null);
@@ -458,7 +449,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (UnixFileStreamStrategy)s!;
+                var thisRef = (LegacyFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -471,7 +462,7 @@ namespace System.IO
         }
 
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
-        protected override int FillReadBufferForReadByte()
+        private int FillReadBufferForReadByte()
         {
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44542
             _asyncState?.Wait();
@@ -482,7 +473,7 @@ namespace System.IO
 
         /// <summary>Writes a block of bytes to the file stream.</summary>
         /// <param name="source">The buffer containing data to write to the stream.</param>
-        protected override void WriteSpan(ReadOnlySpan<byte> source)
+        private void WriteSpan(ReadOnlySpan<byte> source)
         {
             PrepareForWriting();
 
@@ -559,7 +550,7 @@ namespace System.IO
         /// <param name="source">The buffer to write data from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_useAsyncIO);
             Debug.Assert(_asyncState != null);
@@ -619,7 +610,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (UnixFileStreamStrategy)s!;
+                var thisRef = (LegacyFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -697,7 +688,7 @@ namespace System.IO
         /// </param>
         /// <param name="closeInvalidHandle">not used in Unix implementation</param>
         /// <returns>The new position in the stream.</returns>
-        protected override long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
+        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);

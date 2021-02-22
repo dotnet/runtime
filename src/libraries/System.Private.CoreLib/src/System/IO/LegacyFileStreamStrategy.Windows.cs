@@ -39,7 +39,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    internal sealed partial class WindowsFileStreamStrategy : FileStreamStrategyBase
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.
@@ -51,17 +51,7 @@ namespace System.IO
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        internal WindowsFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            : base(fileStream, handle, access, bufferSize, isAsync)
-        {
-        }
-
-        internal WindowsFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            : base(fileStream, path, mode, access, share, bufferSize, options)
-        {
-        }
-
-        protected override void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             if (!PathInternal.IsExtended(originalPath))
             {
@@ -128,7 +118,7 @@ namespace System.IO
             }
         }
 
-        protected override void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
 #if DEBUG
             bool hadBinding = handle.ThreadPoolBinding != null;
@@ -285,7 +275,7 @@ namespace System.IO
             }
         }
 
-        protected override void FlushOSBuffer()
+        private void FlushOSBuffer()
         {
             if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
             {
@@ -313,12 +303,12 @@ namespace System.IO
             return flushTask;
         }
 
-        protected override void FlushWriteBufferForWriteByte() => FlushWriteBuffer();
+        private void FlushWriteBufferForWriteByte() => FlushWriteBuffer();
 
         // Writes are buffered.  Anytime the buffer fills up
         // (_writePos + delta > _bufferSize) or the buffer switches to reading
         // and there is left over data (_writePos > 0), this function must be called.
-        protected override void FlushWriteBuffer(bool calledFromFinalizer = false)
+        private void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             if (_writePos == 0) return;
             Debug.Assert(_readPos == 0 && _readLength == 0, "FileStream: Read buffer must be empty in FlushWrite!");
@@ -406,7 +396,7 @@ namespace System.IO
         private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource) =>
             Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
-        protected override int ReadSpan(Span<byte> destination)
+        private int ReadSpan(Span<byte> destination)
         {
             Debug.Assert(!_useAsyncIO, "Must only be used when in synchronous mode");
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength),
@@ -479,7 +469,7 @@ namespace System.IO
         }
 
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
-        protected override int FillReadBufferForReadByte() =>
+        private int FillReadBufferForReadByte() =>
             _useAsyncIO ?
                 ReadNativeAsync(new Memory<byte>(_buffer), 0, CancellationToken.None).GetAwaiter().GetResult() :
                 ReadNative(_buffer);
@@ -601,7 +591,7 @@ namespace System.IO
         // This doesn't do argument checking.  Necessary for SetLength, which must
         // set the file pointer beyond the end of the file. This will update the
         // internal position
-        protected override long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
+        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
@@ -622,7 +612,7 @@ namespace System.IO
             return ret;
         }
 
-        protected override void OnBufferAllocated()
+        partial void OnBufferAllocated()
         {
             Debug.Assert(_buffer != null);
             Debug.Assert(_preallocatedOverlapped == null);
@@ -631,7 +621,7 @@ namespace System.IO
                 _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
         }
 
-        protected override void WriteSpan(ReadOnlySpan<byte> source)
+        private void WriteSpan(ReadOnlySpan<byte> source)
         {
             Debug.Assert(!_useAsyncIO, "Must only be used when in synchronous mode");
 
@@ -729,7 +719,7 @@ namespace System.IO
             return;
         }
 
-        protected override Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
+        private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
             if (!CanRead) throw Error.GetReadNotSupported();
@@ -942,7 +932,7 @@ namespace System.IO
             return completionSource.Task;
         }
 
-        protected override ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_useAsyncIO);
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
@@ -1466,7 +1456,7 @@ namespace System.IO
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
             /// <summary>The FileStream that owns this instance.</summary>
-            internal readonly WindowsFileStreamStrategy _fileStream;
+            internal readonly LegacyFileStreamStrategy _fileStream;
 
             /// <summary>Tracked position representing the next location from which to read.</summary>
             internal long _position;
@@ -1487,7 +1477,7 @@ namespace System.IO
             internal object CancellationLock => this;
 
             /// <summary>Initialize the awaitable.</summary>
-            internal AsyncCopyToAwaitable(WindowsFileStreamStrategy fileStream)
+            internal AsyncCopyToAwaitable(LegacyFileStreamStrategy fileStream)
             {
                 _fileStream = fileStream;
             }
