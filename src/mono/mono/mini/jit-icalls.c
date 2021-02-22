@@ -1369,7 +1369,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
-		*this_arg = mono_value_box_checked (mono_domain_get (), klass, mp, error);
+		*this_arg = mono_value_box_checked (klass, mp, error);
 	} else if (m_class_is_valuetype (klass)) {
 		if (is_iface) {
 			/*

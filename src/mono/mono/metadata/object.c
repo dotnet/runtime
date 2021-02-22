@@ -4628,7 +4628,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 						 * boxed object in the arg array with the copy.
 						 */
 						MonoObject *orig = mono_array_get_internal (params, MonoObject*, i);
-						MonoObject *copy = mono_value_box_checked (mono_domain_get (), orig->vtable->klass, mono_object_unbox_internal (orig), error);
+						MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
 						return_val_if_nok (error, NULL);
 						mono_array_setref_internal (params, i, copy);
 					}
@@ -4851,7 +4851,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			if (!params) {
 				goto_if_nok (error, exit_null);
 			} else {
-				res = mono_value_box_checked (mono_domain_get (), m_class_get_cast_class (method->klass), pa [0], error);
+				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
 				goto exit;
 			}
 		}
@@ -4866,7 +4866,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			else
 				o = obj;
 		} else if (m_class_is_valuetype (method->klass)) {
-			MonoObjectHandle obj_h = mono_value_box_handle (mono_domain_get (), method->klass, obj, error);
+			MonoObjectHandle obj_h = mono_value_box_handle (method->klass, obj, error);
 			goto_if_nok (error, exit_null);
 			obj = MONO_HANDLE_RAW (obj_h);
 		}
@@ -4888,7 +4888,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				goto_if_nok (error, exit_null);
 				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
 
-				MonoObjectHandle boxed_h = mono_value_box_handle (mono_domain_get (), m_class_get_cast_class (method->klass), obj, error);
+				MonoObjectHandle boxed_h = mono_value_box_handle (m_class_get_cast_class (method->klass), obj, error);
 				goto_if_nok (error, exit_null);
 				mono_nullable_init ((guint8 *)mono_object_unbox_internal (nullable), MONO_HANDLE_RAW (boxed_h), method->klass);
 				obj = mono_object_unbox_internal (nullable);
@@ -5908,8 +5908,9 @@ mono_string_empty (MonoDomain *domain)
 }
 
 MonoStringHandle
-mono_string_empty_handle (MonoDomain *domain)
+mono_string_empty_handle (void)
 {
+	MonoDomain *domain = mono_get_root_domain ();
 	return MONO_HANDLE_NEW (MonoString, mono_string_empty_internal (domain));
 }
 
@@ -6292,7 +6293,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	MonoObject *result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_value_box_checked (domain, klass, value, error);
+	result = mono_value_box_checked (klass, value, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -6300,7 +6301,6 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 
 /**
  * mono_value_box_handle:
- * \param domain the domain of the new object
  * \param class the class of the value
  * \param value a pointer to the unboxed data
  * \param error set on error
@@ -6308,7 +6308,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
  * returns NULL and sets \p error.
  */
 MonoObjectHandle
-mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 {
 	// FIXMEcoop gpointer value needs more attention
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -6375,7 +6375,6 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 
 /**
  * mono_value_box_checked:
- * \param domain the domain of the new object
  * \param class the class of the value
  * \param value a pointer to the unboxed data
  * \param error set on error
@@ -6383,10 +6382,10 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
  * returns NULL and sets \p error.
  */
 MonoObject *
-mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+mono_value_box_checked (MonoClass *klass, gpointer value, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_OBJ (mono_value_box_handle (domain, klass, value,  error));
+	HANDLE_FUNCTION_RETURN_OBJ (mono_value_box_handle (klass, value,  error));
 }
 
 void

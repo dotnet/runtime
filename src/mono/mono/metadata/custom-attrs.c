@@ -622,7 +622,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 		if (!is_ok (error))
 			return NULL;
 
-		MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (t), val, error);
+		MonoObject *boxed = mono_value_box_checked (mono_class_from_mono_type_internal (t), val, error);
 		g_free (val);
 		return boxed;
 	}

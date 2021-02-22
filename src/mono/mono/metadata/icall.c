@@ -201,7 +201,7 @@ ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoErr
 	if (m_class_is_valuetype (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (MONO_HANDLE_RAW (array), element_size, (gsize)pos);
-		return mono_value_box_handle (MONO_HANDLE_DOMAIN (array), element_class, element_address, error);
+		return mono_value_box_handle (element_class, element_address, error);
 	}
 	MonoObjectHandle result = mono_new_null ();
 	mono_handle_array_getref (result, array, pos);
@@ -2047,14 +2047,12 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info, MonoError *
 MonoArrayHandle
 ves_icall_System_Reflection_MonoMethodInfo_get_parameter_info (MonoMethod *method, MonoReflectionMethodHandle member, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get (); 
-
 	MonoReflectionTypeHandle reftype = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 	MONO_HANDLE_GET (reftype, member, reftype);
 	MonoClass *klass = NULL;
 	if (!MONO_HANDLE_IS_NULL (reftype))
 		klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (reftype, type));
-	return mono_param_get_objects_internal (domain, method, klass, error);
+	return mono_param_get_objects_internal (method, klass, error);
 }
 
 MonoReflectionMarshalAsAttributeHandle
@@ -2235,9 +2233,9 @@ typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
 		result = MONO_HANDLE_NEW (MonoObject, *objp);
 	} else if (mono_type_is_pointer (tref->type)) {
 		/* Boxed as UIntPtr */
-		result = mono_value_box_handle (mono_domain_get (), mono_get_uintptr_class (), tref->value, error);
+		result = mono_value_box_handle (mono_get_uintptr_class (), tref->value, error);
 	} else {
-		result = mono_value_box_handle (mono_domain_get (), tref->klass, tref->value, error);
+		result = mono_value_box_handle (tref->klass, tref->value, error);
 	}
 	HANDLE_FUNCTION_RETURN_REF (MonoObject, result);
 }
@@ -2254,7 +2252,7 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
 		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + field->offset - sizeof (MonoObject)));
 	} else {
-		return mono_value_box_handle (mono_domain_get (), klass, (guint8*)obj->value + field->offset - sizeof (MonoObject), error);
+		return mono_value_box_handle (klass, (guint8*)obj->value + field->offset - sizeof (MonoObject), error);
 	}
 }
 
