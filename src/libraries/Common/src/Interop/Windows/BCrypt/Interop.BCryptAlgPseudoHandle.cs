@@ -19,5 +19,7 @@ internal partial class Interop
             BCRYPT_SHA512_ALG_HANDLE = 0x00000061,
             BCRYPT_PBKDF2_ALG_HANDLE = 0x00000331,
         }
+
+        internal static bool PseudoHandlesSupported { get; } = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
     }
 }
