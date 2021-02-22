@@ -144,6 +144,39 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
+        [Fact]
+        public async Task Http2GetAsyncResponseHeadersReadOption_RemoteServer_TrailingHeaders_Available()
+        {
+            Uri address = new Uri("https://localhost:5001/trailers.ashx");
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(address, HttpCompletionOption.ResponseHeadersRead);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                Stream stream = await response.Content.ReadAsStreamAsync(TestAsync);
+                byte[] data = new byte[100];
+                await stream.ReadAsync(data, 0, data.Length);
+
+                // Read data until EOF is reached
+                while (stream.Read(data, 0, data.Length) != 0) ;
+
+                var trailingHeaders = GetTrailingHeaders(response);
+
+                // "EmptyHeader" is missing with remote server, aspnet probably ignores it.
+                Assert.Equal(3, trailingHeaders.Count());
+                Assert.Contains("amazingtrailer", trailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", trailingHeaders.GetValues("Hello"));
+
+                // Read when already zero. Trailers shouldn't be changed.
+                stream.Read(data, 0, data.Length);
+
+                trailingHeaders = GetTrailingHeaders(response);
+                Assert.Equal(3, trailingHeaders.Count());
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task Http2GetAsync_TrailerHeaders_TrailingHeaderNoBody()
         {
