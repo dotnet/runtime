@@ -2845,7 +2845,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
             if (firstNode->gtFlags & strictEffects & GTF_PERSISTENT_SIDE_EFFECTS)
             {
                 // We have to be conservative - can swap iff op2 is constant.
-                if (!secondNode->OperIsConst())
+                if (!secondNode->IsInvariant())
                 {
                     canSwap = false;
                 }
@@ -12543,7 +12543,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
                     fgWalkTreePre(&colon_op2, gtClearColonCond);
                 }
 
-                JITDUMP("\nIdentical GT_COLON trees! ");
+                JITDUMP("\nIdentical GT_COLON trees!\n");
                 DISPTREE(op2);
 
                 GenTree* op;
@@ -17789,6 +17789,15 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = gtGetClassHandle(call->gtCallThisArg->GetNode(), pIsExact, pIsNonNull);
                     break;
                 }
+
+                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
+                if (specialObjClass != nullptr)
+                {
+                    objClass    = specialObjClass;
+                    *pIsExact   = true;
+                    *pIsNonNull = true;
+                    break;
+                }
             }
             if (call->IsInlineCandidate())
             {
@@ -19589,3 +19598,9 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
     return false;
 }
 #endif // TARGET_ARM
+
+bool GenTree::IsInvariant() const
+{
+    GenTree* lclVarTree = nullptr;
+    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
+}

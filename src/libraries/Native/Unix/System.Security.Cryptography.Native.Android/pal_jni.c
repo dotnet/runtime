@@ -164,10 +164,13 @@ jclass    g_TrustManager;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
-    assert(lref && "object shouldn't be null");
-    jobject gref = (*env)->NewGlobalRef(env, lref);
-    (*env)->DeleteLocalRef(env, lref);
-    return gref;
+    if (lref)
+    {
+        jobject gref = (*env)->NewGlobalRef(env, lref);
+        (*env)->DeleteLocalRef(env, lref);
+        return gref;
+    }
+    return lref;
 }
 
 jobject AddGRef(JNIEnv *env, jobject gref)
@@ -210,9 +213,13 @@ void AssertOnJNIExceptions(JNIEnv* env)
     assert(!CheckJNIExceptions(env));
 }
 
-void SaveTo(uint8_t* src, uint8_t** dst, size_t len)
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite)
 {
-    assert(!(*dst));
+    assert(overwrite || !(*dst));
+    if (overwrite)
+    {
+        free(*dst);
+    }
     *dst = (uint8_t*)malloc(len * sizeof(uint8_t));
     memcpy(*dst, src, len);
 }

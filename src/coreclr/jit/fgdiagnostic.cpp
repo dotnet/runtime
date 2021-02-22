@@ -1617,13 +1617,8 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
         return WALK_CONTINUE;
     }
 
-#ifdef DEBUG
-    if (pComp->verbose)
-    {
-        printf("STRESS_64RSLT_MUL before:\n");
-        pComp->gtDispTree(tree);
-    }
-#endif // DEBUG
+    JITDUMP("STRESS_64RSLT_MUL before:\n");
+    DISPTREE(tree);
 
     // To ensure optNarrowTree() doesn't fold back to the original tree.
     tree->AsOp()->gtOp1 = pComp->gtNewCastNode(TYP_LONG, tree->AsOp()->gtOp1, false, TYP_LONG);
@@ -1633,13 +1628,8 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     tree->gtType        = TYP_LONG;
     *pTree              = pComp->gtNewCastNode(TYP_INT, tree, false, TYP_INT);
 
-#ifdef DEBUG
-    if (pComp->verbose)
-    {
-        printf("STRESS_64RSLT_MUL after:\n");
-        pComp->gtDispTree(*pTree);
-    }
-#endif // DEBUG
+    JITDUMP("STRESS_64RSLT_MUL after:\n");
+    DISPTREE(*pTree);
 
     return WALK_SKIP_SUBTREES;
 }
@@ -3027,6 +3017,68 @@ void Compiler::fgDebugCheckNodesUniqueness()
                 GenTree* root = stmt->GetRootNode();
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// fgDebugCheckLoopTable: checks that the loop table is valid.
+//    - If the method has natural loops, the loop table is not null
+//    - All basic blocks with loop numbers set have a corresponding loop in the table
+//    - All basic blocks without a loop number are not in a loop
+//    - All parents of the loop with the block contain that block
+//
+void Compiler::fgDebugCheckLoopTable()
+{
+    if (optLoopCount > 0)
+    {
+        assert(optLoopTable != nullptr);
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (optLoopCount == 0)
+        {
+            assert(block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP);
+            continue;
+        }
+
+        // Walk the loop table and find the first loop that contains our block.
+        // It should be the innermost one.
+        int loopNum = BasicBlock::NOT_IN_LOOP;
+        for (int i = optLoopCount - 1; i >= 0; i--)
+        {
+            // Ignore removed loops
+            if (optLoopTable[i].lpFlags & LPFLG_REMOVED)
+            {
+                continue;
+            }
+            // Does this loop contain our block?
+            if (optLoopTable[i].lpContains(block))
+            {
+                loopNum = i;
+                break;
+            }
+        }
+
+        // If there is at least one loop that contains this block...
+        if (loopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            // ...it must be the one pointed to by bbNatLoopNum.
+            assert(block->bbNatLoopNum == loopNum);
+        }
+        else
+        {
+            // Otherwise, this block should not point to a loop.
+            assert(block->bbNatLoopNum == BasicBlock::NOT_IN_LOOP);
+        }
+
+        // All loops that contain the innermost loop with this block must also contain this block.
+        while (loopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            assert(optLoopTable[loopNum].lpContains(block));
+
+            loopNum = optLoopTable[loopNum].lpParent;
         }
     }
 }

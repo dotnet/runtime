@@ -481,7 +481,7 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 
 	sig = mono_method_signature_internal (method);
 
-	imethod = (InterpMethod*)m_method_alloc0 (domain, method, sizeof (InterpMethod));
+	imethod = (InterpMethod*)m_method_alloc0 (method, sizeof (InterpMethod));
 	imethod->method = method;
 	imethod->domain = domain;
 	imethod->param_count = sig->param_count;
@@ -492,7 +492,7 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
 		imethod->rtype = mini_get_underlying_type (sig->ret);
-	imethod->param_types = (MonoType**)m_method_alloc0 (domain, method, sizeof (MonoType*) * sig->param_count);
+	imethod->param_types = (MonoType**)m_method_alloc0 (method, sizeof (MonoType*) * sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
 
@@ -678,7 +678,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 	gpointer *table;
 
 	if (offset >= 0) {
-		table = (gpointer*)m_class_alloc0 (vtable->domain, vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
+		table = (gpointer*)m_class_alloc0 (vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
 		vtable->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
@@ -691,7 +691,7 @@ static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
-	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->domain, vtable->klass);
+	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->klass);
 
 	table = get_method_table (vtable, offset);
 
@@ -1047,7 +1047,7 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackva
 			lengths [i] = values [i].data.i;
 		}
 	}
-	return (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, error);
+	return (MonoObject*) mono_array_new_full_checked (klass, lengths, lower_bounds, error);
 }
 
 static gint32
@@ -2962,10 +2962,10 @@ static long opcode_counts[MINT_LASTOP];
 	} while (0);
 
 static MonoObject*
-mono_interp_new (MonoDomain* domain, MonoClass* klass)
+mono_interp_new (MonoClass* klass)
 {
 	ERROR_DECL (error);
-	MonoObject* const object = mono_object_new_checked (domain, klass, error);
+	MonoObject* const object = mono_object_new_checked (klass, error);
 	mono_error_cleanup (error); // FIXME: do not swallow the error
 	return object;
 }
@@ -3976,7 +3976,7 @@ call:
 
 #define BRELOP_CAST(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
-		gint32 br_offset = (gint32) ip [1]; \
+		gint32 br_offset = (gint32)READ32(ip + 3); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		ip += br_offset; \
 	} else \
@@ -4813,15 +4813,14 @@ call:
 
 			g_assert (!m_class_is_valuetype (newobj_class));
 
-			MonoDomain* const domain = frame->imethod->domain;
-			MonoVTable *vtable = mono_class_vtable_checked (domain, newobj_class, error);
+			MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
 			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
 				MonoException *exc = mono_error_convert_to_exception (error);
 				g_assert (exc);
 				THROW_EX (exc, ip);
 			}
 			error_init_reuse (error);
-			MonoObject* o = mono_object_new_checked (domain, newobj_class, error);
+			MonoObject* o = mono_object_new_checked (newobj_class, error);
 			LOCAL_VAR (call_args_offset, MonoObject*) = o; // return value
 			call_args_offset += MINT_STACK_SLOT_SIZE;
 			LOCAL_VAR (call_args_offset, MonoObject*) = o; // first parameter
@@ -4840,11 +4839,6 @@ call:
 			*(gpointer*)span = ptr;
 			*(gint32*)((gpointer*)span + 1) = len;
 			ip += 4;;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_INTRINS_BYREFERENCE_GET_VALUE) {
-			LOCAL_VAR (ip [1], gpointer) = *LOCAL_VAR (ip [2], gpointer*);
-			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET) {
@@ -6138,7 +6132,7 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			LOCAL_VAR (ip [1], MonoObject*) = mono_interp_new (frame->imethod->domain, (MonoClass*)frame->imethod->data_items [ip [2]]); // FIXME: do not swallow the error
+			LOCAL_VAR (ip [1], MonoObject*) = mono_interp_new ((MonoClass*)frame->imethod->data_items [ip [2]]); // FIXME: do not swallow the error
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
@@ -6984,11 +6978,11 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 }
 
 static MonoJitInfo*
-interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
+interp_find_jit_info (MonoMethod *method)
 {
 	InterpMethod* imethod;
 
-	imethod = lookup_imethod (domain, method);
+	imethod = lookup_imethod (mono_get_root_domain (), method);
 	if (imethod)
 		return imethod->jinfo;
 	else
@@ -7170,7 +7164,13 @@ interp_add_imethod (gpointer method)
 static int
 imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 {
-	return (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
+	long diff = (*(InterpMethod**)m2)->opcounts > (*(InterpMethod**)m1)->opcounts;
+	if (diff > 0)
+		return 1;
+	else if (diff < 0)
+		return -1;
+	else
+		return 0;
 }
 
 static void

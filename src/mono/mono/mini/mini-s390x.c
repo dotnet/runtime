@@ -5339,7 +5339,6 @@ mono_arch_register_lowlevel_calls (void)
  * 
  * @param[in] @cfg - Compile control block
  * @param[in] @method - Current method
- * @param[in] @domain - Current Mono Domain
  * @param[in] @code - Current innstruction pointer
  * @param[in] @ji - Jump information 
  * @param[in] @run_cctors - Whether class constructors need to be initialized 
@@ -5350,8 +5349,8 @@ mono_arch_register_lowlevel_calls (void)
  */
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, 
-		          guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg,
+						  guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
 	gint64 displace;
@@ -6473,14 +6472,13 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
  */
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, 
+mono_arch_build_imt_trampoline (MonoVTable *vtable,
 								MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guchar *code, *start;
-	char trampName[64];
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -6514,10 +6512,10 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 	}
 
 	if (fail_tramp) {
-		code = (guint8 *) mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size);
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
-		code = (guint8 *) mono_mem_manager_code_reserve (mem_manager, size);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
+		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 
 	start = code;
@@ -6603,8 +6601,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 
 	g_assert (code - start <= size);
 
-	snprintf(trampName, sizeof(trampName), "%d_imt_trampoline", domain->domain_id);
-	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return (start);
 }

@@ -841,5 +841,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
         }
+
+        [Fact]
+        public static void InternedStringReturnValuesWork()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
+            Runtime.InvokeJS(
+                $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
+                $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
+                "App.call_test_method ('InvokeString2', [ b ]);"
+            );
+            Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
+            Assert.Equal("1", HelperMarshal._stringResource2);
+        }
     }
 }

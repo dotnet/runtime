@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // SpmiDumpHelper.h - a helper to dump structs that are used in JitEEInterface calls and spmi collections.
@@ -48,6 +46,9 @@ public:
         const DenseLightWeightMap<DWORDLONG>* handleMap);
 
     static std::string DumpCorInfoFlag(CorInfoFlag flags);
+
+    static std::string DumpJitFlags(CORJIT_FLAGS corJitFlags);
+    static std::string DumpJitFlags(unsigned long long rawFlags);
 
 private:
 

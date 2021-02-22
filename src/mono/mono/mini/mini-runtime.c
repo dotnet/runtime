@@ -301,7 +301,7 @@ mono_print_method_from_ip (void *ip)
 
 	if (!domain)
 		domain = mono_get_root_domain ();
-	ji = mini_jit_info_table_find_ext (domain, (char *)ip, TRUE, &target_domain);
+	ji = mini_jit_info_table_find_ext (ip, TRUE);
 	if (ji && ji->is_trampoline) {
 		MonoTrampInfo *tinfo = ji->d.tramp_info;
 
@@ -359,14 +359,6 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
 	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
-
-	/*
-	 * If the call was made from domain-neutral to domain-specific
-	 * code, we can't patch the call site.
-	 */
-	if (caller->domain_neutral && !callee->domain_neutral)
-		return FALSE;
-
 	return TRUE;
 }
 
@@ -906,8 +898,7 @@ mono_thread_abort (MonoObject *obj)
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
 
-	if ((mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_LEGACY) ||
-			(obj->vtable->klass == mono_defaults.threadabortexception_class) ||
+	if ((obj->vtable->klass == mono_defaults.threadabortexception_class) ||
 			((obj->vtable->klass) == mono_class_try_get_appdomain_unloaded_exception_class () &&
 			mono_thread_info_current ()->runtime_thread)) {
 		mono_thread_exit ();
@@ -1364,10 +1355,11 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 }
 
 gpointer
-mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error)
+mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error)
 {
 	unsigned char *ip = patch_info->ip.i + code;
 	gconstpointer target = NULL;
+	MonoDomain *domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -1453,7 +1445,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		if (method && method->dynamic) {
 			jump_table = (void **)mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
-			MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, method);
+			MonoMemoryManager *mem_manager = m_method_get_mem_manager (method);
 			if (mono_aot_only) {
 				jump_table = (void **)mono_mem_manager_alloc (mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
@@ -1491,7 +1483,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = GUINT_TO_POINTER ((guint32)(-((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
-		target = mono_class_vtable_checked (domain, patch_info->data.klass, error);
+		target = mono_class_vtable_checked (patch_info->data.klass, error);
 		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
@@ -1504,7 +1496,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -1550,7 +1542,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_LDSTR:
 		target =
-			mono_ldstr_checked (domain, patch_info->data.token->image,
+			mono_ldstr_checked (patch_info->data.token->image,
 					    mono_metadata_token_index (patch_info->data.token->token), error);
 		break;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
@@ -1763,18 +1755,8 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 
 		mono_codeman_enable_write ();
 
-#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 		for (tmp = jlist->list; tmp; tmp = tmp->next)
-			mono_arch_patch_code_new (NULL, domain, (guint8 *)tmp->data, &patch_info, addr);
-#else
-		// FIXME: This won't work since it ends up calling mono_create_jump_trampoline () which returns a trampoline
-		// for gshared methods
-		for (tmp = jlist->list; tmp; tmp = tmp->next) {
-			ERROR_DECL (error);
-			mono_arch_patch_code (NULL, NULL, domain, tmp->data, &patch_info, TRUE, error);
-			mono_error_assert_ok (error);
-		}
-#endif
+			mono_arch_patch_code_new (NULL, (guint8 *)tmp->data, &patch_info, addr);
 
 		mono_codeman_disable_write ();
 	}
@@ -2540,20 +2522,10 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	 */
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
-	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER)
 		callinfo = mono_find_jit_icall_info (winfo->d.icall.jit_icall_id);
 
-		/* Must be domain neutral since there is only one copy */
-		opt |= MONO_OPT_SHARED;
-	} else {
-		/* MONO_OPT_SHARED is no longer supported, we only use it for icall wrappers */
-		opt &= ~MONO_OPT_SHARED;
-	}
-
-	if (opt & MONO_OPT_SHARED)
-		target_domain = mono_get_root_domain ();
-	else
-		target_domain = domain;
+	target_domain = domain;
 
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
@@ -2575,11 +2547,11 @@ lookup_start:
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if (! ((domain != target_domain) && !info->domain_neutral)) {
+		if (domain == target_domain) {
 			MonoVTable *vtable;
 
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
-			vtable = mono_class_vtable_checked (domain, method->klass, error);
+			vtable = mono_class_vtable_checked (method->klass, error);
 			if (!is_ok (error))
 				return NULL;
 			g_assert (vtable);
@@ -2618,7 +2590,7 @@ lookup_start:
 				 * The suspend code needs to be able to lookup these methods by ip in async context,
 				 * so preload their jit info.
 				 */
-				MonoJitInfo *ji = mini_jit_info_table_find (domain, code, NULL);
+				MonoJitInfo *ji = mini_jit_info_table_find (code);
 				g_assert (ji);
 			}
 
@@ -2628,7 +2600,7 @@ lookup_start:
 			 * called by init_method ().
 			 */
 			if (!mono_llvm_only && !mono_class_is_open_constructed_type (m_class_get_byval_arg (method->klass))) {
-				vtable = mono_class_vtable_checked (domain, method->klass, error);
+				vtable = mono_class_vtable_checked (method->klass, error);
 				mono_error_assert_ok (error);
 				if (!mono_runtime_class_init_full (vtable, error))
 					return NULL;
@@ -2692,12 +2664,10 @@ lookup_start:
 	//FIXME mini_jit_info_table_find doesn't work yet under wasm due to code_start/code_end issues.
 #ifndef HOST_WASM
 	if ((method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER || method->wrapper_type == MONO_WRAPPER_ALLOC)) {
-		MonoDomain *d;
-
 		/*
 		 * SGEN requires the JIT info for these methods to be registered, see is_ip_in_managed_allocator ().
 		 */
-		MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)code, &d);
+		MonoJitInfo *ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 	}
 #endif
@@ -2864,7 +2834,7 @@ mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *metho
 				mono_error_cleanup (oerror);
 
 			/* Might be interpreted */
-			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);
+			ji = mini_get_interp_callbacks ()->find_jit_info (method);
 		}
 	}
 
@@ -2879,15 +2849,12 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	MonoDomain *target_domain;
 	MonoJitInfo *info;
 
-	if (default_opt & MONO_OPT_SHARED)
-		target_domain = mono_get_root_domain ();
-	else
-		target_domain = domain;
+	target_domain = domain;
 
 	info = lookup_method (target_domain, method);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if (! ((domain != target_domain) && !info->domain_neutral)) {
+		if (domain == target_domain) {
 			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
 			if (ji)
 				*ji = info;
@@ -2996,7 +2963,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	(void)invoke;
-	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
+	info->vtable = mono_class_vtable_checked (method->klass, error);
 	if (!is_ok (error))
 		goto exit;
 	g_assert (info->vtable);
@@ -3281,7 +3248,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					return NULL;
 			} else {
 				if (mono_llvm_only) {
-					ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
+					ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (compiled_method));
 					callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 					if (callee_gsharedvt)
 						callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));
@@ -4771,16 +4738,14 @@ register_icalls (void)
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);
 	register_icall (ves_icall_mono_delegate_ctor_interp, mono_icall_sig_void_object_object_ptr, FALSE);
 	register_icall (mono_class_static_field_address,
-				 mono_icall_sig_ptr_ptr_ptr, FALSE);
+				 mono_icall_sig_ptr_ptr, FALSE);
 	register_icall (mono_ldtoken_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_ldtoken_wrapper_generic_shared,
 		mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_get_special_static_data, mono_icall_sig_ptr_int, FALSE);
-	register_icall (ves_icall_mono_ldstr, mono_icall_sig_object_ptr_ptr_int32, FALSE);
 	register_icall (mono_helper_stelem_ref_check, mono_icall_sig_void_object_object, FALSE);
-	register_icall (ves_icall_object_new, mono_icall_sig_object_ptr_ptr, FALSE);
+	register_icall (ves_icall_object_new, mono_icall_sig_object_ptr, FALSE);
 	register_icall (ves_icall_object_new_specific, mono_icall_sig_object_ptr, FALSE);
-	register_icall (ves_icall_array_new, mono_icall_sig_object_ptr_ptr_int32, FALSE);
 	register_icall (ves_icall_array_new_specific, mono_icall_sig_object_ptr_int32, FALSE);
 	register_icall (ves_icall_runtime_class_init, mono_icall_sig_void_ptr, FALSE);
 	register_icall (mono_ldftn, mono_icall_sig_ptr_ptr, FALSE);
@@ -5255,3 +5220,40 @@ mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoad
 	mini_get_interp_callbacks ()->invalidate_transformed (domain);
 }
 #endif
+
+/*
+ * mini_get_default_mem_manager:
+ *
+ *   Return a memory manager which can be used for default allocation.
+ * FIXME: Review all callers and change them to allocate from a
+ * class/method/assembly specific memory manager.
+ */
+MonoMemoryManager*
+mini_get_default_mem_manager (void)
+{
+	return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+}
+
+gpointer
+mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size)
+{
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
+
+	static gboolean inited = FALSE;
+	static int generic_virtual_trampolines_size = 0;
+
+	if (!inited) {
+		mono_counters_register ("Generic virtual trampoline bytes",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &generic_virtual_trampolines_size);
+		inited = TRUE;
+	}
+	generic_virtual_trampolines_size += size;
+
+	return mono_mem_manager_code_reserve (mem_manager, size);
+}
+
+MonoException*
+mini_get_stack_overflow_ex (void)
+{
+	return mono_get_root_domain ()->stack_overflow_ex;
+}
