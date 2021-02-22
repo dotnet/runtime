@@ -225,6 +225,8 @@ namespace System.Net.WebSockets
             bool endOfMessage,
             CancellationToken cancellationToken)
         {
+            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
+
             if (messageType != WebSocketMessageType.Binary &&
                     messageType != WebSocketMessageType.Text)
             {
@@ -236,8 +238,6 @@ namespace System.Net.WebSockets
                     nameof(CloseOutputAsync)),
                     nameof(messageType));
             }
-
-            WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
             return SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
         }

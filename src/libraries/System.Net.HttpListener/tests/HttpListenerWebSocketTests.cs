@@ -73,7 +73,7 @@ namespace System.Net.Tests
         public async Task SendAsync_InvalidMessageType_ThrowsArgumentNullException(WebSocketMessageType messageType)
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
-            await AssertExtensions.ThrowsAsync<ArgumentException>("messageType", () => context.WebSocket.SendAsync(new ArraySegment<byte>(), messageType, false, new CancellationToken()));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("buffer.Array", () => context.WebSocket.SendAsync(new ArraySegment<byte>(), messageType, false, new CancellationToken()));
         }
 
         [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/22014", TestPlatforms.AnyUnix)]
