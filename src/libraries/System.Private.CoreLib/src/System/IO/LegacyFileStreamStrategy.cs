@@ -9,10 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    // This type exist so we can avoid code duplication between LegacyFileStreamStrategy and LegacyFileStreamStrategy.
-    // As of now, it implements the Template pattern and defines multiple virtual methods, but in the future when we
-    // separate LegacyFileStreamStrategy into two separate strategies (Sync and Async),
-    // it should be just defining fields present in all implementations (and the non-virtual methods that use them)
+    // This type is partial so we can avoid code duplication between Windows and Unix Legacy implementations
     internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         private byte[]? _buffer;
