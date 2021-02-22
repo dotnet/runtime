@@ -699,7 +699,7 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
-if (HOST_LINUX OR HOST_WIN32 OR HOST_DARWIN)
+if (NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER)
   add_subdirectory(dbi)
 endif()
 
