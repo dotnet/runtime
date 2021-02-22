@@ -54,7 +54,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For 
 // Server GC we will balance regions between heaps.
 #ifdef HOST_64BIT
-#define USE_REGIONS
+//#define USE_REGIONS
 #endif //HOST_64BIT
 
 #ifdef USE_REGIONS
@@ -144,7 +144,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#define TRACE_GC
+//#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
