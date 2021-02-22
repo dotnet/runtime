@@ -225,6 +225,8 @@ METHOD(Encrypt)
 METHOD(EncryptLast)
 METHOD(InverseMixColumns)
 METHOD(KeygenAssist)
+METHOD(PolynomialMultiplyWideningLower)
+METHOD(PolynomialMultiplyWideningUpper)
 // Pclmulqdq
 METHOD(CarrylessMultiply)
 // ArmBase

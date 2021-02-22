@@ -3544,7 +3544,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	int dreg;
 	gpointer trampoline;
 	MonoInst *obj, *tramp_ins;
-	MonoDomain *domain;
 	guint8 **code_slot;
 
 	if (virtual_ && !cfg->llvm_only) {
@@ -3597,16 +3596,17 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		if (target_method_context_used) {
 			code_slot_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
 		} else {
-			domain = mono_domain_get ();
-			mono_domain_lock (domain);
-			if (!domain_jit_info (domain)->method_code_hash)
-				domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
-			code_slot = (guint8 **)g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+
+			jit_mm_lock (jit_mm);
+			if (!jit_mm->method_code_hash)
+				jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
+			code_slot = (guint8 **)g_hash_table_lookup (jit_mm->method_code_hash, method);
 			if (!code_slot) {
 				code_slot = (guint8 **)m_method_alloc0 (method, sizeof (gpointer));
-				g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
+				g_hash_table_insert (jit_mm->method_code_hash, method, code_slot);
 			}
-			mono_domain_unlock (domain);
+			jit_mm_unlock (jit_mm);
 
 			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
 		}

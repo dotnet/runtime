@@ -1352,6 +1352,7 @@ typedef struct {
 
 	MonoGSharedVtMethodInfo *gsharedvt_info;
 
+	gpointer jit_mm;
 	MonoMemoryManager *mem_manager;
 
 	/* Points to the gsharedvt locals area at runtime */
@@ -2851,7 +2852,7 @@ typedef enum {
 	MONO_CPU_ARM64_BASE   = 1 << 1,
 	MONO_CPU_ARM64_CRC    = 1 << 2,
 	MONO_CPU_ARM64_CRYPTO = 1 << 3,
-	MONO_CPU_ARM64_ADVSIMD = 1 << 4,
+	MONO_CPU_ARM64_NEON = 1 << 4,
 #endif
 } MonoCPUFeatures;
 
@@ -2996,7 +2997,9 @@ typedef enum {
 	SIMD_OP_ARM64_SHA256H,
 	SIMD_OP_ARM64_SHA256H2,
 	SIMD_OP_ARM64_SHA256SU0,
-	SIMD_OP_ARM64_SHA256SU1
+	SIMD_OP_ARM64_SHA256SU1,
+	SIMD_OP_ARM64_PMULL64_LOWER,
+	SIMD_OP_ARM64_PMULL64_UPPER
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
