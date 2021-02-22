@@ -19,6 +19,13 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         public TrailingHeadersTest(ITestOutputHelper output) : base(output)
         { }
 
+        // Build number suggested by the WinHttp team.
+        // It can be reduced after the backport of WINHTTP_QUERY_FLAG_TRAILERS is finished,
+        // and the patches are rolled out to CI machines.
+        public static bool OsSupportsWinHttpTrailingHeaders => Environment.OSVersion.Version >= new Version(10, 0, 19622, 0);
+
+        public static bool TestsEnabled => OsSupportsWinHttpTrailingHeaders && PlatformDetection.SupportsAlpn;
+
         protected override Version UseVersion => new Version(2, 0);
 
         protected static byte[] DataBytes = Encoding.ASCII.GetBytes("data");
@@ -32,7 +39,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         protected static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ConditionalFact(nameof(TestsEnabled))]
         public async Task Http2GetAsync_NoTrailingHeaders_EmptyCollection()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -60,7 +67,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ConditionalFact(nameof(TestsEnabled))]
         public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -91,7 +98,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ConditionalFact(nameof(TestsEnabled))]
         public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -144,7 +151,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(OsSupportsWinHttpTrailingHeaders))]
         public async Task Http2GetAsyncResponseHeadersReadOption_RemoteServer_TrailingHeaders_Available()
         {
             Uri address = new Uri("https://localhost:5001/trailers.ashx");
@@ -177,7 +184,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ConditionalFact(nameof(TestsEnabled))]
         public async Task Http2GetAsync_TrailerHeaders_TrailingHeaderNoBody()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -203,7 +210,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        [ConditionalFact(nameof(TestsEnabled))]
         public async Task Http2GetAsync_TrailingHeaders_NoData_EmptyResponseObserved()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
