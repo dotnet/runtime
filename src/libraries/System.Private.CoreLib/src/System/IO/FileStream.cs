@@ -168,7 +168,7 @@ namespace System.IO
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        public virtual IntPtr Handle => _strategy.SafeFileHandle.DangerousGetHandle(); // TODO: is it OK that this method has some logic?
+        public virtual IntPtr Handle => _strategy.Handle;
 
         [UnsupportedOSPlatform("macos")]
         public virtual void Lock(long position, long length)

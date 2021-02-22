@@ -17,6 +17,8 @@ namespace System.IO
 
         internal abstract SafeFileHandle SafeFileHandle { get; }
 
+        internal IntPtr Handle => SafeFileHandle.DangerousGetHandle();
+
         internal abstract bool IsClosed { get; }
 
         internal abstract void Lock(long position, long length);
