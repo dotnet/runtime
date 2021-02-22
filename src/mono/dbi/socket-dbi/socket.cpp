@@ -66,7 +66,6 @@ int Socket::OpenSocketAcceptConnection(const char *address, const char *port) {
             continue;
 
         iResult = bind(socketId, ptr->ai_addr, (int)ptr->ai_addrlen);
-        int err = errno;
         if (iResult == -1)
             continue;
 
