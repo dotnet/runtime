@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
@@ -127,18 +128,30 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span));
         }
 
-        [Fact]
-        public async Task Duplex()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        public async Task Duplex(bool clientContextTakover, bool serverContextTakover)
         {
             var stream = new WebSocketStream();
             using var server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DeflateOptions = new()
+                DeflateOptions = new WebSocketDeflateOptions
+                {
+                    ClientContextTakeover = clientContextTakover,
+                    ServerContextTakeover = serverContextTakover
+                }
             });
             using var client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
-                DeflateOptions = new()
+                DeflateOptions = new WebSocketDeflateOptions
+                {
+                    ClientContextTakeover = clientContextTakover,
+                    ServerContextTakeover = serverContextTakover
+                }
             });
 
             var buffer = new byte[1024];
@@ -255,10 +268,76 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal("The WebSocket received compressed frame when compression is not enabled.", exception.Message);
         }
 
+        [Fact]
+        public async Task ReceiveUncompressedMessageWhenCompressionEnabled()
+        {
+            // We should be able to handle the situation where even if we have
+            // deflate compression enabled, uncompressed messages are OK
+            var stream = new WebSocketStream();
+            var server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                DeflateOptions = null
+            });
+            var client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                DeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            // Server sends uncompressed 
+            await SendTextAsync("Hello", server);
+
+            // Although client has deflate options, it should still be able
+            // to handle uncompressed messages.
+            Assert.Equal("Hello", await ReceiveTextAsync(client));
+
+            // Client sends compressed, but server compression is disabled and should throw on receive
+            await SendTextAsync("Hello back", client);
+            var exception = await Assert.ThrowsAsync<WebSocketException>(() => ReceiveTextAsync(server));
+            Assert.Equal("The WebSocket received compressed frame when compression is not enabled.", exception.Message);
+            Assert.Equal(WebSocketState.Aborted, server.State);
+
+            // The client should close if we try to receive
+            var result = await client.ReceiveAsync(Memory<byte>.Empty, CancellationToken);
+            Assert.Equal(WebSocketMessageType.Close, result.MessageType);
+            Assert.Equal(WebSocketCloseStatus.ProtocolError, client.CloseStatus);
+            Assert.Equal(WebSocketState.CloseReceived, client.State);
+        }
+
+        [Fact]
+        public async Task ReceiveInvalidCompressedData()
+        {
+            var stream = new WebSocketStream();
+            var client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                DeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            Assert.Equal("Hello", await ReceiveTextAsync(client));
+
+            stream.Enqueue(0xc1, 0x07, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00);
+            var exception = await Assert.ThrowsAsync<WebSocketException>(() => ReceiveTextAsync(client));
+
+            Assert.Equal("The message was compressed using an unsupported compression method.", exception.Message);
+            Assert.Equal(WebSocketState.Aborted, client.State);
+        }
+
         private ValueTask SendTextAsync(string text, WebSocket websocket)
         {
             var bytes = Encoding.UTF8.GetBytes(text);
             return websocket.SendAsync(bytes.AsMemory(), WebSocketMessageType.Text, true, CancellationToken);
+        }
+
+        private async Task<string> ReceiveTextAsync(WebSocket websocket)
+        {
+            using var buffer = MemoryPool<byte>.Shared.Rent(1024 * 32);
+            var result = await websocket.ReceiveAsync(buffer.Memory, CancellationToken);
+
+            Assert.True(result.EndOfMessage);
+            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+
+            return Encoding.UTF8.GetString(buffer.Memory.Span.Slice(0, result.Count));
         }
     }
 }

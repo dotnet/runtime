@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="WebSocketDeflateOptionsTests.cs" />
     <Compile Include="WebSocketDeflateTests.cs" />
     <Compile Include="WebSocketStream.cs" />
     <Compile Include="WebSocketTests.cs" />
