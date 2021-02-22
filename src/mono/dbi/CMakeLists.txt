@@ -96,7 +96,7 @@ if (CLR_CMAKE_HOST_UNIX)
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
 
-  append("-Wno-missing-prototypes" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  append("-Wno-missing-prototypes  -Wno-pointer-arith" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/pal pal)
 
   include_directories("../../coreclr/pal/inc/rt/cpp")
@@ -117,7 +117,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/enc md/enc)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/utilcode utilcode)
 if (CLR_CMAKE_HOST_UNIX)
     add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/palrt palrt)
-    append("-Wno-strict-prototypes -Wno-deprecated" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    append("-Wno-strict-prototypes -Wno-deprecated -Wno-pointer-arith" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 endif (CLR_CMAKE_HOST_UNIX)
 
 add_library(mscordbi SHARED "${mscorbi_sources};${PROJECT_SOURCE_DIR}/../mono/mini/debugger-protocol.c;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/xcordebug_i.cpp;${PROJECT_SOURCE_DIR}/../../coreclr/pal/prebuilt/idl/cordebug_i.cpp")
