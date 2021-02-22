@@ -261,6 +261,9 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, extern, dryRun
 #include "pal.h"
 #endif //TARGET_UNIX
 
+const char * gEventPipeNullStr = "NULL";
+const PCWSTR gEventPipeNullWStr = W("NULL");
+
 bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer)
 {
     newSize = (size_t)(newSize * 1.5);
@@ -288,7 +291,7 @@ bool ResizeBuffer(char *&buffer, size_t& size, size_t currLen, size_t newSize, b
 
 bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!src) return true;
+    if (!src) return true;
     if (offset + len > size)
     {
         if (!ResizeBuffer(buffer, size, offset, size + len, fixedBuffer))
@@ -302,7 +305,10 @@ bool WriteToBuffer(const BYTE *src, size_t len, char *&buffer, size_t& offset, s
 
 bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!str) return true;
+    if (!str)
+    {
+        str = gEventPipeNullWStr;
+    }
     size_t byteCount = (wcslen(str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
@@ -318,7 +324,10 @@ bool WriteToBuffer(PCWSTR str, char *&buffer, size_t& offset, size_t& size, bool
 
 bool WriteToBuffer(const char *str, char *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
-    if(!str) return true;
+    if (!str)
+    {
+        str = gEventPipeNullStr;
+    }
     size_t len = strlen(str) + 1;
     if (offset + len > size)
     {
