@@ -765,6 +765,7 @@ Function :
 --*/
 void PAL_DisplayDialog(const char *szTitle, const char *szText)
 {
+#ifndef DBI_COMPONENT_MONO    
     static DisplayDialogMode dispDialog = DisplayDialog_Uninitialized;
 
     if (dispDialog == DisplayDialog_Uninitialized)
@@ -836,6 +837,7 @@ void PAL_DisplayDialog(const char *szTitle, const char *szText)
         }
         CFRelease(cfsTitle);
     }
+#endif    
 }
 
 /*++
