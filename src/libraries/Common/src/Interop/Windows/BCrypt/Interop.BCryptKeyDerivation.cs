@@ -2,13 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
     internal partial class BCrypt
     {
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static unsafe extern NTSTATUS BCryptHash(nuint hAlgorithm, byte* pbSecret, int cbSecret, byte* pbInput, int cbInput, byte* pbOutput, int cbOutput);
+        internal static unsafe extern NTSTATUS BCryptKeyDerivation(
+            SafeBCryptKeyHandle hKey,
+            BCryptBufferDesc* pParameterList,
+            byte* pbDerivedKey,
+            int cbDerivedKey,
+            out uint pcbResult,
+            int dwFlags);
     }
 }

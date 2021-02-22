@@ -437,6 +437,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_CRL) \
     REQUIRED_FUNCTION(PEM_write_bio_X509_CRL) \
+    REQUIRED_FUNCTION(PKCS5_PBKDF2_HMAC) \
     REQUIRED_FUNCTION(PKCS12_free) \
     REQUIRED_FUNCTION(PKCS12_parse) \
     REQUIRED_FUNCTION(PKCS7_sign) \
@@ -847,6 +848,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
 #define PEM_read_bio_X509_CRL PEM_read_bio_X509_CRL_ptr
 #define PEM_write_bio_X509_CRL PEM_write_bio_X509_CRL_ptr
+#define PKCS5_PBKDF2_HMAC PKCS5_PBKDF2_HMAC_ptr
 #define PKCS12_free PKCS12_free_ptr
 #define PKCS12_parse PKCS12_parse_ptr
 #define PKCS7_sign PKCS7_sign_ptr
