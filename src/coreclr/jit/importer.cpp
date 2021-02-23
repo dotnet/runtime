@@ -13708,7 +13708,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
                     impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
-                    var_types type = genActualType(lvaTable[tmpNum].TypeGet());
+                    LclVarDsc* varDsc = lvaGetDesc(tmpNum);
+                    if (op1->IsLocalAddrExpr())
+                    {
+                        varDsc->lvStackByref = 1;
+                    }
+                    var_types type = genActualType(varDsc->TypeGet());
                     op1            = gtNewLclvNode(tmpNum, type);
 
                     // Propagate type info to the temp from the stack and the original tree
@@ -18921,6 +18926,11 @@ bool Compiler::impIsValueType(typeInfo* pTypeInfo)
 
 BOOL Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
+    while (tree->OperIs(GT_CAST))
+    {
+        tree = tree->AsCast()->gtGetOp1();
+    }
+
     if (tree->gtOper != GT_ADDR)
     {
         return FALSE;
@@ -19759,8 +19769,23 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 {
                     assert(varTypeIsIntOrI(sigType));
 
-                    /* If possible bash the BYREF to an int */
+                    bool stackByref = false;
                     if (inlArgNode->IsLocalAddrExpr() != nullptr)
+                    {
+                        stackByref = true;
+                    }
+                    else if (inlArgNode->IsLocal())
+                    {
+                        const GenTreeLclVarCommon* lcl = inlArgNode->AsLclVarCommon();
+                        const LclVarDsc* varDsc = lvaGetDesc(lcl);
+                        if (varDsc->lvStackByref)
+                        {
+                            stackByref = true;
+                        }
+                    }
+
+                    /* If possible bash the BYREF to an int */
+                    if (stackByref)
                     {
                         inlArgNode->gtType           = TYP_I_IMPL;
                         lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));

@@ -16599,6 +16599,10 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 // Returns true if this GenTree defines a result which is based on the address of a local.
 bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire)
 {
+    if (OperGet() == GT_CAST)
+    {
+        return AsCast()->gtGetOp1()->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire);
+    }
     if (OperGet() == GT_ADDR || OperGet() == GT_LCL_VAR_ADDR)
     {
         GenTree* addrArg = this;
@@ -16737,6 +16741,10 @@ bool GenTree::IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, Fie
 
 GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
 {
+    if (OperGet() == GT_CAST)
+    {
+        return AsCast()->gtGetOp1()->IsLocalAddrExpr();
+    }
     if (OperGet() == GT_ADDR)
     {
         return AsOp()->gtOp1->IsLocal() ? AsOp()->gtOp1->AsLclVarCommon() : nullptr;

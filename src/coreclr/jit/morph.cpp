@@ -356,7 +356,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
     }
 #endif // TARGET_X86
-    else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
+    else if (varTypeIsGC(srcType) != varTypeIsGC(dstType) && !oper->IsLocalAddrExpr())
     {
         // We are casting away GC information.  we would like to just
         // change the type to int, however this gives the emitter fits because
