@@ -52,6 +52,6 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
-    <ProjectReference Include="..\..\Common\tests\LongName\LongName.csproj" />
+    <ProjectReference Include="LongPath\LongPath.csproj" />
   </ItemGroup>
 </Project>

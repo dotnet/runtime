@@ -11,8 +11,6 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessModuleTests : ProcessTestBase
     {
-        public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
-
         [Fact]
         public void TestModuleProperties()
         {
@@ -95,7 +93,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LongModuleFileNamesAreSupported()
         {
@@ -103,7 +101,7 @@ namespace System.Diagnostics.Tests
             // Since Long Paths support can be disabled (see the ConditionalFact attribute usage above),
             // we just copy "LongName.dll" from bin to a temp directory with a long name and load it from there.
             // Loading from new path is possible because the type exposed by the assembly is not referenced in any explicit way.
-            const string libraryName = "LongName.dll";
+            const string libraryName = "LongPath.dll";
 
             string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
             string libraryToCopy = Path.Combine(testBinPath, libraryName);
