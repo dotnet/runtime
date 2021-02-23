@@ -851,8 +851,8 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
                 return;
         }
         msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, (va_list)msg.m_args);
-    }
 #endif //HOST_WINDOWS
+    }
 
     // Stress Log ETW feature available only on the desktop versions of the runtime
 #endif //!DACCESS_COMPILE
