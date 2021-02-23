@@ -45,5 +45,10 @@ namespace System.Net.Quic
         /// Idle timeout for connections, after which the connection will be closed.
         /// </summary>
         public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
+
+        /// <summary>
+        /// Whether to receiving datagrams is enabled.
+        /// </summary>
+        public bool DatagramReceiveEnabled { get; set; }
     }
 }

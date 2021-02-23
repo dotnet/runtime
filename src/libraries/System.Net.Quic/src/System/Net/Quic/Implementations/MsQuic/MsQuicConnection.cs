@@ -12,6 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic
@@ -44,6 +45,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _connected;
         private MsQuicSecurityConfig? _securityConfig;
         private long _abortErrorCode = -1;
+        private ushort _datagramMaxSendLength;
 
         // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
@@ -117,6 +119,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return HandleEventNewStream(ref connectionEvent);
                     case QUIC_CONNECTION_EVENT.STREAMS_AVAILABLE:
                         return HandleEventStreamsAvailable(ref connectionEvent);
+                    case QUIC_CONNECTION_EVENT.DATAGRAM_STATE_CHANGED:
+                        return HandleEventDatagramStateChanged(ref connectionEvent);
+                    case QUIC_CONNECTION_EVENT.DATAGRAM_RECEIVED:
+                        return HandleEventDatagramReceived(ref connectionEvent);
+                    case QUIC_CONNECTION_EVENT.DATAGRAM_SEND_STATE_CHANGED:
+                        return HandleEventDatagramSendStateChanged(ref connectionEvent);
                     default:
                         return MsQuicStatusCodes.Success;
                 }
@@ -188,6 +196,37 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventStreamsAvailable(ref ConnectionEvent connectionEvent)
         {
+            return MsQuicStatusCodes.Success;
+        }
+
+        private uint HandleEventDatagramStateChanged(ref ConnectionEvent connectionEvent)
+        {
+            _datagramMaxSendLength = connectionEvent.Data.DatagramStateChanged.MaxSendLength;
+            return MsQuicStatusCodes.Success;
+        }
+
+        private uint HandleEventDatagramReceived(ref ConnectionEvent connectionEvent)
+        {
+            DatagramReceived?.Invoke(this, connectionEvent.DatagramReceivedBuffer);
+            return MsQuicStatusCodes.Success;
+        }
+
+        private uint HandleEventDatagramSendStateChanged(ref ConnectionEvent connectionEvent)
+        {
+            var state = connectionEvent.Data.DatagramSendStateChanged.State;
+            GCHandle handle = GCHandle.FromIntPtr(connectionEvent.Data.DatagramSendStateChanged.ClientContext);
+            ref var source = ref (ManualResetValueTaskSourceCore<QUIC_DATAGRAM_SEND_STATE>)handle.Target!;
+            switch (state)
+            {
+                case QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_LOST_DISCARDED:
+                case QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_ACKNOWLEDGED:
+                case QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_ACKNOWLEDGED_SPURIOUS:
+                case QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_CANCELED:
+                    source.SetResult(state);
+                    break;
+                default:
+                    break;
+            }
             return MsQuicStatusCodes.Success;
         }
 
@@ -375,6 +414,55 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, errorCode);
+        }
+
+        internal override bool DatagramReceiveEnabled
+        {
+            get => MsQuicParameterHelpers.GetByteParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.DATAGRAM_RECEIVE_ENABLED);
+            set => MsQuicParameterHelpers.SetByteParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.DATAGRAM_RECEIVE_ENABLED, (byte)(value ? 1 : 0));
+        }
+
+        internal override bool DatagramSendEnabled
+        {
+            get => MsQuicParameterHelpers.GetByteParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.DATAGRAM_SEND_ENABLED);
+            set => MsQuicParameterHelpers.SetByteParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.DATAGRAM_SEND_ENABLED, (byte)(value ? 1 : 0));
+        }
+
+        public override ushort DatagramMaxSendLength => _datagramMaxSendLength;
+
+        internal override event EventHandler<ReadOnlySpan<System.Byte>> DatagramReceived;
+
+        internal override async ValueTask<bool> SendDatagramAsync(ReadOnlyMemory<byte> buffer, bool priority)
+        {
+            var source = new ManualResetValueTaskSourceCore<QUIC_DATAGRAM_SEND_STATE>();
+            var sourceHandle = GCHandle.Alloc(source, GCHandleType.Pinned);
+            using var handle = buffer.Pin();
+            var quicBuffer = new QuicBuffer[1];
+            quicBuffer[0].Length = (uint)buffer.Length;
+            quicBuffer[0].Buffer = (byte*)buffer.Pointer;
+            var quicBufferHandle = GCHandle.Alloc(quicBuffer, GCHandleType.Pinned);
+            try
+            {
+                var status = MsQuicApi.Api.DatagramSendDelegate(
+                    _ptr,
+                    (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(quicBuffer, 0),
+                    1,
+                    (uint)(priority ? QUIC_SEND_FLAG.DGRAM_PRIORITY : QUIC_SEND_FLAG.NONE),
+                    sourceHandle.AddrOfPinnedObject());
+                QuicExceptionHelpers.ThrowIfFailed(status, "Failed to send a datagram to peer.");
+                return (await new ValueTask<QUIC_DATAGRAM_SEND_STATE>(source, source.Version)) switch
+                {
+                    QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_ACKNOWLEDGED => true,
+                    QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_ACKNOWLEDGED_SPURIOUS => false,
+                    QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_CANCELED => throw new OperationCanceledException("Datagram send canceled."),
+                    QUIC_DATAGRAM_SEND_STATE.QUIC_DATAGRAM_SEND_LOST_DISCARDED => throw new QuicException("Datagram lost discarded.")
+                };
+            }
+            finally
+            {
+                quicBufferHandle.Free();
+                sourceHandle.Free();
+            }
         }
 
         private void ThrowIfDisposed()

@@ -25,7 +25,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 OpenSession(options.ClientAuthenticationOptions!.ApplicationProtocols!,
                     (ushort)options.MaxBidirectionalStreams,
-                    (ushort)options.MaxUnidirectionalStreams);
+                    (ushort)options.MaxUnidirectionalStreams,
+                    (byte)(options.DatagramReceiveEnabled ? 1 : 0));
             }
 
             QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.ConnectionOpenDelegate(
@@ -38,12 +39,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return connectionPtr;
         }
 
-        private void OpenSession(List<SslApplicationProtocol> alpn, ushort bidirectionalStreamCount, ushort undirectionalStreamCount)
+        private void OpenSession(List<SslApplicationProtocol> alpn, ushort bidirectionalStreamCount, ushort undirectionalStreamCount, byte datagramReceiveEnabled)
         {
             _opened = true;
             _nativeObjPtr = MsQuicApi.Api.SessionOpen(alpn);
             SetPeerBiDirectionalStreamCount(bidirectionalStreamCount);
             SetPeerUnidirectionalStreamCount(undirectionalStreamCount);
+            SetDatagramReceiveEnabled(datagramReceiveEnabled);
         }
 
         // TODO allow for a callback to select the certificate (SNI).
@@ -53,7 +55,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 OpenSession(options.ServerAuthenticationOptions!.ApplicationProtocols!,
                                     (ushort)options.MaxBidirectionalStreams,
-                                    (ushort)options.MaxUnidirectionalStreams);
+                                    (ushort)options.MaxUnidirectionalStreams,
+                                    (byte)(options.DatagramReceiveEnabled ? 1 : 0));
             }
 
             QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.ListenerOpenDelegate(
@@ -120,6 +123,21 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 Length = sizeof(ulong),
                 Buffer = (byte*)&count
+            };
+            SetParam(param, buffer);
+        }
+
+        private void SetDatagramReceiveEnabled(byte enabled)
+        {
+            SetByteParameter(QUIC_PARAM_SESSION.DATAGRAM_RECEIVE_ENABLED, enabled);
+        }
+
+        private unsafe void SetByteParameter(QUIC_PARAM_SESSION param, byte value)
+        {
+            var buffer = new MsQuicNativeMethods.QuicBuffer()
+            {
+                Length = sizeof(byte),
+                Buffer = &value
             };
             SetParam(param, buffer);
         }

@@ -85,6 +85,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             ConnectionStartDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionStartDelegate>(
                     nativeRegistration.ConnectionStart);
+            DatagramSendDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.DatagramSendDelegate>(
+                    nativeRegistration.DatagramSend);
 
             StreamOpenDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamOpenDelegate>(
@@ -180,6 +183,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal MsQuicNativeMethods.ConnectionCloseDelegate ConnectionCloseDelegate { get; }
         internal MsQuicNativeMethods.ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
         internal MsQuicNativeMethods.ConnectionStartDelegate ConnectionStartDelegate { get; }
+        internal MsQuicNativeMethods.DatagramSendDelegate DatagramSendDelegate { get; }
 
         internal MsQuicNativeMethods.StreamOpenDelegate StreamOpenDelegate { get; }
         internal MsQuicNativeMethods.StreamCloseDelegate StreamCloseDelegate { get; }

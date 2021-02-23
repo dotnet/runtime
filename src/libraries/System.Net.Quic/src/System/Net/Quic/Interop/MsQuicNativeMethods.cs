@@ -249,6 +249,27 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ushort UniDirectionalCount;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ConnectionEventDataDatagramStateChanged
+        {
+            internal byte SendEnabled;
+            internal ushort MaxSendLength;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ConnectionEventDataDatagramReceived
+        {
+            internal QuicBuffer* Buffer;
+            internal QUIC_RECEIVE_FLAG Flags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct ConnectionEventDataDatagramSendStateChanged
+        {
+            internal IntPtr ClientContext;
+            internal QUIC_DATAGRAM_SEND_STATE State;
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         internal struct ConnectionEventDataUnion
         {
@@ -275,6 +296,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             [FieldOffset(0)]
             internal ConnectionEventDataStreamsAvailable StreamsAvailable;
+
+            [FieldOffset(0)]
+            internal ConnectionEventDataDatagramStateChanged DatagramStateChanged;
+
+            [FieldOffset(0)]
+            internal ConnectionEventDataDatagramReceived DatagramReceived;
+
+            [FieldOffset(0)]
+            internal ConnectionEventDataDatagramSendStateChanged DatagramSendStateChanged;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -290,6 +320,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal bool ShutdownTimedOut => Data.ShutdownComplete.TimedOut;
             internal ushort BiDirectionalCount => Data.StreamsAvailable.BiDirectionalCount;
             internal ushort UniDirectionalCount => Data.StreamsAvailable.UniDirectionalCount;
+            internal ReadOnlySpan<byte> DatagramReceivedBuffer => new ReadOnlySpan<byte>(Data.DatagramReceived.Buffer->Buffer, (int)Data.DatagramReceived.Buffer->Length);
             internal QUIC_STREAM_OPEN_FLAG StreamFlags => Data.StreamStarted.Flags;
         }
 
@@ -499,6 +530,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr stream,
             [MarshalAs(UnmanagedType.U1)]
             bool enabled);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate uint DatagramSendDelegate(
+            IntPtr connection,
+            QuicBuffer* buffers,
+            uint bufferCount,
+            uint flags,
+            IntPtr clientSendContext);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct QuicBuffer

@@ -178,6 +178,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         RESUMPTION_TICKET_RECEIVED = 14
     }
 
+    internal enum QUIC_DATAGRAM_SEND_STATE : uint
+    {
+        QUIC_DATAGRAM_SENT = 0,
+        QUIC_DATAGRAM_SEND_LOST_SUSPECT = 1,
+        QUIC_DATAGRAM_SEND_LOST_DISCARDED = 2,
+        QUIC_DATAGRAM_SEND_ACKNOWLEDGED = 3,
+        QUIC_DATAGRAM_SEND_ACKNOWLEDGED_SPURIOUS = 4,
+        QUIC_DATAGRAM_SEND_CANCELED = 5,
+    }
+
     internal enum QUIC_STREAM_EVENT : uint
     {
         START_COMPLETE = 0,

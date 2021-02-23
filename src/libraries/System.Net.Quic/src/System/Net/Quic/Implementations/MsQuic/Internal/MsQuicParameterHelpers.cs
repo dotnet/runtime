@@ -81,6 +81,35 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 "Could not set ulong.");
         }
 
+        internal static unsafe byte GetByteParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param)
+        {
+            byte* ptr = stackalloc byte[sizeof(byte)];
+            QuicBuffer buffer = new QuicBuffer()
+            {
+                Length = sizeof(byte),
+                Buffer = ptr
+            };
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not get byte.");
+
+            return *ptr;
+        }
+
+        internal static unsafe void SetByteParam(MsQuicApi api, IntPtr nativeObject, uint level, uint param, byte value)
+        {
+            QuicBuffer buffer = new QuicBuffer()
+            {
+                Length = sizeof(byte),
+                Buffer = &value
+            };
+
+            QuicExceptionHelpers.ThrowIfFailed(
+                api.UnsafeGetParam(nativeObject, level, param, ref buffer),
+                "Could not set byte.");
+        }
+
         internal static unsafe void SetSecurityConfig(MsQuicApi api, IntPtr nativeObject, uint level, uint param, IntPtr value)
         {
             QuicBuffer buffer = new QuicBuffer()

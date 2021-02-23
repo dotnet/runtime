@@ -223,6 +223,16 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
+        internal override bool DatagramReceiveEnabled { get; set; } = true;
+
+        internal override bool DatagramSendEnabled { get; set; } = true;
+
+        internal override ushort DatagramMaxSendLength { get; }
+
+        internal override event EventHandler<ReadOnlySpan<System.Byte>> DatagramReceived;
+
+        internal override ValueTask<bool> SendDatagramAsync(ReadOnlyMemory<byte> buffer, bool priority) => ValueTask.FromResult(true);
+
         private void CheckDisposed()
         {
             if (_disposed)

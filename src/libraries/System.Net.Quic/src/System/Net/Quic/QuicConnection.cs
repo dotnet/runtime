@@ -102,5 +102,45 @@ namespace System.Net.Quic
         /// Gets the maximum number of unidirectional streams that can be made to the peer.
         /// </summary>
         public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
+
+        /// <summary>
+        /// Whether receiving datagram is enabled.
+        /// </summary>
+        public bool DatagramReceiveEnabled
+        {
+            get => _provider.DatagramReceiveEnabled;
+            set => _provider.DatagramReceiveEnabled = value;
+        }
+
+        /// <summary>
+        /// Whether sending datagram is enabled.
+        /// </summary>
+        public bool DatagramSendEnabled
+        {
+            get => _provider.DatagramSendEnabled;
+            set => _provider.DatagramSendEnabled = value;
+        }
+
+        /// <summary>
+        /// Max length of datagram payload to be sent.
+        /// </summary>
+        public ushort DatagramMaxSendLength => _provider.DatagramMaxSendLength;
+
+        /// <summary>
+        /// Occurs when a datagram is received.
+        /// </summary>
+        public event EventHandler<ReadOnlySpan<byte>> DatagramReceived
+        {
+            add => _provider.DatagramReceived += value;
+            remove => _provider.DatagramReceived -= value;
+        }
+
+        /// <summary>
+        /// Sends a datagram.
+        /// </summary>
+        /// <param name="buffer">Payload of the datagram.</param>
+        /// <param name="priority">Whether the datagram should be prioritized.</param>
+        /// <returns>Whether the datagram is acknowledged in time.</returns>
+        public ValueTask<bool> SendDatagramAsync(ReadOnlyMemory<byte> buffer, bool priority = false) => _provider.SendDatagramAsync(buffer, priority);
     }
 }

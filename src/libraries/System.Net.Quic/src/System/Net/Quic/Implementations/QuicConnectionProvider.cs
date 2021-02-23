@@ -30,6 +30,16 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default);
 
+        internal abstract bool DatagramReceiveEnabled { get; set; }
+
+        internal abstract bool DatagramSendEnabled { get; set; }
+
+        internal abstract ushort DatagramMaxSendLength { get; }
+
+        internal abstract event EventHandler<ReadOnlySpan<byte>> DatagramReceived;
+
+        internal abstract ValueTask<bool> SendDatagramAsync(ReadOnlyMemory<byte> buffer, bool priority);
+
         public abstract void Dispose();
     }
 }

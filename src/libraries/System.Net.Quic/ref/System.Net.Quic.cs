@@ -34,6 +34,7 @@ namespace System.Net.Quic
         public long MaxBidirectionalStreams { get => throw null; set => throw null; }
         public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
         public TimeSpan IdleTimeout { get => throw null; set => throw null; }
+        public bool DatagramReceiveEnabled { get => throw null; set => throw null; }
     }
     public sealed class QuicConnection : IDisposable
     {
@@ -53,6 +54,11 @@ namespace System.Net.Quic
         public void Dispose() => throw null;
         public long GetRemoteAvailableUnidirectionalStreamCount() => throw null;
         public long GetRemoteAvailableBidirectionalStreamCount() => throw null;
+        public bool DatagramReceiveEnabled { get => throw null; set => throw null; }
+        public bool DatagramSendEnabled { get => throw null; set => throw null; }
+        public ushort DatagramMaxSendLength { get => throw null; }
+        public event EventHandler<ReadOnlySpan<byte>> DatagramReceived { add => throw null; remove => throw null; }
+        public System.Threading.Tasks.ValueTask<bool> SendDatagramAsync(ReadOnlyMemory<byte> buffer, bool priority = false) => throw null;
     }
     public class QuicClientConnectionOptions
     {
@@ -62,6 +68,7 @@ namespace System.Net.Quic
         public long MaxBidirectionalStreams { get => throw null; set => throw null; }
         public long MaxUnidirectionalStreams { get => throw null; set => throw null; }
         public TimeSpan IdleTimeout { get => throw null; set => throw null; }
+        public bool DatagramReceiveEnabled { get => throw null; set => throw null; }
     }
     public sealed class QuicStream : System.IO.Stream
     {
