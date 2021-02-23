@@ -224,6 +224,10 @@ jmethodID g_EllipticCurveGetSeed;
 jclass    g_X509EncodedKeySpecClass;
 jmethodID g_X509EncodedKeySpecCtor;
 
+// javax/security/auth
+jclass    g_DestroyableClass;
+jmethodID g_destroy;
+
 // java/util/Date
 jclass    g_DateClass;
 jmethodID g_DateGetTime;

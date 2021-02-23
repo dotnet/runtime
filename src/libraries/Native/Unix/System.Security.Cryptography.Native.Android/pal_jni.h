@@ -237,6 +237,7 @@ extern jmethodID g_X509EncodedKeySpecCtor;
 // javax/security/auth
 extern jclass    g_DestroyableClass;
 extern jmethodID g_destroy;
+
 // java/util/Date
 extern jclass    g_DateClass;
 extern jmethodID g_DateGetTime;
