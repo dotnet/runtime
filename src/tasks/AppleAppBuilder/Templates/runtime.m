@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 static char *bundle_path;
+static char *icu_data = NULL;
 
 // no-op for iOS and tvOS.
 // watchOS is not supported yet.
@@ -209,15 +210,15 @@ static int32_t load_icu_data()
 {
     char path [1024];
     int res;
-    
+
     const char *dname = "icudt.dat";
     const char *bundle = get_bundle_path ();
 
     os_log_info (OS_LOG_DEFAULT, "Loading ICU data file '%s'.", dname);
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
     assert (res > 0);
-   
-    char *icu_data = NULL;
+
+    // TO DO: Handle the case when the file isn't there.
     FILE *fp = fopen(path, "rb");
     if (fp != NULL) {
         if (fseek(fp, 0L, SEEK_END) == 0) {
@@ -243,8 +244,6 @@ static int32_t load_icu_data()
         }
         fclose(fp);
     }
-
-    free(icu_data);
 
     return GlobalizationNative_LoadICUData(icu_data);
 }
@@ -326,6 +325,9 @@ mono_ios_runtime_init (void)
     int res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+
+    if (icu_data)
+        free(icu_data);
 
     exit (res);
 }
