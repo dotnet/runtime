@@ -407,10 +407,7 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (_strategy != null) // possible in finalizer
-            {
-                _strategy.DisposeInternal(disposing);
-            }
+            _strategy?.DisposeInternal(disposing); // null _strategy possible in finalizer
         }
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
