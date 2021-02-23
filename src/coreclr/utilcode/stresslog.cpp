@@ -840,7 +840,8 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
 
     if (InlinedStressLogOn(facility, level))
     {
-        ThreadStressLog* msgs = t_pCurrentThreadLog;
+#ifdef HOST_WINDOWS // On Linux, this cast: (va_list)msg.m_args gives a compile error
+       ThreadStressLog* msgs = t_pCurrentThreadLog;
 
         if (msgs == 0)
         {
@@ -851,6 +852,7 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
         }
         msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, (va_list)msg.m_args);
     }
+#endif //HOST_WINDOWS
 
     // Stress Log ETW feature available only on the desktop versions of the runtime
 #endif //!DACCESS_COMPILE

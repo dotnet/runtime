@@ -9315,13 +9315,7 @@ size_t gc_heap::sort_mark_list()
         return 0;
     }
 
-    uint64_t now = GetHighPrecisionTimeStamp();
-
     uint8_t **local_mark_list_index = equalize_mark_lists (total_mark_list_size);
-
-    uint64_t after_equalize = GetHighPrecisionTimeStamp();
-
-    dprintf (4, ("equalize_mark_lists took %Id microseconds to equalize %Id mark list items", after_equalize - now, local_mark_list_index - mark_list_index));
 
 #ifdef USE_VXSORT
     ptrdiff_t item_count = local_mark_list_index - mark_list;
