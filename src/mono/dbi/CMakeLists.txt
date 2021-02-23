@@ -106,7 +106,10 @@ endif (CLR_CMAKE_HOST_UNIX)
 include_directories("../../coreclr/pal/prebuilt/inc")
 include_directories("../../coreclr/nativeresources")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/nativeresources nativeresources)
+if (CLR_CMAKE_HOST_UNIX)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/nativeresources nativeresources)
+endif()
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/runtime md/runtime)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/md/compiler md/compiler)
 
