@@ -628,7 +628,7 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoAssembly *assembly, M
 		goto return_null;
 
 	if (assembly) {
-		assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+		assembly_handle = mono_assembly_get_object_handle (assembly, error);
 		goto_if_nok (error, return_null);
 	}
 
@@ -672,11 +672,11 @@ mono_domain_set_fast (MonoDomain *domain, gboolean force)
 }
 
 static gboolean
-add_assembly_to_array (MonoDomain *domain, MonoArrayHandle dest, int dest_idx, MonoAssembly* assm, MonoError *error)
+add_assembly_to_array (MonoArrayHandle dest, int dest_idx, MonoAssembly* assm, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
-	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (domain, assm, error);
+	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (assm, error);
 	goto_if_nok (error, leave);
 	MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, assm_obj);
 leave:
@@ -694,7 +694,7 @@ get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
 	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
 	goto_if_nok (error, leave);
 	for (i = 0; i < assemblies->len; ++i) {
-		if (!add_assembly_to_array (domain, res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
+		if (!add_assembly_to_array (res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
 			goto leave;
 	}
 
@@ -728,7 +728,6 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoAssembly *ret = NULL;
-	MonoDomain *domain = mono_alc_domain (alc);
 	char *filename = NULL;
 
 	if (mono_runtime_get_no_exec ())
@@ -755,7 +754,7 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 
 	MonoReflectionAssemblyHandle requesting_handle;
 	if (requesting) {
-		requesting_handle = mono_assembly_get_object_handle (domain, requesting, error);
+		requesting_handle = mono_assembly_get_object_handle (requesting, error);
 		goto_if_nok (error, leave);
 	}
 
@@ -880,7 +879,7 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 		goto exit;
 
 	MonoReflectionAssemblyHandle assembly_handle;
-	assembly_handle = mono_assembly_get_object_handle (domain, assembly, error);
+	assembly_handle = mono_assembly_get_object_handle (assembly, error);
 	goto_if_nok (error, exit);
 
 	gpointer args [1];
@@ -1157,7 +1156,6 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	if (!alc)
 		g_assert_not_reached ();
 	
-	MonoDomain *domain = mono_alc_domain (alc);
 	g_assert (alc);
 	asmctx = MONO_ASMCTX_DEFAULT;
 	mono_assembly_request_prepare_byname (&req, asmctx, alc);
@@ -1192,7 +1190,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 		goto fail;
 
 	MonoReflectionAssemblyHandle refass;
-	refass = mono_assembly_get_object_handle (domain, ass, error);
+	refass = mono_assembly_get_object_handle (ass, error);
 	goto_if_nok (error, fail);
 	return refass;
 
@@ -1242,14 +1240,13 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile (gpointer a
 {
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_ptr;
-	MonoDomain *domain = mono_alc_domain (alc);
 
 	MonoAssembly *executing_assembly;
 	executing_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssembly *ass = mono_alc_load_file (alc, fname, executing_assembly, mono_alc_is_default (alc) ? MONO_ASMCTX_LOADFROM : MONO_ASMCTX_INDIVIDUAL, error);
 	goto_if_nok (error, leave);
 
-	result = mono_assembly_get_object_handle (domain, ass, error);
+	result = mono_assembly_get_object_handle (ass, error);
 
 leave:
 	return result;
@@ -1262,13 +1259,12 @@ MonoReflectionAssemblyHandle
 ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFromStream (gpointer native_alc, gpointer raw_assembly_ptr, gint32 raw_assembly_len, gpointer raw_symbols_ptr, gint32 raw_symbols_len, MonoError *error)
 {
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)native_alc;
-	MonoDomain *domain = mono_alc_domain (alc);
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	MonoAssembly *assm = NULL;
 	assm = mono_alc_load_raw_bytes (alc, (guint8 *)raw_assembly_ptr, raw_assembly_len, (guint8 *)raw_symbols_ptr, raw_symbols_len, error);
 	goto_if_nok (error, leave);
 
-	result = mono_assembly_get_object_handle (domain, assm, error);
+	result = mono_assembly_get_object_handle (assm, error);
 
 leave:
 	return result;
