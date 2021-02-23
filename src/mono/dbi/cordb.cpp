@@ -559,24 +559,18 @@ CordbBaseMono::CordbBaseMono(Connection* conn)
 {
     this->conn     = conn;
     m_cRef         = 0;
-    m_cRefInternal = 0;
 }
 
 CordbBaseMono::~CordbBaseMono() {}
 
 ULONG CordbBaseMono::InternalAddRef()
 {
-    return InterlockedIncrement((volatile LONG*)&m_cRefInternal);
+    return BaseAddRef();
 }
 
 ULONG CordbBaseMono::InternalRelease()
 {
-    ULONG cRef = InterlockedDecrement((volatile LONG*)&m_cRefInternal);
-    if (cRef == 0 && m_cRef == 0)
-    {
-        delete this;
-    }
-    return cRef;
+    return BaseRelease();
 }
 
 ULONG CordbBaseMono::BaseAddRef()
@@ -587,7 +581,7 @@ ULONG CordbBaseMono::BaseAddRef()
 ULONG CordbBaseMono::BaseRelease()
 {
     ULONG cRef = InterlockedDecrement((volatile LONG*)&m_cRef);
-    if (cRef == 0 && m_cRefInternal == 0)
+    if (cRef == 0)
     {
         delete this;
     }

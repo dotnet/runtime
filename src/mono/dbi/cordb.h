@@ -135,7 +135,6 @@ class CordbBaseMono
 protected:
     Connection* conn;
     ULONG       m_cRef;         // Ref count.
-    ULONG       m_cRefInternal; // Ref count.
 public:
     CordbBaseMono(Connection* conn);
     virtual ~CordbBaseMono();
