@@ -21,9 +21,13 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
+#endif
 #include <sys/un.h>
+#if defined(__APPLE__)
 #include <sys/socketvar.h>
+#endif
 #include <errno.h>
 #include <stdio.h>
 #endif
