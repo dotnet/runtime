@@ -616,7 +616,6 @@ __MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
 __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
-    __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 __CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
