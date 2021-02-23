@@ -167,11 +167,17 @@ namespace System.Net.Mail.Tests
         {
             Action act = () => new MailAddress(address);
             if (address is null)
+            {
                 Assert.Throws<ArgumentNullException>(act);
+            }
             else if (address == string.Empty)
+            {
                 Assert.Throws<ArgumentException>(act);
+            }
             else
+            {
                 Assert.Throws<FormatException>(act);
+            }
         }
     }
 }
