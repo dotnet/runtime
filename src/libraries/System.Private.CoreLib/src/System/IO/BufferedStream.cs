@@ -539,7 +539,7 @@ namespace System.IO
 
             // Ok. We can fill the buffer:
             EnsureBufferAllocated();
-            _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+            _readLen = _stream.Read(_buffer!, 0, _buffer!.Length);
 
             bytesFromBuffer = ReadFromBuffer(buffer, offset, count);
 
@@ -594,7 +594,7 @@ namespace System.IO
             {
                 // Otherwise, fill the buffer, then read from that.
                 EnsureBufferAllocated();
-                _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+                _readLen = _stream.Read(_buffer!, 0, _buffer!.Length);
                 return ReadFromBuffer(destination) + bytesFromBuffer;
             }
         }
@@ -755,7 +755,7 @@ namespace System.IO
 
                 // Ok. We can fill the buffer:
                 EnsureBufferAllocated();
-                _readLen = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
+                _readLen = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer!.Length), cancellationToken).ConfigureAwait(false);
 
                 bytesFromBuffer = ReadFromBuffer(buffer.Span);
                 return bytesAlreadySatisfied + bytesFromBuffer;
@@ -796,7 +796,7 @@ namespace System.IO
                 FlushWrite();
 
             EnsureBufferAllocated();
-            _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+            _readLen = _stream.Read(_buffer!, 0, _buffer!.Length);
             _readPos = 0;
 
             if (_readLen == 0)
