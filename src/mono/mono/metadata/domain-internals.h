@@ -438,20 +438,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
 
-// TODO: remove these on netcore, we should always be explicit about allocating from ALCs
-//#ifndef ENABLE_NETCORE
-gpointer
-mono_domain_alloc  (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc(domain, size) (g_cast (mono_domain_alloc ((domain), (size))))
-
-gpointer
-mono_domain_alloc0 (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
-
-//#endif
-
 void
 mono_domain_unset (void);
 

@@ -950,32 +950,6 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 	return domain->friendly_name;
 }
 
-/*
- * mono_domain_alloc:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc (memory_manager, size);
-}
-
-/*
- * mono_domain_alloc0:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc0) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc0 (memory_manager, size);
-}
-
 /**
  * mono_context_set:
  */

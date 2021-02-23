@@ -1787,7 +1787,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	/* If not found, make a new one */
 	if (!gvc) {
-		gvc = (GenericVirtualCase *)mono_domain_alloc (domain, sizeof (GenericVirtualCase));
+		gvc = (GenericVirtualCase *)m_class_alloc (vtable->klass, sizeof (GenericVirtualCase));
 		gvc->method = method;
 		gvc->code = code;
 		gvc->count = 0;
@@ -1911,7 +1911,7 @@ mono_class_try_get_vtable (MonoClass *klass)
 }
 
 static gpointer*
-alloc_vtable (MonoDomain *domain, size_t vtable_size, size_t imt_table_bytes)
+alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1930,7 +1930,7 @@ alloc_vtable (MonoDomain *domain, size_t vtable_size, size_t imt_table_bytes)
 		alloc_offset = 0;
 	}
 
-	return (gpointer*) ((char*)mono_domain_alloc0 (domain, vtable_size) + alloc_offset);
+	return (gpointer*) ((char*)m_class_alloc0 (klass, vtable_size) + alloc_offset);
 }
 
 static MonoVTable *
@@ -2031,7 +2031,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	UnlockedIncrement (&mono_stats.used_class_count);
 	UnlockedAdd (&mono_stats.class_vtable_size, vtable_size);
 
-	interface_offsets = alloc_vtable (domain, vtable_size, imt_table_bytes);
+	interface_offsets = alloc_vtable (klass, vtable_size, imt_table_bytes);
 	vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
 	/* If on interp, skip the interp interface table */
 	if (use_interpreter)
@@ -2076,7 +2076,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		} else {
-			vt->vtable [m_class_get_vtable_size (klass)] = mono_domain_alloc0 (domain, class_size);
+			vt->vtable [m_class_get_vtable_size (klass)] = m_class_alloc0 (klass, class_size);
 		}
 		vt->has_static_fields = TRUE;
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
