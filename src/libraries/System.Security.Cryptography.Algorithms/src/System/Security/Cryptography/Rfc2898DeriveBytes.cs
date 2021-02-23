@@ -12,7 +12,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
-    public class Rfc2898DeriveBytes : DeriveBytes
+    public partial class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;
 

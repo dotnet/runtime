@@ -493,7 +493,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, error));
+			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_defaults.int_class, &ftn, error));
 			goto_if_nok (error, leave);
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
@@ -5974,7 +5974,7 @@ mono_marshal_get_type_object (MonoClass *klass)
 {
 	ERROR_DECL (error);
 	MonoType *type = m_class_get_byval_arg (klass);
-	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+	MonoObject *result = (MonoObject*)mono_type_get_object_checked (type, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }

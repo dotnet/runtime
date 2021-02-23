@@ -733,7 +733,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (error != 0)
                 {
-                    if (Utility.IsLdapError((LdapError)error))
+                    if (LdapErrorMappings.IsLdapError(error))
                     {
                         string errorMessage = LdapErrorMappings.MapResultCode(error);
                         throw new LdapException(error, errorMessage);
