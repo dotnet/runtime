@@ -48,6 +48,7 @@ namespace Tracing.Tests.GCFinalizers
                     return total;
                 });
             }
+            Task.WaitAll(tasks);
         };
 
         private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainEvents = (source) => 
