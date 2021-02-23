@@ -93,7 +93,7 @@ namespace System.Net.Http
                 response.RequestMessage = request;
 
                 // Parse raw response headers and place them into response message.
-                ParseResponseHeaders(requestHandle, Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF, response, buffer, stripEncodingHeaders, isTrailers: false);
+                ParseResponseHeaders(requestHandle, response, buffer, stripEncodingHeaders);
 
                 if (response.RequestMessage.Method != HttpMethod.Head)
                 {
@@ -300,16 +300,56 @@ namespace System.Net.Http
         {
         }
 
-        public static void ParseResponseHeaders(
+        private static void ParseResponseHeaders(
             SafeWinHttpHandle requestHandle,
-            uint infoLevel,
             HttpResponseMessage response,
             char[] buffer,
-            bool stripEncodingHeaders,
-            bool isTrailers)
+            bool stripEncodingHeaders)
         {
             HttpResponseHeaders responseHeaders = response.Headers;
             HttpContentHeaders contentHeaders = response.Content.Headers;
+
+            int bufferLength = GetResponseHeader(
+                requestHandle,
+                Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF,
+                buffer);
+
+            var reader = new WinHttpResponseHeaderReader(buffer, 0, bufferLength);
+
+            // Skip the first line which contains status code, etc. information that we already parsed.
+            reader.ReadLine();
+
+            // Parse the array of headers and split them between Content headers and Response headers.
+            while (reader.ReadHeader(out string headerName, out string headerValue))
+            {
+                if (!responseHeaders.TryAddWithoutValidation(headerName, headerValue))
+                {
+                    if (stripEncodingHeaders)
+                    {
+                        // Remove Content-Length and Content-Encoding headers if we are
+                        // decompressing the response stream in the handler (due to
+                        // WINHTTP not supporting it in a particular downlevel platform).
+                        // This matches the behavior of WINHTTP when it does decompression itself.
+                        if (string.Equals(HttpKnownHeaderNames.ContentLength, headerName, StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(HttpKnownHeaderNames.ContentEncoding, headerName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                    }
+
+                    contentHeaders.TryAddWithoutValidation(headerName, headerValue);
+                }
+            }
+        }
+
+        public static void ParseResponseTrailers(
+            SafeWinHttpHandle requestHandle,
+            HttpResponseMessage response,
+            char[] buffer)
+        {
+            HttpResponseHeaders responseHeaders = response.Headers;
+            HttpContentHeaders contentHeaders = response.Content.Headers;
+
 #if NETSTANDARD2_1
             HttpResponseHeaders responseTrailers = response.TrailingHeaders;
 #else
@@ -319,47 +359,15 @@ namespace System.Net.Http
 
             int bufferLength = GetResponseHeader(
                 requestHandle,
-                infoLevel,
+                Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF | Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS,
                 buffer);
 
             var reader = new WinHttpResponseHeaderReader(buffer, 0, bufferLength);
 
-            if (!isTrailers)
-            {
-                // Skip the first line which contains status code, etc. information that we already parsed.
-                reader.ReadLine();
-            }
-
             // Parse the array of headers and split them between Content headers and Response headers.
-            string headerName;
-            string headerValue;
-
-            while (reader.ReadHeader(out headerName, out headerValue))
+            while (reader.ReadHeader(out string headerName, out string headerValue))
             {
-                if (!isTrailers)
-                {
-                    if (!responseHeaders.TryAddWithoutValidation(headerName, headerValue))
-                    {
-                        if (stripEncodingHeaders)
-                        {
-                            // Remove Content-Length and Content-Encoding headers if we are
-                            // decompressing the response stream in the handler (due to
-                            // WINHTTP not supporting it in a particular downlevel platform).
-                            // This matches the behavior of WINHTTP when it does decompression itself.
-                            if (string.Equals(HttpKnownHeaderNames.ContentLength, headerName, StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(HttpKnownHeaderNames.ContentEncoding, headerName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
-                        }
-
-                        contentHeaders.TryAddWithoutValidation(headerName, headerValue);
-                    }
-                }
-                else
-                {
-                    responseTrailers.TryAddWithoutValidation(headerName, headerValue);
-                }
+                responseTrailers.TryAddWithoutValidation(headerName, headerValue);
             }
         }
 
