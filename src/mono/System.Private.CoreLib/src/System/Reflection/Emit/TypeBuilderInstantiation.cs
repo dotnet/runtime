@@ -50,12 +50,12 @@ namespace System.Reflection.Emit
     internal sealed class TypeBuilderInstantiation :
         TypeInfo
     {
-        #region Keep in sync with object-internals.h MonoReflectionGenericClass
+#region Keep in sync with object-internals.h MonoReflectionGenericClass
 #pragma warning disable 649
         internal Type generic_type;
         private Type[] type_arguments;
 #pragma warning restore 649
-        #endregion
+#endregion
 
         private Dictionary<FieldInfo, FieldInfo>? fields;
         private Dictionary<ConstructorInfo, ConstructorInfo>? ctors;
@@ -456,13 +456,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
-            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
-            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
-            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        [DynamicallyAccessedMembers(MemberAnnotations)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException();
