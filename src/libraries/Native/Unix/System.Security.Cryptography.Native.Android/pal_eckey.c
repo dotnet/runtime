@@ -132,13 +132,6 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
     return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }
 
-int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
-{
-    // We have to generate the key in CryptoNative_EcKeyCreateByOid to get the curve parameters,
-    // so by the time we get here, we've already generated the key.
-    return SUCCESS;
-}
-
 int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
 {
     if (!r)
@@ -168,9 +161,41 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
     return 1;
 }
 
-int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)
+int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)
 {
-    // The public APIs do not support getting a name from an ECKeyParameters object.
-    *nidName = 0;
+    if (!g_ECParameterSpecGetCurveName)
+    {
+        // We can't get the curve name. Treat all curves as unnamed.
+        *curveName = NULL;
+        return SUCCESS;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+
+    jstring curveNameStr = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetCurveName);
+
+    if (!curveNameStr)
+    {
+        *curveName = NULL;
+        return SUCCESS;
+    }
+
+    if (CheckJNIExceptions(env))
+    {
+        *curveName = NULL;
+        return FAIL;
+    }
+
+    jsize nameLength = (*env)->GetStringLength(env, curveNameStr);
+
+    // add one for the null terminator.
+    uint16_t* buffer = malloc(sizeof(int16_t) * (size_t)(nameLength + 1));
+    buffer[nameLength] = 0;
+
+    (*env)->GetStringRegion(env, curveNameStr, 0, nameLength, (jchar*)buffer);
+    (*env)->DeleteLocalRef(env, curveNameStr);
+
+    *curveName = buffer;
+
     return SUCCESS;
 }

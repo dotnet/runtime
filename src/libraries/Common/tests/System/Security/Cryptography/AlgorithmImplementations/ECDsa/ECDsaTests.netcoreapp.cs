@@ -58,8 +58,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public abstract partial class ECDsaTests : ECDsaTestsBase
     {
         [Fact]
-        [SkipOnMono("Android doesn't support getting a curve name from a curve.", TestPlatforms.Android)]
-        public void KeySizePropWithNamedCheck()
+        public void KeySizeProp()
         {
             using (ECDsa e = ECDsaFactory.Create())
             {
@@ -77,24 +76,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
                 // Ensure the key was regenerated
                 Assert.NotEqual(p384.Curve.Oid.FriendlyName, p521.Curve.Oid.FriendlyName);
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
-        public void KeySizeProp()
-        {
-            using (ECDsa e = ECDsaFactory.Create())
-            {
-                e.KeySize = 384;
-                Assert.Equal(384, e.KeySize);
-                ECParameters p384 = e.ExportParameters(false);
-                p384.Validate();
-
-                e.KeySize = 521;
-                Assert.Equal(521, e.KeySize);
-                ECParameters p521 = e.ExportParameters(false);
-                p521.Validate();
             }
         }
 

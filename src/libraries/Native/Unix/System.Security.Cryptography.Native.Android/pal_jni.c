@@ -169,6 +169,7 @@ jmethodID g_ECParameterSpecGetCurve;
 jmethodID g_ECParameterSpecGetGenerator;
 jmethodID g_ECParameterSpecGetCofactor;
 jmethodID g_ECParameterSpecGetOrder;
+jmethodID g_ECParameterSpecGetCurveName;
 
 // java/security/spec/ECField
 jclass    g_ECFieldClass;
@@ -372,6 +373,16 @@ jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, 
     return mid;
 }
 
+jmethodID TryGetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
+{
+    LOG_DEBUG("Finding %s method", name);
+    jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
+    if (!mid) {
+        LOG_INFO("optional method %s %s was not found", name, sig);
+    }
+    return mid;
+}
+
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
     LOG_DEBUG("Finding %s field", name);
@@ -564,6 +575,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ECParameterSpecGetGenerator =    GetMethod(env, false, g_ECParameterSpecClass, "getGenerator", "()Ljava/security/spec/ECPoint;");
     g_ECParameterSpecGetCofactor =     GetMethod(env, false, g_ECParameterSpecClass, "getCofactor", "()I");
     g_ECParameterSpecGetOrder =        GetMethod(env, false, g_ECParameterSpecClass, "getOrder", "()Ljava/math/BigInteger;");
+    g_ECParameterSpecGetCurveName =    TryGetMethod(env, false, g_ECParameterSpecClass, "getCurveName", "()Ljava/lang/String;");
 
     g_ECPointClass =                   GetClassGRef(env, "java/security/spec/ECPoint");
     g_ECPointCtor =                    GetMethod(env, false, g_ECPointClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;)V");

@@ -197,6 +197,7 @@ extern jmethodID g_ECParameterSpecGetCurve;
 extern jmethodID g_ECParameterSpecGetGenerator;
 extern jmethodID g_ECParameterSpecGetCofactor;
 extern jmethodID g_ECParameterSpecGetOrder;
+extern jmethodID g_ECParameterSpecGetCurveName;
 
 // java/security/spec/ECPoint
 extern jclass    g_ECPointClass;
@@ -319,6 +320,7 @@ jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
 void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
+jmethodID TryGetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
 int GetEnumAsInt(JNIEnv *env, jobject enumObj);
