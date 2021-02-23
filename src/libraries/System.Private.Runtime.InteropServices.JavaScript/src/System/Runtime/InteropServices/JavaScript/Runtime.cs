@@ -328,7 +328,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var pResult = (MarshalSignatureInfo *)resultPtr;
 
-            MethodBase? mb = MethodBase.GetMethodFromHandle(methodHandle, typeHandle);
+            MethodBase? mb = (typePtr != IntPtr.Zero)
+                ? MethodBase.GetMethodFromHandle(methodHandle, typeHandle)
+                : MethodBase.GetMethodFromHandle(methodHandle);
             if (mb == null)
                 return 1;
 
