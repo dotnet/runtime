@@ -269,6 +269,8 @@
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
+             Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
              Link="Common\System\Net\ContextAwareResult.cs" />
     <Compile Include="..\..\src\System\Net\Mail\SmtpConnection.Auth.cs"

@@ -1,10 +1,9 @@
 #ifndef __DIAGNOSTICS_PROCESS_PROTOCOL_H__
 #define __DIAGNOSTICS_PROCESS_PROTOCOL_H__
 
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #include "ds-types.h"
 #include "ds-ipc.h"
 
@@ -38,7 +37,7 @@ struct _DiagnosticsProcessInfoPayload_Internal {
 	const ep_char16_t *command_line;
 	const ep_char16_t *os;
 	const ep_char16_t *arch;
-	uint8_t runtime_cookie [EP_ACTIVITY_ID_SIZE];
+	uint8_t runtime_cookie [EP_GUID_SIZE];
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -148,7 +147,7 @@ namespace System.Net.Security
     {
 #endif
 
-        internal SafeFreeCertContext() : base(true) { }
+        public SafeFreeCertContext() : base(true) { }
 
         // This must be ONLY called from this file.
         internal void Set(IntPtr value)
@@ -317,51 +316,6 @@ namespace System.Net.Security
             return errorCode;
         }
 
-    }
-
-    //
-    // This is a class holding a Credential handle reference, used for static handles cache
-    //
-#if DEBUG
-    internal sealed class SafeCredentialReference : DebugCriticalHandleMinusOneIsInvalid
-    {
-#else
-    internal sealed class SafeCredentialReference : CriticalHandleMinusOneIsInvalid
-    {
-#endif
-
-        //
-        // Static cache will return the target handle if found the reference in the table.
-        //
-        internal SafeFreeCredentials Target;
-
-        internal static SafeCredentialReference? CreateReference(SafeFreeCredentials target)
-        {
-            SafeCredentialReference result = new SafeCredentialReference(target);
-            if (result.IsInvalid)
-            {
-                return null;
-            }
-
-            return result;
-        }
-        private SafeCredentialReference(SafeFreeCredentials target) : base()
-        {
-            // Bumps up the refcount on Target to signify that target handle is statically cached so
-            // its dispose should be postponed
-            bool ignore = false;
-            target.DangerousAddRef(ref ignore);
-            Target = target;
-            SetHandle(new IntPtr(0));   // make this handle valid
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            SafeFreeCredentials target = Target;
-            target?.DangerousRelease();
-            Target = null!;
-            return true;
-        }
     }
 
     internal sealed class SafeFreeCredential_SECURITY : SafeFreeCredentials
@@ -1125,7 +1079,7 @@ namespace System.Net.Security
 
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
-        internal SafeDeleteSslContext() : base() { }
+        public SafeDeleteSslContext() : base() { }
 
         protected override bool ReleaseHandle()
         {

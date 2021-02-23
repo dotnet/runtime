@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -58,10 +59,14 @@ namespace System.Diagnostics.Tests
                                     Assert.Equal("Aplicaci\u00F3n", logLink.DisplayName);
                                 }
                             }
-                            Assert.Contains("EventLogMessages.dll", providerMetadata.MessageFilePath);
+
+                            string[] expectedMessageFileNames = new[] { "EventLogMessages.dll", "System.Diagnostics.EventLog.Messages.dll" };
+                            string messageFileName = Path.GetFileName(providerMetadata.MessageFilePath);
+                            Assert.Contains(expectedMessageFileNames, expected => expected.Equals(messageFileName, StringComparison.OrdinalIgnoreCase));
                             if (providerMetadata.HelpLink != null)
                             {
-                                Assert.Contains("EventLogMessages.dll", providerMetadata.HelpLink.ToString());
+                                string helpLink = providerMetadata.HelpLink.ToString();
+                                Assert.Contains(expectedMessageFileNames, expected => -1 != helpLink.IndexOf(expected, StringComparison.OrdinalIgnoreCase));
                             }
                         }
                         else

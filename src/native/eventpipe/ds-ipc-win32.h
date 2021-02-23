@@ -1,14 +1,11 @@
 #ifndef __DIAGNOSTICS_IPC_WIN32_H__
 #define __DIAGNOSTICS_IPC_WIN32_H__
 
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
 #ifdef HOST_WIN32
-#include "ds-rt-config.h"
-#include "ds-types.h"
-#include "ds-ipc.h"
-#include "ep-stream.h"
+#include "ds-ipc-pal.h"
 
 #undef DS_IMPL_GETTER_SETTER
 #ifdef DS_IMPL_IPC_WIN32_GETTER_SETTER
@@ -23,7 +20,6 @@
  */
 
 #define DS_IPC_WIN32_MAX_NAMED_PIPE_LEN 256
-#define DS_IPC_WIN32_INFINITE_TIMEOUT INFINITE
 
 #if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_IPC_WIN32_GETTER_SETTER)
 struct _DiagnosticsIpc {

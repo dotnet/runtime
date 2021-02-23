@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,7 +13,7 @@ namespace System.Net.Sockets
     {
         private readonly SafeSocketHandle? _socketHandle;
 
-        private SafeNativeOverlapped()
+        public SafeNativeOverlapped()
             : this(IntPtr.Zero)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);

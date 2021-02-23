@@ -1165,14 +1165,17 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
     }
-    if (ret != 0)
+    // If we copied to a filesystem (eg EXFAT) that does not preserve POSIX ownership, all files appear
+    // to be owned by root. If we aren't running as root, then we won't be an owner of our new file, and 
+    // attempting to copy metadata to it will fail with EPERM. We have copied successfully, we just can't
+    // copy metadata. The best thing we can do is skip copying the metadata.
+    if (ret != 0 && errno != EPERM)
     {
         return -1;
     }
-
     // Then copy permissions.
     while ((ret = fchmod(outFd, sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))) < 0 && errno == EINTR);
-    if (ret != 0)
+    if (ret != 0 && errno != EPERM) // See EPERM comment above
     {
         return -1;
     }
@@ -1260,8 +1263,27 @@ char* SystemNative_RealPath(const char* path)
     return realpath(path, NULL);
 }
 
+static int16_t ConvertLockType(int16_t managedLockType)
+{
+    // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
+    // which can be different per distro:
+    // https://github.com/torvalds/linux/blob/fcadab740480e0e0e9fa9bd272acd409884d431a/arch/alpha/include/uapi/asm/fcntl.h#L48-L50
+    // https://github.com/freebsd/freebsd-src/blob/fb8c2f743ab695f6004650b58bf96972e2535b20/sys/sys/fcntl.h#L277-L279
+    switch (managedLockType)
+    {
+        case 0:
+            return F_RDLCK;
+        case 1:
+            return F_WRLCK;
+        default:
+            assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
+            return F_UNLCK;
+    }
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+    int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
         errno = EINVAL;
@@ -1274,7 +1296,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-    lockArgs.l_type = lockType;
+    lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
@@ -1306,10 +1328,9 @@ int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 #endif
 }
 
-#ifdef __sun
-
 int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
 {
+#ifdef __sun
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
 
@@ -1330,6 +1351,9 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
     }
 
     return 0;
-}
-
+#else
+    (void)pid, (void)processStatus;
+    errno = ENOTSUP;
+    return -1;
 #endif // __sun
+}

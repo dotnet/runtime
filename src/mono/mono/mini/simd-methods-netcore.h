@@ -183,7 +183,7 @@ METHOD(MoveAndDuplicate)
 METHOD(MoveHighAndDuplicate)
 METHOD(MoveLowAndDuplicate)
 // Ssse3
-METHOD(Abs)
+METHOD(Abs) // Also used by ARM64
 METHOD(AlignRight)
 METHOD(HorizontalAddSaturate)
 METHOD(HorizontalSubtractSaturate)
@@ -225,6 +225,8 @@ METHOD(Encrypt)
 METHOD(EncryptLast)
 METHOD(InverseMixColumns)
 METHOD(KeygenAssist)
+METHOD(PolynomialMultiplyWideningLower)
+METHOD(PolynomialMultiplyWideningUpper)
 // Pclmulqdq
 METHOD(CarrylessMultiply)
 // ArmBase
@@ -236,3 +238,20 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+// Crypto
+METHOD(FixedRotate)
+METHOD(HashUpdateChoose)
+METHOD(HashUpdateMajority)
+METHOD(HashUpdateParity)
+METHOD(HashUpdate1)
+METHOD(HashUpdate2)
+METHOD(ScheduleUpdate0)
+METHOD(ScheduleUpdate1)
+METHOD(MixColumns)
+//AdvSimd
+METHOD(AbsSaturate)
+METHOD(AbsScalar)
+METHOD(AbsoluteCompareGreaterThan)
+METHOD(AbsoluteCompareGreaterThanOrEqual)
+METHOD(AbsoluteCompareLessThan)
+METHOD(AbsoluteCompareLessThanOrEqual)

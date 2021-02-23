@@ -809,7 +809,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(2, originalPrivateKeyCount);
 
                 byte[] exported = collection.Export(X509ContentType.Pkcs12);
-                
+
                 using (ImportedCollection ic = Cert.Import(exported))
                 {
                     X509Certificate2Collection importedCollection = ic.Collection;
@@ -1305,7 +1305,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Halfway between microsoftDotCom's NotBefore and NotAfter
                 // This isn't a boundary condition test.
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -1465,7 +1465,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ImportFromPemFile_MultiplePems_Success()
         {
             string pemAggregate = TestData.RsaCertificate + TestData.ECDsaCertificate;
-    
+
             using (TempFileHolder aggregatePemFile = new TempFileHolder(pemAggregate))
             using(ImportedCollection ic = Cert.ImportFromPemFile(aggregatePemFile.FilePath))
             {

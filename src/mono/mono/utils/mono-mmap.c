@@ -289,7 +289,7 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 		return NULL;
 #endif
 
-#if defined(__APPLE__) && defined(MAP_JIT)
+#if defined(__APPLE__) && defined(MAP_JIT) && defined(TARGET_OSX)
 	if (get_darwin_version () >= DARWIN_VERSION_MOJAVE) {
 		/* Check for hardened runtime */
 		static int is_hardened_runtime;

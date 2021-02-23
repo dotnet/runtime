@@ -122,17 +122,12 @@ namespace System.Threading
             _valueFactory = valueFactory;
             _trackAllValues = trackAllValues;
 
-            // Assign the ID and mark the instance as initialized. To avoid leaking IDs, we assign the ID and set _initialized
-            // in a finally block, to avoid a thread abort in between the two statements.
-            try { }
-            finally
-            {
-                _idComplement = ~s_idManager.GetId();
+            // Assign the ID and mark the instance as initialized.
+             _idComplement = ~s_idManager.GetId();
 
-                // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
-                // occurred in the constructor.)
-                _initialized = true;
-            }
+            // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
+            // occurred in the constructor.)
+            _initialized = true;
         }
 
         /// <summary>

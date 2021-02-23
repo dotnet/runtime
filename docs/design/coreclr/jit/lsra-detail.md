@@ -341,7 +341,7 @@ After LSRA, the graph has the following properties:
 -   If a node has both `GTF_SPILL` and `GTF_SPILLED`, the tree node is reloaded prior to using
     it (`GTF_SPILLED`) and spilled after it is evaluated (`GTF_SPILL`).
 
-    -   For normal variables, we can only have both `GTF_SPILL` and `GTF_SPILLED` on uses, 
+    -   For normal variables, we can only have both `GTF_SPILL` and `GTF_SPILLED` on uses,
         since a def never needs to reload an old value. However, for EH-write-thru variable
         defs, this combination of flags has a special meaning. A def of an EH-write-thru variable is
         always written to the stack. However, if it is also marked `GTF_SPILLED` it remains live in the
@@ -714,7 +714,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
 
     -   The actual resolution, for all edge types, is done by `resolveEdge()`.
         Based on the `ResolveType`, it either inserts the move at the top or bottom
-        of the block. 
+        of the block.
         The algorithm for resolution can be found in [[2]](#[2]), though note
         that there is a typo: in the last 'if' statement, it should be
         "if b != loc(pred(b))" instead of "if b = loc(pred(b))":
@@ -962,7 +962,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the `COMPLUS_JitStressRegs` environment variable.
+The implementation uses the `COMPlus_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -1178,7 +1178,26 @@ I have an old experimental branch where I started working on this:
 https://github.com/CarolEidt/runtime/tree/NoEdgeSplitting. It was ported from the coreclr to
 the runtime repo, but not validated in any significant way.
 Initial experience showed that this resulted in more regressions than improvements.
-Issue [\#8552](https://github.com/dotnet/runtime/issues/8552) may be related.
+
+A less aggressive approach would be to make minor modifications to reduce the
+need for split edges:
+
+* When selecting a predecessor for the fall-through block for a loop backedge,
+  instead of using the actual predecessor, use the non-backedge predecessor of
+  the loop head. This will mean that both successors of the loop will use the same
+  mapping, reducing the need to split the edge.
+
+* When a `RefTypeExpUse` is encountered, if it is at a loop backedge, the variable
+  is in a register, and the loop head has the variable on the stack, spill it.
+  Spilling preemptively will enable the spill to be performed at an actual reference,
+  rather than at the block boundary.
+
+This approach has been implemented experimentally in https://github.com/CarolEidt/runtime/tree/AvoidSplittingBackedge.
+Running crossgen diffs across frameworks and benchmarks for X64 Windows shows
+a delta of -2392 (-0.007%) with 317 methods improved and 66 regressed.
+Further analysis of the regressions is needed.
+
+Issues [\#8552](https://github.com/dotnet/runtime/issues/8552) and [\#40264](https://github.com/dotnet/runtime/issues/40264) may be related.
 
 ### Enable EHWriteThru by default
 
@@ -1193,11 +1212,11 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 
     1. For determining whether an EH var should be a candidate for register allocation,
        e.g. if the defs outweight the uses.
-       
+
        - An initial investigation might only consider an EH var as a register candidate if it has a single use. One complication is that we sometimes generate better code for a non-register-candidate local than one that is always spilled (we don't support `RegOptional` defs).
        Thus, it would be better to identify *before* building intervals whether we should consider it a candidate, but the problem with that is that we don't necessarily know at that
        time whether there is a single def. A possible approach:
-    
+
             - Add an `isSingleDef` flag to `Interval`.
             - When allocating a use of a `writeThru` interval:
                 - If it's marked `isSingleDef`, allocate as usual.
@@ -1270,7 +1289,7 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 ### Improving Preferencing
 
--   Issues [#36454](https://github.com/dotnet/runtime/issues/36454), 
+-   Issues [#36454](https://github.com/dotnet/runtime/issues/36454),
     [#11260](https://github.com/dotnet/runtime/issues/11260) and
     [#12945](https://github.com/dotnet/runtime/issues/12945)
     involve preferencing for HW intrinsics.
@@ -1280,7 +1299,7 @@ Issue [\#9896](https://github.com/dotnet/runtime/issues/9896).
 
 -   Issue [#13090](https://github.com/dotnet/runtime/issues/13090) involves a case where anti-preferencing might be useful.
 
--   Issue 10296 may also be related to preferencing, if it is still an issue. 
+-   Issue [#10296](https://github.com/dotnet/runtime/issues/10296) may also be related to preferencing, if it is still an issue.
 
 ### Leveraging SSA form
 

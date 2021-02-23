@@ -225,23 +225,19 @@ PALEXPORT int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int
  */
 PALEXPORT char* SystemNative_GetCwd(char* buffer, int32_t bufferSize);
 
-#if HAVE_SCHED_SETAFFINITY
 /**
  * Sets the CPU affinity mask for a specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
 PALEXPORT int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask);
-#endif
 
-#if HAVE_SCHED_GETAFFINITY
 /**
  * Gets the affinity mask of the specified thread (or the current thread if 0).
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
 PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
-#endif
 
 /**
  * Returns the path of the executable that started the currently executing process, 

@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -237,7 +238,7 @@
     <value>The LDAP connection cannot retrieve a partial result set.</value>
   </data>
   <data name="DefaultLdapError" xml:space="preserve">
-    <value>The LDAP server returned an unknown error.</value>
+    <value>The LDAP server returned an unknown error: {0}</value>
   </data>
   <data name="LDAP_PARTIAL_RESULTS" xml:space="preserve">
     <value>Only partial results and referrals were received.</value>
@@ -487,5 +488,8 @@
   </data>
   <data name="DirectoryServicesProtocols_PlatformNotSupported" xml:space="preserve">
     <value>System.DirectoryServices.Protocols is not supported on this platform.</value>
+  </data>
+  <data name="QuotaControlNotSupported" xml:space="preserve">
+    <value>System.DirectoryServices.Protocols.QuotaControl is not supported on this platform.</value>
   </data>
 </root>

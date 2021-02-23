@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
+
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -20,12 +22,14 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
                     onWait: () =>
                     {
-                        if (PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadWait(
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadWait(
                                 (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                         }
                     });
+
+            private static readonly ThreadStart s_workerThreadStart = WorkerThreadStart;
 
             private static void WorkerThreadStart()
             {
@@ -33,9 +37,9 @@ namespace System.Threading
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStart(
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStart(
                         (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                 }
 
@@ -58,6 +62,24 @@ namespace System.Threading
                                 // decreases the worker thread count goal.
                                 alreadyRemovedWorkingWorker = true;
                                 break;
+                            }
+
+                            if (threadPoolInstance._separated.numRequestedWorkers <= 0)
+                            {
+                                break;
+                            }
+
+                            // In highly bursty cases with short bursts of work, especially in the portable thread pool
+                            // implementation, worker threads are being released and entering Dispatch very quickly, not finding
+                            // much work in Dispatch, and soon afterwards going back to Dispatch, causing extra thrashing on
+                            // data and some interlocked operations, and similarly when the thread pool runs out of work. Since
+                            // there is a pending request for work, introduce a slight delay before serving the next request.
+                            // The spin-wait is mainly for when the sleep is not effective due to there being no other threads
+                            // to schedule.
+                            Thread.UninterruptibleSleep0();
+                            if (!Environment.IsSingleProcessor)
+                            {
+                                Thread.SpinWait(1);
                             }
                         }
 
@@ -105,9 +127,9 @@ namespace System.Threading
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
 
-                                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                                if (NativeRuntimeEventSource.Log.IsEnabled())
                                 {
-                                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
+                                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
                                 }
                                 return;
                             }
@@ -139,21 +161,6 @@ namespace System.Threading
                         break;
                     }
                     currentCounts = oldCounts;
-                }
-
-                if (currentCounts.NumProcessingWork > 1)
-                {
-                    // In highly bursty cases with short bursts of work, especially in the portable thread pool implementation,
-                    // worker threads are being released and entering Dispatch very quickly, not finding much work in Dispatch,
-                    // and soon afterwards going back to Dispatch, causing extra thrashing on data and some interlocked
-                    // operations. If this is not the last thread to stop processing work, introduce a slight delay to help
-                    // other threads make more efficient progress. The spin-wait is mainly for when the sleep is not effective
-                    // due to there being no other threads to schedule.
-                    Thread.UninterruptibleSleep0();
-                    if (!Environment.IsSingleProcessor)
-                    {
-                        Thread.SpinWait(1);
-                    }
                 }
 
                 // It's possible that we decided we had thread requests just before a request came in,
@@ -285,10 +292,13 @@ namespace System.Threading
             {
                 try
                 {
-                    Thread workerThread = new Thread(WorkerThreadStart);
+                    // Thread pool threads must start in the default execution context without transferring the context, so
+                    // using UnsafeStart() instead of Start()
+                    Thread workerThread = new Thread(s_workerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
-                    workerThread.Start();
+                    // thread name will be set in thread proc
+                    workerThread.UnsafeStart();
                 }
                 catch (ThreadStartException)
                 {
@@ -298,6 +308,7 @@ namespace System.Threading
                 {
                     return false;
                 }
+
                 return true;
             }
         }

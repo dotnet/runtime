@@ -1,7 +1,6 @@
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #if !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES)
 
 #define DS_IMPL_PROFILER_PROTOCOL_GETTER_SETTER
@@ -56,10 +55,10 @@ attach_profiler_command_try_parse_payload (
 		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)EP_ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->client_data_len) ||
-		!(buffer_len <= instance->client_data_len))
+		!(buffer_cursor_len <= instance->client_data_len))
 		ep_raise_error ();
 
-	instance->client_data = buffer;
+	instance->client_data = buffer_cursor;
 
 ep_on_exit:
 	return (uint8_t *)instance;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -292,7 +291,7 @@ namespace System.Security.Cryptography.Apple
 {
     internal class SafeKeychainItemHandle : SafeHandle
     {
-        internal SafeKeychainItemHandle()
+        public SafeKeychainItemHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -310,7 +309,7 @@ namespace System.Security.Cryptography.Apple
 
     internal class SafeKeychainHandle : SafeHandle
     {
-        internal SafeKeychainHandle()
+        public SafeKeychainHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

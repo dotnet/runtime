@@ -70,9 +70,11 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_CLIENT_CONTROLS = 0x13, // Not Supported in Windows
         LDAP_OPT_API_FEATURE_INFO = 0x15,
         LDAP_OPT_HOST_NAME = 0x30,
-        LDAP_OPT_ERROR_NUMBER = 0x31,
-        LDAP_OPT_ERROR_STRING = 0x32,
-        LDAP_OPT_SERVER_ERROR = 0x33,
+        LDAP_OPT_ERROR_NUMBER = 0x31, // aka LDAP_OPT_RESULT_CODE
+        LDAP_OPT_ERROR_STRING = 0x32, // aka LDAP_OPT_DIAGNOSTIC_MESSAGE
+        // This one is overloaded between Windows and Linux servers:
+        // in OpenLDAP, LDAP_OPT_MATCHED_DN = 0x33
+        LDAP_OPT_SERVER_ERROR = 0x33, // Not Supported in Linux
         LDAP_OPT_SERVER_EXT_ERROR = 0x34, // Not Supported in Linux
         LDAP_OPT_HOST_REACHABLE = 0x3E, // Not Supported in Linux
         LDAP_OPT_PING_KEEP_ALIVE = 0x36, // Not Supported in Linux

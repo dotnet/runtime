@@ -126,5 +126,89 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).Count(predicate));
         }
+
+        [Fact]
+        public void NonEnumeratingCount_NullSource_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IEnumerable<int>)null).TryGetNonEnumeratedCount(out _));
+        }
+
+        [Theory]
+        [MemberData(nameof(NonEnumeratingCount_SupportedEnumerables))]
+        public void NonEnumeratingCount_SupportedEnumerables_ShouldReturnExpectedCount<T>(int expectedCount, IEnumerable<T> source)
+        {
+            Assert.True(source.TryGetNonEnumeratedCount(out int actualCount));
+            Assert.Equal(expectedCount, actualCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonEnumeratingCount_UnsupportedEnumerables))]
+        public void NonEnumeratingCount_UnsupportedEnumerables_ShouldReturnFalse<T>(IEnumerable<T> source)
+        {
+            Assert.False(source.TryGetNonEnumeratedCount(out int actualCount));
+            Assert.Equal(0, actualCount);
+        }
+
+        [Fact]
+        public void NonEnumeratingCount_ShouldNotEnumerateSource()
+        {
+            bool isEnumerated = false;
+            Assert.False(Source().TryGetNonEnumeratedCount(out int count));
+            Assert.Equal(0, count);
+            Assert.False(isEnumerated);
+
+            IEnumerable<int> Source()
+            {
+                isEnumerated = true;
+                yield return 42;
+            }
+        }
+
+        public static IEnumerable<object[]> NonEnumeratingCount_SupportedEnumerables()
+        {
+            yield return WrapArgs(4, new int[]{ 1, 2, 3, 4 });
+            yield return WrapArgs(4, new List<int>(new int[] { 1, 2, 3, 4 }));
+            yield return WrapArgs(4, new Stack<int>(new int[] { 1, 2, 3, 4 }));
+
+            yield return WrapArgs(0, Enumerable.Empty<string>());
+
+            if (PlatformDetection.IsSpeedOptimized)
+            {
+                yield return WrapArgs(100, Enumerable.Range(1, 100));
+                yield return WrapArgs(80, Enumerable.Repeat(1, 80));
+                yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1));
+                yield return WrapArgs(4, new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
+                yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
+                yield return WrapArgs(7, Enumerable.Range(1, 20).ToLookup(x => x % 7));
+                yield return WrapArgs(20, Enumerable.Range(1, 20).Reverse());
+                yield return WrapArgs(20, Enumerable.Range(1, 20).OrderBy(x => -x));
+                yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
+            }
+
+            static object[] WrapArgs<T>(int expectedCount, IEnumerable<T> source) => new object[] { expectedCount, source };
+        }
+
+        public static IEnumerable<object[]> NonEnumeratingCount_UnsupportedEnumerables()
+        {
+            yield return WrapArgs(Enumerable.Range(1, 100).Where(x => x % 2 == 0));
+            yield return WrapArgs(Enumerable.Range(1, 100).GroupBy(x => x % 2 == 0));
+            yield return WrapArgs(new Stack<int>(new int[] { 1, 2, 3, 4 }).Select(x => x + 1));
+            yield return WrapArgs(Enumerable.Range(1, 100).Distinct());
+
+            if (!PlatformDetection.IsSpeedOptimized)
+            {
+                yield return WrapArgs(Enumerable.Range(1, 100));
+                yield return WrapArgs(Enumerable.Repeat(1, 80));
+                yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
+                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
+                yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
+                yield return WrapArgs(Enumerable.Range(1, 20).ToLookup(x => x % 7));
+                yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
+                yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));
+                yield return WrapArgs(Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
+            }
+
+            static object[] WrapArgs<T>(IEnumerable<T> source) => new object[] { source };
+        }
     }
 }

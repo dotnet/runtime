@@ -7,13 +7,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageDescriptionFile>$(InstallerProjectRoot)pkg/projects/descriptions.json</PackageDescriptionFile>
-    <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
-    <ProjectUrl>https://dot.net</ProjectUrl>
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
 
@@ -26,17 +19,4 @@
   <ItemGroup>
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
-
-  <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
-    <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
-    <Error Condition="'$(HostResolverVersion)'==''" Text="HostResolverVersion is undefined" />
-    <Error Condition="'$(HostVersion)'==''" Text="HostVersion is undefined" />
-    <Error Condition="'$(AppHostVersion)'==''" Text="AppHostVersion is undefined" />
-  </Target>
-
-  <Target Name="ValidatePreReleaseStrings" Condition="'$(StabilizePackageVersion)'!='true'">
-    <Error Condition="'$(PreReleaseVersionLabel)'==''" Text="PreReleaseVersionLabel is undefined" />
-    <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
-    <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
-  </Target>
 </Project>

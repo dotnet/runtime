@@ -1,10 +1,9 @@
 #ifndef __DIAGNOSTICS_SERVER_H__
 #define __DIAGNOSTICS_SERVER_H__
 
-#include <config.h>
+#include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ds-rt-config.h"
 #include "ds-types.h"
 #include "ds-rt.h"
 

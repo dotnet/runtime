@@ -457,7 +457,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAILCALL_MEMBASE 1
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
@@ -474,8 +473,9 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 
-#if defined(HOST_TVOS)
-/* No signals */
+#if defined(HOST_TVOS) || defined(HOST_WATCHOS)
+/* Neither tvOS nor watchOS give signal handlers access to a ucontext_t, so we
+ * can't use signals to translate SIGFPE into a .NET-level exception. */
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
 

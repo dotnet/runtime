@@ -351,7 +351,7 @@ namespace System
 
         // methods
 
-        public override bool Equals(object? rparam)
+        public override bool Equals([NotNullWhen(true)] object? rparam)
         {
             if (rparam == null)
             {

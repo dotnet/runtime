@@ -88,6 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        [PlatformSpecific(~TestPlatforms.Browser)]  // JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
             var rand = new Random();

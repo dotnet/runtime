@@ -3,8 +3,7 @@
 
 namespace System.Security
 {
-    // SuppressUnmanagedCodeSecurityAttribute:
-    //  This attribute has no functional impact in CoreCLR.
+    // Has no effect in .NET Core
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
     public sealed class SuppressUnmanagedCodeSecurityAttribute : Attribute
     {

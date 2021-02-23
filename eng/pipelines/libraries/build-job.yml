@@ -24,6 +24,7 @@ parameters:
   preBuildSteps: []
   container: ''
   condition: true
+  dependOnEvaluatePaths: false
   shouldContinueOnError: false
   variables: {}
   pool: ''
@@ -50,6 +51,7 @@ jobs:
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}

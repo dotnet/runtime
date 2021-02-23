@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
@@ -58,6 +59,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />

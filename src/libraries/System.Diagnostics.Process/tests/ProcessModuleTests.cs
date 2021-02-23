@@ -3,7 +3,7 @@
 
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -27,61 +27,6 @@ namespace System.Diagnostics.Tests
                 Assert.InRange(module.BaseAddress.ToInt64(), long.MinValue, long.MaxValue);
                 Assert.InRange(module.EntryPointAddress.ToInt64(), long.MinValue, long.MaxValue);
                 Assert.InRange(module.ModuleMemorySize, 0, long.MaxValue);
-            }
-        }
-
-        [ConditionalFact(nameof(IsProcessElevated))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void TestModuleLongPath()
-        {
-            // // Metadata version: v4.0.30319
-            // .assembly Test
-            // {
-            //   .ver 0:0:0:0
-            // }
-            // .module Test.dll
-            // // MVID: {48E60D10-353B-45DC-AA09-3A1E6B0FD382}
-            // .imagebase 0x00400000
-            // .file alignment 0x00000200
-            // .stackreserve 0x00100000
-            // .subsystem 0x0003       // WINDOWS_CUI
-            // .corflags 0x00000001    //  ILONLY
-            byte[] assemblyImage = Convert.FromBase64String(
-                "TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAA4fug4AtAnNIbgBTM0hVGhpcyBwcm9ncmFt" +
-                "IGNhbm5vdCBiZSBydW4gaW4gRE9TIG1vZGUuDQ0KJAAAAAAAAABQRQAATAECAJyj7l8AAAAAAAAAAOAAAiELAQsAAAIAAAACAAAAAAAAfiEAAAAgAAAAQAAA" +
-                "AABAAAAgAAAAAgAABAAAAAAAAAAEAAAAAAAAAABgAAAAAgAAAAAAAAMAQIUAABAAABAAAAAAEAAAEAAAAAAAABAAAAAAAAAAAAAAADAhAABLAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAEAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAACAAAAAAAAAAAAAAA" +
-                "CCAAAEgAAAAAAAAAAAAAAC50ZXh0AAAAhAEAAAAgAAAAAgAAAAIAAAAAAAAAAAAAAAAAACAAAGAucmVsb2MAAAwAAAAAQAAAAAIAAAAEAAAAAAAAAAAAAAAA" +
-                "AABAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgIQAAAAAAAEgAAAACAAUAUCAAAOAAAAABAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJTSkIBAAEAAAAAAAwAAAB2NC4wLjMwMzE5AAAAAAQAXAAAAFQA" +
-                "AAAjfgAAsAAAABgAAAAjU3RyaW5ncwAAAADIAAAACAAAACNVUwDQAAAAEAAAACNHVUlEAAAAAAAAAAIAAAEFAAAAAQAAAAD6JTMAFgAAAQAAAAEAAAABAAAA" +
-                "AAAKAAEAAAAAAAAAAAABAAAAAAABAAEAAAAAAAAAAAAAAAAAAAAAAAAAEwAAAAAAADxNb2R1bGU+AFRlc3QuZGxsAFRlc3QAAAMgAAAAAAAQDeZIOzXcRaoJ" +
-                "Oh5rD9OCWCEAAAAAAAAAAAAAbiEAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAhAAAAAAAAAABfQ29yRGxsTWFpbgBtc2NvcmVlLmRsbAAAAAAA/yUAIEAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAMAAAAgDEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                "AAAAAAAA"
-            );
-
-            string libraryDirectory = GetTestFilePath();
-            Directory.CreateDirectory(libraryDirectory);
-            string libraryPath = Path.Combine(libraryDirectory, new string('_', 250) + ".dll");
-            Assert.True(libraryPath.Length > 260);
-            File.WriteAllBytes(libraryPath, assemblyImage);
-
-            IntPtr library = NativeLibrary.Load(libraryPath);
-            Assert.True(library != IntPtr.Zero);
-            try
-            {
-                Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == libraryPath);
-            }
-            finally
-            {
-                NativeLibrary.Free(library);
             }
         }
 
@@ -145,6 +90,33 @@ namespace System.Diagnostics.Tests
 
             process.Dispose();
             Assert.Equal(expectedCount, disposedCount);
+        }
+
+        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void LongModuleFileNamesAreSupported()
+        {
+            // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path >= 260 chars.
+            // Since Long Paths support can be disabled (see the ConditionalFact attribute usage above),
+            // we just copy "LongName.dll" from bin to a temp directory with a long name and load it from there.
+            // Loading from new path is possible because the type exposed by the assembly is not referenced in any explicit way.
+            const string libraryName = "LongPath.dll";
+
+            string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
+            string libraryToCopy = Path.Combine(testBinPath, libraryName);
+            Assert.True(File.Exists(libraryToCopy), $"{libraryName} was not present in bin folder '{testBinPath}'");
+
+            string directoryWithLongName = Path.Combine(TestDirectory, new string('a', Math.Max(1, 261 - TestDirectory.Length)));
+            Directory.CreateDirectory(directoryWithLongName);
+
+            string longNamePath = Path.Combine(directoryWithLongName, libraryName);
+            Assert.True(longNamePath.Length > 260);
+
+            File.Copy(libraryToCopy, longNamePath);
+
+            Assembly loaded = Assembly.LoadFile(longNamePath);
+
+            Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == longNamePath);
         }
     }
 }

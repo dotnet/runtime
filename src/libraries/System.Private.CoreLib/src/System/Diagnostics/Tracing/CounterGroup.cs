@@ -133,6 +133,7 @@ namespace System.Diagnostics.Tracing
                 ResetCounters(); // Reset statistics for counters before we start the thread.
 
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
+#if ES_BUILD_STANDALONE
                 // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 bool restoreFlow = false;
                 try
@@ -142,7 +143,7 @@ namespace System.Diagnostics.Tracing
                         ExecutionContext.SuppressFlow();
                         restoreFlow = true;
                     }
-
+#endif
                     _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
 
                     // Create the polling thread and init all the shared state if needed
@@ -150,8 +151,16 @@ namespace System.Diagnostics.Tracing
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
                         s_counterGroupEnabledList = new List<CounterGroup>();
-                        s_pollingThread = new Thread(PollForValues) { IsBackground = true };
+                        s_pollingThread = new Thread(PollForValues)
+                        {
+                            IsBackground = true,
+                            Name = ".NET Counter Poller"
+                        };
+#if ES_BUILD_STANDALONE
                         s_pollingThread.Start();
+#else
+                        s_pollingThread.UnsafeStart();
+#endif
                     }
 
                     if (!s_counterGroupEnabledList!.Contains(this))
@@ -162,6 +171,7 @@ namespace System.Diagnostics.Tracing
                     // notify the polling thread that the polling interval may have changed and the sleep should
                     // be recomputed
                     s_pollingThreadSleepEvent!.Set();
+#if ES_BUILD_STANDALONE
                 }
                 finally
                 {
@@ -169,6 +179,7 @@ namespace System.Diagnostics.Tracing
                     if (restoreFlow)
                         ExecutionContext.RestoreFlow();
                 }
+#endif
             }
         }
 

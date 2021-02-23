@@ -171,7 +171,7 @@ function(set_exports_linker_option exports_filename)
 endfunction()
 
 # compile_asm(TARGET target ASM_FILES file1 [file2 ...] OUTPUT_OBJECTS [variableName])
-# CMake does not support the ARM or ARM64 assemblers on Windows when using the 
+# CMake does not support the ARM or ARM64 assemblers on Windows when using the
 # MSBuild generator. When the MSBuild generator is in use, we manually compile the assembly files
 # using this function.
 function(compile_asm)
@@ -211,16 +211,16 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(AWK_SCRIPT generateexportedsymbols.awk)
+  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
-    set(AWK_SCRIPT generateversionscript.awk)
-  endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(SCRIPT_NAME generateversionscript.sh)
+  endif()
 
   add_custom_command(
     OUTPUT ${outputFilename}
-    COMMAND ${AWK} -f ${CLR_ENG_NATIVE_DIR}/${AWK_SCRIPT} ${INPUT_LIST} >${outputFilename}
-    DEPENDS ${INPUT_LIST} ${CLR_ENG_NATIVE_DIR}/${AWK_SCRIPT}
+    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
+    DEPENDS ${INPUT_LIST} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
     COMMENT "Generating exports file ${outputFilename}"
   )
   set_source_files_properties(${outputFilename}
@@ -230,18 +230,18 @@ endfunction()
 function(generate_exports_file_prefix inputFilename outputFilename prefix)
 
   if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(AWK_SCRIPT generateexportedsymbols.awk)
+    set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
-    set(AWK_SCRIPT generateversionscript.awk)
+    set(SCRIPT_NAME generateversionscript.sh)
     if (NOT ${prefix} STREQUAL "")
-        set(AWK_VARS ${AWK_VARS} -v prefix=${prefix})
+        set(EXTRA_ARGS ${prefix})
     endif()
   endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
   add_custom_command(
     OUTPUT ${outputFilename}
-    COMMAND ${AWK} -f ${CLR_ENG_NATIVE_DIR}/${AWK_SCRIPT} ${AWK_VARS} ${inputFilename} >${outputFilename}
-    DEPENDS ${inputFilename} ${CLR_ENG_NATIVE_DIR}/${AWK_SCRIPT}
+    COMMAND ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+    DEPENDS ${inputFilename} ${CLR_ENG_NATIVE_DIR}/${SCRIPT_NAME}
     COMMENT "Generating exports file ${outputFilename}"
   )
   set_source_files_properties(${outputFilename}
@@ -252,7 +252,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dwarf)
 
       # Ensure that dsymutil and strip are present
@@ -268,7 +268,7 @@ function(strip_symbols targetName outputFilename)
 
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
       if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
       else ()
         set(strip_command)
       endif ()
@@ -281,7 +281,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
       set(strip_destination_file ${strip_source_file}.dbg)
 
       add_custom_command(
@@ -293,7 +293,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   else(CLR_CMAKE_HOST_UNIX)
@@ -315,6 +315,12 @@ function(install_with_stripped_symbols targetName kind destination)
       strip_symbols(${targetName} symbol_file)
       install_symbols(${symbol_file} ${destination})
     endif()
+
+    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+      # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
+      set(kind PROGRAMS)
+    endif()
+
     if ("${kind}" STREQUAL "TARGETS")
       set(install_source ${targetName})
     elseif("${kind}" STREQUAL "PROGRAMS")

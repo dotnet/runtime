@@ -1,0 +1,7 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <PackageDescription>Provides additional DataAnnotations specific functionality related to Options.</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+  </PropertyGroup>
+</Project>

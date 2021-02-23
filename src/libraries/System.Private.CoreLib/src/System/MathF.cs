@@ -37,6 +37,12 @@ namespace System
 
         private const float singleRoundLimit = 1e8f;
 
+        private const float SCALEB_C1 = 1.7014118E+38f; // 0x1p127f
+
+        private const float SCALEB_C2 = 1.1754944E-38f; // 0x1p-126f
+
+        private const float SCALEB_C3 = 16777216f; // 0x1p24f
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -259,6 +265,56 @@ namespace System
             return y;
         }
 
+        /// <summary>Returns an estimate of the reciprocal of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RCPSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / x;
+            }
+        }
+
+        /// <summary>Returns an estimate of the reciprocal square root of a specified number.</summary>
+        /// <param name="x">The number whose reciprocal square root is to be estimated.</param>
+        /// <returns>An estimate of the reciprocal square root <paramref name="x" />.</returns>
+        /// <remarks>
+        ///    <para>On x86/x64 hardware this may use the <c>RSQRTSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReciprocalSqrtEstimate(float x)
+        {
+            if (Sse.IsSupported)
+            {
+                return Sse.ReciprocalSqrtScalar(Vector128.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ReciprocalSquareRootEstimateScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+            }
+            else
+            {
+                return 1.0f / Sqrt(x);
+            }
+        }
+
         [Intrinsic]
         public static float Round(float x)
         {
@@ -420,6 +476,48 @@ namespace System
         {
             ModF(x, &x);
             return x;
+        }
+
+        public static float ScaleB(float x, int n)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/scalblnf.c
+            //
+            // Performs the calculation x * 2^n efficiently. It constructs a float from 2^n by building
+            // the correct biased exponent. If n is greater than the maximum exponent (127) or less than
+            // the minimum exponent (-126), adjust x and n to compute correct result.
+
+            float y = x;
+            if (n > 127)
+            {
+                y *= SCALEB_C1;
+                n -= 127;
+                if (n > 127)
+                {
+                    y *= SCALEB_C1;
+                    n -= 127;
+                    if (n > 127)
+                    {
+                        n = 127;
+                    }
+                }
+            }
+            else if (n < -126)
+            {
+                y *= SCALEB_C2 * SCALEB_C3;
+                n += 126 - 24;
+                if (n < -126)
+                {
+                    y *= SCALEB_C2 * SCALEB_C3;
+                    n += 126 - 24;
+                    if (n < -126)
+                    {
+                        n = -126;
+                    }
+                }
+            }
+
+            float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
+            return y * u;
         }
     }
 }

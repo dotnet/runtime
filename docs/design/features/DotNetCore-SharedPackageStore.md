@@ -42,7 +42,7 @@ The layout is composed from a list of package names and versions specified as xm
  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="1.3.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="1.3.2" />
-    <PackageReference Include=""Microsoft.CodeAnalysis.VisualBasic.Features" Version="1.3.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Features" Version="1.3.2" />
   </ItemGroup>
 </Project>
 ```

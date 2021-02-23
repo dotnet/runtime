@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +16,6 @@ internal static partial class Interop
         private const string ExeFileName = "/exe";
         private const string CmdLineFileName = "/cmdline";
         private const string StatFileName = "/stat";
-        private const string MapsFileName = "/maps";
         private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
 
@@ -78,12 +76,6 @@ internal static partial class Interop
             //internal long cguest_time;
         }
 
-        internal struct ParsedMapsModule
-        {
-            internal string FileName;
-            internal KeyValuePair<long, long> AddressRange;
-        }
-
         internal static string GetExeFilePathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + ExeFileName;
@@ -99,11 +91,6 @@ internal static partial class Interop
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }
 
-        internal static string GetMapsFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + MapsFileName;
-        }
-
         internal static string GetTaskDirectoryPathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + TaskDirectoryName;
@@ -112,80 +99,6 @@ internal static partial class Interop
         internal static string GetFileDescriptorDirectoryPathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + FileDescriptorDirectoryName;
-        }
-
-        internal static IEnumerable<ParsedMapsModule> ParseMapsModules(int pid)
-        {
-            try
-            {
-                return ParseMapsModulesCore(File.ReadLines(GetMapsFilePathForProcess(pid)));
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return Array.Empty<ParsedMapsModule>();
-        }
-
-        private static IEnumerable<ParsedMapsModule> ParseMapsModulesCore(IEnumerable<string> lines)
-        {
-            Debug.Assert(lines != null);
-
-            // Parse each line from the maps file into a ParsedMapsModule result
-            foreach (string line in lines)
-            {
-                // Use a StringParser to avoid string.Split costs
-                var parser = new StringParser(line, separator: ' ', skipEmpty: true);
-
-                // Parse the address range
-                KeyValuePair<long, long> addressRange =
-                    parser.ParseRaw(delegate (string s, ref int start, ref int end)
-                    {
-                        long startingAddress = 0, endingAddress = 0;
-                        int pos = s.IndexOf('-', start, end - start);
-                        if (pos > 0)
-                        {
-                            if (long.TryParse(s.AsSpan(start, pos), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out startingAddress))
-                            {
-                                long.TryParse(s.AsSpan(pos + 1, end - (pos + 1)), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out endingAddress);
-                            }
-                        }
-                        return new KeyValuePair<long, long>(startingAddress, endingAddress);
-                    });
-
-                // Parse the permissions (we only care about entries with 'r' and 'x' set)
-                if (!parser.ParseRaw(delegate (string s, ref int start, ref int end)
-                {
-                    bool sawRead = false, sawExec = false;
-                    for (int i = start; i < end; i++)
-                    {
-                        if (s[i] == 'r')
-                            sawRead = true;
-                        else if (s[i] == 'x')
-                            sawExec = true;
-                    }
-                    return sawRead & sawExec;
-                }))
-                {
-                    continue;
-                }
-
-                // Skip past the offset, dev, and inode fields
-                parser.MoveNext();
-                parser.MoveNext();
-                parser.MoveNext();
-
-                // Parse the pathname
-                if (!parser.MoveNext())
-                {
-                    continue;
-                }
-                string pathname = parser.ExtractCurrentToEnd();
-
-                // We only get here if a we have a non-empty pathname and
-                // the permissions included both readability and executability.
-                // Yield the result.
-                yield return new ParsedMapsModule { FileName = pathname, AddressRange = addressRange };
-            }
         }
 
         private static string GetStatFilePathForThread(int pid, int tid)

@@ -109,13 +109,37 @@ then
     echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
     exit 1
   fi
+  if [ ! -f "$(DisassemblyName)" ]
+  then
+    echo "EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing"
+    exit 1
+  fi
 
-  echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-  "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-  ERRORLEVEL=$?
+  ilasm_count=1
+  while true
+  do
+    echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    ERRORLEVEL=$?
+    if [ $ERRORLEVEL -eq 0 ]
+    then
+      break
+    fi
+
+    echo EXECUTION $ilasm_count OF ILASM - FAILED with $ERRORLEVEL
+
+    if [ $ilasm_count -eq 3 ]
+    then
+      break
+    fi
+
+    ((ilasm_count++))
+    echo Trying again
+    sleep 10
+  done
+
   if [ $ERRORLEVEL -ne 0 ]
   then
-    echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
     exit 1
   fi
 fi
@@ -163,14 +187,29 @@ IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
     ECHO %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
     %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
       Exit /b 1
     )
+    IF NOT EXIST $(DisassemblyName) (
+      ECHO EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing
+      Exit /b 1
+    )
+
+   set ilasm_count=1
+:Try_ilasm
     ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF ILASM - FAILED !ERRORLEVEL!
+      ECHO EXECUTION OF ILASM - Try !ilasm_count! FAILED with status !ERRORLEVEL! 
+      IF !ilasm_count! LEQ 3 (
+        ECHO Trying again
+        set /A ilasm_count=ilasm_count+1
+        timeout /t 10 /nobreak
+        goto :Try_ilasm
+      )
+      ECHO EXECUTION OF ILASM - FAILED
       Exit /b 1
     )
   )

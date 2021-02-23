@@ -29,7 +29,6 @@ if defined VS160COMNTOOLS (
 ::      __TargetOS           -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
-::      __SourceDir         -- default: %__ProjectDir%\src\
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
 ::      __BinDir            -- default: %__RootBinDir%\%__TargetOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
@@ -49,7 +48,6 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
 
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 
 set __BuildAll=
@@ -167,7 +165,7 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!pro
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-ninja"               (set __Ninja=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-ninja"               (set __Ninja=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -275,6 +273,11 @@ if %__SkipCrossArchNative% EQU 0 (
 
 REM Set the remaining variables based upon the determined build configuration
 
+REM PGO optimization is only applied to release builds (see pgosupport.cmake). Disable PGO by default if not building release.
+if NOT "%__BuildType%"=="Release" (
+    set __PgoOptimize=0
+)
+
 if %__PgoOptimize%==0 (
     set __RestoreOptData=0
 )
@@ -364,7 +367,7 @@ REM === Restore optimization profile data
 REM ===
 REM =========================================================================================
 
-set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
+set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
     set "__BinLog=\"%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
@@ -594,7 +597,7 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__BuildArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCBuildArch=x86_amd64
+    set __VCBuildArch=amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
@@ -688,7 +691,14 @@ if %__BuildNative% EQU 1 (
 
 :SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
-        "%PYTHON%" "%__ProjectDir%\src\scripts\pgocheck.py" "%__BinDir%\coreclr.dll" "%__BinDir%\clrjit.dll"
+        set PgoCheckCmd="!PYTHON!" "!__ProjectDir!\scripts\pgocheck.py" "!__BinDir!\coreclr.dll" "!__BinDir!\clrjit.dll"
+        echo !PgoCheckCmd!
+        !PgoCheckCmd!
+        if not !errorlevel! == 0 (
+            set __exitCode=!errorlevel!
+            echo !__ErrMsgPrefix!!__MsgPrefix!Error: Error running pgocheck.py on coreclr and clrjit.
+            goto ExitWithCode
+        )
     )
 
 :SkipNativeBuild

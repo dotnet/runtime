@@ -139,27 +139,6 @@ namespace System.IO
 
         public static void MoveFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // The desired behavior for Move(source, dest) is to not overwrite the destination file
-            // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
-            // link/unlink are used instead. Rename is more efficient than link/unlink on file systems
-            // where hard links are not supported (such as FAT). Therefore, given that source file exists,
-            // rename is used in 2 cases: when dest file does not exist or when source path and dest
-            // path refer to the same file (on the same device). This is important for case-insensitive
-            // file systems (e.g. renaming a file in a way that just changes casing), so that we support
-            // changing the casing in the naming of the file. If this fails in any way (e.g. source file
-            // doesn't exist, dest file doesn't exist, rename fails, etc.), we just fall back to trying the
-            // link/unlink approach and generating any exceptional messages from there as necessary.
-            Interop.Sys.FileStatus sourceStat, destStat;
-            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
-                (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
-                sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
-                Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
-            {
-                // Renamed successfully.
-                return;
-            }
-
             // If overwrite is allowed then just call rename
             if (overwrite)
             {
@@ -179,7 +158,7 @@ namespace System.IO
                         // when the error occurs and our checks, but it's the best we can do, and the
                         // worst case in such a race condition (which could occur if the file system is
                         // being manipulated concurrently with these checks) is that we throw a
-                        // FileNotFoundException instead of DirectoryNotFoundexception.
+                        // FileNotFoundException instead of DirectoryNotFoundException.
                         throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath,
                             isDirectory: errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))   // The parent directory of destFile can't be found
                             );
@@ -187,6 +166,28 @@ namespace System.IO
                 }
 
                 // Rename or CopyFile complete
+                return;
+            }
+
+            // The desired behavior for Move(source, dest) is to not overwrite the destination file
+            // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
+            // link/unlink are used instead. Rename is more efficient than link/unlink on file systems
+            // where hard links are not supported (such as FAT). Therefore, given that source file exists,
+            // rename is used in 2 cases: when dest file does not exist or when source path and dest
+            // path refer to the same file (on the same device). This is important for case-insensitive
+            // file systems (e.g. renaming a file in a way that just changes casing), so that we support
+            // changing the casing in the naming of the file. If this fails in any way (e.g. source file
+            // doesn't exist, dest file doesn't exist, rename fails, etc.), we just fall back to trying the
+            // link/unlink approach and generating any exceptional messages from there as necessary.
+
+            Interop.Sys.FileStatus sourceStat, destStat;
+            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
+                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
+                 (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
+                  sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
+                Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
+            {
+                // Renamed successfully.
                 return;
             }
 
@@ -360,19 +361,6 @@ namespace System.IO
                 // Throwing IOException to match Windows behavior.
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
             }
-
-#if TARGET_BROWSER
-            // renaming a file doesn't return correct error code on emscripten if one of the parent paths does not exist,
-            // manually workaround it for now (https://github.com/dotnet/runtime/issues/40305)
-            if (!Directory.Exists(Path.GetDirectoryName(sourceFullPath)))
-            {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-            }
-            if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
-            {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destFullPath));
-            }
-#endif
 
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {

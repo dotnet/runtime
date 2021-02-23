@@ -1,10 +1,9 @@
 #ifndef __EVENTPIPE_THREAD_H__
 #define __EVENTPIPE_THREAD_H__
 
-#include <config.h>
+#include "ep-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-config.h"
 #include "ep-types.h"
 
 #undef EP_IMPL_GETTER_SETTER
@@ -89,6 +88,12 @@ ep_thread_init (void);
 
 void
 ep_thread_fini (void);
+
+bool
+ep_thread_register (EventPipeThread *thread);
+
+bool
+ep_thread_unregister (EventPipeThread *thread);
 
 EventPipeThread *
 ep_thread_get (void);

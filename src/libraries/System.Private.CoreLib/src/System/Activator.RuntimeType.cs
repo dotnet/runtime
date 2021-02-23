@@ -103,6 +103,8 @@ namespace System
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
+            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
                                                            bool ignoreCase,
@@ -148,7 +150,7 @@ namespace System
         [System.Runtime.CompilerServices.Intrinsic]
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
         {
-            return (T)((RuntimeType)typeof(T)).CreateInstanceDefaultCtor(publicOnly: true, wrapExceptions: true)!;
+            return (T)((RuntimeType)typeof(T)).CreateInstanceOfT()!;
         }
 
         private static T CreateDefaultInstance<T>() where T : struct => default;

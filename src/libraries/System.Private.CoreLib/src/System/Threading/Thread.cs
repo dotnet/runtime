@@ -19,19 +19,94 @@ namespace System.Threading
         [ThreadStatic]
         private static Thread? t_currentThread;
 
+        // State associated with starting new thread
+        private sealed class StartHelper
+        {
+            internal int _maxStackSize;
+            internal Delegate _start;
+            internal object? _startArg;
+            internal CultureInfo? _culture;
+            internal CultureInfo? _uiCulture;
+            internal ExecutionContext? _executionContext;
+
+            internal StartHelper(Delegate start)
+            {
+                _start = start;
+            }
+
+            internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(Callback);
+
+            private static void Callback(object? state)
+            {
+                Debug.Assert(state != null);
+                ((StartHelper)state).RunWorker();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
+            internal void Run()
+            {
+                if (_executionContext != null && !_executionContext.IsDefault)
+                {
+                    ExecutionContext.RunInternal(_executionContext, s_threadStartContextCallback, this);
+                }
+                else
+                {
+                    RunWorker();
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // avoid long-lived stack frame in many threads
+            private void RunWorker()
+            {
+                InitializeCulture();
+
+                Delegate start = _start;
+                _start = null!;
+
+                if (start is ThreadStart threadStart)
+                {
+                    threadStart();
+                }
+                else
+                {
+                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                    object? startArg = _startArg;
+                    _startArg = null;
+
+                    parameterizedThreadStart(startArg);
+                }
+            }
+
+            private void InitializeCulture()
+            {
+                if (_culture != null)
+                {
+                    CultureInfo.CurrentCulture = _culture;
+                    _culture = null;
+                }
+
+                if (_uiCulture != null)
+                {
+                    CultureInfo.CurrentUICulture = _uiCulture;
+                    _uiCulture = null;
+                }
+            }
+        }
+
         public Thread(ThreadStart start)
-            : this()
         {
             if (start == null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
 
-            Create(start);
+            _startHelper = new StartHelper(start);
+
+            Initialize();
         }
 
         public Thread(ThreadStart start, int maxStackSize)
-            : this()
         {
             if (start == null)
             {
@@ -42,22 +117,24 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Create(start, maxStackSize);
+            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+
+            Initialize();
         }
 
         public Thread(ParameterizedThreadStart start)
-            : this()
         {
             if (start == null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
 
-            Create(start);
+            _startHelper = new StartHelper(start);
+
+            Initialize();
         }
 
         public Thread(ParameterizedThreadStart start, int maxStackSize)
-            : this()
         {
             if (start == null)
             {
@@ -68,8 +145,86 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Create(start, maxStackSize);
+            _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
+
+            Initialize();
         }
+
+#if !TARGET_BROWSER
+        internal const bool IsThreadStartSupported = true;
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
+        /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
+        [UnsupportedOSPlatform("browser")]
+        public void Start(object? parameter) => Start(parameter, captureContext: true);
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
+        /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
+        /// <remarks>
+        /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
+        /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
+
+        private void Start(object? parameter, bool captureContext)
+        {
+            StartHelper? startHelper = _startHelper;
+
+            // In the case of a null startHelper (second call to start on same thread)
+            // StartCore method will take care of the error reporting.
+            if (startHelper != null)
+            {
+                if (startHelper._start is ThreadStart)
+                {
+                    // We expect the thread to be setup with a ParameterizedThreadStart if this Start is called.
+                    throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
+                }
+
+                startHelper._startArg = parameter;
+                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
+            }
+
+            StartCore();
+        }
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        [UnsupportedOSPlatform("browser")]
+        public void Start() => Start(captureContext: true);
+
+        /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
+        /// <exception cref="ThreadStateException">The thread has already been started.</exception>
+        /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
+        /// <remarks>
+        /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
+        /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public void UnsafeStart() => Start(captureContext: false);
+
+        private void Start(bool captureContext)
+        {
+            StartHelper? startHelper = _startHelper;
+
+            // In the case of a null startHelper (second call to start on same thread)
+            // StartCore method will take care of the error reporting.
+            if (startHelper != null)
+            {
+                startHelper._startArg = null;
+                startHelper._executionContext = captureContext ? ExecutionContext.Capture() : null;
+            }
+
+            StartCore();
+        }
+#endif
 
         private void RequireCurrentThread()
         {
@@ -85,11 +240,26 @@ namespace System.Threading
             {
                 throw new ArgumentNullException(nameof(value));
             }
+
+            StartHelper? startHelper = _startHelper;
+
+            // This check is best effort to catch common user errors only. It won't catch all posssible race
+            // conditions between setting culture on unstarted thread and starting the thread.
             if ((ThreadState & ThreadState.Unstarted) == 0)
             {
                 throw new InvalidOperationException(SR.Thread_Operation_RequiresCurrentThread);
             }
-            SetCultureOnUnstartedThreadNoCheck(value, uiCulture);
+
+            Debug.Assert(startHelper != null);
+
+            if (uiCulture)
+            {
+                startHelper._uiCulture = value;
+            }
+            else
+            {
+                startHelper._culture = value;
+            }
         }
 
         partial void ThreadNameChanged(string? value);
@@ -173,15 +343,10 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
+                    if (_name != value)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-
-                    _name = value;
-                    ThreadNameChanged(value);
-                    if (value != null)
-                    {
+                        _name = value;
+                        ThreadNameChanged(value);
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -195,10 +360,8 @@ namespace System.Threading
 
             lock (this)
             {
-                // Bypass the exception from setting the property
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
-                _name = null;
             }
         }
 
@@ -225,7 +388,7 @@ namespace System.Threading
 
             _mayNeedResetForThreadPool = false;
 
-            if (_name != null)
+            if (_name != ThreadPool.WorkerThreadName)
             {
                 SetThreadPoolWorkerThreadName();
             }

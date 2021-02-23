@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class LoggerRuleSelector
+    internal static class LoggerRuleSelector
     {
-        public void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
+        public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
         {
             filter = null;
             minLevel = options.MinLevel;
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging
                 if (wildcardIndex != -1 &&
                     categoryName.IndexOf(WildcardChar, wildcardIndex + 1) != -1)
                 {
-                    throw new InvalidOperationException("Only one wildcard character is allowed in category name.");
+                    throw new InvalidOperationException(SR.MoreThanOneWildcard);
                 }
 
                 ReadOnlySpan<char> prefix, suffix;

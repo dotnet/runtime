@@ -250,7 +250,8 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact, OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop]
         public static void VeryLargeAmountOfEnumsToSerialize()
         {
             // Ensure we don't throw OutOfMemoryException.

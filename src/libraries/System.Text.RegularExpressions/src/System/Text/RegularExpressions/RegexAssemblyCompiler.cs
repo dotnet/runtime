@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 
 #if DEBUG // until it can be fully implemented
 namespace System.Text.RegularExpressions
@@ -97,14 +98,19 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates a very simple factory method.</summary>
-        internal void GenerateCreateInstance(Type type)
+        private void GenerateCreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             // return new Type();
             Newobj(type.GetConstructor(Type.EmptyTypes)!);
             Ret();
         }
 
-        private void GenerateRegexDefaultCtor(string pattern, RegexOptions options, Type regexRunnerFactoryType, RegexCode code, TimeSpan matchTimeout)
+        private void GenerateRegexDefaultCtor(
+            string pattern,
+            RegexOptions options,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type regexRunnerFactoryType,
+            RegexCode code,
+            TimeSpan matchTimeout)
         {
             // Call the base ctor and store pattern, options, and factory.
             // base.ctor();
@@ -241,7 +247,12 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Begins the definition of a new type with a specified base class</summary>
-        private static TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, bool isPublic, bool isSealed, Type inheritFromClass)
+        private static TypeBuilder DefineType(
+            ModuleBuilder moduleBuilder,
+            string typeName,
+            bool isPublic,
+            bool isSealed,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type inheritFromClass)
         {
             TypeAttributes attrs = TypeAttributes.Class | TypeAttributes.BeforeFieldInit | (isPublic ? TypeAttributes.Public : TypeAttributes.NotPublic);
             if (isSealed)
