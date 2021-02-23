@@ -288,7 +288,7 @@ namespace System.Net.Http
                 char[] trailersBuffer = ArrayPool<char>.Shared.Rent(bufferLength);
                 try
                 {
-                    WinHttpResponseParser.ParseResponseHeaders(_requestHandle, Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF | Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS, _responseMessage, trailersBuffer, stripEncodingHeaders: false, isTrailers: true);
+                    WinHttpResponseParser.ParseResponseTrailers(_requestHandle, _responseMessage, trailersBuffer);
                 }
                 finally
                 {
