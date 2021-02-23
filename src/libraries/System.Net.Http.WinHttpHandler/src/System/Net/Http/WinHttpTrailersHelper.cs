@@ -1,13 +1,16 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    public static class WinHttpTrailersHelper
+    internal static class WinHttpTrailersHelper
     {
         private static Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
-        public static bool AreTrailersSupported => s_trailersSupported.Value;
+        public static bool OsSupportsTrailers => s_trailersSupported.Value;
 
         private static bool GetTrailersSupported()
         {
@@ -32,7 +35,7 @@ namespace System.Net.Http
                 }
 
                 int lastError = Marshal.GetLastWin32Error();
-                return lastError != Interop.WinHttp.WINHTTP_INVALID_STATUS_CALLBACK;
+                return lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER;
             }
             finally
             {
