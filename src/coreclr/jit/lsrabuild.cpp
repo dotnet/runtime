@@ -3207,8 +3207,24 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
             srcInterval->assignRelatedInterval(varDefInterval);
         }
     }
-    RefPosition* def =
-        newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(varDsc->TypeGet()), index);
+
+    regMaskTP defCandidates = RBM_NONE;
+    var_types type          = varDsc->TypeGet();
+
+#ifdef TARGET_X86
+    if (varTypeIsByte(type))
+    {
+        defCandidates = allByteRegs();
+    }
+    else
+    {
+        defCandidates = allRegs(type);
+    }
+#else
+    defCandidates = allRegs(type);
+#endif // TARGET_X86
+
+    RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
     {
         // We always make write-thru defs reg-optional, as we can store them if they don't
