@@ -369,7 +369,7 @@ mono_arch_get_delegate_invoke_impls (void)
 }
 
 gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
 {
 	g_error ("mono_arch_get_gsharedvt_call_info");
 	return NULL;
