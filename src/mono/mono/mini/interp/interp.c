@@ -6946,7 +6946,6 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 		return FALSE;
 
 	MonoMethod *method = iframe->imethod->method;
-	frame->domain = mono_get_root_domain ();
 	frame->interp_frame = iframe;
 	frame->method = method;
 	frame->actual_method = method;

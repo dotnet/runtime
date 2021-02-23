@@ -677,7 +677,6 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 	}
 
 	frame->native_offset = -1;
-	frame->domain = mono_get_root_domain ();
 	frame->async_context = async;
 	frame->frame_addr = MONO_CONTEXT_GET_SP (ctx);
 
@@ -1259,7 +1258,6 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 	gboolean async = mono_thread_info_is_async_context ();
 	Unwinder unwinder;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	memset (&frame, 0, sizeof (StackFrameInfo));
 
@@ -1275,7 +1273,6 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 			guint8 *ip = (guint8*)l->data;
 			memset (&frame, 0, sizeof (StackFrameInfo));
 			frame.ji = mini_jit_info_table_find (ip);
-			frame.domain = domain;
 			if (!frame.ji || frame.ji->is_trampoline)
 				continue;
 			frame.type = FRAME_TYPE_MANAGED;
@@ -3324,7 +3321,7 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
 		method = jinfo_get_method (frame->ji);
 
-	if (method && frame->domain) {
+	if (method) {
 		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 		g_string_append_printf (p, "  %s\n", location);
 		g_free (location);

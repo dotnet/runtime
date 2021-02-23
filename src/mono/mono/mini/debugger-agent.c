@@ -2158,7 +2158,6 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
-		data->domain = info->domain;
 		return TRUE;
 	}
 }
@@ -2788,7 +2787,6 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
 	frame->de.method = method;
 	frame->de.native_offset = info->native_offset;
 
