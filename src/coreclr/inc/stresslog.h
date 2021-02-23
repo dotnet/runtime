@@ -314,7 +314,7 @@ public:
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
-#ifdef HOST_WINDOWS
+#if defined(HOST_WINDOWS) && defined(HOST_64BIT)
 #define MEMORY_MAPPED_STRESSLOG
 #endif
 
@@ -562,7 +562,11 @@ struct StressLogChunk
         }
         else
         {
+#ifdef MEMORY_MAPPED_STRESSLOG
             return StressLog::AllocMemoryMapped(size);
+#else
+            return nullptr;
+#endif //MEMORY_MAPPED_STRESSLOG
         }
     }
 

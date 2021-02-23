@@ -249,6 +249,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+#ifdef MEMORY_MAPPED_STRESSLOG
     int moduleIndex = 0;
     StressLogHeader* hdr = theLog.stressLogHeader;
     if (hdr == nullptr)
@@ -285,6 +286,7 @@ void StressLog::AddModule(uint8_t* moduleBase)
         addr += mbi.RegionSize;
         hdr->modules[moduleIndex].size = (size_t)(addr - (uint8_t*)moduleBase);
     }
+#endif //MEMORY_MAPPED_STRESSLOG
 }
 
 /*********************************************************************************/
@@ -491,10 +493,13 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         {
             delete msgs;
             msgs = 0;
+#ifdef MEMORY_MAPPED_STRESSLOG
             if (!t_triedToCreateThreadStressLog && theLog.stressLogHeader != nullptr)
             {
                 theLog.stressLogHeader->threadsWithNoLog++;
+                t_triedToCreateThreadStressLog = true;
             }
+#endif //MEMORY_MAPPED_STRESSLOG
             goto LEAVE;
         }
     }
@@ -864,6 +869,7 @@ void  StressLog::LogCallStack(const char *const callTag){
 }
 #endif //_DEBUG
 
+#ifdef MEMORY_MAPPED_STRESSLOG
 void* StressLog::AllocMemoryMapped(size_t n)
 {
     if ((ptrdiff_t)n > 0)
@@ -893,6 +899,7 @@ void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
         return StressLog::AllocMemoryMapped(n);
     }
 }
+#endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
 
