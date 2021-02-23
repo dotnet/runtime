@@ -296,10 +296,6 @@ namespace System.Net.Http
                 new string(buffer, 0, bufferLength);
         }
 
-        private class HttpResponseTrailers : HttpHeaders
-        {
-        }
-
         private static void ParseResponseHeaders(
             SafeWinHttpHandle requestHandle,
             HttpResponseMessage response,
@@ -347,15 +343,7 @@ namespace System.Net.Http
             HttpResponseMessage response,
             char[] buffer)
         {
-            HttpResponseHeaders responseHeaders = response.Headers;
-            HttpContentHeaders contentHeaders = response.Content.Headers;
-
-#if NETSTANDARD2_1
-            HttpResponseHeaders responseTrailers = response.TrailingHeaders;
-#else
-            HttpResponseTrailers responseTrailers = new HttpResponseTrailers();
-            response.RequestMessage.Properties["__ResponseTrailers"] = responseTrailers;
-#endif
+            HttpHeaders responseTrailers = WinHttpTrailersHelper.GetResponseTrailers(response);
 
             int bufferLength = GetResponseHeader(
                 requestHandle,

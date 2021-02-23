@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
@@ -11,6 +12,20 @@ namespace System.Net.Http
     {
         private static Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
         public static bool OsSupportsTrailers => s_trailersSupported.Value;
+
+        public static HttpHeaders GetResponseTrailers(HttpResponseMessage response)
+        {
+#if NETSTANDARD2_1
+            // We are (ab)using a property that became Obsolete on .NET 5
+#pragma warning disable CS0618
+            return response.TrailingHeaders;
+#pragma warning restore CS0618
+#else
+            HttpResponseTrailers responseTrailers = new HttpResponseTrailers();
+            response.RequestMessage.Properties["__ResponseTrailers"] = responseTrailers;
+            return responseTrailers;
+#endif
+        }
 
         private static bool GetTrailersSupported()
         {
@@ -42,5 +57,11 @@ namespace System.Net.Http
                 sessionHandle.Dispose();
             }
         }
+
+#if !NETSTANDARD2_1
+        private class HttpResponseTrailers : HttpHeaders
+        {
+        }
+#endif
     }
 }
