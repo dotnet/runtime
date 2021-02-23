@@ -326,6 +326,17 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 
 
+def download_progress_hook(count, block_size, total_size):
+    """ A hook for urlretrieve to report download progress
+
+    Args:
+        count (int)               : current block index
+        block_size (int)          : size of a block
+        total_size (int)          : total size of a payload
+    """
+    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.flush()
+
 def is_zero_length_file(fpath):
     """ Determine if a file system path refers to an existing file that is zero length
 
@@ -1859,7 +1870,7 @@ def determine_coredis_tools(coreclr_args):
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
         logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location)
+        urllib.request.urlretrieve(coredistools_uri, coredistools_location, reporthook=download_progress_hook)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1896,7 +1907,7 @@ def determine_pmi_location(coreclr_args):
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
                 logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location)
+                urllib.request.urlretrieve(pmi_uri, pmi_location, reporthook=download_progress_hook)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2350,7 +2361,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 try:
                     if verbose:
                         logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
                         raise httperror
@@ -2381,7 +2392,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 try:
                     if verbose:
                         logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
                     local_files.append(download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
