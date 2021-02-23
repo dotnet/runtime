@@ -9566,7 +9566,7 @@ void Compiler::optRemoveRedundantZeroInits()
                             {
                                 if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
                                     (lclDsc->lvIsStructField &&
-                                        BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                     BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
                                     (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
                                     // We are guaranteed to have a zero initialization in the prolog or a
@@ -9576,12 +9576,12 @@ void Compiler::optRemoveRedundantZeroInits()
                                     if (tree == stmt->GetRootNode())
                                     {
                                         fgRemoveStmt(block, stmt);
-                                        removedExplicitZeroInit = true;
+                                        removedExplicitZeroInit      = true;
                                         lclDsc->lvSuppressedZeroInit = 1;
 
                                         if (lclDsc->lvTracked)
                                         {
-                                            removedTrackedDefs = true;
+                                            removedTrackedDefs   = true;
                                             unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
                                             *pDefsCount = (*pDefsCount) - 1;
                                         }
