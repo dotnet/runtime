@@ -673,12 +673,12 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 }
 
 void
-mono_lldb_remove_method (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *info)
+mono_lldb_remove_method (MonoMethod *method, MonoJitDynamicMethodInfo *info)
 {
 }
 
 void
-mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, gpointer code, guint32 code_len)
+mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp_type, gpointer code, guint32 code_len)
 {
 }
 
