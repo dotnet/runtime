@@ -353,9 +353,6 @@ struct _MonoDomain {
 
 	GHashTable	   *generic_virtual_cases;
 
-	/* Information maintained by the JIT engine */
-	gpointer runtime_info;
-
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
 
@@ -412,16 +409,6 @@ mono_install_runtime_load  (MonoLoadFunc func);
 
 MonoDomain*
 mono_runtime_load (const char *filename, const char *runtime_version);
-
-typedef void (*MonoCreateDomainFunc) (MonoDomain *domain);
-
-void
-mono_install_create_domain_hook (MonoCreateDomainFunc func);
-
-typedef void (*MonoFreeDomainFunc) (MonoDomain *domain);
-
-void
-mono_install_free_domain_hook (MonoFreeDomainFunc func);
 
 void
 mono_runtime_quit_internal (void);

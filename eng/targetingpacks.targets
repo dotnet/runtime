@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <SharedFrameworkName Condition="'$(SharedFrameworkName)' == ''">Microsoft.NETCore.App</SharedFrameworkName>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">

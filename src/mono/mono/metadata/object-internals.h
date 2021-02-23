@@ -637,6 +637,8 @@ typedef struct {
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	void     (*install_state_summarizer) (void);
 	gboolean (*is_interpreter_enabled) (void);
+	void (*init_mem_manager)(MonoMemoryManager*);
+	void (*free_mem_manager)(MonoMemoryManager*);
 #ifdef ENABLE_METADATA_UPDATE
 	void     (*metadata_update_init) (MonoError *error);
 	void     (*metadata_update_published) (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
@@ -1411,7 +1413,7 @@ void        mono_reflection_register_with_runtime (MonoReflectionType *type);
 
 MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error);
 
-MonoArrayHandle mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass, MonoError *error);
+MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
@@ -1425,7 +1427,7 @@ MonoReflectionEvent *
 ves_icall_TypeBuilder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
 
 MonoReflectionMarshalAsAttributeHandle
-mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
+mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass, MonoMarshalSpec *spec, MonoError *error);
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
@@ -1508,10 +1510,10 @@ void
 mono_nullable_init_unboxed (guint8 *buf, gpointer value, MonoClass *klass);
 
 MonoObject *
-mono_value_box_checked (MonoDomain *domain, MonoClass *klass, void* val, MonoError *error);
+mono_value_box_checked (MonoClass *klass, void* val, MonoError *error);
 
 MonoObjectHandle
-mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer val, MonoError *error);
+mono_value_box_handle (MonoClass *klass, gpointer val, MonoError *error);
 
 MonoObject*
 mono_nullable_box (gpointer buf, MonoClass *klass, MonoError *error);
@@ -1575,14 +1577,6 @@ void
 mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
-
-typedef enum {
-	MONO_UNHANDLED_POLICY_LEGACY,
-	MONO_UNHANDLED_POLICY_CURRENT
-} MonoRuntimeUnhandledExceptionPolicy;
-
-MonoRuntimeUnhandledExceptionPolicy
-mono_runtime_unhandled_exception_policy_get (void);
 
 void
 mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
@@ -1881,7 +1875,7 @@ MonoMethod*
 mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *error);
 
 MonoStringHandle
-mono_string_empty_handle (MonoDomain *domain);
+mono_string_empty_handle (void);
 
 /*
  * mono_object_get_data:

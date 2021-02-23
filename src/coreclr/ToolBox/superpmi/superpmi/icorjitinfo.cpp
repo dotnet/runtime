@@ -489,31 +489,21 @@ bool MyICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls)
 CORINFO_MODULE_HANDLE MyICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassModule");
-    LogError("Hit unimplemented getClassModule");
-    DebugBreakorAV(28);
-    return (CORINFO_MODULE_HANDLE)0;
-    // jitInstance->mc->getClassModule(cls);
+    return jitInstance->mc->repGetClassModule(cls);
 }
 
 // Returns the assembly that contains the module "mod".
 CORINFO_ASSEMBLY_HANDLE MyICJI::getModuleAssembly(CORINFO_MODULE_HANDLE mod)
 {
     jitInstance->mc->cr->AddCall("getModuleAssembly");
-    LogError("Hit unimplemented getModuleAssembly");
-    DebugBreakorAV(28);
-    return (CORINFO_ASSEMBLY_HANDLE)0;
-
-    //  return jitInstance->mc->getModuleAssembly(mod);
+    return jitInstance->mc->repGetModuleAssembly(mod);
 }
 
 // Returns the name of the assembly "assem".
 const char* MyICJI::getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
 {
     jitInstance->mc->cr->AddCall("getAssemblyName");
-    LogError("Hit unimplemented getAssemblyName");
-    DebugBreakorAV(28);
-    return nullptr;
-    //  return jitInstance->mc->getAssemblyName(assem);
+    return jitInstance->mc->repGetAssemblyName(assem);
 }
 
 // Allocate and delete process-lifetime objects.  Should only be

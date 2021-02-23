@@ -4484,7 +4484,7 @@ PhaseStatus Compiler::optInvertLoops()
         }
     }
 
-    const bool madeChanges = fgModified;
+    bool madeChanges = fgModified;
 
     if (madeChanges)
     {
@@ -4492,6 +4492,15 @@ PhaseStatus Compiler::optInvertLoops()
         //
         fgModified = false;
     }
+
+    // optInvertWhileLoop can cause IR changes even if it does not modify
+    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
+    // Work around this for now.
+    //
+    // Note phase status only impacts dumping and checking done post-phase,
+    // it has no impact on a release build.
+    //
+    madeChanges = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -4513,6 +4522,15 @@ PhaseStatus Compiler::optOptimizeLayout()
     madeChanges |= fgUpdateFlowGraph(allowTailDuplication);
     madeChanges |= fgReorderBlocks();
     madeChanges |= fgUpdateFlowGraph();
+
+    // fgReorderBlocks can cause IR changes even if it does not modify
+    // the flow graph. It calls gtPrepareCost which can cause operand swapping.
+    // Work around this for now.
+    //
+    // Note phase status only impacts dumping and checking done post-phase,
+    // it has no impact on a release build.
+    //
+    madeChanges = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

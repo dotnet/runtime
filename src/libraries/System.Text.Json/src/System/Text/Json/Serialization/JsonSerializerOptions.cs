@@ -313,7 +313,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Determines whether read-only fields are ignored during serialization.
-        /// A property is read-only if it isn't marked with the <c>readonly</c> keyword.
+        /// A field is read-only if it is marked with the <c>readonly</c> keyword.
         /// The default value is false.
         /// </summary>
         /// <remarks>
@@ -336,7 +336,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Determines whether fields are handled serialization and deserialization.
+        /// Determines whether fields are handled on serialization and deserialization.
         /// The default value is false.
         /// </summary>
         /// <exception cref="InvalidOperationException">

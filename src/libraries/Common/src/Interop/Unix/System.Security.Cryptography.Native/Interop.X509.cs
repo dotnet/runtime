@@ -13,6 +13,21 @@ internal static partial class Interop
     {
         internal delegate int X509StoreVerifyCallback(int ok, IntPtr ctx);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotBefore")]
+        internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotAfter")]
+        internal static extern IntPtr GetX509NotAfter(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SignatureAlgorithm")]
+        internal static extern IntPtr GetX509SignatureAlgorithm(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyAlgorithm")]
+        internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyBytes")]
+        internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EvpPublicKey")]
         internal static extern SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
 
