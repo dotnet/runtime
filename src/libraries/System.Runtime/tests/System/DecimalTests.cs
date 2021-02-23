@@ -1505,7 +1505,7 @@ namespace System.Tests
         public void TestRoundTripDecimalToString(string input)
         {
             decimal d = Decimal.Parse(input, NumberStyles.Number, NumberFormatInfo.InvariantInfo);
-            string dString = d.ToString();
+            string dString = d.ToString(CultureInfo.InvariantCulture);
             Assert.Equal(input, dString);
         }
         public static IEnumerable<object[]> Truncate_TestData()
