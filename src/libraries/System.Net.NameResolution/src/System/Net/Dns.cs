@@ -547,6 +547,8 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
