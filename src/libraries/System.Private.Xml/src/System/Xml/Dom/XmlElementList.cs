@@ -22,7 +22,7 @@ namespace System.Xml
         private bool _atomized;     //whether the localname and namespaceuri are atomized
         private int _matchCount;   // cached list count. -1 means it needs reconstruction
 
-        private WeakReference<XmlElementListListener>? _listener;   // XmlElementListListener
+        private WeakReference<XmlElementListListener>? _listener;
 
         private XmlElementList(XmlNode parent)
         {
