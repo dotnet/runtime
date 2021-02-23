@@ -64,18 +64,18 @@ namespace System.IO.Compression
         /// If there is an error while extracting the archive, the archive will remain partially extracted.
         /// Each entry will be extracted such that the extracted file has the same relative path to <paramref name="destinationDirectoryName" /> as the entry has to the root of the archive.
         /// If a file to be archived has an invalid last modified time, the first date and time representable in the Zip timestamp format (midnight on January 1, 1980) will be used.</remarks>
-        /// <exception cref="System.ArgumentException"><paramref name="destinationArchiveFileName" /> is a zero-length string, contains only whitespace,
+        /// <exception cref="System.ArgumentException"><paramref name="destinationDirectoryName" /> is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.</exception>
-        /// <exception cref="System.ArgumentNullException"><paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="destinationDirectoryName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
         /// <exception cref="System.IO.DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
         /// <exception cref="System.IO.IOException">The name of a <see cref="System.IO.Compression.ZipArchiveEntry" /> is zero-length, contains only whitespace, or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.
         /// -or-
-        /// Extracting a <see cref="System.IO.Compression.ZipArchiveEntry" /> would have resulted in a destination file that is outside <paramref name="destinationArchiveFileName" /> (for example, if the entry name contains parent directory accessors).
+        /// Extracting a <see cref="System.IO.Compression.ZipArchiveEntry" /> would have resulted in a destination file that is outside <paramref name="destinationDirectoryName" /> (for example, if the entry name contains parent directory accessors).
         /// -or-
         /// A <see cref="System.IO.Compression.ZipArchiveEntry" /> has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="System.NotSupportedException"><paramref name="destinationArchiveFileName" /> is in an invalid format.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="destinationDirectoryName" /> is in an invalid format.</exception>
         /// <exception cref="System.IO.InvalidDataException">A <see cref="System.IO.Compression.ZipArchiveEntry" /> was not found or was corrupt.
         /// -or-
         /// A <see cref="System.IO.Compression.ZipArchiveEntry" /> has been compressed using a compression method that is not supported.</exception>
