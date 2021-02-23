@@ -24,11 +24,11 @@ class CordbThread : public CordbBaseMono,
 
 public:
     CordbThread(Connection* conn, CordbProcess* ppProcess, long thread_id);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -38,51 +38,35 @@ public:
     }
     ~CordbThread();
     void    SetRegisterSet(CordbRegisterSet* rs);
-    HRESULT HasUnhandledException(void);
-    HRESULT
-    GetBlockingObjects(ICorDebugBlockingObjectEnum** ppBlockingObjectEnum);
-    HRESULT
-    GetCurrentCustomDebuggerNotification(ICorDebugValue** ppNotificationObject);
-    HRESULT
-    CreateStackWalk(ICorDebugStackWalk** ppStackWalk);
-    HRESULT
-    GetActiveInternalFrames(ULONG32                  cInternalFrames,
+    HRESULT STDMETHODCALLTYPE HasUnhandledException(void);
+    HRESULT STDMETHODCALLTYPE GetBlockingObjects(ICorDebugBlockingObjectEnum** ppBlockingObjectEnum);
+    HRESULT STDMETHODCALLTYPE GetCurrentCustomDebuggerNotification(ICorDebugValue** ppNotificationObject);
+    HRESULT STDMETHODCALLTYPE CreateStackWalk(ICorDebugStackWalk** ppStackWalk);
+    HRESULT STDMETHODCALLTYPE GetActiveInternalFrames(ULONG32                  cInternalFrames,
                             ULONG32*                 pcInternalFrames,
                             ICorDebugInternalFrame2* ppInternalFrames[]);
-    HRESULT GetActiveFunctions(ULONG32 cFunctions, ULONG32* pcFunctions, COR_ACTIVE_FUNCTION pFunctions[]);
-    HRESULT
-    GetConnectionID(CONNID* pdwConnectionId);
-    HRESULT GetTaskID(TASKID* pTaskId);
-    HRESULT GetVolatileOSThreadID(DWORD* pdwTid);
-    HRESULT
-    InterceptCurrentException(ICorDebugFrame* pFrame);
-    HRESULT
-    GetProcess(ICorDebugProcess** ppProcess);
-    HRESULT GetID(DWORD* pdwThreadId);
-    HRESULT GetHandle(HTHREAD* phThreadHandle);
-    HRESULT
-    GetAppDomain(ICorDebugAppDomain** ppAppDomain);
-    HRESULT SetDebugState(CorDebugThreadState state);
-    HRESULT
-    GetDebugState(CorDebugThreadState* pState);
-    HRESULT GetUserState(CorDebugUserState* pState);
-    HRESULT
-    GetCurrentException(ICorDebugValue** ppExceptionObject);
-    HRESULT ClearCurrentException(void);
-    HRESULT
-    CreateStepper(ICorDebugStepper** ppStepper);
-    HRESULT
-    EnumerateChains(ICorDebugChainEnum** ppChains);
-    HRESULT
-    GetActiveChain(ICorDebugChain** ppChain);
-    HRESULT
-    GetActiveFrame(ICorDebugFrame** ppFrame);
-    HRESULT
-    GetRegisterSet(ICorDebugRegisterSet** ppRegisters);
-    HRESULT CreateEval(ICorDebugEval** ppEval);
-    HRESULT GetObject(ICorDebugValue** ppObject);
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE GetActiveFunctions(ULONG32 cFunctions, ULONG32* pcFunctions, COR_ACTIVE_FUNCTION pFunctions[]);
+    HRESULT STDMETHODCALLTYPE GetConnectionID(CONNID* pdwConnectionId);
+    HRESULT STDMETHODCALLTYPE GetTaskID(TASKID* pTaskId);
+    HRESULT STDMETHODCALLTYPE GetVolatileOSThreadID(DWORD* pdwTid);
+    HRESULT STDMETHODCALLTYPE InterceptCurrentException(ICorDebugFrame* pFrame);
+    HRESULT STDMETHODCALLTYPE GetProcess(ICorDebugProcess** ppProcess);
+    HRESULT STDMETHODCALLTYPE GetID(DWORD* pdwThreadId);
+    HRESULT STDMETHODCALLTYPE GetHandle(HTHREAD* phThreadHandle);
+    HRESULT STDMETHODCALLTYPE GetAppDomain(ICorDebugAppDomain** ppAppDomain);
+    HRESULT STDMETHODCALLTYPE SetDebugState(CorDebugThreadState state);
+    HRESULT STDMETHODCALLTYPE GetDebugState(CorDebugThreadState* pState);
+    HRESULT STDMETHODCALLTYPE GetUserState(CorDebugUserState* pState);
+    HRESULT STDMETHODCALLTYPE GetCurrentException(ICorDebugValue** ppExceptionObject);
+    HRESULT STDMETHODCALLTYPE ClearCurrentException(void);
+    HRESULT STDMETHODCALLTYPE CreateStepper(ICorDebugStepper** ppStepper);
+    HRESULT STDMETHODCALLTYPE EnumerateChains(ICorDebugChainEnum** ppChains);
+    HRESULT STDMETHODCALLTYPE GetActiveChain(ICorDebugChain** ppChain);
+    HRESULT STDMETHODCALLTYPE GetActiveFrame(ICorDebugFrame** ppFrame);
+    HRESULT STDMETHODCALLTYPE GetRegisterSet(ICorDebugRegisterSet** ppRegisters);
+    HRESULT STDMETHODCALLTYPE CreateEval(ICorDebugEval** ppEval);
+    HRESULT STDMETHODCALLTYPE GetObject(ICorDebugValue** ppObject);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
     long GetThreadId() const
     {

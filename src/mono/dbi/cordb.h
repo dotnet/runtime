@@ -162,11 +162,11 @@ public:
         return m_pCallback;
     }
     Cordb();
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -176,15 +176,15 @@ public:
     }
     ~Cordb();
 
-    HRESULT Initialize(void);
+    HRESULT STDMETHODCALLTYPE Initialize(void);
 
-    HRESULT Terminate(void);
+    HRESULT STDMETHODCALLTYPE Terminate(void);
 
-    HRESULT SetManagedHandler(ICorDebugManagedCallback* pCallback);
+    HRESULT STDMETHODCALLTYPE SetManagedHandler(ICorDebugManagedCallback* pCallback);
 
-    HRESULT SetUnmanagedHandler(ICorDebugUnmanagedCallback* pCallback);
+    HRESULT STDMETHODCALLTYPE SetUnmanagedHandler(ICorDebugUnmanagedCallback* pCallback);
 
-    HRESULT CreateProcess(LPCWSTR                    lpApplicationName,
+    HRESULT STDMETHODCALLTYPE CreateProcess(LPCWSTR                    lpApplicationName,
                           LPWSTR                     lpCommandLine,
                           LPSECURITY_ATTRIBUTES      lpProcessAttributes,
                           LPSECURITY_ATTRIBUTES      lpThreadAttributes,
@@ -197,14 +197,14 @@ public:
                           CorDebugCreateProcessFlags debuggingFlags,
                           ICorDebugProcess**         ppProcess);
 
-    HRESULT DebugActiveProcess(DWORD id, BOOL win32Attach, ICorDebugProcess** ppProcess);
-    HRESULT EnumerateProcesses(ICorDebugProcessEnum** ppProcess);
+    HRESULT STDMETHODCALLTYPE DebugActiveProcess(DWORD id, BOOL win32Attach, ICorDebugProcess** ppProcess);
+    HRESULT STDMETHODCALLTYPE EnumerateProcesses(ICorDebugProcessEnum** ppProcess);
 
-    HRESULT GetProcess(DWORD dwProcessId, ICorDebugProcess** ppProcess);
+    HRESULT STDMETHODCALLTYPE GetProcess(DWORD dwProcessId, ICorDebugProcess** ppProcess);
 
-    HRESULT CanLaunchOrAttach(DWORD dwProcessId, BOOL win32DebuggingEnabled);
-    HRESULT QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
-    HRESULT CreateProcessEx(ICorDebugRemoteTarget*     pRemoteTarget,
+    HRESULT STDMETHODCALLTYPE CanLaunchOrAttach(DWORD dwProcessId, BOOL win32DebuggingEnabled);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
+    HRESULT STDMETHODCALLTYPE CreateProcessEx(ICorDebugRemoteTarget*     pRemoteTarget,
                             LPCWSTR                    lpApplicationName,
                             _In_ LPWSTR                lpCommandLine,
                             LPSECURITY_ATTRIBUTES      lpProcessAttributes,
@@ -218,7 +218,7 @@ public:
                             CorDebugCreateProcessFlags debuggingFlags,
                             ICorDebugProcess**         ppProcess);
 
-    HRESULT DebugActiveProcessEx(ICorDebugRemoteTarget* pRemoteTarget,
+    HRESULT STDMETHODCALLTYPE DebugActiveProcessEx(ICorDebugRemoteTarget* pRemoteTarget,
                                  DWORD                  dwProcessId,
                                  BOOL                   fWin32Attach,
                                  ICorDebugProcess**     ppProcess);

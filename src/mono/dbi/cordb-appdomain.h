@@ -19,11 +19,11 @@ class CordbAppDomain : public CordbBaseMono,
 
 public:
     CordbAppDomain(Connection* conn, CordbProcess* ppProcess);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -31,49 +31,35 @@ public:
     {
         return "CordbAppDomain";
     }
-    HRESULT Stop(DWORD dwTimeoutIgnored);
-    HRESULT Continue(BOOL fIsOutOfBand);
-    HRESULT IsRunning(BOOL* pbRunning);
-    HRESULT HasQueuedCallbacks(ICorDebugThread* pThread, BOOL* pbQueued);
-    HRESULT
-    EnumerateThreads(ICorDebugThreadEnum** ppThreads);
-    HRESULT
-    SetAllThreadsDebugState(CorDebugThreadState state, ICorDebugThread* pExceptThisThread);
-    HRESULT Detach(void);
-    HRESULT Terminate(UINT exitCode);
-    HRESULT
-    CanCommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
-    HRESULT
-    CommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppInterface);
-    HRESULT
-    GetProcess(ICorDebugProcess** ppProcess);
-    HRESULT
-    EnumerateAssemblies(ICorDebugAssemblyEnum** ppAssemblies);
-    HRESULT GetModuleFromMetaDataInterface(IUnknown* pIMetaData, ICorDebugModule** ppModule);
-    HRESULT
-    EnumerateBreakpoints(ICorDebugBreakpointEnum** ppBreakpoints);
-    HRESULT
-    EnumerateSteppers(ICorDebugStepperEnum** ppSteppers);
-    HRESULT IsAttached(BOOL* pbAttached);
-    HRESULT
-    GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[]);
-    HRESULT GetObject(ICorDebugValue** ppObject);
-    HRESULT Attach(void);
-    HRESULT GetID(ULONG32* pId);
-    HRESULT GetArrayOrPointerType(CorElementType  elementType,
+    HRESULT STDMETHODCALLTYPE Stop(DWORD dwTimeoutIgnored);
+    HRESULT STDMETHODCALLTYPE Continue(BOOL fIsOutOfBand);
+    HRESULT STDMETHODCALLTYPE IsRunning(BOOL* pbRunning);
+    HRESULT STDMETHODCALLTYPE HasQueuedCallbacks(ICorDebugThread* pThread, BOOL* pbQueued);
+    HRESULT STDMETHODCALLTYPE EnumerateThreads(ICorDebugThreadEnum** ppThreads);
+    HRESULT STDMETHODCALLTYPE SetAllThreadsDebugState(CorDebugThreadState state, ICorDebugThread* pExceptThisThread);
+    HRESULT STDMETHODCALLTYPE Detach(void);
+    HRESULT STDMETHODCALLTYPE Terminate(UINT exitCode);
+    HRESULT STDMETHODCALLTYPE CanCommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
+    HRESULT STDMETHODCALLTYPE CommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppInterface);
+    HRESULT STDMETHODCALLTYPE GetProcess(ICorDebugProcess** ppProcess);
+    HRESULT STDMETHODCALLTYPE EnumerateAssemblies(ICorDebugAssemblyEnum** ppAssemblies);
+    HRESULT STDMETHODCALLTYPE GetModuleFromMetaDataInterface(IUnknown* pIMetaData, ICorDebugModule** ppModule);
+    HRESULT STDMETHODCALLTYPE EnumerateBreakpoints(ICorDebugBreakpointEnum** ppBreakpoints);
+    HRESULT STDMETHODCALLTYPE EnumerateSteppers(ICorDebugStepperEnum** ppSteppers);
+    HRESULT STDMETHODCALLTYPE IsAttached(BOOL* pbAttached);
+    HRESULT STDMETHODCALLTYPE GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[]);
+    HRESULT STDMETHODCALLTYPE GetObject(ICorDebugValue** ppObject);
+    HRESULT STDMETHODCALLTYPE Attach(void);
+    HRESULT STDMETHODCALLTYPE GetID(ULONG32* pId);
+    HRESULT STDMETHODCALLTYPE GetArrayOrPointerType(CorElementType  elementType,
                                   ULONG32         nRank,
                                   ICorDebugType*  pTypeArg,
                                   ICorDebugType** ppType);
-    HRESULT
-    GetFunctionPointerType(ULONG32 nTypeArgs, ICorDebugType* ppTypeArgs[], ICorDebugType** ppType);
-    HRESULT
-    GetCachedWinRTTypesForIIDs(ULONG32 cReqTypes, GUID* iidsToResolve, ICorDebugTypeEnum** ppTypesEnum);
-    HRESULT
-    GetCachedWinRTTypes(ICorDebugGuidToTypeEnum** ppGuidToTypeEnum);
-    HRESULT
-    GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue** ppManagedObject);
+    HRESULT STDMETHODCALLTYPE GetFunctionPointerType(ULONG32 nTypeArgs, ICorDebugType* ppTypeArgs[], ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypesForIIDs(ULONG32 cReqTypes, GUID* iidsToResolve, ICorDebugTypeEnum** ppTypesEnum);
+    HRESULT STDMETHODCALLTYPE GetCachedWinRTTypes(ICorDebugGuidToTypeEnum** ppGuidToTypeEnum);
+    HRESULT STDMETHODCALLTYPE GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue** ppManagedObject);
 };
 
 class CordbAppDomainEnum : public CordbBaseMono, public ICorDebugAppDomainEnum
@@ -83,11 +69,11 @@ class CordbAppDomainEnum : public CordbBaseMono, public ICorDebugAppDomainEnum
 
 public:
     CordbAppDomainEnum(Connection* conn, CordbProcess* ppProcess);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -95,12 +81,12 @@ public:
     {
         return "CordbAppDomainEnum";
     }
-    HRESULT Next(ULONG celt, ICorDebugAppDomain* values[], ULONG* pceltFetched);
-    HRESULT Skip(ULONG celt);
-    HRESULT Reset(void);
-    HRESULT Clone(ICorDebugEnum** ppEnum);
-    HRESULT GetCount(ULONG* pcelt);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugAppDomain* values[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE Reset(void);
+    HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 };
 
 #endif

@@ -18,11 +18,11 @@ class CordbType : public CordbBaseMono, public ICorDebugType, public ICorDebugTy
 
 public:
     CordbType(CorElementType type, Connection* conn, CordbClass* klass = NULL, CordbType* typeParameter = NULL);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -31,17 +31,16 @@ public:
         return "CordbType";
     }
     ~CordbType();
-    HRESULT GetType(CorElementType* ty);
-    HRESULT GetClass(ICorDebugClass** ppClass);
-    HRESULT
-    EnumerateTypeParameters(ICorDebugTypeEnum** ppTyParEnum);
-    HRESULT GetFirstTypeParameter(ICorDebugType** value);
-    HRESULT GetBase(ICorDebugType** pBase);
-    HRESULT GetStaticFieldValue(mdFieldDef fieldDef, ICorDebugFrame* pFrame, ICorDebugValue** ppValue);
-    HRESULT GetRank(ULONG32* pnRank);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE GetType(CorElementType* ty);
+    HRESULT STDMETHODCALLTYPE GetClass(ICorDebugClass** ppClass);
+    HRESULT STDMETHODCALLTYPE EnumerateTypeParameters(ICorDebugTypeEnum** ppTyParEnum);
+    HRESULT STDMETHODCALLTYPE GetFirstTypeParameter(ICorDebugType** value);
+    HRESULT STDMETHODCALLTYPE GetBase(ICorDebugType** pBase);
+    HRESULT STDMETHODCALLTYPE GetStaticFieldValue(mdFieldDef fieldDef, ICorDebugFrame* pFrame, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE GetRank(ULONG32* pnRank);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT GetTypeID(COR_TYPEID* id);
+    HRESULT STDMETHODCALLTYPE GetTypeID(COR_TYPEID* id);
 };
 
 class CordbTypeEnum : public CordbBaseMono, public ICorDebugTypeEnum
@@ -50,11 +49,11 @@ class CordbTypeEnum : public CordbBaseMono, public ICorDebugTypeEnum
 
 public:
     CordbTypeEnum(Connection* conn, CordbType* type);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -63,12 +62,12 @@ public:
         return "CordbTypeEnum";
     }
     ~CordbTypeEnum();
-    virtual HRESULT Next(ULONG celt, ICorDebugType* values[], ULONG* pceltFetched);
-    HRESULT         Skip(ULONG celt);
-    HRESULT         Reset(void);
-    HRESULT         Clone(ICorDebugEnum** ppEnum);
-    HRESULT         GetCount(ULONG* pcelt);
-    HRESULT         QueryInterface(REFIID riid, void** ppvObject);
+    virtual HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugType* values[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE         Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE         Reset(void);
+    HRESULT STDMETHODCALLTYPE         Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE         GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE         QueryInterface(REFIID riid, void** ppvObject);
 };
 
 #endif

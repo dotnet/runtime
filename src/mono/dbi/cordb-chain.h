@@ -15,11 +15,11 @@ class CordbChainEnum : public CordbBaseMono, public ICorDebugChainEnum
 
 public:
     CordbChainEnum(Connection* conn, CordbThread* thread);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -27,15 +27,13 @@ public:
     {
         return "CordbChainEnum";
     }
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
-    HRESULT Skip(ULONG celt);
-    HRESULT Reset(void);
-    HRESULT Clone(ICorDebugEnum** ppEnum);
-    HRESULT GetCount(ULONG* pcelt);
-    HRESULT
-    Next(ULONG celt, ICorDebugChain* chains[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE Reset(void);
+    HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE Next(ULONG celt, ICorDebugChain* chains[], ULONG* pceltFetched);
 };
 
 class CordbChain : public CordbBaseMono, public ICorDebugChain
@@ -46,11 +44,11 @@ class CordbChain : public CordbBaseMono, public ICorDebugChain
 
 public:
     CordbChain(Connection* conn, CordbThread* thread, CorDebugChainReason chain_reason, bool is_managed);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -58,24 +56,19 @@ public:
     {
         return "CordbChain";
     }
-    HRESULT GetThread(ICorDebugThread** ppThread);
-    HRESULT GetStackRange(CORDB_ADDRESS* pStart, CORDB_ADDRESS* pEnd);
-    HRESULT
-    GetContext(ICorDebugContext** ppContext);
-    HRESULT GetCaller(ICorDebugChain** ppChain);
-    HRESULT GetCallee(ICorDebugChain** ppChain);
-    HRESULT GetPrevious(ICorDebugChain** ppChain);
-    HRESULT GetNext(ICorDebugChain** ppChain);
-    HRESULT IsManaged(BOOL* pManaged);
-    HRESULT
-    EnumerateFrames(ICorDebugFrameEnum** ppFrames);
-    HRESULT
-    GetActiveFrame(ICorDebugFrame** ppFrame);
-    HRESULT
-    GetRegisterSet(ICorDebugRegisterSet** ppRegisters);
-    HRESULT GetReason(CorDebugChainReason* pReason);
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE GetThread(ICorDebugThread** ppThread);
+    HRESULT STDMETHODCALLTYPE GetStackRange(CORDB_ADDRESS* pStart, CORDB_ADDRESS* pEnd);
+    HRESULT STDMETHODCALLTYPE GetContext(ICorDebugContext** ppContext);
+    HRESULT STDMETHODCALLTYPE GetCaller(ICorDebugChain** ppChain);
+    HRESULT STDMETHODCALLTYPE GetCallee(ICorDebugChain** ppChain);
+    HRESULT STDMETHODCALLTYPE GetPrevious(ICorDebugChain** ppChain);
+    HRESULT STDMETHODCALLTYPE GetNext(ICorDebugChain** ppChain);
+    HRESULT STDMETHODCALLTYPE IsManaged(BOOL* pManaged);
+    HRESULT STDMETHODCALLTYPE EnumerateFrames(ICorDebugFrameEnum** ppFrames);
+    HRESULT STDMETHODCALLTYPE GetActiveFrame(ICorDebugFrame** ppFrame);
+    HRESULT STDMETHODCALLTYPE GetRegisterSet(ICorDebugRegisterSet** ppRegisters);
+    HRESULT STDMETHODCALLTYPE GetReason(CorDebugChainReason* pReason);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 };
 
 #endif

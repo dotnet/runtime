@@ -20,41 +20,38 @@ public:
     ~CordbEval();
     void EvalComplete(MdbgProtBuffer* pReply);
 
-    HRESULT CallParameterizedFunction(ICorDebugFunction* pFunction,
+    HRESULT STDMETHODCALLTYPE CallParameterizedFunction(ICorDebugFunction* pFunction,
                                       ULONG32            nTypeArgs,
                                       ICorDebugType*     ppTypeArgs[],
                                       ULONG32            nArgs,
                                       ICorDebugValue*    ppArgs[]);
-    HRESULT NewParameterizedObject(ICorDebugFunction* pConstructor,
+    HRESULT STDMETHODCALLTYPE NewParameterizedObject(ICorDebugFunction* pConstructor,
                                    ULONG32            nTypeArgs,
                                    ICorDebugType*     ppTypeArgs[],
                                    ULONG32            nArgs,
                                    ICorDebugValue*    ppArgs[]);
-    HRESULT NewParameterizedObjectNoConstructor(ICorDebugClass* pClass, ULONG32 nTypeArgs, ICorDebugType* ppTypeArgs[]);
-    HRESULT CallFunction(ICorDebugFunction* pFunction, ULONG32 nArgs, ICorDebugValue* ppArgs[]);
-    HRESULT NewObject(ICorDebugFunction* pConstructor, ULONG32 nArgs, ICorDebugValue* ppArgs[]);
-    HRESULT
-    NewObjectNoConstructor(ICorDebugClass* pClass);
-    HRESULT NewString(LPCWSTR string);
-    HRESULT NewArray(
+    HRESULT STDMETHODCALLTYPE NewParameterizedObjectNoConstructor(ICorDebugClass* pClass, ULONG32 nTypeArgs, ICorDebugType* ppTypeArgs[]);
+    HRESULT STDMETHODCALLTYPE CallFunction(ICorDebugFunction* pFunction, ULONG32 nArgs, ICorDebugValue* ppArgs[]);
+    HRESULT STDMETHODCALLTYPE NewObject(ICorDebugFunction* pConstructor, ULONG32 nArgs, ICorDebugValue* ppArgs[]);
+    HRESULT STDMETHODCALLTYPE NewObjectNoConstructor(ICorDebugClass* pClass);
+    HRESULT STDMETHODCALLTYPE NewString(LPCWSTR string);
+    HRESULT STDMETHODCALLTYPE NewArray(
         CorElementType elementType, ICorDebugClass* pElementClass, ULONG32 rank, ULONG32 dims[], ULONG32 lowBounds[]);
-    HRESULT IsActive(BOOL* pbActive);
-    HRESULT Abort(void);
-    HRESULT GetResult(ICorDebugValue** ppResult);
-    HRESULT GetThread(ICorDebugThread** ppThread);
-    HRESULT CreateValue(CorElementType elementType, ICorDebugClass* pElementClass, ICorDebugValue** ppValue);
-    HRESULT
-    CreateValueForType(ICorDebugType* pType, ICorDebugValue** ppValue);
-    HRESULT
-    NewParameterizedArray(ICorDebugType* pElementType, ULONG32 rank, ULONG32 dims[], ULONG32 lowBounds[]);
-    HRESULT NewStringWithLength(LPCWSTR string, UINT uiLength);
-    HRESULT RudeAbort(void);
-    HRESULT QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
-    ULONG   AddRef(void)
+    HRESULT STDMETHODCALLTYPE IsActive(BOOL* pbActive);
+    HRESULT STDMETHODCALLTYPE Abort(void);
+    HRESULT STDMETHODCALLTYPE GetResult(ICorDebugValue** ppResult);
+    HRESULT STDMETHODCALLTYPE GetThread(ICorDebugThread** ppThread);
+    HRESULT STDMETHODCALLTYPE CreateValue(CorElementType elementType, ICorDebugClass* pElementClass, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE CreateValueForType(ICorDebugType* pType, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE NewParameterizedArray(ICorDebugType* pElementType, ULONG32 rank, ULONG32 dims[], ULONG32 lowBounds[]);
+    HRESULT STDMETHODCALLTYPE NewStringWithLength(LPCWSTR string, UINT uiLength);
+    HRESULT STDMETHODCALLTYPE RudeAbort(void);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }

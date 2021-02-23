@@ -16,11 +16,11 @@ class CordbFunctionBreakpoint : public CordbBaseMono, public ICorDebugFunctionBr
 
 public:
     CordbFunctionBreakpoint(Connection* conn, CordbCode* code, ULONG32 offset);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -37,11 +37,11 @@ public:
         return "CordbFunctionBreakpoint";
     }
     ~CordbFunctionBreakpoint();
-    HRESULT GetFunction(ICorDebugFunction** ppFunction);
-    HRESULT GetOffset(ULONG32* pnOffset);
-    HRESULT Activate(BOOL bActive);
-    HRESULT IsActive(BOOL* pbActive);
-    HRESULT QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE GetFunction(ICorDebugFunction** ppFunction);
+    HRESULT STDMETHODCALLTYPE GetOffset(ULONG32* pnOffset);
+    HRESULT STDMETHODCALLTYPE Activate(BOOL bActive);
+    HRESULT STDMETHODCALLTYPE IsActive(BOOL* pbActive);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 };
 
 #endif

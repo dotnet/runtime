@@ -32,11 +32,11 @@ class CordbProcess : public CordbBaseMono,
 public:
     ArrayList* appDomains;
     CordbProcess(Cordb* cordb);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -49,94 +49,67 @@ public:
         return m_pCordb;
     }
     ~CordbProcess();
-    HRESULT EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum** ppRanges);
-    HRESULT EnableGCNotificationEvents(BOOL fEnable);
-    HRESULT
-    EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
-    HRESULT
-    SetWriteableMetadataUpdateMode(WriteableMetadataUpdateMode flags);
-    HRESULT
-    GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
-    HRESULT
-    EnumerateHeap(ICorDebugHeapEnum** ppObjects);
-    HRESULT
-    EnumerateHeapRegions(ICorDebugHeapSegmentEnum** ppRegions);
-    HRESULT
-    GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue** pObject);
-    HRESULT
-    EnumerateGCReferences(BOOL enumerateWeakReferences, ICorDebugGCReferenceEnum** ppEnum);
-    HRESULT
-    EnumerateHandles(CorGCReferenceType types, ICorDebugGCReferenceEnum** ppEnum);
-    HRESULT GetTypeID(CORDB_ADDRESS obj, COR_TYPEID* pId);
-    HRESULT GetTypeForTypeID(COR_TYPEID id, ICorDebugType** ppType);
-    HRESULT GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT* pLayout);
-    HRESULT GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT* pLayout);
-    HRESULT GetTypeFields(COR_TYPEID id, ULONG32 celt, COR_FIELD fields[], ULONG32* pceltNeeded);
-    HRESULT
-    EnableNGENPolicy(CorDebugNGENPolicy ePolicy);
-    HRESULT
-    Filter(const BYTE                pRecord[],
+    HRESULT STDMETHODCALLTYPE EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum** ppRanges);
+    HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
+    HRESULT STDMETHODCALLTYPE EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExceptionsOutsideOfJMC);
+    HRESULT STDMETHODCALLTYPE SetWriteableMetadataUpdateMode(WriteableMetadataUpdateMode flags);
+    HRESULT STDMETHODCALLTYPE GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
+    HRESULT STDMETHODCALLTYPE EnumerateHeap(ICorDebugHeapEnum** ppObjects);
+    HRESULT STDMETHODCALLTYPE EnumerateHeapRegions(ICorDebugHeapSegmentEnum** ppRegions);
+    HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue** pObject);
+    HRESULT STDMETHODCALLTYPE EnumerateGCReferences(BOOL enumerateWeakReferences, ICorDebugGCReferenceEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE EnumerateHandles(CorGCReferenceType types, ICorDebugGCReferenceEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetTypeID(CORDB_ADDRESS obj, COR_TYPEID* pId);
+    HRESULT STDMETHODCALLTYPE GetTypeForTypeID(COR_TYPEID id, ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT* pLayout);
+    HRESULT STDMETHODCALLTYPE GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT* pLayout);
+    HRESULT STDMETHODCALLTYPE GetTypeFields(COR_TYPEID id, ULONG32 celt, COR_FIELD fields[], ULONG32* pceltNeeded);
+    HRESULT STDMETHODCALLTYPE EnableNGENPolicy(CorDebugNGENPolicy ePolicy);
+    HRESULT STDMETHODCALLTYPE Filter(const BYTE                pRecord[],
            DWORD                     countBytes,
            CorDebugRecordFormat      format,
            DWORD                     dwFlags,
            DWORD                     dwThreadId,
            ICorDebugManagedCallback* pCallback,
            CORDB_CONTINUE_STATUS*    pContinueStatus);
-    HRESULT
-    ProcessStateChanged(CorDebugStateChange eChange);
-    HRESULT SetEnableCustomNotification(ICorDebugClass* pClass, BOOL fEnable);
-    HRESULT GetID(DWORD* pdwProcessId);
-    HRESULT GetHandle(HPROCESS* phProcessHandle);
-    HRESULT GetThread(DWORD dwThreadId, ICorDebugThread** ppThread);
-    HRESULT
-    EnumerateObjects(ICorDebugObjectEnum** ppObjects);
-    HRESULT IsTransitionStub(CORDB_ADDRESS address, BOOL* pbTransitionStub);
-    HRESULT IsOSSuspended(DWORD threadID, BOOL* pbSuspended);
-    HRESULT
-    GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE context[]);
-    HRESULT
-    SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE context[]);
-    HRESULT
-    ReadMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* read);
-    HRESULT
-    WriteMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* written);
-    HRESULT ClearCurrentException(DWORD threadID);
-    HRESULT EnableLogMessages(BOOL fOnOff);
-    HRESULT
-    ModifyLogSwitch(_In_ WCHAR* pLogSwitchName, LONG lLevel);
-    HRESULT
-    EnumerateAppDomains(ICorDebugAppDomainEnum** ppAppDomains);
-    HRESULT GetObject(ICorDebugValue** ppObject);
-    HRESULT ThreadForFiberCookie(DWORD fiberCookie, ICorDebugThread** ppThread);
-    HRESULT GetHelperThreadID(DWORD* pThreadID);
-    HRESULT GetThreadForTaskID(TASKID taskid, ICorDebugThread2** ppThread);
-    HRESULT GetVersion(COR_VERSION* version);
-    HRESULT SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32* bufLen);
-    HRESULT
-    ClearUnmanagedBreakpoint(CORDB_ADDRESS address);
-    HRESULT
-    SetDesiredNGENCompilerFlags(DWORD pdwFlags);
-    HRESULT
-    GetDesiredNGENCompilerFlags(DWORD* pdwFlags);
-    HRESULT
-    GetReferenceValueFromGCHandle(UINT_PTR handle, ICorDebugReferenceValue** pOutValue);
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE ProcessStateChanged(CorDebugStateChange eChange);
+    HRESULT STDMETHODCALLTYPE SetEnableCustomNotification(ICorDebugClass* pClass, BOOL fEnable);
+    HRESULT STDMETHODCALLTYPE GetID(DWORD* pdwProcessId);
+    HRESULT STDMETHODCALLTYPE GetHandle(HPROCESS* phProcessHandle);
+    HRESULT STDMETHODCALLTYPE GetThread(DWORD dwThreadId, ICorDebugThread** ppThread);
+    HRESULT STDMETHODCALLTYPE EnumerateObjects(ICorDebugObjectEnum** ppObjects);
+    HRESULT STDMETHODCALLTYPE IsTransitionStub(CORDB_ADDRESS address, BOOL* pbTransitionStub);
+    HRESULT STDMETHODCALLTYPE IsOSSuspended(DWORD threadID, BOOL* pbSuspended);
+    HRESULT STDMETHODCALLTYPE GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE context[]);
+    HRESULT STDMETHODCALLTYPE SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE context[]);
+    HRESULT STDMETHODCALLTYPE ReadMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* read);
+    HRESULT STDMETHODCALLTYPE WriteMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* written);
+    HRESULT STDMETHODCALLTYPE ClearCurrentException(DWORD threadID);
+    HRESULT STDMETHODCALLTYPE EnableLogMessages(BOOL fOnOff);
+    HRESULT STDMETHODCALLTYPE ModifyLogSwitch(_In_ WCHAR* pLogSwitchName, LONG lLevel);
+    HRESULT STDMETHODCALLTYPE EnumerateAppDomains(ICorDebugAppDomainEnum** ppAppDomains);
+    HRESULT STDMETHODCALLTYPE GetObject(ICorDebugValue** ppObject);
+    HRESULT STDMETHODCALLTYPE ThreadForFiberCookie(DWORD fiberCookie, ICorDebugThread** ppThread);
+    HRESULT STDMETHODCALLTYPE GetHelperThreadID(DWORD* pThreadID);
+    HRESULT STDMETHODCALLTYPE GetThreadForTaskID(TASKID taskid, ICorDebugThread2** ppThread);
+    HRESULT STDMETHODCALLTYPE GetVersion(COR_VERSION* version);
+    HRESULT STDMETHODCALLTYPE SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32* bufLen);
+    HRESULT STDMETHODCALLTYPE ClearUnmanagedBreakpoint(CORDB_ADDRESS address);
+    HRESULT STDMETHODCALLTYPE SetDesiredNGENCompilerFlags(DWORD pdwFlags);
+    HRESULT STDMETHODCALLTYPE GetDesiredNGENCompilerFlags(DWORD* pdwFlags);
+    HRESULT STDMETHODCALLTYPE GetReferenceValueFromGCHandle(UINT_PTR handle, ICorDebugReferenceValue** pOutValue);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
-    HRESULT Stop(DWORD dwTimeoutIgnored);
-    HRESULT Continue(BOOL fIsOutOfBand);
-    HRESULT IsRunning(BOOL* pbRunning);
-    HRESULT HasQueuedCallbacks(ICorDebugThread* pThread, BOOL* pbQueued);
-    HRESULT
-    EnumerateThreads(ICorDebugThreadEnum** ppThreads);
-    HRESULT
-    SetAllThreadsDebugState(CorDebugThreadState state, ICorDebugThread* pExceptThisThread);
-    HRESULT Detach(void);
-    HRESULT Terminate(UINT exitCode);
-    HRESULT
-    CanCommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
-    HRESULT
-    CommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
+    HRESULT STDMETHODCALLTYPE Stop(DWORD dwTimeoutIgnored);
+    HRESULT STDMETHODCALLTYPE Continue(BOOL fIsOutOfBand);
+    HRESULT STDMETHODCALLTYPE IsRunning(BOOL* pbRunning);
+    HRESULT STDMETHODCALLTYPE HasQueuedCallbacks(ICorDebugThread* pThread, BOOL* pbQueued);
+    HRESULT STDMETHODCALLTYPE EnumerateThreads(ICorDebugThreadEnum** ppThreads);
+    HRESULT STDMETHODCALLTYPE SetAllThreadsDebugState(CorDebugThreadState state, ICorDebugThread* pExceptThisThread);
+    HRESULT STDMETHODCALLTYPE Detach(void);
+    HRESULT STDMETHODCALLTYPE Terminate(UINT exitCode);
+    HRESULT STDMETHODCALLTYPE CanCommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
+    HRESULT STDMETHODCALLTYPE CommitChanges(ULONG cSnapshots, ICorDebugEditAndContinueSnapshot* pSnapshots[], ICorDebugErrorInfoEnum** pError);
 
     void                     AddThread(CordbThread* thread);
     void                     AddFunction(CordbFunction* function);

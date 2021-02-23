@@ -13,11 +13,11 @@ class CordbBlockingObjectEnum : public CordbBaseMono, public ICorDebugBlockingOb
 {
 public:
     CordbBlockingObjectEnum(Connection* conn);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -25,12 +25,12 @@ public:
     {
         return "CordbBlockingObjectEnum";
     }
-    HRESULT Next(ULONG celt, CorDebugBlockingObject values[], ULONG* pceltFetched);
-    HRESULT Skip(ULONG celt);
-    HRESULT Reset(void);
-    HRESULT Clone(ICorDebugEnum** ppEnum);
-    HRESULT GetCount(ULONG* pcelt);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE Next(ULONG celt, CorDebugBlockingObject values[], ULONG* pceltFetched);
+    HRESULT STDMETHODCALLTYPE Skip(ULONG celt);
+    HRESULT STDMETHODCALLTYPE Reset(void);
+    HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 };
 
 #endif

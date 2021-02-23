@@ -23,11 +23,11 @@ class CordbFunction : public CordbBaseMono,
 
 public:
     CordbFunction(Connection* conn, mdToken token, int id, CordbModule* module);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -40,29 +40,22 @@ public:
     {
         return m_debuggerId;
     }
-    HRESULT
-    QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
 
-    HRESULT GetModule(ICorDebugModule** ppModule);
-    HRESULT GetClass(ICorDebugClass** ppClass);
-    HRESULT GetToken(mdMethodDef* pMethodDef);
-    HRESULT GetILCode(ICorDebugCode** ppCode);
-    HRESULT GetNativeCode(ICorDebugCode** ppCode);
-    HRESULT
-    CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint);
-    HRESULT
-    GetLocalVarSigToken(mdSignature* pmdSig);
-    HRESULT
-    GetCurrentVersionNumber(ULONG32* pnCurrentVersion);
-    HRESULT SetJMCStatus(BOOL bIsJustMyCode);
-    HRESULT GetJMCStatus(BOOL* pbIsJustMyCode);
-    HRESULT
-    EnumerateNativeCode(ICorDebugCodeEnum** ppCodeEnum);
-    HRESULT GetVersionNumber(ULONG32* pnVersion);
-    HRESULT
-    GetActiveReJitRequestILCode(ICorDebugILCode** ppReJitedILCode);
-    HRESULT
-    CreateNativeBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE GetModule(ICorDebugModule** ppModule);
+    HRESULT STDMETHODCALLTYPE GetClass(ICorDebugClass** ppClass);
+    HRESULT STDMETHODCALLTYPE GetToken(mdMethodDef* pMethodDef);
+    HRESULT STDMETHODCALLTYPE GetILCode(ICorDebugCode** ppCode);
+    HRESULT STDMETHODCALLTYPE GetNativeCode(ICorDebugCode** ppCode);
+    HRESULT STDMETHODCALLTYPE CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE GetLocalVarSigToken(mdSignature* pmdSig);
+    HRESULT STDMETHODCALLTYPE GetCurrentVersionNumber(ULONG32* pnCurrentVersion);
+    HRESULT STDMETHODCALLTYPE SetJMCStatus(BOOL bIsJustMyCode);
+    HRESULT STDMETHODCALLTYPE GetJMCStatus(BOOL* pbIsJustMyCode);
+    HRESULT STDMETHODCALLTYPE EnumerateNativeCode(ICorDebugCodeEnum** ppCodeEnum);
+    HRESULT STDMETHODCALLTYPE GetVersionNumber(ULONG32* pnVersion);
+    HRESULT STDMETHODCALLTYPE GetActiveReJitRequestILCode(ICorDebugILCode** ppReJitedILCode);
+    HRESULT STDMETHODCALLTYPE CreateNativeBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint);
     mdToken GetMetadataToken() const
     {
         return m_metadataToken;

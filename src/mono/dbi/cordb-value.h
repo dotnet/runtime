@@ -28,11 +28,11 @@ class CordbValue : public CordbBaseMono, public ICorDebugValue2, public ICorDebu
 
 public:
     CordbValue(Connection* conn, CorElementType type, CordbContent value, int size);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -41,17 +41,16 @@ public:
         return "CordbValue";
     }
     ~CordbValue();
-    HRESULT GetType(CorElementType* pType);
-    HRESULT GetSize(ULONG32* pSize);
-    HRESULT GetAddress(CORDB_ADDRESS* pAddress);
-    HRESULT
-    CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE GetType(CorElementType* pType);
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG32* pSize);
+    HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS* pAddress);
+    HRESULT STDMETHODCALLTYPE CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT GetExactType(ICorDebugType** ppType);
-    HRESULT GetSize64(ULONG64* pSize);
-    HRESULT GetValue(void* pTo);
-    HRESULT SetValue(void* pFrom);
+    HRESULT STDMETHODCALLTYPE GetExactType(ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetSize64(ULONG64* pSize);
+    HRESULT STDMETHODCALLTYPE GetValue(void* pTo);
+    HRESULT STDMETHODCALLTYPE SetValue(void* pFrom);
 };
 
 class CordbReferenceValue : public CordbBaseMono,
@@ -68,11 +67,11 @@ class CordbReferenceValue : public CordbBaseMono,
 public:
     CordbReferenceValue(
         Connection* conn, CorElementType type, int object_id, CordbClass* klass = NULL, CordbType* cordbType = NULL);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -81,22 +80,21 @@ public:
         return "CordbReferenceValue";
     }
     ~CordbReferenceValue();
-    HRESULT GetType(CorElementType* pType);
-    HRESULT GetSize(ULONG32* pSize);
-    HRESULT GetAddress(CORDB_ADDRESS* pAddress);
-    HRESULT
-    CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE GetType(CorElementType* pType);
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG32* pSize);
+    HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS* pAddress);
+    HRESULT STDMETHODCALLTYPE CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT GetExactType(ICorDebugType** ppType);
-    HRESULT GetSize64(ULONG64* pSize);
-    HRESULT GetValue(void* pTo);
-    HRESULT SetValue(void* pFrom);
-    HRESULT IsNull(BOOL* pbNull);
-    HRESULT GetValue(CORDB_ADDRESS* pValue);
-    HRESULT SetValue(CORDB_ADDRESS value);
-    HRESULT Dereference(ICorDebugValue** ppValue);
-    HRESULT DereferenceStrong(ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE GetExactType(ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetSize64(ULONG64* pSize);
+    HRESULT STDMETHODCALLTYPE GetValue(void* pTo);
+    HRESULT STDMETHODCALLTYPE SetValue(void* pFrom);
+    HRESULT STDMETHODCALLTYPE IsNull(BOOL* pbNull);
+    HRESULT STDMETHODCALLTYPE GetValue(CORDB_ADDRESS* pValue);
+    HRESULT STDMETHODCALLTYPE SetValue(CORDB_ADDRESS value);
+    HRESULT STDMETHODCALLTYPE Dereference(ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE DereferenceStrong(ICorDebugValue** ppValue);
 };
 
 class CordbObjectValue : public CordbBaseMono,
@@ -119,11 +117,11 @@ class CordbObjectValue : public CordbBaseMono,
 
 public:
     CordbObjectValue(Connection* conn, CorElementType type, int object_id, CordbClass* klass);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -132,45 +130,41 @@ public:
         return "CordbObjectValue";
     }
     ~CordbObjectValue();
-    HRESULT        GetClass(ICorDebugClass** ppClass);
-    HRESULT        GetFieldValue(ICorDebugClass* pClass, mdFieldDef fieldDef, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE        GetClass(ICorDebugClass** ppClass);
+    HRESULT STDMETHODCALLTYPE        GetFieldValue(ICorDebugClass* pClass, mdFieldDef fieldDef, ICorDebugValue** ppValue);
     static HRESULT CreateCordbValue(Connection* conn, MdbgProtBuffer* pReply, ICorDebugValue** ppValue);
-    static int     GetTypeSize(int type);
-    HRESULT        GetVirtualMethod(mdMemberRef memberRef, ICorDebugFunction** ppFunction);
-    HRESULT        GetContext(ICorDebugContext** ppContext);
-    HRESULT        IsValueClass(BOOL* pbIsValueClass);
-    HRESULT        GetManagedCopy(IUnknown** ppObject);
-    HRESULT        SetFromManagedCopy(IUnknown* pObject);
-    HRESULT        IsValid(BOOL* pbValid);
-    HRESULT
-    CreateRelocBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT GetType(CorElementType* pType);
-    HRESULT GetSize(ULONG32* pSize);
-    HRESULT GetAddress(CORDB_ADDRESS* pAddress);
-    HRESULT
-    CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    static int GetTypeSize(int type);
+    HRESULT STDMETHODCALLTYPE        GetVirtualMethod(mdMemberRef memberRef, ICorDebugFunction** ppFunction);
+    HRESULT STDMETHODCALLTYPE        GetContext(ICorDebugContext** ppContext);
+    HRESULT STDMETHODCALLTYPE        IsValueClass(BOOL* pbIsValueClass);
+    HRESULT STDMETHODCALLTYPE        GetManagedCopy(IUnknown** ppObject);
+    HRESULT STDMETHODCALLTYPE        SetFromManagedCopy(IUnknown* pObject);
+    HRESULT STDMETHODCALLTYPE        IsValid(BOOL* pbValid);
+    HRESULT STDMETHODCALLTYPE CreateRelocBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE GetType(CorElementType* pType);
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG32* pSize);
+    HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS* pAddress);
+    HRESULT STDMETHODCALLTYPE CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT GetExactType(ICorDebugType** ppType);
-    HRESULT GetSize64(ULONG64* pSize);
-    HRESULT GetValue(void* pTo);
-    HRESULT SetValue(void* pFrom);
-    HRESULT
-    GetVirtualMethodAndType(mdMemberRef memberRef, ICorDebugFunction** ppFunction, ICorDebugType** ppType);
-    HRESULT GetLength(ULONG32* pcchString);
-    HRESULT GetString(ULONG32 cchString, ULONG32* pcchString, WCHAR szString[]);
-    HRESULT CreateHandle(CorDebugHandleType type, ICorDebugHandleValue** ppHandle);
-    HRESULT GetThreadOwningMonitorLock(ICorDebugThread** ppThread, DWORD* pAcquisitionCount);
-    HRESULT
-    GetMonitorEventWaitList(ICorDebugThreadEnum** ppThreadEnum);
-    HRESULT EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
-    HRESULT GetCachedInterfaceTypes(BOOL bIInspectableOnly, ICorDebugTypeEnum** ppInterfacesEnum);
-    HRESULT GetCachedInterfacePointers(BOOL           bIInspectableOnly,
+    HRESULT STDMETHODCALLTYPE GetExactType(ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetSize64(ULONG64* pSize);
+    HRESULT STDMETHODCALLTYPE GetValue(void* pTo);
+    HRESULT STDMETHODCALLTYPE SetValue(void* pFrom);
+    HRESULT STDMETHODCALLTYPE GetVirtualMethodAndType(mdMemberRef memberRef, ICorDebugFunction** ppFunction, ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetLength(ULONG32* pcchString);
+    HRESULT STDMETHODCALLTYPE GetString(ULONG32 cchString, ULONG32* pcchString, WCHAR szString[]);
+    HRESULT STDMETHODCALLTYPE CreateHandle(CorDebugHandleType type, ICorDebugHandleValue** ppHandle);
+    HRESULT STDMETHODCALLTYPE GetThreadOwningMonitorLock(ICorDebugThread** ppThread, DWORD* pAcquisitionCount);
+    HRESULT STDMETHODCALLTYPE GetMonitorEventWaitList(ICorDebugThreadEnum** ppThreadEnum);
+    HRESULT STDMETHODCALLTYPE EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+    HRESULT STDMETHODCALLTYPE GetCachedInterfaceTypes(BOOL bIInspectableOnly, ICorDebugTypeEnum** ppInterfacesEnum);
+    HRESULT STDMETHODCALLTYPE GetCachedInterfacePointers(BOOL           bIInspectableOnly,
                                        ULONG32        celt,
                                        ULONG32*       pcEltFetched,
                                        CORDB_ADDRESS* ptrs);
-    HRESULT GetTarget(ICorDebugReferenceValue** ppObject);
-    HRESULT GetFunction(ICorDebugFunction** ppFunction);
+    HRESULT STDMETHODCALLTYPE GetTarget(ICorDebugReferenceValue** ppObject);
+    HRESULT STDMETHODCALLTYPE GetFunction(ICorDebugFunction** ppFunction);
 };
 
 class CordbArrayValue : public CordbBaseMono,
@@ -194,11 +188,11 @@ class CordbArrayValue : public CordbBaseMono,
 
 public:
     CordbArrayValue(Connection* conn, CordbType* type, int object_id, CordbClass* klass);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -207,51 +201,47 @@ public:
         return "CordbArrayValue";
     }
     ~CordbArrayValue();
-    HRESULT GetClass(ICorDebugClass** ppClass);
-    HRESULT GetFieldValue(ICorDebugClass* pClass, mdFieldDef fieldDef, ICorDebugValue** ppValue);
-    HRESULT GetVirtualMethod(mdMemberRef memberRef, ICorDebugFunction** ppFunction);
-    HRESULT GetContext(ICorDebugContext** ppContext);
-    HRESULT IsValueClass(BOOL* pbIsValueClass);
-    HRESULT GetManagedCopy(IUnknown** ppObject);
-    HRESULT SetFromManagedCopy(IUnknown* pObject);
-    HRESULT GetType(CorElementType* pType);
-    HRESULT GetSize(ULONG32* pSize);
-    HRESULT GetAddress(CORDB_ADDRESS* pAddress);
-    HRESULT
-    CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE GetClass(ICorDebugClass** ppClass);
+    HRESULT STDMETHODCALLTYPE GetFieldValue(ICorDebugClass* pClass, mdFieldDef fieldDef, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE GetVirtualMethod(mdMemberRef memberRef, ICorDebugFunction** ppFunction);
+    HRESULT STDMETHODCALLTYPE GetContext(ICorDebugContext** ppContext);
+    HRESULT STDMETHODCALLTYPE IsValueClass(BOOL* pbIsValueClass);
+    HRESULT STDMETHODCALLTYPE GetManagedCopy(IUnknown** ppObject);
+    HRESULT STDMETHODCALLTYPE SetFromManagedCopy(IUnknown* pObject);
+    HRESULT STDMETHODCALLTYPE GetType(CorElementType* pType);
+    HRESULT STDMETHODCALLTYPE GetSize(ULONG32* pSize);
+    HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS* pAddress);
+    HRESULT STDMETHODCALLTYPE CreateBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT
-    GetVirtualMethodAndType(mdMemberRef memberRef, ICorDebugFunction** ppFunction, ICorDebugType** ppType);
-    HRESULT GetValue(void* pTo);
-    HRESULT SetValue(void* pFrom);
-    HRESULT GetLength(ULONG32* pcchString);
-    HRESULT GetString(ULONG32 cchString, ULONG32* pcchString, WCHAR szString[]);
-    HRESULT IsValid(BOOL* pbValid);
-    HRESULT
-    CreateRelocBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
-    HRESULT GetExactType(ICorDebugType** ppType);
-    HRESULT GetSize64(ULONG64* pSize);
-    HRESULT CreateHandle(CorDebugHandleType type, ICorDebugHandleValue** ppHandle);
-    HRESULT GetThreadOwningMonitorLock(ICorDebugThread** ppThread, DWORD* pAcquisitionCount);
-    HRESULT
-    GetMonitorEventWaitList(ICorDebugThreadEnum** ppThreadEnum);
-    HRESULT EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
-    HRESULT GetCachedInterfaceTypes(BOOL bIInspectableOnly, ICorDebugTypeEnum** ppInterfacesEnum);
-    HRESULT GetCachedInterfacePointers(BOOL           bIInspectableOnly,
+    HRESULT STDMETHODCALLTYPE GetVirtualMethodAndType(mdMemberRef memberRef, ICorDebugFunction** ppFunction, ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetValue(void* pTo);
+    HRESULT STDMETHODCALLTYPE SetValue(void* pFrom);
+    HRESULT STDMETHODCALLTYPE GetLength(ULONG32* pcchString);
+    HRESULT STDMETHODCALLTYPE GetString(ULONG32 cchString, ULONG32* pcchString, WCHAR szString[]);
+    HRESULT STDMETHODCALLTYPE IsValid(BOOL* pbValid);
+    HRESULT STDMETHODCALLTYPE CreateRelocBreakpoint(ICorDebugValueBreakpoint** ppBreakpoint);
+    HRESULT STDMETHODCALLTYPE GetExactType(ICorDebugType** ppType);
+    HRESULT STDMETHODCALLTYPE GetSize64(ULONG64* pSize);
+    HRESULT STDMETHODCALLTYPE CreateHandle(CorDebugHandleType type, ICorDebugHandleValue** ppHandle);
+    HRESULT STDMETHODCALLTYPE GetThreadOwningMonitorLock(ICorDebugThread** ppThread, DWORD* pAcquisitionCount);
+    HRESULT STDMETHODCALLTYPE GetMonitorEventWaitList(ICorDebugThreadEnum** ppThreadEnum);
+    HRESULT STDMETHODCALLTYPE EnumerateExceptionCallStack(ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+    HRESULT STDMETHODCALLTYPE GetCachedInterfaceTypes(BOOL bIInspectableOnly, ICorDebugTypeEnum** ppInterfacesEnum);
+    HRESULT STDMETHODCALLTYPE GetCachedInterfacePointers(BOOL           bIInspectableOnly,
                                        ULONG32        celt,
                                        ULONG32*       pcEltFetched,
                                        CORDB_ADDRESS* ptrs);
-    HRESULT GetTarget(ICorDebugReferenceValue** ppObject);
-    HRESULT GetFunction(ICorDebugFunction** ppFunction);
+    HRESULT STDMETHODCALLTYPE GetTarget(ICorDebugReferenceValue** ppObject);
+    HRESULT STDMETHODCALLTYPE GetFunction(ICorDebugFunction** ppFunction);
 
-    HRESULT GetElementType(CorElementType* pType);
-    HRESULT GetRank(ULONG32* pnRank);
-    HRESULT GetCount(ULONG32* pnCount);
-    HRESULT GetDimensions(ULONG32 cdim, ULONG32 dims[]);
-    HRESULT HasBaseIndicies(BOOL* pbHasBaseIndicies);
-    HRESULT GetBaseIndicies(ULONG32 cdim, ULONG32 indicies[]);
-    HRESULT GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue** ppValue);
-    HRESULT GetElementAtPosition(ULONG32 nPosition, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE GetElementType(CorElementType* pType);
+    HRESULT STDMETHODCALLTYPE GetRank(ULONG32* pnRank);
+    HRESULT STDMETHODCALLTYPE GetCount(ULONG32* pnCount);
+    HRESULT STDMETHODCALLTYPE GetDimensions(ULONG32 cdim, ULONG32 dims[]);
+    HRESULT STDMETHODCALLTYPE HasBaseIndicies(BOOL* pbHasBaseIndicies);
+    HRESULT STDMETHODCALLTYPE GetBaseIndicies(ULONG32 cdim, ULONG32 indicies[]);
+    HRESULT STDMETHODCALLTYPE GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE GetElementAtPosition(ULONG32 nPosition, ICorDebugValue** ppValue);
 };
 #endif

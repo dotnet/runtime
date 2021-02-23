@@ -16,11 +16,11 @@ class CordbClass : public CordbBaseMono, public ICorDebugClass, public ICorDebug
 
 public:
     CordbClass(Connection* conn, mdToken token, int module_id);
-    ULONG AddRef(void)
+    ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());
     }
-    ULONG Release(void)
+    ULONG STDMETHODCALLTYPE Release(void)
     {
         return (BaseRelease());
     }
@@ -28,16 +28,16 @@ public:
     {
         return "CordbClass";
     }
-    HRESULT GetModule(ICorDebugModule** pModule);
-    HRESULT GetToken(mdTypeDef* pTypeDef);
-    HRESULT GetStaticFieldValue(mdFieldDef fieldDef, ICorDebugFrame* pFrame, ICorDebugValue** ppValue);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    HRESULT STDMETHODCALLTYPE GetModule(ICorDebugModule** pModule);
+    HRESULT STDMETHODCALLTYPE GetToken(mdTypeDef* pTypeDef);
+    HRESULT STDMETHODCALLTYPE GetStaticFieldValue(mdFieldDef fieldDef, ICorDebugFrame* pFrame, ICorDebugValue** ppValue);
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
 
-    HRESULT GetParameterizedType(CorElementType  elementType,
+    HRESULT STDMETHODCALLTYPE GetParameterizedType(CorElementType  elementType,
                                  ULONG32         nTypeArgs,
                                  ICorDebugType*  ppTypeArgs[],
                                  ICorDebugType** ppType);
-    HRESULT SetJMCStatus(BOOL bIsJustMyCode);
+    HRESULT STDMETHODCALLTYPE SetJMCStatus(BOOL bIsJustMyCode);
 };
 
 #endif
