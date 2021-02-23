@@ -1085,19 +1085,20 @@ namespace System.IO
             // Try to satisfy the request from the buffer synchronously.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
                 bool completeSynchronously = true;
                 try
                 {
                     if (_writePos == 0)
                     {
-                        ClearReadBufferBeforeWrite();
+                        ClearReadBufferBeforeWrite(); // Seeks, but does not perform sync IO
                     }
 
                     Debug.Assert(_writePos < _bufferSize);
 
-                    // If the write completely fits into the buffer, we can complete synchronously:
+                    // hot path #1 If the write completely fits into the buffer, we can complete synchronously:
                     completeSynchronously = buffer.Length < _bufferSize - _writePos;
                     if (completeSynchronously)
                     {
@@ -1111,10 +1112,20 @@ namespace System.IO
                     if (completeSynchronously)  // if this is FALSE, we will be entering WriteToUnderlyingStreamAsync and releasing there.
                         sem.Release();
                 }
+
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                if (_writePos == 0 && buffer.Length >= _bufferSize)
+                {
+                    ValueTask result = _stream!.WriteAsync(buffer, cancellationToken);
+
+                    sem.Release();
+
+                    return result;
+                }
             }
 
             // Delegate to the async implementation.
-            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask);
+            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask, locked);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1123,7 +1134,7 @@ namespace System.IO
         /// little as possible.
         /// </summary>
         private async ValueTask WriteToUnderlyingStreamAsync(
-            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask, bool locked)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
@@ -1133,14 +1144,23 @@ namespace System.IO
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
 
-            await semaphoreLockTask.ConfigureAwait(false);
+            if (!locked)
+            {
+                await semaphoreLockTask.ConfigureAwait(false);
+            }
+
             try
             {
-                // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
+                if (!locked)
+                {
+                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                    // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
 
-                if (_writePos == 0)
-                    ClearReadBufferBeforeWrite();
+                    if (_writePos == 0)
+                    {
+                        ClearReadBufferBeforeWrite();
+                    }
+                }
 
                 int totalUserBytes;
                 bool useBuffer;
@@ -1155,7 +1175,7 @@ namespace System.IO
                 {
                     buffer = buffer.Slice(WriteToBuffer(buffer.Span));
 
-                    if (_writePos < _bufferSize)
+                    if (_writePos < _buffer!.Length)
                     {
                         Debug.Assert(buffer.Length == 0);
                         return;
