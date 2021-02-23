@@ -976,16 +976,28 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
             {
                 GenTreeUnOp* addr  = op1->AsUnOp();
                 GenTree*     indir = addr->gtGetOp1();
-                if (indir->OperIs(GT_IND) && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
+                if (indir->OperIsIndir() && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
                 {
                     op1 = indir->AsIndir()->Addr();
                 }
+            }
+            else if (op1->OperIs(GT_CAST))
+            {
+                // For code like `return(short) *((short*)&struct)` Roslyn generates:
+                // ldarga.s     0x0 - puts byref
+                // conv.u           - casts byref to ulong
+                // ldind.i2         - dereference ulong as short
+                // ret              - return short
+                // optimize the cast away.
+                GenTreeCast* cast  = op1->AsCast();
+                assert(genTypeSize(cast->gtCastType) == TARGET_POINTER_SIZE);
+                op1 = cast->gtGetOp1();
             }
         }
         else if (oper == GT_ADDR)
         {
             // if "x" is not an array index, ADDR(IND(x)) == x
-            if (op1->gtOper == GT_IND && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+            if (op1->OperIsIndir() && (op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
             {
                 return op1->AsOp()->gtOp1;
             }

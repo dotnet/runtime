@@ -14568,7 +14568,7 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            if (op1->OperGet() == GT_IND)
+            if (op1->OperIsIndir())
             {
                 if ((op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
                 {

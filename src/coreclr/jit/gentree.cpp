@@ -6715,6 +6715,27 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
     var_types nodeType = impNormStructType(structHnd);
     assert(varTypeIsStruct(nodeType));
 
+    if (addr->OperIs(GT_ADDR))
+    {
+        GenTree*     indir = addr->gtGetOp1();
+        if (indir->OperIsIndir() && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
+        {
+            addr = indir->AsIndir()->Addr();
+        }
+    }
+    else if (addr->OperIs(GT_CAST))
+    {
+        // For code like `return(short) *((short*)&struct)` Roslyn generates:
+        // ldarga.s     0x0 - puts byref
+        // conv.u           - casts byref to ulong
+        // ldind.i2         - dereference ulong as short
+        // ret              - return short
+        // optimize the cast away.
+        GenTreeCast* cast = addr->AsCast();
+        assert(genTypeSize(cast->gtCastType) == TARGET_POINTER_SIZE);
+        addr = cast->gtGetOp1();
+    }
+
     GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, typGetObjLayout(structHnd));
 
     // An Obj is not a global reference, if it is known to be a local struct.
