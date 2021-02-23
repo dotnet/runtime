@@ -8,141 +8,135 @@ using System.Text;
 
 namespace System.IO.Compression
 {
+    /// <summary>Provides static methods for creating, extracting, and opening zip archives.</summary>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// > [!IMPORTANT]
+    /// >  To use the <xref:System.IO.Compression.ZipFile> class, you must add a reference to the `System.IO.Compression.FileSystem` assembly in your project; otherwise, you'll get the following error message when trying to compile : **The name 'ZipFile' does not exist in the current context**. For more information on how to add a reference to your project in Visual Studio, see [How to: Add or Remove References By Using the Reference Manager](/visualstudio/ide/how-to-add-or-remove-references-by-using-the-reference-manager).
+    /// The methods for manipulating zip archives and their files are spread across three classes: <xref:System.IO.Compression.ZipFile>, <xref:System.IO.Compression.ZipArchive> and <xref:System.IO.Compression.ZipArchiveEntry>.
+    /// |To...|Use...|
+    /// |---------|----------|
+    /// |Create a zip archive from a directory|<xref:System.IO.Compression.ZipFile.CreateFromDirectory%2A?displayProperty=nameWithType>|
+    /// |Extract the contents of a zip archive to a directory|<xref:System.IO.Compression.ZipFile.ExtractToDirectory%2A?displayProperty=nameWithType>|
+    /// |Add new files to an existing zip archive|<xref:System.IO.Compression.ZipArchive.CreateEntry%2A?displayProperty=nameWithType>|
+    /// |Retrieve a file in a zip archive|<xref:System.IO.Compression.ZipArchive.GetEntry%2A?displayProperty=nameWithType>|
+    /// |Retrieve all of the files in a zip archive|<xref:System.IO.Compression.ZipArchive.Entries%2A?displayProperty=nameWithType>|
+    /// |To open a stream to an individual file contained in a zip archive|<xref:System.IO.Compression.ZipArchiveEntry.Open%2A?displayProperty=nameWithType>|
+    /// |Delete a file from a zip archive|<xref:System.IO.Compression.ZipArchiveEntry.Delete%2A?displayProperty=nameWithType>|
+    /// You cannot use the <xref:System.IO.Compression.ZipFile> or  <xref:System.IO.Compression.ZipFileExtensions> classes  in [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] apps. In [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] apps, you should use the following classes to work with compressed files.
+    /// -   <xref:System.IO.Compression.ZipArchive>
+    /// -   <xref:System.IO.Compression.ZipArchiveEntry>
+    /// -   <xref:System.IO.Compression.DeflateStream>
+    /// -   <xref:System.IO.Compression.GZipStream>
+    /// ## Examples
+    /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder.
+    /// > [!TIP]
+    /// >  To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+    /// [!code-csharp[System.IO.Compression.ZipFile#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program1.cs#1)]
+    /// [!code-vb[System.IO.Compression.ZipFile#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program1.vb#1)]
+    /// ]]></format></remarks>
+    /// <related type="Article" href="/visualstudio/ide/how-to-add-or-remove-references-by-using-the-reference-manager">How to: Add or Remove References By Using the Reference Manager</related>
     public static partial class ZipFile
     {
-        /// <summary>
-        /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace, or contains one
-        ///                                     or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">archiveFileName is null.</exception>
-        /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters,
-        ///                                        and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The specified archiveFileName is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An unspecified I/O error occurred while opening the file.</exception>
-        /// <exception cref="UnauthorizedAccessException">archiveFileName specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="FileNotFoundException">The file specified in archiveFileName was not found.</exception>
-        /// <exception cref="NotSupportedException">archiveFileName is in an invalid format. </exception>
-        /// <exception cref="InvalidDataException">The specified file could not be interpreted as a Zip file.</exception>
-        ///
-        /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on. The path is permitted
-        /// to specify relative or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
+        /// <summary>Opens a zip archive for reading at the specified path.</summary>
+        /// <param name="archiveFileName">The path to the archive to open, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <returns>The opened zip archive.</returns>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// This method is equivalent to calling the <xref:System.IO.Compression.ZipFile.Open%2A> method and setting the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read>. The archive is opened with <xref:System.IO.FileMode.Open?displayProperty=nameWithType> as the file mode value. If the archive does not exist, a <xref:System.IO.FileNotFoundException> exception is thrown.
+        /// ## Examples
+        /// The following example shows how to open a zip archive for reading.
+        /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="archiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="archiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="archiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="archiveFileName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="archiveFileName" /> could not be opened.
+        /// -or-
+        /// An unspecified I/O error occurred while opening the file.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="archiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the file specified in <paramref name="archiveFileName" />.</exception>
+        /// <exception cref="System.IO.FileNotFoundException">The file specified in <paramref name="archiveFileName" /> is not found.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="archiveFileName" /> contains an invalid format.</exception>
+        /// <exception cref="System.IO.InvalidDataException"><paramref name="archiveFileName" /> could not be interpreted as a zip archive.</exception>
         public static ZipArchive OpenRead(string archiveFileName) => Open(archiveFileName, ZipArchiveMode.Read);
 
-        /// <summary>
-        /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
-        ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">path is null.</exception>
-        /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters,
-        ///                                        and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The specified archiveFileName is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An unspecified I/O error occurred while opening the file.</exception>
-        /// <exception cref="UnauthorizedAccessException">archiveFileName specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><code>mode</code> specified an invalid value.</exception>
-        /// <exception cref="FileNotFoundException">The file specified in <code>archiveFileName</code> was not found. </exception>
-        /// <exception cref="NotSupportedException"><code>archiveFileName</code> is in an invalid format.</exception>
-        /// <exception cref="InvalidDataException">The specified file could not be interpreted as a Zip file.
-        ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is missing from the archive or
-        ///                                        is corrupt and cannot be read.
-        ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is too large to fit into memory.</exception>
-        ///
-        /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on.
-        /// The path is permitted to specify relative or absolute path information.
-        /// Relative path information is interpreted as relative to the current working directory.</param>
-        /// <param name="mode">See the description of the <code>ZipArchiveMode</code> enum.
-        /// If <code>Read</code> is specified, the file is opened with <code>System.IO.FileMode.Open</code>, and will throw
-        /// a <code>FileNotFoundException</code> if the file does not exist.
-        /// If <code>Create</code> is specified, the file is opened with <code>System.IO.FileMode.CreateNew</code>, and will throw
-        /// a <code>System.IO.IOException</code> if the file already exists.
-        /// If <code>Update</code> is specified, the file is opened with <code>System.IO.FileMode.OpenOrCreate</code>.
-        /// If the file exists and is a Zip file, its entries will become accessible, and may be modified, and new entries may be created.
-        /// If the file exists and is not a Zip file, a <code>ZipArchiveException</code> will be thrown.
-        /// If the file exists and is empty or does not exist, a new Zip file will be created.
-        /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
+        /// <summary>Opens a zip archive at the specified path and in the specified mode.</summary>
+        /// <param name="archiveFileName">The path to the archive to open, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="mode">One of the enumeration values that specifies the actions which are allowed on the entries in the opened archive.</param>
+        /// <returns>The opened zip archive.</returns>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read>, the archive is opened with <xref:System.IO.FileMode.Open> from the <xref:System.IO.FileMode> enumeration as the file mode value. If the archive does not exist, a <xref:System.IO.FileNotFoundException> exception is thrown. Setting the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read> is equivalent to calling the <xref:System.IO.Compression.ZipFile.OpenRead%2A> method.
+        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Create>, the archive is opened with <xref:System.IO.FileMode.CreateNew?displayProperty=nameWithType> as the file mode value. If the archive already exists, an <xref:System.IO.IOException> is thrown.
+        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Update>,  the archive is opened with <xref:System.IO.FileMode.OpenOrCreate?displayProperty=nameWithType> as the file mode value. If the archive exists, it is opened. The existing entries can be modified and new entries can be created. If the archive does not exist, a new archive is created; however, creating a zip archive in <xref:System.IO.Compression.ZipArchiveMode.Update> mode is not as efficient as creating it in <xref:System.IO.Compression.ZipArchiveMode.Create> mode.
+        /// ## Examples
+        /// The following example shows how to open a zip archive in the update mode and add an entry to the archive.
+        /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
+        /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="archiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="archiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="archiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="archiveFileName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="archiveFileName" /> could not be opened.
+        /// -or-
+        /// <paramref name="mode" /> is set to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, but the file specified in <paramref name="archiveFileName" /> already exists.
+        /// -or-
+        /// An unspecified I/O error occurred while opening the file.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="archiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the file specified in <paramref name="archiveFileName" />.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode" /> specifies an invalid value.</exception>
+        /// <exception cref="System.IO.FileNotFoundException"><paramref name="mode" /> is set to <see cref="System.IO.Compression.ZipArchiveMode.Read" />, but the file specified in <paramref name="archiveFileName" /> is not found.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="archiveFileName" /> contains an invalid format.</exception>
+        /// <exception cref="System.IO.InvalidDataException"><paramref name="archiveFileName" /> could not be interpreted as a zip archive.
+        /// -or-
+        /// <paramref name="mode" /> is <see cref="System.IO.Compression.ZipArchiveMode.Update" />, but an entry is missing or corrupt and cannot be read.
+        /// -or-
+        /// <paramref name="mode" /> is <see cref="System.IO.Compression.ZipArchiveMode.Update" />, but an entry is too large to fit into memory.</exception>
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode) => Open(archiveFileName, mode, entryNameEncoding: null);
 
-        /// <summary>
-        /// Opens a <code>ZipArchive</code> on the specified <code>archiveFileName</code> in the specified <code>ZipArchiveMode</code> mode.
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException">archiveFileName is a zero-length string, contains only whitespace,
-        ///                                     or contains one or more invalid characters as defined by InvalidPathChars.</exception>
-        /// <exception cref="ArgumentNullException">path is null.</exception>
-        /// <exception cref="PathTooLongException">The specified archiveFileName exceeds the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters,
-        ///                                        and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The specified archiveFileName is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An unspecified I/O error occurred while opening the file.</exception>
-        /// <exception cref="UnauthorizedAccessException">archiveFileName specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><code>mode</code> specified an invalid value.</exception>
-        /// <exception cref="FileNotFoundException">The file specified in <code>archiveFileName</code> was not found. </exception>
-        /// <exception cref="NotSupportedException"><code>archiveFileName</code> is in an invalid format.</exception>
-        /// <exception cref="InvalidDataException">The specified file could not be interpreted as a Zip file.
-        ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is missing from the archive or
-        ///                                        is corrupt and cannot be read.
-        ///                                        -OR- <code>mode</code> is <code>Update</code> and an entry is too large to fit into memory.</exception>
-        ///
-        /// <param name="archiveFileName">A string specifying the path on the filesystem to open the archive on.
-        /// The path is permitted to specify relative or absolute path information.
-        /// Relative path information is interpreted as relative to the current working directory.</param>
-        /// <param name="mode">See the description of the <code>ZipArchiveMode</code> enum.
-        /// If <code>Read</code> is specified, the file is opened with <code>System.IO.FileMode.Open</code>, and will throw
-        /// a <code>FileNotFoundException</code> if the file does not exist.
-        /// If <code>Create</code> is specified, the file is opened with <code>System.IO.FileMode.CreateNew</code>, and will throw
-        /// a <code>System.IO.IOException</code> if the file already exists.
-        /// If <code>Update</code> is specified, the file is opened with <code>System.IO.FileMode.OpenOrCreate</code>.
-        /// If the file exists and is a Zip file, its entries will become accessible, and may be modified, and new entries may be created.
-        /// If the file exists and is not a Zip file, a <code>ZipArchiveException</code> will be thrown.
-        /// If the file exists and is empty or does not exist, a new Zip file will be created.
-        /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
-        ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
-        ///         This value is used as follows:</para>
-        ///     <para><strong>Reading (opening) ZIP archive files:</strong></para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
-        ///     <list>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
-        ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
-        ///     </list>
-        ///     <para><strong>Writing (saving) ZIP archive files:</strong></para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
-        ///     <list>
-        ///         <item>For entry names that contain characters outside the ASCII range,
-        ///         the language encoding flag (EFS) will be set in the general purpose bit flag of the local file header,
-        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name into bytes.</item>
-        ///         <item>For entry names that do not contain characters outside the ASCII range,
-        ///         the language encoding flag (EFS) will not be set in the general purpose bit flag of the local file header,
-        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names into bytes.</item>
-        ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
-        ///     <list>
-        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names into bytes.
-        ///         The language encoding flag (EFS) in the general purpose bit flag of the local file header will be set if and only
-        ///         if the specified <c>entryNameEncoding</c> is a UTF-8 encoding.</item>
-        ///     </list>
-        ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
-        ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
-        /// </param>
+        /// <summary>Opens a zip archive at the specified path, in the specified mode, and by using the specified character encoding for entry names.</summary>
+        /// <param name="archiveFileName">The path to the archive to open, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="mode">One of the enumeration values that specifies the actions that are allowed on the entries in the opened archive.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <returns>The opened zip archive.</returns>
+        /// <remarks>When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Read" />, the archive is opened with <see cref="System.IO.FileMode.Open" /> as the file mode value. If the archive does not exist, a <see cref="System.IO.FileNotFoundException" /> exception is thrown. Setting the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Read" /> is equivalent to calling the <see cref="System.IO.Compression.ZipFile.OpenRead" /> method.
+        /// When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, the archive is opened with <see cref="System.IO.FileMode.CreateNew" /> as the file mode value. If the archive already exists, an <see cref="System.IO.IOException" /> is thrown.
+        /// When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Update" />,  the archive is opened with <see cref="System.IO.FileMode.OpenOrCreate" /> as the file mode value. If the archive exists, it is opened. The existing entries can be modified and new entries can be created. If the archive does not exist, a new archive is created; however, creating a zip archive in <see cref="System.IO.Compression.ZipArchiveMode.Update" /> mode is not as efficient as creating it in <see cref="System.IO.Compression.ZipArchiveMode.Create" /> mode.
+        /// When you open a zip archive file for reading and <paramref name="entryNameEncoding" /> is set to <see langword="null" />, entry names are decoded according to the following rules:
+        /// -   When the language encoding flag (in the general-purpose bit flag of the local file header) is not set, the current system default code page is used to decode the entry name.
+        /// -   When the language encoding flag is set, UTF-8 is used to decode the entry name.
+        /// When you open a zip archive file for reading and <paramref name="entryNameEncoding" /> is set to a value other than <see langword="null" />, entry names are decoded according to the following rules:
+        /// -   When the language encoding flag is not set, the specified <paramref name="entryNameEncoding" /> is used to decode the entry name.
+        /// -   When the language encoding flag is set, UTF-8 is used to decode the entry name.
+        /// When you write to archive files and <paramref name="entryNameEncoding" /> is set to <see langword="null" />, entry names are encoded according to the following rules:
+        /// -   For entry names that contain characters outside the ASCII range, the language encoding flag is set, and entry names are encoded by using UTF-8.
+        /// -   For entry names that contain only ASCII characters, the language encoding flag is not set, and entry names are encoded by using the current system default code page.
+        /// When you write to archive files and <paramref name="entryNameEncoding" /> is set to a value other than <see langword="null" />, the specified <paramref name="entryNameEncoding" /> is used to encode the entry names into bytes. The language encoding flag (in the general-purpose bit flag of the local file header) is set only when the specified encoding is a UTF-8 encoding.</remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="archiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// -or-
+        /// <paramref name="entryNameEncoding" /> is set to a Unicode encoding other than UTF-8.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="archiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="archiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="archiveFileName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="archiveFileName" /> could not be opened.
+        /// -or-
+        /// <paramref name="mode" /> is set to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, but the file specified in <paramref name="archiveFileName" /> already exists.
+        /// -or-
+        /// An unspecified I/O error occurred while opening the file.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="archiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the file specified in <paramref name="archiveFileName" />.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode" /> specifies an invalid value.</exception>
+        /// <exception cref="System.IO.FileNotFoundException"><paramref name="mode" /> is set to <see cref="System.IO.Compression.ZipArchiveMode.Read" />, but the file specified in <paramref name="archiveFileName" /> is not found.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="archiveFileName" /> contains an invalid format.</exception>
+        /// <exception cref="System.IO.InvalidDataException"><paramref name="archiveFileName" /> could not be interpreted as a zip archive.
+        /// -or-
+        /// <paramref name="mode" /> is <see cref="System.IO.Compression.ZipArchiveMode.Update" />, but an entry is missing or corrupt and cannot be read.
+        /// -or-
+        /// <paramref name="mode" /> is <see cref="System.IO.Compression.ZipArchiveMode.Update" />, but an entry is too large to fit into memory.</exception>
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding)
         {
             // Relies on FileStream's ctor for checking of archiveFileName
@@ -193,160 +187,98 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories from
-        /// the directory specified by <code>sourceDirectoryName</code>. The directory structure is preserved in the archive, and a
-        /// recursive search is done for files to be archived. The archive must not exist. If the directory is empty, an empty
-        /// archive will be created. If a file in the directory cannot be added to the archive, the archive will be left incomplete
-        /// and invalid and the method will throw an exception. This method does not include the base directory into the archive.
-        /// If an error is encountered while adding files to the archive, this method will stop adding files and leave the archive
-        /// in an invalid state. The paths are permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
-        /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
-        /// last modified time.</p>
-        ///
-        /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        ///
-        /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
-        /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
-        /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
-        ///                                     <code>InvalidPathChars</code>.</exception>
-        /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
-        /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the specified
-        ///                                        path, file name, or both exceed the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters, and file
-        ///                                        names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified in <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>
-        ///                                              is invalid, (for example, it is on an unmapped drive).
-        ///                                              -OR- The directory specified by <code>sourceDirectoryName</code> does not exist.</exception>
-        /// <exception cref="IOException"><code>destinationArchiveFileName</code> already exists.
-        ///                                     -OR- An I/O error occurred while opening a file to be archived.</exception>
-        /// <exception cref="UnauthorizedAccessException"><code>destinationArchiveFileName</code> specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is
-        ///                                         in an invalid format.</exception>
-        ///
-        /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived. </param>
-        /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
+        /// <summary>Creates a zip archive that contains the files and directories from the specified directory.</summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destinationArchiveFileName">The path of the archive to be created, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. This method overload does not include the base directory in the archive and does not allow you to specify a compression level. If you want to include the base directory or specify a compression level, call the <xref:System.IO.Compression.ZipFile.CreateFromDirectory%28string%2Cstring%2CSystem.IO.Compression.CompressionLevel%2Cbool%29> method overload.
+        /// If the archive already exists, an <xref:System.IO.IOException> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <xref:System.IO.IOException> exception.
+        /// ## Examples
+        /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// [!code-csharp[System.IO.Compression.ZipFile#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipFile#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program1.vb#1)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="destinationArchiveFileName" /> already exists.
+        /// -or-
+        /// A file in the specified directory could not be opened.
+        /// -or-
+        /// An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="destinationArchiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the directory specified in <paramref name="sourceDirectoryName" /> or the file specified in <paramref name="destinationArchiveFileName" />.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> contains an invalid format.
+        /// -or-
+        /// The zip archive does not support writing.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null);
 
-        /// <summary>
-        /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
-        /// specified by <code>sourceDirectoryName</code>. The directory structure is preserved in the archive, and a recursive search is
-        /// done for files to be archived. The archive must not exist. If the directory is empty, an empty archive will be created.
-        /// If a file in the directory cannot be added to the archive, the archive will be left incomplete and invalid and the
-        /// method will throw an exception. This method optionally includes the base directory in the archive.
-        /// If an error is encountered while adding files to the archive, this method will stop adding files and leave the archive
-        /// in an invalid state. The paths are permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
-        /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
-        /// last modified time.</p>
-        ///
-        /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        ///
-        /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
-        /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
-        /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
-        ///                                     <code>InvalidPathChars</code>.</exception>
-        /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
-        /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the
-        ///                                        specified path, file name, or both exceed the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters,
-        ///                                        and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified in <code>sourceDirectoryName</code> or
-        ///                                              <code>destinationArchiveFileName</code> is invalid, (for example, it is on an unmapped drive).
-        ///                                              -OR- The directory specified by <code>sourceDirectoryName</code> does not exist.</exception>
-        /// <exception cref="IOException"><code>destinationArchiveFileName</code> already exists.
-        ///                               -OR- An I/O error occurred while opening a file to be archived.</exception>
-        /// <exception cref="UnauthorizedAccessException"><code>destinationArchiveFileName</code> specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>
-        ///                                         is in an invalid format.</exception>
-        ///
-        /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
-        /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
-        /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
-        /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
-        /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
-        /// should be included directly in the archive.</param>
+        /// <summary>Creates a zip archive that contains the files and directories from the specified directory, uses the specified compression level, and optionally includes the base directory.</summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destinationArchiveFileName">The path of the archive to be created, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
+        /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. Use this method overload to specify the compression level and whether to include the base directory in the archive.
+        /// If the archive already exists, an <xref:System.IO.IOException> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <xref:System.IO.IOException> exception.
+        /// ## Examples
+        /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. When compressing the archive, the base directory is included and the compression level is set to emphasize the speed of the operation over efficiency. To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// [!code-csharp[System.IO.Compression.ZipFile#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program2.cs#2)]
+        /// [!code-vb[System.IO.Compression.ZipFile#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program2.vb#2)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="destinationArchiveFileName" /> already exists.
+        /// -or-
+        /// A file in the specified directory could not be opened.
+        /// -or-
+        /// An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="destinationArchiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the directory specified in <paramref name="sourceDirectoryName" /> or the file specified in <paramref name="destinationArchiveFileName" />.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> contains an invalid format.
+        /// -or-
+        /// The zip archive does not support writing.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, CompressionLevel compressionLevel, bool includeBaseDirectory) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
 
-        /// <summary>
-        /// <p>Creates a Zip archive at the path <code>destinationArchiveFileName</code> that contains the files and directories in the directory
-        /// specified by <code>sourceDirectoryName</code>. The directory structure is preserved in the archive, and a recursive search is
-        /// done for files to be archived. The archive must not exist. If the directory is empty, an empty archive will be created.
-        /// If a file in the directory cannot be added to the archive, the archive will be left incomplete and invalid and the
-        /// method will throw an exception. This method optionally includes the base directory in the archive.
-        /// If an error is encountered while adding files to the archive, this method will stop adding files and leave the archive
-        /// in an invalid state. The paths are permitted to specify relative or absolute path information. Relative path information
-        /// is interpreted as relative to the current working directory. If a file in the archive has data in the last write time
-        /// field that is not a valid Zip timestamp, an indicator value of 1980 January 1 at midnight will be used for the file's
-        /// last modified time.</p>
-        ///
-        /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
-        ///
-        /// <p>Since no <code>CompressionLevel</code> is specified, the default provided by the implementation of the underlying compression
-        /// algorithm will be used; the <code>ZipArchive</code> will not impose its own default.
-        /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
-        /// </summary>
-        ///
-        /// <exception cref="ArgumentException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is a zero-length
-        ///                                     string, contains only whitespace, or contains one or more invalid characters as defined by
-        ///                                     <code>InvalidPathChars</code>.</exception>
-        /// <exception cref="ArgumentNullException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code> is null.</exception>
-        /// <exception cref="PathTooLongException">In <code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>, the
-        ///                                        specified path, file name, or both exceed the system-defined maximum length.
-        ///                                        For example, on Windows-based platforms, paths must be less than 248 characters,
-        ///                                        and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified in <code>sourceDirectoryName</code> or
-        ///                                              <code>destinationArchiveFileName</code> is invalid, (for example, it is on an unmapped drive).
-        ///                                              -OR- The directory specified by <code>sourceDirectoryName</code> does not exist.</exception>
-        /// <exception cref="IOException"><code>destinationArchiveFileName</code> already exists.
-        ///                               -OR- An I/O error occurred while opening a file to be archived.</exception>
-        /// <exception cref="UnauthorizedAccessException"><code>destinationArchiveFileName</code> specified a directory.
-        ///                                               -OR- The caller does not have the required permission.</exception>
-        /// <exception cref="NotSupportedException"><code>sourceDirectoryName</code> or <code>destinationArchiveFileName</code>
-        ///                                         is in an invalid format.</exception>
-        ///
-        /// <param name="sourceDirectoryName">The path to the directory on the file system to be archived.</param>
-        /// <param name="destinationArchiveFileName">The name of the archive to be created.</param>
-        /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
-        /// <param name="includeBaseDirectory"><code>true</code> to indicate that a directory named <code>sourceDirectoryName</code> should
-        /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
-        /// should be included directly in the archive.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
-        ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
-        ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
-        ///         This value is used as follows while creating the archive:</para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
-        ///     <list>
-        ///         <item>For file names that contain characters outside the ASCII range:<br />
-        ///         The language encoding flag (EFS) will be set in the general purpose bit flag of the local file header of the corresponding entry,
-        ///         and UTF-8 (<c>Encoding.UTF8</c>) will be used in order to encode the entry name into bytes.</item>
-        ///         <item>For file names that do not contain characters outside the ASCII range:<br />
-        ///         the language encoding flag (EFS) will not be set in the general purpose bit flag of the local file header of the corresponding entry,
-        ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names into bytes.</item>
-        ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
-        ///     <list>
-        ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names into bytes.
-        ///         The language encoding flag (EFS) in the general purpose bit flag of the local file header for each entry will be set if and only
-        ///         if the specified <c>entryNameEncoding</c> is a UTF-8 encoding.</item>
-        ///     </list>
-        ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
-        ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
-        /// </param>
+        /// <summary>Creates a zip archive that contains the files and directories from the specified directory, uses the specified compression level and character encoding for entry names, and optionally includes the base directory.</summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destinationArchiveFileName">The path of the archive to be created, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
+        /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <remarks>The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. Use this method overload to specify the compression level and character encoding, and whether to include the base directory in the archive.
+        /// If the archive already exists, an <see cref="System.IO.IOException" /> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="System.IO.IOException" /> exception.
+        /// If <paramref name="entryNameEncoding" /> is set to a value other than <see langword="null" />, the entry names are encoded by using the specified encoding. If the specified encoding is a UTF-8, the language encoding flag (in the general-purpose bit flag of the local file header) is set for each entry,
+        /// If <paramref name="entryNameEncoding" /> is set to <see langword="null" />, the entry names are encoded according to the following rules:
+        /// -   For entry names that contain characters outside the ASCII range, the language encoding flag is set, and UTF-8 is used to encode the entry name.
+        /// -   For entry names that contain only ASCII characters, the language encoding flag is set, and the current system default code page is used to encode the entry names.</remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// -or-
+        /// <paramref name="entryNameEncoding" /> is set to a Unicode encoding other than UTF-8.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">In <paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="destinationArchiveFileName" /> already exists.
+        /// -or-
+        /// A file in the specified directory could not be opened.
+        /// -or-
+        /// An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="System.UnauthorizedAccessException"><paramref name="destinationArchiveFileName" /> specifies a directory.
+        /// -or-
+        /// The caller does not have the required permission to access the directory specified in <paramref name="sourceDirectoryName" /> or the file specified in <paramref name="destinationArchiveFileName" />.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> contains an invalid format.
+        /// -or-
+        /// The zip archive does not support writing.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding);

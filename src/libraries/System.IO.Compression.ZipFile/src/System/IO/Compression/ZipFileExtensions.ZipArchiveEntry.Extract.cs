@@ -5,65 +5,97 @@ using System.ComponentModel;
 
 namespace System.IO.Compression
 {
+    /// <summary>Provides extension methods for the <see cref="System.IO.Compression.ZipArchive" /> and <see cref="System.IO.Compression.ZipArchiveEntry" /> classes.</summary>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// The <xref:System.IO.Compression.ZipFileExtensions> class contains only static methods that extend the <xref:System.IO.Compression.ZipArchive> and <xref:System.IO.Compression.ZipArchiveEntry> classes. You do not create an instance of the <xref:System.IO.Compression.ZipFileExtensions> class; instead, you use these methods from instances of <xref:System.IO.Compression.ZipArchive> or <xref:System.IO.Compression.ZipArchiveEntry>.
+    /// To use the extension methods, you must reference the `System.IO.Compression.FileSystem` assembly in your project. The `System.IO.Compression.FileSystem` assembly is not available in [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] apps. Therefore, the <xref:System.IO.Compression.ZipFileExtensions> and <xref:System.IO.Compression.ZipFile> classes (both of which are in the `System.IO.Compression.FileSystem` assembly) are not available in [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] apps. In [!INCLUDE[win8_appname_long](~/includes/win8-appname-long-md.md)] apps, you work with compressed files by using the methods in <xref:System.IO.Compression.ZipArchive>, <xref:System.IO.Compression.ZipArchiveEntry>, <xref:System.IO.Compression.DeflateStream>, and <xref:System.IO.Compression.GZipStream>.
+    /// The <xref:System.IO.Compression.ZipFileExtensions> class contains four methods that extend <xref:System.IO.Compression.ZipArchive>:
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.CreateEntryFromFile%28System.IO.Compression.ZipArchive%2Cstring%2Cstring%29>
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.CreateEntryFromFile%28System.IO.Compression.ZipArchive%2Cstring%2Cstring%2CSystem.IO.Compression.CompressionLevel%29>
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%28System.IO.Compression.ZipArchive%2Cstring%29>
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%28System.IO.Compression.ZipArchive%2Cstring%2Cbool%29>
+    /// The <xref:System.IO.Compression.ZipFileExtensions> class contains two methods that extend <xref:System.IO.Compression.ZipArchiveEntry>:
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%29>
+    /// -   <xref:System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%2Cbool%29>
+    /// ## Examples
+    /// The following example shows how to create a new entry in a zip archive from an existing file, and extract the contents of the archive to a directory.
+    /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
+    /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
+    /// The following example shows how to iterate through the contents of a zip archive and extract files that have a .txt extension.
+    /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
+    /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
+    /// ]]></format></remarks>
     public static partial class ZipFileExtensions
     {
-        /// <summary>
-        /// Creates a file on the file system with the entry?s contents and the specified name. The last write time of the file is set to the
-        /// entry?s last write time. This method does not allow overwriting of an existing file with the same name. Attempting to extract explicit
-        /// directories (entries with names that end in directory separator characters) will not result in the creation of a directory.
-        /// </summary>
-        ///
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace, or contains one or more
-        /// invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
-        /// <exception cref="ArgumentNullException">destinationFileName is null.</exception>
-        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
-        /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid (for example, it is on
-        /// an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName already exists.
-        /// -or- An I/O error has occurred. -or- The entry is currently open for writing.
-        /// -or- The entry has been deleted from the archive.</exception>
-        /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
-        /// -or- The ZipArchive that this entry belongs to was opened in a write-only mode.</exception>
-        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
-        /// -or- The entry has been compressed using a compression method that is not supported.</exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <summary>Extracts an entry in the zip archive to a file.</summary>
         /// <param name="source">The zip archive entry to extract a file from.</param>
-        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
-        /// The path is permitted to specify relative or absolute path information.
-        /// Relative path information is interpreted as relative to the current working directory.</param>
+        /// <param name="destinationFileName">The path of the file to create from the contents of the entry. You can  specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// If the destination file already exists, this method does not overwrite it; it throws an <xref:System.IO.IOException> exception. To overwrite an existing file, use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%2Cbool%29> method overload instead.
+        /// The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property.
+        /// You cannot use this method to extract a directory; use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%2A> method instead.
+        /// ## Examples
+        /// The following example shows how to iterate through the contents of a zip archive file and extract files that have a .txt extension.
+        /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="destinationFileName" /> is a zero-length string, contains only white space, or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.
+        /// -or-
+        /// <paramref name="destinationFileName" /> specifies a directory.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="destinationFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="destinationFileName" /> already exists.
+        /// -or-
+        /// An I/O error occurred.
+        /// -or-
+        /// The entry is currently open for writing.
+        /// -or-
+        /// The entry has been deleted from the archive.</exception>
+        /// <exception cref="System.UnauthorizedAccessException">The caller does not have the required permission to create the new file.</exception>
+        /// <exception cref="System.IO.InvalidDataException">The entry is missing from the archive, or is corrupt and cannot be read.
+        /// -or-
+        /// The entry has been compressed by using a compression method that is not supported.</exception>
+        /// <exception cref="System.ObjectDisposedException">The zip archive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="destinationFileName" /> is in an invalid format.
+        /// -or-
+        /// The zip archive for this entry was opened in <see cref="System.IO.Compression.ZipArchiveMode.Create" /> mode, which does not permit the retrieval of entries.</exception>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName) =>
             ExtractToFile(source, destinationFileName, false);
 
-        /// <summary>
-        /// Creates a file on the file system with the entry?s contents and the specified name.
-        /// The last write time of the file is set to the entry?s last write time.
-        /// This method does allows overwriting of an existing file with the same name.
-        /// </summary>
-        ///
-        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace,
-        /// or contains one or more invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
-        /// <exception cref="ArgumentNullException">destinationFileName is null.</exception>
-        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
-        /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
-        /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid
-        /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName exists and overwrite is false.
-        /// -or- An I/O error has occurred.
-        /// -or- The entry is currently open for writing.
-        /// -or- The entry has been deleted from the archive.</exception>
-        /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
-        /// -or- The ZipArchive that this entry belongs to was opened in a write-only mode.</exception>
-        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
-        /// -or- The entry has been compressed using a compression method that is not supported.</exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <summary>Extracts an entry in the zip archive to a file, and optionally overwrites an existing file that has the same name.</summary>
         /// <param name="source">The zip archive entry to extract a file from.</param>
-        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
-        /// The path is permitted to specify relative or absolute path information.
-        /// Relative path information is interpreted as relative to the current working directory.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param>
+        /// <param name="destinationFileName">The path of the file to create from the contents of the entry. You can specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="overwrite"><see langword="true" /> to overwrite an existing file that has the same name as the destination file; otherwise, <see langword="false" />.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property.
+        /// You cannot use this method to extract a directory; use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%2A> method instead.
+        /// ## Examples
+        /// The following example shows how to iterate through the contents of a zip archive file, and extract files that have a .txt extension. It overwrites an existing file that has the same name in the destination folder. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
+        /// [!code-csharp[System.IO.Compression.ZipArchive#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program2.cs#2)]
+        /// [!code-vb[System.IO.Compression.ZipArchive#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program2.vb#2)]
+        /// ]]></format></remarks>
+        /// <exception cref="System.ArgumentException"><paramref name="destinationFileName" /> is a zero-length string, contains only white space, or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.
+        /// -or-
+        /// <paramref name="destinationFileName" /> specifies a directory.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="destinationFileName" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="System.IO.DirectoryNotFoundException">The specified path is invalid (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="System.IO.IOException"><paramref name="destinationFileName" /> already exists and <paramref name="overwrite" /> is <see langword="false" />.
+        /// -or-
+        /// An I/O error occurred.
+        /// -or-
+        /// The entry is currently open for writing.
+        /// -or-
+        /// The entry has been deleted from the archive.</exception>
+        /// <exception cref="System.UnauthorizedAccessException">The caller does not have the required permission to create the new file.</exception>
+        /// <exception cref="System.IO.InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read.
+        /// -or-
+        /// The entry has been compressed by using a compression method that is not supported.</exception>
+        /// <exception cref="System.ObjectDisposedException">The zip archive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="System.NotSupportedException"><paramref name="destinationFileName" /> is in an invalid format.
+        /// -or-
+        /// The zip archive for this entry was opened in <see cref="System.IO.Compression.ZipArchiveMode.Create" /> mode, which does not permit the retrieval of entries.</exception>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
             if (source == null)
