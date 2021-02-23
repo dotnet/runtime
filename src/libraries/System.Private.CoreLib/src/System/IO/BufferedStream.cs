@@ -85,7 +85,11 @@ namespace System.IO
         private void EnsureNotClosed()
         {
             if (_stream == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+            {
+                Throw();
+            }
+
+            static void Throw() => throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
         private void EnsureCanSeek()
@@ -93,7 +97,11 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanSeek)
-                throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            {
+                Throw();
+            }
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
         private void EnsureCanRead()
@@ -101,7 +109,11 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanRead)
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            {
+                Throw();
+            }
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
         private void EnsureCanWrite()
@@ -109,7 +121,11 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            {
+                Throw();
+            }
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
 
         private void EnsureShadowBufferAllocated()
@@ -403,9 +419,13 @@ namespace System.IO
             // However, since the user did not call a method that is intuitively expected to seek, a better message is in order.
             // Ideally, we would throw an InvalidOperation here, but for backward compat we have to stick with NotSupported.
             if (!_stream.CanSeek)
-                throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
+            {
+                Throw();
+            }
 
             FlushRead();
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
         }
 
         private void FlushWrite()
