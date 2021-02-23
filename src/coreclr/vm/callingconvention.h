@@ -1500,7 +1500,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     int alignment;
     if (!isValueType)
     {
-	_ASSERTE((cbArg & (cbArg - 1)) == 0);
+        _ASSERTE((cbArg & (cbArg - 1)) == 0);
         alignment = cbArg;
     }
     else if (isFloatHfa)
