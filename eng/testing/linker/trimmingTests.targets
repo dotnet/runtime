@@ -93,16 +93,21 @@
     <Message Text="Generated $(_projectFile)" />
   </Target>
 
+  <Target Name="GetTrimmingProjectsToRestore"
+          DependsOnTargets="GenerateProjects"
+          Returns="@(TestConsoleApps)" />
+
   <Target Name="PublishTrimmedProjects"
           DependsOnTargets="GenerateProjects">
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"
+             Condition="'$(SkipTrimmingProjectsRestore)' != 'true'"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration)" />
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false" />
   </Target>
 
   <Target Name="ExecuteApplications"
