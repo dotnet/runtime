@@ -17,7 +17,7 @@
 #include <socket.h>
 
 #define DEBUG_ADDRESS "127.0.0.1"
-#define DEBUG_PORT "4712"
+#define DEBUG_PORT "4713"
 
 MONO_API HRESULT CoreCLRCreateCordbObjectEx(
     int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, void** ppCordb)
@@ -212,7 +212,7 @@ Connection::~Connection()
         if (buf)
         {
             m_dbgprot_buffer_free(buf);
-            free(buf);
+            delete buf;
         }
         i++;
     }
@@ -232,6 +232,7 @@ void Connection::Receive()
 
         if (iResult == -1)
         {
+            m_dbgprot_buffer_free(&recvbuf_header);
             pCordb->GetCallback()->ExitProcess(static_cast<ICorDebugProcess*>(GetProcess()));
             break;
         }
@@ -244,16 +245,15 @@ void Connection::Receive()
         }
 
         MdbgProtHeader  header;
-        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();
         m_dbgprot_decode_command_header(&recvbuf_header, &header);
         m_dbgprot_buffer_free(&recvbuf_header);
-        m_dbgprot_buffer_init(recvbuf, header.len - HEADER_LENGTH);
-
         if (header.len < HEADER_LENGTH)
         {
             return;
         }
 
+        MdbgProtBuffer* recvbuf = new MdbgProtBuffer();        
+        m_dbgprot_buffer_init(recvbuf, header.len - HEADER_LENGTH);
         if (header.len - HEADER_LENGTH != 0)
         {
             iResult       = socket->Receive((char*)recvbuf->p, header.len - HEADER_LENGTH);
@@ -438,6 +438,7 @@ void Connection::ProcessPacketFromQueue()
             dbg_lock();
             receivedPacketsToProcess->Set(i, NULL);
             dbg_unlock();
+            m_dbgprot_buffer_free(req);
             delete req;
         }
         i++;
@@ -553,8 +554,9 @@ void Connection::SendPacket(MdbgProtBuffer& sendbuf)
 int Connection::SendEvent(int cmd_set, int cmd, MdbgProtBuffer* sendbuf)
 {
     MdbgProtBuffer outbuf;
-    int            ret = m_dbgprot_buffer_add_command_header(sendbuf, cmd_set, cmd, &outbuf);
+    int ret = m_dbgprot_buffer_add_command_header(sendbuf, cmd_set, cmd, &outbuf);
     SendPacket(outbuf);
+    m_dbgprot_buffer_free(&outbuf);
     return ret;
 }
 
