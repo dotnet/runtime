@@ -12,7 +12,7 @@ The repo can be built for the following platforms, using the provided setup and 
 | ARM64 | &#x2714; | &#x2714; |          |          |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
 
-Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
+Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work. Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of disk space space and network transfer, and that a full build can consume somewhere between 10-15 GB of space. This might increase over time, so consider this to be a minimum bar for working with this codebase.
 
 ## Concepts
 
