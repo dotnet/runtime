@@ -45,7 +45,7 @@ struct _EventPipeThread_Internal {
 	// that pointer will be protected from deletion. See ep_disable () and
 	// ep_write () for more detail.
 	volatile uint32_t writing_event_in_progress;
-	// This is set to non-zero when the thread is unregistered from the global list of EventPpe threads.
+	// This is set to non-zero when the thread is unregistered from the global list of EventPipe threads.
 	// This should happen when a physical thread is ending.
 	// This is a convenience marker to prevent us from having to search the global list.
 	// defaults to false.
