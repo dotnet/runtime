@@ -7,8 +7,21 @@
 PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 
-PALEXPORT void CryptoNative_X509Destroy(jobject /*X509Certificate*/ cert);
-PALEXPORT jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certificate*/ cert);
+PALEXPORT int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t bufLen, jobject /*X509Certificate*/ *out, int32_t outLen);
+
+// Matches managed X509ContentType enum
+enum
+{
+    PAL_X509Unknown = 0,
+    PAL_Certificate = 1,
+    PAL_SerializedCert = 2,
+    PAL_Pkcs12 = 3,
+    PAL_SerializedStore = 4,
+    PAL_Pkcs7 = 5,
+    PAL_Authenticode = 6,
+};
+typedef uint32_t PAL_X509ContentType;
+PALEXPORT PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t *buf, int32_t len);
 
 // Keep in sync with managed definition in Interop.X509
 struct X509BasicInformation
@@ -25,7 +38,6 @@ PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyBytes(jobject /*X509Certif
 PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509GetSignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetThumbprint(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 
 // Name
 PALEXPORT int32_t AndroidCryptoNative_X509GetIssuerNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);

@@ -16,8 +16,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
-    // TODO: [AndroidCrypto] Rename class to AndroidX509CertificateReader
-    internal sealed class OpenSslX509CertificateReader : ICertificatePal
+    internal sealed class AndroidX509CertificateReader : ICertificatePal
     {
         private SafeX509Handle _cert;
         private SafeEvpPKeyHandle? _privateKey;
@@ -32,7 +31,8 @@ namespace Internal.Cryptography.Pal
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
-            return new OpenSslX509CertificateReader(Interop.Crypto.X509UpRef(handle));
+            var newHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(handle));
+            return new AndroidX509CertificateReader(newHandle);
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
@@ -40,19 +40,16 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(cert.Pal != null);
 
             // Ensure private key is copied
-            OpenSslX509CertificateReader certPal = (OpenSslX509CertificateReader)cert.Pal;
+            AndroidX509CertificateReader certPal = (AndroidX509CertificateReader)cert.Pal;
             return certPal.DuplicateHandles();
         }
 
         public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
+            // TODO: [AndroidCrypto] Handle PKCS#12
             Debug.Assert(password != null);
             ICertificatePal? cert;
-            Exception? exception;
-            if (TryReadX509(rawData, out cert)
-                || PkcsFormatReader.TryReadPkcs7Der(rawData, out cert)
-                || PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert)
-                || PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out exception))
+            if (TryReadX509(rawData, out cert))
             {
                 if (cert == null)
                 {
@@ -64,8 +61,7 @@ namespace Internal.Cryptography.Pal
             }
 
             // Unsupported
-            Debug.Assert(exception != null);
-            throw exception;
+            throw new CryptographicException();
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -88,44 +84,11 @@ namespace Internal.Cryptography.Pal
                 return false;
             }
 
-            handle = new OpenSslX509CertificateReader(certHandle);
+            handle = new AndroidX509CertificateReader(certHandle);
             return true;
         }
 
-        internal static bool TryReadX509Der(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? certPal)
-        {
-            return TryReadX509(rawData, out certPal);
-        }
-
-        internal static bool TryReadX509Pem(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? certPal)
-        {
-            return TryReadX509(rawData, out certPal);
-        }
-
-        internal static bool TryReadX509Der(SafeBioHandle bio, [NotNullWhen(true)] out ICertificatePal? certPal)
-        {
-            certPal = null;
-            throw new NotImplementedException(nameof(TryReadX509Der));
-        }
-
-        internal static bool TryReadX509Pem(SafeBioHandle bio, [NotNullWhen(true)] out ICertificatePal? certPal)
-        {
-            certPal = null;
-            throw new NotImplementedException(nameof(TryReadX509Pem));
-        }
-
-        internal static bool TryReadX509PemNoAux(SafeBioHandle bio, [NotNullWhen(true)] out ICertificatePal? certPal)
-        {
-            certPal = null;
-            throw new NotImplementedException(nameof(TryReadX509PemNoAux));
-        }
-
-        internal static void RewindBio(SafeBioHandle bio, int bioPosition)
-        {
-            throw new NotImplementedException(nameof(RewindBio));
-        }
-
-        private OpenSslX509CertificateReader(SafeX509Handle handle)
+        private AndroidX509CertificateReader(SafeX509Handle handle)
         {
             _cert = handle;
         }
@@ -186,6 +149,15 @@ namespace Internal.Cryptography.Pal
                 // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
                 byte[] bytes = Interop.AndroidCrypto.X509GetPublicKeyBytes(_cert);
                 return SubjectPublicKeyInfoAsn.Decode(bytes, AsnEncodingRules.DER).SubjectPublicKey.ToArray();
+            }
+        }
+
+        public byte[] SubjectPublicKeyInfo
+        {
+            get
+            {
+                // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
+                return Interop.AndroidCrypto.X509GetPublicKeyBytes(_cert);
             }
         }
 
@@ -465,11 +437,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal OpenSslX509CertificateReader DuplicateHandles()
+        internal AndroidX509CertificateReader DuplicateHandles()
         {
             // Add a global reference to the underlying cert object.
-            SafeX509Handle certHandle = Interop.Crypto.X509UpRef(_cert);
-            OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
+            SafeX509Handle duplicateHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(Handle));
+            AndroidX509CertificateReader duplicate = new AndroidX509CertificateReader(duplicateHandle);
 
             if (_privateKey != null)
             {
