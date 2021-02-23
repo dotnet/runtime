@@ -15,22 +15,22 @@ namespace Internal.Cryptography.Pal
     {
         public static ICertificatePal FromHandle(IntPtr handle)
         {
-            return AndroidX509CertificateReader.FromHandle(handle);
+            return AndroidCertificatePal.FromHandle(handle);
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
         {
-            return AndroidX509CertificateReader.FromOtherCert(cert);
+            return AndroidCertificatePal.FromOtherCert(cert);
         }
 
         public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            return AndroidX509CertificateReader.FromBlob(rawData, password, keyStorageFlags);
+            return AndroidCertificatePal.FromBlob(rawData, password, keyStorageFlags);
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            return AndroidX509CertificateReader.FromFile(fileName, password, keyStorageFlags);
+            return AndroidCertificatePal.FromFile(fileName, password, keyStorageFlags);
         }
     }
 }

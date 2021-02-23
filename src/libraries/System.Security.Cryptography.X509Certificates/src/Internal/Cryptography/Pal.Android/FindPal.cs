@@ -23,13 +23,13 @@ namespace Internal.Cryptography.Pal
 
             protected override byte[] GetSubjectPublicKeyInfo(X509Certificate2 cert)
             {
-                AndroidX509CertificateReader pal = (AndroidX509CertificateReader)cert.Pal;
+                AndroidCertificatePal pal = (AndroidCertificatePal)cert.Pal;
                 return pal.SubjectPublicKeyInfo;
             }
 
             protected override X509Certificate2 CloneCertificate(X509Certificate2 cert)
             {
-                return new X509Certificate2(AndroidX509CertificateReader.FromOtherCert(cert));
+                return new X509Certificate2(AndroidCertificatePal.FromOtherCert(cert));
             }
         }
     }

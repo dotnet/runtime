@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
                     SafeX509Handle handle = _certs[i];
                     System.Diagnostics.Debug.Assert(!handle.IsInvalid);
 
-                    ICertificatePal certPal = AndroidX509CertificateReader.FromHandle(handle.DangerousGetHandle());
+                    ICertificatePal certPal = AndroidCertificatePal.FromHandle(handle.DangerousGetHandle());
                     X509Certificate2 cert = new X509Certificate2(certPal);
                     collection.Add(cert);
                 }

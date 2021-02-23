@@ -16,15 +16,12 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
-    internal sealed class AndroidX509CertificateReader : ICertificatePal
+    internal sealed class AndroidCertificatePal : ICertificatePal
     {
         private SafeX509Handle _cert;
         private SafeEvpPKeyHandle? _privateKey;
-        private X500DistinguishedName? _subjectName;
-        private X500DistinguishedName? _issuerName;
-        private string? _subject;
-        private string? _issuer;
-        private Interop.AndroidCrypto.X509BasicInformation _basicInformation;
+
+        private CertificateData _certData;
 
         public static ICertificatePal FromHandle(IntPtr handle)
         {
@@ -32,7 +29,7 @@ namespace Internal.Cryptography.Pal
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
 
             var newHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(handle));
-            return new AndroidX509CertificateReader(newHandle);
+            return new AndroidCertificatePal(newHandle);
         }
 
         public static ICertificatePal FromOtherCert(X509Certificate cert)
@@ -40,7 +37,7 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(cert.Pal != null);
 
             // Ensure private key is copied
-            AndroidX509CertificateReader certPal = (AndroidX509CertificateReader)cert.Pal;
+            AndroidCertificatePal certPal = (AndroidCertificatePal)cert.Pal;
             return certPal.DuplicateHandles();
         }
 
@@ -71,10 +68,10 @@ namespace Internal.Cryptography.Pal
         }
 
         // Handles both DER and PEM
-        internal static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
+        private static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
         {
             handle = null;
-            SafeX509Handle certHandle = Interop.AndroidCrypto.DecodeX509(
+            SafeX509Handle certHandle = Interop.AndroidCrypto.X509Decode(
                 ref MemoryMarshal.GetReference(rawData),
                 rawData.Length);
 
@@ -84,11 +81,11 @@ namespace Internal.Cryptography.Pal
                 return false;
             }
 
-            handle = new AndroidX509CertificateReader(certHandle);
+            handle = new AndroidCertificatePal(certHandle);
             return true;
         }
 
-        private AndroidX509CertificateReader(SafeX509Handle handle)
+        private AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
         }
@@ -103,15 +100,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_issuer == null)
-                {
-                    // IssuerName is mutable to callers in X509Certificate. We want to be
-                    // able to get the issuer even if IssuerName has been mutated, so we
-                    // don't use it here.
-                    _issuer = Interop.AndroidCrypto.X509GetIssuerName(_cert).Name;
-                }
-
-                return _issuer;
+                EnsureCertificateData();
+                return _certData.IssuerName;
             }
         }
 
@@ -119,15 +109,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_subject == null)
-                {
-                    // SubjectName is mutable to callers in X509Certificate. We want to be
-                    // able to get the subject even if SubjectName has been mutated, so we
-                    // don't use it here.
-                    _subject = Interop.AndroidCrypto.X509GetSubjectName(_cert).Name;
-                }
-
-                return _subject;
+                EnsureCertificateData();
+                return _certData.SubjectName;
             }
         }
 
@@ -136,19 +119,39 @@ namespace Internal.Cryptography.Pal
         public string LegacySubject => SubjectName.Decode(X500DistinguishedNameFlags.None);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
-        public byte[] Thumbprint => SHA1.HashData(RawData);
+        public byte[] Thumbprint
+        {
+            get
+            {
+                EnsureCertificateData();
+                return SHA1.HashData(_certData.RawData);
+            }
+        }
 
-        public string KeyAlgorithm => new Oid(Interop.AndroidCrypto.X509GetPublicKeyAlgorithm(_cert)).Value!;
+        public string KeyAlgorithm
+        {
+            get
+            {
+                EnsureCertificateData();
+                return _certData.PublicKeyAlgorithm.AlgorithmId!;
+            }
+        }
 
-        public byte[] KeyAlgorithmParameters => Interop.AndroidCrypto.X509GetPublicKeyParameterBytes(_cert);
+        public byte[] KeyAlgorithmParameters
+        {
+            get
+            {
+                EnsureCertificateData();
+                return _certData.PublicKeyAlgorithm.Parameters;
+            }
+        }
 
         public byte[] PublicKeyValue
         {
             get
             {
-                // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
-                byte[] bytes = Interop.AndroidCrypto.X509GetPublicKeyBytes(_cert);
-                return SubjectPublicKeyInfoAsn.Decode(bytes, AsnEncodingRules.DER).SubjectPublicKey.ToArray();
+                EnsureCertificateData();
+                return _certData.PublicKey;
             }
         }
 
@@ -156,21 +159,35 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                // AndroidCrypto returns the SubjectPublicKeyInfo - extract just the SubjectPublicKey
-                return Interop.AndroidCrypto.X509GetPublicKeyBytes(_cert);
+                EnsureCertificateData();
+                return _certData.SubjectPublicKeyInfo;
             }
         }
 
-        public byte[] SerialNumber => Interop.AndroidCrypto.X509GetSerialNumber(_cert);
+        public byte[] SerialNumber
+        {
+            get
+            {
+                EnsureCertificateData();
+                return _certData.SerialNumber;
+            }
+        }
 
-        public string SignatureAlgorithm => Interop.AndroidCrypto.X509GetSignatureAlgorithm(_cert);
+        public string SignatureAlgorithm
+        {
+            get
+            {
+                EnsureCertificateData();
+                return _certData.SignatureAlgorithm.AlgorithmId!;
+            }
+        }
 
         public DateTime NotAfter
         {
             get
             {
-                EnsureBasicInformation();
-                return _basicInformation.NotAfter;
+                EnsureCertificateData();
+                return _certData.NotAfter.ToLocalTime();
             }
         }
 
@@ -178,19 +195,19 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                EnsureBasicInformation();
-                return _basicInformation.NotBefore;
+                EnsureCertificateData();
+                return _certData.NotBefore.ToLocalTime();
             }
         }
 
-        public byte[] RawData => Interop.AndroidCrypto.EncodeX509(_cert);
+        public byte[] RawData => Interop.AndroidCrypto.X509Encode(_cert);
 
         public int Version
         {
             get
             {
-                EnsureBasicInformation();
-                return _basicInformation.Version;
+                EnsureCertificateData();
+                return _certData.Version + 1;
             }
         }
 
@@ -218,12 +235,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_subjectName == null)
-                {
-                    _subjectName = Interop.AndroidCrypto.X509GetSubjectName(_cert);
-                }
-
-                return _subjectName;
+                EnsureCertificateData();
+                return _certData.Subject;
             }
         }
 
@@ -231,97 +244,50 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                if (_issuerName == null)
-                {
-                    _issuerName = Interop.AndroidCrypto.X509GetIssuerName(_cert);
-                }
-
-                return _issuerName;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static unsafe void EnumExtensionsPolicyDataCallback(byte* oid, int oidLen, byte* data, int dataLen, byte isCritical, void* context)
-        {
-            ref PolicyData policyData = ref Unsafe.As<byte, PolicyData>(ref *(byte*)context);
-            string oidStr = Encoding.UTF8.GetString(oid, oidLen);
-
-            ReadOnlySpan<byte> rawData;
-            if (!AsnDecoder.TryReadPrimitiveOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out rawData, out _))
-            {
-                Debug.Fail($"{nameof(AsnDecoder.TryReadPrimitiveOctetString)} can't return false for DER inputs");
-                return;
-            }
-
-            switch (oidStr)
-            {
-                case Oids.ApplicationCertPolicies:
-                    policyData.ApplicationCertPolicies = rawData.ToArray();
-                    break;
-                case Oids.CertPolicies:
-                    policyData.CertPolicies = rawData.ToArray();
-                    break;
-                case Oids.CertPolicyMappings:
-                    policyData.CertPolicyMappings = rawData.ToArray();
-                    break;
-                case Oids.CertPolicyConstraints:
-                    policyData.CertPolicyConstraints = rawData.ToArray();
-                    break;
-                case Oids.EnhancedKeyUsage:
-                    policyData.EnhancedKeyUsage = rawData.ToArray();
-                    break;
-                case Oids.InhibitAnyPolicyExtension:
-                    policyData.InhibitAnyPolicyExtension = rawData.ToArray();
-                    break;
+                EnsureCertificateData();
+                return _certData.Issuer;
             }
         }
 
         public PolicyData GetPolicyData()
         {
+            EnsureCertificateData();
             PolicyData policyData = default;
-            unsafe
+            foreach (X509Extension extension in _certData.Extensions)
             {
-                Interop.AndroidCrypto.X509EnumExtensions(_cert, &EnumExtensionsPolicyDataCallback, Unsafe.AsPointer(ref policyData));
+                switch (extension.Oid!.Value)
+                {
+                    case Oids.ApplicationCertPolicies:
+                        policyData.ApplicationCertPolicies = extension.RawData;
+                        break;
+                    case Oids.CertPolicies:
+                        policyData.CertPolicies = extension.RawData;
+                        break;
+                    case Oids.CertPolicyMappings:
+                        policyData.CertPolicyMappings = extension.RawData;
+                        break;
+                    case Oids.CertPolicyConstraints:
+                        policyData.CertPolicyConstraints = extension.RawData;
+                        break;
+                    case Oids.EnhancedKeyUsage:
+                        policyData.EnhancedKeyUsage = extension.RawData;
+                        break;
+                    case Oids.InhibitAnyPolicyExtension:
+                        policyData.InhibitAnyPolicyExtension = extension.RawData;
+                        break;
+                }
             }
 
             return policyData;
         }
 
-        private struct EnumExtensionsContext
-        {
-            public List<X509Extension> Results;
-        }
-
-        [UnmanagedCallersOnly]
-        private static unsafe void EnumExtensionsCallback(byte* oid, int oidLen, byte* data, int dataLen, byte isCritical, void* context)
-        {
-            ref EnumExtensionsContext callbackContext = ref Unsafe.As<byte, EnumExtensionsContext>(ref *(byte*)context);
-            string oidStr = Encoding.UTF8.GetString(oid, oidLen);
-            byte[] rawData = AsnDecoder.ReadOctetString(new ReadOnlySpan<byte>(data, dataLen), AsnEncodingRules.DER, out _);
-            bool critical = isCritical != 0;
-            callbackContext.Results.Add(new X509Extension(new Oid(oidStr), rawData, critical));
-        }
-
-        // TODO: [AndroidCrypto] This is returning critical exceptions followed by non-critical, rather than in their declared order.
-        // Might have to switch to using CertificateAsn for parsing the raw data.
         public IEnumerable<X509Extension> Extensions
         {
             get
             {
-                EnumExtensionsContext context = default;
-                context.Results = new List<X509Extension>();
-                unsafe
-                {
-                    Interop.AndroidCrypto.X509EnumExtensions(_cert, &EnumExtensionsCallback, Unsafe.AsPointer(ref context));
-                }
-
-                return context.Results;
+                EnsureCertificateData();
+                return _certData.Extensions;
             }
-        }
-
-        internal static ArraySegment<byte> FindFirstExtension(SafeX509Handle cert, string oidValue)
-        {
-            return Interop.AndroidCrypto.X509FindExtensionData(cert, oidValue);
         }
 
         internal void SetPrivateKey(SafeEvpPKeyHandle privateKey)
@@ -406,7 +372,8 @@ namespace Internal.Cryptography.Pal
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
-            throw new NotImplementedException(nameof(GetNameInfo));
+            EnsureCertificateData();
+            return _certData.GetNameInfo(nameType, forIssuer);
         }
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
@@ -437,11 +404,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal AndroidX509CertificateReader DuplicateHandles()
+        internal AndroidCertificatePal DuplicateHandles()
         {
             // Add a global reference to the underlying cert object.
             SafeX509Handle duplicateHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(Handle));
-            AndroidX509CertificateReader duplicate = new AndroidX509CertificateReader(duplicateHandle);
+            AndroidCertificatePal duplicate = new AndroidCertificatePal(duplicateHandle);
 
             if (_privateKey != null)
             {
@@ -462,17 +429,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static DateTime ExtractValidityDateTime(IntPtr validityDatePtr)
+        private void EnsureCertificateData()
         {
-            throw new NotImplementedException(nameof(ExtractValidityDateTime));
-        }
-
-        private void EnsureBasicInformation()
-        {
-            if (!_basicInformation.Equals(default(Interop.AndroidCrypto.X509BasicInformation)))
+            if (!_certData.Equals(default(CertificateData)))
                 return;
 
-            _basicInformation = Interop.AndroidCrypto.X509GetBasicInformation(_cert);
+            Debug.Assert(!_cert.IsInvalid);
+            _certData = new CertificateData(RawData);
         }
     }
 }

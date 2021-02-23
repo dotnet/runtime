@@ -394,13 +394,14 @@
   </ItemGroup>
   <!-- Used in Android (native crypto) -->
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="Internal\Cryptography\Pal.Android\AndroidX509CertificateReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidCertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Crypto.cs"
@@ -539,7 +540,6 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
@@ -548,6 +548,7 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
