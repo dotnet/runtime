@@ -26,6 +26,8 @@ For each of these mail notifications, a matching issue should exist (either in t
 
 Tests are not run during the internal builds. Publishing and signing steps are run only during internal builds. Rolling builds run tests for the full matrix.
 
+Any consistently failing test where the fix is not in pipeline should be promptly disabled on the CI. Don't leave tests failing in CI while you investigate; it's too disruptive for the rest of the team.
+
 For new issues, try to provide a [runfo](https://runfo.azurewebsites.net/) search which will make it easy to isolate repeated instances of that failure.
 
 Contact @chcosta if you are having any trouble accessing the dashboards.

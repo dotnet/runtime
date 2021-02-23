@@ -5,9 +5,18 @@
 
 JavaVM* gJvm;
 
+// java/io/ByteArrayInputStream
+jclass    g_ByteArrayInputStreamClass;
+jmethodID g_ByteArrayInputStreamCtor;
+
 // java/lang/Enum
 jclass    g_Enum;
 jmethodID g_EnumOrdinal;
+
+// java/security/Key
+jclass    g_KeyClass;
+jmethodID g_KeyGetAlgorithm;
+jmethodID g_KeyGetEncoded;
 
 // java/security/SecureRandom
 jclass    g_randClass;
@@ -100,6 +109,32 @@ jmethodID g_SignatureInitVerify;
 jmethodID g_SignatureUpdate;
 jmethodID g_SignatureSign;
 jmethodID g_SignatureVerify;
+// java/security/cert/CertificateFactory
+jclass    g_CertFactoryClass;
+jmethodID g_CertFactoryGetInstance;
+jmethodID g_CertFactoryGenerateCertificate;
+jmethodID g_CertFactoryGenerateCRL;
+
+// java/security/cert/X509Certificate
+jclass    g_X509CertClass;
+jmethodID g_X509CertGetEncoded;
+jmethodID g_X509CertGetIssuerX500Principal;
+jmethodID g_X509CertGetNotAfter;
+jmethodID g_X509CertGetNotBefore;
+jmethodID g_X509CertGetPublicKey;
+jmethodID g_X509CertGetSerialNumber;
+jmethodID g_X509CertGetSigAlgOID;
+jmethodID g_X509CertGetSubjectX500Principal;
+jmethodID g_X509CertGetVersion;
+
+// java/security/cert/X509Certificate implements java/security/cert/X509Extension
+jmethodID g_X509CertGetCriticalExtensionOIDs;
+jmethodID g_X509CertGetExtensionValue;
+jmethodID g_X509CertGetNonCriticalExtensionOIDs;
+
+// java/security/cert/X509CRL
+jclass    g_X509CRLClass;
+jmethodID g_X509CRLGetNextUpdate;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -189,9 +224,18 @@ jmethodID g_EllipticCurveGetSeed;
 jclass    g_X509EncodedKeySpecClass;
 jmethodID g_X509EncodedKeySpecCtor;
 
-// javax/security/auth
-jclass    g_DestroyableClass;
-jmethodID g_destroy;
+// java/util/Date
+jclass    g_DateClass;
+jmethodID g_DateGetTime;
+
+// java/util/Iterator
+jclass    g_IteratorClass;
+jmethodID g_IteratorHasNext;
+jmethodID g_IteratorNext;
+
+// java/util/Set
+jclass    g_SetClass;
+jmethodID g_SetIterator;
 
 // com/android/org/conscrypt/NativeCrypto
 jclass    g_NativeCryptoClass;
@@ -239,6 +283,11 @@ jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
 
 // javax/net/ssl/TrustManager
 jclass    g_TrustManager;
+
+// javax/security/auth/x500/X500Principal
+jclass    g_X500PrincipalClass;
+jmethodID g_X500PrincipalGetEncoded;
+jmethodID g_X500PrincipalHashCode;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -359,9 +408,15 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     JNIEnv* env = GetJNIEnv();
 
     // cache some classes and methods while we're in the thread-safe JNI_OnLoad
+    g_ByteArrayInputStreamClass =   GetClassGRef(env, "java/io/ByteArrayInputStream");
+    g_ByteArrayInputStreamCtor =    GetMethod(env, false, g_ByteArrayInputStreamClass, "<init>", "([B)V");
 
     g_Enum =                    GetClassGRef(env, "java/lang/Enum");
     g_EnumOrdinal =             GetMethod(env, false, g_Enum, "ordinal", "()I");
+
+    g_KeyClass =        GetClassGRef(env, "java/security/Key");
+    g_KeyGetAlgorithm = GetMethod(env, false, g_KeyClass, "getAlgorithm", "()Ljava/lang/String;");
+    g_KeyGetEncoded =   GetMethod(env, false, g_KeyClass, "getEncoded", "()[B");
 
     g_randClass =               GetClassGRef(env, "java/security/SecureRandom");
     g_randCtor =                GetMethod(env, false, g_randClass, "<init>", "()V");
@@ -414,6 +469,29 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_sslCtxClass =                     GetClassGRef(env, "javax/net/ssl/SSLContext");
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
     g_sslCtxGetDefaultSslParamsMethod = GetMethod(env, false, g_sslCtxClass, "getDefaultSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
+
+    g_CertFactoryClass =                GetClassGRef(env, "java/security/cert/CertificateFactory");
+    g_CertFactoryGetInstance =          GetMethod(env, true, g_CertFactoryClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertificateFactory;");
+    g_CertFactoryGenerateCertificate =  GetMethod(env, false, g_CertFactoryClass, "generateCertificate", "(Ljava/io/InputStream;)Ljava/security/cert/Certificate;");
+    g_CertFactoryGenerateCRL =          GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
+
+    g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
+    g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
+    g_X509CertGetIssuerX500Principal =      GetMethod(env, false, g_X509CertClass, "getIssuerX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
+    g_X509CertGetNotAfter =                 GetMethod(env, false, g_X509CertClass, "getNotAfter", "()Ljava/util/Date;");
+    g_X509CertGetNotBefore =                GetMethod(env, false, g_X509CertClass, "getNotBefore", "()Ljava/util/Date;");
+    g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
+    g_X509CertGetSerialNumber =             GetMethod(env, false, g_X509CertClass, "getSerialNumber", "()Ljava/math/BigInteger;");
+    g_X509CertGetSigAlgOID =                GetMethod(env, false, g_X509CertClass, "getSigAlgOID", "()Ljava/lang/String;");
+    g_X509CertGetSubjectX500Principal =     GetMethod(env, false, g_X509CertClass, "getSubjectX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
+    g_X509CertGetVersion =                  GetMethod(env, false, g_X509CertClass, "getVersion", "()I");
+
+    g_X509CertGetCriticalExtensionOIDs =    GetMethod(env, false, g_X509CertClass, "getCriticalExtensionOIDs", "()Ljava/util/Set;");
+    g_X509CertGetExtensionValue =           GetMethod(env, false, g_X509CertClass, "getExtensionValue", "(Ljava/lang/String;)[B");
+    g_X509CertGetNonCriticalExtensionOIDs = GetMethod(env, false, g_X509CertClass, "getNonCriticalExtensionOIDs", "()Ljava/util/Set;");
+
+    g_X509CRLClass          = GetClassGRef(env, "java/security/cert/X509CRL");
+    g_X509CRLGetNextUpdate  = GetMethod(env, false, g_X509CRLClass, "getNextUpdate", "()Ljava/util/Date;");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -515,6 +593,16 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DestroyableClass =               GetClassGRef(env, "javax/security/auth/Destroyable");
     g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
 
+    g_DateClass =   GetClassGRef(env, "java/util/Date");
+    g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
+
+    g_IteratorClass =   GetClassGRef(env, "java/util/Iterator");
+    g_IteratorHasNext = GetMethod(env, false, g_IteratorClass, "hasNext", "()Z");
+    g_IteratorNext =    GetMethod(env, false, g_IteratorClass, "next", "()Ljava/lang/Object;");
+
+    g_SetClass =    GetClassGRef(env, "java/util/Set");
+    g_SetIterator = GetMethod(env, false, g_SetClass, "iterator", "()Ljava/util/Iterator;");
+
     g_NativeCryptoClass =              GetClassGRef(env, "com/android/org/conscrypt/NativeCrypto");
 
     g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
@@ -554,6 +642,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineResultGetHandshakeStatusMethod =  GetMethod(env, false, g_SSLEngineResult, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
 
     g_TrustManager =                             GetClassGRef(env, "javax/net/ssl/TrustManager");
+
+    g_X500PrincipalClass =      GetClassGRef(env, "javax/security/auth/x500/X500Principal");
+    g_X500PrincipalGetEncoded = GetMethod(env, false, g_X500PrincipalClass, "getEncoded", "()[B");
+    g_X500PrincipalHashCode =   GetMethod(env, false, g_X500PrincipalClass, "hashCode", "()I");
 
     return JNI_VERSION_1_6;
 }
