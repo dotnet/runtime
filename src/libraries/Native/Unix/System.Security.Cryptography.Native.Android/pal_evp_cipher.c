@@ -158,6 +158,18 @@ CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
     return CheckJNIExceptions(env) ? FAIL : ctx;
 }
 
+int32_t CryptoNative_EvpCipherSetCcmTagLength(CipherCtx* ctx, int32_t tagLength)
+{
+    if (!ctx)
+        return FAIL;
+    
+    if(tagLength > TAG_MAX_LENGTH)
+        return FAIL;
+
+    ctx->tagLength = tagLength;
+    return SUCCESS;
+}
+
 static int32_t CryptoNative_EvpCipherReinitialize(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
@@ -256,6 +268,8 @@ int32_t CryptoNative_EvpCipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t inl
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
     (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
+    (*env)->DeleteLocalRef(env, inDataBytes);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)

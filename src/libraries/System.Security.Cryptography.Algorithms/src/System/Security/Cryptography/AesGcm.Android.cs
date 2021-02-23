@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
             if (associatedData.Length != 0)
             {
-                if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, Span<byte>.Empty, out _, associatedData))
+                if (!Interop.Crypto.EvpCipherUpdateAAD(_ctxHandle, associatedData))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
 
             if (associatedData.Length != 0)
             {
-                if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, associatedData))
+                if (!Interop.Crypto.EvpCipherUpdateAAD(_ctxHandle, associatedData))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
 
             if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
             {
-                throw Interop.Crypto.CreateOpensslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             plaintextBytesWritten += bytesWritten;
