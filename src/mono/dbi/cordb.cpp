@@ -187,18 +187,18 @@ ReceivedReplyPacket::~ReceivedReplyPacket()
 
 Connection::Connection(CordbProcess* proc, Cordb* cordb)
 {
-    pProcess                 = proc;
-    pCordb                   = cordb;
-    receiveReplies           = new ArrayList();
-    receivedPacketsToProcess = new ArrayList();
+    m_pProcess                 = proc;
+    m_pCordb                   = cordb;
+    m_pReceiveReplies           = new ArrayList();
+    m_pReceivedPacketsToProcess = new ArrayList();
 }
 
 Connection::~Connection()
 {
     DWORD i = 0;
-    while (i < receiveReplies->GetCount())
+    while (i < m_pReceiveReplies->GetCount())
     {
-        ReceivedReplyPacket* rrp = (ReceivedReplyPacket*)receiveReplies->Get(i);
+        ReceivedReplyPacket* rrp = (ReceivedReplyPacket*)m_pReceiveReplies->Get(i);
         if (rrp)
         {
             delete rrp;
@@ -206,9 +206,9 @@ Connection::~Connection()
         i++;
     }
     i = 0;
-    while (i < receivedPacketsToProcess->GetCount())
+    while (i < m_pReceivedPacketsToProcess->GetCount())
     {
-        MdbgProtBuffer* buf = (MdbgProtBuffer*)receivedPacketsToProcess->Get(i);
+        MdbgProtBuffer* buf = (MdbgProtBuffer*)m_pReceivedPacketsToProcess->Get(i);
         if (buf)
         {
             m_dbgprot_buffer_free(buf);
@@ -216,9 +216,9 @@ Connection::~Connection()
         }
         i++;
     }
-    delete socket;
-    delete receiveReplies;
-    delete receivedPacketsToProcess;
+    delete m_socket;
+    delete m_pReceiveReplies;
+    delete m_pReceivedPacketsToProcess;
 }
 
 void Connection::Receive()
@@ -228,19 +228,19 @@ void Connection::Receive()
         MdbgProtBuffer recvbuf_header;
         m_dbgprot_buffer_init(&recvbuf_header, HEADER_LENGTH);
 
-        int iResult = socket->Receive((char*)recvbuf_header.buf, HEADER_LENGTH);
+        int iResult = m_socket->Receive((char*)recvbuf_header.buf, HEADER_LENGTH);
 
         if (iResult == -1)
         {
             m_dbgprot_buffer_free(&recvbuf_header);
-            pCordb->GetCallback()->ExitProcess(static_cast<ICorDebugProcess*>(GetProcess()));
+            m_pCordb->GetCallback()->ExitProcess(static_cast<ICorDebugProcess*>(GetProcess()));
             break;
         }
         while (iResult == 0)
         {
             LOG((LF_CORDB, LL_INFO100000, "transport_recv () sleep returned %d, expected %d.\n", iResult,
                  HEADER_LENGTH));
-            iResult = socket->Receive((char*)recvbuf_header.buf, HEADER_LENGTH);
+            iResult = m_socket->Receive((char*)recvbuf_header.buf, HEADER_LENGTH);
             Sleep(1000);
         }
 
@@ -256,11 +256,11 @@ void Connection::Receive()
         m_dbgprot_buffer_init(recvbuf, header.len - HEADER_LENGTH);
         if (header.len - HEADER_LENGTH != 0)
         {
-            iResult       = socket->Receive((char*)recvbuf->p, header.len - HEADER_LENGTH);
+            iResult       = m_socket->Receive((char*)recvbuf->p, header.len - HEADER_LENGTH);
             int totalRead = iResult;
             while (totalRead < header.len - HEADER_LENGTH)
             {
-                iResult = socket->Receive((char*)recvbuf->p + totalRead, (header.len - HEADER_LENGTH) - totalRead);
+                iResult = m_socket->Receive((char*)recvbuf->p + totalRead, (header.len - HEADER_LENGTH) - totalRead);
                 totalRead += iResult;
             }
         }
@@ -269,31 +269,14 @@ void Connection::Receive()
         if (header.flags == REPLY_PACKET)
         {
             ReceivedReplyPacket* rp = new ReceivedReplyPacket(header.error, header.error_2, header.id, recvbuf);
-            receiveReplies->Append(rp);
+            m_pReceiveReplies->Append(rp);
         }
         else
         {
-            receivedPacketsToProcess->Append(recvbuf);
+            m_pReceivedPacketsToProcess->Append(recvbuf);
         }
         dbg_unlock();
     }
-}
-
-MdbgProtBuffer* Connection::GetReply(int cmdId)
-{
-    ReceivedReplyPacket* rrp = NULL;
-    while (rrp == NULL || rrp->Id() != cmdId)
-    {
-        dbg_lock();
-        for (int i = receiveReplies->GetCount() - 1; i >= 0; i--)
-        {
-            rrp = (ReceivedReplyPacket*)receiveReplies->Get(i);
-            if (rrp->Id() == cmdId)
-                break;
-        }
-        dbg_unlock();
-    }
-    return rrp->Buffer();
 }
 
 ReceivedReplyPacket* Connection::GetReplyWithError(int cmdId)
@@ -302,9 +285,9 @@ ReceivedReplyPacket* Connection::GetReplyWithError(int cmdId)
     while (rrp == NULL || rrp->Id() != cmdId)
     {
         dbg_lock();
-        for (int i = receiveReplies->GetCount() - 1; i >= 0; i--)
+        for (int i = m_pReceiveReplies->GetCount() - 1; i >= 0; i--)
         {
-            rrp = (ReceivedReplyPacket*)receiveReplies->Get(i);
+            rrp = (ReceivedReplyPacket*)m_pReceiveReplies->Get(i);
             if (rrp->Id() == cmdId)
                 break;
         }
@@ -340,18 +323,18 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
         {
             case MDBGPROT_EVENT_KIND_VM_START:
             {
-                pCordb->GetCallback()->CreateProcess(static_cast<ICorDebugProcess*>(GetProcess()));
+                m_pCordb->GetCallback()->CreateProcess(static_cast<ICorDebugProcess*>(GetProcess()));
             }
             break;
             case MDBGPROT_EVENT_KIND_VM_DEATH:
             {
-                pCordb->GetCallback()->ExitProcess(static_cast<ICorDebugProcess*>(GetProcess()));
+                m_pCordb->GetCallback()->ExitProcess(static_cast<ICorDebugProcess*>(GetProcess()));
             }
             break;
             case MDBGPROT_EVENT_KIND_THREAD_START:
             {
                 CordbThread* thread = new CordbThread(this, GetProcess(), thread_id);
-                pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
+                m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
             }
             break;
             case MDBGPROT_EVENT_KIND_APPDOMAIN_CREATE:
@@ -367,16 +350,16 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                 {
                     pCorDebugAppDomain = new CordbAppDomain(this, GetProcess());
                     GetProcess()->Stop(false);
-                    pCordb->GetCallback()->CreateAppDomain(static_cast<ICorDebugProcess*>(GetProcess()),
+                    m_pCordb->GetCallback()->CreateAppDomain(static_cast<ICorDebugProcess*>(GetProcess()),
                                                            pCorDebugAppDomain);
                 }
                 CordbAssembly* pAssembly = new CordbAssembly(this, GetProcess(), pCorDebugAppDomain, assembly_id);
                 CordbModule*   pModule   = new CordbModule(this, GetProcess(), (CordbAssembly*)pAssembly, assembly_id);
 
                 GetProcess()->Stop(false);
-                pCordb->GetCallback()->LoadAssembly(pCorDebugAppDomain, pAssembly);
+                m_pCordb->GetCallback()->LoadAssembly(pCorDebugAppDomain, pAssembly);
 
-                pCordb->GetCallback()->LoadModule(pCorDebugAppDomain, pModule);
+                m_pCordb->GetCallback()->LoadModule(pCorDebugAppDomain, pModule);
             }
             break;
             case MDBGPROT_EVENT_KIND_BREAKPOINT:
@@ -388,11 +371,11 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                 {
                     thread = new CordbThread(this, GetProcess(), thread_id);
                     GetProcess()->Stop(false);
-                    pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
+                    m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
                 }
                 DWORD                    i          = 0;
                 CordbFunctionBreakpoint* breakpoint = GetProcess()->GetBreakpointByOffsetAndFuncId(offset, method_id);
-                pCordb->GetCallback()->Breakpoint(pCorDebugAppDomain, thread,
+                m_pCordb->GetCallback()->Breakpoint(pCorDebugAppDomain, thread,
                                                   static_cast<ICorDebugFunctionBreakpoint*>(breakpoint));
             }
             break;
@@ -405,9 +388,9 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                 {
                     thread = new CordbThread(this, GetProcess(), thread_id);
                     GetProcess()->Stop(false);
-                    pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
+                    m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
                 }
-                pCordb->GetCallback()->StepComplete(pCorDebugAppDomain, thread, thread->GetStepper(), STEP_NORMAL);
+                m_pCordb->GetCallback()->StepComplete(pCorDebugAppDomain, thread, thread->GetStepper(), STEP_NORMAL);
             }
             break;
             default:
@@ -429,14 +412,14 @@ int Connection::ProcessPacket(bool is_answer)
 void Connection::ProcessPacketFromQueue()
 {
     DWORD i = 0;
-    while (i < receivedPacketsToProcess->GetCount())
+    while (i < m_pReceivedPacketsToProcess->GetCount())
     {
-        MdbgProtBuffer* req = (MdbgProtBuffer*)receivedPacketsToProcess->Get(i);
+        MdbgProtBuffer* req = (MdbgProtBuffer*)m_pReceivedPacketsToProcess->Get(i);
         if (req)
         {
             ProcessPacketInternal(req);
             dbg_lock();
-            receivedPacketsToProcess->Set(i, NULL);
+            m_pReceivedPacketsToProcess->Set(i, NULL);
             dbg_unlock();
             m_dbgprot_buffer_free(req);
             delete req;
@@ -504,18 +487,18 @@ void Connection::EnableEvent(MdbgProtEventKind eventKind)
 
 void Connection::CloseConnection()
 {
-    socket->Close();
+    m_socket->Close();
 }
 
 void Connection::StartConnection()
 {
     LOG((LF_CORDB, LL_INFO100000, "Start Connection\n"));
 
-    socket = new Socket();
+    m_socket = new Socket();
 
     LOG((LF_CORDB, LL_INFO100000, "Listening to %s:%s\n", DEBUG_ADDRESS, DEBUG_PORT));
 
-    int ret = socket->OpenSocketAcceptConnection(DEBUG_ADDRESS, DEBUG_PORT);
+    int ret = m_socket->OpenSocketAcceptConnection(DEBUG_ADDRESS, DEBUG_PORT);
     if (ret == -1)
         exit(1);
 
@@ -533,7 +516,7 @@ void Connection::TransportHandshake()
     m_dbgprot_buffer_init(&recvbuf, buflen);
 
     int iResult;
-    iResult = socket->Receive((char*)recvbuf.buf, buflen);
+    iResult = m_socket->Receive((char*)recvbuf.buf, buflen);
 
     // Send an initial buffer
     m_dbgprot_buffer_add_data(&sendbuf, (uint8_t*)"DWP-Handshake", 13);
@@ -544,7 +527,7 @@ void Connection::TransportHandshake()
 
 void Connection::SendPacket(MdbgProtBuffer& sendbuf)
 {
-    int iResult = socket->Send((const char*)sendbuf.buf, m_dbgprot_buffer_len(&sendbuf));
+    int iResult = m_socket->Send((const char*)sendbuf.buf, m_dbgprot_buffer_len(&sendbuf));
     if (iResult == -1)
     {
         return;

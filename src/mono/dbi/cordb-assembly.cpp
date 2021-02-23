@@ -57,19 +57,19 @@ HRESULT CordbAssembly::GetAppDomain(ICorDebugAppDomain** ppAppDomain)
 HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum** ppModules)
 {
     LOG((LF_CORDB, LL_INFO100000, "CorDebugAssembly - EnumerateModules - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CorDebugAssembly - GetCodeBase - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbAssembly::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CorDebugAssembly - GetName - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbAssembly::QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppInterface)
@@ -158,7 +158,7 @@ HRESULT CordbModule::IsMappedLayout(BOOL* pIsMapped)
 HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - CreateReaderForInMemorySymbols - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::SetJMCStatus(BOOL bIsJustMyCode, ULONG32 cTokens, mdToken pTokens[])
@@ -170,7 +170,7 @@ HRESULT CordbModule::SetJMCStatus(BOOL bIsJustMyCode, ULONG32 cTokens, mdToken p
 HRESULT CordbModule::ApplyChanges(ULONG cbMetadata, BYTE pbMetadata[], ULONG cbIL, BYTE pbIL[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - ApplyChanges - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
@@ -190,12 +190,12 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD* pdwFlags)
 HRESULT CordbModule::ResolveAssembly(mdToken tkAssemblyRef, ICorDebugAssembly** ppAssembly)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - ResolveAssembly - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetProcess(ICorDebugProcess** ppProcess)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetProcess - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetProcess - IMPLEMENTED\n"));
     conn->GetProcess()->QueryInterface(IID_ICorDebugProcess, (void**)ppProcess);
     return S_OK;
 }
@@ -250,13 +250,13 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 HRESULT CordbModule::EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - EnableJITDebugging - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - EnableClassLoadCallbacks - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef, ICorDebugFunction** ppFunction)
@@ -288,7 +288,7 @@ HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef, ICorDebugFuncti
 HRESULT CordbModule::GetFunctionFromRVA(CORDB_ADDRESS rva, ICorDebugFunction** ppFunction)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetFunctionFromRVA - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetClassFromToken(mdTypeDef typeDef, ICorDebugClass** ppClass)
@@ -302,13 +302,13 @@ HRESULT
 CordbModule::CreateBreakpoint(ICorDebugModuleBreakpoint** ppBreakpoint)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - CreateBreakpoint - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetEditAndContinueSnapshot(ICorDebugEditAndContinueSnapshot** ppEditAndContinueSnapshot)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetEditAndContinueSnapshot - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetMetaDataInterface(REFIID riid, IUnknown** ppObj)
@@ -338,7 +338,7 @@ HRESULT CordbModule::GetMetaDataInterface(REFIID riid, IUnknown** ppObj)
 HRESULT CordbModule::GetToken(mdModule* pToken)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetToken - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::IsDynamic(BOOL* pDynamic)
@@ -350,7 +350,7 @@ HRESULT CordbModule::IsDynamic(BOOL* pDynamic)
 HRESULT CordbModule::GetGlobalVariableValue(mdFieldDef fieldDef, ICorDebugValue** ppValue)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetGlobalVariableValue - NOT IMPLEMENTED\n"));
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT CordbModule::GetSize(ULONG32* pcBytes)

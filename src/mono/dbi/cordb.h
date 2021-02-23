@@ -95,12 +95,12 @@ public:
 
 class Connection
 {
-    Socket*       socket;
-    CordbProcess* pProcess;
-    Cordb*        pCordb;
-    ArrayList*    receiveReplies;           // TODO use hashmap
-    ArrayList*    pendingEval;              // TODO use hashmap
-    ArrayList*    receivedPacketsToProcess; // TODO use hashmap
+    Socket*       m_socket;
+    CordbProcess* m_pProcess;
+    Cordb*        m_pCordb;
+    ArrayList*    m_pReceiveReplies;           // TODO use hashmap
+    ArrayList*    m_pReceivedPacketsToProcess;
+
     void          ProcessPacketInternal(MdbgProtBuffer* recvbuf);
     void          ProcessPacketFromQueue();
     void          EnableEvent(MdbgProtEventKind eventKind);
@@ -110,11 +110,11 @@ class Connection
 public:
     CordbProcess* GetProcess() const
     {
-        return pProcess;
+        return m_pProcess;
     }
     Cordb* GetCordb() const
     {
-        return pCordb;
+        return m_pCordb;
     }
     Connection(CordbProcess* proc, Cordb* cordb);
     ~Connection();
@@ -126,7 +126,6 @@ public:
     void Receive();
 
     int                  SendEvent(int cmd_set, int cmd, MdbgProtBuffer* sendbuf);
-    MdbgProtBuffer*      GetReply(int cmdId);
     ReceivedReplyPacket* GetReplyWithError(int cmdId);
     CordbAppDomain*      GetCurrentAppDomain();
 };
