@@ -104,6 +104,7 @@ struct _MonoMemoryManager {
 	LockFreeMempool *lock_free_mp;
 
 	GPtrArray *class_vtable_array;
+	GHashTable *generic_virtual_cases;
 
 	/* Information maintained by mono-debug.c */
 	gpointer debug_info;

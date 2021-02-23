@@ -474,7 +474,6 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	}
 
 	gboolean do_initialization = FALSE;
-	MonoDomain *last_domain = NULL;
 	TypeInitializationLock *lock = NULL;
 	gboolean pending_tae = FALSE;
 
@@ -495,12 +494,6 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	}
 	lock = (TypeInitializationLock *)g_hash_table_lookup (type_initialization_hash, vtable);
 	if (lock == NULL) {
-		/* This thread will get to do the initialization */
-		if (mono_domain_get () != domain) {
-			/* Transfer into the target domain */
-			last_domain = mono_domain_get ();
-			mono_domain_set_fast (domain, FALSE);
-		}
 		lock = (TypeInitializationLock *)g_malloc0 (sizeof (TypeInitializationLock));
 		mono_coop_mutex_init_recursive (&lock->mutex);
 		mono_coop_cond_init (&lock->cond);
@@ -593,9 +586,6 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			mono_mem_manager_unlock (memory_manager);
 		}
 
-		if (last_domain)
-			mono_domain_set_fast (last_domain, TRUE);
-
 		/* Signal to the other threads that we are done */
 		mono_type_init_lock (lock);
 		lock->done = TRUE;
@@ -653,13 +643,13 @@ exit:
 MonoDomain *
 mono_vtable_domain_internal (MonoVTable *vtable)
 {
-	return vtable->domain;
+	return mono_get_root_domain ();
 }
 
 MonoDomain*
 mono_vtable_domain (MonoVTable *vtable)
 {
-	MONO_EXTERNAL_ONLY (MonoDomain*, mono_vtable_domain_internal (vtable));
+	MONO_EXTERNAL_ONLY (MonoDomain*, mono_get_root_domain ());
 }
 
 MonoClass *
@@ -1462,7 +1452,7 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 }
 
 static gpointer
-initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry *imt_builder_entry, gpointer fail_tramp)
+initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry, gpointer fail_tramp)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1492,14 +1482,14 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 }
 
 static MonoImtBuilderEntry*
-get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot);
+get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot);
 
 /*
  * LOCKING: requires the loader and domain locks.
  *
 */
 static void
-build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces, int slot_num)
+build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces, int slot_num)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -1510,6 +1500,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	int method_count = 0;
 	gboolean record_method_count_for_max_collisions = FALSE;
 	gboolean has_generic_virtual = FALSE, has_variant_iface = FALSE;
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
 
 #if DEBUG_IMT
 	printf ("Building IMT for class %s.%s slot %d\n", m_class_get_name_space (klass), m_class_get_name (klass), slot_num);
@@ -1579,7 +1570,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		 * we're building this specific one
 		 */
 		if (slot_num < 0 || i == slot_num) {
-			MonoImtBuilderEntry *entries = get_generic_virtual_entries (domain, &imt [i]);
+			MonoImtBuilderEntry *entries = get_generic_virtual_entries (mem_manager, &imt [i]);
 
 			if (entries) {
 				if (imt_builder [i]) {
@@ -1610,9 +1601,9 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * The IMT trampoline might be called with an instance of one of the 
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (vt, i));
+				imt [i] = initialize_imt_slot (vt, imt_builder [i], callbacks.get_imt_trampoline (vt, i));
 			} else {
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
+				imt [i] = initialize_imt_slot (vt, imt_builder [i], NULL);
 			}
 #if DEBUG_IMT
 			printf ("initialize_imt_slot[%d]: %p methods %d\n", i, imt [i], imt_builder [i]->children + 1);
@@ -1648,10 +1639,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 }
 
 static void
-build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
+build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces)
+{
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	build_imt_slots (klass, vt, domain, imt, extra_interfaces, -1);
+	build_imt_slots (klass, vt, imt, extra_interfaces, -1);
 }
 
 /**
@@ -1681,7 +1673,7 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	mono_domain_lock (vtable->domain);
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
 	if (!callbacks.imt_entry_inited (vtable, imt_slot))
-		build_imt_slots (vtable->klass, vtable, vtable->domain, imt, NULL, imt_slot);
+		build_imt_slots (vtable->klass, vtable, imt, NULL, imt_slot);
 	mono_domain_unlock (vtable->domain);
 	mono_loader_unlock ();
 }
@@ -1703,18 +1695,19 @@ typedef struct _GenericVirtualCase {
  * VTABLE_SLOT.
  */ 
 static MonoImtBuilderEntry*
-get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot)
+get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
   	GenericVirtualCase *list;
  	MonoImtBuilderEntry *entries;
-  
+	MonoDomain *domain = mono_get_root_domain ();
+
  	mono_domain_lock (domain);
- 	if (!domain->generic_virtual_cases)
- 		domain->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
+ 	if (!mem_manager->generic_virtual_cases)
+ 		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
  
-	list = (GenericVirtualCase *)g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+	list = (GenericVirtualCase *)g_hash_table_lookup (mem_manager->generic_virtual_cases, vtable_slot);
  
  	entries = NULL;
  	for (; list; list = list->next) {
@@ -1751,7 +1744,7 @@ get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot)
  * virtual method trampoline.
  */
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code)
 {
@@ -1763,12 +1756,13 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	GenericVirtualCase *gvc, *list;
 	MonoImtBuilderEntry *entries;
-	int i;
 	GPtrArray *sorted;
+	MonoDomain *domain = mono_get_root_domain ();
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	mono_domain_lock (domain);
-	if (!domain->generic_virtual_cases)
-		domain->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	if (!mem_manager->generic_virtual_cases)
+		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	if (!inited) {
 		mono_counters_register ("Generic virtual cases", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_added);
@@ -1777,7 +1771,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	}
 
 	/* Check whether the case was already added */
-	list = (GenericVirtualCase *)g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+	list = (GenericVirtualCase *)g_hash_table_lookup (mem_manager->generic_virtual_cases, vtable_slot);
 	gvc = list;
 	while (gvc) {
 		if (gvc->method == method)
@@ -1791,9 +1785,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 		gvc->method = method;
 		gvc->code = code;
 		gvc->count = 0;
-		gvc->next = (GenericVirtualCase *)g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+		gvc->next = (GenericVirtualCase *)g_hash_table_lookup (mem_manager->generic_virtual_cases, vtable_slot);
 
-		g_hash_table_insert (domain->generic_virtual_cases, vtable_slot, gvc);
+		g_hash_table_insert (mem_manager->generic_virtual_cases, vtable_slot, gvc);
 
 		num_added++;
 	}
@@ -1813,7 +1807,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 		} else {
 			vtable_trampoline = callbacks.get_vtable_trampoline ? callbacks.get_vtable_trampoline (vtable, (gpointer*)vtable_slot - (gpointer*)vtable->vtable) : NULL;
 
-			entries = get_generic_virtual_entries (domain, vtable_slot);
+			entries = get_generic_virtual_entries (mem_manager, vtable_slot);
 
 			sorted = imt_sort_slot_entries (entries);
 
@@ -1826,7 +1820,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 				entries = next;
 			}
 
-			for (i = 0; i < sorted->len; ++i)
+			for (int i = 0; i < sorted->len; ++i)
 				g_free (g_ptr_array_index (sorted, i));
 			g_ptr_array_free (sorted, TRUE);
 
@@ -4158,39 +4152,6 @@ create_unhandled_exception_eventargs (MonoObjectHandle exc, MonoError *error)
 return_null:
 	return MONO_HANDLE_NEW (MonoObject, NULL);
 }
-
-/* Used in mono_unhandled_exception_internal */
-static void
-call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate, MonoObjectHandle exc)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	ERROR_DECL (error);
-	MonoDomain *current_domain = mono_domain_get ();
-
-	if (domain != current_domain)
-		mono_domain_set_internal_with_options (domain, FALSE);
-
-	g_assert (domain == mono_object_domain (domain->domain));
-
-	g_assert (MONO_HANDLE_DOMAIN (exc) == domain);
-
-	gpointer pa [ ] = {
-		domain->domain,
-		MONO_HANDLE_RAW (create_unhandled_exception_eventargs (exc, error)) // FIXMEcoop
-	};
-	mono_error_assert_ok (error);
-	mono_runtime_delegate_try_invoke_handle (delegate, pa, error);
-
-	if (domain != current_domain)
-		mono_domain_set_internal_with_options (current_domain, FALSE);
-
-	if (!is_ok (error)) {
-		g_warning ("exception inside UnhandledException handler: %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-	}
-}
-
 
 void
 mono_unhandled_exception_internal (MonoObject *exc_raw)

@@ -339,8 +339,6 @@ struct _MonoDomain {
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
 
-	GHashTable	   *generic_virtual_cases;
-
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
 

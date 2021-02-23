@@ -649,8 +649,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		vtable_slot = orig_vtable_slot;
 		g_assert (vtable_slot);
 
-		mono_method_add_generic_virtual_invocation (mono_get_root_domain (), 
-													vt, vtable_slot,
+		mono_method_add_generic_virtual_invocation (vt, vtable_slot,
 													target, addr);
 
 		return addr;

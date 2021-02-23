@@ -500,8 +500,7 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
 		MonoFtnDesc *ftndesc = mini_llvmonly_create_ftndesc (m, addr, out_arg);
 
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, vt->vtable + slot,
+		mono_method_add_generic_virtual_invocation (vt, vt->vtable + slot,
 													generic_virtual, ftndesc);
 	}
 
@@ -568,8 +567,7 @@ mini_llvmonly_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod
 	MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
 	mono_error_assert_ok (error);
 
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, vt->vtable + slot,
+	mono_method_add_generic_virtual_invocation (vt, vt->vtable + slot,
 												generic_virtual, ftndesc);
 	return ftndesc;
 }
@@ -612,8 +610,7 @@ mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, 
 	 */
 	ftndesc = mini_llvmonly_load_method_ftndesc (m, FALSE, need_unbox_tramp, error);
 
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, imt + imt_slot,
+	mono_method_add_generic_virtual_invocation (vt, imt + imt_slot,
 												variant_iface ? variant_iface : generic_virtual, ftndesc);
 	return ftndesc;
 }
@@ -753,8 +750,7 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 	if (generic_virtual || variant_iface) {
 		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
 
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, imt + imt_slot,
+		mono_method_add_generic_virtual_invocation (vt, imt + imt_slot,
 													target, addr);
 	}
 

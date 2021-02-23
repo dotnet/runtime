@@ -1574,7 +1574,7 @@ guint32
 mono_method_get_imt_slot (MonoMethod *method);
 
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 											gpointer *vtable_slot,
 											MonoMethod *method, gpointer code);
 
