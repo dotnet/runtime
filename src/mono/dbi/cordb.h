@@ -17,6 +17,8 @@
 
 #include "arraylist.h"
 #include "utsem.h"
+#include "ex.h"
+#include "log.h"
 
 #ifdef HOST_WIN32
 #include <windows.h>
@@ -38,10 +40,6 @@ static UTSemReadWrite* m_pSemReadWrite;
 #ifdef _DEBUG
 #define LOGGING
 #endif
-
-#include "log.h"
-
-#include "arraylist.h"
 
 #define CreateProcess CreateProcessW
 
@@ -228,7 +226,7 @@ public:
         if (localbuf->Error() > 0 || localbuf->Error2() > 0)                                                           \
         {                                                                                                              \
             LOG((LF_CORDB, LL_INFO100000, "ERROR RECEIVED\n"));                                                        \
-            return S_FALSE;                                                                                            \
+            EX_THROW(HRException, (E_FAIL));                                                                                           \
         }                                                                                                              \
     } while (0)
 

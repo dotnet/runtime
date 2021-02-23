@@ -47,7 +47,8 @@ ULONG32 CordbCode::GetSize() {
         m_dbgprot_buffer_free(&localbuf);
 
         ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        if (received_reply_packet->Error() > 0 || received_reply_packet->Error2() > 0)
+            return 0;
         MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
         m_nSize = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
@@ -74,36 +75,40 @@ HRESULT CordbCode::CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint*
 HRESULT CordbCode::GetCode(
     ULONG32 startOffset, ULONG32 endOffset, ULONG32 cBufferAlloc, BYTE buffer[], ULONG32* pcBufferSize)
 {
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-
-    m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
-
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-    
-    ULONG32 totalSize = GetSize();
-    
-    if (cBufferAlloc < endOffset - startOffset)
-        endOffset = startOffset + cBufferAlloc;
-
-    if (endOffset > totalSize)
-        endOffset = totalSize;
-
-    if (startOffset > totalSize)
-        startOffset = totalSize;
-
-    uint8_t* m_rgbCode = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, (int32_t*)pcBufferSize);
-    memcpy(buffer,
-               m_rgbCode+startOffset,
-               endOffset - startOffset);
-    free(m_rgbCode);
-    
     LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetCode - IMPLEMENTED\n"));
-    return S_OK;
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+
+        m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        
+        ULONG32 totalSize = GetSize();
+        
+        if (cBufferAlloc < endOffset - startOffset)
+            endOffset = startOffset + cBufferAlloc;
+
+        if (endOffset > totalSize)
+            endOffset = totalSize;
+
+        if (startOffset > totalSize)
+            startOffset = totalSize;
+
+        uint8_t* m_rgbCode = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, (int32_t*)pcBufferSize);
+        memcpy(buffer,
+                m_rgbCode+startOffset,
+                endOffset - startOffset);
+        free(m_rgbCode);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbCode::GetVersionNumber(ULONG32* nVersion)

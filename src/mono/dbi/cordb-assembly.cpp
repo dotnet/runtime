@@ -23,6 +23,7 @@
 #include "mdlog.h"
 #include "mdperf.h"
 #include "regmeta.h"
+#include "ex.h"
 
 using namespace std;
 
@@ -205,51 +206,62 @@ HRESULT CordbModule::GetProcess(ICorDebugProcess** ppProcess)
 
 HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
 {
-    if (!m_pAssemblyMetadataBlob) {
-        MdbgProtBuffer localbuf;
-        m_dbgprot_buffer_init(&localbuf, 128);
-        m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
-        m_dbgprot_buffer_free(&localbuf);
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {
+        if (!m_pAssemblyMetadataBlob) {
+            MdbgProtBuffer localbuf;
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
 
-        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-        m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
+            m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
+        }
+        LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
+
+        *pAddress = (CORDB_ADDRESS)m_pAssemblyMetadataBlob;
     }
-    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
-
-    *pAddress = (CORDB_ADDRESS)m_pAssemblyMetadataBlob;
-    return S_OK;
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 {
-    if (!m_pAssemblyName) {
-        LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
-        MdbgProtBuffer localbuf;
-        m_dbgprot_buffer_init(&localbuf, 128);
-        m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
-        m_dbgprot_buffer_free(&localbuf);
-
-        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-
-        m_pAssemblyName = m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
-    }
-
-    if (cchName < strlen(m_pAssemblyName) + 1)
+    HRESULT hr = S_OK;
+    EX_TRY
     {
-        *pcchName = (ULONG32)strlen(m_pAssemblyName) + 1;
-        return S_OK;
-    }
+        if (!m_pAssemblyName) {
+            LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
+            MdbgProtBuffer localbuf;
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
 
-    MultiByteToWideChar(CP_UTF8, 0, m_pAssemblyName, -1, szName, cchName);
-    *pcchName = cchName;
-    return S_OK;
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+            m_pAssemblyName = m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
+        }
+
+        if (cchName < strlen(m_pAssemblyName) + 1)
+        {
+            *pcchName = (ULONG32)strlen(m_pAssemblyName) + 1;
+        }
+        else
+        {
+            MultiByteToWideChar(CP_UTF8, 0, m_pAssemblyName, -1, szName, cchName);
+            *pcchName = cchName;
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbModule::EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts)
@@ -266,28 +278,32 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
 
 HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef, ICorDebugFunction** ppFunction)
 {
-    // check in a cache before talk to mono runtime to get info
-    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetFunctionFromToken - IMPLEMENTED\n"));
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
-    m_dbgprot_buffer_add_int(&localbuf, methodDef);
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
-
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-
-    int            id   = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-    CordbFunction* func = NULL;
-    func                = m_pProcess->FindFunction(id);
-    if (func == NULL)
+    HRESULT hr = S_OK;
+    EX_TRY 
     {
-        func = new CordbFunction(conn, methodDef, id, this);
+        LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetFunctionFromToken - IMPLEMENTED\n"));
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+        m_dbgprot_buffer_add_int(&localbuf, methodDef);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        int            id   = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+        CordbFunction* func = NULL;
+        func                = m_pProcess->FindFunction(id);
+        if (func == NULL)
+        {
+            func = new CordbFunction(conn, methodDef, id, this);
+        }
+        func->QueryInterface(IID_ICorDebugFunction, (void**)ppFunction);
     }
-    func->QueryInterface(IID_ICorDebugFunction, (void**)ppFunction);
-    return S_OK;
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbModule::GetFunctionFromRVA(CORDB_ADDRESS rva, ICorDebugFunction** ppFunction)

@@ -135,29 +135,34 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewParameterizedArray(ICorDebugType* pEleme
 
 HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string, UINT uiLength)
 {
-    conn->GetProcess()->Stop(false);
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {
+        conn->GetProcess()->Stop(false);
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, m_pThread->GetThreadId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_APPDOMAIN, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-    int domainId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+        int domainId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
 
-    LPSTR szString;
-    UTF8STR(string, szString);
+        LPSTR szString;
+        UTF8STR(string, szString);
 
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, domainId);
-    m_dbgprot_buffer_add_string(&localbuf, szString);
-    this->m_commandId = conn->SendEvent(MDBGPROT_CMD_SET_APPDOMAIN, MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
-    conn->GetProcess()->AddPendingEval(this);
-    return S_OK;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, domainId);
+        m_dbgprot_buffer_add_string(&localbuf, szString);
+        this->m_commandId = conn->SendEvent(MDBGPROT_CMD_SET_APPDOMAIN, MDBGPROT_CMD_APPDOMAIN_CREATE_STRING, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+        conn->GetProcess()->AddPendingEval(this);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbEval::RudeAbort(void)

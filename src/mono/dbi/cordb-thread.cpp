@@ -212,35 +212,39 @@ HRESULT STDMETHODCALLTYPE CordbThread::GetActiveChain(ICorDebugChain** ppChain)
 HRESULT STDMETHODCALLTYPE CordbThread::GetActiveFrame(ICorDebugFrame** ppFrame)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbThread - GetActiveFrame - IMPLEMENTED\n"));
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
-    m_dbgprot_buffer_add_int(&localbuf, 0);
-    m_dbgprot_buffer_add_int(&localbuf, -1);
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {    
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetThreadId());
+        m_dbgprot_buffer_add_int(&localbuf, 0);
+        m_dbgprot_buffer_add_int(&localbuf, -1);
 
-    int cmdId = this->conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+        int cmdId = this->conn->SendEvent(MDBGPROT_CMD_SET_THREAD, MDBGPROT_CMD_THREAD_GET_FRAME_INFO, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-    int nframes = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-    if (nframes > 0)
-    {
-        int frameid   = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-        int methodId  = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-        int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-        int flags     = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
-        if (m_pCurrentFrame)
-            m_pCurrentFrame->InternalRelease();
-        m_pCurrentFrame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, this);
-        m_pCurrentFrame->InternalAddRef();
-        m_pCurrentFrame->QueryInterface(IID_ICorDebugFrame, (void**)ppFrame);
+        int nframes = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+        if (nframes > 0)
+        {
+            int frameid   = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+            int methodId  = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+            int il_offset = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+            int flags     = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
+            if (m_pCurrentFrame)
+                m_pCurrentFrame->InternalRelease();
+            m_pCurrentFrame = new CordbNativeFrame(conn, frameid, methodId, il_offset, flags, this);
+            m_pCurrentFrame->InternalAddRef();
+            m_pCurrentFrame->QueryInterface(IID_ICorDebugFrame, (void**)ppFrame);
+        }
+        SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
     }
-    SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
-
-    return S_OK;
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbThread::GetRegisterSet(ICorDebugRegisterSet** ppRegisters)

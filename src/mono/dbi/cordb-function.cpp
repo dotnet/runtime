@@ -65,30 +65,36 @@ HRESULT CordbFunction::QueryInterface(REFIID id, void** pInterface)
 HRESULT CordbFunction::GetModule(ICorDebugModule** ppModule)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetModule - IMPLEMENTED\n"));
-    MdbgProtBuffer localbuf;
-    if (!m_pModule)
-    {
-        m_dbgprot_buffer_init(&localbuf, 128);
-        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
-        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
-        m_dbgprot_buffer_free(&localbuf);
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {    
+        MdbgProtBuffer localbuf;
+        if (!m_pModule)
+        {
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_ASSEMBLY, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
 
-        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-        int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-        m_pModule     = conn->GetProcess()->GetModule(module_id);
-        if (m_pModule)
-            m_pModule->InternalAddRef();
+            int module_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+            m_pModule     = conn->GetProcess()->GetModule(module_id);
+            if (m_pModule)
+                m_pModule->InternalAddRef();
+        }
+
+        if (!m_pModule)
+            hr = S_FALSE;
+        else {
+            m_pModule->AddRef();
+            *ppModule = static_cast<ICorDebugModule*>(m_pModule);
+        }
     }
-
-    if (!m_pModule)
-        return S_FALSE;
-
-    m_pModule->AddRef();
-    *ppModule = static_cast<ICorDebugModule*>(m_pModule);
-    return S_OK;
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbFunction::GetClass(ICorDebugClass** ppClass)
@@ -99,23 +105,28 @@ HRESULT CordbFunction::GetClass(ICorDebugClass** ppClass)
 
 HRESULT CordbFunction::GetToken(mdMethodDef* pMethodDef)
 {
-    if (this->GetMetadataToken() == 0)
-    {
-        LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetToken - IMPLEMENTED\n"));
-        MdbgProtBuffer localbuf;
-        m_dbgprot_buffer_init(&localbuf, 128);
-        m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
-        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
-        m_dbgprot_buffer_free(&localbuf);
+    LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetToken - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {     
+        if (this->GetMetadataToken() == 0)
+        {
+            MdbgProtBuffer localbuf;
+            m_dbgprot_buffer_init(&localbuf, 128);
+            m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_TOKEN, &localbuf);
+            m_dbgprot_buffer_free(&localbuf);
 
-        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+            ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+            CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+            MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-        this->m_metadataToken = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+            this->m_metadataToken = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+        }
+        *pMethodDef = this->GetMetadataToken();        
     }
-    *pMethodDef = this->GetMetadataToken();
-    return S_OK;
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbFunction::GetILCode(ICorDebugCode** ppCode)
