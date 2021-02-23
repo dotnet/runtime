@@ -40,7 +40,7 @@ namespace System.Linq
             while (index < endIndex && e.MoveNext())
             {
                 yield return e.Current;
-                checked { ++index; }
+                ++index;
             }
         }
     }
