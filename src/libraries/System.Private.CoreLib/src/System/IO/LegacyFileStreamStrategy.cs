@@ -68,7 +68,7 @@ namespace System.IO
 
             InitFromHandle(handle, access, isAsync);
 
-            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
+            // Note: It would be cleaner to set the following fields in ValidateHandle,
             // but we can't as they're readonly.
             _access = access;
             _useAsyncIO = isAsync;

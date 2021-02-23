@@ -11,17 +11,7 @@ namespace System.IO
     internal static class FileStreamHelpers
     {
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-        {
-            // the switch exitst to measure the overhead of introducing a factory method to the FileStream ctor
-            // we are going to have more implementations soon and then it's going to make more sense
-            switch (isAsync)
-            {
-                case true:
-                    return new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, true);
-                case false:
-                    return new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, false);
-            }
-        }
+            => new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, isAsync);
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
             => new LegacyFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
