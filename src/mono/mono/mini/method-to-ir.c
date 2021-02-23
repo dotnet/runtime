@@ -9527,6 +9527,9 @@ calli_end:
 				CHECK_CFG_ERROR;
 			}
 
+			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
+			 * to be called here.
+			 */
 			if (!context_used) {
 				mono_class_vtable_checked (klass, cfg->error);
 				CHECK_CFG_ERROR;
