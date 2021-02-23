@@ -1369,7 +1369,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
-		*this_arg = mono_value_box_checked (mono_domain_get (), klass, mp, error);
+		*this_arg = mono_value_box_checked (klass, mp, error);
 	} else if (m_class_is_valuetype (klass)) {
 		if (is_iface) {
 			/*
@@ -1554,7 +1554,7 @@ MonoObject*
 mono_get_assembly_object (MonoImage *image)
 {
 	ICALL_ENTRY();
-	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (mono_domain_get (), image->assembly, error));
+	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (image->assembly, error));
 	ICALL_RETURN_OBJ (result);
 }
 
@@ -1563,7 +1563,7 @@ mono_get_method_object (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoObject * result;
-	result = (MonoObject*)mono_method_get_object_checked (mono_domain_get (), method, method->klass, error);
+	result = (MonoObject*)mono_method_get_object_checked (method, method->klass, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
