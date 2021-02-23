@@ -10,7 +10,7 @@
 
 using namespace std;
 
-HRESULT __stdcall CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
+HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64* pAvailable)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetRegistersAvailable - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
@@ -22,13 +22,13 @@ CordbRegisterSet::CordbRegisterSet(Connection* conn, uint8_t* ctx, uint32_t ctx_
     this->m_ctxLen = ctx_len;
 }
 
-HRESULT __stdcall CordbRegisterSet::QueryInterface(REFIID id, void** pInterface)
+HRESULT CordbRegisterSet::QueryInterface(REFIID id, void** pInterface)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - QueryInterface - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[])
+HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount, CORDB_REGISTER regBuffer[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbRegisterSet - GetRegisters - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;

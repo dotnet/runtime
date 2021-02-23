@@ -16,46 +16,53 @@ using namespace std;
 CordbCode::CordbCode(Connection* conn, CordbFunction* func) : CordbBaseMono(conn)
 {
     this->m_pFunction = func;
+    m_nSize = -1;
 }
 
-HRESULT __stdcall CordbCode::IsIL(BOOL* pbIL)
+HRESULT CordbCode::IsIL(BOOL* pbIL)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - IsIL - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbCode::GetFunction(ICorDebugFunction** ppFunction)
+HRESULT CordbCode::GetFunction(ICorDebugFunction** ppFunction)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - GetFunction - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbCode::GetAddress(CORDB_ADDRESS* pStart)
+HRESULT CordbCode::GetAddress(CORDB_ADDRESS* pStart)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - GetAddress - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbCode::GetSize(ULONG32* pcBytes)
+ULONG32 CordbCode::GetSize() {
+    if (m_nSize == -1) {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+
+        m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        m_nSize = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
+    }
+    return m_nSize;
+}
+
+HRESULT CordbCode::GetSize(ULONG32* pcBytes)
 {
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-
-    m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
-
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-
-    int code_size = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-    *pcBytes      = code_size;
+    *pcBytes      = GetSize();
     LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetSize - IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbCode::CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint** ppBreakpoint)
+HRESULT CordbCode::CreateBreakpoint(ULONG32 offset, ICorDebugFunctionBreakpoint** ppBreakpoint)
 {
     // add it in a list to not recreate a already created breakpoint
     CordbFunctionBreakpoint* bp = new CordbFunctionBreakpoint(conn, this, offset);
@@ -64,7 +71,7 @@ HRESULT __stdcall CordbCode::CreateBreakpoint(ULONG32 offset, ICorDebugFunctionB
     return S_OK;
 }
 
-HRESULT __stdcall CordbCode::GetCode(
+HRESULT CordbCode::GetCode(
     ULONG32 startOffset, ULONG32 endOffset, ULONG32 cBufferAlloc, BYTE buffer[], ULONG32* pcBufferSize)
 {
     MdbgProtBuffer localbuf;
@@ -77,35 +84,48 @@ HRESULT __stdcall CordbCode::GetCode(
     ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
     CHECK_ERROR_RETURN_FALSE(received_reply_packet);
     MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+    
+    ULONG32 totalSize = GetSize();
+    
+    if (cBufferAlloc < endOffset - startOffset)
+        endOffset = startOffset + cBufferAlloc;
 
-    uint8_t* code = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, (int32_t*)pcBufferSize);
+    if (endOffset > totalSize)
+        endOffset = totalSize;
 
-    memcpy(buffer, code, *pcBufferSize);
-    free(code);
+    if (startOffset > totalSize)
+        startOffset = totalSize;
+
+    uint8_t* m_rgbCode = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, (int32_t*)pcBufferSize);
+    memcpy(buffer,
+               m_rgbCode+startOffset,
+               endOffset - startOffset);
+    free(m_rgbCode);
+    
     LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetCode - IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbCode::GetVersionNumber(ULONG32* nVersion)
+HRESULT CordbCode::GetVersionNumber(ULONG32* nVersion)
 {
     *nVersion = 1;
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - GetVersionNumber - NOT IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbCode::GetILToNativeMapping(ULONG32 cMap, ULONG32* pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[])
+HRESULT CordbCode::GetILToNativeMapping(ULONG32 cMap, ULONG32* pcMap, COR_DEBUG_IL_TO_NATIVE_MAP map[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - GetILToNativeMapping - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbCode::GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32* pcMap, ULONG32 offsets[])
+HRESULT CordbCode::GetEnCRemapSequencePoints(ULONG32 cMap, ULONG32* pcMap, ULONG32 offsets[])
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbCode - GetEnCRemapSequencePoints - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbCode::QueryInterface(REFIID id, void** pInterface)
+HRESULT CordbCode::QueryInterface(REFIID id, void** pInterface)
 {
     if (id == IID_ICorDebugCode)
     {

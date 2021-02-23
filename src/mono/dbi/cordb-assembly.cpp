@@ -107,6 +107,7 @@ CordbModule::CordbModule(Connection* conn, CordbProcess* process, CordbAssembly*
     dwFlags = 0;
     conn->GetProcess()->AddModule(this);
     m_pAssemblyMetadataBlob = NULL;
+    m_pAssemblyName = NULL;
 }
 
 CordbModule::~CordbModule()
@@ -115,6 +116,8 @@ CordbModule::~CordbModule()
         m_pAssembly->InternalRelease();
     if (m_pAssemblyMetadataBlob)
         free(m_pAssemblyMetadataBlob);
+    if (m_pAssemblyName)
+        free(m_pAssemblyName);
 }
 
 HRESULT CordbModule::QueryInterface(REFIID id, void** pInterface)
@@ -202,18 +205,19 @@ HRESULT CordbModule::GetProcess(ICorDebugProcess** ppProcess)
 
 HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
 {
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+    if (!m_pAssemblyMetadataBlob) {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-    m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
-
+        m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
+    }
     LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
 
     *pAddress = (CORDB_ADDRESS)m_pAssemblyMetadataBlob;
@@ -222,28 +226,29 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
 
 HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32* pcchName, WCHAR szName[])
 {
-    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
-    MdbgProtBuffer localbuf;
-    m_dbgprot_buffer_init(&localbuf, 128);
-    m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
-    m_dbgprot_buffer_free(&localbuf);
+    if (!m_pAssemblyName) {
+        LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetName - IMPLEMENTED\n"));
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_LOCATION, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
 
-    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-    CHECK_ERROR_RETURN_FALSE(received_reply_packet);
-    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-    char* assembly_name = m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
+        m_pAssemblyName = m_dbgprot_decode_string(pReply->p, &pReply->p, pReply->end);
+    }
 
-    if (cchName < strlen(assembly_name) + 1)
+    if (cchName < strlen(m_pAssemblyName) + 1)
     {
-        *pcchName = (ULONG32)strlen(assembly_name) + 1;
-        free(assembly_name);
+        *pcchName = (ULONG32)strlen(m_pAssemblyName) + 1;
         return S_OK;
     }
-    MultiByteToWideChar(CP_UTF8, 0, assembly_name, -1, szName, cchName);
+
+    MultiByteToWideChar(CP_UTF8, 0, m_pAssemblyName, -1, szName, cchName);
     *pcchName = cchName;
-    free(assembly_name);
     return S_OK;
 }
 

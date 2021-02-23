@@ -22,20 +22,20 @@ CordbFunctionBreakpoint::CordbFunctionBreakpoint(Connection* conn, CordbCode* co
 
 CordbFunctionBreakpoint::~CordbFunctionBreakpoint() {}
 
-HRESULT __stdcall CordbFunctionBreakpoint::GetFunction(ICorDebugFunction** ppFunction)
+HRESULT CordbFunctionBreakpoint::GetFunction(ICorDebugFunction** ppFunction)
 {
     GetCode()->GetFunction()->QueryInterface(IID_ICorDebugFunction, (void**)ppFunction);
     LOG((LF_CORDB, LL_INFO1000000, "CordbFunctionBreakpoint - GetFunction - IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunctionBreakpoint::GetOffset(ULONG32* pnOffset)
+HRESULT CordbFunctionBreakpoint::GetOffset(ULONG32* pnOffset)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunctionBreakpoint - GetOffset - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunctionBreakpoint::Activate(BOOL bActive)
+HRESULT CordbFunctionBreakpoint::Activate(BOOL bActive)
 {
     if (bActive)
     {
@@ -59,13 +59,13 @@ HRESULT __stdcall CordbFunctionBreakpoint::Activate(BOOL bActive)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunctionBreakpoint::IsActive(BOOL* pbActive)
+HRESULT CordbFunctionBreakpoint::IsActive(BOOL* pbActive)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunctionBreakpoint - IsActive - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunctionBreakpoint::QueryInterface(REFIID id, void** pInterface)
+HRESULT CordbFunctionBreakpoint::QueryInterface(REFIID id, void** pInterface)
 {
     if (id == IID_ICorDebugFunctionBreakpoint)
     {

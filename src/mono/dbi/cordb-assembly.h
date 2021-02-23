@@ -25,6 +25,7 @@ class CordbModule : public CordbBaseMono,
     uint8_t*            m_pAssemblyMetadataBlob;
     int32_t             m_assemblyMetadataLen;
     unsigned long       dwFlags;
+    char *              m_pAssemblyName;
 
 public:
     CordbModule(Connection* conn, CordbProcess* process, CordbAssembly* assembly, int id_assembly);

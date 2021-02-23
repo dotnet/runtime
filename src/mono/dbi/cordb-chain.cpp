@@ -12,7 +12,7 @@
 
 using namespace std;
 
-HRESULT __stdcall CordbChainEnum::Next(ULONG celt, ICorDebugChain* chains[], ULONG* pceltFetched)
+HRESULT CordbChainEnum::Next(ULONG celt, ICorDebugChain* chains[], ULONG* pceltFetched)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbChainEnum - Next - NOT IMPLEMENTED\n"));
 
@@ -29,13 +29,13 @@ CordbChainEnum::CordbChainEnum(Connection* conn, CordbThread* thread) : CordbBas
     this->m_pThread = thread;
 }
 
-HRESULT __stdcall CordbChainEnum::QueryInterface(REFIID id, void** pInterface)
+HRESULT CordbChainEnum::QueryInterface(REFIID id, void** pInterface)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbChainEnum - QueryInterface - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbChainEnum::Skip(ULONG celt)
+HRESULT CordbChainEnum::Skip(ULONG celt)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbChainEnum - Skip - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;

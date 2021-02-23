@@ -12,7 +12,7 @@
 class CordbCode : public CordbBaseMono, public ICorDebugCode
 {
     CordbFunction* m_pFunction;
-
+    ULONG32 m_nSize;
 public:
     CordbCode(Connection* conn, CordbFunction* func);
     ULONG STDMETHODCALLTYPE AddRef(void)
@@ -27,6 +27,7 @@ public:
     {
         return "CordbCode";
     }
+    ULONG32 GetSize();
     HRESULT STDMETHODCALLTYPE IsIL(BOOL* pbIL);
     HRESULT STDMETHODCALLTYPE GetFunction(ICorDebugFunction** ppFunction);
     HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS* pStart);

@@ -31,7 +31,7 @@ CordbFunction::~CordbFunction()
         m_pModule->InternalRelease();
 }
 
-HRESULT __stdcall CordbFunction::QueryInterface(REFIID id, void** pInterface)
+HRESULT CordbFunction::QueryInterface(REFIID id, void** pInterface)
 {
     if (id == IID_ICorDebugFunction)
     {
@@ -62,7 +62,7 @@ HRESULT __stdcall CordbFunction::QueryInterface(REFIID id, void** pInterface)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule** ppModule)
+HRESULT CordbFunction::GetModule(ICorDebugModule** ppModule)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetModule - IMPLEMENTED\n"));
     MdbgProtBuffer localbuf;
@@ -91,13 +91,13 @@ HRESULT __stdcall CordbFunction::GetModule(ICorDebugModule** ppModule)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetClass(ICorDebugClass** ppClass)
+HRESULT CordbFunction::GetClass(ICorDebugClass** ppClass)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetClass - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetToken(mdMethodDef* pMethodDef)
+HRESULT CordbFunction::GetToken(mdMethodDef* pMethodDef)
 {
     if (this->GetMetadataToken() == 0)
     {
@@ -118,7 +118,7 @@ HRESULT __stdcall CordbFunction::GetToken(mdMethodDef* pMethodDef)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetILCode(ICorDebugCode** ppCode)
+HRESULT CordbFunction::GetILCode(ICorDebugCode** ppCode)
 {
     if (m_pCode == NULL)
     {
@@ -130,7 +130,7 @@ HRESULT __stdcall CordbFunction::GetILCode(ICorDebugCode** ppCode)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetNativeCode(ICorDebugCode** ppCode)
+HRESULT CordbFunction::GetNativeCode(ICorDebugCode** ppCode)
 {
     if (m_pCode == NULL)
     {
@@ -142,57 +142,57 @@ HRESULT __stdcall CordbFunction::GetNativeCode(ICorDebugCode** ppCode)
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
+HRESULT CordbFunction::CreateBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - CreateBreakpoint - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetLocalVarSigToken(mdSignature* pmdSig)
+HRESULT CordbFunction::GetLocalVarSigToken(mdSignature* pmdSig)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetLocalVarSigToken - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetCurrentVersionNumber(ULONG32* pnCurrentVersion)
+HRESULT CordbFunction::GetCurrentVersionNumber(ULONG32* pnCurrentVersion)
 {
     *pnCurrentVersion = 1;
     LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetCurrentVersionNumber - IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::SetJMCStatus(BOOL bIsJustMyCode)
+HRESULT CordbFunction::SetJMCStatus(BOOL bIsJustMyCode)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - SetJMCStatus - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetJMCStatus(BOOL* pbIsJustMyCode)
+HRESULT CordbFunction::GetJMCStatus(BOOL* pbIsJustMyCode)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetJMCStatus - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::EnumerateNativeCode(ICorDebugCodeEnum** ppCodeEnum)
+HRESULT CordbFunction::EnumerateNativeCode(ICorDebugCodeEnum** ppCodeEnum)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - EnumerateNativeCode - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::GetVersionNumber(ULONG32* pnVersion)
+HRESULT CordbFunction::GetVersionNumber(ULONG32* pnVersion)
 {
     *pnVersion = 1;
     LOG((LF_CORDB, LL_INFO1000000, "CordbFunction - GetVersionNumber - IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT __stdcall CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode** ppReJitedILCode)
+HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode** ppReJitedILCode)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - GetActiveReJitRequestILCode - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
-HRESULT __stdcall CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
+HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint** ppBreakpoint)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbFunction - CreateNativeBreakpoint - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
