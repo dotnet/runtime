@@ -6799,6 +6799,14 @@ public:
         optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
     }
 
+    void considerGuardedDevirtualization(GenTreeCall*            call,
+                                         IL_OFFSETX              iloffset,
+                                         bool                    isInterface,
+                                         CORINFO_METHOD_HANDLE   baseMethod,
+                                         CORINFO_CLASS_HANDLE    baseClass,
+                                         CORINFO_CONTEXT_HANDLE* pContextHandle DEBUGARG(CORINFO_CLASS_HANDLE objClass)
+                                             DEBUGARG(const char* objClassName));
+
     void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
                                              CORINFO_METHOD_HANDLE methodHandle,
                                              CORINFO_CLASS_HANDLE  classHandle,
