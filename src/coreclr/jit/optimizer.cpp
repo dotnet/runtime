@@ -9583,7 +9583,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                         {
                                             removedTrackedDefs   = true;
                                             unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
-                                            *pDefsCount = (*pDefsCount) - 1;
+                                            *pDefsCount          = (*pDefsCount) - 1;
                                         }
                                     }
                                 }
