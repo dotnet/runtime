@@ -405,7 +405,7 @@ MONO_RESTORE_WARNING
 		if (out_obj) {
 			if (!type)
 				return NULL;
-			*out_obj = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+			*out_obj = (MonoObject*)mono_type_get_object_checked (type, error);
 			return NULL;
 		} else {
 			return type;
@@ -424,7 +424,7 @@ MONO_RESTORE_WARNING
 			if (out_obj) {
 				if (!type)
 					return NULL;
-				*out_obj = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+				*out_obj = (MonoObject*)mono_type_get_object_checked (type, error);
 				return NULL;
 			} else {
 				return type;
@@ -622,7 +622,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 		if (!is_ok (error))
 			return NULL;
 
-		MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (t), val, error);
+		MonoObject *boxed = mono_value_box_checked (mono_class_from_mono_type_internal (t), val, error);
 		g_free (val);
 		return boxed;
 	}
@@ -645,7 +645,7 @@ create_cattr_typed_arg (MonoType *t, MonoObject *val, MonoError *error)
 
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, ctor)
 
-	params [0] = mono_type_get_object_checked (mono_domain_get (), t, error);
+	params [0] = mono_type_get_object_checked (t, error);
 	return_val_if_nok (error, NULL);
 	MONO_HANDLE_PIN ((MonoObject*)params [0]);
 
@@ -1355,7 +1355,6 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 																		  MonoArrayHandleOut ctor_args_h, MonoArrayHandleOut named_args_h,
 																		  MonoError *error)
 {
-	MonoDomain *domain;
 	MonoArray *typed_args, *named_args;
 	MonoImage *image;
 	MonoMethod *method;
@@ -1376,7 +1375,6 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 
 	image = assembly->assembly->image;
 	method = ref_method->method;
-	domain = mono_object_domain (ref_method);
 
 	if (!mono_class_init_internal (method->klass)) {
 		mono_error_set_for_class_failure (error, method->klass);
@@ -1416,11 +1414,11 @@ ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoRe
 		obj = mono_array_get_internal (named_args, MonoObject*, i);
 		MONO_HANDLE_ASSIGN_RAW (obj_h, obj);
 		if (arginfo [i].prop) {
-			minfo = (MonoObject*)mono_property_get_object_checked (domain, arginfo [i].prop->parent, arginfo [i].prop, error);
+			minfo = (MonoObject*)mono_property_get_object_checked (arginfo [i].prop->parent, arginfo [i].prop, error);
 			if (!minfo)
 				goto leave;
 		} else {
-			minfo = (MonoObject*)mono_field_get_object_checked (domain, NULL, arginfo [i].field, error);
+			minfo = (MonoObject*)mono_field_get_object_checked (NULL, arginfo [i].field, error);
 			goto_if_nok (error, leave);
 		}
 		MONO_HANDLE_ASSIGN_RAW (minfo_h, minfo);
@@ -1453,8 +1451,6 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr, MonoError
 	HANDLE_FUNCTION_ENTER ();
 
 	static MonoMethod *ctor;
-
-	MonoDomain *domain;
 	void *params [4];
 
 	error_init (error);
@@ -1474,16 +1470,14 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr, MonoError
 		ctor = tmp;
 	}
 
-	domain = mono_domain_get ();
-
 	attr = mono_object_new_handle (cattr_data, error);
 	goto_if_nok (error, fail);
 
 	MonoReflectionMethodHandle ctor_obj;
-	ctor_obj = mono_method_get_object_handle (domain, cattr->ctor, NULL, error);
+	ctor_obj = mono_method_get_object_handle (cattr->ctor, NULL, error);
 	goto_if_nok (error, fail);
 	MonoReflectionAssemblyHandle assm;
-	assm = mono_assembly_get_object_handle (domain, image->assembly, error);
+	assm = mono_assembly_get_object_handle (image->assembly, error);
 	goto_if_nok (error, fail);
 	params [0] = MONO_HANDLE_RAW (ctor_obj);
 	params [1] = MONO_HANDLE_RAW (assm);

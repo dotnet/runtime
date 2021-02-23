@@ -92,10 +92,10 @@ alloc_code (LLVMValueRef function, int size)
 	return (unsigned char *)mono_mem_manager_code_reserve (cfg->mem_manager, size);
 }
 
-class MonoJitMemoryManager : public RTDyldMemoryManager
+class MonoLLVMMemoryManager : public RTDyldMemoryManager
 {
 public:
-	~MonoJitMemoryManager() override;
+	~MonoLLVMMemoryManager() override;
 
 	uint8_t *allocateDataSection(uintptr_t Size,
 								 unsigned Alignment,
@@ -113,12 +113,12 @@ private:
 	SmallVector<sys::MemoryBlock, 16> PendingCodeMem;
 };
 
-MonoJitMemoryManager::~MonoJitMemoryManager()
+MonoLLVMMemoryManager::~MonoLLVMMemoryManager()
 {
 }
 
 uint8_t *
-MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
+MonoLLVMMemoryManager::allocateDataSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName,
@@ -138,7 +138,7 @@ MonoJitMemoryManager::allocateDataSection(uintptr_t Size,
 }
 
 uint8_t *
-MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
+MonoLLVMMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned Alignment,
 										  unsigned SectionID,
 										  StringRef SectionName)
@@ -149,7 +149,7 @@ MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
 }
 
 bool
-MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
+MonoLLVMMemoryManager::finalizeMemory(std::string *ErrMsg)
 {
 	for (sys::MemoryBlock &Block : PendingCodeMem) {
 #if LLVM_API_VERSION >= 900
@@ -197,7 +197,7 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 #if LLVM_API_VERSION >= 900
 
 struct MonoLLVMJIT {
-	std::shared_ptr<MonoJitMemoryManager> mmgr;
+	std::shared_ptr<MonoLLVMMemoryManager> mmgr;
 	ExecutionSession execution_session;
 	std::map<VModuleKey, std::shared_ptr<SymbolResolver>> resolvers;
 	TargetMachine *target_machine;
@@ -207,7 +207,7 @@ struct MonoLLVMJIT {
 	legacy::FunctionPassManager fpm;
 
 	MonoLLVMJIT (TargetMachine *tm, Module *pgo_module)
-		: mmgr (std::make_shared<MonoJitMemoryManager>())
+		: mmgr (std::make_shared<MonoLLVMMemoryManager>())
 		, target_machine (tm)
 		, object_layer (
 			AcknowledgeORCv1Deprecation, execution_session,
@@ -331,7 +331,7 @@ public:
 	typedef IRCompileLayer<ObjLayerT, SimpleCompiler> CompileLayerT;
 	typedef CompileLayerT::ModuleHandleT ModuleHandleT;
 
-	MonoLLVMJIT (TargetMachine *TM, MonoJitMemoryManager *mm)
+	MonoLLVMJIT (TargetMachine *TM, MonoLLVMMemoryManager *mm)
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
 		  modules(),
@@ -432,12 +432,12 @@ private:
 	legacy::FunctionPassManager fpm;
 };
 
-static MonoJitMemoryManager *mono_mm;
+static MonoLLVMMemoryManager *mono_mm;
 
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *)
 {
-	mono_mm = new MonoJitMemoryManager ();
+	mono_mm = new MonoLLVMMemoryManager ();
 	return new MonoLLVMJIT(target_machine, mono_mm);
 }
 

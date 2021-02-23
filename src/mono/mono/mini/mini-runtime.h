@@ -15,9 +15,12 @@
 #include "mini.h"
 #include "ee.h"
 
-/* Per-domain information maintained by the JIT */
-typedef struct
-{
+/*
+ * Per-memory manager information maintained by the JIT.
+ */
+typedef struct {
+	MonoMemoryManager *mem_manager;
+
 	/* Maps MonoMethod's to a GSList of GOT slot addresses pointing to its code */
 	GHashTable *jump_target_got_slot_hash;
 	GHashTable *jump_target_hash;
@@ -27,7 +30,6 @@ typedef struct
 	GHashTable *delegate_trampoline_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
-	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
@@ -55,9 +57,36 @@ typedef struct
 	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
-} MonoJitDomainInfo;
+} MonoJitMemoryManager;
 
-#define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
+static inline MonoJitMemoryManager*
+get_default_jit_mm (void)
+{
+	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+}
+
+static inline MonoJitMemoryManager*
+jit_mm_for_method (MonoMethod *method)
+{
+	/*
+	 * Some places might not look up the correct memory manager because of generic instances/generic sharing etc.
+	 * So use the same memory manager everywhere, this is not a problem since we don't support unloading yet.
+	 */
+	//return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
+	return get_default_jit_mm ();
+}
+
+static inline void
+jit_mm_lock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_lock (jit_mm->mem_manager);
+}
+
+static inline void
+jit_mm_unlock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_unlock (jit_mm->mem_manager);
+}
 
 /*
  * Stores state need to resume exception handling when using LLVM

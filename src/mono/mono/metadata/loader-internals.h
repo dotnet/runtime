@@ -96,6 +96,9 @@ struct _MonoMemoryManager {
 	/* Information maintained by mono-debug.c */
 	gpointer debug_info;
 
+	/* Information maintained by the execution engine */
+	gpointer runtime_info;
+
 	// !!! REGISTERED AS GC ROOTS !!!
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;

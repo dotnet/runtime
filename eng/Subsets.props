@@ -202,6 +202,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj" Pack="true" BuildInParallel="false" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
@@ -305,7 +306,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+publish+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
   </ItemGroup>
 
   <!-- Utility -->
