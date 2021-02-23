@@ -158,7 +158,7 @@ CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
     return CheckJNIExceptions(env) ? FAIL : ctx;
 }
 
-int32_t CryptoNative_EvpCipherSetCcmTagLength(CipherCtx* ctx, int32_t tagLength)
+int32_t CryptoNative_EvpCipherSetTagLength(CipherCtx* ctx, int32_t tagLength)
 {
     if (!ctx)
         return FAIL;
@@ -324,7 +324,9 @@ int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* ou
         *outl += outBytesLen - tagLength;
 
         if (hasTag && !decrypt)
+        {
             (*env)->GetByteArrayRegion(env, outBytes, outBytesLen - ctx->tagLength, ctx->tagLength, (jbyte*) ctx->tag);
+        }
     }
 
     (*env)->DeleteLocalRef(env, outBytes);

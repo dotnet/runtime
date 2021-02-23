@@ -32,6 +32,12 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
+
+            if (!Interop.Crypto.EvpCipherSetTagLength(_ctxHandle, tag.Length))
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
                 Span<byte>.Empty,

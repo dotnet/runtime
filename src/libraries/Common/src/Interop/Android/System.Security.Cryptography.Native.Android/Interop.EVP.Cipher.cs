@@ -168,9 +168,9 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherSetCcmTagLength")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherSetTagLength")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpCipherSetCcmTagLength(
+        internal static extern bool EvpCipherSetTagLength(
             SafeEvpCipherCtxHandle ctx,
             int tagLength);
 
