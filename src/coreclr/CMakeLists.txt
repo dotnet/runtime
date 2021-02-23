@@ -117,7 +117,6 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific compile definitions should be included in this file
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
-include(clrfeatures.cmake)
 include(clrdefinitions.cmake)
 
 if(FEATURE_STANDALONE_GC)
