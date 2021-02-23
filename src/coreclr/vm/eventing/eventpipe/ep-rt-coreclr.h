@@ -1569,34 +1569,7 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	ep_char8_t *outputPath = ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
-	if (outputPath != NULL)
-	{
-		while (true)
-		{
-			const ep_char8_t* pidSearchString = "{pid}";
-			ep_char8_t* outputPathPid = strstr(outputPath, pidSearchString);
-			if (outputPathPid != NULL)
-			{
-				size_t newBufSize = strlen(outputPath) + 12; // 12 is 1 for the null-terminator + 11 for the largest possible 4 byte integer converted to a string
-				*outputPathPid = '\0';
-				ep_char8_t *newOutputPath =  reinterpret_cast<ep_char8_t *>(malloc(newBufSize));
-				if (newOutputPath == NULL)
-				{
-					return NULL;
-				}
-				sprintf_s(newOutputPath, newBufSize, "%s%d%s", outputPath, (int)GetCurrentProcessId(), outputPathPid + strlen(pidSearchString));
-				ep_rt_utf8_string_free(outputPath);
-				outputPath = newOutputPath;
-
-				continue; // In case there is a second use of {pid} in the output path
-			}
-
-			// No more instances of {pid} in the OutputPath
-			break;
-		}
-	}
-	return outputPath;
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
 
 static
@@ -2513,6 +2486,38 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 sprintf_s (reinterpret_cast<char *>(str), static_cast<size_t>(str_len), reinterpret_cast<const char *>(format), __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  reinterpret_cast<ep_char8_t *>(malloc(newStrSize));
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", strFound - (*str), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 ep_char16_t *

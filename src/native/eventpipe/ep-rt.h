@@ -687,6 +687,14 @@ ep_rt_utf8_string_strtok (
 	format, ...) ep_redefine
 
 static
+inline bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+);
+
+static
 ep_char16_t *
 ep_rt_utf8_to_utf16_string (
 	const ep_char8_t *str,
