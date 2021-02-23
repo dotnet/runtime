@@ -1339,8 +1339,6 @@ typedef struct {
 
 	GList           *ldstr_list; /* used by AOT */
 	
-	MonoDomain      *domain;
-
 	guint            real_offset;
 	GHashTable      *cbb_hash;
 

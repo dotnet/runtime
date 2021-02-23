@@ -2818,6 +2818,24 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 	mono_copy_value (field->type, dest, value, FALSE);
 }
 
+gpointer
+mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
+{
+	gpointer addr = NULL;
+	MonoDomain *domain = mono_get_root_domain ();
+
+	/* The special_static_fields field is init'd in mono_class_vtable */
+	mono_class_vtable_checked (field->parent, error);
+	return_val_if_nok (error, NULL);
+
+	mono_domain_lock (domain);
+	if (domain->special_static_fields)
+		addr = g_hash_table_lookup (domain->special_static_fields, field);
+	mono_domain_unlock (domain);
+
+	return addr;
+}
+
 /**
  * mono_field_static_set_value:
  * \param field \c MonoClassField describing the field to set

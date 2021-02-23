@@ -1662,6 +1662,9 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 MonoObjectHandle
 mono_static_field_get_value_handle (MonoClassField *field, MonoError *error);
 
+gpointer
+mono_special_static_field_get_offset (MonoClassField *field, MonoError *error);
+
 gboolean
 mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void **params, MonoError *error);
 

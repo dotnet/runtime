@@ -2113,7 +2113,6 @@ mono_codegen (MonoCompile *cfg)
 
 	max_epilog_size = 0;
 
-	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
 
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
@@ -2171,9 +2170,9 @@ mono_codegen (MonoCompile *cfg)
  
 	if (cfg->verbose_level > 0) {
 		char* nm = mono_method_get_full_name (cfg->method);
-		g_print ("Method %s emitted at %p to %p (code length %d) [%s]\n",
+		g_print ("Method %s emitted at %p to %p (code length %d)\n",
 				 nm, 
-				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len);
 		g_free (nm);
 	}
 
@@ -3071,7 +3070,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
 	cfg->run_cctors = run_cctors;
-	cfg->domain = mono_get_root_domain ();
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->full_aot = full_aot;
@@ -3759,9 +3757,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		if (cfg->verbose_level > 0 && !cfg->compile_aot) {
 			nm = mono_method_get_full_name (cfg->method);
-			g_print ("LLVM Method %s emitted at %p to %p (code length %d) [%s]\n", 
+			g_print ("LLVM Method %s emitted at %p to %p (code length %d)\n",
 					 nm, 
-					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len);
 			g_free (nm);
 		}
 #endif
@@ -3802,9 +3800,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
-		mono_domain_lock (cfg->domain);
-		mono_jit_info_table_add (cfg->domain, cfg->jit_info);
-		mono_domain_unlock (cfg->domain);
+		MonoDomain *domain = mono_get_root_domain ();
+		mono_domain_lock (domain);
+		mono_jit_info_table_add (domain, cfg->jit_info);
+		mono_domain_unlock (domain);
 
 		if (cfg->method->dynamic) {
 			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
