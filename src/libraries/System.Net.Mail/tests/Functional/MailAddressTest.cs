@@ -70,11 +70,17 @@ namespace System.Net.Mail.Tests
         {
             Action act = () => new MailAddress(invalidAddress);
             if (invalidAddress is null)
+            {
                 Assert.Throws<ArgumentNullException>(act);
+            }
             else if (invalidAddress == string.Empty)
+            {
                 Assert.Throws<ArgumentException>(act);
+            }
             else
+            {
                 Assert.Throws<FormatException>(act);
+            }
         }
 
         public static IEnumerable<object[]> GetInvalid_AddressDisplayName()
