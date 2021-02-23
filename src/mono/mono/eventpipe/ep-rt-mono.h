@@ -1883,7 +1883,7 @@ ep_rt_utf8_string_replace (
 			*str = NULL;
 			return false;
 		}
-		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", strFound - (*str), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
 		ep_rt_utf8_string_free(*str);
 		*str = newStr;
 		return true;
