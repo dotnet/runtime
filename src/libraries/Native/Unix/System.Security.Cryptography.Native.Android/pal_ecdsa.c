@@ -108,7 +108,7 @@ int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
     const int derEncodingBytes = 7;
     JNIEnv* env = GetJNIEnv();
     jobject order = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
-    int byteLength = CryptoNative_GetBigNumBytes(order);
+    int byteLength = CryptoNative_GetBigNumBytesNoStripLeadingZero(order);
     ReleaseLRef(env, order);
     return 2 * byteLength + derEncodingBytes;
 }

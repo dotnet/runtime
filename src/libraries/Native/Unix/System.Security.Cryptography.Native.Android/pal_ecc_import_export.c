@@ -7,6 +7,26 @@
 #include "pal_jni.h"
 #include "pal_utilities.h"
 
+static jobject CryptoNative_CreateBigInteger(uint8_t* data, int32_t len)
+{
+    JNIEnv* env = GetJNIEnv();
+    jbyteArray buffArray = (*env)->NewByteArray(env, len);
+    (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)data);
+    jobject bigNum;
+    if (data[0] & 0x80)
+    {
+        // If the top bit is set, we need to create a BigInteger with the sign-and-magnitude constructor.
+        bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, buffArray);
+    }
+    else
+    {
+        // Otherwise, we need to create it with the byte-array-value constructor.
+        bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, buffArray);
+    }
+    (*env)->DeleteLocalRef(env, buffArray);
+    return CheckJNIExceptions(env) ? FAIL : ToGRef(env, bigNum);
+}
+
 int32_t CryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         int32_t includePrivate,
                                         jobject* qx,
@@ -196,13 +216,6 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
 
         *seed = ToGRef(env, seedBn);
         *cbSeed = CryptoNative_GetBigNumBytes(*seed);
-
-        /*
-            To implement SEC 1 standard and align to Windows, we also want to extract the nid
-            to the algorithm (e.g. NID_sha256) that was used to generate seed but this
-            metadata does not appear to exist in openssl (see openssl's ec_curve.c) so we may
-            eventually want to add that metadata, but that could be done on the managed side.
-        */
     }
     else
     {
@@ -291,8 +304,8 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(
     // Create the public and private key specs.
     if (qx && qy)
     {
-        qxBn = CryptoNative_BigNumFromBinary(qx, qxLength);
-        qyBn = CryptoNative_BigNumFromBinary(qy, qyLength);
+        qxBn = CryptoNative_CreateBigInteger(qx, qxLength);
+        qyBn = CryptoNative_CreateBigInteger(qy, qyLength);
         if (!qxBn || !qyBn)
             goto error;
 
@@ -303,7 +316,7 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(
         // Set private key (optional)
         if (d && dLength)
         {
-            dBn = CryptoNative_BigNumFromBinary(d, dLength);
+            dBn = CryptoNative_CreateBigInteger(d, dLength);
             if (!dBn)
                 goto error;
 
@@ -314,7 +327,7 @@ static jobject CryptoNative_CreateKeyPairFromCurveParameters(
     // re-derive the public key from d.
     else if (qx == NULL && qy == NULL && qxLength == 0 && qyLength == 0 && d && dLength > 0)
     {
-        dBn = CryptoNative_BigNumFromBinary(d, dLength);
+        dBn = CryptoNative_CreateBigInteger(d, dLength);
         if (!dBn)
             goto error;
 
@@ -509,7 +522,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
         return NULL;
     }
 
-    pBn = CryptoNative_BigNumFromBinary(p, pLength);
+    pBn = CryptoNative_CreateBigInteger(p, pLength);
 
     // At this point we should use 'goto error' since we allocated objects or memory
 
@@ -545,8 +558,8 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
-    aBn = CryptoNative_BigNumFromBinary(a, aLength);
-    bBn = CryptoNative_BigNumFromBinary(b, bLength);
+    aBn = CryptoNative_CreateBigInteger(a, aLength);
+    bBn = CryptoNative_CreateBigInteger(b, bLength);
 
     if (seed && seedLength > 0)
     {
@@ -560,15 +573,15 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
     }
 
     // Set generator, order and cofactor
-    gxBn = CryptoNative_BigNumFromBinary(gx, gxLength);
-    gyBn = CryptoNative_BigNumFromBinary(gy, gyLength);
+    gxBn = CryptoNative_CreateBigInteger(gx, gxLength);
+    gyBn = CryptoNative_CreateBigInteger(gy, gyLength);
     G = (*env)->NewObject(env, g_ECPointClass, g_ECPointCtor, gxBn, gyBn);
 
-    orderBn = CryptoNative_BigNumFromBinary(order, orderLength);
+    orderBn = CryptoNative_CreateBigInteger(order, orderLength);
 
     // Java ECC doesn't support BigInteger-based cofactor. It uses positive 32-bit integers.
     // So, convert the cofactor to a positive 32-bit integer with overflow protection.
-    cofactorBn = CryptoNative_BigNumFromBinary(cofactor, cofactorLength);
+    cofactorBn = CryptoNative_CreateBigInteger(cofactor, cofactorLength);
     int cofactorInt = CryptoNative_ConvertBigIntegerToPositiveInt32(env, cofactorBn);
 
     if (cofactorInt == -1)

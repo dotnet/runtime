@@ -20,12 +20,41 @@ int32_t CryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
     JNIEnv* env = GetJNIEnv();
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
     jsize bytesLen = (*env)->GetArrayLength(env, bytes);
-    (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*)output);
+
+    // We strip the leading zero byte from the byte array.
+    jsize startingIndex = 0;
+    jbyte leadingByte;
+    (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
+    if (leadingByte == 0)
+    {
+        startingIndex++;
+        bytesLen--;
+    }
+
+    (*env)->GetByteArrayRegion(env, bytes, startingIndex, bytesLen, (jbyte*)output);
     (*env)->DeleteLocalRef(env, bytes);
     return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
 }
 
 int32_t CryptoNative_GetBigNumBytes(jobject bignum)
+{
+    // bigNum.toByteArray().length();
+    JNIEnv* env = GetJNIEnv();
+    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
+    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
+
+    // We strip the leading zero byte from the byte array.
+    jbyte leadingByte;
+    (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
+    if (leadingByte == 0)
+    {
+        bytesLen--;
+    }
+    (*env)->DeleteLocalRef(env, bytes);
+    return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
+}
+
+int32_t CryptoNative_GetBigNumBytesNoStripLeadingZero(jobject bignum)
 {
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();
