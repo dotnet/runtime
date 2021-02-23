@@ -75,6 +75,7 @@ var BindingSupportLib = {
 			this.mono_wasm_create_method_signature_info = Module.cwrap ('mono_wasm_create_method_signature_info', 'number', ['number']);
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 			this.mono_wasm_get_class_for_bind_or_invoke = Module.cwrap ('mono_wasm_get_class_for_bind_or_invoke', 'number', ['number', 'number']);
+			this.mono_wasm_class_get_type = Module.cwrap ('mono_wasm_class_get_type', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(32);
 			this._unbox_buffer_size = 65536;
@@ -1012,18 +1013,23 @@ var BindingSupportLib = {
 			if (!result) {
 				const bufferSize = 1024;
 				var infoPtr = Module._malloc(bufferSize);
-				console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr} and methodPtr ${methodPtr}`);
-				var err = this.make_marshal_signature_info (classPtr, methodPtr, infoPtr, bufferSize);
+				MONO._zero_region(infoPtr, bufferSize);
+				var typePtr = this.mono_wasm_class_get_type (classPtr)
+				console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr}, at offset ${infoPtr}`);
+				var err = this.make_marshal_signature_info (typePtr, methodPtr, infoPtr, bufferSize);
 				if (err !== 0)
 					throw new Error (`MakeMarshalSignatureInfo failed with code ${err}`);
 
-				var off32 = infoPtr >> 2;
+				var off32 = (infoPtr / 4) | 0;
 				var pcount = Module.HEAPU32[off32 + 0];
+
+				console.log(`MakeMarshalSignatureInfo produced ${pcount} parameter(s)`);
+				pcount = Math.min(63, pcount);
 
 				var decode = function (offset32) {
 					return {
 						"marshalType": Module.HEAPU32[offset32 + 0],
-						"class": Module.HEAPU32[offset32 + 1]
+						"typePtr": Module.HEAPU32[offset32 + 1]
 					};
 				};				
 
@@ -1034,10 +1040,12 @@ var BindingSupportLib = {
 				result = {
 					"result": decode(off32 + 1),
 					"parameters": parms,
-					"classPtr": classPtr
+					"typePtr": typePtr,
+					"classPtr": classPtr,
+					"methodPtr": methodPtr
 				};
 
-				console.log(methodPtr, JSON.stringify(result));
+				console.log(JSON.stringify(result));
 
 				Module._free (infoPtr);
 				if (classMismatch)

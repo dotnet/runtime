@@ -257,6 +257,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(0)]
             internal RuntimeMethodHandle handle;
+
+            [FieldOffset(0)]
+            internal RuntimeTypeHandle typeHandle;
         }
 
         // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
@@ -303,50 +306,52 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack=1)]
         public struct MarshalTypeRecord {
             public MarshalType MarshalType;
             public IntPtr TypeHandle;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack=1)]
         public struct MarshalSignatureInfo {
             public int ParameterCount;
             public MarshalTypeRecord ReturnType;
             public MarshalTypeRecord FirstParameterType;
         }
 
-        public static unsafe int MakeMarshalSignatureInfo (RuntimeTypeHandle classPtr, IntPtr methodHandle, out MarshalSignatureInfo result, int resultSize) {
-            result = default(MarshalSignatureInfo);
+        public static unsafe int MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr, IntPtr resultPtr, int resultSize) {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = methodHandle;
+            tmp.ptr = methodPtr;
+            var methodHandle = tmp.handle;
+            tmp.ptr = typePtr;
+            var typeHandle = tmp.typeHandle;
 
-            MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle, classPtr);
+            var pResult = (MarshalSignatureInfo *)resultPtr;
+
+            MethodBase? mb = MethodBase.GetMethodFromHandle(methodHandle, typeHandle);
             if (mb == null)
                 return 1;
 
             MakeMarshalTypeRecord(
                 (mb as MethodInfo)?.ReturnType ?? typeof(void),
-                out result.ReturnType
+                out pResult->ReturnType
             );
 
-            ParameterInfo[] parms = mb.GetParameters();
-            result.ParameterCount = parms.Length;
-            if (result.ParameterCount <= 0)
+            var parms = mb.GetParameters();
+            pResult->ParameterCount = parms.Length;
+            if (pResult->ParameterCount <= 0)
                 return 0;
 
-            fixed (MarshalSignatureInfo* pResult = &result) {
-                MarshalTypeRecord* pParameters = &pResult->FirstParameterType;
-                void* pEnd = ((byte*)pResult) + resultSize -
-                    (((byte*)&pParameters[1]) - (byte*)pParameters);
+            var pParameters = &pResult->FirstParameterType;
+            void* pEnd = ((byte*)pResult) + resultSize -
+                (((byte*)&pParameters[1]) - (byte*)pParameters);
 
-                for (int i = 0; i < result.ParameterCount; i++)
-                {
-                    var ptr = &pParameters[i];
-                    if (ptr >= pEnd)
-                        return 2;
-                    MakeMarshalTypeRecord(parms[i].ParameterType, out *ptr);
-                }
+            for (int i = 0; i < pResult->ParameterCount; i++)
+            {
+                var ptr = &pParameters[i];
+                if (ptr >= pEnd)
+                    return 2;
+                MakeMarshalTypeRecord(parms[i].ParameterType, out *ptr);
             }
 
             return 0;

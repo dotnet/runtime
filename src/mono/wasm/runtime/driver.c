@@ -1351,6 +1351,14 @@ mono_wasm_string_get_data (
 	return;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoType *
+mono_wasm_class_get_type (MonoClass *klass)
+{
+	if (!klass)
+		return 0;
+	return mono_class_get_type (klass);
+}
+
 EMSCRIPTEN_KEEPALIVE void *
 mono_wasm_unbox_rooted (MonoObject *obj)
 {
