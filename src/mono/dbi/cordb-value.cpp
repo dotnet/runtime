@@ -596,8 +596,12 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetFunction(ICorDebugFunction** ppFu
 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetClass(ICorDebugClass** ppClass)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbObjectValue - GetClass - NOT IMPLEMENTED\n"));
-    return E_NOTIMPL;
+    LOG((LF_CORDB, LL_INFO100000, "CordbObjectValue - GetClass - IMPLEMENTED\n"));
+    if (m_pClass) {
+        m_pClass->QueryInterface(IID_ICorDebugClass, (void**)ppClass);
+        return S_OK;
+    }
+    return S_FALSE;
 }
 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetFieldValue(ICorDebugClass*  pClass,
