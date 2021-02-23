@@ -85,6 +85,7 @@
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc2898Tests.cs" />
+    <Compile Include="Rfc2898OneShotTests.cs" />
     <Compile Include="Rfc4231HmacTests.cs" />
     <Compile Include="Sha1Tests.cs" />
     <Compile Include="Sha256Tests.cs" />

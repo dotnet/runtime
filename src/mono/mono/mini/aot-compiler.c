@@ -6867,8 +6867,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Encode method info */
 	/**********************/
 
-	g_assert (!(cfg->opt & MONO_OPT_SHARED));
-
 	guint32 *got_offsets = g_new0 (guint32, patches->len);
 
 	n_patches = 0;
@@ -8187,7 +8185,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
 	else if (!strcmp (attr + prefix, "simd"))
-		feature = MONO_CPU_ARM64_ADVSIMD;
+		feature = MONO_CPU_ARM64_NEON;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;

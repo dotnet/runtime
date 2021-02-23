@@ -181,103 +181,78 @@ namespace System
         public override string ToString() =>
             ToString(DefaultFormatFieldCount);
 
-        public string ToString(int fieldCount) =>
-            fieldCount == 0 ? string.Empty :
-            fieldCount == 1 ? _Major.ToString() :
-            StringBuilderCache.GetStringAndRelease(ToCachedStringBuilder(fieldCount));
+        public string ToString(int fieldCount)
+        {
+            Span<char> dest = stackalloc char[(4 * Number.Int32NumberBufferLength) + 3]; // at most 4 Int32s and 3 periods
+            bool success = TryFormat(dest, fieldCount, out int charsWritten);
+            Debug.Assert(success);
+            return dest.Slice(0, charsWritten).ToString();
+        }
 
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
             TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
 
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten)
         {
-            if (fieldCount == 0)
+            string? failureUpperBound = (uint)fieldCount switch
             {
-                charsWritten = 0;
-                return true;
-            }
-            else if (fieldCount == 1)
+                > 4 => "4",
+                >= 3 when _Build == -1 => "2",
+                4 when _Revision == -1 => "3",
+                _ => null
+            };
+            if (failureUpperBound is not null)
             {
-                return _Major.TryFormat(destination, out charsWritten);
-            }
-
-            StringBuilder sb = ToCachedStringBuilder(fieldCount);
-            if (sb.Length <= destination.Length)
-            {
-                sb.CopyTo(0, destination, sb.Length);
-                StringBuilderCache.Release(sb);
-                charsWritten = sb.Length;
-                return true;
+                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
             }
 
-            StringBuilderCache.Release(sb);
-            charsWritten = 0;
-            return false;
+            int totalCharsWritten = 0;
+
+            for (int i = 0; i < fieldCount; i++)
+            {
+                if (i != 0)
+                {
+                    if (destination.IsEmpty)
+                    {
+                        charsWritten = 0;
+                        return false;
+                    }
+
+                    destination[0] = '.';
+                    destination = destination.Slice(1);
+                    totalCharsWritten++;
+                }
+
+                int value = i switch
+                {
+                    0 => _Major,
+                    1 => _Minor,
+                    2 => _Build,
+                    _ => _Revision
+                };
+
+                if (!value.TryFormat(destination, out int valueCharsWritten))
+                {
+                    charsWritten = 0;
+                    return false;
+                }
+
+                totalCharsWritten += valueCharsWritten;
+                destination = destination.Slice(valueCharsWritten);
+            }
+
+            charsWritten = totalCharsWritten;
+            return true;
         }
 
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
-        {
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are ignored.
-            return TryFormat(destination, out charsWritten);
-        }
+            TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
 
         private int DefaultFormatFieldCount =>
             _Build == -1 ? 2 :
             _Revision == -1 ? 3 :
             4;
-
-        private StringBuilder ToCachedStringBuilder(int fieldCount)
-        {
-            // Note: As we always have positive numbers then it is safe to convert the number to string
-            // regardless of the current culture as we'll not have any punctuation marks in the number.
-
-            if (fieldCount == 2)
-            {
-                StringBuilder sb = StringBuilderCache.Acquire();
-                sb.Append(_Major);
-                sb.Append('.');
-                sb.Append(_Minor);
-                return sb;
-            }
-            else
-            {
-                if (_Build == -1)
-                {
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), nameof(fieldCount));
-                }
-
-                if (fieldCount == 3)
-                {
-                    StringBuilder sb = StringBuilderCache.Acquire();
-                    sb.Append(_Major);
-                    sb.Append('.');
-                    sb.Append(_Minor);
-                    sb.Append('.');
-                    sb.Append(_Build);
-                    return sb;
-                }
-
-                if (_Revision == -1)
-                {
-                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), nameof(fieldCount));
-                }
-
-                if (fieldCount == 4)
-                {
-                    StringBuilder sb = StringBuilderCache.Acquire();
-                    sb.Append(_Major);
-                    sb.Append('.');
-                    sb.Append(_Minor);
-                    sb.Append('.');
-                    sb.Append(_Build);
-                    sb.Append('.');
-                    sb.Append(_Revision);
-                    return sb;
-                }
-
-                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), nameof(fieldCount));
-            }
-        }
 
         public static Version Parse(string input)
         {

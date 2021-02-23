@@ -51,7 +51,6 @@
 #include <ucontext.h>
 
 #include <mono/arch/s390x/s390x-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -503,7 +502,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, MonoLMF **lmf,
 			 host_mgreg_t **save_locations,
@@ -553,7 +552,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		return TRUE;
 	} else if (*lmf) {
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
 		if (!ji) {
 			if (!(*lmf)->method)
 				return FALSE;
@@ -582,7 +581,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 
@@ -630,7 +629,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/*
 	 * Setup the call frame on the application stack so that control is

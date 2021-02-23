@@ -23,7 +23,6 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
-#include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>

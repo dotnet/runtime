@@ -192,6 +192,9 @@ typedef struct
 	GList *dont_inline;
 	int inline_depth;
 	int has_localloc : 1;
+	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
+	// bail out of inlining when having to generate certain opcodes (like call, throw).
+	int aggressive_inlining : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

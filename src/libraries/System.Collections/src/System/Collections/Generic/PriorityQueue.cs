@@ -23,7 +23,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Custom comparer used to order the heap.
         /// </summary>
-        private IComparer<TPriority>? _comparer;
+        private readonly IComparer<TPriority>? _comparer;
 
         /// <summary>
         /// Lazily-initialized collection used to expose the contents of the queue.

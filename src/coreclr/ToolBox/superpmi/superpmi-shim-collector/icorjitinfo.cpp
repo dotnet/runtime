@@ -608,21 +608,27 @@ bool interceptor_ICJI::isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cl
 CORINFO_MODULE_HANDLE interceptor_ICJI::getClassModule(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassModule");
-    return original_ICorJitInfo->getClassModule(cls);
+    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->getClassModule(cls);
+    mc->recGetClassModule(cls, temp);
+    return temp;
 }
 
 // Returns the assembly that contains the module "mod".
 CORINFO_ASSEMBLY_HANDLE interceptor_ICJI::getModuleAssembly(CORINFO_MODULE_HANDLE mod)
 {
     mc->cr->AddCall("getModuleAssembly");
-    return original_ICorJitInfo->getModuleAssembly(mod);
+    CORINFO_ASSEMBLY_HANDLE temp = original_ICorJitInfo->getModuleAssembly(mod);
+    mc->recGetModuleAssembly(mod, temp);
+    return temp;
 }
 
 // Returns the name of the assembly "assem".
 const char* interceptor_ICJI::getAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
 {
     mc->cr->AddCall("getAssemblyName");
-    return original_ICorJitInfo->getAssemblyName(assem);
+    const char* temp = original_ICorJitInfo->getAssemblyName(assem);
+    mc->recGetAssemblyName(assem, temp);
+    return temp;
 }
 
 // Allocate and delete process-lifetime objects.  Should only be

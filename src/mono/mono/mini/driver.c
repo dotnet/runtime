@@ -130,7 +130,7 @@ static const gint16 opt_names [] = {
 	MONO_OPT_AOT | \
 	MONO_OPT_FLOAT32)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
+#define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
 static char *mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
 static char *mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
@@ -326,7 +326,6 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_CMOV,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM,
-       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM | MONO_OPT_SHARED,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_CMOV,
        DEFAULT_OPTIMIZATIONS, 
 };
@@ -495,13 +494,11 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	comp_time = elapsed = 0.0;
 	int local_skip_index = 0;
 
-	/* fixme: ugly hack - delete all previously compiled methods */
-	if (domain_jit_info (domain)) {
-		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
-		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-		mono_jit_code_hash_init (&(domain->jit_code_hash));
-	}
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	g_hash_table_destroy (jit_mm->jit_trampoline_hash);
+	jit_mm->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+	mono_jit_code_hash_init (&(domain->jit_code_hash));
 
 	g_timer_start (timer);
 	if (mini_stats_fd)
@@ -1354,7 +1351,7 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
     // (https://github.com/Fody/Costura) to work properly, as they inject
     // a module initializer which sets up event handlers (e.g. AssemblyResolve)
     // that allow the main method to run properly
-    if (!mono_runtime_run_module_cctor(image, domain, error)) {
+    if (!mono_runtime_run_module_cctor(image, error)) {
         g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
         return 1;
     }
@@ -1525,14 +1522,14 @@ load_agent (MonoDomain *domain, char *desc)
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 1, error);
 		if (main_args) {
-			MonoString *str = mono_string_new_checked (domain, args, error);
+			MonoString *str = mono_string_new_checked (args, error);
 			if (str)
 				mono_array_set_internal (main_args, MonoString*, 0, str);
 		}
 	} else {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 0, error);
 	}
 	if (!main_args) {
 		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (error));
