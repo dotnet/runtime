@@ -213,7 +213,7 @@ private:
 protected:
 #ifndef DACCESS_COMPILE
     // Initialize the module
-    virtual void Initialize(AllocMemTracker *pamTracker);
+    virtual void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName = NULL);
 #endif
 
 public:

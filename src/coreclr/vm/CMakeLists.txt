@@ -39,6 +39,13 @@ if(FEATURE_PERFTRACING)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
+# Enable ENC subset for hot reload on Linux/MacOS x64, exclude arm & arm64
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+        add_compile_definitions($<$<AND:$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:EnC_SUPPORTED>)
+    endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+endif(NOT CLR_CMAKE_TARGET_WIN32)
+
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
@@ -759,7 +766,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
-        gcdecode.cpp
         exinfo.cpp
         ${ARCH_SOURCES_DIR}/cgenx86.cpp
         ${ARCH_SOURCES_DIR}/excepx86.cpp
@@ -888,11 +894,22 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND VM_SOURCES_DAC ${VM_HEADERS_DAC})
 endif(CLR_CMAKE_TARGET_WIN32)
 
-#these two files we need to compile differently for standalone and mergeable flavors of WKS
+# these two files we need to compile differently for standalone and mergeable flavors of WKS
 set (VM_SOURCES_WKS_SPECIAL
     codeman.cpp
     ceemain.cpp
 )
+
+# gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
+# treat it in a special way when statically linking with both VM and JIT
+if(CLR_CMAKE_TARGET_ARCH_I386)
+    list(APPEND VM_SOURCES_DAC
+        gcdecode.cpp
+    )
+    list(APPEND VM_SOURCES_WKS_SPECIAL
+        gcdecode.cpp
+    )
+endif()
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})

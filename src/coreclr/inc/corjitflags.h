@@ -167,17 +167,17 @@ public:
 
     void Set(CorJitFlag flag)
     {
-        corJitFlags |= 1ULL << (unsigned __int64)flag;
+        corJitFlags |= 1ULL << (uint64_t)flag;
     }
 
     void Clear(CorJitFlag flag)
     {
-        corJitFlags &= ~(1ULL << (unsigned __int64)flag);
+        corJitFlags &= ~(1ULL << (uint64_t)flag);
     }
 
     bool IsSet(CorJitFlag flag) const
     {
-        return (corJitFlags & (1ULL << (unsigned __int64)flag)) != 0;
+        return (corJitFlags & (1ULL << (uint64_t)flag)) != 0;
     }
 
     void Add(const CORJIT_FLAGS& other)
@@ -197,20 +197,20 @@ public:
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    unsigned __int64 GetFlagsRaw()
+    uint64_t GetFlagsRaw()
     {
         return corJitFlags;
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    unsigned __int64 GetInstructionSetFlagsRaw()
+    uint64_t GetInstructionSetFlagsRaw()
     {
         return instructionSetFlags.GetFlagsRaw();
     }
 
 private:
 
-    unsigned __int64 corJitFlags;
+    uint64_t corJitFlags;
     CORINFO_InstructionSetFlags instructionSetFlags;
 };
 

@@ -112,13 +112,6 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v4.0.30319"
 
-/* Callbacks installed by the JIT */
-static MonoCreateDomainFunc create_domain_hook;
-static MonoFreeDomainFunc free_domain_hook;
-
-/* AOT cache configuration */
-static MonoAotCacheConfig aot_cache_config;
-
 static GSList*
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
@@ -209,18 +202,6 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 	}
 
 	return res;
-}
-
-void
-mono_install_create_domain_hook (MonoCreateDomainFunc func)
-{
-	create_domain_hook = func;
-}
-
-void
-mono_install_free_domain_hook (MonoFreeDomainFunc func)
-{
-	free_domain_hook = func;
 }
 
 gboolean
@@ -427,7 +408,6 @@ mono_domain_create (void)
 	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
-	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
 	domain->num_jit_info_table_duplicates = 0;
@@ -453,12 +433,7 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
 
-	mono_debug_domain_create (domain);
-
 	mono_alc_create_default (domain);
-
-	if (create_domain_hook)
-		create_domain_hook (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -697,21 +672,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
-
-#ifndef DISABLE_REMOTING
-	mono_defaults.transparent_proxy_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
-
-	mono_defaults.real_proxy_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "RealProxy");
-
-	mono_defaults.marshalbyrefobject_class =  mono_class_load_from_name (
-	        mono_defaults.corlib, "System", "MarshalByRefObject");
-
-	mono_defaults.iremotingtypeinfo_class = mono_class_load_from_name (
-	        mono_defaults.corlib, "System.Runtime.Remoting", "IRemotingTypeInfo");
-
-#endif
 
 	mono_defaults.field_info_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Reflection", "FieldInfo");
@@ -1481,12 +1441,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-MonoAotCacheConfig *
-mono_get_aot_cache_config (void)
-{
-	return &aot_cache_config;
 }
 
 void

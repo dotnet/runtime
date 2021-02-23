@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (RangeItemHeaderValue range in source._ranges)
                 {
-                    this.Ranges.Add((RangeItemHeaderValue)((ICloneable)range).Clone());
+                    this.Ranges.Add(new RangeItemHeaderValue(range));
                 }
             }
         }

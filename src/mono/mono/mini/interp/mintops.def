@@ -68,9 +68,6 @@ OPDEF(MINT_LDFLD_VT, "ldfld.vt", 5, 1, 1, MintOpShortInt)
 OPDEF(MINT_LDFLD_I8_UNALIGNED, "ldfld.i8.unaligned", 4, 1, 1, MintOpUShortInt)
 OPDEF(MINT_LDFLD_R8_UNALIGNED, "ldfld.r8.unaligned", 4, 1, 1, MintOpUShortInt)
 
-OPDEF(MINT_LDRMFLD, "ldrmfld", 4, 1, 1, MintOpFieldToken)
-OPDEF(MINT_LDRMFLD_VT, "ldrmfld.vt", 4, 1, 1, MintOpUShortInt)
-
 OPDEF(MINT_LDFLDA, "ldflda", 4, 1, 1, MintOpUShortInt)
 OPDEF(MINT_LDFLDA_UNSAFE, "ldflda.unsafe", 4, 1, 1, MintOpUShortInt)
 
@@ -87,9 +84,6 @@ OPDEF(MINT_STFLD_VT, "stfld.vt", 5, 0, 2, MintOpTwoShorts)
 OPDEF(MINT_STFLD_VT_NOREF, "stfld.vt.noref", 5, 0, 2, MintOpTwoShorts)
 OPDEF(MINT_STFLD_I8_UNALIGNED, "stfld.i8.unaligned", 4, 0, 2, MintOpUShortInt)
 OPDEF(MINT_STFLD_R8_UNALIGNED, "stfld.r8.unaligned", 4, 0, 2, MintOpUShortInt)
-
-OPDEF(MINT_STRMFLD, "strmfld", 4, 0, 2, MintOpFieldToken)
-OPDEF(MINT_STRMFLD_VT, "strmfld.vt", 4, 0, 2, MintOpUShortInt)
 
 OPDEF(MINT_LDTSFLD_I1, "ldtsfld.i1", 4, 1, 0, MintOpInt)
 OPDEF(MINT_LDTSFLD_U1, "ldtsfld.u1", 4, 1, 0, MintOpInt)
@@ -722,7 +716,6 @@ OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassTok
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_GET_TYPE, "intrins_get_type", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_SPAN_CTOR, "intrins_span_ctor", 4, 1, 2, MintOpNoArgs)
-OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 3, 1, 1, MintOpNoArgs)

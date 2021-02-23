@@ -50,10 +50,10 @@ public:
     }
 
     // Write an raw U32 in nibble encoded form.
-    void DoEncodedU32(DWORD dw) { m_w.WriteEncodedU32(dw); }
+    void DoEncodedU32(uint32_t dw) { m_w.WriteEncodedU32(dw); }
 
     // Use to encode a monotonically increasing delta.
-    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast)
+    void DoEncodedDeltaU32(uint32_t & dw, uint32_t dwLast)
     {
         CONTRACTL
         {
@@ -63,7 +63,7 @@ public:
         }
         CONTRACTL_END;
         _ASSERTE(dw >= dwLast);
-        DWORD dwDelta = dw - dwLast;
+        uint32_t dwDelta = dw - dwLast;
         m_w.WriteEncodedU32(dwDelta);
     }
 
@@ -71,7 +71,7 @@ public:
     // Some U32 may have a few sentinal negative values .
     // We adjust it to be a real U32 and then encode that.
     // dwAdjust should be the lower bound on the enum.
-    void DoEncodedAdjustedU32(DWORD dw, DWORD dwAdjust)
+    void DoEncodedAdjustedU32(uint32_t dw, uint32_t dwAdjust)
     {
         //_ASSERTE(dwAdjust < 0); // some negative lower bound.
         m_w.WriteEncodedU32(dw - dwAdjust);
@@ -130,7 +130,7 @@ public:
         SUPPORTS_DAC;
     }
 
-    void DoEncodedU32(DWORD & dw)
+    void DoEncodedU32(uint32_t & dw)
     {
         SUPPORTS_DAC;
         dw = m_r.ReadEncodedU32();
@@ -138,14 +138,14 @@ public:
 
     // Use to decode a monotonically increasing delta.
     // dwLast was the last value; we update it to the current value on output.
-    void DoEncodedDeltaU32(DWORD & dw, DWORD dwLast)
+    void DoEncodedDeltaU32(uint32_t & dw, uint32_t dwLast)
     {
         SUPPORTS_DAC;
-        DWORD dwDelta = m_r.ReadEncodedU32();
+        uint32_t dwDelta = m_r.ReadEncodedU32();
         dw = dwLast + dwDelta;
     }
 
-    void DoEncodedAdjustedU32(DWORD & dw, DWORD dwAdjust)
+    void DoEncodedAdjustedU32(uint32_t & dw, uint32_t dwAdjust)
     {
         SUPPORTS_DAC;
         //_ASSERTE(dwAdjust < 0);
@@ -246,8 +246,8 @@ void DoBounds(
     // - flags is 3 indepedent bits.
 
     // Loop through and transfer each Entry in the Mapping.
-    DWORD dwLastNativeOffset = 0;
-    for(DWORD i = 0; i < cMap; i++)
+    uint32_t dwLastNativeOffset = 0;
+    for(uint32_t i = 0; i < cMap; i++)
     {
         ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
 

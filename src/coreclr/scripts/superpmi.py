@@ -326,6 +326,17 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 
 
+def download_progress_hook(count, block_size, total_size):
+    """ A hook for urlretrieve to report download progress
+
+    Args:
+        count (int)               : current block index
+        block_size (int)          : size of a block
+        total_size (int)          : total size of a payload
+    """
+    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.flush()
+
 def is_zero_length_file(fpath):
     """ Determine if a file system path refers to an existing file that is zero length
 
@@ -543,12 +554,13 @@ class TempDir:
 
         Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
         change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if args.skip_cleanup is False).
+        directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, skip_cleanup=False):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
@@ -557,10 +569,7 @@ class TempDir:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
-        # Note: we are using the global `args`, not coreclr_args. This works because
-        # the `skip_cleanup` argument is not processed by CoreclrArguments, but is
-        # just copied there.
-        if not args.skip_cleanup:
+        if not self._skip_cleanup:
             shutil.rmtree(self.mydir)
 
 
@@ -758,7 +767,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -1287,6 +1296,8 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         logging.warning("Compilation failures")
     elif return_code == 2:
         logging.warning("Asm diffs found")
+    elif return_code == 3:
+        logging.warning("SuperPMI missing data encountered")
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1389,7 +1400,7 @@ class SuperPMIReplay:
             repro_flags = []
 
             common_flags = [
-                "-v", "ew",  # only display errors and warnings
+                "-v", "ewmi",  # display errors, warnings, missing, jit info
                 "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
@@ -1573,7 +1584,7 @@ class SuperPMIReplayAsmDiffs:
         files_with_asm_diffs = []
         files_with_replay_failures = []
 
-        with TempDir(self.coreclr_args.temp_dir) as temp_location:
+        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
@@ -1599,7 +1610,7 @@ class SuperPMIReplayAsmDiffs:
                 else:
                     flags = [
                         "-a",  # Asm diffs
-                        "-v", "ew",  # only display errors and warnings
+                        "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
@@ -1859,7 +1870,7 @@ def determine_coredis_tools(coreclr_args):
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
         logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location)
+        urllib.request.urlretrieve(coredistools_uri, coredistools_location, reporthook=download_progress_hook)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1896,7 +1907,7 @@ def determine_pmi_location(coreclr_args):
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
                 logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location)
+                urllib.request.urlretrieve(pmi_uri, pmi_location, reporthook=download_progress_hook)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2350,7 +2361,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 try:
                     if verbose:
                         logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
                         raise httperror
@@ -2381,7 +2392,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 try:
                     if verbose:
                         logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
                     local_files.append(download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:

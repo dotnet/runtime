@@ -194,7 +194,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/ARM            Target processor: ARM (AArch32) processor");
       printf("\n/ARM64          Target processor: ARM64 (AArch64) processor");
       printf("\n/32BITPREFERRED Create a 32BitPreferred image (PE32)");
-      printf("\n/ENC=<file>     Create Edit-and-Continue deltas from specified source file");
 
       printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters (except ARM/ARM64)\nDefault source file extension is .il\n");
 
@@ -208,8 +207,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
     }
 
     uCodePage = CP_UTF8;
-    WszSetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), W(""));
-    WszSetEnvironmentVariable(W("COMP_ENC_EMIT"), W(""));
     if((pAsm = new Assembler()))
     {
         pAsm->SetCodePage(uCodePage);
@@ -432,15 +429,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     pAsm->m_wMSVminor = (WORD)minor;
                             }
                         }
-                    }
-                    else if (!_stricmp(szOpt, "ENC"))
-                    {
-                        WCHAR *pStr = EqualOrColon(argv[i]);
-                        if(pStr == NULL) goto InvalidOption;
-                        for(pStr++; *pStr == L' '; pStr++); //skip the blanks
-                        if(wcslen(pStr)==0) goto InvalidOption; //if no file name
-                        pwzDeltaFiles[NumDeltaFiles++] = pStr;
-                        pAsm->m_fTolerateDupMethods = TRUE;
                     }
                     else if (!_stricmp(szOpt, "SUB"))
                     {
@@ -762,10 +750,8 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     }
                                 }
                                 if(bClock) cw.cEnd = GetTickCount();
-#define ENC_ENABLED
                                 if(exitval==0)
                                 {
-                                    pAsm->m_fENCMode = TRUE;
                                     WCHAR wzNewOutputFilename[MAX_FILENAME_LENGTH+16];
                                     for(iFile = 0; iFile < NumDeltaFiles; iFile++)
                                     {
@@ -801,27 +787,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                                 pParser->msg("%s is not a text file\n",szInputFilename);
                                                 fAllFilesPresent = FALSE;
                                             }
-                                            else
 #endif
-                                            if (SUCCEEDED(pAsm->InitMetaDataForENC(wzNewOutputFilename, bGeneratePdb)))
-                                            {
-                                                pAsm->SetSourceFileName(FullFileName(wzInputFilename,uCodePage)); // deletes the argument!
-
-                                                pParser->ParseFile(pIn);
-                                                if (pParser->Success() || pAsm->OnErrGo)
-                                                {
-                                                    exitval = 1;
-                                                    if(FAILED(hr=pAsm->CreateDeltaFiles(wzNewOutputFilename)))
-                                                        pParser->msg("Could not create output delta files, error code=0x%08X\n",hr);
-                                                    else
-                                                    {
-                                                        if(pAsm->m_fFoldCode && pAsm->m_fReportProgress)
-                                                            pParser->msg("%d methods folded\n",pAsm->m_dwMethodsFolded);
-                                                        if(pParser->Success()) exitval = 0;
-                                                        else    pParser->msg("Output delta files contain errors\n");
-                                                    }
-                                                } // end if (pParser->Success() || pAsm->OnErrGo)
-                                            } //end if (SUCCEEDED(pAsm->InitMetaDataForENC()))
                                         } // end if ((!pIn) || !(pIn->IsValid())) -- else
                                         if(pIn)
                                         {
@@ -844,9 +810,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
         delete pAsm;
     }
     else printf("Insufficient memory\n");
-
-    WszSetEnvironmentVariable(W("COMP_ENC_OPENSCOPE"), W(""));
-    WszSetEnvironmentVariable(W("COMP_ENC_EMIT"), W(""));
 
     if (exitval || !bGeneratePdb)
     {
