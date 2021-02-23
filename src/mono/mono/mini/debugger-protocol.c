@@ -141,7 +141,7 @@ m_dbgprot_buffer_len (MdbgProtBuffer *buf)
 void
 m_dbgprot_buffer_make_room (MdbgProtBuffer *buf, uint32_t size)
 {
-	if (buf->end - buf->p < size) {
+	if (((uint32_t)(buf->end - buf->p)) < size) {
 		int64_t new_size = buf->end - buf->buf + size + 32;
 		uint8_t *p = (uint8_t *)g_realloc (buf->buf, new_size);
 		size = (uint32_t) (buf->p - buf->buf);
