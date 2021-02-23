@@ -1222,23 +1222,23 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 					}
 
 					// if a session_state was exhausted during this sequence point, mark it for deletion
-					if (ep_thread_session_state_get_buffer_list(session_state)->head_buffer == NULL) {
+					if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
 
-						if (ep_rt_volatile_load_uint32_t_without_barrier(&(ep_thread_session_state_get_thread(session_state))->unregistered) > 0) {
+						if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (session_state))) > 0) {
 
-							ep_rt_thread_session_state_array_append(&session_states_to_delete, session_state);
+							ep_rt_thread_session_state_array_append (&session_states_to_delete, session_state);
 						}
 					}
 					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
 				}
 
 				// foreach session_state_to_delete in session_states_to_delete
-				for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin(&session_states_to_delete);
-					 !ep_rt_thread_session_state_array_iterator_end(&session_states_to_delete, &thread_session_state_array_iterator);
-					 ep_rt_thread_session_state_array_iterator_next(&thread_session_state_array_iterator)) {
+				for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin (&session_states_to_delete);
+					 !ep_rt_thread_session_state_array_iterator_end (&session_states_to_delete, &thread_session_state_array_iterator);
+					 ep_rt_thread_session_state_array_iterator_next (&thread_session_state_array_iterator)) {
 
-					EventPipeThreadSessionState * session_state = ep_rt_thread_session_state_array_iterator_value(&thread_session_state_array_iterator);
-					ep_rt_thread_session_state_list_remove(&buffer_manager->thread_session_state_list, session_state);
+					EventPipeThreadSessionState * session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_state_array_iterator);
+					ep_rt_thread_session_state_list_remove (&buffer_manager->thread_session_state_list, session_state);
 				}
 			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
@@ -1258,22 +1258,22 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 
 	// There are sequence points created during this flush and we've marked session states for deletion.
 	// We need to remove these from the internal maps of the subsequent Sequence Points
-	if (ep_rt_thread_session_state_array_size(&session_states_to_delete) > 0) {
+	if (ep_rt_thread_session_state_array_size (&session_states_to_delete) > 0) {
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section4)
 			if (buffer_manager_try_peek_sequence_point (buffer_manager, &sequence_point)) {
 				// foreach (sequence_point in buffer_manager->sequence_point_list)
-				for (ep_rt_sequence_point_list_iterator_t sequence_point_list_iterator = ep_rt_sequence_point_list_iterator_begin(&buffer_manager->sequence_points);
-					!ep_rt_sequence_point_list_iterator_end(&buffer_manager->sequence_points, &sequence_point_list_iterator);
-					ep_rt_sequence_point_list_iterator_next(&sequence_point_list_iterator)) {
+				for (ep_rt_sequence_point_list_iterator_t sequence_point_list_iterator = ep_rt_sequence_point_list_iterator_begin (&buffer_manager->sequence_points);
+					!ep_rt_sequence_point_list_iterator_end (&buffer_manager->sequence_points, &sequence_point_list_iterator);
+					ep_rt_sequence_point_list_iterator_next (&sequence_point_list_iterator)) {
 
-					sequence_point = ep_rt_sequence_point_list_iterator_value(&sequence_point_list_iterator);
+					sequence_point = ep_rt_sequence_point_list_iterator_value (&sequence_point_list_iterator);
 
 					// foreach (session_state in session_states_to_delete)
-					for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin(&session_states_to_delete);
-						!ep_rt_thread_session_state_array_iterator_end(&session_states_to_delete, &thread_session_state_array_iterator);
-						ep_rt_thread_session_state_array_iterator_next(&thread_session_state_array_iterator)) {
+					for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin (&session_states_to_delete);
+						!ep_rt_thread_session_state_array_iterator_end (&session_states_to_delete, &thread_session_state_array_iterator);
+						ep_rt_thread_session_state_array_iterator_next (&thread_session_state_array_iterator)) {
 
-						EventPipeThreadSessionState * thread_session_state = ep_rt_thread_session_state_array_iterator_value(&thread_session_state_array_iterator);
+						EventPipeThreadSessionState * thread_session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_state_array_iterator);
 						uint32_t thread_sequence_number = 0;
 						bool exists = ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), thread_session_state, &thread_sequence_number);
 						if (exists) {
@@ -1289,23 +1289,21 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	}
 
 	// foreach (session_state in session_states_to_delete)
-	for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin(&session_states_to_delete);
-			!ep_rt_thread_session_state_array_iterator_end(&session_states_to_delete, &thread_session_state_array_iterator);
-			ep_rt_thread_session_state_array_iterator_next(&thread_session_state_array_iterator)) {
+	for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin (&session_states_to_delete);
+			!ep_rt_thread_session_state_array_iterator_end (&session_states_to_delete, &thread_session_state_array_iterator);
+			ep_rt_thread_session_state_array_iterator_next (&thread_session_state_array_iterator)) {
 
-		EventPipeThreadSessionState * thread_session_state = ep_rt_thread_session_state_array_iterator_value(&thread_session_state_array_iterator);
+		EventPipeThreadSessionState * thread_session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_state_array_iterator);
 		EP_ASSERT (thread_session_state != NULL);
 		// This may be the last reference to a given EventPipeThread, so make a ref to keep it around till we're done
 		EventPipeThreadHolder thread_holder;
 		if (ep_thread_holder_init (&thread_holder, ep_thread_session_state_get_thread (thread_session_state))) {
 
-			// briefly hold the thread lock to check it's state
-			ep_rt_spin_lock_handle_t *thread_lock = ep_thread_get_rt_lock_ref (ep_thread_session_state_get_thread (thread_session_state));
+			ep_rt_spin_lock_handle_t *thread_lock = ep_thread_get_rt_lock_ref (ep_thread_holder_get_thread (&thread_holder));
 			EP_SPIN_LOCK_ENTER (thread_lock, section5)
-				// if the thread is unregistered delete the session state from it
-				if (ep_rt_volatile_load_uint32_t_without_barrier(&(ep_thread_holder_get_thread (&thread_holder))->unregistered) > 0) {
-					ep_thread_delete_session_state (ep_thread_session_state_get_thread (thread_session_state), ep_thread_session_state_get_session (thread_session_state));
-				}
+
+				EP_ASSERT(ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered (ep_thread_session_state_get_thread (session_state))) > 0);
+				ep_thread_delete_session_state (ep_thread_session_state_get_thread (thread_session_state), ep_thread_session_state_get_session (thread_session_state));
 			EP_SPIN_LOCK_EXIT (thread_lock, section5)
 			ep_thread_holder_fini (&thread_holder);
 		}

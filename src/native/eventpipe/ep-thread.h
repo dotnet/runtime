@@ -75,6 +75,7 @@ EP_DEFINE_SETTER(EventPipeThread *, thread, EventPipeSession *, rundown_session)
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, ep_rt_spin_lock_handle_t *, rt_lock);
 EP_DEFINE_GETTER(EventPipeThread *, thread, uint64_t, os_thread_id);
 EP_DEFINE_GETTER_REF(EventPipeThread *, thread, int32_t *, ref_count);
+EP_DEFINE_GETTER_REF(EventPipeThread *, thread, volatile uint32_t *, unregistered);
 
 EventPipeThread *
 ep_thread_alloc (void);
