@@ -1185,6 +1185,18 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
+            if (_writePos > 0 && _writePos < _buffer!.Length - 1)
+            {
+                _buffer![_writePos++] = value;
+            }
+            else
+            {
+                WriteByteSlow(value);
+            }
+        }
+
+        private void WriteByteSlow(byte value)
+        {
             EnsureNotClosed();
 
             if (_writePos == 0)
@@ -1200,7 +1212,7 @@ namespace System.IO
 
             _buffer![_writePos++] = value;
 
-            Debug.Assert(_writePos < _bufferSize);
+            Debug.Assert(_writePos < _buffer!.Length);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
