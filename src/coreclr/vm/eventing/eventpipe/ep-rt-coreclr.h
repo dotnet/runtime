@@ -1574,13 +1574,17 @@ ep_rt_config_value_get_output_path (void)
 	{
 		while (true)
 		{
-			const char* pidSearchString = "{pid}";
+			const ep_char8_t* pidSearchString = "{pid}";
 			ep_char8_t* outputPathPid = strstr(outputPath, pidSearchString);
 			if (outputPathPid != NULL)
 			{
 				size_t newBufSize = strlen(outputPath) + 12; // 12 is 1 for the null-terminator + 11 for the largest possible 4 byte integer converted to a string
 				*outputPathPid = '\0';
 				ep_char8_t *newOutputPath =  reinterpret_cast<ep_char8_t *>(malloc(newBufSize));
+				if (newOutputPath == NULL)
+				{
+					return NULL;
+				}
 				sprintf_s(newOutputPath, newBufSize, "%s%d%s", outputPath, (int)GetCurrentProcessId(), outputPathPid + strlen(pidSearchString));
 				ep_rt_utf8_string_free(outputPath);
 				outputPath = newOutputPath;
@@ -1591,12 +1595,8 @@ ep_rt_config_value_get_output_path (void)
 			// No more instances of {pid} in the OutputPath
 			break;
 		}
-		return outputPath;
 	}
-	else
-	{
-		return NULL;
-	}
+	return outputPath;
 }
 
 static
@@ -2482,6 +2482,21 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = reinterpret_cast<ep_char8_t *>(malloc(byte_len + 1));
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -2546,13 +2561,6 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
-}
-
-static
-ep_char8_t *
-ep_rt_utf8_string_alloc(size_t len)
-{
-	return reinterpret_cast<ep_char8_t *>(malloc(len));
 }
 
 static

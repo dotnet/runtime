@@ -736,11 +736,8 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 	*data = get_next_config_value (*data, &start, &end);
 
 	ptrdiff_t byte_len = end - start;
-	if (byte_len != 0) {
-		buffer = ep_rt_utf8_string_alloc (byte_len + 1);
-		memcpy (buffer, start, byte_len);
-		buffer [byte_len] = '\0';
-	}
+	if (byte_len != 0)
+		buffer = ep_rt_utf8_string_dup_range(start, end);
 
 	return buffer;
 }

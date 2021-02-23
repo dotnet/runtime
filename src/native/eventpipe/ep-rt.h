@@ -672,6 +672,10 @@ ep_rt_utf8_string_dup (const ep_char8_t *str);
 
 static
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd);
+
+static
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -691,10 +695,6 @@ ep_rt_utf8_to_utf16_string (
 static
 ep_char16_t *
 ep_rt_utf16_string_dup (const ep_char16_t *str);
-
-static
-ep_char8_t *
-ep_rt_utf8_string_alloc(size_t len);
 
 static
 void

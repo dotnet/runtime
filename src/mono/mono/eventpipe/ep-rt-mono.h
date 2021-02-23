@@ -1829,6 +1829,22 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = g_new(ep_char8_t, byte_len + 1);
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -1864,13 +1880,6 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
-}
-
-static
-ep_char8_t *
-ep_rt_utf8_string_alloc(size_t len)
-{
-	return g_new(ep_char8_t, len);
 }
 
 static
