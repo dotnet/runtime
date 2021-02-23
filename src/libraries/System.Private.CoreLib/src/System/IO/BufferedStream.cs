@@ -629,13 +629,13 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
-                bool completeSynchronously = true;
-                try
+                // hot path #1: there is data in the buffer
+                if (_readLen - _readPos > 0 || count == 0)
                 {
-                    Exception? error;
-                    bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out error);
+                    bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out Exception? error);
 
                     // If we satisfied enough data from the buffer, we can complete synchronously.
                     // Reading again for more data may cause us to block if we're using a device with no clear end of file,
@@ -644,27 +644,35 @@ namespace System.IO
                     // BUT - this is a breaking change.
                     // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
                     // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-                    completeSynchronously = (bytesFromBuffer == count || error != null);
-
-                    if (completeSynchronously)
+                    if (bytesFromBuffer == count || error != null)
                     {
+                        // if the above is false, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
+                        sem.Release();
 
                         return (error == null)
-                                    ? LastSyncCompletedReadTask(bytesFromBuffer)
-                                    : Task.FromException<int>(error);
+                            ? LastSyncCompletedReadTask(bytesFromBuffer)
+                            : Task.FromException<int>(error);
                     }
                 }
-                finally
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                else if (_writePos == 0 && count >= _bufferSize)
                 {
-                    if (completeSynchronously)  // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                        sem.Release();
+                    _readPos = _readLen = 0;
+
+                    // start the async operation
+                    ValueTask<int> result = _stream!.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
+
+                    // release the lock (we are not using shared state anymore)
+                    sem.Release();
+
+                    return result.AsTask();
                 }
             }
 
             // Delegate to the async implementation.
             return ReadFromUnderlyingStreamAsync(
                 new Memory<byte>(buffer, offset + bytesFromBuffer, count - bytesFromBuffer),
-                cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
+                cancellationToken, bytesFromBuffer, semaphoreLockTask, locked).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -680,30 +688,42 @@ namespace System.IO
             int bytesFromBuffer = 0;
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
-                bool completeSynchronously = true;
-                try
+                // hot path #1: there is data in the buffer
+                if (_readLen - _readPos > 0 || buffer.Length == 0)
                 {
                     bytesFromBuffer = ReadFromBuffer(buffer.Span);
-                    completeSynchronously = bytesFromBuffer == buffer.Length;
-                    if (completeSynchronously)
+
+                    if (bytesFromBuffer == buffer.Length)
                     {
+                        // if above is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
+                        sem.Release();
+
                         // If we satisfied enough data from the buffer, we can complete synchronously.
                         return new ValueTask<int>(bytesFromBuffer);
                     }
+
+                    buffer = buffer.Slice(bytesFromBuffer);
                 }
-                finally
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                else if (_writePos == 0 && buffer.Length >= _bufferSize)
                 {
-                    if (completeSynchronously)  // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                    {
-                        sem.Release();
-                    }
+                    _readPos = _readLen = 0;
+
+                    // start the async operation
+                    ValueTask<int> result = _stream!.ReadAsync(buffer, cancellationToken);
+
+                    // release the lock (we are not using shared state anymore)
+                    sem.Release();
+
+                    return result;
                 }
             }
 
             // Delegate to the async implementation.
-            return ReadFromUnderlyingStreamAsync(buffer.Slice(bytesFromBuffer), cancellationToken, bytesFromBuffer, semaphoreLockTask);
+            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask, locked);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want ReadAsync to delegate to
@@ -711,7 +731,7 @@ namespace System.IO
         /// This allows BufferedStream to affect the semantics of the stream it wraps as little as possible. </summary>
         /// <returns>-2 if _bufferSize was set to 0 while waiting on the semaphore; otherwise num of bytes read.</returns>
         private async ValueTask<int> ReadFromUnderlyingStreamAsync(
-            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask)
+            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask, bool locked)
         {
             // Same conditions validated with exceptions in ReadAsync:
             Debug.Assert(_stream != null);
@@ -720,22 +740,32 @@ namespace System.IO
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
-            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-            await semaphoreLockTask.ConfigureAwait(false);
+            if (!locked)
+            {
+                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+                await semaphoreLockTask.ConfigureAwait(false);
+            }
+
             try
             {
-                // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                // Check it now again.
-                int bytesFromBuffer = ReadFromBuffer(buffer.Span);
-                if (bytesFromBuffer == buffer.Length)
-                {
-                    return bytesAlreadySatisfied + bytesFromBuffer;
-                }
+                int bytesFromBuffer = 0;
 
-                if (bytesFromBuffer > 0)
+                // we have already tried to read it from the buffer
+                if (!locked)
                 {
-                    buffer = buffer.Slice(bytesFromBuffer);
-                    bytesAlreadySatisfied += bytesFromBuffer;
+                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                    // Check it now again.
+                    bytesFromBuffer = ReadFromBuffer(buffer.Span);
+                    if (bytesFromBuffer == buffer.Length)
+                    {
+                        return bytesAlreadySatisfied + bytesFromBuffer;
+                    }
+
+                    if (bytesFromBuffer > 0)
+                    {
+                        buffer = buffer.Slice(bytesFromBuffer);
+                        bytesAlreadySatisfied += bytesFromBuffer;
+                    }
                 }
 
                 Debug.Assert(_readLen == _readPos);
