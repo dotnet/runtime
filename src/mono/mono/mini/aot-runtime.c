@@ -2738,7 +2738,7 @@ is_thumb_code (MonoAotModule *amodule, guint8 *code)
  * This function is async safe when called in async context.
  */
 static void
-decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitInfo *jinfo,
+decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoJitInfo *jinfo,
 						   guint8 *code, guint32 code_len,
 						   MonoJitExceptionInfo *clauses, int num_clauses,
 						   GSList **nesting,
@@ -2750,11 +2750,14 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 	gint32 *table;
 	int i, pos, left, right;
 	MonoJitExceptionInfo *ei;
+	MonoMemoryManager *mem_manager;
 	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
 	MonoLLVMFDEInfo info;
 	guint8 *unw_info;
 	gboolean async;
+
+	mem_manager = m_image_get_mem_manager (amodule->assembly->image);
 
 	async = mono_thread_info_is_async_context ();
 
@@ -2838,9 +2841,9 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 
 	if (async) {
 		/* These are leaked, but the leak is bounded */
-		ei = mono_domain_alloc0_lock_free (domain, info.ex_info_len * sizeof (MonoJitExceptionInfo));
-		type_info = mono_domain_alloc0_lock_free (domain, info.ex_info_len * sizeof (gpointer));
-		unw_info = mono_domain_alloc0_lock_free (domain, info.unw_info_len);
+		ei = mono_mem_manager_alloc0_lock_free (mem_manager, info.ex_info_len * sizeof (MonoJitExceptionInfo));
+		type_info = mono_mem_manager_alloc0_lock_free (mem_manager, info.ex_info_len * sizeof (gpointer));
+		unw_info = mono_mem_manager_alloc0_lock_free (mem_manager, info.unw_info_len);
 	} else {
 		ei = (MonoJitExceptionInfo *)g_malloc0 (info.ex_info_len * sizeof (MonoJitExceptionInfo));
 		type_info = (gpointer *)g_malloc0 (info.ex_info_len * sizeof (gpointer));
@@ -2929,15 +2932,15 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 }
 
 static gpointer
-alloc0_jit_info_data (MonoDomain *domain, MonoMemoryManager *mem_manager, int size, gboolean async_context)
+alloc0_jit_info_data (MonoMemoryManager *mem_manager, int size, gboolean async_context)
 
-#define alloc0_jit_info_data(domain, mem_manager, size, async_context) (g_cast (alloc0_jit_info_data ((domain), (mem_manager), (size), (async_context))))
+#define alloc0_jit_info_data(mem_manager, size, async_context) (g_cast (alloc0_jit_info_data ((mem_manager), (size), (async_context))))
 
 {
 	gpointer res;
 
 	if (async_context) {
-		res = mono_domain_alloc0_lock_free (domain, size);
+		res = mono_mem_manager_alloc0_lock_free (mem_manager, size);
 		mono_atomic_fetch_add_i32 (&async_jit_info_size, size);
 	} else {
 		res = mono_mem_manager_alloc0 (mem_manager, size);
@@ -2946,11 +2949,10 @@ alloc0_jit_info_data (MonoDomain *domain, MonoMemoryManager *mem_manager, int si
 }
 
 /*
- * LOCKING: Acquires the domain lock.
  * In async context, this is async safe.
  */
 static MonoJitInfo*
-decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain, 
+decode_exception_debug_info (MonoAotModule *amodule,
 							 MonoMethod *method, guint8* ex_info,
 							 guint8 *code, guint32 code_len)
 {
@@ -3025,8 +3027,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 				clauses = g_newa (MonoJitExceptionInfo, num_clauses);
 				nesting = g_newa (GSList*, num_clauses);
 			} else {
-				clauses = alloc0_jit_info_data (domain, mem_manager, sizeof (MonoJitExceptionInfo) * num_clauses, TRUE);
-				nesting = alloc0_jit_info_data (domain, mem_manager, sizeof (GSList*) * num_clauses, TRUE);
+				clauses = alloc0_jit_info_data (mem_manager, sizeof (MonoJitExceptionInfo) * num_clauses, TRUE);
+				nesting = alloc0_jit_info_data (mem_manager, sizeof (GSList*) * num_clauses, TRUE);
 			}
 			memset (clauses, 0, sizeof (MonoJitExceptionInfo) * num_clauses);
 			memset (nesting, 0, sizeof (GSList*) * num_clauses);
@@ -3075,12 +3077,12 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 		int num_llvm_clauses;
 		/* Get the length first */
-		decode_llvm_mono_eh_frame (amodule, domain, NULL, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, &num_llvm_clauses);
+		decode_llvm_mono_eh_frame (amodule, NULL, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, &num_llvm_clauses);
 		len = mono_jit_info_size (flags, num_llvm_clauses, num_holes);
-		jinfo = (MonoJitInfo *)alloc0_jit_info_data (domain, mem_manager, len, async);
+		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_llvm_clauses, num_holes);
 
-		decode_llvm_mono_eh_frame (amodule, domain, jinfo, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, NULL);
+		decode_llvm_mono_eh_frame (amodule, jinfo, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, NULL);
 
 		if (!async) {
 			g_free (clauses);
@@ -3091,7 +3093,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		jinfo->from_llvm = 1;
 	} else {
 		len = mono_jit_info_size (flags, num_clauses, num_holes);
-		jinfo = (MonoJitInfo *)alloc0_jit_info_data (domain, mem_manager, len, async);
+		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		/* The jit info table needs to sort addresses so it contains non-authenticated pointers on arm64e */
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_clauses, num_holes);
 
@@ -3187,7 +3189,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 		gi->nlocs = decode_value (p, &p);
 		if (gi->nlocs) {
-			gi->locations = (MonoDwarfLocListEntry *)alloc0_jit_info_data (domain, mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry), async);
+			gi->locations = (MonoDwarfLocListEntry *)alloc0_jit_info_data (mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry), async);
 			for (i = 0; i < gi->nlocs; ++i) {
 				MonoDwarfLocListEntry *entry = &gi->locations [i];
 
@@ -3220,7 +3222,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 		}
 
-		gi->generic_sharing_context = alloc0_jit_info_data (domain, mem_manager, sizeof (MonoGenericSharingContext), async);
+		gi->generic_sharing_context = alloc0_jit_info_data (mem_manager, sizeof (MonoGenericSharingContext), async);
 		if (decode_value (p, &p)) {
 			/* gsharedvt */
 			MonoGenericSharingContext *gsctx = gi->generic_sharing_context;
@@ -3583,7 +3585,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code, code_len);
+	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, code_len);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
@@ -3603,7 +3605,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 				len = old_table[0].method_index;
 			else
 				len = 1;
-			new_table = (JitInfoMap *)alloc0_jit_info_data (domain, mem_manager, (len + 1) * sizeof (JitInfoMap), async);
+			new_table = (JitInfoMap *)alloc0_jit_info_data (mem_manager, (len + 1) * sizeof (JitInfoMap), async);
 			if (old_table)
 				memcpy (new_table, old_table, len * sizeof (JitInfoMap));
 			new_table [0].method_index = len + 1;
