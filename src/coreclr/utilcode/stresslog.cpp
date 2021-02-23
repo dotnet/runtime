@@ -726,6 +726,14 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
 #endif //DACCESS_COMPILE
 }
 
+void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, ...)
+{
+    va_list Args;
+    va_start(Args, format);
+    LogMsg(facility, cArgs, format, Args);
+    va_end(Args);
+}
+
 FORCEINLINE BOOL StressLog::InlinedStressLogOn(unsigned facility, unsigned level)
 {
     STATIC_CONTRACT_LEAF;

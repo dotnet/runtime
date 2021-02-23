@@ -917,13 +917,8 @@ public:
         return "StressLog TaskSwitch Marker\n";
     }
 
-    void LogMsg (unsigned facility, int cArgs, const char* format, ... )
-    {
-        va_list Args;
-        va_start(Args, format);
-        LogMsg (facility, cArgs, format, Args);
-        va_end(Args);
-    }
+    void LogMsg(unsigned facility, int cArgs, const char* format, ...);
+
     FORCEINLINE void LogMsg (unsigned facility, int cArgs, const char* format, va_list Args);
 #ifdef STRESS_LOG_READONLY
     static size_t OffsetOfNext () {return offsetof (ThreadStressLog, next);}
