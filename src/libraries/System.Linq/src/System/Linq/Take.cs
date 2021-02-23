@@ -255,50 +255,9 @@ namespace System.Linq
 
             return count <= 0 ?
                 Empty<TSource>() :
-                TakeLastIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> TakeLastIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert(count > 0);
-
-            Queue<TSource> queue;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    yield break;
-                }
-
-                queue = new Queue<TSource>();
-                queue.Enqueue(e.Current);
-
-                while (e.MoveNext())
-                {
-                    if (queue.Count < count)
-                    {
-                        queue.Enqueue(e.Current);
-                    }
-                    else
-                    {
-                        do
-                        {
-                            queue.Dequeue();
-                            queue.Enqueue(e.Current);
-                        }
-                        while (e.MoveNext());
-                        break;
-                    }
-                }
-            }
-
-            Debug.Assert(queue.Count <= count);
-            do
-            {
-                yield return queue.Dequeue();
-            }
-            while (queue.Count > 0);
+                TakeRangeFromEndIterator(source,
+                    isStartIndexFromEnd: true, startIndex: count,
+                    isEndIndexFromEnd: true, endIndex: 0);
         }
     }
 }
