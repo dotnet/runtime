@@ -94,7 +94,7 @@
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
-    <DotNetCliVersion>5.0.0</DotNetCliVersion>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
