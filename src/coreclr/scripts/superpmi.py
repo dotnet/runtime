@@ -1346,7 +1346,7 @@ def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
             shutil.copy2(item, repro_location)
 
         logging.info("")
-        logging.info("Repro .mc files created for failures:")
+        logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
         for item in repro_files:
             logging.info(item)
 
