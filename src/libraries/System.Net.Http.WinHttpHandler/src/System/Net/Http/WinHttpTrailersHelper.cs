@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     internal static class WinHttpTrailersHelper
     {
-#if !NETSTANDARD2_1
+#if !NETSTANDARD2_1 && !UNITTEST // The latter is required for the WinHttpHandler.Unit.Tests, which includes the source file.
         private const string RequestMessagePropertyName = "__ResponseTrailers";
         private class HttpResponseTrailers : HttpHeaders
         {
@@ -21,15 +21,12 @@ namespace System.Net.Http
 
         public static HttpHeaders GetResponseTrailers(HttpResponseMessage response)
         {
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1 || UNITTEST
             return response.TrailingHeaders;
 #else
-            // We are (ab)using a property that became Obsolete on .NET 5
-#pragma warning disable CS0618
             HttpResponseTrailers responseTrailers = new HttpResponseTrailers();
             response.RequestMessage.Properties[RequestMessagePropertyName] = responseTrailers;
             return responseTrailers;
-#pragma warning restore CS0618
 #endif
         }
 
