@@ -18,6 +18,9 @@ static jobject CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
 
 int32_t CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32_t* siglen, EC_KEY* key)
 {
+    assert(dgst);
+    assert(sig);
+    assert(key);
     if (!siglen)
     {
         return FAIL;
@@ -60,6 +63,9 @@ error:
 
 int32_t CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)
 {
+    assert(dgst);
+    assert(sig);
+    assert(key);
     JNIEnv* env = GetJNIEnv();
 
     jobject signatureObject = CryptoNative_GetEsDsaSignatureObject(env);
