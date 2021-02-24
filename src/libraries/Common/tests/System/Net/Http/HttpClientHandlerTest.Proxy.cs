@@ -161,37 +161,35 @@ namespace System.Net.Http.Functional.Tests
             };
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
             {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = CreateHttpClient(handler))
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
+
+                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                 {
-                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyResponseBody(
+                        await response.Content.ReadAsStringAsync(),
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        null);
 
-                    using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
+                    if (cred is not null)
                     {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        TestHelper.VerifyResponseBody(
-                            await response.Content.ReadAsStringAsync(),
-                            response.Content.Headers.ContentMD5,
-                            false,
-                            null);
+                        string expectedAuth =
+                            string.IsNullOrEmpty(cred.Domain) ?
+                                $"{cred.UserName}:{cred.Password}" :
+                                $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
+                        _output.WriteLine($"expectedAuth={expectedAuth}");
+                        string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
 
-                        if (cred is not null)
-                        {
-                            string expectedAuth =
-                                string.IsNullOrEmpty(cred.Domain) ?
-                                    $"{cred.UserName}:{cred.Password}" :
-                                    $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
-                            _output.WriteLine($"expectedAuth={expectedAuth}");
-                            string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
-
-                            // Check last request to proxy server. Handlers that don't use
-                            // pre-auth for proxy will make 2 requests.
-                            int requestCount = proxyServer.Requests.Count;
-                            _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
-                            Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
-                            Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
-                        }
+                        // Check last request to proxy server. Handlers that don't use
+                        // pre-auth for proxy will make 2 requests.
+                        int requestCount = proxyServer.Requests.Count;
+                        _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
+                        Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
+                        Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
                     }
                 }
             }
@@ -217,17 +215,15 @@ namespace System.Net.Http.Functional.Tests
             NetworkCredential cred = new NetworkCredential("user", "password");
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
             {
-                HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = cred };
 
                 const string content = "This is a test";
 
-                using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.PostAsync(
-                        Configuration.Http.SecureRemoteEchoServer,
-                        new StringContent(content)))
+                using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.SecureRemoteEchoServer, new StringContent(content)))
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
 
