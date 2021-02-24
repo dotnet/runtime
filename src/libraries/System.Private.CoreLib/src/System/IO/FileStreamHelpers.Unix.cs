@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    // this type defines a set of stateless FileStreamStrategy helper methods
+    // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static class FileStreamHelpers
     {
         // in the future we are most probably going to introduce more strategies (io_uring etc)

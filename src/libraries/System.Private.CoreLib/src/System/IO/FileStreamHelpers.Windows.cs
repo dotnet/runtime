@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    // this type defines a set of stateless FileStreamStrategy helper methods
+    // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static class FileStreamHelpers
     {
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
