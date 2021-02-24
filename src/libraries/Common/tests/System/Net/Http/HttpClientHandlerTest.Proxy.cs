@@ -136,6 +136,20 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
+        const string BasicAuth = "Basic";
+
+        private static ICredentials ConstructCredentials(NetworkCredential cred, Uri uriPrefix, string authType, bool wrapCredsInCache)
+        {
+            if (wrapCredsInCache)
+            {
+                var cache = new CredentialCache();
+                cache.Add(uriPrefix, authType, cred);
+                return cache;
+            }
+
+            return cred;
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -148,18 +162,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
-                const string BasicAuth = "Basic";
-                ICredentials creds;
-                if (wrapCredsInCache)
-                {
-                    var cache = new CredentialCache();
-                    cache.Add(proxyServer.Uri, BasicAuth, cred);
-                    creds = cache;
-                }
-                else
-                {
-                    creds = cred;
-                }
+                ICredentials creds = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache);
 
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
