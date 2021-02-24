@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
         private void ValidateProxyBasicAuthentication(LoopbackProxyServer proxyServer, NetworkCredential cred)
         {
-            if (cred is not null)
+            if (cred != null)
             {
                 string expectedAuth =
                     string.IsNullOrEmpty(cred.Domain) ?
@@ -178,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
         {
             var options = new LoopbackProxyServer.Options
             {
-                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
+                AuthenticationSchemes = cred != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
                 ConnectionCloseAfter407 = connectionCloseAfter407
             };
 
@@ -214,7 +214,7 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new LoopbackProxyServer.Options
             {
-                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
+                AuthenticationSchemes = cred != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
                 ConnectionCloseAfter407 = connectionCloseAfter407
             };
 
