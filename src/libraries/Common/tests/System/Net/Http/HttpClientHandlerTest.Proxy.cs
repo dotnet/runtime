@@ -467,11 +467,6 @@ namespace System.Net.Http.Functional.Tests
             string uri = "http://" + host;
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -505,11 +500,6 @@ namespace System.Net.Http.Functional.Tests
             string expectedAddressUri = $"http://{host}/";
             bool connectionAccepted = false;
 
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -536,11 +526,6 @@ namespace System.Net.Http.Functional.Tests
             string requestTarget = $"{host}:443";
             string addressUri = $"https://{host}/";
             bool connectionAccepted = false;
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
@@ -569,11 +554,6 @@ namespace System.Net.Http.Functional.Tests
             if (IsWinHttpHandler)
             {
                 return; // Skip test since the fix is only in SocketsHttpHandler.
-            }
-
-            if (UseVersion == HttpVersion30)
-            {
-                return;
             }
 
             string host = "nosuchhost.invalid";
