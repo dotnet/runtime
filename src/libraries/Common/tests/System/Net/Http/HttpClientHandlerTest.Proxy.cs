@@ -263,7 +263,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AuthenticatedProxiedRequest_GetAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
         {
-            var options = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Basic };
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic
+            };
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -275,9 +279,6 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
-        // TODO: Make this work like above
-        // Last thing to do : ConnectionClose after 407 variations
 
         [OuterLoop("Uses external server")]
         [Fact]
@@ -291,8 +292,8 @@ namespace System.Net.Http.Functional.Tests
             var options = new LoopbackProxyServer.Options
             {
                 AuthenticationSchemes = AuthenticationSchemes.Basic,
-                ConnectionCloseAfter407 = true
             };
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
