@@ -138,36 +138,6 @@ internal static partial class Interop
             return EvpCipherFinalEx(ctx, ref MemoryMarshal.GetReference(output), out bytesWritten);
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherGetGcmTag")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool EvpCipherGetGcmTag(
-            SafeEvpCipherCtxHandle ctx,
-            ref byte tag,
-            int tagLength);
-
-        internal static void EvpCipherGetGcmTag(SafeEvpCipherCtxHandle ctx, Span<byte> tag)
-        {
-            if (!EvpCipherGetGcmTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
-            {
-                throw CreateOpenSslCryptographicException();
-            }
-        }
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherGetCcmTag")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool EvpCipherGetCcmTag(
-            SafeEvpCipherCtxHandle ctx,
-            ref byte tag,
-            int tagLength);
-
-        internal static void EvpCipherGetCcmTag(SafeEvpCipherCtxHandle ctx, Span<byte> tag)
-        {
-            if (!EvpCipherGetCcmTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
-            {
-                throw CreateOpenSslCryptographicException();
-            }
-        }
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpCipherSetTagLength")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool EvpCipherSetTagLength(

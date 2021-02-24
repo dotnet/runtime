@@ -154,7 +154,6 @@ CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
     ctx->encMode = 0;
     ctx->key = NULL;
     ctx->iv = NULL;
-    memset(ctx->tag, 0, TAG_MAX_LENGTH);
     return CheckJNIExceptions(env) ? FAIL : ctx;
 }
 
@@ -308,26 +307,12 @@ int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* ou
 
     *outl = 0;
 
-    // NOTE: Cipher appends TAG to the end of outBytes in case of CCM/GCM and "encryption" mode
-    bool hasTag = HasTag(ctx->type);
-    bool decrypt = ctx->encMode == CIPHER_DECRYPT_MODE;
-    int tagLength = (hasTag && !decrypt) ? ctx->tagLength : 0;
-
     jbyteArray outBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherDoFinalMethod);
     if (CheckJNIExceptions(env)) return FAIL;
 
     jsize outBytesLen = (*env)->GetArrayLength(env, outBytes);
-
-    if (outBytesLen > tagLength)
-    {
-        (*env)->GetByteArrayRegion(env, outBytes, 0, outBytesLen - tagLength, (jbyte*) outm);
-        *outl += outBytesLen - tagLength;
-
-        if (hasTag && !decrypt)
-        {
-            (*env)->GetByteArrayRegion(env, outBytes, outBytesLen - ctx->tagLength, ctx->tagLength, (jbyte*) ctx->tag);
-        }
-    }
+    *outl = outBytesLen;
+    (*env)->GetByteArrayRegion(env, outBytes, 0, outBytesLen, (jbyte*) outm);
 
     (*env)->DeleteLocalRef(env, outBytes);
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
@@ -382,23 +367,6 @@ int32_t CryptoNative_EvpCipherSetGcmNonceLength(CipherCtx* ctx, int32_t ivLength
 int32_t CryptoNative_EvpCipherSetCcmNonceLength(CipherCtx* ctx, int32_t ivLength)
 {
     return CryptoNative_EvpCipherSetGcmNonceLength(ctx, ivLength);
-}
-
-int32_t CryptoNative_EvpCipherGetGcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength)
-{
-    if (!ctx)
-        return FAIL;
-
-    assert(tagLength <= TAG_MAX_LENGTH);
-
-    // Just return what we extracted during CryptoNative_EvpCipherFinalEx
-    memcpy(tag, ctx->tag, (size_t)tagLength);
-    return SUCCESS;
-}
-
-int32_t CryptoNative_EvpCipherGetCcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength)
-{
-    return CryptoNative_EvpCipherGetGcmTag(ctx, tag, tagLength);
 }
 
 void CryptoNative_EvpCipherDestroy(CipherCtx* ctx)

@@ -21,7 +21,6 @@ typedef struct CipherCtx
     int32_t encMode;
     uint8_t* key;
     uint8_t* iv;
-    uint8_t* tag[TAG_MAX_LENGTH];
 } CipherCtx;
 
 PALEXPORT CipherCtx* CryptoNative_EvpCipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
@@ -36,8 +35,6 @@ PALEXPORT int32_t CryptoNative_EvpCipherCtxSetPadding(CipherCtx* ctx, int32_t pa
 PALEXPORT int32_t CryptoNative_EvpCipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t inl);
 PALEXPORT int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* out, int32_t* outl, uint8_t* in, int32_t inl);
 PALEXPORT int32_t CryptoNative_EvpCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl);
-PALEXPORT int32_t CryptoNative_EvpCipherGetGcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength);
-PALEXPORT int32_t CryptoNative_EvpCipherGetCcmTag(CipherCtx* ctx, uint8_t* tag, int32_t tagLength);
 PALEXPORT intptr_t CryptoNative_EvpAes128Ecb(void);
 PALEXPORT intptr_t CryptoNative_EvpAes128Cbc(void);
 PALEXPORT intptr_t CryptoNative_EvpAes128Cfb8(void);

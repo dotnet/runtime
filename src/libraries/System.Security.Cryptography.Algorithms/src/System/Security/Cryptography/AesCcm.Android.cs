@@ -46,28 +46,55 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertext, out int ciphertextBytesWritten, plaintext))
+                byte[]? rented = null;
+                try
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+                    Span<byte> ciphertextAndTag = stackalloc byte[0];
+                    // Arbitrary limit.
+                    const int StackAllocMax = 128;
+                    if (ciphertext.Length + tag.Length <= StackAllocMax)
+                    {
+                        ciphertextAndTag = stackalloc byte[ciphertext.Length + tag.Length];
+                    }
+                    else
+                    {
+                        rented = CryptoPool.Rent(ciphertext.Length + tag.Length);
+                        ciphertextAndTag = new Span<byte>(rented, 0, ciphertext.Length + tag.Length);
+                    }
 
-                if (!Interop.Crypto.EvpCipherFinalEx(
-                    ctx,
-                    ciphertext.Slice(ciphertextBytesWritten),
-                    out int bytesWritten))
+                    if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertextAndTag, out int ciphertextBytesWritten, plaintext))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (!Interop.Crypto.EvpCipherFinalEx(
+                        ctx,
+                        ciphertextAndTag.Slice(ciphertextBytesWritten),
+                        out int bytesWritten))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    ciphertextBytesWritten += bytesWritten;
+
+                    // NOTE: Android appends tag to the end of the ciphertext in case of CCM/GCM and "encryption" mode
+
+                    if (ciphertextBytesWritten != ciphertextAndTag.Length)
+                    {
+                        Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertextAndTag.Length} bytes.");
+                        throw new CryptographicException();
+                    }
+
+                    ciphertextAndTag.Slice(0, ciphertext.Length).CopyTo(ciphertext);
+                    ciphertextAndTag.Slice(ciphertext.Length).CopyTo(tag);
+                }
+                finally
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    if (rented != null)
+                    {
+                        CryptoPool.Return(rented, ciphertext.Length + tag.Length);
+                    }
                 }
-
-                ciphertextBytesWritten += bytesWritten;
-
-                if (ciphertextBytesWritten != ciphertext.Length)
-                {
-                    Debug.Fail($"CCM encrypt wrote {ciphertextBytesWritten} of {ciphertext.Length} bytes.");
-                    throw new CryptographicException();
-                }
-
-                Interop.Crypto.EvpCipherGetCcmTag(ctx, tag);
             }
         }
 
