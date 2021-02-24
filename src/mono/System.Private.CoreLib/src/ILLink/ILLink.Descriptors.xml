@@ -309,7 +309,9 @@
 
 		<!-- domain.c: mono_defaults.runtimetype_class -->
 		<!-- under mono, this has no runtime visible fields -->
-		<type fullname="System.RuntimeType" preserve="nothing" />
+		<type fullname="System.RuntimeType">
+			<method signature="System.Void .ctor()" />
+		</type>
 
 		<!-- domain.c: mono_defaults.typehandle_class -->
 		<type fullname="System.RuntimeTypeHandle" preserve="fields" />
