@@ -2126,11 +2126,9 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	}
 	mono_assemblies_unlock ();
 
-	GSList *visible_list;
-	GSList *ignores_list;
+	GSList *visible_list = NULL;
+	GSList *ignores_list = NULL;
 
-	visible_list = NULL;
-	ignores_list = NULL;
 	/* 
 	 * We build the list outside the assemblies lock, the worse that can happen
 	 * is that we'll need to free the allocated list.

@@ -5866,9 +5866,8 @@ ignores_access_checks_to (MonoAssembly *accessing, MonoAssembly *accessed)
 		MonoAssemblyName *victim = (MonoAssemblyName *)tmp->data;
 		if (!victim->name)
 			continue;
-		if (g_ascii_strcasecmp (accessed->aname.name, victim->name))
-			continue;
-		return TRUE;
+		if (!g_ascii_strcasecmp (accessed->aname.name, victim->name))
+			return TRUE;
 	}
 	return FALSE;
 }
