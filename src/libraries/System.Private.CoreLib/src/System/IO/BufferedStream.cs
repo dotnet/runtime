@@ -1076,8 +1076,7 @@ namespace System.IO
             // Try to satisfy the request from the buffer synchronously.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool acquiredLock = semaphoreLockTask.IsCompletedSuccessfully;
-            if (acquiredLock)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 bool completeSynchronously = true;
                 try
@@ -1116,7 +1115,7 @@ namespace System.IO
             }
 
             // Delegate to the async implementation.
-            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask, acquiredLock);
+            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1125,7 +1124,7 @@ namespace System.IO
         /// little as possible.
         /// </summary>
         private async ValueTask WriteToUnderlyingStreamAsync(
-            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask, bool acquiredLock)
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
@@ -1135,22 +1134,15 @@ namespace System.IO
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
 
-            if (!acquiredLock)
-            {
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            await semaphoreLockTask.ConfigureAwait(false);
             try
             {
-                if (!acquiredLock)
-                {
-                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                    // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
+                // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
 
-                    if (_writePos == 0)
-                    {
-                        ClearReadBufferBeforeWrite();
-                    }
+                if (_writePos == 0)
+                {
+                    ClearReadBufferBeforeWrite();
                 }
 
                 int totalUserBytes;
