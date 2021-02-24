@@ -365,6 +365,7 @@ HRESULT CordbModule::GetToken(mdModule* pToken)
 HRESULT CordbModule::IsDynamic(BOOL* pDynamic)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));
+    *pDynamic = FALSE;
     return S_OK;
 }
 
@@ -384,6 +385,7 @@ HRESULT CordbModule::GetSize(ULONG32* pcBytes)
 HRESULT CordbModule::IsInMemory(BOOL* pInMemory)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsInMemory - IMPLEMENTED\n"));
+    *pInMemory = FALSE;
     return S_OK;
 }
 
