@@ -103,10 +103,9 @@ static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
     if (type == CryptoNative_EvpDes3Cfb8())     return JSTRING("DESede/CFB/NoPadding");
     if (type == CryptoNative_EvpDes3Cfb64())    return JSTRING("DESede/CFB/NoPadding");
 
-    // custom feedback size is not supported yet:
-    //if (type == CryptoNative_EvpAes128Cfb128()) return JSTRING("AES/CFB/NoPadding");
-    //if (type == CryptoNative_EvpAes192Cfb128()) return JSTRING("AES/CFB/NoPadding");
-    //if (type == CryptoNative_EvpAes256Cfb128()) return JSTRING("AES/CFB/NoPadding");
+    if (type == CryptoNative_EvpAes128Cfb128()) return JSTRING("AES/CFB128/NoPadding");
+    if (type == CryptoNative_EvpAes192Cfb128()) return JSTRING("AES/CFB128/NoPadding");
+    if (type == CryptoNative_EvpAes256Cfb128()) return JSTRING("AES/CFB128/NoPadding");
 
     LOG_ERROR("This algorithm (%ld) is not supported", (long)type);
     return FAIL;
