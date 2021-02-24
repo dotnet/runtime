@@ -1224,6 +1224,9 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 					// if a session_state was exhausted during this sequence point, mark it for deletion
 					if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
 
+						// We don't hold the thread lock here, so it technically races with a thread getting unregistered. This is okay,
+						// because we will either not have passed the above if statement (there were events still in the buffers) or we
+						// will catch it at the next sequence point.
 						if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (session_state))) > 0) {
 
 							ep_rt_thread_session_state_array_append (&session_states_to_delete, session_state);
