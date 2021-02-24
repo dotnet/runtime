@@ -181,7 +181,7 @@ namespace System.Net.Http.Functional.Tests
                         if (cred is not null)
                         {
                             string expectedAuth =
-                                string.IsNullOrEmpty(nc.Domain) ?
+                                string.IsNullOrEmpty(cred.Domain) ?
                                     $"{cred.UserName}:{cred.Password}" :
                                     $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
                             _output.WriteLine($"expectedAuth={expectedAuth}");
