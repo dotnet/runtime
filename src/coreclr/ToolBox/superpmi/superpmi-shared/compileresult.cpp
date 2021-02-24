@@ -819,7 +819,6 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
 
         switch (tmp.fRelocType)
         {
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
             case IMAGE_REL_BASED_REL32:
             {
                 DWORDLONG target        = tmp.target + tmp.addlDelta;
@@ -827,52 +826,57 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
                 INT64     delta         = (INT64)((BYTE*)target - baseAddr);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-                if (delta != (INT64)(int)delta)
+                if (is64BitTarget)
                 {
-                    // This isn't going to fit in a signed 32-bit address. Use something that will fit,
-                    // since we assume that original compilation fit fine. This is only an issue for
-                    // 32-bit offsets on 64-bit targets.
-                    target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                    INT64 newdelta = (INT64)((BYTE*)target - baseAddr);
+                    if (delta != (INT64)(int)delta)
+                    {
+                        // This isn't going to fit in a signed 32-bit address. Use something that will fit,
+                        // since we assume that original compilation fit fine. This is only an issue for
+                        // 32-bit offsets on 64-bit targets.
+                        target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                        INT64 newdelta = (INT64)((BYTE*)target - baseAddr);
 
-                    LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
-                             delta, newdelta);
+                        LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
+                                 delta, newdelta);
 
-                    delta = newdelta;
+                        delta = newdelta;
+                    }
                 }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
                 if (delta != (INT64)(int)delta)
                 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
-#else
-                    LogError("REL32 relocation overflows field! delta=0x%08X", delta);
-#endif
+                    if (is64BitTarget)
+                    {
+                        LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                    }
+                    else
+                    {
+                        LogError("REL32 relocation overflows field! delta=0x%08X", delta);
+                    }
                 }
 
                 // Write 32-bits into location
                 size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
-#if defined(TARGET_AMD64)
-                    // During an actual compile, recordRelocation() will be called before the compile
-                    // is actually finished, and it will write the relative offset into the fixupLocation.
-                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
-                    // to overestimation of instruction sizes. Because we're applying the relocs after the
-                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
-                    // that's now in the fixupLocation.
-                    INT32 adjustment = *(INT32*)address;
-                    delta += adjustment;
-#endif
+                    if (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64)
+                    {
+                        // During an actual compile, recordRelocation() will be called before the compile
+                        // is actually finished, and it will write the relative offset into the fixupLocation.
+                        // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                        // to overestimation of instruction sizes. Because we're applying the relocs after the
+                        // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                        // that's now in the fixupLocation.
+                        INT32 adjustment = *(INT32*)address;
+                        delta += adjustment;
+                    }
+
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
                              delta);
                     *(DWORD*)address = (DWORD)delta;
                 }
             }
             break;
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
 
             default:
                 LogError("Unknown reloc type %u", tmp.fRelocType);
