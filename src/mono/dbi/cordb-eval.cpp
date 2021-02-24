@@ -93,7 +93,6 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(ICorDebugFunction
 
 void CordbEval::EvalComplete(MdbgProtBuffer* pReply)
 {
-
     m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
     CordbObjectValue::CreateCordbValue(conn, pReply, &m_pValue);
 
@@ -136,7 +135,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::NewParameterizedArray(ICorDebugType* pEleme
 HRESULT STDMETHODCALLTYPE CordbEval::NewStringWithLength(LPCWSTR string, UINT uiLength)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
         conn->GetProcess()->Stop(false);
         MdbgProtBuffer localbuf;

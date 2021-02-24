@@ -37,22 +37,24 @@ HRESULT CordbCode::GetAddress(CORDB_ADDRESS* pStart)
     return E_NOTIMPL;
 }
 
-ULONG32 CordbCode::GetSize() {
-    if (m_nSize == -1) {
-        MdbgProtBuffer localbuf;
-        m_dbgprot_buffer_init(&localbuf, 128);
+ULONG32 CordbCode::GetSize()
+{
+    if (m_nSize != -1)
+        return m_nSize;
 
-        m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
-        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
-        m_dbgprot_buffer_free(&localbuf);
+    MdbgProtBuffer localbuf;
+    m_dbgprot_buffer_init(&localbuf, 128);
 
-        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
-        if (received_reply_packet->Error() > 0 || received_reply_packet->Error2() > 0)
-            return 0;
-        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+    m_dbgprot_buffer_add_id(&localbuf, this->GetFunction()->GetDebuggerId());
+    int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_METHOD, MDBGPROT_CMD_METHOD_GET_BODY, &localbuf);
+    m_dbgprot_buffer_free(&localbuf);
 
-        m_nSize = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-    }
+    ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+    if (received_reply_packet->Error() > 0 || received_reply_packet->Error2() > 0)
+        return 0;
+    MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+    m_nSize = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
     return m_nSize;
 }
 
@@ -77,7 +79,7 @@ HRESULT CordbCode::GetCode(
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbCode - GetCode - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
@@ -89,9 +91,9 @@ HRESULT CordbCode::GetCode(
         ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
         CHECK_ERROR_RETURN_FALSE(received_reply_packet);
         MdbgProtBuffer* pReply = received_reply_packet->Buffer();
-        
+
         ULONG32 totalSize = GetSize();
-        
+
         if (cBufferAlloc < endOffset - startOffset)
             endOffset = startOffset + cBufferAlloc;
 
