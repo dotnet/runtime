@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
+            // Convert key length to bits.
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(ctx);
@@ -160,15 +161,13 @@ namespace System.Security.Cryptography
 
         private static IntPtr GetCipher(int keySizeInBits)
         {
-            switch (keySizeInBits)
+            return keySizeInBits switch
             {
-                case 128: return Interop.Crypto.EvpAes128Ccm();
-                case 192: return Interop.Crypto.EvpAes192Ccm();
-                case 256: return Interop.Crypto.EvpAes256Ccm();
-                default:
-                    Debug.Fail("Key size should already be validated");
-                    return IntPtr.Zero;
-            }
+                 128 => Interop.Crypto.EvpAes128Ccm(),
+                 192 => Interop.Crypto.EvpAes192Ccm(),
+                 256 => Interop.Crypto.EvpAes256Ccm(),
+                 _ => IntPtr.Zero
+            };
         }
 
         public void Dispose()

@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
+            // Convert key length to bits.
             _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8));
 
             Interop.Crypto.CheckValidOpenSslHandle(_ctxHandle);
@@ -161,15 +162,13 @@ namespace System.Security.Cryptography
 
         private static IntPtr GetCipher(int keySizeInBits)
         {
-            switch (keySizeInBits)
+            return keySizeInBits switch
             {
-                case 128: return Interop.Crypto.EvpAes128Gcm();
-                case 192: return Interop.Crypto.EvpAes192Gcm();
-                case 256: return Interop.Crypto.EvpAes256Gcm();
-                default:
-                    Debug.Fail("Key size should already be validated");
-                    return IntPtr.Zero;
-            }
+                 128 => Interop.Crypto.EvpAes128Gcm(),
+                 192 => Interop.Crypto.EvpAes192Gcm(),
+                 256 => Interop.Crypto.EvpAes256Gcm(),
+                 _ => IntPtr.Zero
+            };
         }
 
         public void Dispose()
