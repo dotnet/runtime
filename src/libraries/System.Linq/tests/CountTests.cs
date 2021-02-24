@@ -179,7 +179,6 @@ namespace System.Linq.Tests
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(4, new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(7, Enumerable.Range(1, 20).ToLookup(x => x % 7));
                 yield return WrapArgs(20, Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(20, Enumerable.Range(1, 20).OrderBy(x => -x));
                 yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
@@ -202,7 +201,6 @@ namespace System.Linq.Tests
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(Enumerable.Range(1, 20).ToLookup(x => x % 7));
                 yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
                 yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));
                 yield return WrapArgs(Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
