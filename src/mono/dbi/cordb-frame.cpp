@@ -154,8 +154,8 @@ HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetFunctionToken(mdMethodDef* pToken)
 
 HRESULT STDMETHODCALLTYPE CordbJITILFrame::GetStackRange(CORDB_ADDRESS* pStart, CORDB_ADDRESS* pEnd)
 {
-    *pStart = 4096;
-    *pEnd   = 8192;
+    *pStart = 0; //forced value, only to make vs work, I'm not sure which value should returned from mono runtime
+    *pEnd   = 1; //forced value, only to make vs work, I'm not sure which value should returned from mono runtime
     LOG((LF_CORDB, LL_INFO100000, "CordbFrame - GetStackRange - NOT IMPLEMENTED\n"));
     return S_OK;
 }

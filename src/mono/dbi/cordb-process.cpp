@@ -23,7 +23,7 @@ CordbProcess::CordbProcess(Cordb* cordb) : CordbBaseMono(NULL)
     m_pThreads       = new ArrayList();
     m_pFunctions     = new ArrayList();
     m_pModules       = new ArrayList();
-    appDomains       = new ArrayList();
+    m_pAddDomains       = new ArrayList();
     m_pPendingEval   = new ArrayList();
     this->m_pCordb   = cordb;
     m_bIsJustMyCode  = false;
@@ -33,80 +33,74 @@ CordbProcess::~CordbProcess()
 {
     if (m_pAppDomainEnum)
         m_pAppDomainEnum->InternalRelease();
-    DWORD i = 0;
-    while (i < m_pBreakpoints->GetCount())
+   
+    for (DWORD i = 0; i < m_pBreakpoints->GetCount(); i++)
     {
         CordbFunctionBreakpoint* breakpoint = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
         if (breakpoint)
             breakpoint->InternalRelease();
-        i++;
     }
-    i = 0;
-    while (i < m_pThreads->GetCount())
+
+    for (DWORD i = 0; i < m_pThreads->GetCount(); i++)
     {
         CordbThread* thread = (CordbThread*)m_pThreads->Get(i);
         thread->InternalRelease();
-        i++;
     }
-    i = 0;
-    while (i < m_pFunctions->GetCount())
+
+    for (DWORD i = 0; i < m_pFunctions->GetCount(); i++)
     {
         CordbFunction* function = (CordbFunction*)m_pFunctions->Get(i);
         function->InternalRelease();
-        i++;
     }
-    i = 0;
-    while (i < appDomains->GetCount())
+
+    for (DWORD i = 0; i < m_pAddDomains->GetCount(); i++)
     {
-        CordbAppDomain* appdomain = (CordbAppDomain*)appDomains->Get(i);
+        CordbAppDomain* appdomain = (CordbAppDomain*)m_pAddDomains->Get(i);
         appdomain->InternalRelease();
-        i++;
     }
-    i = 0;
-    while (i < m_pModules->GetCount())
+
+    for (DWORD i = 0; i < m_pModules->GetCount(); i++)
     {
         CordbModule* module = (CordbModule*)m_pModules->Get(i);
         module->InternalRelease();
-        i++;
     }
-    i = 0;
-    while (i < m_pPendingEval->GetCount())
+
+    for (DWORD i = 0; i < m_pPendingEval->GetCount(); i++)
     {
         CordbEval* eval = (CordbEval*)m_pPendingEval->Get(i);
         if (eval)
             eval->InternalRelease();
-        i++;
     }
+
     delete m_pBreakpoints;
     delete m_pThreads;
     delete m_pFunctions;
     delete m_pModules;
-    delete appDomains;
+    delete m_pAddDomains;
     delete m_pPendingEval;
     delete conn;
 }
 
 void CordbProcess::CheckPendingEval()
 {
-    DWORD i = 0;
-    while (m_pPendingEval && i < m_pPendingEval->GetCount())
+    if (!m_pPendingEval)
+        return;
+    for (DWORD i = 0; i < m_pPendingEval->GetCount(); i++)
     {
         CordbEval* eval = (CordbEval*)m_pPendingEval->Get(i);
-        if (eval)
-        {
-            ReceivedReplyPacket* recvbuf = conn->GetReplyWithError(eval->GetCommandId());
-            if (recvbuf)
-            {
-                eval->EvalComplete(recvbuf->Buffer());
-                eval->InternalRelease();
-                dbg_lock();
-                m_pPendingEval->Set(i, NULL);
-                dbg_unlock();
-            }
-        }
-        i++;
+        if (!eval)
+            continue;
+        ReceivedReplyPacket* recvbuf = conn->GetReplyWithError(eval->GetCommandId());
+        if (!recvbuf)
+            continue;
+        eval->EvalComplete(recvbuf->Buffer());
+        eval->InternalRelease();
+        dbg_lock();
+        m_pPendingEval->Set(i, NULL);
+        dbg_unlock();
     }
 }
+
 HRESULT CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum** ppRanges)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbProcess - EnumerateLoaderHeapMemoryRegions - NOT IMPLEMENTED\n"));
@@ -549,7 +543,7 @@ void CordbProcess::AddModule(CordbModule* module)
 
 void CordbProcess::AddAppDomain(CordbAppDomain* appDomain)
 {
-    appDomains->Append(appDomain);
+    m_pAddDomains->Append(appDomain);
     appDomain->InternalAddRef();
 }
 
@@ -609,8 +603,8 @@ CordbModule* CordbProcess::GetModule(int module_id)
 
 CordbAppDomain* CordbProcess::GetCurrentAppDomain()
 {
-    if (appDomains->GetCount() > 0)
-        return (CordbAppDomain*)appDomains->Get(0);
+    if (m_pAddDomains->GetCount() > 0)
+        return (CordbAppDomain*)m_pAddDomains->Get(0);
     return NULL;
 }
 

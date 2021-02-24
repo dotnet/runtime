@@ -231,7 +231,6 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
             m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
         }
         LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
-
         *pAddress = (CORDB_ADDRESS)m_pAssemblyMetadataBlob;
     }
     EX_CATCH_HRESULT(hr);

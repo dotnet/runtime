@@ -232,12 +232,12 @@ HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::Next(ULONG celt, ICorDebugAppDomai
     *pceltFetched = celt;
     for (ULONG i = 0; i < celt; i++)
     {
-        if (current_pos >= pProcess->appDomains->GetCount())
+        if (current_pos >= pProcess->m_pAddDomains->GetCount())
         {
             *pceltFetched = 0;
             return S_FALSE;
         }
-        CordbAppDomain* appdomain = (CordbAppDomain*)pProcess->appDomains->Get(current_pos);
+        CordbAppDomain* appdomain = (CordbAppDomain*)pProcess->m_pAddDomains->Get(current_pos);
         appdomain->QueryInterface(IID_ICorDebugAppDomain, (void**)values + current_pos);
         current_pos++;
     }
@@ -266,7 +266,7 @@ HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::Clone(ICorDebugEnum** ppEnum)
 HRESULT STDMETHODCALLTYPE CordbAppDomainEnum::GetCount(ULONG* pcelt)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbAppDomainEnum - GetCount - IMPLEMENTED\n"));
-    *pcelt = pProcess->appDomains->GetCount();
+    *pcelt = pProcess->m_pAddDomains->GetCount();
     return S_OK;
 }
 

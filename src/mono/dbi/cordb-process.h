@@ -30,7 +30,7 @@ class CordbProcess : public CordbBaseMono,
     Cordb*              m_pCordb;
     BOOL                m_bIsJustMyCode;
 public:
-    ArrayList* appDomains;
+    ArrayList* m_pAddDomains;
     CordbProcess(Cordb* cordb);
     ULONG STDMETHODCALLTYPE AddRef(void)
     {
