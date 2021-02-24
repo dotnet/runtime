@@ -36,22 +36,12 @@
     </ItemGroup>
   </Target>
 
-  <!-- This target is just a workaround while https://github.com/dotnet/runtime/issues/48522 gets fixed. Once it is, this whole target
-  should be removed. -->
-  <Target Name="RootJavaScriptInteropAssembly"
-          BeforeTargets="PrepareForILLink"
-          Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <ItemGroup>
-      <TrimmerRootAssembly Include="%(ManagedAssemblyToLink.Identity)" Condition="'%(ManagedAssemblyToLink.FileName)' == 'System.Private.Runtime.InteropServices.JavaScript'" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
           Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'" />
 
-  <!-- Overriding this target as these projects won't need to binplace -->
+  <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="GetBinPlaceTargetFramework" />
   <Target Name="PublishTestAsSelfContained" />
 
