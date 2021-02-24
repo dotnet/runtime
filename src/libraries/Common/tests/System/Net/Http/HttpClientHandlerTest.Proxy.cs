@@ -173,11 +173,12 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task AuthenticatedProxiedRequest_GetAsync_Success(NetworkCredential cred, bool wrapCredsInCache)
+        public async Task AuthenticatedProxiedRequest_GetAsync_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
         {
             var options = new LoopbackProxyServer.Options
             {
-                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None
+                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
+                ConnectionCloseAfter407 = connectionCloseAfter407
             };
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
@@ -205,7 +206,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success(NetworkCredential cred, bool wrapCredsInCache)
+        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
         {
             if (IsWinHttpHandler)
             {
@@ -215,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
             var options = new LoopbackProxyServer.Options
             {
                 AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
-                ConnectionCloseAfter407 = true
+                ConnectionCloseAfter407 = connectionCloseAfter407
             };
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
@@ -627,11 +628,14 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> CredentialsForProxy()
         {
-            yield return new object[] { null, false };
+            yield return new object[] { null, false, false };
             foreach (bool wrapCredsInCache in BoolValues)
             {
-                yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
-                yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
+                foreach (bool connectionCloseAfter407 in BoolValues)
+                {
+                    yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache, connectionCloseAfter407 };
+                    yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache, connectionCloseAfter407 };
+                }
             }
         }
 
