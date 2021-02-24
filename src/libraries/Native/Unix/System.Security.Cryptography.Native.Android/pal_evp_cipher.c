@@ -286,6 +286,7 @@ int32_t CryptoNative_EvpCipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* out
 
     *outl = 0;
     jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
+
     if (outDataBytes && outm)
     {
         jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);

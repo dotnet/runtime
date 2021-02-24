@@ -91,8 +91,8 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                ciphertextAndTag.Slice(0, ciphertext.Length).CopyTo(ciphertext);
-                ciphertextAndTag.Slice(ciphertext.Length).CopyTo(tag);
+                ciphertextAndTag[..ciphertext.Length].CopyTo(ciphertext);
+                ciphertextAndTag[ciphertext.Length..].CopyTo(tag);
             }
             finally
             {
@@ -110,6 +110,11 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
+            if (!Interop.Crypto.EvpCipherSetTagLength(_ctxHandle, tag.Length))
+            {
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
                 ReadOnlySpan<byte>.Empty,

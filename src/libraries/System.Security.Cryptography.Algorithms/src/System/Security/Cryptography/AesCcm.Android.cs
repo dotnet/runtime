@@ -85,8 +85,8 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 
-                    ciphertextAndTag.Slice(0, ciphertext.Length).CopyTo(ciphertext);
-                    ciphertextAndTag.Slice(ciphertext.Length).CopyTo(tag);
+                    ciphertextAndTag[..ciphertext.Length].CopyTo(ciphertext);
+                    ciphertextAndTag[ciphertext.Length..].CopyTo(tag);
                 }
                 finally
                 {
@@ -109,11 +109,17 @@ namespace System.Security.Cryptography
             {
                 Interop.Crypto.CheckValidOpenSslHandle(ctx);
                 Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
+
+                if (!Interop.Crypto.EvpCipherSetTagLength(ctx, tag.Length))
+                {
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
 
                 if (associatedData.Length != 0)
                 {
-                    if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                    if (!Interop.Crypto.EvpCipherUpdateAAD(ctx, associatedData))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
