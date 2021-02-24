@@ -12,10 +12,13 @@ namespace System.Security.Cryptography.RNG.Tests
 {
     public class RandomNumberGeneratorTests
     {
-        [Fact]
-        public static void RandomDistribution()
+        [Theory]
+        [InlineData(2048)]
+        [InlineData(65536)]
+        [InlineData(1048576)]
+        public static void RandomDistribution(int arraySize)
         {
-            byte[] random = new byte[2048];
+            byte[] random = new byte[arraySize];
 
             using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
