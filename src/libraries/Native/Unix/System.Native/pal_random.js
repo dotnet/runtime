@@ -10,14 +10,9 @@ var DotNetEntropyLib = {
         getBatchedRandomValues: function (buffer, bufferLength) {
             // for modern web browsers
             // map the work array to the memory buffer passed with the length
-            var wrkArray = new Uint8Array(Module.HEAPU8.buffer, buffer, bufferLength);
-            while (bufferLength > 0) {
-                var sliceEm = bufferLength % this.batchedQuotaMax;
-                sliceEm = sliceEm > 0 ? sliceEm : this.batchedQuotaMax;
-                var diceEmSegment = new Uint8Array(sliceEm);
-                crypto.getRandomValues(diceEmSegment);
-                bufferLength -= sliceEm;
-                wrkArray.set(diceEmSegment, bufferLength);
+            for (var i = 0; i < bufferLength; i += this.batchedQuotaMax) {
+                var view = new Uint8Array(Module.HEAPU8.buffer, buffer + i, Math.min(bufferLength - i, this.batchedQuotaMax));
+                crypto.getRandomValues(view)
             }
         }
     },
