@@ -3233,13 +3233,16 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 		p += mono_seq_point_info_read (&seq_points, p, FALSE);
 
-		mono_domain_lock (domain);
+		// FIXME: Call a function in seq-points.c
+		// FIXME:
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+		jit_mm_lock (jit_mm);
 		/* This could be set already since this function can be called more than once for the same method */
-		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, method))
-			g_hash_table_insert (domain_jit_info (domain)->seq_points, method, seq_points);
+		if (!g_hash_table_lookup (jit_mm->seq_points, method))
+			g_hash_table_insert (jit_mm->seq_points, method, seq_points);
 		else
 			mono_seq_point_info_free (seq_points);
-		mono_domain_unlock (domain);
+		jit_mm_unlock (jit_mm);
 
 		jinfo->seq_points = seq_points;
 	}
@@ -3994,18 +3997,19 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
 	 * the addresses of the GOT slots pointing to a method, and patch
 	 * them after the method has been compiled.
 	 */
-	MonoJitDomainInfo *info = domain_jit_info (domain);
 	GSList *list;
+	MonoJitMemoryManager *jit_mm;
 	MonoMethod *shared_method = mini_method_to_shared (method);
 	method = shared_method ? shared_method : method;
-		
-	mono_domain_lock (domain);
-	if (!info->jump_target_got_slot_hash)
-		info->jump_target_got_slot_hash = g_hash_table_new (NULL, NULL);
-	list = (GSList *)g_hash_table_lookup (info->jump_target_got_slot_hash, method);
+
+	jit_mm = jit_mm_for_method (method);		
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->jump_target_got_slot_hash)
+		jit_mm->jump_target_got_slot_hash = g_hash_table_new (NULL, NULL);
+	list = (GSList *)g_hash_table_lookup (jit_mm->jump_target_got_slot_hash, method);
 	list = g_slist_prepend (list, got_slot);
-	g_hash_table_insert (info->jump_target_got_slot_hash, method, list);
-	mono_domain_unlock (domain);
+	g_hash_table_insert (jit_mm->jump_target_got_slot_hash, method, list);
+	jit_mm_unlock (jit_mm);
 }
 
 /*

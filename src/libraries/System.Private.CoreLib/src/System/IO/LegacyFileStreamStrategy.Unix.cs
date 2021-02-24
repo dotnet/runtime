@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    public partial class FileStream : Stream
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         /// <summary>File mode.</summary>
         private FileMode _mode;
@@ -34,7 +34,12 @@ namespace System.IO
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
 
-        private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
+        /// <param name="mode">How the file should be opened.</param>
+        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
+        /// <param name="originalPath">The original path specified for the FileStream.</param>
+        /// <param name="options">Options, passed via arguments as we have no guarantee that _options field was already set.</param>
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -45,30 +50,6 @@ namespace System.IO
             if (_useAsyncIO)
                 _asyncState = new AsyncState();
 
-            // Translate the arguments into arguments for an open call.
-            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, _access, share, options);
-
-            // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
-            // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
-            // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
-            // actual permissions will typically be less than what we select here.
-            const Interop.Sys.Permissions OpenPermissions =
-                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR |
-                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
-                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
-
-            // Open the file and store the safe handle.
-            return SafeFileHandle.Open(_path!, openFlags, (int)OpenPermissions);
-        }
-
-        private static bool GetDefaultIsAsync(SafeFileHandle handle) => handle.IsAsync ?? DefaultIsAsync;
-
-        /// <summary>Initializes a stream for reading or writing a Unix file.</summary>
-        /// <param name="mode">How the file should be opened.</param>
-        /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
-        /// <param name="originalPath">The original path specified for the FileStream.</param>
-        private void Init(FileMode mode, FileShare share, string originalPath)
-        {
             _fileHandle.IsAsync = _useAsyncIO;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
@@ -92,8 +73,8 @@ namespace System.IO
             // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
             // so if both are specified, we prefer RandomAccess (behavior on Windows is unspecified if both are provided).
             Interop.Sys.FileAdvice fadv =
-                (_options & FileOptions.RandomAccess) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
-                (_options & FileOptions.SequentialScan) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
+                (options & FileOptions.RandomAccess) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_RANDOM :
+                (options & FileOptions.SequentialScan) != 0 ? Interop.Sys.FileAdvice.POSIX_FADV_SEQUENTIAL :
                 0;
             if (fadv != 0)
             {
@@ -101,7 +82,7 @@ namespace System.IO
                     ignoreNotSupported: true); // just a hint.
             }
 
-            if (_mode == FileMode.Append)
+            if (mode == FileMode.Append)
             {
                 // Jump to the end of the file if opened as Append.
                 _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
@@ -134,71 +115,6 @@ namespace System.IO
                 SeekCore(handle, 0, SeekOrigin.Current);
         }
 
-        /// <summary>Translates the FileMode, FileAccess, and FileOptions values into flags to be passed when opening the file.</summary>
-        /// <param name="mode">The FileMode provided to the stream's constructor.</param>
-        /// <param name="access">The FileAccess provided to the stream's constructor</param>
-        /// <param name="share">The FileShare provided to the stream's constructor</param>
-        /// <param name="options">The FileOptions provided to the stream's constructor</param>
-        /// <returns>The flags value to be passed to the open system call.</returns>
-        private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options)
-        {
-            // Translate FileMode.  Most of the values map cleanly to one or more options for open.
-            Interop.Sys.OpenFlags flags = default;
-            switch (mode)
-            {
-                default:
-                case FileMode.Open: // Open maps to the default behavior for open(...).  No flags needed.
-                case FileMode.Truncate: // We truncate the file after getting the lock
-                    break;
-
-                case FileMode.Append: // Append is the same as OpenOrCreate, except that we'll also separately jump to the end later
-                case FileMode.OpenOrCreate:
-                case FileMode.Create: // We truncate the file after getting the lock
-                    flags |= Interop.Sys.OpenFlags.O_CREAT;
-                    break;
-
-                case FileMode.CreateNew:
-                    flags |= (Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL);
-                    break;
-            }
-
-            // Translate FileAccess.  All possible values map cleanly to corresponding values for open.
-            switch (access)
-            {
-                case FileAccess.Read:
-                    flags |= Interop.Sys.OpenFlags.O_RDONLY;
-                    break;
-
-                case FileAccess.ReadWrite:
-                    flags |= Interop.Sys.OpenFlags.O_RDWR;
-                    break;
-
-                case FileAccess.Write:
-                    flags |= Interop.Sys.OpenFlags.O_WRONLY;
-                    break;
-            }
-
-            // Handle Inheritable, other FileShare flags are handled by Init
-            if ((share & FileShare.Inheritable) == 0)
-            {
-                flags |= Interop.Sys.OpenFlags.O_CLOEXEC;
-            }
-
-            // Translate some FileOptions; some just aren't supported, and others will be handled after calling open.
-            // - Asynchronous: Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
-            // - DeleteOnClose: Doesn't have a Unix equivalent, but we approximate it in Dispose
-            // - Encrypted: No equivalent on Unix and is ignored
-            // - RandomAccess: Implemented after open if posix_fadvise is available
-            // - SequentialScan: Implemented after open if posix_fadvise is available
-            // - WriteThrough: Handled here
-            if ((options & FileOptions.WriteThrough) != 0)
-            {
-                flags |= Interop.Sys.OpenFlags.O_SYNC;
-            }
-
-            return flags;
-        }
-
         /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
         public override bool CanSeek => CanSeekCore(_fileHandle);
 
@@ -223,21 +139,24 @@ namespace System.IO
             return _canSeek.GetValueOrDefault();
         }
 
-        private long GetLengthInternal()
+        public override long Length
         {
-            // Get the length of the file as reported by the OS
-            Interop.Sys.FileStatus status;
-            CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
-            long length = status.Size;
-
-            // But we may have buffered some data to be written that puts our length
-            // beyond what the OS is aware of.  Update accordingly.
-            if (_writePos > 0 && _filePosition + _writePos > length)
+            get
             {
-                length = _writePos + _filePosition;
-            }
+                // Get the length of the file as reported by the OS
+                Interop.Sys.FileStatus status;
+                CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
+                long length = status.Size;
 
-            return length;
+                // But we may have buffered some data to be written that puts our length
+                // beyond what the OS is aware of.  Update accordingly.
+                if (_writePos > 0 && _filePosition + _writePos > length)
+                {
+                    length = _writePos + _filePosition;
+                }
+
+                return length;
+            }
         }
 
         /// <summary>Releases the unmanaged resources used by the stream.</summary>
@@ -305,7 +224,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(static s => ((FileStream)s!).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(static s => ((LegacyFileStreamStrategy)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -342,7 +261,7 @@ namespace System.IO
         }
 
         /// <summary>Writes any data in the write buffer to the underlying stream and resets the buffer.</summary>
-        private void FlushWriteBuffer()
+        private void FlushWriteBuffer(bool calledFromFinalizer = false)
         {
             AssertBufferInvariants();
             if (_writePos > 0)
@@ -354,7 +273,7 @@ namespace System.IO
 
         /// <summary>Sets the length of this stream to the given value.</summary>
         /// <param name="value">The new length of the stream.</param>
-        private void SetLengthInternal(long value)
+        public override void SetLength(long value)
         {
             FlushInternalBuffer();
 
@@ -530,7 +449,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!;
+                var thisRef = (LegacyFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -691,7 +610,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!;
+                var thisRef = (LegacyFileStreamStrategy)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -702,11 +621,6 @@ namespace System.IO
                 finally { thisRef._asyncState.Release(); }
             }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default));
         }
-
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) =>
-            // Windows version overrides this method, so the Unix version does as well, but it doesn't
-            // currently have any special optimizations to be done and so just calls to the base.
-            base.CopyToAsync(destination, bufferSize, cancellationToken);
 
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
@@ -772,10 +686,11 @@ namespace System.IO
         /// Specifies the beginning, the end, or the current position as a reference
         /// point for offset, using a value of type SeekOrigin.
         /// </param>
+        /// <param name="closeInvalidHandle">not used in Unix implementation</param>
         /// <returns>The new position in the stream.</returns>
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin)
+        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(!fileHandle.IsClosed && (GetType() != typeof(FileStream) || CanSeekCore(fileHandle))); // verify that we can seek, but only if CanSeek won't be a virtual call (which could happen in the ctor)
+            Debug.Assert(!fileHandle.IsClosed && CanSeekCore(fileHandle));
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values

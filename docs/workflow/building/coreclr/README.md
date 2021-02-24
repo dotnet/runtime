@@ -11,6 +11,7 @@ For Windows:
 ```
 build.cmd -subset clr
 ```
+Specifying `-subset` explicitly is not necessary if it is the first argument: `./build -subset clr` and `./build clr` are equivalent.
 
 By default, build generates a 'debug' build type, that includes asserts and is easier for some people to debug. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version (which does not have these checks) by adding the flag `-configuration release` (or `-c release`), for example:
 ```

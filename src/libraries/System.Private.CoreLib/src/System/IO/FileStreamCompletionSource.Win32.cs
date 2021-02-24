@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
@@ -25,7 +25,7 @@ namespace System.IO
 
             private static Action<object?>? s_cancelCallback;
 
-            private readonly FileStream _stream;
+            private readonly LegacyFileStreamStrategy _stream;
             private readonly int _numBufferedBytes;
             private CancellationTokenRegistration _cancellationRegistration;
 #if DEBUG
@@ -35,7 +35,7 @@ namespace System.IO
             private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            protected FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[]? bytes)
+            protected FileStreamCompletionSource(LegacyFileStreamStrategy stream, int numBufferedBytes, byte[]? bytes)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
@@ -132,8 +132,8 @@ namespace System.IO
                 // be directly the FileStreamCompletionSource that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
                 object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
-                Debug.Assert(state is FileStream || state is FileStreamCompletionSource);
-                FileStreamCompletionSource completionSource = state is FileStream fs ?
+                Debug.Assert(state is LegacyFileStreamStrategy || state is FileStreamCompletionSource);
+                FileStreamCompletionSource completionSource = state is LegacyFileStreamStrategy fs ?
                     fs._currentOverlappedOwner! : // must be owned
                     (FileStreamCompletionSource)state!;
                 Debug.Assert(completionSource != null);
@@ -220,7 +220,7 @@ namespace System.IO
                 }
             }
 
-            public static FileStreamCompletionSource Create(FileStream stream, int numBufferedBytesRead, ReadOnlyMemory<byte> memory)
+            public static FileStreamCompletionSource Create(LegacyFileStreamStrategy stream, int numBufferedBytesRead, ReadOnlyMemory<byte> memory)
             {
                 // If the memory passed in is the stream's internal buffer, we can use the base FileStreamCompletionSource,
                 // which has a PreAllocatedOverlapped with the memory already pinned.  Otherwise, we use the derived
@@ -241,7 +241,7 @@ namespace System.IO
         {
             private MemoryHandle _handle; // mutable struct; do not make this readonly
 
-            internal MemoryFileStreamCompletionSource(FileStream stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
+            internal MemoryFileStreamCompletionSource(LegacyFileStreamStrategy stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
                 base(stream, numBufferedBytes, bytes: null) // this type handles the pinning, so null is passed for bytes
             {
                 _handle = memory.Pin();

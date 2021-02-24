@@ -3,14 +3,14 @@
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
-        private static void LockInternal(long position, long length)
+        internal override void Lock(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }
 
-        private static void UnlockInternal(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
         }
