@@ -309,6 +309,7 @@
 
 		<!-- domain.c: mono_defaults.runtimetype_class -->
 		<!-- under mono, this has no runtime visible fields -->
+		<!-- RuntimeType is a fundamental type and the constructor is called by the runtime to implement reflection primitives like Object.GetType() and typeof(C) -->
 		<type fullname="System.RuntimeType">
 			<method signature="System.Void .ctor()" />
 		</type>
