@@ -19,6 +19,7 @@
         $(WasmBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
   <PropertyGroup>
     <_NetCoreAppToolCurrent>net5.0</_NetCoreAppToolCurrent>
   </PropertyGroup>
@@ -53,5 +54,4 @@
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
 </Project>
