@@ -133,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializeDirectoryContext(contextType, name, null, null);
         }
 
-        public DirectoryContext(DirectoryContextType contextType, string username, string password)
+        public DirectoryContext(DirectoryContextType contextType, string? username, string? password)
         {
             //
             // this constructor can only be called for DirectoryContextType.Forest or DirectoryContextType.Domain
@@ -147,7 +147,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializeDirectoryContext(contextType, null, username, password);
         }
 
-        public DirectoryContext(DirectoryContextType contextType, string name, string username, string password)
+        public DirectoryContext(DirectoryContextType contextType, string name, string? username, string? password)
         {
             if (contextType < DirectoryContextType.Domain || contextType > DirectoryContextType.ApplicationPartition)
             {

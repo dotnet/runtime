@@ -10,16 +10,16 @@ namespace System.DirectoryServices
     /// </devdoc>
     public class ResultPropertyValueCollection : ReadOnlyCollectionBase
     {
-        internal ResultPropertyValueCollection(object?[] values)
+        internal ResultPropertyValueCollection(object[] values)
         {
             InnerList.AddRange(values ?? Array.Empty<object>());
         }
 
-        public object? this[int index]
+        public object this[int index]
         {
             get
             {
-                object? returnValue = InnerList[index];
+                object returnValue = InnerList[index]!;
                 if (returnValue is Exception)
                     throw (Exception)returnValue;
                 else

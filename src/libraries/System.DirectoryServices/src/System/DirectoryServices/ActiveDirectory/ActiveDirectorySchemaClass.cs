@@ -1002,7 +1002,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (_schemaGuidBinaryForm == null)
                     {
                         // get the property from the server
-                        _schemaGuidBinaryForm = (byte[]?)GetValueFromCache(PropertyManager.SchemaIDGuid, true);
+                        _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true)!;
                     }
                 }
 

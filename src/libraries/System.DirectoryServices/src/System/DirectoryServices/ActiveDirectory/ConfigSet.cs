@@ -204,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return FindAdamInstances(_context, partitionName, null);
         }
 
-        public AdamInstanceCollection FindAllAdamInstances(string? partitionName, string? siteName)
+        public AdamInstanceCollection FindAllAdamInstances(string? partitionName, string siteName)
         {
             CheckIfDisposed();
 
@@ -260,13 +260,13 @@ namespace System.DirectoryServices.ActiveDirectory
             _cachedSecurityLevel = (ReplicationSecurityLevel)(-1);
         }
 
-        public override string? ToString() => Name;
+        public override string ToString() => Name;
 
         #endregion public methods
 
         #region public properties
 
-        public string? Name
+        public string Name
         {
             get
             {

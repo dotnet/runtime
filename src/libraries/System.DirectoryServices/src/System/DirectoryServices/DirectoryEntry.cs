@@ -790,7 +790,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Calls a method on the native Active Directory.
         /// </devdoc>
-        public object? Invoke(string methodName, params object?[] args)
+        public object? Invoke(string methodName, params object?[]? args)
         {
             object target = this.NativeObject;
             Type type = target.GetType();
@@ -861,7 +861,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Sets a property on the native Active Directory object.
         /// </devdoc>
-        public void InvokeSet(string propertyName, params object?[] args)
+        public void InvokeSet(string propertyName, params object?[]? args)
         {
             object target = this.NativeObject;
             Type type = target.GetType();

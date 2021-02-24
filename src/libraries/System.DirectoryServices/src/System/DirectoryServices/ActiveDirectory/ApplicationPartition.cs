@@ -89,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (_domainDNSEntry != null)
                     {
                         _domainDNSEntry.Dispose();
-                        _domainDNSEntry = null!;
+                        _domainDNSEntry = null;
                     }
 
                     _disposed = true;

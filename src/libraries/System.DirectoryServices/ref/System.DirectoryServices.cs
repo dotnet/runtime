@@ -177,9 +177,9 @@ namespace System.DirectoryServices
         public void DeleteTree() { }
         protected override void Dispose(bool disposing) { }
         public static bool Exists(string path) { throw null; }
-        public object? Invoke(string methodName, params object?[] args) { throw null; }
+        public object? Invoke(string methodName, params object?[]? args) { throw null; }
         public object? InvokeGet(string propertyName) { throw null; }
-        public void InvokeSet(string propertyName, params object?[] args) { }
+        public void InvokeSet(string propertyName, params object?[]? args) { }
         public void MoveTo(System.DirectoryServices.DirectoryEntry newParent) { }
         public void MoveTo(System.DirectoryServices.DirectoryEntry newParent, string? newName) { }
         public void RefreshCache() { }
@@ -469,7 +469,7 @@ namespace System.DirectoryServices
     public partial class ResultPropertyValueCollection : System.Collections.ReadOnlyCollectionBase
     {
         internal ResultPropertyValueCollection() { }
-        public object? this[int index] { get { throw null; } }
+        public object this[int index] { get { throw null; } }
         public bool Contains(object? value) { throw null; }
         public void CopyTo(object?[] values, int index) { }
         public int IndexOf(object? value) { throw null; }
@@ -1062,7 +1062,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal ConfigurationSet() { }
         public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection AdamInstances { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ApplicationPartitionCollection ApplicationPartitions { get { throw null; } }
-        public string? Name { get { throw null; } }
+        public string Name { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.AdamInstance NamingRoleOwner { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema Schema { get { throw null; } }
         public System.DirectoryServices.ActiveDirectory.AdamInstance SchemaRoleOwner { get { throw null; } }
@@ -1073,20 +1073,20 @@ namespace System.DirectoryServices.ActiveDirectory
         public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance(string partitionName) { throw null; }
         public System.DirectoryServices.ActiveDirectory.AdamInstance FindAdamInstance(string? partitionName, string siteName) { throw null; }
         public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances() { throw null; }
-        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string partitionName) { throw null; }
+        public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string? partitionName) { throw null; }
         public System.DirectoryServices.ActiveDirectory.AdamInstanceCollection FindAllAdamInstances(string? partitionName, string? siteName) { throw null; }
         public static System.DirectoryServices.ActiveDirectory.ConfigurationSet GetConfigurationSet(System.DirectoryServices.ActiveDirectory.DirectoryContext context) { throw null; }
         public System.DirectoryServices.DirectoryEntry GetDirectoryEntry() { throw null; }
         public System.DirectoryServices.ActiveDirectory.ReplicationSecurityLevel GetSecurityLevel() { throw null; }
         public void SetSecurityLevel(System.DirectoryServices.ActiveDirectory.ReplicationSecurityLevel securityLevel) { }
-        public override string? ToString() { throw null; }
+        public override string ToString() { throw null; }
     }
     public partial class DirectoryContext
     {
         public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType) { }
         public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name) { }
-        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string username, string password) { }
-        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name, string username, string password) { }
+        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string? username, string? password) { }
+        public DirectoryContext(System.DirectoryServices.ActiveDirectory.DirectoryContextType contextType, string name, string? username, string? password) { }
         public System.DirectoryServices.ActiveDirectory.DirectoryContextType ContextType { get { throw null; } }
         public string? Name { get { throw null; } }
         public string? UserName { get { throw null; } }

@@ -199,7 +199,7 @@ namespace System.DirectoryServices
                 }
             }
 
-            public object? Current => Entry.Value;
+            public object Current => Entry.Value!;
 
             public DictionaryEntry Entry
             {
@@ -214,7 +214,7 @@ namespace System.DirectoryServices
 
             public object Key => Entry.Key;
 
-            public object? Value => Entry.Value;
+            public object Value => Entry.Value!;
 
             public bool MoveNext()
             {
