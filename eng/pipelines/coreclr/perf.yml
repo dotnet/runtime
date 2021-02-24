@@ -45,30 +45,30 @@ jobs:
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-    buildConfig: release
-    platforms:
-    - Linux_arm64
-    jobParameters:
-      testGroup: perf
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
 
   # run arm64 interpreter jobs for mono
   - template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-    buildConfig: release
-    runtimeFlavor: mono
-    platforms:
-    - Linux_arm64
-    jobParameters:
-      testGroup: perf
-      liveLibrariesBuildConfig: Release
-      runtimeType: mono
-      codeGenType: 'Interpreter'
-      projectFile: microbenchmarks.proj
-      runKind: micro_mono
-      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'Interpreter'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
