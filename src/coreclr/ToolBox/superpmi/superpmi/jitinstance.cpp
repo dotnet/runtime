@@ -322,12 +322,12 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         {
             // For altjit, treat SKIPPED as OK
 #ifdef TARGET_AMD64
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
+            if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
             {
                 jitResult = CORJIT_OK;
             }
 #elif defined(TARGET_X86)
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
+            if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM)
             {
                 jitResult = CORJIT_OK;
             }

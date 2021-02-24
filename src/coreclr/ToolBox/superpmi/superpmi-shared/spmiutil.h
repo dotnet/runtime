@@ -45,4 +45,15 @@ inline DWORDLONG CastPointer(T* p)
     return (DWORDLONG)(uintptr_t)p;
 }
 
+enum SPMI_TARGET_ARCHITECTURE
+{
+    SPMI_TARGET_ARCHITECTURE_X86,
+    SPMI_TARGET_ARCHITECTURE_AMD64,
+    SPMI_TARGET_ARCHITECTURE_ARM64,
+    SPMI_TARGET_ARCHITECTURE_ARM
+};
+
+SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
+void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
+
 #endif // !_SPMIUtil

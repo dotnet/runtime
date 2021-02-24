@@ -227,3 +227,25 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     return fullPath;
 }
+
+#ifdef TARGET_AMD64
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
+#elif defined(TARGET_X86)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+#elif defined(TARGET_ARM)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+#elif defined(TARGET_ARM64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+#else
+#error Unsupported architecture
+#endif
+
+SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture()
+{
+    return SpmiTargetArchitecture;
+}
+
+void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture)
+{
+    SpmiTargetArchitecture = spmiTargetArchitecture;
+}
