@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
@@ -169,6 +172,195 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(count, r.Count);
             Assert.Equal(messageType, r.MessageType);
             Assert.Equal(endOfMessage, r.EndOfMessage);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(125)]
+        [InlineData(ushort.MaxValue)]
+        [InlineData(ushort.MaxValue * 2)]
+        public async Task SendUncompressedClientMessage(int messageSize)
+        {
+            var stream = new WebSocketTestStream();
+            using WebSocket server = CreateFromStream(stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+            using WebSocket client = CreateFromStream(stream.Remote, isServer: false, null, Timeout.InfiniteTimeSpan);
+
+            var message = new byte[messageSize];
+            new Random(0).NextBytes(message);
+
+            await client.SendAsync(message, WebSocketMessageType.Binary, true, default);
+
+            var buffer = new byte[messageSize];
+            var result = await server.ReceiveAsync(buffer, default);
+
+            Assert.Equal(messageSize, result.Count);
+            Assert.True(result.EndOfMessage);
+            Assert.True(message.AsSpan().SequenceEqual(buffer));
+        }
+
+        [Fact]
+        public async Task WhenPingReceivedPongMessageMustBeSent()
+        {
+            var stream = new WebSocketTestStream();
+            using WebSocket server = CreateFromStream(stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+            using var cancellation = new CancellationTokenSource();
+
+            stream.Enqueue(0b1000_1001, 0x00);
+            var receiveTask = server.ReceiveAsync(Memory<byte>.Empty, cancellation.Token).AsTask();
+
+            Assert.Equal(0, stream.Available);
+            Assert.Equal(2, stream.Remote.Available);
+            Assert.Equal<byte>(new byte[] { 0b1000_1010, 0x00 }, stream.Remote.NextAvailableBytes.ToArray());
+
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await receiveTask.ConfigureAwait(false));
+        }
+
+        [Fact]
+        public async Task WhenPongReceivedNothingShouldBeSentBack()
+        {
+            var stream = new WebSocketTestStream();
+            using WebSocket client = CreateFromStream(stream, isServer: false, null, Timeout.InfiniteTimeSpan);
+
+            using var cancellation = new CancellationTokenSource();
+
+            stream.Enqueue(0b1000_1010, 0x00);
+            var receiveTask = client.ReceiveAsync(Memory<byte>.Empty, cancellation.Token).AsTask();
+
+            Assert.Equal(0, stream.Available);
+            Assert.Equal(0, stream.Remote.Available);
+
+            cancellation.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await receiveTask.ConfigureAwait(false));
+        }
+
+        [Fact]
+        public async Task ClosingWebSocketsGracefully()
+        {
+            var stream = new WebSocketTestStream();
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            using WebSocket client = CreateFromStream(stream, isServer: false, null, Timeout.InfiniteTimeSpan);
+            using WebSocket server = CreateFromStream(stream.Remote, isServer: true, null, Timeout.InfiniteTimeSpan);
+
+            var clientClose = client.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Yeet", cancellation.Token);
+            var result = await server.ReceiveAsync(Memory<byte>.Empty, cancellation.Token);
+
+            Assert.True(result.EndOfMessage);
+            Assert.Equal(WebSocketMessageType.Close, result.MessageType);
+            Assert.Equal(0, result.Count);
+            Assert.Equal("Yeet", server.CloseStatusDescription);
+            Assert.Equal(WebSocketCloseStatus.PolicyViolation, server.CloseStatus);
+
+            await server.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancellation.Token);
+            await clientClose;
+
+            Assert.Equal(WebSocketState.Closed, server.State);
+            Assert.Equal(WebSocketState.Closed, client.State);
+        }
+
+        [Fact]
+        public async Task LargeMessageSplitInMultipleFrames()
+        {
+            var stream = new WebSocketTestStream();
+            using WebSocket server = CreateFromStream(stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+            using WebSocket client = CreateFromStream(stream.Remote, isServer: false, null, Timeout.InfiniteTimeSpan);
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+            Memory<byte> testData = new byte[ushort.MaxValue];
+            Memory<byte> receivedData = new byte[testData.Length];
+
+            // Make the data incompressible to make sure that the output is larger than the input
+            var rng = new Random(0);
+            rng.NextBytes(testData.Span);
+
+            // Test it a few times with different frame sizes
+            for (var i = 0; i < 10; ++i)
+            {
+                var frameSize = rng.Next(1024, 2048);
+                var position = 0;
+
+                while (position < testData.Length)
+                {
+                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    var eof = position + currentFrameSize == testData.Length;
+
+                    await server.SendAsync(testData.Slice(position, currentFrameSize), WebSocketMessageType.Binary, eof, cancellation.Token);
+                    position += currentFrameSize;
+                }
+
+                Assert.True(testData.Length < stream.Remote.Available, "The compressed data should be bigger.");
+                Assert.Equal(testData.Length, position);
+
+                // Receive the data from the client side
+                receivedData.Span.Clear();
+                position = 0;
+
+                // Intentionally receive with a frame size that is less than what the sender used
+                frameSize /= 3;
+
+                while (true)
+                {
+                    var currentFrameSize = Math.Min(frameSize, testData.Length - position);
+                    var result = await client.ReceiveAsync(receivedData.Slice(position, currentFrameSize), cancellation.Token);
+
+                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
+                    position += result.Count;
+
+                    if (result.EndOfMessage)
+                        break;
+                }
+
+                Assert.Equal(0, stream.Remote.Available);
+                Assert.Equal(testData.Length, position);
+                Assert.True(testData.Span.SequenceEqual(receivedData.Span));
+            }
+        }
+
+        [Fact]
+        public async Task Duplex()
+        {
+            var stream = new WebSocketTestStream();
+            using WebSocket server = CreateFromStream(stream, isServer: true, null, Timeout.InfiniteTimeSpan);
+            using WebSocket client = CreateFromStream(stream.Remote, isServer: false, null, Timeout.InfiniteTimeSpan);
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+            var buffer = new byte[1024];
+
+            for (var i = 0; i < 10; ++i)
+            {
+                var message = $"Sending number {i} from server.";
+                if (i >= 5)
+                {
+                    // Because the code is optimized when tasks complete synchronously,
+                    // cause the next send to complete asynchronously.
+                    stream.Remote.DelayForNextSend = TimeSpan.FromMilliseconds(1);
+                }
+                await server.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, cancellation.Token);
+                var result = await client.ReceiveAsync(buffer.AsMemory(), cancellation.Token);
+
+                Assert.True(result.EndOfMessage);
+                Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+
+                Assert.Equal(message, Encoding.UTF8.GetString(buffer.AsSpan(0, result.Count)));
+            }
+
+            for (var i = 0; i < 10; ++i)
+            {
+                var message = $"Sending number {i} from client.";
+                if (i >= 5)
+                {
+                    // Because the code is optimized when tasks complete synchronously,
+                    // cause the next send to complete asynchronously.
+                    stream.DelayForNextSend = TimeSpan.FromMilliseconds(1);
+                }
+                await client.SendAsync(Encoding.UTF8.GetBytes(message), WebSocketMessageType.Text, true, cancellation.Token);
+                var result = await server.ReceiveAsync(buffer.AsMemory(), cancellation.Token);
+
+                Assert.True(result.EndOfMessage);
+                Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+
+                Assert.Equal(message, Encoding.UTF8.GetString(buffer.AsSpan(0, result.Count)));
+            }
         }
 
         public abstract class ExposeProtectedWebSocket : WebSocket
