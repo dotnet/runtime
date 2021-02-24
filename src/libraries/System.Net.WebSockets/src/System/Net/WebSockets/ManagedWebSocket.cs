@@ -405,7 +405,7 @@ namespace System.Net.WebSockets
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
-                sendTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer, CancellationToken.None);
+                sendTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer.Span, CancellationToken.None);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
@@ -461,7 +461,7 @@ namespace System.Net.WebSockets
             await _sendFrameAsyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                await _sender.SendAsync(opcode, endOfMessage, payloadBuffer, cancellationToken).ConfigureAwait(false);
+                await _sender.SendAsync(opcode, endOfMessage, payloadBuffer.Span, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exc) when (exc is not OperationCanceledException)
             {
