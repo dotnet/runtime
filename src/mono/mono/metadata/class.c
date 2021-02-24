@@ -5858,8 +5858,6 @@ is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoCl
 static gboolean
 ignores_access_checks_to (MonoAssembly *accessing, MonoAssembly *accessed)
 {
-	if (accessing == accessed)
-		return TRUE;
 	if (!accessing || !accessed)
 		return FALSE;
 
