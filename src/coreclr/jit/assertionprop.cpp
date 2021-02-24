@@ -4658,8 +4658,16 @@ public:
 
             if (dupCount > 1)
             {
+                // Scenario where next block and conditional block, both point to the same block.
+                // In such case, intersect the assertions present on both the out edges of predBlock.
                 assert(predBlock->bbNext == block);
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
+
+                JITDUMP("AssertionPropCallback::Merge     : Duplicate flow, " FMT_BB " in -> %s, predBlock " FMT_BB
+                        " out1 -> %s, out2 -> %s\n",
+                        block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
+                        BitVecOps::ToString(apTraits, mJumpDestOut[predBlock->bbNum]),
+                        BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
             }
         }
         else
