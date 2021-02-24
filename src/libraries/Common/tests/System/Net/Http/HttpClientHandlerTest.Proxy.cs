@@ -137,6 +137,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         const string BasicAuth = "Basic";
+        const string content = "This is a test";
 
         private static ICredentials ConstructCredentials(NetworkCredential cred, Uri uriPrefix, string authType, bool wrapCredsInCache)
         {
@@ -224,8 +225,6 @@ namespace System.Net.Http.Functional.Tests
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
 
-                const string content = "This is a test";
-
                 using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.SecureRemoteEchoServer, new StringContent(content)))
                 {
                     string responseContent = await response.Content.ReadAsStringAsync();
@@ -278,6 +277,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         // TODO: Make this work like above
+        // Last thing to do : ConnectionClose after 407 variations
 
         [OuterLoop("Uses external server")]
         [Fact]
@@ -299,9 +299,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.Proxy = new WebProxy(proxyServer.Uri);
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.PostAsync(
-                    Configuration.Http.SecureRemoteEchoServer,
-                    new StringContent("This is a test")))
+                using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.SecureRemoteEchoServer, new StringContent(content)))
                 {
                     Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
                 }
