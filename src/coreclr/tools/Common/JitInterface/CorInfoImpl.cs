@@ -61,10 +61,10 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
+        [DllImport(JitLibrary)]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(JitLibrary)]
         private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
@@ -1054,6 +1054,13 @@ namespace Internal.JitInterface
             }
 
             return result != null ? ObjectToHandle(result) : null;
+        }
+
+        private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
+        {
+            TypeDesc comparand = HandleToObject(elemType);
+            TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetComparerForType(comparand);
+            return comparer != null ? ObjectToHandle(comparer) : null;
         }
 
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)

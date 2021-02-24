@@ -890,7 +890,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 
 		return thunks;
 	} else {
-		ji = mini_jit_info_table_find (domain, (char*)code, NULL);
+		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 		info = mono_jit_info_get_thunk_info (ji);
 		g_assert (info);
@@ -1004,9 +1004,10 @@ mono_arm_patch (guint8 *code, guint8 *target, int relocation)
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	guint8 *ip;
+	MonoDomain *domain = mono_get_root_domain ();
 
 	ip = ji->ip.i + code;
 
@@ -5331,7 +5332,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i, buf_len, imt_reg;
@@ -5373,9 +5374,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	}
 
 	if (fail_tramp) {
-		buf = (guint8*)mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), buf_len);
+		buf = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, buf_len);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		buf = mono_mem_manager_code_reserve (mem_manager, buf_len);
 	}
 	code = buf;
@@ -5465,7 +5466,7 @@ mono_arch_get_trampolines (gboolean aot)
 #else /* DISABLE_JIT */
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	g_assert_not_reached ();
@@ -5567,26 +5568,27 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;
+	MonoJitMemoryManager *jit_mm;
+
+	jit_mm = get_default_jit_mm ();
 
 	// FIXME: Add a free function
 
-	mono_domain_lock (domain);
-	info = (SeqPointInfo*)g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points,
-								code);
-	mono_domain_unlock (domain);
+	jit_mm_lock (jit_mm);
+	info = (SeqPointInfo *)g_hash_table_lookup (jit_mm->arch_seq_points, code);
+	jit_mm_unlock (jit_mm);
 
 	if (!info) {
-		ji = mono_jit_info_table_find (domain, code);
+		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
 		info = g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size / 4) * sizeof(guint8*));
 
 		info->ss_tramp_addr = &ss_trampoline;
 
-		mono_domain_lock (domain);
-		g_hash_table_insert (domain_jit_info (domain)->arch_seq_points,
-							 code, info);
-		mono_domain_unlock (domain);
+		jit_mm_lock (jit_mm);
+		g_hash_table_insert (jit_mm->arch_seq_points, code, info);
+		jit_mm_unlock (jit_mm);
 	}
 
 	return info;

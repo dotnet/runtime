@@ -260,7 +260,7 @@ gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **o
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method, gpointer addr);
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot);
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr);
-gpointer mono_aot_get_imt_trampoline        (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
+gpointer mono_aot_get_imt_trampoline        (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr);
 gpointer mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
 gpointer mono_aot_get_unbox_arbitrary_trampoline (gpointer addr);

@@ -12,11 +12,6 @@ namespace System.Linq
 
         public static bool SequenceEqual<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
-            if (comparer == null)
-            {
-                comparer = EqualityComparer<TSource>.Default;
-            }
-
             if (first == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
@@ -25,6 +20,24 @@ namespace System.Linq
             if (second == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
+            }
+
+            if (comparer == null)
+            {
+                // It's relatively common to see code (especially in tests and testing frameworks) that ends up
+                // using Enumerable.SequenceEqual to compare two byte arrays.  Using ReadOnlySpan.SequenceEqual
+                // is significantly faster than accessing each byte via the array's IList<byte> interface
+                // implementation.  So, we special-case byte[] here.  It would be nice to be able to delegate
+                // to ReadOnlySpan.SequenceEqual for all TSource[] arrays where TSource is a value type and
+                // implements IEquatable<TSource>, but there's no good way without reflection to convince
+                // the C# compiler to let us delegate, as ReadOnlySpan.SequenceEqual requires an IEquatable<T>
+                // constraint on its type parameter, and Enumerable.SequenceEqual lacks one on its type parameter.
+                if (typeof(TSource) == typeof(byte) && first is byte[] firstArr && second is byte[] secondArr)
+                {
+                    return ((ReadOnlySpan<byte>)firstArr).SequenceEqual(secondArr);
+                }
+
+                comparer = EqualityComparer<TSource>.Default;
             }
 
             if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)

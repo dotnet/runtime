@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -75,7 +75,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs"
              Link="System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs" />

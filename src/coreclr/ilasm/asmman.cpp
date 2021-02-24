@@ -843,8 +843,7 @@ HRESULT AsmMan::EmitManifest()
         EmitFiles();
         EmitAssembly();
 
-        if((((Assembler*)m_pAssembler)->m_dwIncludeDebugInfo != 0) && (m_pAssembly == NULL)
-           && !(((Assembler*)m_pAssembler)->m_fENCMode))
+        if((((Assembler*)m_pAssembler)->m_dwIncludeDebugInfo != 0) && (m_pAssembly == NULL))
         {
             mdToken tkOwner, tkMscorlib;
             tkMscorlib = ((Assembler*)m_pAssembler)->GetAsmRef("mscorlib");

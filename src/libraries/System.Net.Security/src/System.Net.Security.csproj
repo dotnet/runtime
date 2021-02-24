@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
     <Nullable>enable</Nullable>
@@ -9,7 +9,7 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetSecurity_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <DefineConstants>$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
@@ -268,7 +268,7 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Unix.cs" />
@@ -326,7 +326,7 @@
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeSslCredentials.cs"
              Link="Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.CFArray.cs"

@@ -23,13 +23,11 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
-#include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
-#include <mono/metadata/attach.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
@@ -823,8 +821,6 @@ mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
 
-	mono_attach_maybe_start ();
-
 	finalize_domain_objects ();
 
 	MONO_PROFILER_RAISE (gc_finalizing, ());
@@ -917,7 +913,9 @@ mono_gc_init_finalizer_thread (void)
 #ifndef LAZY_GC_THREAD_CREATION
 	/* do nothing */
 #else
+	MONO_ENTER_GC_UNSAFE;
 	init_finalizer_thread ();
+	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 

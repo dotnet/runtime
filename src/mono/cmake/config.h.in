@@ -416,9 +416,6 @@
 /* Disable generics support */
 #cmakedefine DISABLE_GENERICS 1
 
-/* Disable agent attach support */
-#cmakedefine DISABLE_ATTACH 1
-
 /* Disables the verifier */
 #cmakedefine DISABLE_VERIFIER 1
 

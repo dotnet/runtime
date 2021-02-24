@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // CommandLine.h - tiny very specific command line parser
@@ -23,6 +21,7 @@ public:
             , actionDumpMap(false)
             , actionDumpToc(false)
             , actionFracture(false)
+            , actionJitFlags(false)
             , actionILDump(false)
             , actionInteg(false)
             , actionMerge(false)
@@ -51,6 +50,7 @@ public:
         bool  actionDumpMap;
         bool  actionDumpToc;
         bool  actionFracture;
+        bool  actionJitFlags;
         bool  actionILDump;
         bool  actionInteg;
         bool  actionMerge;
