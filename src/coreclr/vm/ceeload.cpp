@@ -686,10 +686,13 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
 
-    // If the program has the "ForceEnc" env variable set we ensure every eligible
-    // module has EnC turned on.
-    if (g_pConfig->ForceEnc() && IsEditAndContinueCapable())
-        EnableEditAndContinue();
+    if (IsEditAndContinueCapable())
+    {
+        // If the program has the "ForceEnc" env variable set we ensure every eligible module has EnC turned on
+        // or if the debug built modifiable assemblies are enabled and the module is a debug built module.
+        if (g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits())))
+            EnableEditAndContinue();
+    }
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
@@ -1087,7 +1090,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     }
     else
     {
-        if (!g_pConfig->ForceEnc())
+        if (!(g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()))))
             DisableEditAndContinue();
     }
 #endif // DEBUGGING_SUPPORTED
