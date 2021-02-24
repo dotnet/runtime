@@ -1274,8 +1274,8 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 						ep_rt_thread_session_state_array_iterator_next (&thread_session_state_array_iterator)) {
 
 						EventPipeThreadSessionState * thread_session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_state_array_iterator);
-						uint32_t thread_sequence_number = 0;
-						bool exists = ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), thread_session_state, &thread_sequence_number);
+						uint32_t unused_thread_sequence_number = 0;
+						bool exists = ep_rt_thread_sequence_number_map_lookup (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), thread_session_state, &unused_thread_sequence_number);
 						if (exists) {
 							ep_rt_thread_sequence_number_map_remove (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), thread_session_state);
 							// every entry of this map was holding an extra ref to the thread (see: ep-event-instance.{h|c})
