@@ -15,6 +15,11 @@ build.cmd/sh -subset libs.tests
 build.cmd/sh -subset libs.tests -test -c Release
 ```
 
+- The following builds all tests for x86 architecture (**for x86 it's mandatory to build clr** even if you want to run libs tests only):
+```
+build.cmd/sh -subset clr+libs.pretest -rc Release -arch x86
+```
+
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI:
 ```
 build.cmd/sh -subset libs.tests -test /p:WithoutCategories=IgnoreForCI
@@ -39,6 +44,11 @@ dotnet build /t:Test
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g.:
 ```cmd
 dotnet build /t:Test /p:XUnitOptions="-class Test.ClassUnderTests"
+```
+
+Which is very useful when you want to run tests as `x86` on a `x64` machine:
+```cmd
+dotnet build /t:Test /p:TargetArchitecture=x86
 ```
 
 There may be multiple projects in some directories so you may need to specify the path to a specific test project to get it to build and run the tests.
