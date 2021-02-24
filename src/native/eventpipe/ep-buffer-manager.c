@@ -1230,14 +1230,6 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 						}
 					}
 					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
-				}
-
-				// foreach session_state_to_delete in session_states_to_delete
-				for (ep_rt_thread_session_state_array_iterator_t thread_session_state_array_iterator = ep_rt_thread_session_state_array_iterator_begin (&session_states_to_delete);
-					 !ep_rt_thread_session_state_array_iterator_end (&session_states_to_delete, &thread_session_state_array_iterator);
-					 ep_rt_thread_session_state_array_iterator_next (&thread_session_state_array_iterator)) {
-
-					EventPipeThreadSessionState * session_state = ep_rt_thread_session_state_array_iterator_value (&thread_session_state_array_iterator);
 					ep_rt_thread_session_state_list_remove (&buffer_manager->thread_session_state_list, session_state);
 				}
 			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
