@@ -629,8 +629,7 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
-            if (locked)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 // hot path #1: there is data in the buffer
                 if (_readLen - _readPos > 0 || count == 0)
@@ -672,7 +671,7 @@ namespace System.IO
             // Delegate to the async implementation.
             return ReadFromUnderlyingStreamAsync(
                 new Memory<byte>(buffer, offset + bytesFromBuffer, count - bytesFromBuffer),
-                cancellationToken, bytesFromBuffer, semaphoreLockTask, locked).AsTask();
+                cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -688,8 +687,7 @@ namespace System.IO
             int bytesFromBuffer = 0;
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool acquiredLock = semaphoreLockTask.IsCompletedSuccessfully;
-            if (acquiredLock)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 // hot path #1: there is data in the buffer
                 if (_readLen - _readPos > 0 || buffer.Length == 0)
@@ -723,7 +721,7 @@ namespace System.IO
             }
 
             // Delegate to the async implementation.
-            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask, acquiredLock);
+            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want ReadAsync to delegate to
@@ -731,7 +729,7 @@ namespace System.IO
         /// This allows BufferedStream to affect the semantics of the stream it wraps as little as possible. </summary>
         /// <returns>-2 if _bufferSize was set to 0 while waiting on the semaphore; otherwise num of bytes read.</returns>
         private async ValueTask<int> ReadFromUnderlyingStreamAsync(
-            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask, bool acquiredLock)
+            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask)
         {
             // Same conditions validated with exceptions in ReadAsync:
             Debug.Assert(_stream != null);
@@ -740,32 +738,25 @@ namespace System.IO
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
-            if (!acquiredLock)
-            {
-                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
+            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+            await semaphoreLockTask.ConfigureAwait(false);
 
             try
             {
                 int bytesFromBuffer = 0;
 
-                // we have already tried to read it from the buffer
-                if (!acquiredLock)
+                // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                // Check it now again.
+                bytesFromBuffer = ReadFromBuffer(buffer.Span);
+                if (bytesFromBuffer == buffer.Length)
                 {
-                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                    // Check it now again.
-                    bytesFromBuffer = ReadFromBuffer(buffer.Span);
-                    if (bytesFromBuffer == buffer.Length)
-                    {
-                        return bytesAlreadySatisfied + bytesFromBuffer;
-                    }
+                    return bytesAlreadySatisfied + bytesFromBuffer;
+                }
 
-                    if (bytesFromBuffer > 0)
-                    {
-                        buffer = buffer.Slice(bytesFromBuffer);
-                        bytesAlreadySatisfied += bytesFromBuffer;
-                    }
+                if (bytesFromBuffer > 0)
+                {
+                    buffer = buffer.Slice(bytesFromBuffer);
+                    bytesAlreadySatisfied += bytesFromBuffer;
                 }
 
                 Debug.Assert(_readLen == _readPos);
