@@ -125,7 +125,7 @@ namespace System.Linq
                             } while (e.MoveNext());
                             break;
                         }
-                    } while (e.MoveNext());
+                    }
 
                     Debug.Assert(queue.Count == Math.Min(count, startIndex));
                 }
