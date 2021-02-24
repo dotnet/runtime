@@ -10,6 +10,8 @@ namespace System.Net.Http
 {
     internal static class WinHttpTrailersHelper
     {
+        private const string RequestMessagePropertyName = "__ResponseTrailers";
+
         private static Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
         public static bool OsSupportsTrailers => s_trailersSupported.Value;
 
@@ -22,11 +24,14 @@ namespace System.Net.Http
 #pragma warning restore CS0618
 #else
             HttpResponseTrailers responseTrailers = new HttpResponseTrailers();
-            response.RequestMessage.Properties["__ResponseTrailers"] = responseTrailers;
+            response.RequestMessage.Properties[RequestMessagePropertyName] = responseTrailers;
             return responseTrailers;
 #endif
         }
 
+        // There is no way to verify if WINHTTP_QUERY_FLAG_TRAILERS is supported by the OS without creating a request.
+        // Instead, the WinHTTP team recommended to check if WINHTTP_OPTION_STREAM_ERROR_CODE is recognized by the OS.
+        // Both features were introduced in Manganese and are planned to be backported to older Windows versions together.
         private static bool GetTrailersSupported()
         {
             SafeWinHttpHandle sessionHandle = null;
@@ -50,6 +55,9 @@ namespace System.Net.Http
                 }
 
                 int lastError = Marshal.GetLastWin32Error();
+
+                // New Windows builds are expected to fail with ERROR_WINHTTP_INCORRECT_HANDLE_TYPE,
+                // when querying WINHTTP_OPTION_STREAM_ERROR_CODE on a session handle.
                 return lastError != Interop.WinHttp.ERROR_INVALID_PARAMETER;
             }
             finally
