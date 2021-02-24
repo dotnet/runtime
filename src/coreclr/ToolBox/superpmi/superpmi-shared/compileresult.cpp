@@ -767,6 +767,32 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
+        {
+            switch (relocType)
+            {
+                case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
+                {
+                    DWORDLONG fixupLocation = tmp.location;
+                    DWORDLONG branchInstr   = section_begin + fixupLocation - (DWORDLONG)originalAddr;
+                    DWORDLONG endOfTheBlock = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                    INT64 delta = (INT64)(endOfTheBlock - fixupLocation);
+                    PutArm64Rel28((UINT32*)branchInstr, (INT32)delta);
+                    relocWasHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                    LogError("Unimplemented reloc type %u", tmp.fRelocType);
+                    relocWasHandled = true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         if (relocWasHandled)
             continue;
 
@@ -843,23 +869,6 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
             break;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-#ifdef TARGET_ARM64
-            case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
-            {
-                DWORDLONG fixupLocation = tmp.location;
-                DWORDLONG branchInstr   = section_begin + fixupLocation - (DWORDLONG)originalAddr;
-                DWORDLONG endOfTheBlock = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                INT64 delta             = (INT64)(endOfTheBlock - fixupLocation);
-                PutArm64Rel28((UINT32*)branchInstr, (INT32)delta);
-            }
-            break;
-
-            case IMAGE_REL_ARM64_PAGEBASE_REL21:
-            case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                LogError("Unimplemented reloc type %u", tmp.fRelocType);
-                break;
-#endif // TARGET_ARM64
 
             default:
                 LogError("Unknown reloc type %u", tmp.fRelocType);
