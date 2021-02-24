@@ -139,20 +139,26 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
+        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(NetworkCredential cred, bool wrapCredsInCache)
         {
             var options = new LoopbackProxyServer.Options
-                { AuthenticationSchemes = creds != null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None
-                };
+            {
+                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None
+            };
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 const string BasicAuth = "Basic";
+                ICredentials creds;
                 if (wrapCredsInCache)
                 {
-                    Assert.IsAssignableFrom<NetworkCredential>(creds);
                     var cache = new CredentialCache();
-                    cache.Add(proxyServer.Uri, BasicAuth, (NetworkCredential)creds);
+                    cache.Add(proxyServer.Uri, BasicAuth, cred);
                     creds = cache;
+                }
+                else
+                {
+                    creds = cred;
                 }
 
                 using (HttpClientHandler handler = CreateHttpClientHandler())
