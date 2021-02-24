@@ -249,3 +249,11 @@ void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture)
 {
     SpmiTargetArchitecture = spmiTargetArchitecture;
 }
+
+void PutArm64Rel28(UINT32* pCode, INT32 imm28)
+{
+    UINT32 branchInstr = *pCode;
+    branchInstr &= 0xFC000000;
+    branchInstr |= ((imm28 >> 2) & 0x03FFFFFF);
+    *pCode = branchInstr;
+}

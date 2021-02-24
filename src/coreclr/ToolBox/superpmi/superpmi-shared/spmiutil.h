@@ -56,4 +56,6 @@ enum SPMI_TARGET_ARCHITECTURE
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
 void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 
+void PutArm64Rel28(UINT32* pCode, INT32 imm28);
+
 #endif // !_SPMIUtil
