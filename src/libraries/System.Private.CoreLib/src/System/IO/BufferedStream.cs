@@ -740,14 +740,11 @@ namespace System.IO
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
             await semaphoreLockTask.ConfigureAwait(false);
-
             try
             {
-                int bytesFromBuffer = 0;
-
                 // The buffer might have been changed by another async task while we were waiting on the semaphore.
                 // Check it now again.
-                bytesFromBuffer = ReadFromBuffer(buffer.Span);
+                int bytesFromBuffer = ReadFromBuffer(buffer.Span);
                 if (bytesFromBuffer == buffer.Length)
                 {
                     return bytesAlreadySatisfied + bytesFromBuffer;
@@ -1083,7 +1080,7 @@ namespace System.IO
                 {
                     if (_writePos == 0)
                     {
-                        ClearReadBufferBeforeWrite(); // Seeks, but does not perform sync IO
+                        ClearReadBufferBeforeWrite();
                     }
 
                     Debug.Assert(_writePos < _bufferSize);
@@ -1141,9 +1138,7 @@ namespace System.IO
                 // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
 
                 if (_writePos == 0)
-                {
                     ClearReadBufferBeforeWrite();
-                }
 
                 int totalUserBytes;
                 bool useBuffer;
@@ -1158,7 +1153,7 @@ namespace System.IO
                 {
                     buffer = buffer.Slice(WriteToBuffer(buffer.Span));
 
-                    if (_writePos < _buffer!.Length)
+                    if (_writePos < _bufferSize)
                     {
                         Debug.Assert(buffer.Length == 0);
                         return;
@@ -1218,7 +1213,7 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
-            if (_writePos > 0 && _writePos < _buffer!.Length - 1)
+            if (_writePos > 0 && _writePos < _bufferSize - 1)
             {
                 _buffer![_writePos++] = value;
             }
@@ -1245,7 +1240,7 @@ namespace System.IO
 
             _buffer![_writePos++] = value;
 
-            Debug.Assert(_writePos < _buffer!.Length);
+            Debug.Assert(_writePos < _bufferSize);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
