@@ -216,6 +216,14 @@ namespace System.Threading
 #endif
         }
 
+#if TARGET_UNIX || TARGET_BROWSER
+        private void EnsureWaitInfo()
+        {
+            if (_waitInfo == null)
+                _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
+        }
+#endif
+
         public static void SpinWait(int iterations)
         {
             if (iterations < 0)
@@ -322,6 +330,9 @@ namespace System.Threading
         private static Thread InitializeCurrentThread()
         {
             InitializeCurrentThread_icall(ref t_currentThread);
+#if TARGET_UNIX || TARGET_BROWSER
+            t_currentThread.EnsureWaitInfo();
+#endif
             return t_currentThread;
         }
 
