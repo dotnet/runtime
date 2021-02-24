@@ -37,8 +37,8 @@ namespace System.Collections.Generic
         private const int ShrinkThreshold = 3;
         private const int StartOfFreeList = -3;
 
-        private int[]? _buckets;
-        private Entry[]? _entries;
+        private int[] _buckets;
+        private Entry[] _entries;
 #if TARGET_64BIT
         private ulong _fastModMultiplier;
 #endif
@@ -50,9 +50,77 @@ namespace System.Collections.Generic
 
         #region Constructors
 
-        public HashSet() : this((IEqualityComparer<T>?)null) { }
+        public HashSet() : this(0, null) { }
 
-        public HashSet(IEqualityComparer<T>? comparer)
+        public HashSet(IEqualityComparer<T>? comparer) : this(0, comparer) { }
+
+        public HashSet(int capacity) : this(capacity, null) { }
+
+        public HashSet(IEnumerable<T> collection) : this(collection, null) { }
+
+        public HashSet(IEnumerable<T> collection, IEqualityComparer<T>? comparer)
+        {
+            if (collection == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+            }
+
+            InitializeComparer(comparer);
+
+            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
+            {
+                ConstructFrom(otherAsHashSet);
+                Debug.Assert(_buckets != null);
+                Debug.Assert(_entries != null);
+            }
+            else
+            {
+                // To avoid excess resizes, first set size based on collection's count. The collection may
+                // contain duplicates, so call TrimExcess if resulting HashSet is larger than the threshold.
+                int count = (collection as ICollection<T>)?.Count ?? 0;
+                if (count > 0)
+                {
+                    Initialize(HashHelpers.GetPrime(count));
+                }
+                else
+                {
+                    InitializeEmpty();
+                }
+                Debug.Assert(_buckets != null);
+                Debug.Assert(_entries != null);
+
+                UnionWith(collection);
+
+                if (_count > 0 && _entries.Length / _count > ShrinkThreshold)
+                {
+                    TrimExcess();
+                }
+            }
+        }
+
+        public HashSet(int capacity, IEqualityComparer<T>? comparer)
+        {
+            if (capacity < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+            }
+
+            InitializeComparer(comparer);
+
+            if (capacity > 0)
+            {
+                Initialize(HashHelpers.GetPrime(capacity));
+            }
+            else
+            {
+                InitializeEmpty();
+            }
+            Debug.Assert(_buckets != null);
+            Debug.Assert(_entries != null);
+        }
+
+        // Only to be called from constructor
+        private void InitializeComparer(IEqualityComparer<T>? comparer)
         {
             if (comparer != null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
@@ -80,56 +148,6 @@ namespace System.Collections.Generic
             }
         }
 
-        public HashSet(int capacity) : this(capacity, null) { }
-
-        public HashSet(IEnumerable<T> collection) : this(collection, null) { }
-
-        public HashSet(IEnumerable<T> collection, IEqualityComparer<T>? comparer) : this(comparer)
-        {
-            if (collection == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-            }
-
-            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
-            {
-                ConstructFrom(otherAsHashSet);
-            }
-            else
-            {
-                // To avoid excess resizes, first set size based on collection's count. The collection may
-                // contain duplicates, so call TrimExcess if resulting HashSet is larger than the threshold.
-                if (collection is ICollection<T> coll)
-                {
-                    int count = coll.Count;
-                    if (count > 0)
-                    {
-                        Initialize(count);
-                    }
-                }
-
-                UnionWith(collection);
-
-                if (_count > 0 && _entries!.Length / _count > ShrinkThreshold)
-                {
-                    TrimExcess();
-                }
-            }
-        }
-
-        public HashSet(int capacity, IEqualityComparer<T>? comparer) : this(comparer)
-        {
-            if (capacity < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
-            }
-
-            if (capacity > 0)
-            {
-                Initialize(capacity);
-            }
-        }
-
         protected HashSet(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been
@@ -137,6 +155,9 @@ namespace System.Collections.Generic
             // fail.  For the time being, we'll just cache this.  The graph is not valid until
             // OnDeserialization has been called.
             HashHelpers.SerializationInfoTable.Add(this, info);
+            InitializeEmpty();
+            Debug.Assert(_buckets != null);
+            Debug.Assert(_entries != null);
         }
 
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
@@ -144,19 +165,17 @@ namespace System.Collections.Generic
         {
             if (source.Count == 0)
             {
-                // As well as short-circuiting on the rest of the work done,
-                // this avoids errors from trying to access source._buckets
-                // or source._entries when they aren't initialized.
+                InitializeEmpty();
                 return;
             }
 
-            int capacity = source._buckets!.Length;
+            int capacity = source._entries.Length;
             int threshold = HashHelpers.ExpandPrime(source.Count + 1);
 
             if (threshold >= capacity)
             {
                 _buckets = (int[])source._buckets.Clone();
-                _entries = (Entry[])source._entries!.Clone();
+                _entries = (Entry[])source._entries.Clone();
                 _freeList = source._freeList;
                 _freeCount = source._freeCount;
                 _count = source._count;
@@ -166,12 +185,12 @@ namespace System.Collections.Generic
             }
             else
             {
-                Initialize(source.Count);
+                Initialize(HashHelpers.GetPrime(source.Count));
 
-                Entry[]? entries = source._entries;
+                Entry[] entries = source._entries;
                 for (int i = 0; i < source._count; i++)
                 {
-                    ref Entry entry = ref entries![i];
+                    ref Entry entry = ref entries[i];
                     if (entry.Next >= -1)
                     {
                         AddIfNotPresent(entry.Value, out _);
@@ -194,9 +213,6 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
-                Debug.Assert(_buckets != null, "_buckets should be non-null");
-                Debug.Assert(_entries != null, "_entries should be non-null");
-
                 Array.Clear(_buckets, 0, _buckets.Length);
                 _count = 0;
                 _freeList = -1;
@@ -213,71 +229,45 @@ namespace System.Collections.Generic
         /// <summary>Gets the index of the item in <see cref="_entries"/>, or -1 if it's not in the set.</summary>
         private int FindItemIndex(T item)
         {
-            int[]? buckets = _buckets;
-            if (buckets != null)
+            Entry[] entries = _entries;
+
+            uint collisionCount = 0;
+            IEqualityComparer<T>? comparer = _comparer;
+
+            if (comparer == null)
             {
-                Entry[]? entries = _entries;
-                Debug.Assert(entries != null, "Expected _entries to be initialized");
-
-                uint collisionCount = 0;
-                IEqualityComparer<T>? comparer = _comparer;
-
-                if (comparer == null)
+                int hashCode = item != null ? item.GetHashCode() : 0;
+                if (typeof(T).IsValueType)
                 {
-                    int hashCode = item != null ? item.GetHashCode() : 0;
-                    if (typeof(T).IsValueType)
+                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
+                    while (i >= 0)
                     {
-                        // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                        while (i >= 0)
+                        ref Entry entry = ref entries[i];
+                        if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item))
                         {
-                            ref Entry entry = ref entries[i];
-                            if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item))
-                            {
-                                return i;
-                            }
-                            i = entry.Next;
-
-                            collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
-                            {
-                                // The chain of entries forms a loop, which means a concurrent update has happened.
-                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                            }
+                            return i;
                         }
-                    }
-                    else
-                    {
-                        // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize (https://github.com/dotnet/runtime/issues/10050),
-                        // so cache in a local rather than get EqualityComparer per loop iteration.
-                        EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
-                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                        while (i >= 0)
-                        {
-                            ref Entry entry = ref entries[i];
-                            if (entry.HashCode == hashCode && defaultComparer.Equals(entry.Value, item))
-                            {
-                                return i;
-                            }
-                            i = entry.Next;
+                        i = entry.Next;
 
-                            collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
-                            {
-                                // The chain of entries forms a loop, which means a concurrent update has happened.
-                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                            }
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
+                        {
+                            // The chain of entries forms a loop, which means a concurrent update has happened.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                         }
                     }
                 }
                 else
                 {
-                    int hashCode = item != null ? comparer.GetHashCode(item) : 0;
+                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize (https://github.com/dotnet/runtime/issues/10050),
+                    // so cache in a local rather than get EqualityComparer per loop iteration.
+                    EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
                     int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                     while (i >= 0)
                     {
                         ref Entry entry = ref entries[i];
-                        if (entry.HashCode == hashCode && comparer.Equals(entry.Value, item))
+                        if (entry.HashCode == hashCode && defaultComparer.Equals(entry.Value, item))
                         {
                             return i;
                         }
@@ -292,6 +282,27 @@ namespace System.Collections.Generic
                     }
                 }
             }
+            else
+            {
+                int hashCode = item != null ? comparer.GetHashCode(item) : 0;
+                int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
+                while (i >= 0)
+                {
+                    ref Entry entry = ref entries[i];
+                    if (entry.HashCode == hashCode && comparer.Equals(entry.Value, item))
+                    {
+                        return i;
+                    }
+                    i = entry.Next;
+
+                    collisionCount++;
+                    if (collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop, which means a concurrent update has happened.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
+            }
 
             return -1;
         }
@@ -300,7 +311,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetBucketRef(int hashCode)
         {
-            int[] buckets = _buckets!;
+            int[] buckets = _buckets;
 #if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod((uint)hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
@@ -310,56 +321,52 @@ namespace System.Collections.Generic
 
         public bool Remove(T item)
         {
-            if (_buckets != null)
+            Entry[] entries = _entries;
+
+            uint collisionCount = 0;
+            int last = -1;
+            int hashCode = item != null ? (_comparer?.GetHashCode(item) ?? item.GetHashCode()) : 0;
+
+            ref int bucket = ref GetBucketRef(hashCode);
+            int i = bucket - 1; // Value in buckets is 1-based
+
+            while (i >= 0)
             {
-                Entry[]? entries = _entries;
-                Debug.Assert(entries != null, "entries should be non-null");
+                ref Entry entry = ref entries[i];
 
-                uint collisionCount = 0;
-                int last = -1;
-                int hashCode = item != null ? (_comparer?.GetHashCode(item) ?? item.GetHashCode()) : 0;
-
-                ref int bucket = ref GetBucketRef(hashCode);
-                int i = bucket - 1; // Value in buckets is 1-based
-
-                while (i >= 0)
+                if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Value, item) ?? EqualityComparer<T>.Default.Equals(entry.Value, item)))
                 {
-                    ref Entry entry = ref entries[i];
-
-                    if (entry.HashCode == hashCode && (_comparer?.Equals(entry.Value, item) ?? EqualityComparer<T>.Default.Equals(entry.Value, item)))
+                    if (last < 0)
                     {
-                        if (last < 0)
-                        {
-                            bucket = entry.Next + 1; // Value in buckets is 1-based
-                        }
-                        else
-                        {
-                            entries[last].Next = entry.Next;
-                        }
-
-                        Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                        entry.Next = StartOfFreeList - _freeList;
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                        {
-                            entry.Value = default!;
-                        }
-
-                        _freeList = i;
-                        _freeCount++;
-                        return true;
+                        bucket = entry.Next + 1; // Value in buckets is 1-based
+                    }
+                    else
+                    {
+                        entries[last].Next = entry.Next;
                     }
 
-                    last = i;
-                    i = entry.Next;
+                    Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                    entry.Next = StartOfFreeList - _freeList;
 
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                     {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        entry.Value = default!;
                     }
+
+                    _freeList = i;
+                    _freeCount++;
+                    return true;
+                }
+
+                last = i;
+                i = entry.Next;
+
+                collisionCount++;
+                if (collisionCount > (uint)entries.Length)
+                {
+                    // The chain of entries forms a loop; which means a concurrent update has happened.
+                    // Break out of the loop and throw, rather than looping forever.
+                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 }
             }
 
@@ -394,9 +401,9 @@ namespace System.Collections.Generic
 
             info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
-            info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
+            info.AddValue(CapacityName, _entries.Length);
 
-            if (_buckets != null)
+            if (_entries.Length > 0)
             {
                 var array = new T[Count];
                 CopyTo(array);
@@ -446,7 +453,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                _buckets = null;
+                InitializeEmpty();
             }
 
             _version = siInfo.GetInt32(VersionName);
@@ -474,14 +481,11 @@ namespace System.Collections.Generic
         /// </remarks>
         public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
         {
-            if (_buckets != null)
+            int index = FindItemIndex(equalValue);
+            if (index >= 0)
             {
-                int index = FindItemIndex(equalValue);
-                if (index >= 0)
-                {
-                    actualValue = _entries![index].Value;
-                    return true;
-                }
+                actualValue = _entries[index].Value;
+                return true;
             }
 
             actualValue = default;
@@ -882,10 +886,10 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
 
-            Entry[]? entries = _entries;
+            Entry[] entries = _entries;
             for (int i = 0; i < _count && count != 0; i++)
             {
-                ref Entry entry = ref entries![i];
+                ref Entry entry = ref entries[i];
                 if (entry.Next >= -1)
                 {
                     array[arrayIndex++] = entry.Value;
@@ -902,11 +906,11 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            Entry[]? entries = _entries;
+            Entry[] entries = _entries;
             int numRemoved = 0;
             for (int i = 0; i < _count; i++)
             {
-                ref Entry entry = ref entries![i];
+                ref Entry entry = ref entries[i];
                 if (entry.Next >= -1)
                 {
                     // Cache value in case delegate removes it
@@ -949,15 +953,10 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             }
 
-            int currentCapacity = _entries == null ? 0 : _entries.Length;
+            int currentCapacity = _entries.Length;
             if (currentCapacity >= capacity)
             {
                 return currentCapacity;
-            }
-
-            if (_buckets == null)
-            {
-                return Initialize(capacity);
             }
 
             int newSize = HashHelpers.GetPrime(capacity);
@@ -971,7 +970,6 @@ namespace System.Collections.Generic
         {
             // Value types never rehash
             Debug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
-            Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
             var entries = new Entry[newSize];
@@ -1027,9 +1025,8 @@ namespace System.Collections.Generic
             int capacity = Count;
 
             int newSize = HashHelpers.GetPrime(capacity);
-            Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            Entry[] oldEntries = _entries;
+            if (newSize >= oldEntries.Length)
             {
                 return;
             }
@@ -1037,14 +1034,14 @@ namespace System.Collections.Generic
             int oldCount = _count;
             _version++;
             Initialize(newSize);
-            Entry[]? entries = _entries;
+            Entry[] entries = _entries;
             int count = 0;
             for (int i = 0; i < oldCount; i++)
             {
-                int hashCode = oldEntries![i].HashCode; // At this point, we know we have entries.
+                int hashCode = oldEntries[i].HashCode; // At this point, we know we have entries.
                 if (oldEntries[i].Next >= -1)
                 {
-                    ref Entry entry = ref entries![count];
+                    ref Entry entry = ref entries[count];
                     entry = oldEntries[i];
                     ref int bucket = ref GetBucketRef(hashCode);
                     entry.Next = bucket - 1; // Value in _buckets is 1-based
@@ -1068,9 +1065,8 @@ namespace System.Collections.Generic
         /// Initializes buckets and slots arrays. Uses suggested capacity by finding next prime
         /// greater than or equal to capacity.
         /// </summary>
-        private int Initialize(int capacity)
+        private void Initialize(int size)
         {
-            int size = HashHelpers.GetPrime(capacity);
             var buckets = new int[size];
             var entries = new Entry[size];
 
@@ -1081,8 +1077,16 @@ namespace System.Collections.Generic
 #if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)size);
 #endif
+        }
 
-            return size;
+        private void InitializeEmpty()
+        {
+            _freeList = -1;
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
+#endif
+            _buckets = HashHelpers.SizeOneIntArray;
+            _entries = Array.Empty<Entry>();
         }
 
         /// <summary>Adds the specified element to the set if it's not already contained.</summary>
@@ -1091,14 +1095,7 @@ namespace System.Collections.Generic
         /// <returns>true if the element is added to the <see cref="HashSet{T}"/> object; false if the element is already present.</returns>
         private bool AddIfNotPresent(T value, out int location)
         {
-            if (_buckets == null)
-            {
-                Initialize(0);
-            }
-            Debug.Assert(_buckets != null);
-
-            Entry[]? entries = _entries;
-            Debug.Assert(entries != null, "expected entries to be non-null");
+            Entry[] entries = _entries;
 
             IEqualityComparer<T>? comparer = _comparer;
             int hashCode;
@@ -1185,7 +1182,7 @@ namespace System.Collections.Generic
             {
                 index = _freeList;
                 _freeCount--;
-                Debug.Assert((StartOfFreeList - entries![_freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                Debug.Assert((StartOfFreeList - entries[_freeList].Next) >= -1, "shouldn't overflow because `next` cannot underflow");
                 _freeList = StartOfFreeList - entries[_freeList].Next;
             }
             else
@@ -1195,14 +1192,14 @@ namespace System.Collections.Generic
                 {
                     Resize();
                     bucket = ref GetBucketRef(hashCode);
+                    entries = _entries;
                 }
                 index = count;
                 _count = count + 1;
-                entries = _entries;
             }
 
             {
-                ref Entry entry = ref entries![index];
+                ref Entry entry = ref entries[index];
                 entry.HashCode = hashCode;
                 entry.Next = bucket - 1; // Value in _buckets is 1-based
                 entry.Value = value;
@@ -1271,10 +1268,10 @@ namespace System.Collections.Generic
         /// </summary>
         private void IntersectWithHashSetWithSameComparer(HashSet<T> other)
         {
-            Entry[]? entries = _entries;
+            Entry[] entries = _entries;
             for (int i = 0; i < _count; i++)
             {
-                ref Entry entry = ref entries![i];
+                ref Entry entry = ref entries[i];
                 if (entry.Next >= -1)
                 {
                     T item = entry.Value;
@@ -1294,8 +1291,6 @@ namespace System.Collections.Generic
         /// </summary>
         private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
         {
-            Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
-
             // Keep track of current last index; don't want to move past the end of our bit array
             // (could happen if another thread is modifying the collection).
             int originalCount = _count;
@@ -1320,7 +1315,7 @@ namespace System.Collections.Generic
             // FindFirstUnmarked method.
             for (int i = 0; i < originalCount; i++)
             {
-                ref Entry entry = ref _entries![i];
+                ref Entry entry = ref _entries[i];
                 if (entry.Next >= -1 && !bitHelper.IsMarked(i))
                 {
                     Remove(entry.Value);
@@ -1409,7 +1404,7 @@ namespace System.Collections.Generic
             {
                 if (itemsToRemove.IsMarked(i))
                 {
-                    Remove(_entries![i].Value);
+                    Remove(_entries[i].Value);
                 }
             }
         }
@@ -1451,8 +1446,6 @@ namespace System.Collections.Generic
 
                 return (UniqueCount: 0, UnfoundCount: numElementsInOther);
             }
-
-            Debug.Assert((_buckets != null) && (_count > 0), "_buckets was null but count greater than 0");
 
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1537,7 +1530,7 @@ namespace System.Collections.Generic
                 // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
                 while ((uint)_index < (uint)_hashSet._count)
                 {
-                    ref Entry entry = ref _hashSet._entries![_index++];
+                    ref Entry entry = ref _hashSet._entries[_index++];
                     if (entry.Next >= -1)
                     {
                         _current = entry.Value;
