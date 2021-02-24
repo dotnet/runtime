@@ -352,13 +352,22 @@ int32_t CryptoNative_EvpCipherCtxSetPadding(CipherCtx* ctx, int32_t padding)
 
 int32_t CryptoNative_EvpCipherReset(CipherCtx* ctx)
 {
-    // TODO: re-init ctx->cipher ?
-    LOG_ERROR("EvpCipherReset is no-op.");
-
     if (!ctx)
         return FAIL;
+    
+    free(ctx->iv);
+    ctx->iv = NULL;
+    ctx->ivLength = 0;
+    
+    JNIEnv* env = GetJNIEnv();
+    ReleaseGRef(env, ctx->cipher);
+    jobject algName = GetAlgorithmName(env, ctx->type);
+    if (!algName)
+        return FAIL;
 
-    return SUCCESS;
+    ctx->cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
+    (*env)->DeleteLocalRef(env, algName);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 int32_t CryptoNative_EvpCipherSetGcmNonceLength(CipherCtx* ctx, int32_t ivLength)
