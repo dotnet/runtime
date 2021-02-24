@@ -11,6 +11,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <Import Project="..\build\Microsoft.NET.ILLink.Tasks.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.NET.ILLink.Tasks.props" />
 
 </Project>
