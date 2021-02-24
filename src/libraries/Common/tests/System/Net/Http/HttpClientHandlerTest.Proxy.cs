@@ -136,7 +136,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -534,6 +533,77 @@ namespace System.Net.Http.Functional.Tests
             }));
 
             Assert.True(connectionAccepted);
+        }
+
+        [OuterLoop("Uses external server")]
+        [Fact]
+        public async Task AuthenticatedProxyTunnelRequestWithValidCredentials_PostAsync_Success()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic,
+                ConnectionCloseAfter407 = true
+            };
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                handler.Proxy = new WebProxy(proxyServer.Uri)
+                {
+                    Credentials = new NetworkCredential("user", "password")
+                };
+
+                const string content = "This is a test";
+
+                using (HttpClient client = CreateHttpClient(handler))
+                using (HttpResponseMessage response = await client.PostAsync(
+                        Configuration.Http.SecureRemoteEchoServer,
+                        new StringContent(content)))
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyResponseBody(
+                        responseContent,
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        content);
+                }
+            }
+        }
+
+        [OuterLoop("Uses external server")]
+        [Fact]
+        public async Task AuthenticatedProxyTunnelRequestWithNoCredentials_PostAsync_ProxyAuthenticationRequiredStatusCode()
+        {
+            if (IsWinHttpHandler)
+            {
+                return;
+            }
+
+            var options = new LoopbackProxyServer.Options
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Basic,
+                ConnectionCloseAfter407 = true
+            };
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.Proxy = new WebProxy(proxyServer.Uri);
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using (HttpClient client = CreateHttpClient(handler))
+                using (HttpResponseMessage response = await client.PostAsync(
+                    Configuration.Http.SecureRemoteEchoServer,
+                    new StringContent("This is a test")))
+                {
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
+                }
+            }
         }
 
         public static IEnumerable<object[]> BypassedProxies()
