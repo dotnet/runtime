@@ -1,0 +1,8 @@
+<Project>
+
+  <PropertyGroup>
+    <GitHubRepositoryName>linker</GitHubRepositoryName>
+    <SourceBuildManagedOnly>true</SourceBuildManagedOnly>
+  </PropertyGroup>
+
+</Project>

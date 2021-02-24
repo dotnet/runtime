@@ -45,6 +45,8 @@ stages:
         testResultsFormat: vstest
       enablePublishBuildAssets: true # generate build manifests and publish to BAR in internal builds
       enableMicrobuild: true # only affects internal builds
+      # See https://github.com/dotnet/source-build/issues/2049
+      # enableSourceBuild: true
 
       jobs:
 
@@ -84,6 +86,20 @@ stages:
             displayName: Build illink.sln $(_BuildConfig)
           ${{ if eq(variables.officialBuild, 'true') }}:
             displayName: Build and publish illink.sln $(_BuildConfig)
+
+      - job: SourceBuild_Managed
+        displayName: Source-Build (Managed)
+        pool:
+          vmImage: ubuntu-20.04
+        container: 'mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-3e800f1-20190501005343'
+        workspace:
+          clean: all
+        steps:
+        - checkout: self
+          submodules: true
+        - template: /eng/common/templates/steps/source-build.yml
+          parameters:
+            enablePublishTestResults: true
 
       - ${{ if eq(variables.officialBuild, 'false') }}:
         - job: Linux
