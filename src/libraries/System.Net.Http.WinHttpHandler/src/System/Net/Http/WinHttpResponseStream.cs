@@ -278,10 +278,7 @@ namespace System.Net.Http
 
             _readTrailingHeaders = true;
 
-            var bufferLength = WinHttpResponseParser.GetResponseHeaderCharBufferLength(
-                _requestHandle,
-                Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF | Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS,
-                isTrailingHeaders: true);
+            var bufferLength = WinHttpResponseParser.GetResponseHeaderCharBufferLength(_requestHandle, isTrailingHeaders: true);
 
             if (bufferLength != 0)
             {

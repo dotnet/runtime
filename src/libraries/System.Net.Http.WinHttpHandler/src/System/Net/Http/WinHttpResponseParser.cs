@@ -29,7 +29,7 @@ namespace System.Net.Http
             // Create a single buffer to use for all subsequent WinHttpQueryHeaders string interop calls.
             // This buffer is the length needed for WINHTTP_QUERY_RAW_HEADERS_CRLF, which includes the status line
             // and all headers separated by CRLF, so it should be large enough for any individual status line or header queries.
-            int bufferLength = GetResponseHeaderCharBufferLength(requestHandle, Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF, isTrailingHeaders: false);
+            int bufferLength = GetResponseHeaderCharBufferLength(requestHandle, isTrailingHeaders: false);
             char[] buffer = ArrayPool<char>.Shared.Rent(bufferLength);
             try
             {
@@ -223,11 +223,17 @@ namespace System.Net.Http
         /// <summary>
         /// Returns the size of the char array buffer.
         /// </summary>
-        public static unsafe int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, uint infoLevel, bool isTrailingHeaders)
+        public static unsafe int GetResponseHeaderCharBufferLength(SafeWinHttpHandle requestHandle, bool isTrailingHeaders)
         {
             char* buffer = null;
             int bufferLength = 0;
             uint index = 0;
+
+            uint infoLevel = Interop.WinHttp.WINHTTP_QUERY_RAW_HEADERS_CRLF;
+            if (isTrailingHeaders)
+            {
+                infoLevel |= Interop.WinHttp.WINHTTP_QUERY_FLAG_TRAILERS;
+            }
 
             if (!QueryHeaders(requestHandle, infoLevel, buffer, ref bufferLength, ref index))
             {
