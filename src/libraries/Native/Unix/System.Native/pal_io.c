@@ -429,6 +429,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
 #else
     int error;
 
+    // EINTR isn't documented, happens in practice on macOS.
     while ((error = readdir_r(dir, entry, &result)) && error == EINTR);
 
     // positive error number returned -> failure
@@ -477,6 +478,7 @@ DIR* SystemNative_OpenDir(const char* path)
 {
     DIR *result;
 
+    // EINTR isn't documented, happens in practice on macOS.
     while ((result = opendir(path)) == NULL && errno == EINTR);
 
     return result;
@@ -487,6 +489,8 @@ int32_t SystemNative_CloseDir(DIR* dir)
     int32_t result;
 
     result = closedir(dir);
+
+    // EINTR isn't documented, happens in practice on macOS.
     if (result < 0 && errno == EINTR)
     {
         result = 0;
