@@ -122,20 +122,6 @@ static bool HasTag(intptr_t type)
            (type == CryptoNative_EvpAes256Ccm());
 }
 
-static bool IsAesCcm(intptr_t type)
-{
-    return (type == CryptoNative_EvpAes128Ccm()) ||
-           (type == CryptoNative_EvpAes192Ccm()) ||
-           (type == CryptoNative_EvpAes256Ccm());
-}
-
-static bool IsAesGcm(intptr_t type)
-{
-    return (type == CryptoNative_EvpAes128Gcm()) ||
-           (type == CryptoNative_EvpAes192Gcm()) ||
-           (type == CryptoNative_EvpAes256Gcm());
-}
-
 CipherCtx* CryptoNative_EvpCipherCreatePartial(intptr_t type)
 {
     JNIEnv* env = GetJNIEnv();
