@@ -86,7 +86,7 @@ jobs:
       jobParameters:
         testGroup: perf
 
-  build mono on wasm
+  # build mono on wasm
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
