@@ -183,6 +183,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 HelpOption();
             }
 
+#if DEBUG
+            // Usage of the jittrace format requires using logic embedded in the runtime repository and isn't suitable for general consumer use at this time
+            // Build it in debug and check builds to ensure that it doesn't bitrot, and remains available for use by developers willing to build the repo
             var jittraceCommand = syntax.DefineCommand(name: "create-jittrace", value: ref command, help: "Transform a trace file into a jittrace runtime file.");
             if (jittraceCommand.IsActive)
             {
@@ -211,6 +214,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 syntax.DefineOption(name: "includeReadyToRun", value: ref ProcessR2REvents, help: "Include ReadyToRun methods in the trace file.", requireValue: false);
                 HelpOption();
             }
+#endif
 
             if (syntax.ActiveCommand == null)
             {
