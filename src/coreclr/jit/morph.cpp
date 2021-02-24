@@ -14801,7 +14801,6 @@ DONE_MORPHING_CHILDREN:
             }
 
             GenTree* throwNode = op1->AsOp()->gtOp1;
-            noway_assert(throwNode->gtType == TYP_VOID);
 
             if (oper == GT_COMMA)
             {
