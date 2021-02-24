@@ -989,7 +989,7 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
                 // ldind.i2         - dereference ulong as short
                 // ret              - return short
                 // optimize the cast away.
-                GenTreeCast* cast  = op1->AsCast();
+                GenTreeCast* cast = op1->AsCast();
                 assert(genTypeSize(cast->gtCastType) == TARGET_POINTER_SIZE);
                 op1 = cast->gtGetOp1();
             }

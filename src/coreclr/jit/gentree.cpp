@@ -6717,7 +6717,7 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 
     if (addr->OperIs(GT_ADDR))
     {
-        GenTree*     indir = addr->gtGetOp1();
+        GenTree* indir = addr->gtGetOp1();
         if (indir->OperIsIndir() && ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0))
         {
             addr = indir->AsIndir()->Addr();

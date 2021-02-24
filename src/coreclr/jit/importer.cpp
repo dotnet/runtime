@@ -19776,8 +19776,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                     }
                     else if (inlArgNode->IsLocal())
                     {
-                        const GenTreeLclVarCommon* lcl = inlArgNode->AsLclVarCommon();
-                        const LclVarDsc* varDsc = lvaGetDesc(lcl);
+                        const GenTreeLclVarCommon* lcl    = inlArgNode->AsLclVarCommon();
+                        const LclVarDsc*           varDsc = lvaGetDesc(lcl);
                         if (varDsc->lvStackByref)
                         {
                             stackByref = true;
