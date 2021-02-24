@@ -21,9 +21,33 @@ Tool 'dotnet-pgo' (version '6.0.47001') was successfully installed.
 
 In order to use dotnet-pgo you will need to:
 
-1. Collect traces of you application with at least the following trace setting. `Microsoft-Windows-DotNETRuntime:0x1C000080018:4`
+1. Collect traces of you application with at least the following trace setting. `Microsoft-Windows-DotNETRuntime:0x1C000080018:4`. For best results enable instrumented code generation.
 2. Run the dotnet-pgo tool specifying the trace file collected above to create a mibc file.
 3. Pass the mibc file to a `dotnet publish` command. Specify the file via the `ReadyToRunOptimizationData` property. Multiple files may be passed separated by `;` characters.
+
+### Examples
+
+Given a project located in the current directory named pgotest, an example workflow for using `dotnet-pgo` could be the following. The adjusted environment variables are used to enable instrumented code generation.
+
+```
+dotnet build -p:Configuration=Release
+
+set COMPLUS_TieredPGO=1
+set COMPLUS_TC_QuickJitForLoops=1
+set COMPLUS_TC_CallCountThreshold=10000
+set COMPLUS_ZapDisable=1
+
+dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
+
+set COMPLUS_TieredPGO=
+set COMPLUS_TC_QuickJitForLoops=
+set COMPLUS_TC_CallCountThreshold=
+set COMPLUS_ZapDisable=
+
+dotnet-pgo --trace trace.nettrace --output trace.mibc
+
+dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -p:ReadyToRunOptimizationData=trace.mibc
+```
 
 ## Command line reference for dotnet-pgo
 
@@ -39,18 +63,17 @@ usage: dotnet-pgo <command> [<args>]
 ### `create-mibc` command
 Transform a trace file into a Mibc profile data file.
 ```
-usage: dotnet-pgo create-mibc --trace-file <arg> --output-file-name <arg> [--pid <arg>] [--process-name [arg]] [--clr-instance-id <arg>] [--reference <arg>...] [--exclude-events-before <arg>]
-                  [--exclude-events-after <arg>] [--verbosity <arg>] [--compressed] [-h]
+usage: dotnet-pgo create-mibc [-t <arg>] [-o <arg>] [--pid <arg>] [--process-name [arg]] [--clr-instance-id <arg>] [-r <arg>...] [--exclude-events-before <arg>] [--exclude-events-after <arg>] [-v <arg>] [--compressed] [-h]
 
-    --trace-file <arg>               Specify the trace file to be parsed.
-    --output-file-name <arg>         Specify the output filename to be created.
+    -t, --trace <arg>                Specify the trace file to be parsed.
+    -o, --output <arg>               Specify the output filename to be created.
     --pid <arg>                      The pid within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified
     --process-name [arg]             The process name within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified.
     --clr-instance-id <arg>          If the process contains multiple .NET runtimes, the instance ID must be specified.
-    --reference <arg>...             If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter
+    -r, --reference <arg>...         If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.
     --exclude-events-before <arg>    Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace.
     --exclude-events-after <arg>     Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace.
-    --verbosity <arg>                Adjust verbosity level.
+    -v, --verbosity <arg>            Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.
     --compressed                     Generate compressed mibc
     -h, --help                       Display this usage message.
 ```
@@ -71,10 +94,10 @@ Merge multiple Mibc profile data files into one file.
 ```
 usage: dotnet-pgo merge --input <arg>... --output-file-name <arg> [--exclude-reference <arg>] [--verbosity <arg>] [--compressed] [-h]
 
-    --input <arg>                    Specify the trace file to be parsed.
-    --output-file-name <arg>         Specify the output filename to be created.
+    -i, --input <arg>                Specify the trace file to be parsed.
+    -o, --output-file-name <arg>     Specify the output filename to be created.
     --exclude-reference <arg>        Exclude references to the specified assembly from the output.
-    --verbosity <arg>                Adjust verbosity level.
+    -v, --verbosity <arg>            Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.
     --compressed                     Generate compressed mibc
     -h, --help                       Display this usage message.
 ```

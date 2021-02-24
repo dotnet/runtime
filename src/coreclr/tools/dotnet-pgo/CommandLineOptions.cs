@@ -79,7 +79,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 string traceFile = null;
                 FailIfUnspecified(syntax.DefineOption(
-                    name: "trace-file",
+                    name: "t|trace",
                     value: ref traceFile,
                     help: "Specify the trace file to be parsed.",
                     requireValue: true));
@@ -88,7 +88,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 string outputFile = null;
                 FailIfUnspecified(syntax.DefineOption(
-                    name: "output-file-name",
+                    name: "o|output",
                     value: ref outputFile,
                     help: "Specify the output filename to be created.",
                     requireValue: true));
@@ -120,7 +120,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
 
                 IReadOnlyList<string> referencesAsStrings = null;
-                syntax.DefineOptionList(name: "reference", value: ref referencesAsStrings, help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter", requireValue: true);
+                syntax.DefineOptionList(name: "r|reference", value: ref referencesAsStrings, help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.", requireValue: true);
                 List<FileInfo> referenceList = new List<FileInfo>();
                 Reference = referenceList;
                 if (referencesAsStrings != null)
@@ -149,7 +149,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     requireValue: true);
 
                 Verbosity verbosity = default(Verbosity);
-                syntax.DefineOption(name: "verbosity", value: ref verbosity, help: "Adjust verbosity level.", valueConverter: VerbosityConverter, requireValue: true);
+                syntax.DefineOption(name: "v|verbosity", value: ref verbosity, help: "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.", valueConverter: VerbosityConverter, requireValue: true);
                 BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                 Warnings = (int)verbosity >= (int)Verbosity.normal;
                 VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
@@ -165,7 +165,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (mibcCommand.IsActive)
             {
                 activeCommandIsCommandAssociatedWithTraceProcessing = true;
-                HelpArgs = new string[] { "create-mibc", "--help", "--trace-file", "trace", "--output-file-name", "output" };
+                HelpArgs = new string[] { "create-mibc", "--help", "--trace", "trace", "--output", "output" };
                 FileType = PgoFileType.mibc;
                 GenerateCallGraph = true;
                 ProcessJitEvents = true;
@@ -183,6 +183,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 HelpOption();
             }
 
+            JitTraceOptions = jittraceoptions.none;
 #if DEBUG
             // Usage of the jittrace format requires using logic embedded in the runtime repository and isn't suitable for general consumer use at this time
             // Build it in debug and check builds to ensure that it doesn't bitrot, and remains available for use by developers willing to build the repo
@@ -190,7 +191,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (jittraceCommand.IsActive)
             {
                 activeCommandIsCommandAssociatedWithTraceProcessing = true;
-                HelpArgs = new string[] { "create-jittrace", "--help", "--trace-file", "trace", "--output-file-name", "output" };
+                HelpArgs = new string[] { "create-jittrace", "--help", "--trace", "trace", "--output", "output" };
                 FileType = PgoFileType.jittrace;
                 ProcessJitEvents = true;
                 ProcessR2REvents = false;
