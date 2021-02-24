@@ -173,7 +173,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task AuthenticatedProxiedRequest_GetAsync_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
+        public async Task AuthenticatedProxiedRequest_GetAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
         {
             var options = new LoopbackProxyServer.Options
             {
@@ -201,12 +201,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // TODO: Make this work similar to above, consolidate variations
-
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
+        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithCreds_Success(NetworkCredential cred, bool wrapCredsInCache, bool connectionCloseAfter407)
         {
             if (IsWinHttpHandler)
             {
@@ -264,7 +262,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        public async Task Proxy_HaveNoCredsAndUseAuthenticatedCustomProxy_ProxyAuthenticationRequiredStatusCode()
+        public async Task AuthenticatedProxiedRequest_GetAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
         {
             var options = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Basic };
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
@@ -283,7 +281,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        public async Task AuthenticatedProxyTunnelRequestWithNoCredentials_PostAsync_ProxyAuthenticationRequiredStatusCode()
+        public async Task AuthenticatedProxyTunnelRequest_PostAsyncWithNoCreds_ProxyAuthenticationRequiredStatusCode()
         {
             if (IsWinHttpHandler)
             {
