@@ -569,10 +569,13 @@ namespace System.Net.Http
                     _readOffset = 0;
                     _readLength = bytesRead;
                 }
+                else
+                {
+                    await FillAsync(async).ConfigureAwait(false);
+                }
 
-                // The request is no longer retryable; either we received data from the _readAheadTask,
-                // or there was no _readAheadTask because this is the first request on the connection.
-                // (We may have already set this as well if we sent request content.)
+                // We have received data from the server, so the request is no longer retryable.
+                // (We may have already set this above if we sent request content.)
                 _canRetry = false;
 
                 // Parse the response status line.
@@ -821,7 +824,7 @@ namespace System.Net.Http
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 // If the request is retryable, indicate that on the exception.
-                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnSameOrNextProxy : RequestRetryType.NoRetry);
+                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
                 return true;
             }
             // Otherwise, just allow the original exception to propagate.

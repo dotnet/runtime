@@ -1307,7 +1307,7 @@ namespace System.Net.Http
                 {
                     if (_pool.EnableMultipleHttp2Connections)
                     {
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnStreamLimitReached);
                     }
 
                     if (HttpTelemetry.Log.IsEnabled())
@@ -2014,7 +2014,7 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception innerException) =>
-            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
+            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
             new IOException(SR.net_http_request_aborted, innerException);

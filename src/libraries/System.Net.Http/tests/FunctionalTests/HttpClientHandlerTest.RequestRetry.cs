@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -13,21 +12,42 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpRetryProtocolTests : HttpClientHandlerTestBase
+    public abstract class HttpClientHandlerTest_RequestRetry : HttpClientHandlerTestBase
     {
-        private static readonly string s_simpleContent = "Hello World\r\n";
+        private const string SimpleContent = "Hello World\r\n";
 
-        public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
+        public HttpClientHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public async Task GetAsync_RetryOnConnectionClosed_Success()
+        public async Task GetAsyncOnNewConnection_RetryOnConnectionClosed_Success()
         {
-            if (IsWinHttpHandler)
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
-                // WinHttpHandler does not support Expect: 100-continue.
-                return;
-            }
+                using (HttpClient client = CreateHttpClient())
+                {
+                    // Send request. The server will close the first connection after it is successfully established, but SocketsHttpHandler should retry the request.
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.Equal(SimpleContent, await response.Content.ReadAsStringAsync());
+                }
+            },
+            async server =>
+            {
+                // Accept first connection
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Read request headers, then close connection
+                    await connection.ReadRequestHeaderAsync();
+                });
 
+                // Client should reconnect.  Accept that connection and send response.
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: SimpleContent);
+            });
+        }
+
+        [Fact]
+        public async Task GetAsyncOnExistingConnection_RetryOnConnectionClosed_Success()
+        {
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -35,13 +55,13 @@ namespace System.Net.Http.Functional.Tests
                     // Send initial request and receive response so connection is established
                     HttpResponseMessage response1 = await client.GetAsync(url);
                     Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
-                    Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
+                    Assert.Equal(SimpleContent, await response1.Content.ReadAsStringAsync());
 
                     // Send second request.  Should reuse same connection.
                     // The server will close the connection, but HttpClient should retry the request.
                     HttpResponseMessage response2 = await client.GetAsync(url);
-                    Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
-                    Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
+                    Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                    Assert.Equal(SimpleContent, await response2.Content.ReadAsStringAsync());
                 }
             },
             async server =>
@@ -50,26 +70,49 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     // Initial response
-                    await connection.ReadRequestHeaderAndSendResponseAsync(content: s_simpleContent);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: SimpleContent);
 
                     // Second response: Read request headers, then close connection
                     await connection.ReadRequestHeaderAsync();
                 });
 
                 // Client should reconnect.  Accept that connection and send response.
-                await server.AcceptConnectionSendResponseAndCloseAsync(content: s_simpleContent);
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: SimpleContent);
+            });
+        }
+
+        [Fact]
+        public async Task GetAsync_RetryUntilLimitExceeded_ThrowsHttpRequestException()
+        {
+            const int MaxRetries = 5;
+
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    // Send request. The server will keeping closing the connection after it is successfully established.
+                    // SocketsHttpHandler should retry the request up to the retry limit, then fail.
+                    await Assert.ThrowsAsync<HttpRequestException>(async () => await client.GetAsync(url));
+                }
+            },
+            async server =>
+            {
+                for (int i = 0; i < MaxRetries; i++)
+                {
+                    // Establish connection and then close it before sending a response
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                    });
+                }
+
+                // Client should not attempt any further connections.
             });
         }
 
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHttpHandler does not support Expect: 100-continue.
-                return;
-            }
-
             var contentSending = new TaskCompletionSource<bool>();
             var connectionClosed = new TaskCompletionSource<bool>();
 
@@ -80,7 +123,7 @@ namespace System.Net.Http.Functional.Tests
                     // Send initial request and receive response so connection is established
                     HttpResponseMessage response1 = await client.GetAsync(url);
                     Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
-                    Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
+                    Assert.Equal(SimpleContent, await response1.Content.ReadAsStringAsync());
 
                     // Send second request on same connection.  When the Expect: 100-continue timeout
                     // expires, the content will start to be serialized and will signal the server to
@@ -101,7 +144,7 @@ namespace System.Net.Http.Functional.Tests
                     server.ListenSocket.Close();
 
                     // Initial response
-                    await connection.ReadRequestHeaderAndSendResponseAsync(content: s_simpleContent);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: SimpleContent);
 
                     // Second response: Read request headers, then close connection
                     List<string> lines = await connection.ReadRequestHeaderAsync();
