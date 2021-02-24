@@ -150,6 +150,26 @@ namespace System.Net.Http.Functional.Tests
             return cred;
         }
 
+        private void ValidateProxyBasicAuthentication(LoopbackProxyServer proxyServer, NetworkCredential cred)
+        {
+            if (cred is not null)
+            {
+                string expectedAuth =
+                    string.IsNullOrEmpty(cred.Domain) ?
+                        $"{cred.UserName}:{cred.Password}" :
+                        $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
+                _output.WriteLine($"expectedAuth={expectedAuth}");
+                string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
+
+                // Check last request to proxy server. Handlers that don't use
+                // pre-auth for proxy will make 2 requests.
+                int requestCount = proxyServer.Requests.Count;
+                _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
+                Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
+                Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
+            }
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -175,22 +195,7 @@ namespace System.Net.Http.Functional.Tests
                         false,
                         null);
 
-                    if (cred is not null)
-                    {
-                        string expectedAuth =
-                            string.IsNullOrEmpty(cred.Domain) ?
-                                $"{cred.UserName}:{cred.Password}" :
-                                $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
-                        _output.WriteLine($"expectedAuth={expectedAuth}");
-                        string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
-
-                        // Check last request to proxy server. Handlers that don't use
-                        // pre-auth for proxy will make 2 requests.
-                        int requestCount = proxyServer.Requests.Count;
-                        _output.WriteLine($"proxyServer.Requests.Count={requestCount}");
-                        Assert.Equal(BasicAuth, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueScheme);
-                        Assert.Equal(expectedAuthHash, proxyServer.Requests[requestCount - 1].AuthorizationHeaderValueToken);
-                    }
+                    ValidateProxyBasicAuthentication(proxyServer, cred);
                 }
             }
         }
@@ -232,6 +237,8 @@ namespace System.Net.Http.Functional.Tests
                         response.Content.Headers.ContentMD5,
                         false,
                         content);
+
+                    ValidateProxyBasicAuthentication(proxyServer, cred);
                 }
             }
         }
