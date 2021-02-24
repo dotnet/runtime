@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
     <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true' ">$(NoWarn);0649</NoWarn>
@@ -286,7 +286,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />

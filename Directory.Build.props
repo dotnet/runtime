@@ -217,9 +217,11 @@
   <!-- Packaging -->
   <PropertyGroup>
     <GitHubRepositoryName>runtime</GitHubRepositoryName>
-    <RepositoryUrl>git://github.com/dotnet/$(GitHubRepositoryName)</RepositoryUrl>
-    <ProjectUrl>https://github.com/dotnet/$(GitHubRepositoryName)</ProjectUrl>
-    <LicenseUrl>https://github.com/dotnet/$(GitHubRepositoryName)/blob/master/LICENSE.TXT</LicenseUrl>
+    <RepositoryUrl>https://github.com/dotnet/$(GitHubRepositoryName)</RepositoryUrl>
+    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
+    <!-- Remove ProjectUrl after https://github.com/dotnet/arcade/pull/6995 is merged and consumed. -->
+    <ProjectUrl>$(PackageProjectUrl)</ProjectUrl>
+    <Owners>microsoft,dotnetframework</Owners>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'pkg', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
