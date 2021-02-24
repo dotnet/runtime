@@ -793,6 +793,26 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
+        const bool is64BitTarget = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
+
+        if (is64BitTarget)
+        {
+            if (relocType == IMAGE_REL_BASED_DIR64)
+            {
+                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+
+                // Write 64-bits into location
+                size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                {
+                    LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
+                        *(DWORDLONG*)address, tmp.target);
+                    *(DWORDLONG*)address = tmp.target;
+                }
+
+                wasRelocHandled = true;
+            }
+        }
 
         if (wasRelocHandled)
             continue;
@@ -853,23 +873,6 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
             break;
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            case IMAGE_REL_BASED_DIR64:
-            {
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
-
-                // Write 64-bits into location
-                size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
-                {
-                    LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
-                             *(DWORDLONG*)address, tmp.target);
-                    *(DWORDLONG*)address = tmp.target;
-                }
-            }
-            break;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
             default:
                 LogError("Unknown reloc type %u", tmp.fRelocType);
