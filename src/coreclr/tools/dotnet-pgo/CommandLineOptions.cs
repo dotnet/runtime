@@ -90,7 +90,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 FailIfUnspecified(syntax.DefineOption(
                     name: "output-file-name",
                     value: ref outputFile,
-                    help: "Specify the jittrace filename to be created.",
+                    help: "Specify the output filename to be created.",
                     requireValue: true));
                 if (outputFile != null)
                     OutputFileName = new FileInfo(outputFile);
