@@ -745,7 +745,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
         const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
 
         const DWORD relocType = tmp.fRelocType;
-        bool relocWasHandled  = false;
+        bool wasRelocHandled  = false;
 
         // Do platform specific relocations first.
 
@@ -763,7 +763,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
 
-                relocWasHandled = true;
+                wasRelocHandled = true;
             }
         }
 
@@ -778,14 +778,14 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                     DWORDLONG endOfTheBlock = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
                     INT64 delta = (INT64)(endOfTheBlock - fixupLocation);
                     PutArm64Rel28((UINT32*)branchInstr, (INT32)delta);
-                    relocWasHandled = true;
+                    wasRelocHandled = true;
                 }
                 break;
 
                 case IMAGE_REL_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_ARM64_PAGEOFFSET_12A:
                     LogError("Unimplemented reloc type %u", tmp.fRelocType);
-                    relocWasHandled = true;
+                    wasRelocHandled = true;
                     break;
 
                 default:
@@ -793,7 +793,8 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
-        if (relocWasHandled)
+
+        if (wasRelocHandled)
             continue;
 
         switch (tmp.fRelocType)
