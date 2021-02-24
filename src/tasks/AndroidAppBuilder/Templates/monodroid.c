@@ -294,3 +294,11 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     return mono_droid_runtime_init ();
 }
+
+// called from C#
+void
+invoke_external_native_api (void (*callback)(void))
+{
+    if (callback)
+        callback();
+}
