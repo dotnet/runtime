@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(NetworkCredential cred, bool wrapCredsInCache)
+        public async Task AuthenticatedProxiedRequest_GetAsync_Success(NetworkCredential cred, bool wrapCredsInCache)
         {
             var options = new LoopbackProxyServer.Options
             {
@@ -162,12 +162,10 @@ namespace System.Net.Http.Functional.Tests
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
-                ICredentials creds = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache);
-
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = creds };
+                    handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
 
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
@@ -203,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Fact]
-        public async Task AuthenticatedProxyTunnelRequestWithValidCredentials_PostAsync_Success()
+        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success()
         {
             if (IsWinHttpHandler)
             {
@@ -215,14 +213,14 @@ namespace System.Net.Http.Functional.Tests
                 AuthenticationSchemes = AuthenticationSchemes.Basic,
                 ConnectionCloseAfter407 = true
             };
+
+            NetworkCredential cred = new NetworkCredential("user", "password");
+
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                handler.Proxy = new WebProxy(proxyServer.Uri)
-                {
-                    Credentials = new NetworkCredential("user", "password")
-                };
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = cred };
 
                 const string content = "This is a test";
 
