@@ -631,40 +631,44 @@ namespace System.IO
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
-                // hot path #1: there is data in the buffer
-                if (_readLen - _readPos > 0 || count == 0)
+                bool releaseLock = true;
+                try
                 {
-                    bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out Exception? error);
-
-                    // If we satisfied enough data from the buffer, we can complete synchronously.
-                    // Reading again for more data may cause us to block if we're using a device with no clear end of file,
-                    // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
-                    // process's standard output, this can lead to deadlocks involving two processes.
-                    // BUT - this is a breaking change.
-                    // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
-                    // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-                    if (bytesFromBuffer == count || error != null)
+                    // hot path #1: there is data in the buffer
+                    if (_readLen - _readPos > 0 || count == 0)
                     {
-                        // if the above is false, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                        sem.Release();
+                        bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out Exception? error);
 
-                        return (error == null)
-                            ? LastSyncCompletedReadTask(bytesFromBuffer)
-                            : Task.FromException<int>(error);
+                        // If we satisfied enough data from the buffer, we can complete synchronously.
+                        // Reading again for more data may cause us to block if we're using a device with no clear end of file,
+                        // such as a serial port or pipe. If we blocked here and this code was used with redirected pipes for a
+                        // process's standard output, this can lead to deadlocks involving two processes.
+                        // BUT - this is a breaking change.
+                        // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
+                        // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
+                        if (bytesFromBuffer == count || error != null)
+                        {
+                            return (error == null)
+                                ? LastSyncCompletedReadTask(bytesFromBuffer)
+                                : Task.FromException<int>(error);
+                        }
                     }
+                    // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                    else if (_writePos == 0 && count >= _bufferSize)
+                    {
+                        _readPos = _readLen = 0;
+
+                        return _stream!.ReadAsync(buffer, offset, count, cancellationToken);
+                    }
+
+                    releaseLock = false;
                 }
-                // hot path #2: there is nothing to Flush and buffering would not be beneficial
-                else if (_writePos == 0 && count >= _bufferSize)
+                finally
                 {
-                    _readPos = _readLen = 0;
-
-                    // start the async operation
-                    ValueTask<int> result = _stream!.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
-
-                    // release the lock (we are not using shared state anymore)
-                    sem.Release();
-
-                    return result.AsTask();
+                    if (releaseLock) // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there
+                    {
+                        sem.Release();
+                    }
                 }
             }
 
@@ -689,34 +693,38 @@ namespace System.IO
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
-                // hot path #1: there is data in the buffer
-                if (_readLen - _readPos > 0 || buffer.Length == 0)
+                bool releaseLock = true;
+                try
                 {
-                    bytesFromBuffer = ReadFromBuffer(buffer.Span);
-
-                    if (bytesFromBuffer == buffer.Length)
+                    // hot path #1: there is data in the buffer
+                    if (_readLen - _readPos > 0 || buffer.Length == 0)
                     {
-                        // if above is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                        sem.Release();
+                        bytesFromBuffer = ReadFromBuffer(buffer.Span);
 
-                        // If we satisfied enough data from the buffer, we can complete synchronously.
-                        return new ValueTask<int>(bytesFromBuffer);
+                        if (bytesFromBuffer == buffer.Length)
+                        {
+                            // If we satisfied enough data from the buffer, we can complete synchronously.
+                            return new ValueTask<int>(bytesFromBuffer);
+                        }
+
+                        buffer = buffer.Slice(bytesFromBuffer);
+                    }
+                    // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                    else if (_writePos == 0 && buffer.Length >= _bufferSize)
+                    {
+                        _readPos = _readLen = 0;
+
+                        return _stream!.ReadAsync(buffer, cancellationToken);
                     }
 
-                    buffer = buffer.Slice(bytesFromBuffer);
+                    releaseLock = false;
                 }
-                // hot path #2: there is nothing to Flush and buffering would not be beneficial
-                else if (_writePos == 0 && buffer.Length >= _bufferSize)
+                finally
                 {
-                    _readPos = _readLen = 0;
-
-                    // start the async operation
-                    ValueTask<int> result = _stream!.ReadAsync(buffer, cancellationToken);
-
-                    // release the lock (we are not using shared state anymore)
-                    sem.Release();
-
-                    return result;
+                    if (releaseLock) // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there
+                    {
+                        sem.Release();
+                    }
                 }
             }
 
@@ -1075,7 +1083,7 @@ namespace System.IO
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
             if (semaphoreLockTask.IsCompletedSuccessfully)
             {
-                bool completeSynchronously = true;
+                bool releaseLock = true;
                 try
                 {
                     if (_writePos == 0)
@@ -1086,28 +1094,26 @@ namespace System.IO
                     Debug.Assert(_writePos < _bufferSize);
 
                     // hot path #1 If the write completely fits into the buffer, we can complete synchronously:
-                    completeSynchronously = buffer.Length < _bufferSize - _writePos;
-                    if (completeSynchronously)
+                    if (buffer.Length < _bufferSize - _writePos)
                     {
                         int bytesWritten = WriteToBuffer(buffer.Span);
                         Debug.Assert(bytesWritten == buffer.Length);
                         return default;
                     }
+                    // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                    else if (_writePos == 0 && buffer.Length >= _bufferSize)
+                    {
+                        return _stream!.WriteAsync(buffer, cancellationToken);
+                    }
+
+                    releaseLock = false;
                 }
                 finally
                 {
-                    if (completeSynchronously)  // if this is FALSE, we will be entering WriteToUnderlyingStreamAsync and releasing there.
+                    if (releaseLock)  // if this is FALSE, we will be entering WriteToUnderlyingStreamAsync and releasing there.
+                    {
                         sem.Release();
-                }
-
-                // hot path #2: there is nothing to Flush and buffering would not be beneficial
-                if (_writePos == 0 && buffer.Length >= _bufferSize)
-                {
-                    ValueTask result = _stream!.WriteAsync(buffer, cancellationToken);
-
-                    sem.Release();
-
-                    return result;
+                    }
                 }
             }
 
