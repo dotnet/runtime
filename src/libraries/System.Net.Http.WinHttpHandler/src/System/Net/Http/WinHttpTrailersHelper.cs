@@ -10,22 +10,26 @@ namespace System.Net.Http
 {
     internal static class WinHttpTrailersHelper
     {
+#if !NETSTANDARD2_1
         private const string RequestMessagePropertyName = "__ResponseTrailers";
-
+        private class HttpResponseTrailers : HttpHeaders
+        {
+        }
+#endif
         private static Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
         public static bool OsSupportsTrailers => s_trailersSupported.Value;
 
         public static HttpHeaders GetResponseTrailers(HttpResponseMessage response)
         {
 #if NETSTANDARD2_1
+            return response.TrailingHeaders;
+#else
             // We are (ab)using a property that became Obsolete on .NET 5
 #pragma warning disable CS0618
-            return response.TrailingHeaders;
-#pragma warning restore CS0618
-#else
             HttpResponseTrailers responseTrailers = new HttpResponseTrailers();
             response.RequestMessage.Properties[RequestMessagePropertyName] = responseTrailers;
             return responseTrailers;
+#pragma warning restore CS0618
 #endif
         }
 
@@ -65,11 +69,5 @@ namespace System.Net.Http
                 sessionHandle.Dispose();
             }
         }
-
-#if !NETSTANDARD2_1
-        private class HttpResponseTrailers : HttpHeaders
-        {
-        }
-#endif
     }
 }
