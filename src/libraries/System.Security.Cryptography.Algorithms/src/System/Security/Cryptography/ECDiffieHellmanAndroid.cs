@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
                 get
                 {
                     ThrowIfDisposed();
-                    return new ECDiffieHellmanAndroidPublicKey(_key.UpRefKeyHandle());
+                    return new ECDiffieHellmanAndroidPublicKey(GetKey());
                 }
             }
 

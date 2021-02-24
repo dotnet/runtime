@@ -11,23 +11,14 @@ namespace System.Security.Cryptography
         {
             private ECAndroid _key;
 
-            internal ECDiffieHellmanAndroidPublicKey(SafeEvpPKeyHandle pkeyHandle)
+            internal ECDiffieHellmanAndroidPublicKey(SafeEcKeyHandle ecKeyHandle)
             {
-                if (pkeyHandle == null)
-                    throw new ArgumentNullException(nameof(pkeyHandle));
-                if (pkeyHandle.IsInvalid)
-                    throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
+                if (ecKeyHandle == null)
+                    throw new ArgumentNullException(nameof(ecKeyHandle));
+                if (ecKeyHandle.IsInvalid)
+                    throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(ecKeyHandle));
 
-                // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-                SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
-
-                if (key.IsInvalid)
-                {
-                    key.Dispose();
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                _key = new ECAndroid(key);
+                _key = new ECAndroid(ecKeyHandle.DuplicateHandle());
             }
 
             internal ECDiffieHellmanAndroidPublicKey(ECParameters parameters)
@@ -73,28 +64,9 @@ namespace System.Security.Cryptography
                 base.Dispose(disposing);
             }
 
-            internal SafeEvpPKeyHandle DuplicateKeyHandle()
+            internal SafeEcKeyHandle DuplicateKeyHandle()
             {
-                SafeEcKeyHandle currentKey = GetKey();
-                SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-                try
-                {
-                    // Wrapping our key in an EVP_PKEY will up_ref our key.
-                    // When the EVP_PKEY is Disposed it will down_ref the key.
-                    // So everything should be copacetic.
-                    if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    return pkeyHandle;
-                }
-                catch
-                {
-                    pkeyHandle.Dispose();
-                    throw;
-                }
+                return GetKey().DuplicateHandle();
             }
 
             private void ThrowIfDisposed()

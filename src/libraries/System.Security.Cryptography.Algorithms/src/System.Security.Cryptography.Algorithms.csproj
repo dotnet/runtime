@@ -614,6 +614,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.cs"/>
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />

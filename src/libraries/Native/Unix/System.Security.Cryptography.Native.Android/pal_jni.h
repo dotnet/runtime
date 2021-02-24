@@ -304,6 +304,13 @@ extern jclass    g_X500PrincipalClass;
 extern jmethodID g_X500PrincipalGetEncoded;
 extern jmethodID g_X500PrincipalHashCode;
 
+// javax/crypto/KeyAgreement
+extern jclass    g_KeyAgreementClass;
+extern jmethodID g_KeyAgreementGetInstance;
+extern jmethodID g_KeyAgreementInit;
+extern jmethodID g_KeyAgreementDoPhase;
+extern jmethodID g_KeyAgreementGenerateSecret;
+
 // JNI helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))

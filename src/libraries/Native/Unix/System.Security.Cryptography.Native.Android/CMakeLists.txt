@@ -17,6 +17,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecdsa.c
     pal_ecc_import_export.c
     pal_eckey.c
+    pal_ecdh.c
     pal_sslstream.c
     pal_x509.c
 )

@@ -294,6 +294,13 @@ jclass    g_X500PrincipalClass;
 jmethodID g_X500PrincipalGetEncoded;
 jmethodID g_X500PrincipalHashCode;
 
+// javax/crypto/KeyAgreement
+jclass    g_KeyAgreementClass;
+jmethodID g_KeyAgreementGetInstance;
+jmethodID g_KeyAgreementInit;
+jmethodID g_KeyAgreementDoPhase;
+jmethodID g_KeyAgreementGenerateSecret;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -662,6 +669,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_X500PrincipalClass =      GetClassGRef(env, "javax/security/auth/x500/X500Principal");
     g_X500PrincipalGetEncoded = GetMethod(env, false, g_X500PrincipalClass, "getEncoded", "()[B");
     g_X500PrincipalHashCode =   GetMethod(env, false, g_X500PrincipalClass, "hashCode", "()I");
+
+    g_KeyAgreementClass          = GetClassGRef(env, "javax/crypto/KeyAgreement");
+    g_KeyAgreementGetInstance    = GetMethod(env, true, g_KeyAgreementClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/KeyAgreement;");
+    g_KeyAgreementInit           = GetMethod(env, false, g_KeyAgreementClass, "init", "(Ljava/security/Key;)V");
+    g_KeyAgreementDoPhase        = GetMethod(env, false, g_KeyAgreementClass, "doPhase", "(Ljava/security/Key;Z)Ljava/security/Key;");
+    g_KeyAgreementGenerateSecret = GetMethod(env, false, g_KeyAgreementClass, "generateSecret", "()[B");
 
     return JNI_VERSION_1_6;
 }

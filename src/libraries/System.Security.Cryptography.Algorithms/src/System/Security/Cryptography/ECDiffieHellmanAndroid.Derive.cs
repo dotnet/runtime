@@ -106,10 +106,10 @@ namespace System.Security.Cryptography
 
                 bool otherIsNamed = otherKey.HasCurveName;
 
-                SafeEvpPKeyHandle? ourKey = null;
-                SafeEvpPKeyHandle? theirKey = null;
+                SafeEcKeyHandle? ourKey = null;
+                SafeEcKeyHandle? theirKey = null;
                 byte[]? rented = null;
-                int secretLength = 0;
+                int secretLength = KeySize;
 
                 try
                 {
@@ -142,42 +142,37 @@ namespace System.Security.Cryptography
                         theirKey = otherKey.DuplicateKeyHandle();
                     }
 
-                    using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
+                    // Indicate that secret can hold stackallocs from nested scopes
+                    Span<byte> secret = stackalloc byte[0];
+
+                    // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
+                    const int StackAllocMax = 66;
+
+                    if (secretLength > StackAllocMax)
                     {
-                        if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
-                        {
-                            throw Interop.Crypto.CreateOpenSslCryptographicException();
-                        }
+                        rented = CryptoPool.Rent(secretLength);
+                        secret = new Span<byte>(rented, 0, secretLength);
+                    }
+                    else
+                    {
+                        secret = stackalloc byte[secretLength];
+                    }
 
-                        secretLength = (int)secretLengthU;
+                    if (!Interop.Crypto.EcdhDeriveKey(ourKey, theirKey, secret, out int usedBufferLength))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
 
-                        // Indicate that secret can hold stackallocs from nested scopes
-                        Span<byte> secret = stackalloc byte[0];
+                    secret = secret.Slice(0, usedBufferLength);
 
-                        // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
-                        const int StackAllocMax = 66;
-
-                        if (secretLength > StackAllocMax)
-                        {
-                            rented = CryptoPool.Rent(secretLength);
-                            secret = new Span<byte>(rented, 0, secretLength);
-                        }
-                        else
-                        {
-                            secret = stackalloc byte[secretLength];
-                        }
-
-                        Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
-
-                        if (hasher == null)
-                        {
-                            return secret.ToArray();
-                        }
-                        else
-                        {
-                            hasher.AppendData(secret);
-                            return null;
-                        }
+                    if (hasher == null)
+                    {
+                        return secret.ToArray();
+                    }
+                    else
+                    {
+                        hasher.AppendData(secret);
+                        return null;
                     }
                 }
                 finally

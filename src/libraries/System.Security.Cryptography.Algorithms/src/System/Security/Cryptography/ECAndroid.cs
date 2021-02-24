@@ -42,11 +42,7 @@ namespace System.Security.Cryptography
 
         internal int KeySize => Interop.Crypto.EcKeyGetSize(_key.Value);
 
-        internal SafeEvpPKeyHandle UpRefKeyHandle()
-        {
-            // TODO: reimplement when implementing ECDH support.
-            throw new PlatformNotSupportedException();
-        }
+        internal SafeEcKeyHandle UpRefKeyHandle() => _key.Value.DuplicateHandle();
 
         internal void SetKey(SafeEcKeyHandle key)
         {
