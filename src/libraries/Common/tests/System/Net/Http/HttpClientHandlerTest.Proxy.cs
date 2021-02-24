@@ -198,8 +198,9 @@ namespace System.Net.Http.Functional.Tests
         // TODO: Make this work similar to above, consolidate variations
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success()
+        [Theory]
+        [MemberData(nameof(CredentialsForProxy))]
+        public async Task AuthenticatedProxyTunnelRequest_PostAsync_Success(NetworkCredential cred, bool wrapCredsInCache)
         {
             if (IsWinHttpHandler)
             {
@@ -208,18 +209,16 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new LoopbackProxyServer.Options
             {
-                AuthenticationSchemes = AuthenticationSchemes.Basic,
+                AuthenticationSchemes = cred is not null ? AuthenticationSchemes.Basic : AuthenticationSchemes.None,
                 ConnectionCloseAfter407 = true
             };
-
-            NetworkCredential cred = new NetworkCredential("user", "password");
 
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = cred };
+                handler.Proxy = new WebProxy(proxyServer.Uri) { Credentials = ConstructCredentials(cred, proxyServer.Uri, BasicAuth, wrapCredsInCache) };
 
                 const string content = "This is a test";
 
