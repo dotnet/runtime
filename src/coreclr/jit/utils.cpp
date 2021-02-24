@@ -1458,6 +1458,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
             case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
+            case CORINFO_HELP_FAIL_FAST:
+            case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
+            case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
+            case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
 
                 break;
 

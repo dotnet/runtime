@@ -684,32 +684,46 @@ PhaseStatus Compiler::fgImport()
 
 bool Compiler::fgIsThrow(GenTree* tree)
 {
-    if ((tree->gtOper != GT_CALL) || (tree->AsCall()->gtCallType != CT_HELPER))
+    if (!tree->IsCall())
     {
         return false;
     }
 
-    // TODO-Throughput: Replace all these calls to eeFindHelper() with a table based lookup
-
-    if ((tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED)))
+    GenTreeCall* call = tree->AsCall();
+    if (call->IsNoReturn())
     {
-        noway_assert(tree->gtFlags & GTF_CALL);
-        noway_assert(tree->gtFlags & GTF_EXCEPT);
         return true;
     }
 
-    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
-    // that would be nice to recognize.
+    if (call->gtCallType != CT_HELPER)
+    {
+        return false;
+    }
 
-    return false;
+    switch (eeGetHelperNum(call->gtCallMethHnd))
+    {
+        case CORINFO_HELP_OVERFLOW:
+        case CORINFO_HELP_VERIFICATION:
+        case CORINFO_HELP_RNGCHKFAIL:
+        case CORINFO_HELP_THROWDIVZERO:
+        case CORINFO_HELP_THROWNULLREF:
+        case CORINFO_HELP_THROW:
+        case CORINFO_HELP_RETHROW:
+        case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
+        case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+        case CORINFO_HELP_FAIL_FAST:
+        case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
+        case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
+        case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
+        case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+        case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+        case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+            noway_assert(call->gtFlags & GTF_CALL);
+            noway_assert(call->gtFlags & GTF_EXCEPT);
+            return true;
+        default:
+            return false;
+    }
 }
 
 /*****************************************************************************
