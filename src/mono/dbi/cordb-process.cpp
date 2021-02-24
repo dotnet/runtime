@@ -26,6 +26,7 @@ CordbProcess::CordbProcess(Cordb* cordb) : CordbBaseMono(NULL)
     appDomains       = new ArrayList();
     m_pPendingEval   = new ArrayList();
     this->m_pCordb   = cordb;
+    m_bIsJustMyCode  = false;
 }
 
 CordbProcess::~CordbProcess()
@@ -88,7 +89,7 @@ CordbProcess::~CordbProcess()
 void CordbProcess::CheckPendingEval()
 {
     DWORD i = 0;
-    while (i < m_pPendingEval->GetCount())
+    while (m_pPendingEval && i < m_pPendingEval->GetCount())
     {
         CordbEval* eval = (CordbEval*)m_pPendingEval->Get(i);
         if (eval)
@@ -643,3 +644,14 @@ CordbFunctionBreakpoint* CordbProcess::GetBreakpointByOffsetAndFuncId(int64_t of
     }
     return NULL;
 }
+
+void CordbProcess::SetJMCStatus(BOOL bIsJustMyCode)
+{
+    m_bIsJustMyCode = bIsJustMyCode;
+}
+
+BOOL CordbProcess::GetJMCStatus()
+{
+    return m_bIsJustMyCode;
+}
+

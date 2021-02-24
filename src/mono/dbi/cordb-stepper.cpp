@@ -7,6 +7,7 @@
 #include <cordb-frame.h>
 #include <cordb-stepper.h>
 #include <cordb-thread.h>
+#include <cordb-process.h>
 #include <cordb.h>
 
 using namespace std;
@@ -73,7 +74,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn, COR_DEBUG_STEP_R
         m_dbgprot_buffer_add_id(&sendbuf, m_pThread->GetThreadId());
         m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_SIZE_MIN);
         m_dbgprot_buffer_add_int(&sendbuf, bStepIn ? MDBGPROT_STEP_DEPTH_INTO : MDBGPROT_STEP_DEPTH_OVER);
-        m_dbgprot_buffer_add_int(&sendbuf, MDBGPROT_STEP_FILTER_NONE);
+        m_dbgprot_buffer_add_int(&sendbuf, conn->GetProcess()->GetJMCStatus() ? MDBGPROT_STEP_FILTER_DEBUGGER_NON_USER_CODE : MDBGPROT_STEP_FILTER_NONE);
 
         int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
         m_dbgprot_buffer_free(&sendbuf);

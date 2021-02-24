@@ -28,7 +28,7 @@ class CordbProcess : public CordbBaseMono,
     ArrayList*          m_pPendingEval;
     CordbAppDomainEnum* m_pAppDomainEnum;
     Cordb*              m_pCordb;
-
+    BOOL                m_bIsJustMyCode;
 public:
     ArrayList* appDomains;
     CordbProcess(Cordb* cordb);
@@ -124,6 +124,8 @@ public:
     CordbThread*             FindThread(long thread_id);
     CordbFunctionBreakpoint* GetBreakpointByOffsetAndFuncId(int64_t offset, int method_id);
     void                     CheckPendingEval();
+    void                     SetJMCStatus(BOOL bIsJustMyCode);
+    BOOL                     GetJMCStatus();
 };
 
 #endif

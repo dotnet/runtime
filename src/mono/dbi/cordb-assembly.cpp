@@ -165,9 +165,17 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
     return E_NOTIMPL;
 }
 
-HRESULT CordbModule::SetJMCStatus(BOOL bIsJustMyCode, ULONG32 cTokens, mdToken pTokens[])
+HRESULT CordbModule::SetJMCStatus(BOOL bIsJustMyCode, ULONG32 cOthers, mdToken pTokens[])
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbModule - SetJMCStatus - NOT IMPLEMENTED\n"));
+    if (cOthers != 0)
+    {
+        _ASSERTE(!"not yet impl for cOthers != 0");
+        return E_NOTIMPL;
+    }
+    LOG((LF_CORDB, LL_INFO100000, "CordbModule - SetJMCStatus - IMPLEMENTED\n"));    
+    //on mono JMC is not by module, for now receiving this for one module, will affect all.
+    if (bIsJustMyCode)
+        conn->GetProcess()->SetJMCStatus(bIsJustMyCode);
     return S_OK;
 }
 
@@ -336,7 +344,12 @@ HRESULT CordbModule::GetMetaDataInterface(REFIID riid, IUnknown** ppObj)
 {
     if (m_pRegMeta == NULL)
     {
+        OptionValue optionForNewScope;
+        memset(&optionForNewScope, 0, sizeof(OptionValue));
+        optionForNewScope.m_ThreadSafetyOptions = MDThreadSafetyOn;
+
         m_pRegMeta = new RegMeta();
+        m_pRegMeta->SetOption(&optionForNewScope);
 
         m_pStgdbRW       = new CLiteWeightStgdbRW();
         ULONG32 pcchName = 0;
@@ -364,9 +377,25 @@ HRESULT CordbModule::GetToken(mdModule* pToken)
 
 HRESULT CordbModule::IsDynamic(BOOL* pDynamic)
 {
-    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));
-    *pDynamic = FALSE;
-    return S_OK;
+    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));    
+    HRESULT hr = S_OK;
+    EX_TRY 
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_IS_DYNAMIC, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        int m_bIsDynamic = m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
+        *pDynamic = m_bIsDynamic;
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbModule::GetGlobalVariableValue(mdFieldDef fieldDef, ICorDebugValue** ppValue)
