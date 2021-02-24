@@ -1217,6 +1217,7 @@ void HelperCallProperties::init()
         //
         bool isPure        = false; // true if the result only depends upon input args and not any global state
         bool noThrow       = false; // true if the helper will never throw
+        bool alwaysThrow   = false; // true if the helper will always throw
         bool nonNullReturn = false; // true if the result will never be null or zero
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
@@ -1463,6 +1464,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
             case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
 
+                alwaysThrow = true;
                 break;
 
             // These helper calls may throw an exception
@@ -1502,6 +1504,7 @@ void HelperCallProperties::init()
 
         m_isPure[helper]        = isPure;
         m_noThrow[helper]       = noThrow;
+        m_alwaysThrow[helper]   = alwaysThrow;
         m_nonNullReturn[helper] = nonNullReturn;
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;

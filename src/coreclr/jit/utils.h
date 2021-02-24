@@ -451,6 +451,7 @@ class HelperCallProperties
 private:
     bool m_isPure[CORINFO_HELP_COUNT];
     bool m_noThrow[CORINFO_HELP_COUNT];
+    bool m_alwaysThrow[CORINFO_HELP_COUNT];
     bool m_nonNullReturn[CORINFO_HELP_COUNT];
     bool m_isAllocator[CORINFO_HELP_COUNT];
     bool m_mutatesHeap[CORINFO_HELP_COUNT];
@@ -476,6 +477,13 @@ public:
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
         return m_noThrow[helperId];
+    }
+
+    bool AlwaysThrow(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_alwaysThrow[helperId];
     }
 
     bool NonNullReturn(CorInfoHelpFunc helperId)

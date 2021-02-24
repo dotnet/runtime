@@ -695,35 +695,12 @@ bool Compiler::fgIsThrow(GenTree* tree)
         return true;
     }
 
-    if (call->gtCallType != CT_HELPER)
+    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
-        return false;
+        noway_assert(call->gtFlags & GTF_EXCEPT);
+        return true;
     }
-
-    switch (eeGetHelperNum(call->gtCallMethHnd))
-    {
-        case CORINFO_HELP_OVERFLOW:
-        case CORINFO_HELP_VERIFICATION:
-        case CORINFO_HELP_RNGCHKFAIL:
-        case CORINFO_HELP_THROWDIVZERO:
-        case CORINFO_HELP_THROWNULLREF:
-        case CORINFO_HELP_THROW:
-        case CORINFO_HELP_RETHROW:
-        case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
-        case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
-        case CORINFO_HELP_FAIL_FAST:
-        case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
-        case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
-        case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-        case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-        case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-        case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
-            noway_assert(call->gtFlags & GTF_CALL);
-            noway_assert(call->gtFlags & GTF_EXCEPT);
-            return true;
-        default:
-            return false;
-    }
+    return false;
 }
 
 /*****************************************************************************
