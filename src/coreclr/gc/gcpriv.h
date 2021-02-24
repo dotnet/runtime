@@ -4345,6 +4345,9 @@ protected:
     PER_HEAP_ISOLATED
     int generation_skip_ratio_threshold;
 
+    PER_HEAP_ISOLATED
+    int conserve_mem_setting;
+
     PER_HEAP
     BOOL gen0_bricks_cleared;
     PER_HEAP

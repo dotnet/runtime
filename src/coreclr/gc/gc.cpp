@@ -2190,6 +2190,7 @@ double       gc_heap::short_plugs_pad_ratio = 0;
 #endif //SHORT_PLUGS
 
 int         gc_heap::generation_skip_ratio_threshold = 0;
+int         gc_heap::conserve_mem_setting = 0;
 
 uint64_t    gc_heap::suspended_start_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
@@ -2992,11 +2993,6 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                 if (gen_number == max_generation)
                 {
                     float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
-                    int conserve_mem_setting = (int)GCConfig::GetGCConserveMem();
-                    if (conserve_mem_setting < 0)
-                        conserve_mem_setting = 0;
-                    if (conserve_mem_setting > 9)
-                        conserve_mem_setting = 9;
                     float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
 #ifndef MULTIPLE_HEAPS
                     if (conserve_mem_setting == 0)
@@ -12014,6 +12010,12 @@ gc_heap::init_semi_shared()
 
     generation_skip_ratio_threshold = (int)GCConfig::GetGCLowSkipRatio();
 
+    conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
+    if (conserve_mem_setting  < 0)
+        conserve_mem_setting = 0;
+    if (conserve_mem_setting > 9)
+        conserve_mem_setting = 9;
+
     ret = 1;
 
 cleanup:
@@ -17671,6 +17673,39 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             *blocking_collection_p = TRUE;
             settings.loh_compaction = TRUE;
             dprintf (GTC_LOG, ("compacting LOH due to hard limit"));
+        }
+    }
+
+    if (conserve_mem_setting != 0)
+    {
+        float frag_limit = 1.0f - conserve_mem_setting / 10.0f;
+
+#ifdef MULTIPLE_HEAPS
+        size_t loh_size = 0;
+        for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+        {
+            gc_heap* hp = gc_heap::g_heaps[hn];
+            loh_size += hp->generation_sizes (hp->generation_of (loh_generation));
+        }
+#else
+        size_t loh_size = generation_sizes (generation_of (loh_generation));
+#endif //MULTIPLE_HEAPS
+        float loh_frag_ratio = 0.0f;
+        if (loh_size != 0)
+        {
+            size_t loh_frag = get_total_gen_fragmentation(loh_generation);
+            loh_frag_ratio = ((float)loh_frag) / (float)loh_size;
+        }
+        if (loh_frag_ratio > frag_limit)
+        {
+            dprintf(GTC_LOG, ("loh frag: %f > limit %f", loh_frag_ratio, frag_limit));
+            gc_data_global.gen_to_condemn_reasons.set_condition (gen_joined_limit_loh_frag);
+
+            n = max_generation;
+            *blocking_collection_p = TRUE;
+            settings.loh_compaction = TRUE;
+
+            dprintf(GTC_LOG, ("compacting LOH due to GCConserveMem setting"));
         }
     }
 
@@ -24500,7 +24535,7 @@ BOOL gc_heap::plan_loh()
 
 void gc_heap::compact_loh()
 {
-    assert (loh_compaction_requested() || heap_hard_limit);
+    assert (loh_compaction_requested() || heap_hard_limit || conserve_mem_setting);
 
     generation* gen        = large_object_generation;
     heap_segment* start_seg = heap_segment_rw (generation_start_segment (gen));
@@ -35468,6 +35503,16 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             cst = min (1.0f, float (out) / float (dd_begin_data_size (dd)));
 
             f = surv_to_growth (cst, limit, max_limit);
+            if (conserve_mem_setting != 0)
+            {
+                // if this is set, compete a growth factor based on it.
+                // formula below means use 50% of the allowable fragmentation
+                float f_conserve = (10.0f / conserve_mem_setting - 1) * 0.5f + 1.0f;
+
+                // use the smaller one
+                f = min (f, f_conserve);
+            }
+
             size_t max_growth_size = (size_t)(max_size / f);
             if (current_size >= max_growth_size)
             {
