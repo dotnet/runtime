@@ -742,10 +742,16 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             printf("\n");
         }
 
-        switch (tmp.fRelocType)
+        const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
+
+        const DWORD relocType = tmp.fRelocType;
+        bool relocWasHandled  = false;
+
+        // Do platform specific relocations first.
+
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_X86)
         {
-#if defined(TARGET_X86)
-            case IMAGE_REL_BASED_HIGHLOW:
+            if (relocType == IMAGE_REL_BASED_HIGHLOW)
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -753,13 +759,19 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
-                             (DWORD)tmp.target);
+                        (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
-            }
-            break;
-#endif // TARGET_X86
 
+                relocWasHandled = true;
+            }
+        }
+
+        if (relocWasHandled)
+            continue;
+
+        switch (tmp.fRelocType)
+        {
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
             case IMAGE_REL_BASED_REL32:
             {
