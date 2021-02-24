@@ -1,7 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 class NameConfigWithPid
 {
@@ -16,19 +20,25 @@ class NameConfigWithPid
         }
         else
         {
-            Process process = new Process();
+            Process process = null;
+            try
+            {
+                process = new Process();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // For platforms that do not support launching child processes, simply succeed the test
+                return 100;
+            }
+
             string corerun = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 corerun = corerun + ".exe";
 
             // Use dll directory as temp directory
             string tempDir = Path.GetDirectoryName(typeof(NameConfigWithPid).Assembly.Location);
-            string outputPathPattern = Path.Combine(tempDir, "eventPipeStream{pid}_{pid}.nettrace");
-
-            foreach (string oldFile in Directory.EnumerateFiles(tempDir, "eventPipeStream*"))
-            {
-                File.Delete(oldFile);
-            }
+            string outputPathBaseName = $"eventPipeStream{Thread.CurrentThread.ManagedThreadId}_{(ulong)Stopwatch.GetTimestamp()}";
+            string outputPathPattern = Path.Combine(tempDir, outputPathBaseName + "_{pid}_{pid}.nettrace");
 
             process.StartInfo.FileName = corerun;
             process.StartInfo.Arguments = typeof(NameConfigWithPid).Assembly.Location + " waitforinput";
@@ -56,7 +66,19 @@ class NameConfigWithPid
             else
             {
                 Console.WriteLine($"{expectedPath} found");
-                return 100; 
+                for (int i = 0; i < 20; i++)
+                {
+                    try
+                    {
+                        if (File.Exists(expectedPath))
+                            File.Delete(expectedPath);
+                        return 100;
+                    }
+                    catch { }
+                    Thread.Sleep(1000);
+                }
+                Console.WriteLine($"Unable to delete {expectedPath}");
+                return 2; 
             }
         }
     }
