@@ -404,7 +404,9 @@ jmethodID g_SSLContextCreateSSLEngineMethod;
 // javax/net/ssl/SSLSession
 jclass    g_SSLSession;
 jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
+jmethodID g_SSLSessionGetCipherSuite;
 jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+jmethodID g_SSLSessionGetProtocol;
 
 // javax/net/ssl/SSLEngineResult
 jclass    g_SSLEngineResult;
@@ -932,7 +934,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_SSLSession =                               GetClassGRef(env, "javax/net/ssl/SSLSession");
     g_SSLSessionGetApplicationBufferSizeMethod = GetMethod(env, false, g_SSLSession, "getApplicationBufferSize", "()I");
+    g_SSLSessionGetCipherSuite =                 GetMethod(env, false, g_SSLSession, "getCipherSuite", "()Ljava/lang/String;");
     g_SSLSessionGetPacketBufferSizeMethod =      GetMethod(env, false, g_SSLSession, "getPacketBufferSize", "()I");
+    g_SSLSessionGetProtocol =                    GetMethod(env, false, g_SSLSession, "getProtocol", "()Ljava/lang/String;");
 
     g_SSLEngineResult =                          GetClassGRef(env, "javax/net/ssl/SSLEngineResult");
     g_SSLEngineResultGetStatusMethod =           GetMethod(env, false, g_SSLEngineResult, "getStatus", "()Ljavax/net/ssl/SSLEngineResult$Status;");

@@ -3,7 +3,10 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+
 using Microsoft.Win32.SafeHandles;
+
 using SafeSslHandle = System.Net.SafeSslHandle;
 
 internal static partial class Interop
@@ -18,14 +21,14 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
         internal static extern SafeSslHandle SSLStreamCreate(
-            bool isServer,
+            [MarshalAs(UnmanagedType.U1)] bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
             int appOutBufferSize,
             int appInBufferSize);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamHandshake")]
-        internal static extern SafeSslHandle SSLStreamHandshake(SafeSslHandle sslHandle);
+        internal static extern int SSLStreamHandshake(SafeSslHandle sslHandle);
 
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateAndStartHandshake")]
         private static extern SafeSslHandle SSLStreamCreateAndStartHandshake(
@@ -93,6 +96,40 @@ internal static partial class Interop
             {
                 HResult = errorCode;
             }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetProtocol")]
+        private static extern int SSLStreamGetProtocol(SafeSslHandle ssl, out IntPtr protocol);
+        internal static string SSLStreamGetProtocol(SafeSslHandle ssl)
+        {
+            IntPtr protocolPtr;
+            int ret = SSLStreamGetProtocol(ssl, out protocolPtr);
+            if (ret != SUCCESS)
+                throw new CryptographicException();
+
+            if (protocolPtr == IntPtr.Zero)
+                return string.Empty;
+
+            string protocol = Marshal.PtrToStringUni(protocolPtr)!;
+            Marshal.FreeHGlobal(protocolPtr);
+            return protocol;
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetCipherSuite")]
+        private static extern int SSLStreamGetCipherSuite(SafeSslHandle ssl, out IntPtr cipherSuite);
+        internal static string SSLStreamGetCipherSuite(SafeSslHandle ssl)
+        {
+            IntPtr cipherSuitePtr;
+            int ret = SSLStreamGetCipherSuite(ssl, out cipherSuitePtr);
+            if (ret != SUCCESS)
+                throw new CryptographicException();
+
+            if (cipherSuitePtr == IntPtr.Zero)
+                return string.Empty;
+
+            string cipherSuite = Marshal.PtrToStringUni(cipherSuitePtr)!;
+            Marshal.FreeHGlobal(cipherSuitePtr);
+            return cipherSuite;
         }
     }
 }

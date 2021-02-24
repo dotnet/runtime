@@ -413,7 +413,9 @@ extern jmethodID g_SSLContextCreateSSLEngineMethod;
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;
 extern jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
+extern jmethodID g_SSLSessionGetCipherSuite;
 extern jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+extern jmethodID g_SSLSessionGetProtocol;
 
 // javax/net/ssl/SSLEngineResult
 extern jclass    g_SSLEngineResult;

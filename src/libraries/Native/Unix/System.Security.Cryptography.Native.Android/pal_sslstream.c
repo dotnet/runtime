@@ -5,6 +5,9 @@
 
 #define INSUFFICIENT_BUFFER -1
 
+static uint16_t* AllocateString(JNIEnv *env, jstring source);
+static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t *len);
+
 static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
 
 static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
@@ -105,6 +108,7 @@ static jobject ensureRemaining(JNIEnv* env, SSLStream* sslStream, jobject oldBuf
 
 static void doWrap(JNIEnv* env, SSLStream* sslStream)
 {
+    LOG_DEBUG("doWwrap");
     /*
         appOutBuffer.flip();
         final SSLEngineResult result;
@@ -141,6 +145,7 @@ static void doWrap(JNIEnv* env, SSLStream* sslStream)
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferCompactMethod));
 
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslEngineResult, g_SSLEngineResultGetStatusMethod));
+    LOG_DEBUG("doWwrap status: %d", status);
     switch (status)
     {
         case STATUS__OK:
@@ -163,6 +168,7 @@ static void doWrap(JNIEnv* env, SSLStream* sslStream)
 
 static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
 {
+    LOG_DEBUG("doUnwrap");
     /*
         if (netInBuffer.position() == 0)
         {
@@ -217,6 +223,7 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
             handleEndOfStream(env, sslStream);
             return;
         }
+        LOG_DEBUG("streamReader return count: %d", count);
         (*env)->SetByteArrayRegion(env, tmp, 0, count, (jbyte*)(tmpNative));
         (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPut3Method, tmp, 0, count));
         free(tmpNative);
@@ -228,6 +235,7 @@ static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferCompactMethod));
 
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslEngineResult, g_SSLEngineResultGetStatusMethod));
+    LOG_DEBUG("doUnwwrap status: %d", status);
     switch (status)
     {
         case STATUS__OK:
@@ -266,6 +274,7 @@ static void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshak
         }
     */
 
+    LOG_DEBUG("Handshake status: %d", handshakeStatus);
     AssertOnJNIExceptions(env);
     switch (handshakeStatus)
     {
@@ -304,10 +313,15 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
 
     SSLStream* sslStream = malloc(sizeof(SSLStream));
 
-    // SSLContext sslContext = SSLContext.getDefault();
-    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_sslCtxGetDefaultMethod);
+    // SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+    // sslContext.init(null, null, null);
+    // TODO: set TrustManager[] argument in init to be able to intercept cert validation process (and callback to C#).
+    jstring protocol = JSTRING("TLSv1.2");
+    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, protocol);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     sslStream->sslContext = ToGRef(env, sslContext);
+    (*env)->CallVoidMethod(env, sslStream->sslContext, g_SSLContextInitMethod, NULL, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // SSLEngine sslEngine = sslContext.createSSLEngine();
     // sslEngine.setUseClientMode(!isServer);
@@ -345,7 +359,7 @@ cleanup:
     return NULL;
 }
 
-int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream)
+int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream)
 {
     assert(sslStream != NULL);
     JNIEnv* env = GetJNIEnv();
@@ -485,19 +499,6 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
     FreeSSLStream(env, sslStream);
 }
 
-static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
-{
-    jsize bytesLen = (*env)->GetArrayLength(env, source);
-
-    bool insufficientBuffer = *len < bytesLen;
-    *len = bytesLen;
-    if (insufficientBuffer)
-        return INSUFFICIENT_BUFFER;
-
-    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
-}
-
 int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen)
 {
     assert(sslStream != NULL);
@@ -521,4 +522,75 @@ int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream
 cleanup:
     RELEASE_LOCALS(loc, env);
     return ret;
+}
+
+int32_t AndroidCryptoNative_SSLStreamGetCipherSuite(SSLStream *sslStream, uint16_t** out)
+{
+    assert(sslStream != NULL);
+    assert(out != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    *out = NULL;
+
+    // String cipherSuite = sslSession.getCipherSuite();
+    jstring cipherSuite = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetCipherSuite);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *out = AllocateString(env, cipherSuite);
+
+    ret = SUCCESS;
+
+cleanup:
+    (*env)->DeleteLocalRef(env, cipherSuite);
+    return ret;
+}
+
+int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream *sslStream, uint16_t** out)
+{
+    assert(sslStream != NULL);
+    assert(out != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    *out = NULL;
+
+    // String protocol = sslSession.getProtocol();
+    jstring protocol = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetProtocol);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *out = AllocateString(env, protocol);
+
+    ret = SUCCESS;
+
+cleanup:
+    (*env)->DeleteLocalRef(env, protocol);
+    return ret;
+}
+
+static int32_t PopulateByteArray(JNIEnv* env, jbyteArray source, uint8_t* dest, int32_t* len)
+{
+    jsize bytesLen = (*env)->GetArrayLength(env, source);
+
+    bool insufficientBuffer = *len < bytesLen;
+    *len = bytesLen;
+    if (insufficientBuffer)
+        return INSUFFICIENT_BUFFER;
+
+    (*env)->GetByteArrayRegion(env, source, 0, bytesLen, (jbyte*)dest);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+static uint16_t* AllocateString(JNIEnv *env, jstring source)
+{
+    if (source == NULL)
+        return NULL;
+
+    // Length with null terminator
+    jsize len = (*env)->GetStringLength(env, source);
+
+    // +1 for null terminator.
+    uint16_t* buffer = malloc(sizeof(uint16_t) * (size_t)(len + 1));
+    buffer[len] = '\0';
+
+    (*env)->GetStringRegion(env, source, 0, len, (jchar*)buffer);
+    return buffer;
 }
