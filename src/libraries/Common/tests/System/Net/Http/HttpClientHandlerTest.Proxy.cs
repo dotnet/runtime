@@ -178,13 +178,12 @@ namespace System.Net.Http.Functional.Tests
                             false,
                             null);
 
-                        if (options.AuthenticationSchemes != AuthenticationSchemes.None)
+                        if (cred is not null)
                         {
-                            NetworkCredential nc = creds?.GetCredential(proxyServer.Uri, BasicAuth);
-                            Assert.NotNull(nc);
                             string expectedAuth =
-                                string.IsNullOrEmpty(nc.Domain) ? $"{nc.UserName}:{nc.Password}" :
-                                    $"{nc.Domain}\\{nc.UserName}:{nc.Password}";
+                                string.IsNullOrEmpty(nc.Domain) ?
+                                    $"{cred.UserName}:{cred.Password}" :
+                                    $"{cred.Domain}\\{cred.UserName}:{cred.Password}";
                             _output.WriteLine($"expectedAuth={expectedAuth}");
                             string expectedAuthHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(expectedAuth));
 
