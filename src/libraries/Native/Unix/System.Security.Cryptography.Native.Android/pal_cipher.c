@@ -4,124 +4,84 @@
 #include "pal_cipher.h"
 #include "pal_utilities.h"
 
-// just some unique IDs
-intptr_t AndroidCryptoNative_Aes128Ecb()    { return 1001; }
-intptr_t AndroidCryptoNative_Aes128Cbc()    { return 1002; }
-intptr_t AndroidCryptoNative_Aes128Cfb8()   { return 1003; }
-intptr_t AndroidCryptoNative_Aes128Cfb128() { return 1004; }
-intptr_t AndroidCryptoNative_Aes128Gcm()    { return 1005; }
-intptr_t AndroidCryptoNative_Aes128Ccm()    { return 1006; }
-
-intptr_t AndroidCryptoNative_Aes192Ecb()    { return 1007; }
-intptr_t AndroidCryptoNative_Aes192Cbc()    { return 1008; }
-intptr_t AndroidCryptoNative_Aes192Cfb8()   { return 1009; }
-intptr_t AndroidCryptoNative_Aes192Cfb128() { return 1010; }
-intptr_t AndroidCryptoNative_Aes192Gcm()    { return 1011; }
-intptr_t AndroidCryptoNative_Aes192Ccm()    { return 1012; }
-
-intptr_t AndroidCryptoNative_Aes256Ecb()    { return 1013; }
-intptr_t AndroidCryptoNative_Aes256Cbc()    { return 1014; }
-intptr_t AndroidCryptoNative_Aes256Cfb8()   { return 1015; }
-intptr_t AndroidCryptoNative_Aes256Cfb128() { return 1016; }
-intptr_t AndroidCryptoNative_Aes256Gcm()    { return 1017; }
-intptr_t AndroidCryptoNative_Aes256Ccm()    { return 1018; }
-
-intptr_t AndroidCryptoNative_Des3Ecb()      { return 1019; }
-intptr_t AndroidCryptoNative_Des3Cbc()      { return 1020; }
-intptr_t AndroidCryptoNative_Des3Cfb8()     { return 1021; }
-intptr_t AndroidCryptoNative_Des3Cfb64()    { return 1022; }
-
-intptr_t AndroidCryptoNative_DesEcb()       { return 1023; }
-intptr_t AndroidCryptoNative_DesCfb8()      { return 1024; }
-intptr_t AndroidCryptoNative_DesCbc()       { return 1025; }
-
-intptr_t AndroidCryptoNative_RC2Ecb()       { return 1026; }
-intptr_t AndroidCryptoNative_RC2Cbc()       { return 1027; }
-
-static int32_t GetAlgorithmWidth(intptr_t type)
+typedef struct CipherInfo
 {
-    if (type == AndroidCryptoNative_Aes128Ecb())    return 128;
-    if (type == AndroidCryptoNative_Aes128Cbc())    return 128;
-    if (type == AndroidCryptoNative_Aes128Gcm())    return 128;
-    if (type == AndroidCryptoNative_Aes128Ccm())    return 128;
-    if (type == AndroidCryptoNative_Aes128Cfb8())   return 128;
-    if (type == AndroidCryptoNative_Aes128Cfb128()) return 128;
+    bool isSupported;
+    bool hasTag;
+    int32_t width;
+    const char* name;
+} CipherInfo;
 
-    if (type == AndroidCryptoNative_Aes192Ecb())    return 192;
-    if (type == AndroidCryptoNative_Aes192Cbc())    return 192;
-    if (type == AndroidCryptoNative_Aes192Gcm())    return 192;
-    if (type == AndroidCryptoNative_Aes192Ccm())    return 192;
-    if (type == AndroidCryptoNative_Aes192Cfb8())   return 192;
-    if (type == AndroidCryptoNative_Aes192Cfb128()) return 192;
-
-    if (type == AndroidCryptoNative_Aes256Ecb())    return 256;
-    if (type == AndroidCryptoNative_Aes256Cbc())    return 256;
-    if (type == AndroidCryptoNative_Aes256Gcm())    return 256;
-    if (type == AndroidCryptoNative_Aes256Ccm())    return 256;
-    if (type == AndroidCryptoNative_Aes256Cfb8())   return 256;
-    if (type == AndroidCryptoNative_Aes256Cfb128()) return 256;
-
-    if (type == AndroidCryptoNative_DesEcb())       return 56;
-    if (type == AndroidCryptoNative_DesCfb8())      return 56;
-    if (type == AndroidCryptoNative_DesCbc())       return 56;
-
-    if (type == AndroidCryptoNative_Des3Ecb())      return 168;
-    if (type == AndroidCryptoNative_Des3Cbc())      return 168;
-    if (type == AndroidCryptoNative_Des3Cfb8())     return 168;
-    if (type == AndroidCryptoNative_Des3Cfb64())    return 168;
-
-    assert(0 && "unexpected type");
-    return FAIL;
+#define DEFINE_CIPHER(cipherId, width, javaName, hasTag) \
+CipherInfo* AndroidCryptoNative_ ## cipherId() \
+{ \
+    static CipherInfo info = { true, hasTag, width, javaName }; \
+    return &info; \
 }
 
-static jobject GetAlgorithmName(JNIEnv* env, intptr_t type)
-{
-    if (type == AndroidCryptoNative_Aes128Ecb())    return JSTRING("AES/ECB/NoPadding");
-    if (type == AndroidCryptoNative_Aes128Cbc())    return JSTRING("AES/CBC/NoPadding");
-    if (type == AndroidCryptoNative_Aes128Gcm())    return JSTRING("AES/GCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes128Ccm())    return JSTRING("AES/CCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes128Cfb8())   return JSTRING("AES/CFB/NoPadding");
-
-    if (type == AndroidCryptoNative_Aes192Ecb())    return JSTRING("AES/ECB/NoPadding");
-    if (type == AndroidCryptoNative_Aes192Cbc())    return JSTRING("AES/CBC/NoPadding");
-    if (type == AndroidCryptoNative_Aes192Gcm())    return JSTRING("AES/GCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes192Ccm())    return JSTRING("AES/CCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes192Cfb8())   return JSTRING("AES/CFB/NoPadding");
-
-    if (type == AndroidCryptoNative_Aes256Ecb())    return JSTRING("AES/ECB/NoPadding");
-    if (type == AndroidCryptoNative_Aes256Cbc())    return JSTRING("AES/CBC/NoPadding");
-    if (type == AndroidCryptoNative_Aes256Gcm())    return JSTRING("AES/GCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes256Ccm())    return JSTRING("AES/CCM/NoPadding");
-    if (type == AndroidCryptoNative_Aes256Cfb8())   return JSTRING("AES/CFB/NoPadding");
-
-    if (type == AndroidCryptoNative_DesEcb())       return JSTRING("DES/ECB/NoPadding");
-    if (type == AndroidCryptoNative_DesCfb8())      return JSTRING("DES/CFB/NoPadding");
-    if (type == AndroidCryptoNative_DesCbc())       return JSTRING("DES/CBC/NoPadding");
-
-    if (type == AndroidCryptoNative_Des3Ecb())      return JSTRING("DESede/ECB/NoPadding");
-    if (type == AndroidCryptoNative_Des3Cbc())      return JSTRING("DESede/CBC/NoPadding");
-    if (type == AndroidCryptoNative_Des3Cfb8())     return JSTRING("DESede/CFB/NoPadding");
-    if (type == AndroidCryptoNative_Des3Cfb64())    return JSTRING("DESede/CFB/NoPadding");
-
-    if (type == AndroidCryptoNative_Aes128Cfb128()) return JSTRING("AES/CFB128/NoPadding");
-    if (type == AndroidCryptoNative_Aes192Cfb128()) return JSTRING("AES/CFB128/NoPadding");
-    if (type == AndroidCryptoNative_Aes256Cfb128()) return JSTRING("AES/CFB128/NoPadding");
-
-    LOG_ERROR("This algorithm (%ld) is not supported", (long)type);
-    return FAIL;
+#define DEFINE_UNSUPPORTED_CIPHER(cipherId) \
+CipherInfo* AndroidCryptoNative_ ## cipherId() \
+{ \
+    static CipherInfo info = { false, false, 0, NULL }; \
+    return &info; \
 }
 
-static bool HasTag(intptr_t type)
+DEFINE_CIPHER(Aes128Ecb,    128, "AES/ECB/NoPadding", false)
+DEFINE_CIPHER(Aes128Cbc,    128, "AES/CBC/NoPadding", false)
+DEFINE_CIPHER(Aes128Cfb8,   128, "AES/CFB/NoPadding", false)
+DEFINE_CIPHER(Aes128Cfb128, 128, "AES/CFB128/NoPadding", false)
+DEFINE_CIPHER(Aes128Gcm,    128, "AES/GCM/NoPadding", true)
+DEFINE_CIPHER(Aes128Ccm,    128, "AES/CCM/NoPadding", true)
+DEFINE_CIPHER(Aes192Ecb,    192, "AES/ECB/NoPadding", false)
+DEFINE_CIPHER(Aes192Cbc,    192, "AES/CBC/NoPadding", false)
+DEFINE_CIPHER(Aes192Cfb8,   192, "AES/CFB/NoPadding", false)
+DEFINE_CIPHER(Aes192Cfb128, 192, "AES/CFB128/NoPadding", false)
+DEFINE_CIPHER(Aes192Gcm,    192, "AES/GCM/NoPadding", true)
+DEFINE_CIPHER(Aes192Ccm,    192, "AES/CCM/NoPadding", true)
+DEFINE_CIPHER(Aes256Ecb,    256, "AES/ECB/NoPadding", false)
+DEFINE_CIPHER(Aes256Cbc,    256, "AES/CBC/NoPadding", false)
+DEFINE_CIPHER(Aes256Cfb8,   256, "AES/CFB/NoPadding", false)
+DEFINE_CIPHER(Aes256Cfb128, 256, "AES/CFB128/NoPadding", false)
+DEFINE_CIPHER(Aes256Gcm,    256, "AES/GCM/NoPadding", true)
+DEFINE_CIPHER(Aes256Ccm,    256, "AES/CCM/NoPadding", true)
+DEFINE_CIPHER(DesEcb,       56,  "DES/ECB/NoPadding", false)
+DEFINE_CIPHER(DesCbc,       56,  "DES/CBC/NoPadding", false)
+DEFINE_CIPHER(DesCfb8,      56,  "DES/CFB/NoPadding", false)
+DEFINE_CIPHER(Des3Ecb,      168, "DESede/ECB/NoPadding", false)
+DEFINE_CIPHER(Des3Cbc,      168, "DESede/CBC/NoPadding", false)
+DEFINE_CIPHER(Des3Cfb8,     168, "DESede/CFB/NoPadding", false)
+DEFINE_CIPHER(Des3Cfb64,    168, "DESede/CFB/NoPadding", false)
+DEFINE_UNSUPPORTED_CIPHER(RC2Ecb)
+DEFINE_UNSUPPORTED_CIPHER(RC2Cbc)
+
+
+static int32_t GetAlgorithmWidth(CipherInfo* type)
 {
-    return (type == AndroidCryptoNative_Aes128Gcm()) ||
-           (type == AndroidCryptoNative_Aes128Ccm()) ||
-           (type == AndroidCryptoNative_Aes192Gcm()) ||
-           (type == AndroidCryptoNative_Aes192Ccm()) ||
-           (type == AndroidCryptoNative_Aes256Gcm()) ||
-           (type == AndroidCryptoNative_Aes256Ccm());
+    if (!type->isSupported)
+    {
+        assert(false);
+        return FAIL;
+    }
+    return type->width;
 }
 
-CipherCtx* AndroidCryptoNative_CipherCreatePartial(intptr_t type)
+static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
+{
+    if (!type->isSupported)
+    {
+        LOG_ERROR("This cipher is not supported");
+        assert(false);
+        return FAIL;
+    }
+    return JSTRING(type->name);
+}
+
+static bool HasTag(CipherInfo* type)
+{
+    return type->hasTag;
+}
+
+CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
 {
     JNIEnv* env = GetJNIEnv();
     jobject algName = GetAlgorithmName(env, type);
@@ -131,6 +91,11 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(intptr_t type)
     jobject cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
     (*env)->DeleteLocalRef(env, algName);
 
+    if (CheckJNIExceptions(env))
+    {
+        return FAIL;
+    }
+
     CipherCtx* ctx = malloc(sizeof(CipherCtx));
     ctx->cipher = cipher;
     ctx->type = type;
@@ -139,7 +104,7 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(intptr_t type)
     ctx->encMode = 0;
     ctx->key = NULL;
     ctx->iv = NULL;
-    return CheckJNIExceptions(env) ? FAIL : ctx;
+    return ctx;
 }
 
 int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength)
@@ -223,7 +188,7 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     return ReinitializeCipher(ctx);
 }
 
-CipherCtx* AndroidCryptoNative_CipherCreate2(intptr_t type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+CipherCtx* AndroidCryptoNative_CipherCreate2(CipherInfo* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
     if (effectiveKeyLength != 0)
     {
