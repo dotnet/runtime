@@ -120,16 +120,25 @@
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblyInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
+
+    <ItemGroup>
+      <!-- Add back the interpreter-only assemblies -->
+      <_WasmAssemblyInternal Include="@(_AOTInterpreterOnlyAssemblies)" />
+    </ItemGroup>
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
   <Target Name="_WasmStripAOTAssemblies" Condition="'$(RunAOTCompilation)' == 'true' and '$(WasmStripAOTAssemblies)' == 'true' and '$(AOTMode)' != 'AotInterp' and '$(ArchiveTests)' != 'true'">
     <PropertyGroup>
-      <_WasmStrippedAssembliesPath>$([System.IO.Path]::GetFullPath('$(_WasmIntermediateOutputPath)\stripped-assemblies\'))</_WasmStrippedAssembliesPath>
+      <_WasmStrippedAssembliesPath>$([MSBuild]::NormalizeDirectory($(_WasmIntermediateOutputPath), 'stripped-assemblies'))</_WasmStrippedAssembliesPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmStrippedAssemblies Include="@(_WasmAssemblyInternal->'$(_WasmStrippedAssembliesPath)\%(FileName)%(Extension)')" OriginalPath="%(_WasmAssemblyInternal.Identity)" />
+      <_WasmStrippedAssemblies
+              Condition="'%(_WasmAssemblyInternal.InterpreterOnly)' != 'true'"
+              Include="@(_WasmAssemblyInternal->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
+              OriginalPath="%(_WasmAssemblyInternal.Identity)" />
+      <_WasmInterpOnlyAssembly Include="@(_WasmAssemblyInternal->WithMetadataValue('InterpreterOnly', 'true'))" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -139,7 +148,7 @@
 
     <ItemGroup>
       <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
-      <_WasmAssemblyInternal Include="@(_WasmStrippedAssemblies)" />
+      <_WasmAssemblyInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
     </ItemGroup>
   </Target>
 
@@ -160,6 +169,7 @@
   <Target Name="_BeforeWasmBuildApp">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    <Error Condition="@(WasmAssembly->Count()) == 0" Text="WasmAssembly item is empty. No assemblies to process" />
 
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
@@ -289,11 +299,12 @@
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)dotnet_support.js" />
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
 
+     <_AOTAssemblies Include="@(_WasmAssemblyInternal)" Condition="'%(_WasmAssemblyInternal.InterpreterOnly)' != 'true'" />
      <_BitcodeFile Include="%(_WasmAssemblyInternal.LlvmBitcodeFile)" />
    </ItemGroup>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssemblyInternal->Count())"
-     Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblyInternal->Count())" />
+   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
+     Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblyInternal->Count())" />
 
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
@@ -313,7 +324,7 @@
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_WasmAssemblyInternal->'&quot;%(LlvmBitcodeFile)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
@@ -383,7 +394,12 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
-      <WasmAssemblyFinal Include="@(_WasmAssemblyInternal)" />
+      <WasmAssemblyFinal Include="@(_WasmAssemblyInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
+
+    <Error Condition="@(WasmAssemblyFinal->Count()) != @(WasmAssembly->Count())"
+      Text="Bug: The wasm build started with @(WasmAssembly->Count()) assemblies, but completed with @(WasmAssemblyFinal->Count()).
+      WasmAssembly: @(WasmAssembly)
+      WasmAssemblyFinal: @(WasmAssemblyFinal)" />
   </Target>
 </Project>
