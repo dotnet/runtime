@@ -292,8 +292,12 @@
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
 
-     <!-- on windows, make sure we don't get "-Ic:\foo\bar\" -->
-     <EmccCFlags Condition="$(_WasmIntermediateOutputPath.EndsWith('\')) ">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)""</EmccCFlags>
+     <!--
+          For path c:\foo\bar\ quoting would make it "c:\foo\bar\"
+          .. which escapes the closing quote. So, instead make it
+            c:\foo\bar\ -> "c:\foo\bar\."
+     -->
+     <EmccCFlags Condition="$(_WasmIntermediateOutputPath.EndsWith('\')) ">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)."</EmccCFlags>
      <EmccCFlags Condition="!$(_WasmIntermediateOutputPath.EndsWith('\'))">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)"</EmccCFlags>
 
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
