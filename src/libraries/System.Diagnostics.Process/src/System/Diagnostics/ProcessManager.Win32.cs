@@ -131,7 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
+#if RELEASE
                 int minimumLength = Interop.Kernel32.MAX_PATH;
+#else
+                // use a smaller value to ensure that at least for DEBUG builds
+                // we test the code path that rents a bigger array from ArrayPool
+                int minimumLength = Interop.Kernel32.MAX_PATH / 4;
+#endif
                 char[]? chars = ArrayPool<char>.Shared.Rent(minimumLength);
                 try
                 {
