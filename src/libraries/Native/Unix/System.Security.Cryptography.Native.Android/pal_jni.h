@@ -87,7 +87,9 @@ extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_sslParamsClass;
+extern jmethodID g_sslParamsCtor;
 extern jmethodID g_sslParamsGetProtocolsMethod;
+extern jmethodID g_sslParamsSetServerNames;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
@@ -355,6 +357,11 @@ extern jclass    g_CollectionClass;
 extern jmethodID g_CollectionIterator;
 extern jmethodID g_CollectionSize;
 
+// java/util/ArrayListe
+extern jclass    g_ArrayList;
+extern jmethodID g_ArrayListCtor;
+extern jmethodID g_ArrayListAdd;
+
 // java/util/Date
 extern jclass    g_DateClass;
 extern jmethodID g_DateCtor;
@@ -378,6 +385,10 @@ extern jmethodID g_IteratorNext;
 extern jclass    g_ListClass;
 extern jmethodID g_ListGet;
 
+// javax/net/ssl/SNIHostName
+extern jclass    g_SNIHostName;
+extern jmethodID g_SNIHostNameCtor;
+
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
@@ -389,6 +400,7 @@ extern jmethodID g_SSLEngineUnwrapMethod;
 extern jmethodID g_SSLEngineCloseInboundMethod;
 extern jmethodID g_SSLEngineCloseOutboundMethod;
 extern jmethodID g_SSLEngineGetHandshakeStatusMethod;
+extern jmethodID g_SSLEngineSetSSLParameters;
 
 // java/nio/ByteBuffer
 extern jclass    g_ByteBuffer;
@@ -406,9 +418,11 @@ extern jmethodID g_ByteBufferPositionMethod;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_SSLContext;
+extern jmethodID g_SSLContextGetDefault;
 extern jmethodID g_SSLContextGetInstanceMethod;
 extern jmethodID g_SSLContextInitMethod;
 extern jmethodID g_SSLContextCreateSSLEngineMethod;
+extern jmethodID g_SSLContextCreateSSLEngineWithPeer;
 
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;

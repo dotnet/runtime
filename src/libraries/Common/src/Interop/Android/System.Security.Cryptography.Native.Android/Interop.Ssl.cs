@@ -27,6 +27,11 @@ internal static partial class Interop
             int appOutBufferSize,
             int appInBufferSize);
 
+        [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamConfigureParameters")]
+        internal static extern int SSLStreamConfigureParameters(
+            SafeSslHandle sslHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
+
         [DllImport(Interop.Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamHandshake")]
         internal static extern int SSLStreamHandshake(SafeSslHandle sslHandle);
 

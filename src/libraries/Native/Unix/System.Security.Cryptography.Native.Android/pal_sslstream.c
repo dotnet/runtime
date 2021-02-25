@@ -316,12 +316,17 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
     // SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
     // sslContext.init(null, null, null);
     // TODO: set TrustManager[] argument in init to be able to intercept cert validation process (and callback to C#).
-    jstring protocol = JSTRING("TLSv1.2");
-    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, protocol);
+    // jstring protocol = JSTRING("TLSv1.2");
+    // jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetInstanceMethod, protocol);
+    // ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    // sslStream->sslContext = ToGRef(env, sslContext);
+    // (*env)->CallVoidMethod(env, sslStream->sslContext, g_SSLContextInitMethod, NULL, NULL, NULL);
+    // ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // SSLContext sslContext = SSLContext.getDefault();
+    jobject sslContext = (*env)->CallStaticObjectMethod(env, g_SSLContext, g_SSLContextGetDefault);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     sslStream->sslContext = ToGRef(env, sslContext);
-    (*env)->CallVoidMethod(env, sslStream->sslContext, g_SSLContextInitMethod, NULL, NULL, NULL);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // SSLEngine sslEngine = sslContext.createSSLEngine();
     // sslEngine.setUseClientMode(!isServer);
@@ -357,6 +362,42 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(
 cleanup:
     FreeSSLStream(env, sslStream);
     return NULL;
+}
+
+int32_t AndroidCryptoNative_SSLStreamConfigureParameters(SSLStream *sslStream, char* targetHost)
+{
+    assert(sslStream != NULL);
+    assert(targetHost != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, hostStr, nameList, hostName, params);
+
+    // ArrayList<SNIServerName> nameList = new ArrayList<SNIServerName>();
+    // SNIHostName hostName = new SNIHostName(targetHost);
+    // nameList.add(hostName);
+    loc[hostStr] = JSTRING(targetHost);
+    loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // SSLParameters params = new SSLParameters();
+    // params.setServerNames(nameList);
+    // sslEngine.setSSLParameters(params);
+    loc[params] = (*env)->NewObject(env, g_sslParamsClass, g_sslParamsCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_sslParamsSetServerNames, loc[nameList]);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_SSLStreamHandshake(SSLStream *sslStream)
@@ -502,6 +543,7 @@ void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 int32_t AndroidCryptoNative_SSLStreamGetApplicationProtocol(SSLStream* sslStream, uint8_t* out, int* outLen)
 {
     assert(sslStream != NULL);
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;

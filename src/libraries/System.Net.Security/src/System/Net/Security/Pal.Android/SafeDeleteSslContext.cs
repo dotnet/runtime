@@ -82,8 +82,7 @@ namespace System.Net
 
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
-                // SSLParameters.setServerNames
-                // SSLEngine.setSSLParameters
+                Interop.AndroidCrypto.SSLStreamConfigureParameters(handle, authOptions.TargetHost);
             }
 
             if (isServer && authOptions.RemoteCertRequired)

@@ -181,8 +181,10 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
 
-                // Do handshake
-                // Interop.AndroidCrypto.SSLStreamHandshake
+                // TODO: [AndroidCrypto] Do handshake
+                // int retVal = Interop.AndroidCrypto.SSLStreamHandshake(sslHandle);
+                // if (retVal != Interop.AndroidCrypto.SuccessReturnCode)
+                //     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
 
                 outputBuffer = sslContext.ReadPendingWrites();
 
