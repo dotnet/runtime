@@ -302,22 +302,12 @@ namespace Internal.Cryptography.Pal
 
         public RSA? GetRSAPrivateKey()
         {
-            if (_privateKey == null || _privateKey.IsInvalid)
-            {
-                return null;
-            }
-
-            return new RSAOpenSsl(_privateKey);
+            throw new NotImplementedException(nameof(GetRSAPrivateKey));
         }
 
         public DSA? GetDSAPrivateKey()
         {
-            if (_privateKey == null || _privateKey.IsInvalid)
-            {
-                return null;
-            }
-
-            return new DSAOpenSsl(_privateKey);
+            throw new NotImplementedException(nameof(GetDSAPrivateKey));
         }
 
         public ECDsa GetECDsaPublicKey()
@@ -332,22 +322,12 @@ namespace Internal.Cryptography.Pal
 
         public ECDsa? GetECDsaPrivateKey()
         {
-            if (_privateKey == null || _privateKey.IsInvalid)
-            {
-                return null;
-            }
-
-            return new ECDsaOpenSsl(_privateKey);
+            throw new NotImplementedException(nameof(GetECDsaPrivateKey));
         }
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
-            if (_privateKey == null || _privateKey.IsInvalid)
-            {
-                return null;
-            }
-
-            return new ECDiffieHellmanOpenSsl(_privateKey);
+            throw new NotImplementedException(nameof(GetECDiffieHellmanPrivateKey));
         }
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
