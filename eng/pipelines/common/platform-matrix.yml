@@ -494,7 +494,7 @@ jobs:
 
 # macOS arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'OSX_arm64'), and(in(parameters.platformGroup, 'all', 'gcstress'), in(parameters.helixQueueGroup, 'ci', 'libraries'))) }}:
+- ${{ if containsValue(parameters.platforms, 'OSX_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
