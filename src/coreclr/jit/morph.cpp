@@ -16224,9 +16224,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
             }
-            // block is a BBJ_COND that we are folding the conditional for
-            // bTaken is the path that will always be taken from block
-            // bNotTaken is the path that will never be taken from block
+            // block is a BBJ_COND that we are folding the conditional for.
+            // bTaken is the path that will always be taken from block.
+            // bNotTaken is the path that will never be taken from block.
             //
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;
