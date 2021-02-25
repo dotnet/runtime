@@ -28,7 +28,7 @@ do { \
     } \
 } while(0)
 
-int32_t CryptoNative_GetECKeyParameters(const EC_KEY* key,
+int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         int32_t includePrivate,
                                         jobject* qx,
                                         int32_t* cbQx,
@@ -111,7 +111,7 @@ error:
     return FAIL;
 }
 
-int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
+int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                           int32_t includePrivate,
                                           ECCurveType* curveType,
                                           jobject* qx,
@@ -155,7 +155,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
     assert(cbSeed != NULL);
 
     // Get the public key parameters first in case any of its 'out' parameters are not initialized
-    int32_t rc = CryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    int32_t rc = AndroidCryptoNative_GetECKeyParameters(key, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
 
     JNIEnv* env = GetJNIEnv();
 
@@ -163,7 +163,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
 
     INIT_LOCALS(bn, X, Y, P, A, B, ORDER, COFACTOR, SEED);
 
-    // Exit if CryptoNative_GetECKeyParameters failed
+    // Exit if AndroidCryptoNative_GetECKeyParameters failed
     if (rc != SUCCESS)
         goto error;
 
@@ -236,7 +236,7 @@ int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
     goto exit;
 
 error:
-    // Clear out variables from CryptoNative_GetECKeyParameters
+    // Clear out variables from AndroidCryptoNative_GetECKeyParameters
     *cbQx = *cbQy = 0;
     ReleaseGRef(env, *qx);
     ReleaseGRef(env, *qy);
@@ -269,7 +269,7 @@ exit:
     return rc;
 }
 
-static jobject CryptoNative_CreateKeyPairFromCurveParameters(
+static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
     jobject curveParameters, uint8_t* qx, int32_t qxLength, uint8_t* qy, int32_t qyLength, uint8_t* d, int32_t dLength)
 {
     JNIEnv* env = GetJNIEnv();
@@ -350,7 +350,7 @@ cleanup:
     return ToGRef(env, keyPair);
 }
 
-int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
+int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 const char* oid,
                                                 uint8_t* qx,
                                                 int32_t qxLength,
@@ -371,7 +371,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 
     // The easiest way to create explicit keys with a named curve is to generate
     // new keys for the curve, pull out the explicit paramters, and then create the explicit keys.
-    *key = CryptoNative_EcKeyCreateByOid(oid);
+    *key = AndroidCryptoNative_EcKeyCreateByOid(oid);
     if (*key == NULL)
     {
         return FAIL;
@@ -380,12 +380,12 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.
     ReleaseGRef(env, (*key)->keyPair);
     (*key)->keyPair =
-        CryptoNative_CreateKeyPairFromCurveParameters((*key)->curveParameters, qx, qxLength, qy, qyLength, d, dLength);
+        AndroidCryptoNative_CreateKeyPairFromCurveParameters((*key)->curveParameters, qx, qxLength, qy, qyLength, d, dLength);
 
     if ((*key)->keyPair == NULL)
     {
         // We were unable to make the keys, so clean up and return FAIL.
-        CryptoNative_EcKeyDestroy(*key);
+        AndroidCryptoNative_EcKeyDestroy(*key);
         *key = NULL;
         return FAIL;
     }
@@ -395,7 +395,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 
 // Converts a java.math.BigInteger to a positive int32_t value.
 // Returns -1 if bigInteger < 0 or > INT32_MAX
-static int32_t CryptoNative_ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
+static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
     jobject zero = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)0);
     int isPositive = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, zero);
@@ -420,7 +420,7 @@ static int32_t CryptoNative_ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobjec
     return (*env)->CallIntMethod(env, bigInteger, g_intValueMethod);
 }
 
-EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
+EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
                                                      uint8_t* qx,
                                                      int32_t qxLength,
                                                      uint8_t* qy,
@@ -526,7 +526,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
     // Java ECC doesn't support BigInteger-based cofactor. It uses positive 32-bit integers.
     // So, convert the cofactor to a positive 32-bit integer with overflow protection.
     bn[COFACTOR] = CryptoNative_BigNumFromBinary(cofactor, cofactorLength);
-    int cofactorInt = CryptoNative_ConvertBigIntegerToPositiveInt32(env, bn[COFACTOR]);
+    int cofactorInt = ConvertBigIntegerToPositiveInt32(env, bn[COFACTOR]);
 
     if (cofactorInt == -1)
     {
@@ -539,7 +539,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
     if ((qx && qy) || d)
     {
         // If we have explicit key parameters, use those.
-        keyPair = CryptoNative_CreateKeyPairFromCurveParameters(loc[paramSpec], qx, qxLength, qy, qyLength, d, dLength);
+        keyPair = AndroidCryptoNative_CreateKeyPairFromCurveParameters(loc[paramSpec], qx, qxLength, qy, qyLength, d, dLength);
     }
     else
     {
@@ -565,7 +565,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
     }
 
     // Use AddGRef here since we always delete the local ref below.
-    keyInfo = CryptoNative_NewEcKey(AddGRef(env, loc[paramSpec]), keyPair);
+    keyInfo = AndroidCryptoNative_NewEcKey(AddGRef(env, loc[paramSpec]), keyPair);
 
 error:
     RELEASE_LOCALS(bn, CryptoNative_BigNumDestroy);

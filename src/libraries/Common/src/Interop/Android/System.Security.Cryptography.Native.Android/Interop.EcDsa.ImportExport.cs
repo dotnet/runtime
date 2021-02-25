@@ -9,9 +9,9 @@ using System;
 
 internal static partial class Interop
 {
-    internal static partial class Crypto
+    internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
         private static extern int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
@@ -30,14 +30,13 @@ internal static partial class Interop
             if (rc == -1)
             {
                 key?.Dispose();
-                Interop.Crypto.ErrClearError();
 
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
             }
             return key;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
             byte[]? qx, int qxLength,
@@ -68,7 +67,7 @@ internal static partial class Interop
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
+            SafeEcKeyHandle key = EcKeyCreateByExplicitParameters(
                 curve.CurveType,
                 null, 0,
                 null, 0,
@@ -86,19 +85,15 @@ internal static partial class Interop
             {
                 if (key != null)
                     key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
-
-            // EcKeyCreateByExplicitParameters may have polluted the error queue, but key was good in the end.
-            // Clean up the error queue.
-            Interop.Crypto.ErrClearError();
 
             return key;
         }
 
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECKeyParameters(
+        private static extern int AndroidCryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
@@ -118,7 +113,7 @@ internal static partial class Interop
             try
             {
                 key.DangerousAddRef(ref refAdded); // Protect access to d_bn_not_owned
-                int rc = CryptoNative_GetECKeyParameters(
+                int rc = AndroidCryptoNative_GetECKeyParameters(
                     key,
                     includePrivate,
                     out qx_bn, out qx_cb,
@@ -131,7 +126,7 @@ internal static partial class Interop
                 }
                 else if (rc != 1)
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 using (qx_bn)
@@ -167,7 +162,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECCurveParameters(
+        private static extern int AndroidCryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out ECCurve.ECCurveType curveType,
@@ -196,7 +191,7 @@ internal static partial class Interop
             try
             {
                 key.DangerousAddRef(ref refAdded); // Protect access to d_bn_not_owned
-                int rc = CryptoNative_GetECCurveParameters(
+                int rc = AndroidCryptoNative_GetECCurveParameters(
                     key,
                     includePrivate,
                     out curveType,
@@ -218,7 +213,7 @@ internal static partial class Interop
                 }
                 else if (rc != 1)
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 using (qx_bn)

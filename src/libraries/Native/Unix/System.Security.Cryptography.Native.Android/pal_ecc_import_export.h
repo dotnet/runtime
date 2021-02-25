@@ -20,7 +20,7 @@ typedef enum
 /*
 Returns the ECC key parameters.
 */
-PALEXPORT int32_t CryptoNative_GetECKeyParameters(const EC_KEY* key,
+PALEXPORT int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                                   int32_t includePrivate,
                                                   jobject* qx,
                                                   int32_t* cbQx,
@@ -32,7 +32,7 @@ PALEXPORT int32_t CryptoNative_GetECKeyParameters(const EC_KEY* key,
 /*
 Returns the ECC key and curve parameters.
 */
-PALEXPORT int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
+PALEXPORT int32_t AndroidCryptoNative_GetECCurveParameters(const EC_KEY* key,
                                                     int32_t includePrivate,
                                                     ECCurveType* curveType,
                                                     jobject* qx,
@@ -62,7 +62,7 @@ PALEXPORT int32_t CryptoNative_GetECCurveParameters(const EC_KEY* key,
 Creates the new EC_KEY instance using the curve oid (friendly name or value) and public key parameters.
 Returns 1 upon success, -1 if oid was not found, otherwise 0.
 */
-PALEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
+PALEXPORT int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                           const char* oid,
                                                           uint8_t* qx,
                                                           int32_t qxLength,
@@ -74,7 +74,7 @@ PALEXPORT int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 /*
 Returns the new EC_KEY instance using the explicit parameters.
 */
-PALEXPORT EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
+PALEXPORT EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveType,
                                                                uint8_t* qx,
                                                                int32_t qxLength,
                                                                uint8_t* qy,

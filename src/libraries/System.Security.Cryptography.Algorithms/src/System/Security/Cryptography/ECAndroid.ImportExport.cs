@@ -38,12 +38,8 @@ namespace System.Security.Cryptography
 
             if (key == null || key.IsInvalid)
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
-
-            // The Import* methods above may have polluted the error queue even if in the end they succeeded.
-            // Clean up the error queue.
-            Interop.Crypto.ErrClearError();
 
             FreeKey();
             _key = new Lazy<SafeEcKeyHandle>(key);
@@ -56,7 +52,7 @@ namespace System.Security.Cryptography
         public static ECParameters ExportParameters(SafeEcKeyHandle currentKey, bool includePrivateParameters)
         {
             ECParameters ecparams;
-            if (Interop.Crypto.EcKeyHasCurveName(currentKey))
+            if (Interop.AndroidCrypto.EcKeyHasCurveName(currentKey))
             {
                 ecparams = ExportNamedCurveParameters(currentKey, includePrivateParameters);
             }
@@ -71,7 +67,7 @@ namespace System.Security.Cryptography
         {
             CheckInvalidKey(key);
 
-            ECParameters parameters = Interop.Crypto.GetECKeyParameters(key, includePrivateParameters);
+            ECParameters parameters = Interop.AndroidCrypto.GetECKeyParameters(key, includePrivateParameters);
 
             bool hasPrivateKey = (parameters.D != null);
 
@@ -81,7 +77,7 @@ namespace System.Security.Cryptography
             }
 
             // Assign Curve
-            string curveName = Interop.Crypto.EcKeyGetCurveName(key);
+            string curveName = Interop.AndroidCrypto.EcKeyGetCurveName(key);
             parameters.Curve = ECCurve.CreateFromFriendlyName(curveName);
 
             return parameters;
@@ -91,7 +87,7 @@ namespace System.Security.Cryptography
         {
             CheckInvalidKey(key);
 
-            ECParameters parameters = Interop.Crypto.GetECCurveParameters(key, includePrivateParameters);
+            ECParameters parameters = Interop.AndroidCrypto.GetECCurveParameters(key, includePrivateParameters);
 
             bool hasPrivateKey = (parameters.D != null);
             if (hasPrivateKey != includePrivateParameters)
@@ -110,7 +106,7 @@ namespace System.Security.Cryptography
             string oid = !string.IsNullOrEmpty(parameters.Curve.Oid.Value) ?
                 parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName!;
 
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
+            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByKeyParameters(
                 oid,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
@@ -122,7 +118,7 @@ namespace System.Security.Cryptography
         private static SafeEcKeyHandle ImportPrimeCurveParameters(ECParameters parameters)
         {
             Debug.Assert(parameters.Curve.IsPrime);
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
+            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
@@ -142,7 +138,7 @@ namespace System.Security.Cryptography
         private static SafeEcKeyHandle ImportCharacteristic2CurveParameters(ECParameters parameters)
         {
             Debug.Assert(parameters.Curve.IsCharacteristic2);
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
+            SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
@@ -180,7 +176,7 @@ namespace System.Security.Cryptography
                     throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
             }
 
-            SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
+            SafeEcKeyHandle? key = Interop.AndroidCrypto.EcKeyCreateByOid(oid);
 
             if (key == null || key.IsInvalid)
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));

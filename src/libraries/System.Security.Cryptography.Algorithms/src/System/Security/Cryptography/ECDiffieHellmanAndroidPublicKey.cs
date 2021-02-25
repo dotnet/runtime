@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
             public override ECParameters ExportParameters() =>
                 ECAndroid.ExportParameters(GetKey(), includePrivateParameters: false);
 
-            internal bool HasCurveName => Interop.Crypto.EcKeyHasCurveName(GetKey());
+            internal bool HasCurveName => Interop.AndroidCrypto.EcKeyHasCurveName(GetKey());
 
             internal int KeySize
             {

@@ -5,7 +5,7 @@
 #include "pal_bignum.h"
 #include "pal_utilities.h"
 
-static jobject CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
+static jobject AndroidCryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
 {
     jstring algorithmName = JSTRING("NONEwithECDSA");
     jobject signatureObject =
@@ -16,7 +16,7 @@ static jobject CryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
     return signatureObject;
 }
 
-int32_t CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32_t* siglen, EC_KEY* key)
+int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32_t* siglen, EC_KEY* key)
 {
     assert(dgst);
     assert(sig);
@@ -28,7 +28,7 @@ int32_t CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* si
 
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
@@ -61,14 +61,14 @@ error:
     return FAIL;
 }
 
-int32_t CryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)
+int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)
 {
     assert(dgst);
     assert(sig);
     assert(key);
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = CryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
@@ -100,7 +100,7 @@ error:
     return -1;
 }
 
-int32_t CryptoNative_EcDsaSize(const EC_KEY* key)
+int32_t AndroidCryptoNative_EcDsaSize(const EC_KEY* key)
 {
     // The maximum size of a signature for the provided key is 2* bitlength of the order + extra bytes for the DER
     // encoding. The DER encoding is as follows (with R and S being the components of the signature and all lengths

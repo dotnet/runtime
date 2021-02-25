@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
             FreeKey();
         }
 
-        internal int KeySize => Interop.Crypto.EcKeyGetSize(_key.Value);
+        internal int KeySize => Interop.AndroidCrypto.EcKeyGetSize(_key.Value);
 
         internal SafeEcKeyHandle UpRefKeyHandle() => _key.Value.DuplicateHandle();
 
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
                 // cache that may have different casing for FriendlyNames than Android
                 string oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
 
-                SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
+                SafeEcKeyHandle? key = Interop.AndroidCrypto.EcKeyCreateByOid(oid);
 
                 if (key == null || key.IsInvalid)
                 {
@@ -76,11 +76,11 @@ namespace System.Security.Cryptography
             }
             else if (curve.IsExplicit)
             {
-                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitCurve(curve);
+                SafeEcKeyHandle key = Interop.AndroidCrypto.EcKeyCreateByExplicitCurve(curve);
 
                 if (key == null || key.IsInvalid)
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();;
+                    throw new CryptographicException();
                 }
 
                 SetKey(key);

@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
                 // Ensure that this ECDH object contains a private key by attempting a parameter export
                 // which will throw an OpenSslCryptoException if no private key is available
                 ECParameters thisKeyExplicit = ExportExplicitParameters(true);
-                bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
+                bool thisIsNamed = Interop.AndroidCrypto.EcKeyHasCurveName(_key.Value);
                 ECDiffieHellmanAndroidPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanAndroidPublicKey;
                 bool disposeOtherKey = false;
 
@@ -158,9 +158,9 @@ namespace System.Security.Cryptography
                         secret = stackalloc byte[secretLength];
                     }
 
-                    if (!Interop.Crypto.EcdhDeriveKey(ourKey, theirKey, secret, out int usedBufferLength))
+                    if (!Interop.AndroidCrypto.EcdhDeriveKey(ourKey, theirKey, secret, out int usedBufferLength))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        throw new CryptographicException();
                     }
 
                     secret = secret.Slice(0, usedBufferLength);

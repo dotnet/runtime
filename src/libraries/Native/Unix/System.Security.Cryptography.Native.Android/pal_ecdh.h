@@ -8,4 +8,4 @@
 #include "pal_types.h"
 
 PALEXPORT int32_t
-CryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8_t* resultKey, int32_t bufferLength, int32_t* usedBufferLength);
+AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8_t* resultKey, int32_t bufferLength, int32_t* usedBufferLength);

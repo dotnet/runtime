@@ -6,7 +6,7 @@
 #include "pal_types.h"
 #include "pal_jni.h"
 
-int32_t CryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8_t* resultKey, int32_t bufferLength, int32_t* usedBufferLength)
+int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8_t* resultKey, int32_t bufferLength, int32_t* usedBufferLength)
 {
     JNIEnv* env = GetJNIEnv();
 

@@ -8,12 +8,12 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Crypto
+    internal static partial class AndroidCrypto
     {
         internal static bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, Span<byte> buffer, out int usedBuffer) =>
             EcdhDeriveKey(ourKey, peerKey, ref MemoryMarshal.GetReference(buffer), buffer.Length, out usedBuffer);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcdhDeriveKey")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcdhDeriveKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, ref byte buffer, int bufferLength, out int usedBuffer);
     }

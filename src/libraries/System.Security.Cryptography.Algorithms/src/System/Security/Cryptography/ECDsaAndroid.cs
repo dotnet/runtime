@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-        public partial class ECDsa : AsymmetricAlgorithm
+    public partial class ECDsa : AsymmetricAlgorithm
     {
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
-                int signatureLength = Interop.Crypto.EcDsaSize(key);
+                int signatureLength = Interop.AndroidCrypto.EcDsaSize(key);
 
                 Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
                 ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
 
-                int signatureLength = Interop.Crypto.EcDsaSize(key);
+                int signatureLength = Interop.AndroidCrypto.EcDsaSize(key);
                 Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
@@ -201,9 +201,9 @@ namespace System.Security.Cryptography
                     destination = new byte[signatureLength];
                 }
 
-                if (!Interop.Crypto.EcDsaSign(hash, destination, out int actualLength, key))
+                if (!Interop.AndroidCrypto.EcDsaSign(hash, destination, out int actualLength, key))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 Debug.Assert(
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography
                 }
 
                 SafeEcKeyHandle key = _key.Value;
-                int verifyResult = Interop.Crypto.EcDsaVerify(hash, toVerify, key);
+                int verifyResult = Interop.AndroidCrypto.EcDsaVerify(hash, toVerify, key);
                 return verifyResult == 1;
             }
 

@@ -4,15 +4,16 @@
 using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Security.Cryptography;
 
 internal static partial class Interop
 {
-    internal static partial class Crypto
+    internal static partial class AndroidCrypto
     {
         internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, Span<byte> sig, out int siglen, SafeEcKeyHandle ecKey) =>
             EcDsaSign(ref MemoryMarshal.GetReference(dgst), dgst.Length, ref MemoryMarshal.GetReference(sig), out siglen, ecKey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSign")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool EcDsaSign(ref byte dgst, int dlen, ref byte sig, out int siglen, SafeEcKeyHandle ecKey);
 
@@ -25,11 +26,6 @@ internal static partial class Interop
                 sigbuf.Length,
                 ecKey);
 
-            if (ret < 0)
-            {
-                ErrClearError();
-            }
-
             return ret;
         }
 
@@ -39,20 +35,20 @@ internal static partial class Interop
          *      0: incorrect signature
          *     -1: error
          */
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaVerify")]
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaVerify")]
         private static extern int EcDsaVerify(ref byte dgst, int dgst_len, ref byte sigbuf, int sig_len, SafeEcKeyHandle ecKey);
 
         // returns the maximum length of a DER encoded ECDSA signature created with this key.
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcDsaSize")]
-        private static extern int CryptoNative_EcDsaSize(SafeEcKeyHandle ecKey);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaSize")]
+        private static extern int AndroidCryptoNative_EcDsaSize(SafeEcKeyHandle ecKey);
 
         internal static int EcDsaSize(SafeEcKeyHandle ecKey)
         {
-            int ret = CryptoNative_EcDsaSize(ecKey);
+            int ret = AndroidCryptoNative_EcDsaSize(ecKey);
 
             if (ret == 0)
             {
-                throw CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
 
             return ret;

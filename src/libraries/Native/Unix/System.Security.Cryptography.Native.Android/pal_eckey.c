@@ -5,7 +5,7 @@
 
 #include <assert.h>
 
-EC_KEY* CryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
+EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
 {
     assert(curveParameters);
     assert(keyPair);
@@ -18,7 +18,7 @@ EC_KEY* CryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
     return keyInfo;
 }
 
-void CryptoNative_EcKeyDestroy(EC_KEY* r)
+void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
 {
     if (r)
     {
@@ -45,7 +45,7 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
     }
 }
 
-EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
+EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
 {
     JNIEnv* env = GetJNIEnv();
 
@@ -118,15 +118,13 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 
     jobject field = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetField);
 
-    int size = (*env)->CallIntMethod(env, field, g_ECFieldGetFieldSize);
-
     ReleaseLRef(env, field);
     ReleaseLRef(env, group);
 
-    return CryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
+    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
 }
 
-int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
+int32_t AndroidCryptoNative_EcKeyUpRef(EC_KEY* r)
 {
     if (!r)
         return FAIL;
@@ -134,15 +132,15 @@ int32_t CryptoNative_EcKeyUpRef(EC_KEY* r)
     return SUCCESS;
 }
 
-int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
+int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 {
     if (!keySize)
-        return 0;
+        return FAIL;
 
     *keySize = 0;
 
     if (!key)
-        return 0;
+        return FAIL;
 
     JNIEnv* env = GetJNIEnv();
 
@@ -152,10 +150,10 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
 
     ReleaseLRef(env, field);
     ReleaseLRef(env, curve);
-    return 1;
+    return SUCCESS;
 }
 
-int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)
+int32_t AndroidCryptoNative_EcKeyGetCurveName(const EC_KEY* key, uint16_t** curveName)
 {
     if (!g_ECParameterSpecGetCurveName)
     {
