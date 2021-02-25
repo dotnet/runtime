@@ -118,7 +118,6 @@ public:
     void                     AddBreakpoint(CordbFunctionBreakpoint* bp);
     void                     AddPendingEval(CordbEval* eval);
     CordbFunction*           FindFunction(int id);
-    CordbFunction*           FindFunctionByToken(int token);
     CordbModule*             GetModule(int module_id);
     CordbAppDomain*          GetCurrentAppDomain();
     CordbThread*             FindThread(long thread_id);

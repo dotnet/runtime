@@ -22,8 +22,8 @@ class CordbModule : public CordbBaseMono,
     RegMeta*            m_pRegMeta;
     CordbAssembly*      m_pAssembly;
     CLiteWeightStgdbRW* m_pStgdbRW;
-    uint8_t*            m_pAssemblyMetadataBlob;
-    int32_t             m_assemblyMetadataLen;
+    uint8_t*            m_pPeImage;
+    int32_t             m_nPeImageSize;
     unsigned long       dwFlags;
     char *              m_pAssemblyName;
 

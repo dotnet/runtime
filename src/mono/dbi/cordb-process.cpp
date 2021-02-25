@@ -33,7 +33,7 @@ CordbProcess::~CordbProcess()
 {
     if (m_pAppDomainEnum)
         m_pAppDomainEnum->InternalRelease();
-   
+
     for (DWORD i = 0; i < m_pBreakpoints->GetCount(); i++)
     {
         CordbFunctionBreakpoint* breakpoint = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
@@ -565,21 +565,6 @@ CordbFunction* CordbProcess::FindFunction(int id)
     {
         CordbFunction* function = (CordbFunction*)m_pFunctions->Get(i);
         if (function->GetDebuggerId() == id)
-        {
-            return function;
-        }
-        i++;
-    }
-    return NULL;
-}
-
-CordbFunction* CordbProcess::FindFunctionByToken(int token)
-{
-    DWORD i = 0;
-    while (i < m_pFunctions->GetCount())
-    {
-        CordbFunction* function = (CordbFunction*)m_pFunctions->Get(i);
-        if (function->GetMetadataToken() == token)
         {
             return function;
         }

@@ -107,7 +107,7 @@ CordbModule::CordbModule(Connection* conn, CordbProcess* process, CordbAssembly*
     m_pAssembly->InternalAddRef();
     dwFlags = 0;
     conn->GetProcess()->AddModule(this);
-    m_pAssemblyMetadataBlob = NULL;
+    m_pPeImage = NULL;
     m_pAssemblyName = NULL;
 }
 
@@ -115,8 +115,8 @@ CordbModule::~CordbModule()
 {
     if (m_pAssembly)
         m_pAssembly->InternalRelease();
-    if (m_pAssemblyMetadataBlob)
-        free(m_pAssemblyMetadataBlob);
+    if (m_pPeImage)
+        free(m_pPeImage);
     if (m_pAssemblyName)
         free(m_pAssemblyName);
 }
@@ -172,7 +172,7 @@ HRESULT CordbModule::SetJMCStatus(BOOL bIsJustMyCode, ULONG32 cOthers, mdToken p
         _ASSERTE(!"not yet impl for cOthers != 0");
         return E_NOTIMPL;
     }
-    LOG((LF_CORDB, LL_INFO100000, "CordbModule - SetJMCStatus - IMPLEMENTED\n"));    
+    LOG((LF_CORDB, LL_INFO100000, "CordbModule - SetJMCStatus - IMPLEMENTED\n"));
     //on mono JMC is not by module, for now receiving this for one module, will affect all.
     if (bIsJustMyCode)
         conn->GetProcess()->SetJMCStatus(bIsJustMyCode);
@@ -215,9 +215,9 @@ HRESULT CordbModule::GetProcess(ICorDebugProcess** ppProcess)
 HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
-        if (!m_pAssemblyMetadataBlob) {
+        if (!m_pPeImage) {
             MdbgProtBuffer localbuf;
             m_dbgprot_buffer_init(&localbuf, 128);
             m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
@@ -228,10 +228,10 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
             CHECK_ERROR_RETURN_FALSE(received_reply_packet);
             MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-            m_pAssemblyMetadataBlob = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_assemblyMetadataLen);
+            m_pPeImage = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_nPeImageSize);
         }
         LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
-        *pAddress = (CORDB_ADDRESS)m_pAssemblyMetadataBlob;
+        *pAddress = (CORDB_ADDRESS)m_pPeImage;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -286,7 +286,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
 HRESULT CordbModule::GetFunctionFromToken(mdMethodDef methodDef, ICorDebugFunction** ppFunction)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
         LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetFunctionFromToken - IMPLEMENTED\n"));
         MdbgProtBuffer localbuf;
@@ -376,9 +376,9 @@ HRESULT CordbModule::GetToken(mdModule* pToken)
 
 HRESULT CordbModule::IsDynamic(BOOL* pDynamic)
 {
-    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));    
+    LOG((LF_CORDB, LL_INFO1000000, "CordbModule - IsDynamic - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
@@ -406,7 +406,7 @@ HRESULT CordbModule::GetGlobalVariableValue(mdFieldDef fieldDef, ICorDebugValue*
 HRESULT CordbModule::GetSize(ULONG32* pcBytes)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbModule - GetSize -IMPLEMENTED\n"));
-    *pcBytes = m_assemblyMetadataLen;
+    *pcBytes = m_nPeImageSize;
     return S_OK;
 }
 
