@@ -38,24 +38,16 @@ int32_t CryptoNative_BigNumToBinary(jobject bignum, uint8_t* output)
 
 int32_t CryptoNative_GetBigNumBytes(jobject bignum)
 {
-    // bigNum.toByteArray().length();
+    // bigNum.bitlength();
+    // round up to the nearest byte
     JNIEnv* env = GetJNIEnv();
-    jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);
-    jsize bytesLen = (*env)->GetArrayLength(env, bytes);
-
-    // We strip the leading zero byte from the byte array.
-    jbyte leadingByte;
-    (*env)->GetByteArrayRegion(env, bytes, 0, 1, &leadingByte);
-    if (leadingByte == 0)
-    {
-        bytesLen--;
-    }
-    (*env)->DeleteLocalRef(env, bytes);
+    int bytesLen = ((*env)->CallIntMethod(env, bignum, g_bitLengthMethod) + 7) / 8;
     return CheckJNIExceptions(env) ? FAIL : (int32_t)bytesLen;
 }
 
-int32_t CryptoNative_GetBigNumBytesNoStripLeadingZero(jobject bignum)
+int32_t CryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum)
 {
+    // Use the array here to get the leading zero byte if it exists.
     // bigNum.toByteArray().length();
     JNIEnv* env = GetJNIEnv();
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, bignum, g_toByteArrayMethod);

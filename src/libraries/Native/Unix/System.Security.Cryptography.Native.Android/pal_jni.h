@@ -75,6 +75,7 @@ extern jmethodID g_toByteArrayMethod;
 extern jmethodID g_valueOfMethod;
 extern jmethodID g_compareToMethod;
 extern jmethodID g_intValueMethod;
+extern jmethodID g_bitLengthMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_sslParamsClass;

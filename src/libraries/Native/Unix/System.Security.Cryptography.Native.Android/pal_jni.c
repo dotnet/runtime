@@ -66,6 +66,7 @@ jmethodID g_toByteArrayMethod;
 jmethodID g_valueOfMethod;
 jmethodID g_intValueMethod;
 jmethodID g_compareToMethod;
+jmethodID g_bitLengthMethod;
 
 // javax/net/ssl/SSLParameters
 jclass    g_sslParamsClass;
@@ -484,6 +485,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_valueOfMethod =           GetMethod(env, true, g_bigNumClass, "valueOf", "(J)Ljava/math/BigInteger;");
     g_intValueMethod =          GetMethod(env, false, g_bigNumClass, "intValue", "()I");
     g_compareToMethod =         GetMethod(env, false, g_bigNumClass, "compareTo", "(Ljava/math/BigInteger;)I");
+    g_bitLengthMethod =         GetMethod(env, false, g_bigNumClass, "bitLength", "()I");
 
     g_sslParamsClass =              GetClassGRef(env, "javax/net/ssl/SSLParameters");
     g_sslParamsGetProtocolsMethod = GetMethod(env, false,  g_sslParamsClass, "getProtocols", "()[Ljava/lang/String;");
