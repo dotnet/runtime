@@ -8,10 +8,6 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class ECAndroid
     {
-        internal const string ECDSA_P256_OID_VALUE = "1.2.840.10045.3.1.7"; // Also called nistP256 or secP256r1
-        internal const string ECDSA_P384_OID_VALUE = "1.3.132.0.34"; // Also called nistP384 or secP384r1
-        internal const string ECDSA_P521_OID_VALUE = "1.3.132.0.35"; // Also called nistP521or secP521r1
-
         public int ImportParameters(ECParameters parameters)
         {
             SafeEcKeyHandle key;
@@ -168,9 +164,9 @@ namespace System.Security.Cryptography
             string oid;
             switch (keySize)
             {
-                case 256: oid = ECDSA_P256_OID_VALUE; break;
-                case 384: oid = ECDSA_P384_OID_VALUE; break;
-                case 521: oid = ECDSA_P521_OID_VALUE; break;
+                case 256: oid = Oids.secp256r1; break;
+                case 384: oid = Oids.secp384r1; break;
+                case 521: oid = Oids.secp521r1; break;
                 default:
                     // Only above three sizes supported for backwards compatibility; named curves should be used instead
                     throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
