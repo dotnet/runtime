@@ -308,8 +308,11 @@
 		<type fullname="System.RuntimeMethodHandle" preserve="fields" />
 
 		<!-- domain.c: mono_defaults.runtimetype_class -->
-		<!-- under mono, this has no runtime visible fields -->
-		<type fullname="System.RuntimeType" preserve="nothing" />
+		<!-- under mono, this has no runtime visible fields but the constructor can be called from unmanaged code in mono_type_get_object_checked -->
+		<!-- RuntimeType is a fundamental type and the constructor is called by the runtime to implement reflection primitives like Object.GetType() and typeof(C) -->
+		<type fullname="System.RuntimeType">
+			<method signature="System.Void .ctor()" />
+		</type>
 
 		<!-- domain.c: mono_defaults.typehandle_class -->
 		<type fullname="System.RuntimeTypeHandle" preserve="fields" />
