@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
@@ -143,6 +144,211 @@ namespace System.IO
 
             fileHandle.IsAsync = useAsyncIO;
             return fileHandle;
+        }
+
+        internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
+        {
+            Interop.Kernel32.FILE_STANDARD_INFO info;
+
+            if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+            }
+
+            return info.EndOfFile;
+        }
+
+        internal static void FlushToDisk(SafeFileHandle handle, string? path)
+        {
+            if (!Interop.Kernel32.FlushFileBuffers(handle))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+            }
+        }
+
+        internal static long Seek(SafeFileHandle handle, string? path, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
+        {
+            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
+
+            if (!Interop.Kernel32.SetFilePointerEx(handle, offset, out long ret, (uint)origin))
+            {
+                if (closeInvalidHandle)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(handle), path);
+                }
+                else
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                }
+            }
+
+            return ret;
+        }
+
+        private static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
+        {
+            int errorCode = Marshal.GetLastWin32Error();
+
+            // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
+            // the handle as invalid; the handle must also be closed.
+            //
+            // Marking the handle as invalid but not closing the handle
+            // resulted in exceptions during finalization and locked column
+            // values (due to invalid but unclosed handle) in SQL Win32FileStream
+            // scenarios.
+            //
+            // A more mainstream scenario involves accessing a file on a
+            // network share. ERROR_INVALID_HANDLE may occur because the network
+            // connection was dropped and the server closed the handle. However,
+            // the client side handle is still open and even valid for certain
+            // operations.
+            //
+            // Note that _parent.Dispose doesn't throw so we don't need to special case.
+            // SetHandleAsInvalid only sets _closed field to true (without
+            // actually closing handle) so we don't need to call that as well.
+            if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+            {
+                handle.Dispose();
+            }
+
+            return errorCode;
+        }
+
+        internal static void Lock(SafeFileHandle handle, string? path, long position, long length)
+        {
+            int positionLow = unchecked((int)(position));
+            int positionHigh = unchecked((int)(position >> 32));
+            int lengthLow = unchecked((int)(length));
+            int lengthHigh = unchecked((int)(length >> 32));
+
+            if (!Interop.Kernel32.LockFile(handle, positionLow, positionHigh, lengthLow, lengthHigh))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+            }
+        }
+
+        internal static void Unlock(SafeFileHandle handle, string? path, long position, long length)
+        {
+            int positionLow = unchecked((int)(position));
+            int positionHigh = unchecked((int)(position >> 32));
+            int lengthLow = unchecked((int)(length));
+            int lengthHigh = unchecked((int)(length >> 32));
+
+            if (!Interop.Kernel32.UnlockFile(handle, positionLow, positionHigh, lengthLow, lengthHigh))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+            }
+        }
+
+        internal static void ValidateFileTypeForNonExtendedPaths(SafeFileHandle handle, string originalPath)
+        {
+            if (!PathInternal.IsExtended(originalPath))
+            {
+                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
+                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
+                // \\.\CON, so we'll only allow the \\?\ syntax.
+
+                int fileType = Interop.Kernel32.GetFileType(handle);
+                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
+                {
+                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
+                        ? Marshal.GetLastWin32Error()
+                        : Interop.Errors.ERROR_SUCCESS;
+
+                    handle.Dispose();
+
+                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
+                    {
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    }
+                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
+                }
+            }
+        }
+
+        internal static void GetFileTypeSpecificInformation(SafeFileHandle handle, out bool canSeek, out bool isPipe)
+        {
+            int handleType = Interop.Kernel32.GetFileType(handle);
+            Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
+                || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
+                || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
+                "FileStream was passed an unknown file type!");
+
+            canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+            isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
+        }
+
+        internal static unsafe void SetLength(SafeFileHandle handle, string? path, long length)
+        {
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
+            {
+                EndOfFile = length
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                handle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
+                    throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+            }
+        }
+
+        // __ConsoleStream also uses this code.
+        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
+        {
+            Debug.Assert(handle != null, "handle != null");
+
+            int r;
+            int numBytesRead = 0;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
+            {
+                r = overlapped != null ?
+                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped) :
+                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
+            }
+
+            if (r == 0)
+            {
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesRead;
+            }
+        }
+
+        internal static unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
+        {
+            Debug.Assert(handle != null, "handle != null");
+
+            int numBytesWritten = 0;
+            int r;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+            {
+                r = overlapped != null ?
+                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
+                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
+            }
+
+            if (r == 0)
+            {
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesWritten;
+            }
         }
     }
 }

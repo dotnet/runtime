@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -53,28 +52,7 @@ namespace System.IO
 
         private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
-            if (!PathInternal.IsExtended(originalPath))
-            {
-                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
-                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
-                // \\.\CON, so we'll only allow the \\?\ syntax.
-
-                int fileType = Interop.Kernel32.GetFileType(_fileHandle);
-                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
-                {
-                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                        ? Marshal.GetLastWin32Error()
-                        : Interop.Errors.ERROR_SUCCESS;
-
-                    _fileHandle.Dispose();
-
-                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                    }
-                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
-                }
-            }
+            FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
 
             // This is necessary for async IO using IO Completion ports via our
             // managed Threadpool API's.  This (theoretically) calls the OS's
@@ -139,11 +117,7 @@ namespace System.IO
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            int handleType = Interop.Kernel32.GetFileType(handle);
-            Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
-
-            _canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
-            _isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
+            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out _canSeek, out _isPipe);
 
             // This is necessary for async IO using IO Completion ports via our
             // managed Threadpool API's.  This calls the OS's
@@ -189,11 +163,7 @@ namespace System.IO
         {
             get
             {
-                Interop.Kernel32.FILE_STANDARD_INFO info;
-
-                if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-                long len = info.EndOfFile;
+                long len = FileStreamHelpers.GetFileLength(_fileHandle, _path);
 
                 // If we're writing near the end of the file, we must include our
                 // internal buffer in our Length calculation.  Don't flush because
@@ -275,13 +245,7 @@ namespace System.IO
             }
         }
 
-        private void FlushOSBuffer()
-        {
-            if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
+        private void FlushOSBuffer() => FileStreamHelpers.FlushToDisk(_fileHandle, _path);
 
         // Returns a task that flushes the internal write buffer
         private Task FlushWriteAsync(CancellationToken cancellationToken)
@@ -368,22 +332,7 @@ namespace System.IO
             Debug.Assert(value >= 0, "value >= 0");
             VerifyOSHandlePosition();
 
-            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
-            {
-                EndOfFile = value
-            };
-
-            if (!Interop.Kernel32.SetFileInformationByHandle(
-                _fileHandle,
-                Interop.Kernel32.FileEndOfFileInfo,
-                &eofInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
-            {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-            }
+            FileStreamHelpers.SetLength(_fileHandle, _path, value);
 
             if (_filePosition > value)
             {
@@ -594,22 +543,8 @@ namespace System.IO
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
 
-            if (!Interop.Kernel32.SetFilePointerEx(fileHandle, offset, out long ret, (uint)origin))
-            {
-                if (closeInvalidHandle)
-                {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(), _path);
-                }
-                else
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-                }
-            }
-
-            _filePosition = ret;
-            return ret;
+            return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
         }
 
         partial void OnBufferAllocated()
@@ -1144,85 +1079,16 @@ namespace System.IO
         // __ConsoleStream also uses this code.
         private unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            int r;
-            int numBytesRead = 0;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
-            {
-                r = _useAsyncIO ?
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesRead;
-            }
+            return FileStreamHelpers.ReadFileNative(handle, bytes, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            int numBytesWritten = 0;
-            int r;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                r = _useAsyncIO ?
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesWritten;
-            }
-        }
-
-        private int GetLastWin32ErrorAndDisposeHandleIfInvalid()
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-
-            // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
-            // the handle as invalid; the handle must also be closed.
-            //
-            // Marking the handle as invalid but not closing the handle
-            // resulted in exceptions during finalization and locked column
-            // values (due to invalid but unclosed handle) in SQL Win32FileStream
-            // scenarios.
-            //
-            // A more mainstream scenario involves accessing a file on a
-            // network share. ERROR_INVALID_HANDLE may occur because the network
-            // connection was dropped and the server closed the handle. However,
-            // the client side handle is still open and even valid for certain
-            // operations.
-            //
-            // Note that _parent.Dispose doesn't throw so we don't need to special case.
-            // SetHandleAsInvalid only sets _closed field to true (without
-            // actually closing handle) so we don't need to call that as well.
-            if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-            {
-                _fileHandle.Dispose();
-            }
-
-            return errorCode;
+            return FileStreamHelpers.WriteFileNative(handle, buffer, overlapped, out errorCode);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
@@ -1529,30 +1395,8 @@ namespace System.IO
             }
         }
 
-        internal override void Lock(long position, long length)
-        {
-            int positionLow = unchecked((int)(position));
-            int positionHigh = unchecked((int)(position >> 32));
-            int lengthLow = unchecked((int)(length));
-            int lengthHigh = unchecked((int)(length >> 32));
+        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
 
-            if (!Interop.Kernel32.LockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
-
-        internal override void Unlock(long position, long length)
-        {
-            int positionLow = unchecked((int)(position));
-            int positionHigh = unchecked((int)(position >> 32));
-            int lengthLow = unchecked((int)(length));
-            int lengthHigh = unchecked((int)(length >> 32));
-
-            if (!Interop.Kernel32.UnlockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
+        internal override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
     }
 }
