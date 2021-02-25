@@ -249,6 +249,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+#ifdef MEMORY_MAPPED_STRESSLOG
     int moduleIndex = 0;
     StressLogHeader* hdr = theLog.stressLogHeader;
     if (hdr == nullptr)
@@ -285,6 +286,7 @@ void StressLog::AddModule(uint8_t* moduleBase)
         addr += mbi.RegionSize;
         hdr->modules[moduleIndex].size = (size_t)(addr - (uint8_t*)moduleBase);
     }
+#endif //MEMORY_MAPPED_STRESSLOG
 }
 
 /*********************************************************************************/
@@ -491,10 +493,13 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         {
             delete msgs;
             msgs = 0;
+#ifdef MEMORY_MAPPED_STRESSLOG
             if (!t_triedToCreateThreadStressLog && theLog.stressLogHeader != nullptr)
             {
                 theLog.stressLogHeader->threadsWithNoLog++;
+                t_triedToCreateThreadStressLog = true;
             }
+#endif //MEMORY_MAPPED_STRESSLOG
             goto LEAVE;
         }
     }
@@ -721,6 +726,14 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
 #endif //DACCESS_COMPILE
 }
 
+void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, ...)
+{
+    va_list Args;
+    va_start(Args, format);
+    LogMsg(facility, cArgs, format, Args);
+    va_end(Args);
+}
+
 FORCEINLINE BOOL StressLog::InlinedStressLogOn(unsigned facility, unsigned level)
 {
     STATIC_CONTRACT_LEAF;
@@ -827,7 +840,8 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
 
     if (InlinedStressLogOn(facility, level))
     {
-        ThreadStressLog* msgs = t_pCurrentThreadLog;
+#ifdef HOST_WINDOWS // On Linux, this cast: (va_list)msg.m_args gives a compile error
+       ThreadStressLog* msgs = t_pCurrentThreadLog;
 
         if (msgs == 0)
         {
@@ -837,6 +851,7 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
                 return;
         }
         msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, (va_list)msg.m_args);
+#endif //HOST_WINDOWS
     }
 
     // Stress Log ETW feature available only on the desktop versions of the runtime
@@ -864,6 +879,7 @@ void  StressLog::LogCallStack(const char *const callTag){
 }
 #endif //_DEBUG
 
+#ifdef MEMORY_MAPPED_STRESSLOG
 void* StressLog::AllocMemoryMapped(size_t n)
 {
     if ((ptrdiff_t)n > 0)
@@ -893,6 +909,7 @@ void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
         return StressLog::AllocMemoryMapped(n);
     }
 }
+#endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
 
