@@ -9,8 +9,8 @@
       Required public items/properties:
       - $(WasmMainJSPath)
       - @(WasmAssembly)    - list of assemblies to package as the wasm app
-          - %(_Unsupported_InterpreterOnly_) metadata   - if true, then skips this assembly from the AOT step.
-                                       Error for this to be set with AOTMode=LLVMOnly
+          - %(_InternalForceInterpret) metadata   - if true, then skips this assembly from the AOT step.
+                                                    Error for this to be set with AOTMode=LLVMOnly
 
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
@@ -82,11 +82,11 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal._Unsupported_InterpreterOnly_)' != 'true'">
+      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-      <_AOT_Unsupported_InterpreterOnly_Assemblies Include="@(_WasmAssemblyInternal->WithMetadataValue('_Unsupported_InterpreterOnly_', 'true'))" />
+      <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssemblyInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
 
@@ -99,8 +99,8 @@
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
-    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_Unsupported_InterpreterOnly_Assemblies->Count()) > 0"
-           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _Unsupported_InterpreterOnly_: @(_AOT_Unsupported_InterpreterOnly_Assemblies)" />
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
     <MonoAOTCompiler
@@ -123,7 +123,7 @@
 
     <ItemGroup>
       <!-- Add back the interpreter-only assemblies -->
-      <_WasmAssemblyInternal Include="@(_AOT_Unsupported_InterpreterOnly_Assemblies)" />
+      <_WasmAssemblyInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -135,10 +135,10 @@
 
     <ItemGroup>
       <_WasmStrippedAssemblies
-              Condition="'%(_WasmAssemblyInternal._Unsupported_InterpreterOnly_)' != 'true'"
+              Condition="'%(_WasmAssemblyInternal._InternalForceInterpret)' != 'true'"
               Include="@(_WasmAssemblyInternal->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
               OriginalPath="%(_WasmAssemblyInternal.Identity)" />
-      <_WasmInterpOnlyAssembly Include="@(_WasmAssemblyInternal->WithMetadataValue('_Unsupported_InterpreterOnly_', 'true'))" />
+      <_WasmInterpOnlyAssembly Include="@(_WasmAssemblyInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -299,7 +299,7 @@
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)dotnet_support.js" />
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
 
-     <_AOTAssemblies Include="@(_WasmAssemblyInternal)" Condition="'%(_WasmAssemblyInternal._Unsupported_InterpreterOnly_)' != 'true'" />
+     <_AOTAssemblies Include="@(_WasmAssemblyInternal)" Condition="'%(_WasmAssemblyInternal._InternalForceInterpret)' != 'true'" />
      <_BitcodeFile Include="%(_WasmAssemblyInternal.LlvmBitcodeFile)" />
    </ItemGroup>
 
