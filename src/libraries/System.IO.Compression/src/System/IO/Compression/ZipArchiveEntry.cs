@@ -8,7 +8,29 @@ using System.Text;
 
 namespace System.IO.Compression
 {
-    // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
+    /// <summary>Represents a compressed file within a zip archive.</summary>
+    /// <remarks>A zip archive contains an entry for each compressed file. The <see cref="System.IO.Compression.ZipArchiveEntry" /> class enables you to examine the properties of an entry, and open or delete the entry. When you open an entry, you can modify the compressed file by writing to the stream for that compressed file.
+    /// The methods for manipulating zip archives and their file entries are spread across three classes: <see cref="System.IO.Compression.ZipFile" />, <see cref="System.IO.Compression.ZipArchive" /> and <see cref="System.IO.Compression.ZipArchiveEntry" />.
+    /// |To...|Use...|
+    /// |---------|----------|
+    /// |Create a zip archive from a directory|<see cref="System.IO.Compression.ZipFile.CreateFromDirectory" />|
+    /// |Extract the contents of a zip archive to a directory|<see cref="System.IO.Compression.ZipFile.ExtractToDirectory" />|
+    /// |Add new files to an existing zip archive|<see cref="System.IO.Compression.ZipArchive.CreateEntry" />|
+    /// |Retrieve an file in a zip archive|<see cref="System.IO.Compression.ZipArchive.GetEntry" />|
+    /// |Retrieve all of the files in a zip archive|<see cref="System.IO.Compression.ZipArchive.Entries" />|
+    /// |To open a stream to an individual file contained in a zip archive|<see cref="System.IO.Compression.ZipArchiveEntry.Open" />|
+    /// |Delete a file from a zip archive|<see cref="System.IO.Compression.ZipArchiveEntry.Delete" />|
+    /// If you reference the `System.IO.Compression.FileSystem` assembly in your project, you can access two extension methods for the <see cref="System.IO.Compression.ZipArchiveEntry" /> class. Those methods are <see cref="System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%29" /> and <see cref="System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%2Cbool%29" />, and they enable you to decompress the contents of the entry to a file. The `System.IO.Compression.FileSystem` assembly is not available in Windows 8. In Windows 8.x Store apps, you can decompress the contents of an archive by using <see cref="System.IO.Compression.DeflateStream" /> or <see cref="System.IO.Compression.GZipStream" />, or you can use the Windows Runtime types <a href="https://go.microsoft.com/fwlink/?LinkId=246358">Compressor](https://go.microsoft.com/fwlink/p/?LinkId=246357) and [Decompressor</a> to compress and decompress files.</remarks>
+    /// <example>The first example shows how to create a new entry in a zip archive and write to it.
+    /// <format type="text/markdown"><![CDATA[
+    /// [!code-csharp[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/cs/program1.cs#1)]
+    /// [!code-vb[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/vb/program1.vb#1)]
+    /// ]]></format>
+    /// The second example shows how to use the <see cref="System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%29" /> extension method. You must reference the `System.IO.Compression.FileSystem` assembly in your project for the code to execute.
+    /// <format type="text/markdown"><![CDATA[
+    /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
+    /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
+    /// ]]></format></example>
     public partial class ZipArchiveEntry
     {
         // The maximum index of our buffers, from the maximum index of a byte array
@@ -139,18 +161,24 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// The ZipArchive that this entry belongs to. If this entry has been deleted, this will return null.
-        /// </summary>
+        /// <summary>Gets the zip archive that the entry belongs to.</summary>
+        /// <value>The zip archive that the entry belongs to, or <see langword="null" /> if the entry has been deleted.</value>
         public ZipArchive Archive => _archive;
 
+        /// <summary>The 32-bit Cyclic Redundant Check.</summary>
+        /// <value>An unsigned integer (4 bytes) representing the CRC-32 field.</value>
         [CLSCompliant(false)]
         public uint Crc32 => _crc32;
 
-        /// <summary>
-        /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">This property is not available because the entry has been written to or modified.</exception>
+        /// <summary>Gets the compressed size of the entry in the zip archive.</summary>
+        /// <value>The compressed size of the entry in the zip archive.</value>
+        /// <remarks>This property cannot be retrieved when the mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, or the mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Update" /> and the entry has been opened.</remarks>
+        /// <example>The following example shows how to retrieve entries in a zip archive, and evaluate the properties of the entries. It uses the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property to display the name of the entry, and the <see cref="System.IO.Compression.ZipArchiveEntry.Length" /> and <see cref="System.IO.Compression.ZipArchiveEntry.CompressedLength" /> properties to calculate how much the file was compressed.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/vb/program1.vb#1)]
+        /// ]]></format></example>
+        /// <exception cref="System.InvalidOperationException">The value of the property is not available because the entry has been modified.</exception>
         public long CompressedLength
         {
             get
@@ -161,6 +189,9 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>OS and application specific file attributes.</summary>
+        /// <value>The external attributes written by the application when this entry was written. It is both host OS and application dependent.</value>
+        /// <remarks>The mapping of the external attributes is host-system dependent. For MS-DOS, the low order byte is the MS-DOS directory attribute byte. For Unix, the high Order byte is frequently used to store the file permissions. If input came from standard input, this field is set to zero.</remarks>
         public int ExternalAttributes
         {
             get
@@ -174,9 +205,15 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// The relative path of the entry as stored in the Zip archive. Note that Zip archives allow any string to be the path of the entry, including invalid and absolute paths.
-        /// </summary>
+        /// <summary>Gets the relative path of the entry in the zip archive.</summary>
+        /// <value>The relative path of the entry in the zip archive.</value>
+        /// <remarks>The <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property contains the relative path, including the subdirectory hierarchy, of an entry in a zip archive. (In contrast, the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property contains only the name of the entry and does not include the subdirectory hierarchy.) For example, if you create two entries in a zip archive by using the <see cref="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile" /> method and provide `NewEntry.txt` as the name for the first entry and `AddedFolder\\NewEntry.txt` for the second entry, both entries will have `NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property. The first entry will also have `NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property, but the second entry will have `AddedFolder\\NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property.
+        /// You can specify any string as the path of an entry, including strings that specify invalid and absolute paths. Therefore, the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property might contain a value that is not correctly formatted. An invalid or absolute path might result in an exception when you extract the contents of the zip archive.</remarks>
+        /// <example>The following example shows how to iterate through the contents of a .zip file, and extract files that contain the .txt extension.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
+        /// ]]></format></example>
         public string FullName
         {
             get
@@ -205,16 +242,20 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// The last write time of the entry as stored in the Zip archive. When setting this property, the DateTime will be converted to the
-        /// Zip timestamp format, which supports a resolution of two seconds. If the data in the last write time field is not a valid Zip timestamp,
-        /// an indicator value of 1980 January 1 at midnight will be returned.
-        /// </summary>
-        /// <exception cref="NotSupportedException">An attempt to set this property was made, but the ZipArchive that this entry belongs to was
-        /// opened in read-only mode.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">An attempt was made to set this property to a value that cannot be represented in the
-        /// Zip timestamp format. The earliest date/time that can be represented is 1980 January 1 0:00:00 (midnight), and the last date/time
-        /// that can be represented is 2107 December 31 23:59:58 (one second before midnight).</exception>
+        /// <summary>Gets or sets the last time the entry in the zip archive was changed.</summary>
+        /// <value>The last time the entry in the zip archive was changed.</value>
+        /// <remarks>When you create a new entry from an existing file by calling the <see cref="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile" /> method, the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property for the entry is automatically set to the last time the file was modified. When you create a new entry programmatically by calling the <see cref="System.IO.Compression.ZipArchive.CreateEntry" /> method, the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property for the entry is automatically set to the time of execution. If you modify the entry, you must explicitly set the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property if you want the value to reflect the time of the latest change.
+        /// When you set this property, the <see cref="System.DateTimeOffset" /> value is converted to a timestamp format that is specific to zip archives. This format supports a resolution of two seconds. The earliest permitted value is 1980 January 1 0:00:00 (midnight). The latest permitted value is 2107 December 31 23:59:58 (one second before midnight). If the value for the last write time is not valid, the property returns a default value of 1980 January 1 0:00:00 (midnight).</remarks>
+        /// <example>The following example shows how to open an entry in a zip archive, modify it, and set the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property to the current time.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchiveEntry#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/cs/program2.cs#2)]
+        /// [!code-vb[System.IO.Compression.ZipArchiveEntry#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/vb/program2.vb#2)]
+        /// ]]></format></example>
+        /// <exception cref="System.NotSupportedException">The attempt to set this property failed, because the zip archive for the entry is in <see cref="System.IO.Compression.ZipArchiveMode.Read" /> mode.</exception>
+        /// <exception cref="System.IO.IOException">The archive mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Create" />.
+        /// -or-
+        /// The archive mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Update" /> and the entry has been opened.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">An attempt was made to set this property to a value that is either earlier than 1980 January 1 0:00:00 (midnight) or later than 2107 December 31 23:59:58 (one second before midnight).</exception>
         public DateTimeOffset LastWriteTime
         {
             get
@@ -235,10 +276,15 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// The uncompressed size of the entry. This property is not valid in Create mode, and it is only valid in Update mode if the entry has not been opened.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">This property is not available because the entry has been written to or modified.</exception>
+        /// <summary>Gets the uncompressed size of the entry in the zip archive.</summary>
+        /// <value>The uncompressed size of the entry in the zip archive.</value>
+        /// <remarks>This property cannot be retrieved when the mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, or the mode is set to <see cref="System.IO.Compression.ZipArchiveMode.Update" /> and the entry has been opened.</remarks>
+        /// <example>The following example shows how to retrieve entries from a zip archive, and evaluate the properties of the entries. It uses the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property to display the name of the entry, and the <see cref="System.IO.Compression.ZipArchiveEntry.Length" /> and <see cref="System.IO.Compression.ZipArchiveEntry.CompressedLength" /> properties to calculate how much the file was compressed.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/vb/program1.vb#1)]
+        /// ]]></format></example>
+        /// <exception cref="System.InvalidOperationException">The value of the property is not available because the entry has been modified.</exception>
         public long Length
         {
             get
@@ -249,17 +295,20 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// The filename of the entry. This is equivalent to the substring of Fullname that follows the final directory separator character.
-        /// </summary>
+        /// <summary>Gets the file name of the entry in the zip archive.</summary>
+        /// <value>The file name of the entry in the zip archive.</value>
+        /// <remarks>The <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property contains the portion of the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property that follows the final directory separator character (\\), and does not include the subdirectory hierarchy. For example, if you create two entries in a zip archive by using the <see cref="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile" /> method and provide `NewEntry.txt` as the name for the first entry and `AddedFolder\\NewEntry.txt` for the second entry, both entries will have `NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property. The first entry will also have `NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property, but the second entry will have `AddedFolder\\NewEntry.txt` in the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property.</remarks>
+        /// <example>The following example shows how to retrieve entries from a zip archive and evaluate the properties of the entries. It uses the <see cref="System.IO.Compression.ZipArchiveEntry.Name" /> property to display the name of the entry, and the <see cref="System.IO.Compression.ZipArchiveEntry.Length" /> and <see cref="System.IO.Compression.ZipArchiveEntry.CompressedLength" /> properties to calculate how much the file was compressed.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchiveEntry#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchiveentry/vb/program1.vb#1)]
+        /// ]]></format></example>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
-        /// <summary>
-        /// Deletes the entry from the archive.
-        /// </summary>
-        /// <exception cref="IOException">The entry is already open for reading or writing.</exception>
-        /// <exception cref="NotSupportedException">The ZipArchive that this entry belongs to was opened in a mode other than ZipArchiveMode.Update. </exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <summary>Deletes the entry from the zip archive.</summary>
+        /// <exception cref="System.IO.IOException">The entry is already open for reading or writing.</exception>
+        /// <exception cref="System.NotSupportedException">The zip archive for this entry was opened in a mode other than <see cref="System.IO.Compression.ZipArchiveMode.Update" />.</exception>
+        /// <exception cref="System.ObjectDisposedException">The zip archive for this entry has been disposed.</exception>
         public void Delete()
         {
             if (_archive == null)
@@ -278,13 +327,23 @@ namespace System.IO.Compression
             UnloadStreams();
         }
 
-        /// <summary>
-        /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
-        /// </summary>
-        /// <returns>A Stream that represents the contents of the entry.</returns>
-        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
-        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
-        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <summary>Opens the entry from the zip archive.</summary>
+        /// <returns>The stream that represents the contents of the entry.</returns>
+        /// <remarks>You use this method to access the stream for an entry in a zip archive. After retrieving the stream, you can read from or write to the stream. When you write to the stream, the modifications you make to the entry will appear in the zip archive.</remarks>
+        /// <example>The following example shows how to create a new entry, open it with the <see cref="System.IO.Compression.ZipArchiveEntry.Open" /> method, and write to the stream.
+        /// <format type="text/markdown"><![CDATA[
+        /// [!code-csharp[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/cs/program1.cs#1)]
+        /// [!code-vb[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/vb/program1.vb#1)]
+        /// ]]></format></example>
+        /// <exception cref="System.IO.IOException">The entry is already currently open for writing.
+        /// -or-
+        /// The entry has been deleted from the archive.
+        /// -or-
+        /// The archive for this entry was opened with the <see cref="System.IO.Compression.ZipArchiveMode.Create" /> mode, and this entry has already been written to.</exception>
+        /// <exception cref="System.IO.InvalidDataException">The entry is either missing from the archive or is corrupt and cannot be read.
+        /// -or-
+        /// The entry has been compressed by using a compression method that is not supported.</exception>
+        /// <exception cref="System.ObjectDisposedException">The zip archive for this entry has been disposed.</exception>
         public Stream Open()
         {
             ThrowIfInvalidArchive();
@@ -302,10 +361,8 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>
-        /// Returns the FullName of the entry.
-        /// </summary>
-        /// <returns>FullName of the entry</returns>
+        /// <summary>Retrieves the relative path of the entry in the zip archive.</summary>
+        /// <returns>The relative path of the entry, which is the value stored in the <see cref="System.IO.Compression.ZipArchiveEntry.FullName" /> property.</returns>
         public override string ToString()
         {
             return FullName;
