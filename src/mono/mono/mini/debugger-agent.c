@@ -1761,14 +1761,19 @@ ids_cleanup (void)
 }
 
 static void
-debugger_agent_free_domain_info (MonoDomain *domain)
+debugger_agent_free_mem_manager (gpointer mem_manager)
 {
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
-	int i, j;
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)mem_manager;
+	AgentDomainInfo *info = (AgentDomainInfo *)jit_mm->agent_info;
+	int i;
 	GHashTableIter iter;
 	GPtrArray *file_names;
 	char *basename;
 	GSList *l;
+
+	// FIXME:
+	if (mem_manager != get_default_jit_mm ())
+		return;
 
 	if (info) {
 		for (i = 0; i < ID_NUM; ++i)
@@ -1797,8 +1802,9 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	domain_jit_info (domain)->agent_info = NULL;
+	jit_mm->agent_info = NULL;
 
+#if 0
 	/* Clear ids referencing structures in the domain */
 	dbg_lock ();
 	for (i = 0; i < ID_NUM; ++i) {
@@ -1811,17 +1817,15 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		}
 	}
 	dbg_unlock ();
-
-	mono_de_domain_remove (domain);
+#endif
 }
 
 static AgentDomainInfo*
-get_agent_domain_info (MonoDomain *domain)
+get_agent_info (void)
 {
 	AgentDomainInfo *info = NULL;
-	MonoJitDomainInfo *jit_info = domain_jit_info (domain);
-
-	info = (AgentDomainInfo *)jit_info->agent_info;
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	info = (AgentDomainInfo *)jit_mm->agent_info;
 
 	if (info) {
 		mono_memory_read_barrier ();
@@ -1836,7 +1840,7 @@ get_agent_domain_info (MonoDomain *domain)
 
 	mono_memory_write_barrier ();
 
-	gpointer other_info = mono_atomic_cas_ptr (&jit_info->agent_info, info, NULL);
+	gpointer other_info = mono_atomic_cas_ptr (&jit_mm->agent_info, info, NULL);
 
 	if (other_info != NULL) {
 		g_hash_table_destroy (info->loaded_classes);
@@ -1846,7 +1850,7 @@ get_agent_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	return (AgentDomainInfo *)jit_info->agent_info;
+	return (AgentDomainInfo *)jit_mm->agent_info;
 }
 
 static int
@@ -1858,7 +1862,7 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	if (val == NULL)
 		return 0;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	dbg_lock ();
 
@@ -2068,8 +2072,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -3010,7 +3016,7 @@ static void
 emit_appdomain_load (gpointer key, gpointer value, gpointer user_data)
 {
 	process_profiler_event (EVENT_KIND_APPDOMAIN_CREATE, value);
-	g_hash_table_foreach (get_agent_domain_info ((MonoDomain *)value)->loaded_classes, emit_type_load, NULL);
+	g_hash_table_foreach (get_agent_info ()->loaded_classes, emit_type_load, NULL);
 }
 
 /*
@@ -3844,10 +3850,9 @@ static void
 send_type_load (MonoClass *klass)
 {
 	gboolean type_load = FALSE;
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 
@@ -3873,7 +3878,7 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 	g_assert (info);
 
 	old_domain = mono_domain_get ();
@@ -4739,7 +4744,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (!agent_inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (throw_ctx));
 	if (catch_frame)
 		catch_ji = catch_frame->ji;
 	else
@@ -5383,7 +5388,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 					g_free (vtype_buf);
 					return err;
 				}
-				*(MonoObject**)addr = mono_value_box_checked (d, klass, vtype_buf, error);
+				*(MonoObject**)addr = mono_value_box_checked (klass, vtype_buf, error);
 				mono_error_cleanup (error);
 				g_free (vtype_buf);
 			} else {
@@ -5441,7 +5446,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 				g_free (nullable_buf);
 				return err;
 			}
-			MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (targ), nullable_buf, error);
+			MonoObject *boxed = mono_value_box_checked (mono_class_from_mono_type_internal (targ), nullable_buf, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return ERR_INVALID_OBJECT;
@@ -5792,14 +5797,9 @@ type_comes_from_assembly (gpointer klass, gpointer also_klass, gpointer assembly
 static void
 clear_types_for_assembly (MonoAssembly *assembly)
 {
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	if (!domain || !domain_jit_info (domain))
-		/* Can happen during shutdown */
-		return;
-
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 	g_hash_table_foreach_remove (info->loaded_classes, type_comes_from_assembly, assembly);
@@ -5966,7 +5966,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				return ERR_INVALID_ARGUMENT;
 			else {
 				ERROR_DECL (error);
-				this_arg = mono_object_new_checked (domain, m->klass, error);
+				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					return ERR_INVALID_ARGUMENT;
@@ -6334,7 +6334,7 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
+	AgentDomainInfo *info = get_agent_info ();
 
 	/* Update 'source_file_to_class' cache */
 	g_hash_table_iter_init (&iter, info->loaded_classes);
@@ -7172,7 +7172,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new_checked (domain, s, error);
+		o = mono_string_new_checked (s, error);
 		if (!is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (error));
 			mono_error_cleanup (error);
@@ -7189,7 +7189,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		uintptr_t size = 0;
 		int len = decode_int (p, &p, end);
 		size = len;
-		arr = mono_array_new_full_checked (mono_domain_get (), mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
+		arr = mono_array_new_full_checked (mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
 		elem = mono_array_addr_internal (arr, guint8, 0);
 		memcpy (elem, p, len);
 		p += len;
@@ -7212,7 +7212,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME:
 		g_assert (domain == domain2);
 
-		o = mono_object_new_checked (domain, klass, error);
+		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
 		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
@@ -7230,12 +7230,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
-get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf, MonoError *error)
+get_assembly_object_command (MonoAssembly *ass, Buffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	ErrorCode err = ERR_NONE;
 	error_init (error);
-	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
+	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (ass, error);
 	if (MONO_HANDLE_IS_NULL (o)) {
 		err = ERR_INVALID_OBJECT;
 		goto leave;
@@ -7288,7 +7288,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
 		ERROR_DECL (error);
-		err = get_assembly_object_command (domain, ass, buf, error);
+		err = get_assembly_object_command (ass, buf, error);
 		mono_error_cleanup (error);
 		return err;
 	}
@@ -7809,7 +7809,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				goto invalid_fieldid;
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7854,7 +7854,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -7872,7 +7872,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoObject *o = (MonoObject*)mono_type_get_object_checked (m_class_get_byval_arg (klass), error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			goto invalid_object;
@@ -7999,7 +7999,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, loader_error);
 
 		if (vtable)
@@ -8012,7 +8012,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		MonoObject *obj;
 
-		obj = mono_object_new_checked (domain, klass, error);
+		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
 		break;
@@ -8382,7 +8382,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
+			s = mono_ldstr_checked (m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8_checked_internal (s, error);
@@ -9261,7 +9261,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9308,7 +9308,7 @@ get_field_value:
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;
@@ -9857,7 +9857,7 @@ mono_debugger_agent_init (void)
 	cbs.single_step_event = debugger_agent_single_step_event;
 	cbs.single_step_from_context = debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
-	cbs.free_domain_info = debugger_agent_free_domain_info;
+	cbs.free_mem_manager = debugger_agent_free_mem_manager;
 	cbs.unhandled_exception = debugger_agent_unhandled_exception;
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;

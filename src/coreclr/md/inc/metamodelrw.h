@@ -409,7 +409,7 @@ public:
 
     // translate index returned by getMethodListOfTypeDef to a rid into Method table
     __checkReturn
-    FORCEINLINE HRESULT GetMethodRid(ULONG index, ULONG *pRid)
+    FORCEINLINE HRESULT GetMethodRid(ULONG index, RID *pRid)
     {
         HRESULT hr;
         if (HasIndirectTable(TBL_Method))
@@ -430,7 +430,7 @@ public:
 
     // translate index returned by getFieldListOfTypeDef to a rid into Field table
     __checkReturn
-    FORCEINLINE HRESULT GetFieldRid(ULONG index, ULONG *pRid)
+    FORCEINLINE HRESULT GetFieldRid(ULONG index, RID *pRid)
     {
         HRESULT hr;
         if (HasIndirectTable(TBL_Field))
@@ -451,7 +451,7 @@ public:
 
     // translate index returned by getParamListOfMethod to a rid into Param table
     __checkReturn
-    FORCEINLINE HRESULT GetParamRid(ULONG index, ULONG *pRid)
+    FORCEINLINE HRESULT GetParamRid(ULONG index, RID *pRid)
     {
         HRESULT hr;
         if (HasIndirectTable(TBL_Param))
@@ -472,7 +472,7 @@ public:
 
     // translate index returned by getEventListOfEventMap to a rid into Event table
     __checkReturn
-    FORCEINLINE HRESULT GetEventRid(ULONG index, ULONG *pRid)
+    FORCEINLINE HRESULT GetEventRid(ULONG index, RID *pRid)
     {
         HRESULT hr;
         if (HasIndirectTable(TBL_Event))
@@ -493,7 +493,7 @@ public:
 
     // translate index returned by getPropertyListOfPropertyMap to a rid into Property table
     __checkReturn
-    FORCEINLINE HRESULT GetPropertyRid(ULONG index, ULONG *pRid)
+    FORCEINLINE HRESULT GetPropertyRid(ULONG index, RID *pRid)
     {
         HRESULT hr;
         if (HasIndirectTable(TBL_Property))

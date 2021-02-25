@@ -2,6 +2,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/mono-hash-internals.h>
+#include <mono/metadata/debug-internals.h>
 
 static void
 memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
@@ -20,6 +21,9 @@ memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboo
 	memory_manager->type_hash = mono_g_hash_table_new_type_internal ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
 	memory_manager->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 	memory_manager->type_init_exception_hash = mono_g_hash_table_new_type_internal (mono_aligned_addr_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Type Initialization Exception Table");
+
+	if (mono_get_runtime_callbacks ()->init_mem_manager)
+		mono_get_runtime_callbacks ()->init_mem_manager (memory_manager);
 }
 
 MonoSingletonMemoryManager *
@@ -75,6 +79,14 @@ static void
 memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 {
 	// Scan here to assert no lingering references in vtables?
+
+	if (mono_get_runtime_callbacks ()->free_mem_manager)
+		mono_get_runtime_callbacks ()->free_mem_manager (memory_manager);
+
+	if (memory_manager->debug_info) {
+		mono_mem_manager_free_debug_info (memory_manager);
+		memory_manager->debug_info = NULL;
+	}
 
 	if (!memory_manager->freeing)
 		memory_manager_delete_objects (memory_manager);

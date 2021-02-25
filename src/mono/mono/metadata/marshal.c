@@ -192,7 +192,7 @@ ves_icall_mono_string_to_utf8_impl (MonoStringHandle str, MonoError *error)
 MonoStringHandle
 ves_icall_string_new_wrapper_impl (const char *text, MonoError *error)
 {
-	return text ? mono_string_new_handle (mono_domain_get (), text, error) : NULL_HANDLE_STRING;
+	return text ? mono_string_new_handle (text, error) : NULL_HANDLE_STRING;
 }
 
 void
@@ -493,7 +493,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, error));
+			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_defaults.int_class, &ftn, error));
 			goto_if_nok (error, leave);
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
@@ -515,7 +515,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 			g_free (sig);
 		}
 
-		MONO_HANDLE_ASSIGN (d, mono_object_new_handle (mono_domain_get (), klass, error));
+		MONO_HANDLE_ASSIGN (d, mono_object_new_handle (klass, error));
 		goto_if_nok (error, leave);
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
@@ -582,7 +582,7 @@ mono_string_from_byvalstr_impl (const char *data, int max_len, MonoError *error)
 		len++;
 
 	// FIXMEcoop
-	MonoString *s = mono_string_new_len_checked (mono_domain_get (), data, len, error);
+	MonoString *s = mono_string_new_len_checked (data, len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
@@ -598,7 +598,7 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
 	const int len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (mono_domain_get (), data, MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, MIN (len, max_len), error);
 }
 
 gpointer
@@ -756,7 +756,7 @@ mono_string_builder_new (int starting_string_length, MonoError *error)
 	// array will always be garbage collected.
 	args [0] = &initial_len;
 
-	MonoStringBuilderHandle sb = MONO_HANDLE_CAST (MonoStringBuilder, mono_object_new_handle (mono_domain_get (), string_builder_class, error));
+	MonoStringBuilderHandle sb = MONO_HANDLE_CAST (MonoStringBuilder, mono_object_new_handle (string_builder_class, error));
 	mono_error_assert_ok (error);
 
 	mono_runtime_try_invoke_handle (sb_ctor, MONO_HANDLE_CAST (MonoObject, sb), args, error);
@@ -1023,7 +1023,7 @@ mono_string_from_ansibstr_impl (const char *data, MonoError *error)
 	if (!data)
 		return NULL_HANDLE_STRING;
 
-	return mono_string_new_utf8_len (mono_domain_get (), data, *((guint32 *)data - 1) / sizeof (char), error);
+	return mono_string_new_utf8_len (data, *((guint32 *)data - 1) / sizeof (char), error);
 }
 
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
@@ -1111,7 +1111,7 @@ mono_string_to_byvalwstr_impl (gunichar2 *dst, MonoStringHandle src, int size, M
 MonoStringHandle
 mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *error)
 {
-	MonoString *s = mono_string_new_len_checked (mono_domain_get (), text, length, error);
+	MonoString *s = mono_string_new_len_checked (text, length, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
@@ -5974,7 +5974,7 @@ mono_marshal_get_type_object (MonoClass *klass)
 {
 	ERROR_DECL (error);
 	MonoType *type = m_class_get_byval_arg (klass);
-	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+	MonoObject *result = (MonoObject*)mono_type_get_object_checked (type, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }

@@ -28,5 +28,15 @@ namespace System.IO.Tests
                 Assert.Equal(length + 1, fs.Position);
             }
         }
+
+        [Fact]
+        public void GetPositionThrowsForUnseekableFileStream()
+        {
+            string fileName = GetTestFilePath();
+            using (FileStream fs = new UnseekableFileStream(fileName, FileMode.Create))
+            {
+                Assert.Throws<NotSupportedException>(() => _ = fs.Position);
+            }
+        }
     }
 }

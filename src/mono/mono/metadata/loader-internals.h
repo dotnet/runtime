@@ -93,6 +93,12 @@ struct _MonoMemoryManager {
 
 	GPtrArray *class_vtable_array;
 
+	/* Information maintained by mono-debug.c */
+	gpointer debug_info;
+
+	/* Information maintained by the execution engine */
+	gpointer runtime_info;
+
 	// !!! REGISTERED AS GC ROOTS !!!
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
@@ -233,6 +239,9 @@ mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManage
 
 char*
 mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
+
+void
+mono_mem_manager_free_debug_info (MonoMemoryManager *memory_manager);
 
 G_END_DECLS
 

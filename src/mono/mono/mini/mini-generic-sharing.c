@@ -925,7 +925,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		return_val_if_nok (error, NULL);
 		return mono_vtable_get_static_field_data (vtable);
 	}
@@ -934,7 +934,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 		return m_class_get_element_class (klass);
 	case MONO_RGCTX_INFO_VTABLE: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		return_val_if_nok (error, NULL);
 		return vtable;
 	}
@@ -973,11 +973,12 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 	case MONO_RGCTX_INFO_BZERO: {
 		static MonoMethod *memcpy_method [17];
 		static MonoMethod *bzero_method [17];
-		MonoJitDomainInfo *domain_info;
+		MonoJitMemoryManager *jit_mm;
 		int size;
 		guint32 align;
 
-		domain_info = domain_jit_info (domain);
+		/* The memcpy methods are in the default memory alc */
+		jit_mm = get_default_jit_mm ();
 
 		if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (klass))) {
 			size = sizeof (gpointer);
@@ -1005,13 +1006,13 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 				mono_memory_barrier ();
 				memcpy_method [size] = m;
 			}
-			if (!domain_info->memcpy_addr [size]) {
+			if (!jit_mm->memcpy_addr [size]) {
 				gpointer addr = mono_compile_method_checked (memcpy_method [size], error);
 				mono_memory_barrier ();
-				domain_info->memcpy_addr [size] = (gpointer *)addr;
+				jit_mm->memcpy_addr [size] = (gpointer *)addr;
 				mono_error_assert_ok (error);
 			}
-			return domain_info->memcpy_addr [size];
+			return jit_mm->memcpy_addr [size];
 		} else {
 			if (!bzero_method [size]) {
 				MonoMethod *m;
@@ -1026,13 +1027,13 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 				mono_memory_barrier ();
 				bzero_method [size] = m;
 			}
-			if (!domain_info->bzero_addr [size]) {
+			if (!jit_mm->bzero_addr [size]) {
 				gpointer addr = mono_compile_method_checked (bzero_method [size], error);
 				mono_memory_barrier ();
-				domain_info->bzero_addr [size] = (gpointer *)addr;
+				jit_mm->bzero_addr [size] = (gpointer *)addr;
 				mono_error_assert_ok (error);
 			}
-			return domain_info->bzero_addr [size];
+			return jit_mm->bzero_addr [size];
 		}
 	}
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX:
@@ -1071,7 +1072,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		}
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		g_assert (ji);
 		if (mini_jit_info_is_gsharedvt (ji))
 			return mono_create_static_rgctx_trampoline (method, addr);
@@ -2009,9 +2010,9 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	ERROR_DECL (error);
 	gpointer res, info;
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitDomainInfo *domain_info;
 	GSharedVtTrampInfo *tramp_info;
 	GSharedVtTrampInfo tinfo;
+	MonoJitMemoryManager *jit_mm;
 
 	if (mono_llvm_only) {
 		MonoMethod *wrapper;
@@ -2033,16 +2034,17 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	tinfo.sig = normal_sig;
 	tinfo.gsig = gsharedvt_sig;
 
-	domain_info = domain_jit_info (domain);
+	// FIXME:
+	jit_mm = get_default_jit_mm ();
 
 	/*
 	 * The arg trampolines might only have a finite number in full-aot, so use a cache.
 	 */
-	mono_domain_lock (domain);
-	if (!domain_info->gsharedvt_arg_tramp_hash)
-		domain_info->gsharedvt_arg_tramp_hash = g_hash_table_new (tramp_info_hash, tramp_info_equal);
-	res = g_hash_table_lookup (domain_info->gsharedvt_arg_tramp_hash, &tinfo);
-	mono_domain_unlock (domain);
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->gsharedvt_arg_tramp_hash)
+		jit_mm->gsharedvt_arg_tramp_hash = g_hash_table_new (tramp_info_hash, tramp_info_equal);
+	res = g_hash_table_lookup (jit_mm->gsharedvt_arg_tramp_hash, &tinfo);
+	jit_mm_unlock (jit_mm);
 	if (res)
 		return res;
 
@@ -2077,7 +2079,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	if (mono_aot_only)
 		addr = mono_aot_get_gsharedvt_arg_trampoline (info, addr);
 	else
-		addr = mono_arch_get_gsharedvt_arg_trampoline (mono_domain_get (), info, addr);
+		addr = mono_arch_get_gsharedvt_arg_trampoline (info, addr);
 
 	mono_atomic_inc_i32 (&gsharedvt_num_trampolines);
 
@@ -2085,10 +2087,10 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	tramp_info = (GSharedVtTrampInfo *)mono_domain_alloc0 (domain, sizeof (GSharedVtTrampInfo));
 	*tramp_info = tinfo;
 
-	mono_domain_lock (domain);
+	jit_mm_lock (jit_mm);
 	/* Duplicates are not a problem */
-	g_hash_table_insert (domain_info->gsharedvt_arg_tramp_hash, tramp_info, addr);
-	mono_domain_unlock (domain);
+	g_hash_table_insert (jit_mm->gsharedvt_arg_tramp_hash, tramp_info, addr);
+	jit_mm_unlock (jit_mm);
 
 	return addr;
 }
@@ -2155,7 +2157,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_TYPE:
 		return data;
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: {
-		MonoReflectionType *ret = mono_type_get_object_checked (domain, (MonoType *)data, error);
+		MonoReflectionType *ret = mono_type_get_object_checked ((MonoType *)data, error);
 
 		return ret;
 	}
@@ -2178,7 +2180,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJumpInfo ji;
 		ji.type = MONO_PATCH_INFO_METHOD_FTNDESC;
 		ji.data.method = m;
-		return mono_resolve_patch_target (m, domain, NULL, &ji, FALSE, error);
+		return mono_resolve_patch_target (m, NULL, &ji, FALSE, error);
 	}
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: {
 		MonoMethod *m = (MonoMethod*)data;
@@ -2193,7 +2195,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJitInfo *ji;
 		gboolean callee_gsharedvt;
 
-		ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		g_assert (ji);
 		callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 		if (callee_gsharedvt)
@@ -2281,7 +2283,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		if (mono_class_field_is_special_static (field)) {
 			gpointer addr;
 
-			mono_class_vtable_checked (domain, field->parent, error);
+			mono_class_vtable_checked (field->parent, error);
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */
@@ -2381,7 +2383,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		}
 
 		// FIXME: This loads information in the AOT case
-		callee_ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (addr), NULL);
+		callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
 		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
 
 		/*
@@ -3132,45 +3134,52 @@ mini_method_get_mrgctx (MonoVTable *class_vtable, MonoMethod *method)
 	MonoMethodRuntimeGenericContext *mrgctx;
 	MonoMethodRuntimeGenericContext key;
 	MonoGenericInst *method_inst = mini_method_get_context (method)->method_inst;
-	MonoJitDomainInfo *domain_info = domain_jit_info (domain);
+	MonoJitMemoryManager *jit_mm;
 
 	g_assert (!mono_class_is_gtd (class_vtable->klass));
+
+	jit_mm = jit_mm_for_method (method);
 
 	mono_domain_lock (domain);
 
 	if (!method_inst) {
 		g_assert (mini_method_is_default_method (method));
 
-		if (!domain_info->mrgctx_hash)
-			domain_info->mrgctx_hash = g_hash_table_new (NULL, NULL);
-		mrgctx = (MonoMethodRuntimeGenericContext*)g_hash_table_lookup (domain_info->mrgctx_hash, method);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->mrgctx_hash)
+			jit_mm->mrgctx_hash = g_hash_table_new (NULL, NULL);
+		mrgctx = (MonoMethodRuntimeGenericContext*)g_hash_table_lookup (jit_mm->mrgctx_hash, method);
+		jit_mm_unlock (jit_mm);
 	} else {
 		g_assert (!method_inst->is_open);
 
-		if (!domain_info->method_rgctx_hash)
-			domain_info->method_rgctx_hash = g_hash_table_new (mrgctx_hash_func, mrgctx_equal_func);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->method_rgctx_hash)
+			jit_mm->method_rgctx_hash = g_hash_table_new (mrgctx_hash_func, mrgctx_equal_func);
 
 		key.class_vtable = class_vtable;
 		key.method_inst = method_inst;
 
-		mrgctx = (MonoMethodRuntimeGenericContext *)g_hash_table_lookup (domain_info->method_rgctx_hash, &key);
+		mrgctx = (MonoMethodRuntimeGenericContext *)g_hash_table_lookup (jit_mm->method_rgctx_hash, &key);
+		jit_mm_unlock (jit_mm);
 	}
 
 	if (!mrgctx) {
-		//int i;
-
 		mrgctx = (MonoMethodRuntimeGenericContext*)alloc_rgctx_array (domain, 0, TRUE);
 		mrgctx->class_vtable = class_vtable;
 		mrgctx->method_inst = method_inst;
 
+		/* FIXME: The domain lock prevents duplicates */
+		jit_mm_lock (jit_mm);
 		if (!method_inst)
-			g_hash_table_insert (domain_info->mrgctx_hash, method, mrgctx);
+			g_hash_table_insert (jit_mm->mrgctx_hash, method, mrgctx);
 		else
-			g_hash_table_insert (domain_info->method_rgctx_hash, mrgctx, mrgctx);
+			g_hash_table_insert (jit_mm->method_rgctx_hash, mrgctx, mrgctx);
+		jit_mm_unlock (jit_mm);
 
 		/*
 		g_print ("mrgctx alloced for %s <", mono_type_get_full_name (class_vtable->klass));
-		for (i = 0; i < method_inst->type_argc; ++i)
+		for (int i = 0; i < method_inst->type_argc; ++i)
 			g_print ("%s, ", mono_type_full_name (method_inst->type_argv [i]));
 		g_print (">\n");
 		*/
@@ -3874,7 +3883,7 @@ gpointer
 mini_method_get_rgctx (MonoMethod *m)
 {
 	ERROR_DECL (error);
-	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, error);
+	MonoVTable *vt = mono_class_vtable_checked (m->klass, error);
 	mono_error_assert_ok (error);
 	if (mini_method_needs_mrgctx (m))
 		return mini_method_get_mrgctx (vt, m);

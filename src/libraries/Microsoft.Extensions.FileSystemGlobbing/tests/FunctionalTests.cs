@@ -445,10 +445,203 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
+        [Theory] // rootDir, includePattern, expectedPath
+        [InlineData(@"root", @"*.0",         @"test.0")]
+        [InlineData(@"root", @"**/*.0",      @"test.0")]
+        public void PathIncludesAllSegmentsFromPattern_RootDirectory(string root, string includePattern, string expectedPath)
+        {
+            var fileToFind = @"root/test.0";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+        }
+
+        [Theory] // rootDir,      includePattern,    expectedPath
+        [InlineData(@"root/dir1", @"*.1",            @"test.1")]
+        [InlineData(@"root/dir1", @"**/*.1",         @"test.1")]
+        [InlineData(@"root",      @"dir1/*.1",       @"dir1/test.1")]
+        [InlineData(@"root",      @"dir1/**/*.1",    @"dir1/test.1")]
+        [InlineData(@"root",      @"**/dir1/*.1",    @"dir1/test.1")]
+        [InlineData(@"root",      @"**/dir1/**/*.1", @"dir1/test.1")]
+        [InlineData(@"root",      @"**/*.1",         @"dir1/test.1")]
+        public void PathIncludesAllSegmentsFromPattern_OneDirectoryDeep(string root, string includePattern, string expectedPath)
+        {
+            var fileToFind = @"root/dir1/test.1";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+        }
+
+        [Theory] // rootDir,           includePattern,            expectedPath
+        [InlineData(@"root/dir1/dir2", @"*.2",                    @"test.2")]
+        [InlineData(@"root/dir1/dir2", @"**/*.2",                 @"test.2")]
+        [InlineData(@"root/dir1",      @"dir2/*.2",               @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"dir2/**/*.2",            @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/*.2",            @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/**/*.2",         @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/*.2",                 @"dir2/test.2")]
+        [InlineData(@"root",           @"dir1/dir2/*.2",          @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"dir1/dir2/**/*.2",       @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/dir2/**/*.2",    @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/*.2",    @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/**/*.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"dir1/**/*.2",            @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/*.2",         @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/*.2",            @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/**/*.2",         @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/*.2",                 @"dir1/dir2/test.2")]
+        public void PathIncludesAllSegmentsFromPattern_TwoDirectoriesDeep(string root, string includePattern, string expectedPath)
+        {
+            var fileToFind = @"root/dir1/dir2/test.2";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
+
+            Assert.Equal(expectedPath, actualPath);
+        }
+
+        [Theory] // rootDir, includePattern, expectedStem
+        [InlineData(@"root", @"*.0",         @"test.0")]
+        [InlineData(@"root", @"**/*.0",      @"test.0")]
+        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_RootDirectory(string root, string includePattern, string expectedStem)
+        {
+            var fileToFind = @"root/test.0";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+        }
+
+        [Theory] // rootDir,      includePattern,    expectedStem
+        [InlineData(@"root/dir1", @"*.1",            @"test.1")]
+        [InlineData(@"root/dir1", @"**/*.1",         @"test.1")]
+        [InlineData(@"root",      @"dir1/*.1",       @"test.1")]
+        [InlineData(@"root",      @"dir1/**/*.1",    @"test.1")]
+        [InlineData(@"root",      @"**/dir1/*.1",    @"dir1/test.1")]
+        [InlineData(@"root",      @"**/dir1/**/*.1", @"dir1/test.1")]
+        [InlineData(@"root",      @"**/*.1",         @"dir1/test.1")]
+        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_OneDirectoryDeep(string root, string includePattern, string expectedStem)
+        {
+            var fileToFind = @"root/dir1/test.1";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+        }
+
+        [Theory] // rootDir,           includePattern,            expectedStem
+        [InlineData(@"root/dir1/dir2", @"*.2",                    @"test.2")]
+        [InlineData(@"root/dir1/dir2", @"**/*.2",                 @"test.2")]
+        [InlineData(@"root/dir1",      @"dir2/*.2",               @"test.2")]
+        [InlineData(@"root/dir1",      @"dir2/**/*.2",            @"test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/*.2",            @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/**/*.2",         @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/*.2",                 @"dir2/test.2")]
+        [InlineData(@"root",           @"dir1/dir2/*.2",          @"test.2")]
+        [InlineData(@"root",           @"dir1/dir2/**/*.2",       @"test.2")]
+        [InlineData(@"root",           @"**/dir1/dir2/**/*.2",    @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/*.2",    @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/**/*.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"dir1/**/*.2",            @"dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/*.2",         @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/*.2",            @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/**/*.2",         @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/*.2",                 @"dir1/dir2/test.2")]
+        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_TwoDirectoriesDeep(string root, string includePattern, string expectedStem)
+        {
+            var fileToFind = @"root/dir1/dir2/test.2";
+
+            var matcher = new Matcher();
+            matcher.AddInclude(includePattern);
+
+            var results = matcher.Match(root, new[] { fileToFind });
+            var actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+
+            // Also test all scenarios with the `./` current directory prefix
+            matcher = new Matcher();
+            matcher.AddInclude("./" + includePattern);
+
+            results = matcher.Match(root, new[] { fileToFind });
+            actualStem = results.Files.Select(file => file.Stem).SingleOrDefault();
+
+            Assert.Equal(expectedStem, actualStem);
+        }
+
         private List<string> GetFileList()
         {
             return new List<string>
             {
+                "root/test.0",
+                "root/dir1/test.1",
+                "root/dir1/dir2/test.2",
                 "src/project/source1.cs",
                 "src/project/sub/source2.cs",
                 "src/project/sub/source3.cs",

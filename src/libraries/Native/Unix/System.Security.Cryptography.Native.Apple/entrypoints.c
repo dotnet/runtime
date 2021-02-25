@@ -20,6 +20,7 @@
 #include "pal_trust.h"
 #include "pal_x509.h"
 #include "pal_x509chain.h"
+#include "pal_keyderivation.h"
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -103,6 +104,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509ChainGetStatusAtIndex)
     DllImportEntry(AppleCryptoNative_GetOSStatusForChainStatus)
     DllImportEntry(AppleCryptoNative_X509ChainSetTrustAnchorCertificates)
+    DllImportEntry(AppleCryptoNative_Pbkdf2)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);

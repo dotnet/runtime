@@ -19,17 +19,13 @@
     locking issues vs. the persistent nodes that loaded the task DLL for the previous build. It
     isn't particularly accurate, but better than nothing.
   -->
-  <Target Name="BuildAndRestoreIncrementally"
+  <Target Name="BuildIncrementally"
           DependsOnTargets="GetTasksSrc"
           Inputs="@(TasksSrc)"
           Outputs="$(TasksIntermediateFile)">
     <ItemGroup>
       <TaskProject Include="$(MSBuildProjectFullPath)" />
     </ItemGroup>
-
-    <MSBuild Projects="@(TaskProject)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=Debug;Platform=AnyCPU;RESTORE_TASK_BINLOG_PARAMETERS=$(ArtifactsLogDir)Restore-tasks.proj.binlog"
-             Targets="Restore" />
 
     <MSBuild Projects="@(TaskProject)"
              Properties="Configuration=Debug;Platform=AnyCPU"

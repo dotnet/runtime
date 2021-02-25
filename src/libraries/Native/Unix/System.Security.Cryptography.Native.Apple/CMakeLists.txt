@@ -10,6 +10,7 @@ set(NATIVECRYPTO_SOURCES
     pal_ecc.c
     pal_hmac.c
     pal_keyagree.c
+    pal_keyderivation.c
     pal_keychain.c
     pal_random.c
     pal_rsa.c

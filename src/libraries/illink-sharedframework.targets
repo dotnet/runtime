@@ -63,7 +63,7 @@
       <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
 
       <RootAssemblies Include="@(_LibrariesToLink)">
-        <RootMode>visible</RootMode>
+        <RootMode>library</RootMode>
       </RootAssemblies>
     </ItemGroup>
 

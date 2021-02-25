@@ -92,3 +92,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         add_subdirectory(IJW/NativeVarargs)
     endif()
 endif(CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    add_subdirectory(ObjectiveC)
+endif()

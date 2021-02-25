@@ -565,7 +565,6 @@ typedef struct ucontext
 # define UCONTEXT_GREGS(ctx)	 (((ucontext_t *)(ctx))->uc_mcontext.gregs)
 # define UCONTEXT_FREGS(ctx)     (((ucontext_t *)(ctx))->uc_mcontext.fpregs->fprs)
 # define UCONTEXT_REG_Rn(ctx, n) (((ucontext_t *)(ctx))->uc_mcontext.gregs[(n)])
-# define UCONTEXT_SP(ctx)        (((ucontext_t *)(ctx))->uc_stack.ss_sp)
 # define UCONTEXT_IP(ctx)         (((ucontext_t *)(ctx))->uc_mcontext.psw.addr)
 
 #endif
