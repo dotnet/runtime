@@ -762,31 +762,59 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                         (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
-
                 wasRelocHandled = true;
             }
         }
 
         if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
         {
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
             switch (relocType)
             {
                 case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
                 {
-                    DWORDLONG fixupLocation = tmp.location;
-                    DWORDLONG branchInstr   = section_begin + fixupLocation - (DWORDLONG)originalAddr;
-                    DWORDLONG endOfTheBlock = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                    INT64 delta = (INT64)(endOfTheBlock - fixupLocation);
-                    PutArm64Rel28((UINT32*)branchInstr, (INT32)delta);
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT64 delta = (INT64)(tmp.target - fixupLocation);
+                        if (!FitsInRel28(delta))
+                        {
+                            // Assume here that we would need a jump stub for this relocation and pretend
+                            // that the jump stub is located right at the end of the method.
+                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                            delta = (INT64)(target - fixupLocation);
+                        }
+                        PutArm64Rel28((UINT32*)address, (INT32)delta);
+                    }
                     wasRelocHandled = true;
                 }
                 break;
 
-                case IMAGE_REL_ARM64_PAGEBASE_REL21:
-                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                    LogError("Unimplemented reloc type %u", tmp.fRelocType);
+                case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT64 targetPage        = (INT64)tmp.target & 0xFFFFFFFFFFFFF000LL;
+                        INT64 fixupLocationPage = (INT64)fixupLocation & 0xFFFFFFFFFFFFF000LL;
+                        INT64 pageDelta         = (INT64)(targetPage - targetPage);
+                        INT32 imm21             = (INT32)(pageDelta >> 12) & 0x1FFFFF;
+                        PutArm64Rel21((UINT32*)address, imm21);
+                    }
                     wasRelocHandled = true;
-                    break;
+                }
+                break;
+
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A: // ADD 12 bit page offset
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT32 imm12 = (INT32)(SIZE_T)tmp.target & 0xFFFLL;
+                        PutArm64Rel12((UINT32*)address, imm12);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
 
                 default:
                     break;
