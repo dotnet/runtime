@@ -163,7 +163,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                if (output.IsEmpty)
+                if (output.IsEmpty || _lastHeader.PayloadLength == 0)
                 {
                     return Result(count: 0);
                 }
