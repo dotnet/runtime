@@ -1,8 +1,25 @@
 trigger:
+  batch: true
   branches:
     include:
       - master
       - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+pr: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml

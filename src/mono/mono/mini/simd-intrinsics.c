@@ -841,6 +841,11 @@ static SimdIntrinsic crypto_aes_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic neon_aes_methods [] = {
+	{SN_PolynomialMultiplyWideningLower, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_LOWER},
+	{SN_PolynomialMultiplyWideningUpper, OP_XOP_X_X_X, SIMD_OP_ARM64_PMULL64_UPPER}
+};
+
 static SimdIntrinsic sha1_methods [] = {
 	{SN_FixedRotate, OP_XOP_X_X, SIMD_OP_ARM64_SHA1H},
 	{SN_HashUpdateChoose, OP_XOP_X_X_X_X, SIMD_OP_ARM64_SHA1C},
@@ -978,7 +983,11 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		intrinsics_size = sizeof (sha1_methods);
 	}
 
-	if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
+	if (is_hw_intrinsics_class (klass, "Aes", &is_64bit) && (!strcmp (cmethod->name, "PolynomialMultiplyWideningLower") || !strcmp (cmethod->name, "PolynomialMultiplyWideningUpper"))) {
+		feature = MONO_CPU_ARM64_NEON;
+		intrinsics = neon_aes_methods;
+		intrinsics_size = sizeof (neon_aes_methods);
+	} else if (is_hw_intrinsics_class (klass, "Aes", &is_64bit)) {
 		feature = MONO_CPU_ARM64_CRYPTO;
 		intrinsics = crypto_aes_methods;
 		intrinsics_size = sizeof (crypto_aes_methods);
@@ -1026,7 +1035,7 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		if (!info)
 			return NULL;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_ADVSIMD) != 0;
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_NEON) != 0;
 
 		switch (info -> id) {
 		case SN_Abs: {

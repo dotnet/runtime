@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <SharedFrameworkName Condition="'$(SharedFrameworkName)' == ''">Microsoft.NETCore.App</SharedFrameworkName>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
@@ -15,7 +19,7 @@
                              LatestRuntimeFrameworkVersion="$(ProductVersion)"
                              RuntimeFrameworkName="$(SharedFrameworkName)"
                              RuntimePackNamePatterns="$(SharedFrameworkName).Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;android-arm64;android-arm;android-x64;android-x86;browser-wasm"
+                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86;browser-wasm;osx-arm64"
                              TargetFramework="$(NetCoreAppCurrent)"
                              TargetingPackName="$(SharedFrameworkName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
@@ -23,7 +27,7 @@
     <KnownAppHostPack Include="$(SharedFrameworkName)" 
                       AppHostPackNamePattern="$(SharedFrameworkName).Host.**RID**"
                       AppHostPackVersion="$(ProductVersion)"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64"
                       TargetFramework="$(NetCoreAppCurrent)"
                       Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
     <KnownCrossgen2Pack Include="$(SharedFrameworkName).Crossgen2"

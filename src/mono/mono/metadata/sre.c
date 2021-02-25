@@ -541,7 +541,7 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 
 	rmb->ilgen = mb->ilgen;
 	MONO_HANDLE_PIN (rmb->ilgen);
-	rmb->rtype = mono_type_get_object_checked (mono_domain_get (), mono_get_void_type (), error);
+	rmb->rtype = mono_type_get_object_checked (mono_get_void_type (), error);
 	return_val_if_nok (error, FALSE);
 	MONO_HANDLE_PIN (rmb->rtype);
 	rmb->parameters = mb->parameters;
@@ -1083,7 +1083,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			if (create_open_instance) {
 				guint32 methodspec_token = mono_image_get_methodspec_token (assembly, method);
 				MonoReflectionMethodHandle canonical_obj =
-					mono_method_get_object_handle (MONO_HANDLE_DOMAIN (obj), method, NULL, error);
+					mono_method_get_object_handle (method, NULL, error);
 				goto_if_nok (error, leave);
 				MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
 				token = methodspec_token;
@@ -1121,7 +1121,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			 * reflected type as NULL (ie, take the declaring type
 			 * of the method) */
 			MonoReflectionMethodHandle canonical_obj =
-				mono_method_get_object_handle (MONO_HANDLE_DOMAIN (obj), method, NULL, error);
+				mono_method_get_object_handle (method, NULL, error);
 			goto_if_nok (error, leave);
 			MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
 			token = methodref_token;
@@ -1143,7 +1143,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			/* Same as methodref: get a canonical object to
 			 * register with the token. */
 			MonoReflectionFieldHandle canonical_obj =
-				mono_field_get_object_handle (MONO_HANDLE_DOMAIN (obj), field->parent, field, error);
+				mono_field_get_object_handle (field->parent, field, error);
 			goto_if_nok (error, leave);
 			MONO_HANDLE_ASSIGN (register_obj, canonical_obj);
 			token = fieldref_token;
@@ -2790,12 +2790,12 @@ mono_marshal_spec_from_builder (MonoImage *image, MonoAssembly *assembly,
 #endif /* !DISABLE_REFLECTION_EMIT */
 
 MonoReflectionMarshalAsAttributeHandle
-mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
+mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass,
 							MonoMarshalSpec *spec, MonoError *error)
 {
 	error_init (error);
 	
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_get_root_domain ());
 	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype;
@@ -2823,7 +2823,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 			goto_if_nok (error, fail);
 
 			if (mtype) {
-				MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, mtype, error);
+				MonoReflectionTypeHandle rt = mono_type_get_object_handle (mtype, error);
 				goto_if_nok (error, fail);
 
 				MONO_HANDLE_SET (minfo, marshal_type_ref, rt);
@@ -3852,7 +3852,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 
-		return mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		return mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 	}
 	/*
 	 * Fields to set in klass:
@@ -3949,7 +3949,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	}
 
 	MonoReflectionTypeHandle res;
-	res = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+	res = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 	goto_if_nok (error, failure_unlocked);
 
 	return res;

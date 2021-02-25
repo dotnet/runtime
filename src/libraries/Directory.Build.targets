@@ -128,11 +128,6 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
-  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(IsSourceProject)' == 'true'">
-    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-  </ItemGroup>
-
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>

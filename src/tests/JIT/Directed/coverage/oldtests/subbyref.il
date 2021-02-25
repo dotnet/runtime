@@ -43,7 +43,8 @@
 	ldloca V_2
 	ldc.i4 1
 	sub
-	call       void [System.Console]System.Console::WriteLine(int32)
+	conv.i8
+	call       void [System.Console]System.Console::WriteLine(int64)
 
 ldc.i4 100
   IL_0038:  ret

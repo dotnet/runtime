@@ -1829,6 +1829,22 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = g_new(ep_char8_t, byte_len + 1);
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -1843,6 +1859,37 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 g_snprintf ((gchar *)str, (gulong)str_len, (const gchar *)format, __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  g_new(ep_char8_t, newStrSize);
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 inline
