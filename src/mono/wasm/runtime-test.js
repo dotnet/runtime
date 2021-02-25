@@ -291,16 +291,10 @@ const IGNORE_PARAM_COUNT = -1;
 var App = {
 	init: function () {
 
-		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
-		var runtime_invoke = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
 		var string_from_js = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
-		var assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
-		var string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'string', ['number']);
-		var string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
-		var unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
@@ -347,10 +341,7 @@ var App = {
 			}
 
 			main_assembly_name = args[1];
-			var app_args = string_array_new (args.length - 2);
-			for (var i = 2; i < args.length; ++i) {
-				obj_array_set (app_args, i - 2, string_from_js (args [i]));
-			}
+			var app_args = args.slice (2);
 
 			var main_argc = args.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
@@ -372,7 +363,7 @@ var App = {
 
 			try {
 				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "o");
 
 				if (isThenable (exit_code))
 				{
