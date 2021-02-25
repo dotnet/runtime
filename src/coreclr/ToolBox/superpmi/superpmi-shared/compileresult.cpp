@@ -749,7 +749,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
 
         // Do platform specific relocations first.
 
-        if (targetArch == SPMI_TARGET_ARCHITECTURE_X86)
+        if ((targetArch == SPMI_TARGET_ARCHITECTURE_X86) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM))
         {
             if (relocType == IMAGE_REL_BASED_HIGHLOW)
             {
