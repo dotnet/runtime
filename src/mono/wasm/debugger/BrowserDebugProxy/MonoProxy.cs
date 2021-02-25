@@ -656,6 +656,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.CallStack = frames;
 
                     }
+                    if (bp.Condition.Length > 0)
+                    {
+                        try {
+                            JObject mono_frame = the_mono_frames.First();
+                            var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
+
+                            JObject retValue = await resolver.Resolve(bp.Condition, token);
+                            if (retValue == null)
+                            {
+                                retValue = await EvaluateExpression.CompileAndRunTheExpression(bp.Condition, resolver, token);
+                            }
+
+                            if (retValue != null)
+                            {
+                                if (retValue["value"].Value<bool>() == false)
+                                {
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    return true;
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{bp.Condition}");
+                        }
+                    }
                 }
                 else if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
                         url.StartsWith("wasm://wasm/", StringComparison.Ordinal)))
@@ -921,7 +947,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
+        internal async Task<Result> GetScopeProperties(SessionId msg_id, int scope_id, CancellationToken token)
         {
             try
             {
@@ -957,9 +983,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, CancellationToken token)
+        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, string condition, CancellationToken token)
         {
-            var bp = new Breakpoint(reqId, location, BreakpointState.Pending);
+            var bp = new Breakpoint(reqId, location, condition, BreakpointState.Pending);
             string asm_name = bp.Location.CliLocation.Method.Assembly.Name;
             uint method_token = bp.Location.CliLocation.Method.Token;
             int il_offset = bp.Location.CliLocation.Offset;
@@ -1092,7 +1118,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();
-                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, token);
+                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
                 // don't add it to the list of locations for this id

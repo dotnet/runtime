@@ -244,6 +244,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RemoteId { get; set; }
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
+        public string Condition { get; private set; }
 
         public static bool TryParseId(string stackId, out int id)
         {
@@ -254,11 +255,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return int.TryParse(stackId.Substring("dotnet:".Length), out id);
         }
 
-        public Breakpoint(string stackId, SourceLocation loc, BreakpointState state)
+        public Breakpoint(string stackId, SourceLocation loc, string condition, BreakpointState state)
         {
             this.StackId = stackId;
             this.Location = loc;
             this.State = state;
+            this.Condition = condition;
         }
     }
 
