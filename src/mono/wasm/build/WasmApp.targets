@@ -88,7 +88,7 @@
 
       <_WasmAssemblyInternal Remove="@(_WasmAssemblyInternal)" />
 
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net6.0" />
     </ItemGroup>
 
@@ -165,15 +165,17 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
-      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\cross\$(PackageRID)\mono-aot-cross$(_ExeExt)</MonoAotCrossCompilerPath>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::EnsureTrailingSlash($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+      <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'cross', $(PackageRID), 'mono-aot-cross$(_ExeExt)'))</MonoAotCrossCompilerPath>
 
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
-      <_WasmIntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)\wasm\'))</_WasmIntermediateOutputPath>
+      <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidDir Condition="!HasTrailingSlash('$(MicrosoftNetCoreAppRuntimePackRidDir)')">$(MicrosoftNetCoreAppRuntimePackRidDir)\</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
     <ItemGroup>
         <_WasmAssemblyInternal Include="@(WasmAssembly)" />
@@ -194,11 +196,11 @@
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native\dotnet.timezones.blat" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
     </ItemGroup>
 
     <WasmAppBuilder
@@ -222,7 +224,7 @@
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
-      <EmccFlagsFile>$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-flags.txt</EmccFlagsFile>
+      <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
     </PropertyGroup>
@@ -249,15 +251,15 @@
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
 
    <!-- ICall table generation -->
-   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmIntermediateOutputPath)/runtime-icall-table.h"' />
+   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmIntermediateOutputPath)runtime-icall-table.h"' />
    <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
-     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)/runtime-icall-table.h"
+     RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)runtime-icall-table.h"
      Assemblies="@(_WasmAssemblyInternal)"
-     OutputPath="$(_WasmIntermediateOutputPath)/icall-table.h" />
+     OutputPath="$(_WasmIntermediateOutputPath)icall-table.h" />
    <PropertyGroup>
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
-     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
-     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
+     <_WasmIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmIncludeDir>
+     <_WasmSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmSrcDir>
    </PropertyGroup>
 
    <ItemGroup>
@@ -274,14 +276,15 @@
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)corebindings.o"/>
+     <_WasmObjectsToBuild SourcePath="$(_WasmSrcDir)%(FileName).c" />
 
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
+     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(FileName)%(Extension)')" />
      <_WasmObjects Include="@(_WasmObjectsToBuild)" />
 
-     <_DotnetJSSrcFile Include="$(_WasmSrcDir)/library_mono.js" />
-     <_DotnetJSSrcFile Include="$(_WasmSrcDir)/binding_support.js" />
-     <_DotnetJSSrcFile Include="$(_WasmSrcDir)/dotnet_support.js" />
-     <_DotnetJSSrcFile Include="$(_WasmSrcDir)/pal_random.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)library_mono.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)binding_support.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)dotnet_support.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
 
      <_BitcodeFile Include="%(_WasmAssemblyInternal.LlvmBitcodeFile)" />
    </ItemGroup>
@@ -305,13 +308,13 @@
    </PropertyGroup>
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "$(_WasmSrcDir)/%(_WasmObjectsToBuild.Filename).c" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_WasmAssemblyInternal->'&quot;%(LlvmBitcodeFile)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)\dotnet.wasm" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)\dotnet.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
     </ItemGroup>
   </Target>
 
@@ -354,7 +357,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion">
-    <ReadLinesFromFile File="$(MicrosoftNetCoreAppRuntimePackRidDir)native\src\emcc-version.txt">
+    <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>
 
