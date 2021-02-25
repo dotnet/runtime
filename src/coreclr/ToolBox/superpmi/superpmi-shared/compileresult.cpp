@@ -766,6 +766,46 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM)
+        {
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
+            switch (relocType)
+            {
+                case IMAGE_REL_BASED_THUMB_MOV32:
+                case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
+                {
+                    INT32 delta  = (INT32)(tmp.target - fixupLocation);
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        PutThumb2Mov32((UINT16*)address, (UINT32)delta);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_BASED_THUMB_BRANCH24:
+                {
+                    INT32 delta = (INT32)(tmp.target - fixupLocation);
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        if (!FitsInThumb2BlRel24(delta))
+                        {
+                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                            delta            = (INT32)(target - fixupLocation);
+                        }
+                        PutThumb2BlRel24((UINT16*)address, delta);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                default:
+                    break;
+            }
+        }
+
         if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
         {
             DWORDLONG fixupLocation = tmp.location;
