@@ -275,3 +275,41 @@ void PutArm64Rel12(UINT32* pCode, INT32 imm12)
     addInstr |= (imm12 << 10);
     *pCode = addInstr;
 }
+
+void PutThumb2Imm16(UINT16* p, UINT16 imm16)
+{
+    USHORT Opcode0 = p[0];
+    USHORT Opcode1 = p[1];
+    Opcode0 &= ~((0xf000 >> 12) | (0x0800 >> 1));
+    Opcode1 &= ~((0x0700 << 4) | (0x00ff << 0));
+    Opcode0 |= (imm16 & 0xf000) >> 12;
+    Opcode0 |= (imm16 & 0x0800) >> 1;
+    Opcode1 |= (imm16 & 0x0700) << 4;
+    Opcode1 |= (imm16 & 0x00ff) << 0;
+    p[0] = Opcode0;
+    p[1] = Opcode1;
+}
+
+void PutThumb2Mov32(UINT16* p, UINT32 imm32)
+{
+    PutThumb2Imm16(p, (UINT16)imm32);
+    PutThumb2Imm16(p + 2, (UINT16)(imm32 >> 16));
+}
+
+void PutThumb2BlRel24(UINT16* p, INT32 imm24)
+{
+    USHORT Opcode0 = p[0];
+    USHORT Opcode1 = p[1];
+    Opcode0 &= 0xF800;
+    Opcode1 &= 0xD000;
+
+    UINT32 S = (imm24 & 0x1000000) >> 24;
+    UINT32 J1 = ((imm24 & 0x0800000) >> 23) ^ S ^ 1;
+    UINT32 J2 = ((imm24 & 0x0400000) >> 22) ^ S ^ 1;
+
+    Opcode0 |= ((imm24 & 0x03FF000) >> 12) | (S << 10);
+    Opcode1 |= ((imm24 & 0x0000FFE) >> 1) | (J1 << 13) | (J2 << 11);
+
+    p[0] = Opcode0;
+    p[1] = Opcode1;
+}

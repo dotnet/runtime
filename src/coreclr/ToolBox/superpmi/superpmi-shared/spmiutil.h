@@ -60,4 +60,7 @@ void PutArm64Rel28(UINT32* pCode, INT32 imm28);
 void PutArm64Rel21(UINT32* pCode, INT32 imm21);
 void PutArm64Rel12(UINT32* pCode, INT32 imm12);
 
+void PutThumb2Mov32(UINT16* p, UINT32 imm32);
+void PutThumb2BlRel24(UINT16* p, INT32 imm24);
+
 #endif // !_SPMIUtil
