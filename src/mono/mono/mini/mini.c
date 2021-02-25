@@ -949,26 +949,6 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 	return mono_assembly_has_skip_verification (assembly);
 }
 
-static void
-mono_dynamic_code_hash_insert (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *ji)
-{
-	if (!domain_jit_info (domain)->dynamic_code_hash)
-		domain_jit_info (domain)->dynamic_code_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (domain_jit_info (domain)->dynamic_code_hash, method, ji);
-}
-
-static MonoJitDynamicMethodInfo*
-mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
-{
-	MonoJitDynamicMethodInfo *res;
-
-	if (domain_jit_info (domain)->dynamic_code_hash)
-		res = (MonoJitDynamicMethodInfo *)g_hash_table_lookup (domain_jit_info (domain)->dynamic_code_hash, method);
-	else
-		res = NULL;
-	return res;
-}
-
 typedef struct {
 	MonoClass *vtype;
 	GList *active, *inactive;
@@ -2147,9 +2127,13 @@ mono_codegen (MonoCompile *cfg)
 		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
 		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
-		mono_domain_lock (cfg->domain);
-		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
-		mono_domain_unlock (cfg->domain);
+
+		MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->dynamic_code_hash)
+			jit_mm->dynamic_code_hash = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (jit_mm->dynamic_code_hash, cfg->method, cfg->dynamic_info);
+		jit_mm_unlock (jit_mm);
 
 		if (mono_using_xdebug)
 			/* See the comment for cfg->code_domain */
@@ -2209,7 +2193,6 @@ mono_codegen (MonoCompile *cfg)
 	mono_arch_save_unwind_info (cfg);
 #endif
 
-#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
 	{
 		MonoJumpInfo *ji;
 		gpointer target;
@@ -2229,21 +2212,14 @@ mono_codegen (MonoCompile *cfg)
 			if (ji->type == MONO_PATCH_INFO_NONE)
 				continue;
 
-			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors, cfg->error);
+			target = mono_resolve_patch_target (cfg->method, cfg->native_code, ji, cfg->run_cctors, cfg->error);
 			if (!is_ok (cfg->error)) {
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 				return;
 			}
-			mono_arch_patch_code_new (cfg, cfg->domain, cfg->native_code, ji, target);
+			mono_arch_patch_code_new (cfg, cfg->native_code, ji, target);
 		}
 	}
-#else
-	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors, cfg->error);
-	if (!is_ok (cfg->error)) {
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-		return;
-	}
-#endif
 
 	if (cfg->method->dynamic) {
 		if (mono_using_xdebug)
@@ -2405,7 +2381,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
-	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 
 	if (COMPILE_LLVM (cfg))
 		jinfo->from_llvm = TRUE;
@@ -3112,7 +3087,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
 	cfg->code_exec_only = (flags & JIT_FLAG_CODE_EXEC_ONLY) != 0;
 	cfg->backend = current_backend;
-	cfg->mem_manager = m_method_get_mem_manager (domain, cfg->method);
+	cfg->jit_mm = jit_mm_for_method (cfg->method);
+	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
 		/* We can't have seq points inside gc critical regions */
@@ -3829,13 +3805,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
 		mono_domain_lock (cfg->domain);
 		mono_jit_info_table_add (cfg->domain, cfg->jit_info);
+		mono_domain_unlock (cfg->domain);
 
-		if (cfg->method->dynamic)
-			mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = cfg->jit_info;
+		if (cfg->method->dynamic) {
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+			MonoJitDynamicMethodInfo *res;
+
+			jit_mm_lock (jit_mm);
+			g_assert (jit_mm->dynamic_code_hash);
+			res = (MonoJitDynamicMethodInfo *)g_hash_table_lookup (jit_mm->dynamic_code_hash, method);
+			jit_mm_unlock (jit_mm);
+			g_assert (res);
+			res->ji = cfg->jit_info;
+		}
 
 		mono_postprocess_patches_after_ji_publish (cfg);
-
-		mono_domain_unlock (cfg->domain);
 	}
 
 #if 0
@@ -4064,7 +4048,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	info = mini_lookup_method (target_domain, method, shared);
 	if (info) {
 		/* We can't use a domain specific method in another domain */
-		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
+		if (target_domain == mono_domain_get ()) {
 			code = info->code_start;
 			discarded_code ++;
 			discarded_jit_time += jit_time;
@@ -4104,7 +4088,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	if (!is_ok (error))
 		return NULL;
 
-	vtable = mono_class_vtable_checked (target_domain, method->klass, error);
+	vtable = mono_class_vtable_checked (method->klass, error);
 	return_val_if_nok (error, NULL);
 
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {

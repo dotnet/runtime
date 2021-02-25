@@ -10,6 +10,9 @@ namespace System.Linq
 {
     public static class Queryable
     {
+        internal const string InMemoryQueryableExtensionMethodsRequiresUnreferencedCode = "Enumerating in-memory collections as IQueryable can require unreferenced code because expressions referencing IQueryable extension methods can get rebound to IEnumerable extension methods. The IEnumerable extension methods could be trimmed causing the application to fail at runtime.";
+
+        [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
             if (source == null)
@@ -17,6 +20,7 @@ namespace System.Linq
             return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
+        [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             if (source == null)
@@ -384,8 +388,29 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Take_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.Take_Int32_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(count)
+                    ));
+        }
+
+        /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
+        /// <param name="source">The sequence to return elements from.</param>
+        /// <param name="range">The range of elements to return, which has start and end indexes either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains the specified <paramref name="range" /> of elements from the <paramref name="source" /> sequence.</returns>
+        [DynamicDependency("Take`1", typeof(Enumerable))]
+        public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, Range range)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Take_Range_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(range)
                     ));
         }
 
@@ -968,7 +993,33 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAt_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.ElementAt_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
+                    ));
+        }
+
+        /// <summary>Returns the element at a specified index in a sequence.</summary>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.
+        /// </exception>
+        /// <returns>The element at the specified position in the <paramref name="source" /> sequence.</returns>
+        [DynamicDependency("ElementAt`1", typeof(Enumerable))]
+        public static TSource ElementAt<TSource>(this IQueryable<TSource> source, Index index)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            if (index.IsFromEnd && index.Value == 0)
+                throw Error.ArgumentOutOfRange(nameof(index));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ElementAt_Index_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(index)
                     ));
         }
@@ -981,7 +1032,30 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAtOrDefault_TSource_2(typeof(TSource)),
+                    CachedReflectionInfo.ElementAtOrDefault_Int32_TSource_2(typeof(TSource)),
+                    source.Expression, Expression.Constant(index)
+                    ));
+        }
+
+        /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="default" /> if index is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.
+        /// </returns>
+        [DynamicDependency("ElementAtOrDefault`1", typeof(Enumerable))]
+        public static TSource? ElementAtOrDefault<TSource>(this IQueryable<TSource> source, Index index)
+        {
+            if (source == null)
+                throw Error.ArgumentNull(nameof(source));
+            return source.Provider.Execute<TSource>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.ElementAtOrDefault_Index_TSource_2(typeof(TSource)),
                     source.Expression, Expression.Constant(index)
                     ));
         }

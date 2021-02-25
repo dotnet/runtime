@@ -184,7 +184,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     pMD->SetStoredMethodSig(pNewSig, cbNewSig);
 
     SigPointer  sigPtr(pNewSig, cbNewSig);
-    ULONG       callConvInfo;
+    uint32_t    callConvInfo;
     IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
 
     if (!(callConvInfo & CORINFO_CALLCONV_HASTHIS))

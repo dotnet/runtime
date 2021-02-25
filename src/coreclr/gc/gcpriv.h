@@ -269,8 +269,8 @@ void GCLog (const char *fmt, ... );
 // Nobody used the logging mechanism that used to be here. If we find ourselves
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
-#define dprintf(l, x)
-//#define dprintf(l,x) STRESS_LOG_VA(x);
+//#define dprintf(l, x)
+#define dprintf(l,x) STRESS_LOG_VA(l,x);
 
 #endif //SIMPLE_DPRINTF
 
@@ -1217,6 +1217,10 @@ public:
     void verify_regions (int gen_number);
     PER_HEAP
     void verify_regions();
+    PER_HEAP_ISOLATED
+    void enter_gc_lock_for_verify_heap();
+    PER_HEAP_ISOLATED
+    void leave_gc_lock_for_verify_heap();
     PER_HEAP
     void verify_heap (BOOL begin_gc_p);
     PER_HEAP

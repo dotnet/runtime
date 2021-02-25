@@ -3,7 +3,6 @@
   <PropertyGroup>
     <WasmAppBuilderTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(NuGetPackageRoot)microsoft.netcore.app.runtime.browser-wasm\$(BundledNETCoreAppPackageVersion)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />

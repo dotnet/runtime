@@ -554,17 +554,16 @@ namespace System.Xml.Linq
 
         public override string GetAttribute(int index)
         {
-            // https://github.com/dotnet/runtime/issues/44287
-            //     We should replace returning null with ArgumentOutOfRangeException
-            //     In case of not interactive state likely we should throw InvalidOperationException
             if (!IsInteractive)
             {
-                return null!;
+                throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             }
+
             if (index < 0)
             {
-                return null!;
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
+
             XElement? e = GetElementInAttributeScope();
             if (e != null)
             {
@@ -584,7 +583,7 @@ namespace System.Xml.Linq
                     } while (a != e.lastAttr);
                 }
             }
-            return null!;
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
         public override string? LookupNamespace(string prefix)

@@ -17,6 +17,8 @@
              Link="Common\Microsoft\Win32\TempRegistryKey.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
+             Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="DelegateSynchronizeInvoke.cs" />
     <Compile Include="FileAssociations.cs" />
     <Compile Include="Helpers.cs" />
@@ -50,5 +52,6 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
+    <ProjectReference Include="LongPath\LongPath.csproj" />
   </ItemGroup>
 </Project>

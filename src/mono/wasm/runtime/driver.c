@@ -466,10 +466,14 @@ mono_wasm_register_bundled_satellite_assemblies ()
 	}
 }
 
+void mono_wasm_link_icu_shim (void);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+
+	mono_wasm_link_icu_shim ();
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);

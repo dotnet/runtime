@@ -423,7 +423,7 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
 
 // To determine the OS version, we are going to use RtlGetVersion API
 // since GetVersion call can be shimmed on Win8.1+.
-typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
+typedef LONG (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
 
 pal::string_t pal::get_current_os_rid_platform()
 {
@@ -434,7 +434,7 @@ pal::string_t pal::get_current_os_rid_platform()
     // Init the buffer
     ZeroMemory(&osinfo, sizeof(osinfo));
     osinfo.dwOSVersionInfoSize = sizeof(osinfo);
-    HMODULE hmodNtdll = LoadLibrary("ntdll.dll");
+    HMODULE hmodNtdll = LoadLibraryA("ntdll.dll");
     if (hmodNtdll != NULL)
     {
         pFuncRtlGetVersion pRtlGetVersion = (pFuncRtlGetVersion)GetProcAddress(hmodNtdll, "RtlGetVersion");
