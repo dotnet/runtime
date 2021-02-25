@@ -10,6 +10,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 using std::string;
 using std::ifstream;
@@ -50,6 +52,17 @@ ReleaseOnDetach::~ReleaseOnDetach()
     }
 
     fflush(stdout);
+
+
+    for (int i = 0; i < 50000; ++i)
+    {
+        if  (_doneFlag != NULL)
+        {
+            break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
 
     if (_doneFlag != NULL)
     {
@@ -113,7 +126,7 @@ HRESULT ReleaseOnDetach::ProfilerAttachComplete()
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
+HRESULT ReleaseOnDetach::ProfilerDetachSucceeded()
 {
     SHUTDOWNGUARD();
 
@@ -122,7 +135,13 @@ HRESULT STDMETHODCALLTYPE ReleaseOnDetach::ProfilerDetachSucceeded()
     return S_OK;
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(void *boolPtr)
+void ReleaseOnDetach::SetBoolPtr(bool *done)
 {
-    ReleaseOnDetach::Instance->SetBoolPtr(boolPtr);
+    assert(done != NULL);
+    _doneFlag = reinterpret_cast<bool *>(done);
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(bool *done)
+{
+    ReleaseOnDetach::Instance->SetBoolPtr(done);
 }

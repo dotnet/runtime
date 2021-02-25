@@ -18,30 +18,27 @@ namespace Profiler.Tests
         static volatile bool _profilerDone = false;
 
         [DllImport("Profiler")]
-        private static extern void PassBoolToProfiler(IntPtr boolPtr);
+        private static extern unsafe void PassBoolToProfiler(bool *done);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void WasteTime()
+        public static void WaitForDetach()
         {
             // Give time for the profiler to detach
             Console.WriteLine("Waiting for profiler to detach...");
             bool profilerSetFlag = false;
-            for (int i = 0; i < 100_000; ++i)
+            for (int i = 0; i < 50_000; ++i)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(1));
                 if (_profilerDone)
                 {
                     profilerSetFlag = true;
-                    break;
+                    return;
                 }
             }
 
-            if (!profilerSetFlag)
-            {
-                Console.WriteLine("Warning: test will fail because the profiler never had its destructor called.");
-            }
+            Console.WriteLine("Warning: test will fail because the profiler never had its destructor called.");
         }
-
+        
         public unsafe static int RunTest(string[] args)
         {
             string profilerName;
@@ -70,9 +67,9 @@ namespace Profiler.Tests
             #pragma warning disable CS0420
             fixed (bool *boolPtr = &_profilerDone)
             {
-                PassBoolToProfiler(new IntPtr(boolPtr));
+                PassBoolToProfiler(boolPtr);
 
-                WasteTime();
+                WaitForDetach();
             }
 
             return 100;

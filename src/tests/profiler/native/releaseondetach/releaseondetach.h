@@ -6,6 +6,7 @@
 #include "../profiler.h"
 
 #include <string>
+#include <atomic>
 
 typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
 
@@ -32,11 +33,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ProfilerAttachComplete();
     virtual HRESULT STDMETHODCALLTYPE ProfilerDetachSucceeded();
 
-    void SetBoolPtr(void *ptr)
-    {
-        assert(ptr != NULL);
-        _doneFlag = reinterpret_cast<bool *>(ptr);
-    }
+    void SetBoolPtr(bool *done);
 
 private:
 
@@ -45,5 +42,5 @@ private:
     IMetaDataDispenserEx* _dispenser;
     std::atomic<int> _failures;
     bool _detachSucceeded;
-    volatile bool *_doneFlag;
+    std::atomic<bool *> _doneFlag;
 };
