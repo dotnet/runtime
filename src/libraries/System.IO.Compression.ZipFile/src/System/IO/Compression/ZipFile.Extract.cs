@@ -12,18 +12,18 @@ namespace System.IO.Compression
     /// <remarks><format type="text/markdown"><![CDATA[
     /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/ZipFile/ZipFile.md)]
     /// ]]></format></remarks>
+    /// <related type="Article" href="/visualstudio/ide/how-to-add-or-remove-references-by-using-the-reference-manager">How to: Add or Remove References By Using the Reference Manager</related>
     public static partial class ZipFile
     {
         /// <summary>Extracts all the files in the specified zip archive to a directory on the file system.</summary>
         /// <param name="sourceArchiveFileName">The path to the archive that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// This method creates the specified directory and all subdirectories. The destination directory cannot already exist. Exceptions related to validating the paths in the `destinationDirectoryName` or `sourceArchiveFileName` parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted. Each extracted file has the same relative path to the directory specified by `destinationDirectoryName` as its source entry has to the root of the archive.
-        /// ## Examples
-        /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive and extracts that content to a new folder. To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <remarks>This method creates the specified directory and all subdirectories. The destination directory cannot already exist. Exceptions related to validating the paths in the <paramref name="destinationDirectoryName" /> or <paramref name="sourceArchiveFileName" /> parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted. Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName" /> as its source entry has to the root of the archive.</remarks>
+        /// <example>This example shows how to create and extract a zip archive by using the <see cref="System.IO.Compression.ZipFile" /> class. It compresses the contents of a folder into a zip archive and extracts that content to a new folder. To use the <see cref="System.IO.Compression.ZipFile" /> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipFile#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program1.cs#1)]
         /// [!code-vb[System.IO.Compression.ZipFile#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program1.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="destinationDirectoryName" /> or <paramref name="sourceArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="destinationDirectoryName" /> or <paramref name="sourceArchiveFileName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">The specified path in <paramref name="destinationDirectoryName" /> or <paramref name="sourceArchiveFileName" /> exceeds the system-defined maximum length.</exception>

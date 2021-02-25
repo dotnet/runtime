@@ -14,15 +14,14 @@ namespace System.IO.Compression
         /// <summary>Extracts an entry in the zip archive to a file.</summary>
         /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The path of the file to create from the contents of the entry. You can  specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// If the destination file already exists, this method does not overwrite it; it throws an <xref:System.IO.IOException> exception. To overwrite an existing file, use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToFile%28System.IO.Compression.ZipArchiveEntry%2Cstring%2Cbool%29> method overload instead.
-        /// The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property.
-        /// You cannot use this method to extract a directory; use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%2A> method instead.
-        /// ## Examples
-        /// The following example shows how to iterate through the contents of a zip archive file and extract files that have a .txt extension.
+        /// <remarks>If the destination file already exists, this method does not overwrite it; it throws an <see cref="System.IO.IOException" /> exception. To overwrite an existing file, use the <see cref="System.IO.Compression.ZipFileExtensions.ExtractToFile(ZipArchiveEntry, string, bool)" /> method overload instead.
+        /// The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property.
+        /// You cannot use this method to extract a directory; use the <see cref="O:System.IO.Compression.ZipFileExtensions.ExtractToDirectory" /> method instead.</remarks>
+        /// <example>The following example shows how to iterate through the contents of a zip archive file and extract files that have a .txt extension.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
         /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="destinationFileName" /> is a zero-length string, contains only white space, or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.
         /// -or-
         /// <paramref name="destinationFileName" /> specifies a directory.</exception>
@@ -51,14 +50,13 @@ namespace System.IO.Compression
         /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The path of the file to create from the contents of the entry. You can specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite"><see langword="true" /> to overwrite an existing file that has the same name as the destination file; otherwise, <see langword="false" />.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property.
-        /// You cannot use this method to extract a directory; use the <xref:System.IO.Compression.ZipFileExtensions.ExtractToDirectory%2A> method instead.
-        /// ## Examples
-        /// The following example shows how to iterate through the contents of a zip archive file, and extract files that have a .txt extension. It overwrites an existing file that has the same name in the destination folder. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
+        /// <remarks>The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property.
+        /// You cannot use this method to extract a directory; use the <see cref="System.IO.Compression.ZipFileExtensions.ExtractToDirectory" /> method instead.</remarks>
+        /// <example>The following example shows how to iterate through the contents of a zip archive file, and extract files that have a .txt extension. It overwrites an existing file that has the same name in the destination folder. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program2.cs#2)]
         /// [!code-vb[System.IO.Compression.ZipArchive#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program2.vb#2)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="destinationFileName" /> is a zero-length string, contains only white space, or contains one or more invalid characters as defined by <see cref="System.IO.Path.InvalidPathChars" />.
         /// -or-
         /// <paramref name="destinationFileName" /> specifies a directory.</exception>

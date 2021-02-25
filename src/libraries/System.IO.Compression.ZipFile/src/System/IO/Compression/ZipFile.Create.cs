@@ -12,18 +12,18 @@ namespace System.IO.Compression
     /// <remarks><format type="text/markdown"><![CDATA[
     /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/ZipFile/ZipFile.md)]
     /// ]]></format></remarks>
+    /// <related type="Article" href="/visualstudio/ide/how-to-add-or-remove-references-by-using-the-reference-manager">How to: Add or Remove References By Using the Reference Manager</related>
     public static partial class ZipFile
     {
         /// <summary>Opens a zip archive for reading at the specified path.</summary>
         /// <param name="archiveFileName">The path to the archive to open, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <returns>The opened zip archive.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// This method is equivalent to calling the <xref:System.IO.Compression.ZipFile.Open%2A> method and setting the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read>. The archive is opened with <xref:System.IO.FileMode.Open?displayProperty=nameWithType> as the file mode value. If the archive does not exist, a <xref:System.IO.FileNotFoundException> exception is thrown.
-        /// ## Examples
-        /// The following example shows how to open a zip archive for reading.
+        /// <remarks>This method is equivalent to calling the <see cref="O:System.IO.Compression.ZipFile.Open" /> method and setting the `mode` parameter to <see cref="System.IO.Compression.ZipArchiveMode.Read" />. The archive is opened with <see cref="System.IO.FileMode.Open" /> as the file mode value. If the archive does not exist, a <see cref="System.IO.FileNotFoundException" /> exception is thrown.</remarks>
+        /// <example>The following example shows how to open a zip archive for reading.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program1.cs#1)]
         /// [!code-vb[System.IO.Compression.ZipArchive#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program1.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="archiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="archiveFileName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">In <paramref name="archiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
@@ -43,15 +43,14 @@ namespace System.IO.Compression
         /// <param name="archiveFileName">The path to the archive to open, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="mode">One of the enumeration values that specifies the actions which are allowed on the entries in the opened archive.</param>
         /// <returns>The opened zip archive.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read>, the archive is opened with <xref:System.IO.FileMode.Open> from the <xref:System.IO.FileMode> enumeration as the file mode value. If the archive does not exist, a <xref:System.IO.FileNotFoundException> exception is thrown. Setting the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Read> is equivalent to calling the <xref:System.IO.Compression.ZipFile.OpenRead%2A> method.
-        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Create>, the archive is opened with <xref:System.IO.FileMode.CreateNew?displayProperty=nameWithType> as the file mode value. If the archive already exists, an <xref:System.IO.IOException> is thrown.
-        /// When you set the `mode` parameter to <xref:System.IO.Compression.ZipArchiveMode.Update>,  the archive is opened with <xref:System.IO.FileMode.OpenOrCreate?displayProperty=nameWithType> as the file mode value. If the archive exists, it is opened. The existing entries can be modified and new entries can be created. If the archive does not exist, a new archive is created; however, creating a zip archive in <xref:System.IO.Compression.ZipArchiveMode.Update> mode is not as efficient as creating it in <xref:System.IO.Compression.ZipArchiveMode.Create> mode.
-        /// ## Examples
-        /// The following example shows how to open a zip archive in the update mode and add an entry to the archive.
+        /// <remarks>When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Read" />, the archive is opened with <see cref="System.IO.FileMode.Open" /> from the <see cref="System.IO.FileMode" /> enumeration as the file mode value. If the archive does not exist, a <see cref="System.IO.FileNotFoundException" /> exception is thrown. Setting the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Read" /> is equivalent to calling the <see cref="System.IO.Compression.ZipFile.OpenRead" /> method.
+        /// When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Create" />, the archive is opened with <see cref="System.IO.FileMode.CreateNew" /> as the file mode value. If the archive already exists, an <see cref="System.IO.IOException" /> is thrown.
+        /// When you set the <paramref name="mode" /> parameter to <see cref="System.IO.Compression.ZipArchiveMode.Update" />,  the archive is opened with <see cref="System.IO.FileMode.OpenOrCreate" /> as the file mode value. If the archive exists, it is opened. The existing entries can be modified and new entries can be created. If the archive does not exist, a new archive is created; however, creating a zip archive in <see cref="System.IO.Compression.ZipArchiveMode.Update" /> mode is not as efficient as creating it in <see cref="System.IO.Compression.ZipArchiveMode.Create" /> mode.</remarks>
+        /// <example>The following example shows how to open a zip archive in the update mode and add an entry to the archive.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
         /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="archiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="archiveFileName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">In <paramref name="archiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
@@ -157,15 +156,14 @@ namespace System.IO.Compression
         /// <summary>Creates a zip archive that contains the files and directories from the specified directory.</summary>
         /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="destinationArchiveFileName">The path of the archive to be created, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. This method overload does not include the base directory in the archive and does not allow you to specify a compression level. If you want to include the base directory or specify a compression level, call the <xref:System.IO.Compression.ZipFile.CreateFromDirectory%28string%2Cstring%2CSystem.IO.Compression.CompressionLevel%2Cbool%29> method overload.
-        /// If the archive already exists, an <xref:System.IO.IOException> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
-        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <xref:System.IO.IOException> exception.
-        /// ## Examples
-        /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <remarks>The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. This method overload does not include the base directory in the archive and does not allow you to specify a compression level. If you want to include the base directory or specify a compression level, call the <see cref="System.IO.Compression.ZipFile.CreateFromDirectory(string, string, CompressionLevel, bool)" /> method overload.
+        /// If the archive already exists, an <see cref="System.IO.IOException" /> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="System.IO.IOException" /> exception.</remarks>
+        /// <example>This example shows how to create and extract a zip archive by using the <see cref="System.IO.Compression.ZipFile" /> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. To use the <see cref="System.IO.Compression.ZipFile" /> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipFile#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program1.cs#1)]
         /// [!code-vb[System.IO.Compression.ZipFile#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program1.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">In <paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>
@@ -189,15 +187,14 @@ namespace System.IO.Compression
         /// <param name="destinationArchiveFileName">The path of the archive to be created, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
         /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. Use this method overload to specify the compression level and whether to include the base directory in the archive.
-        /// If the archive already exists, an <xref:System.IO.IOException> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
-        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <xref:System.IO.IOException> exception.
-        /// ## Examples
-        /// This example shows how to create and extract a zip archive by using the <xref:System.IO.Compression.ZipFile> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. When compressing the archive, the base directory is included and the compression level is set to emphasize the speed of the operation over efficiency. To use the <xref:System.IO.Compression.ZipFile> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <remarks>The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created. Use this method overload to specify the compression level and whether to include the base directory in the archive.
+        /// If the archive already exists, an <see cref="System.IO.IOException" /> exception is thrown. If an entry with the specified name already exists in the archive, a second entry is created with an identical name.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="System.IO.IOException" /> exception.</remarks>
+        /// <example>This example shows how to create and extract a zip archive by using the <see cref="System.IO.Compression.ZipFile" /> class. It compresses the contents of a folder into a zip archive, and then extracts that content to a new folder. When compressing the archive, the base directory is included and the compression level is set to emphasize the speed of the operation over efficiency. To use the <see cref="System.IO.Compression.ZipFile" /> class, you must reference the `System.IO.Compression.FileSystem` assembly in your project.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipFile#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.zipfile/cs/program2.cs#2)]
         /// [!code-vb[System.IO.Compression.ZipFile#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.zipfile/vb/program2.vb#2)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">In <paramref name="sourceDirectoryName" /> or <paramref name="destinationArchiveFileName" />, the specified path, file name, or both exceed the system-defined maximum length.</exception>

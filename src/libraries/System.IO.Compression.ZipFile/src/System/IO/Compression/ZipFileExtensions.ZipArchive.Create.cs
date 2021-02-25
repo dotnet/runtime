@@ -17,14 +17,13 @@ namespace System.IO.Compression
         /// <param name="sourceFileName">The path to the file to be archived. You can specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="entryName">The name of the entry to create in the zip archive.</param>
         /// <returns>A wrapper for the new entry in the zip archive.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The new entry in the archive contains the contents of the file specified by `sourceFileName`. If an entry with the specified name (`entryName`) already exists in the archive, a second entry is created with an identical name. The <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property of the entry is set to the last time the file on the file system was changed.
-        /// When `ZipArchiveMode.Update` is present, the size limit of an entry is limited to <xref:int.MaxValue?displayProperty=nameWithType>. This limit is because update mode uses a <xref:System.IO.MemoryStream> internally to allow the seeking required when updating an archive, and <xref:System.IO.MemoryStream> has a maximum equal to the size of an int.
-        /// ## Examples
-        /// The following example shows how to create a new entry in a zip archive from an existing file.
+        /// <remarks>The new entry in the archive contains the contents of the file specified by <paramref name="sourceFileName" />. If an entry with the specified name (<paramref name="entryName" />) already exists in the archive, a second entry is created with an identical name. The <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property of the entry is set to the last time the file on the file system was changed.
+        /// When `ZipArchiveMode.Update` is present, the size limit of an entry is limited to <see cref="int.MaxValue" />. This limit is because update mode uses a <see cref="System.IO.MemoryStream" /> internally to allow the seeking required when updating an archive, and <see cref="System.IO.MemoryStream" /> has a maximum equal to the size of an int.</remarks>
+        /// <example>The following example shows how to create a new entry in a zip archive from an existing file.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
         /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="sourceFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryName" /> is <see cref="string.Empty" />.</exception>
@@ -49,14 +48,13 @@ namespace System.IO.Compression
         /// <param name="entryName">The name of the entry to create in the zip archive.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
         /// <returns>A wrapper for the new entry in the zip archive.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The new entry in the archive contains the contents of the file specified by `sourceFileName`. If an entry with the specified name (`entryName`) already exists in the archive, a second entry is created with an identical name. The <xref:System.IO.Compression.ZipArchiveEntry.LastWriteTime%2A> property of the entry is set to the last time the file on the file system was changed.
-        /// When `ZipArchiveMode.Update` is present, the size limit of an entry is limited to <xref:int.MaxValue?displayProperty=nameWithType>. This limit is because update mode uses a <xref:System.IO.MemoryStream> internally to allow the seeking required when updating an archive, and <xref:System.IO.MemoryStream> has a maximum equal to the size of an int.
-        /// ## Examples
-        /// The following example shows how to create a new entry in a zip archive from an existing file, and specify the compression level.
+        /// <remarks>The new entry in the archive contains the contents of the file specified by <paramref name="sourceFileName" />. If an entry with the specified name (<paramref name="entryName" />) already exists in the archive, a second entry is created with an identical name. The <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property of the entry is set to the last time the file on the file system was changed.
+        /// When `ZipArchiveMode.Update` is present, the size limit of an entry is limited to <see cref="int.MaxValue" />. This limit is because update mode uses a <see cref="System.IO.MemoryStream" /> internally to allow the seeking required when updating an archive, and <see cref="System.IO.MemoryStream" /> has a maximum equal to the size of an int.</remarks>
+        /// <example>The following example shows how to create a new entry in a zip archive from an existing file, and specify the compression level.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#4](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program4.cs#4)]
         /// [!code-vb[System.IO.Compression.ZipArchive#4](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program4.vb#4)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="sourceFileName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryName" /> is <see cref="string.Empty" />.</exception>

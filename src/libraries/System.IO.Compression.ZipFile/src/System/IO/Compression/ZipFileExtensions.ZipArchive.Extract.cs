@@ -14,13 +14,12 @@ namespace System.IO.Compression
         /// <summary>Extracts all the files in the zip archive to a directory on the file system.</summary>
         /// <param name="source">The zip archive to extract files from.</param>
         /// <param name="destinationDirectoryName">The path to the directory to place the extracted files in. You can specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// This method creates the directory specified by `destinationDirectoryName`. If the destination directory already exists, this method does not overwrite it; it throws an <xref:System.IO.IOException> exception. The method also creates subdirectories that reflect the hierarchy in the zip archive. If an error occurs during extraction, the archive remains partially extracted. Each extracted file has the same relative path to the directory specified by `destinationDirectoryName` as its source entry has to the root of the archive.
-        /// ## Examples
-        /// The following example shows how to create a new entry in a zip archive from an existing file, and extract the archive to a new directory. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
+        /// <remarks>This method creates the directory specified by <paramref name="destinationDirectoryName" />. If the destination directory already exists, this method does not overwrite it; it throws an <see cref="System.IO.IOException" /> exception. The method also creates subdirectories that reflect the hierarchy in the zip archive. If an error occurs during extraction, the archive remains partially extracted. Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName" /> as its source entry has to the root of the archive.</remarks>
+        /// <example>The following example shows how to create a new entry in a zip archive from an existing file, and extract the archive to a new directory. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
         /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ArgumentException"><paramref name="destinationDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.</exception>
         /// <exception cref="System.ArgumentNullException"><paramref name="destinationDirectoryName" /> is <see langword="null" />.</exception>
         /// <exception cref="System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
