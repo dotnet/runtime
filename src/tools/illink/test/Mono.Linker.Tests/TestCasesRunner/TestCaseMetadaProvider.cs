@@ -37,8 +37,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
 				KeepDebugMembers = GetOptionAttributeValue (nameof (SetupLinkerKeepDebugMembersAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
-				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null),
-				UserAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerUserActionAttribute), null),
+				TrimMode = GetOptionAttributeValue<string> (nameof (SetupLinkerTrimModeAttribute), null),
+				DefaultAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerDefaultActionAttribute), null),
 				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),
 				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
 				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
@@ -227,13 +227,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
-		public virtual IEnumerable<NPath> GetExtraLinkerSearchDirectories ()
+		public virtual IEnumerable<NPath> GetExtraLinkerReferences ()
 		{
-#if NETCOREAPP
-			yield return Path.GetDirectoryName (typeof (object).Assembly.Location).ToNPath ();
-#else
-			yield break;
-#endif
+			var netcoreappDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+			foreach (var assembly in Directory.EnumerateFiles (netcoreappDir)) {
+				if (Path.GetExtension (assembly) != ".dll")
+					continue;
+				var assemblyName = Path.GetFileNameWithoutExtension (assembly);
+				if (assemblyName.Contains ("Native"))
+					continue;
+				if (assemblyName.StartsWith ("Microsoft") ||
+					assemblyName.StartsWith ("System") ||
+					assemblyName == "mscorlib" || assemblyName == "netstandard")
+					yield return assembly.ToNPath ();
+			}
 		}
 
 		public virtual bool IsIgnored (out string reason)

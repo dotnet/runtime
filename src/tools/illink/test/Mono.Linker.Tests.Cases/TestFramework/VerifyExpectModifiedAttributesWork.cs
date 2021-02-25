@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework
 #endif
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
 	// Keep framework code that calls EventSource methods like OnEventCommand
-	[SetupLinkerCoreAction ("skip")]
+	[SetupLinkerTrimMode ("skip")]
 	// Used to avoid different compilers generating different IL which can mess up the instruction asserts
 	[SetupCompileArgument ("/optimize+")]
 	public class VerifyExpectModifiedAttributesWork

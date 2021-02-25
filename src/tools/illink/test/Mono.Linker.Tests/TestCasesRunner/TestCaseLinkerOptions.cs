@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestCaseLinkerOptions
 	{
-		public string CoreAssembliesAction;
-		public string UserAssembliesAction;
+		public string TrimMode;
+		public string DefaultAssembliesAction;
 		public List<KeyValuePair<string, string>> AssembliesAction = new List<KeyValuePair<string, string>> ();
 
 		public string Il8n;

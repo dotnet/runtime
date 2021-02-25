@@ -200,9 +200,6 @@ namespace Mono.Linker.Steps
 		{
 			InitializeCorelibAttributeXml ();
 
-			foreach (AssemblyDefinition assembly in _context.GetAssemblies ())
-				InitializeAssembly (assembly);
-
 			ProcessMarkedPending ();
 		}
 
@@ -226,13 +223,6 @@ namespace Mono.Linker.Steps
 				_context.CustomAttributes.PrimaryAttributeInfo.AddCustomAttributes (provider, annotations);
 			foreach (var (provider, annotations) in xmlInfo.InternalAttributes)
 				_context.CustomAttributes.PrimaryAttributeInfo.AddInternalAttributes (provider, annotations);
-		}
-
-		protected virtual void InitializeAssembly (AssemblyDefinition assembly)
-		{
-			var action = _context.Annotations.GetAction (assembly);
-			if (IsFullyPreservedAction (action))
-				MarkAssembly (assembly, new DependencyInfo (DependencyKind.AssemblyAction, action));
 		}
 
 		void Complete ()
@@ -386,7 +376,7 @@ namespace Mono.Linker.Steps
 			// Fully mark any assemblies with copy/save action.
 
 			// Unresolved references could get the copy/save action if this is the default action.
-			bool scanReferences = IsFullyPreservedAction (_context.CoreAction) || IsFullyPreservedAction (_context.UserAction);
+			bool scanReferences = IsFullyPreservedAction (_context.TrimAction) || IsFullyPreservedAction (_context.DefaultAction);
 
 			if (!scanReferences) {
 				// Unresolved references could get the copy/save action if it was set explicitly
@@ -1312,7 +1302,7 @@ namespace Mono.Linker.Steps
 
 			MarkExportedTypesTarget.ProcessAssembly (assembly, _context);
 
-			if (IsFullyPreservedAction (_context.Annotations.GetAction (assembly))) {
+			if (ProcessReferencesStep.IsFullyPreservedAction (_context.Annotations.GetAction (assembly))) {
 				MarkEntireAssembly (assembly);
 				return;
 			}

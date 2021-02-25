@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[Reference ("System.dll")]
 	// System.Core.dll is referenced by System.dll in the .NET FW class libraries. Our GetType reflection marking code

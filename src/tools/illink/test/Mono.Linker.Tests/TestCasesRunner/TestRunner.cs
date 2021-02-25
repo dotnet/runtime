@@ -114,9 +114,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var rspFile in sandbox.ResponseFiles)
 				builder.AddResponseFile (rspFile);
 
-			builder.AddSearchDirectory (sandbox.InputDirectory);
-			foreach (var extraSearchDir in metadataProvider.GetExtraLinkerSearchDirectories ())
-				builder.AddSearchDirectory (extraSearchDir);
+			foreach (var inputReference in sandbox.InputDirectory.Files ()) {
+				var ext = inputReference.ExtensionWithDot;
+				if (ext == ".dll" || ext == ".exe")
+					builder.AddReference (inputReference);
+			}
+			var coreAction = caseDefinedOptions.TrimMode ?? "skip";
+			foreach (var extraReference in metadataProvider.GetExtraLinkerReferences ()) {
+				builder.AddReference (extraReference);
+				builder.AddAssemblyAction (coreAction, extraReference.FileNameWithoutExtension);
+			}
 
 			builder.ProcessOptions (caseDefinedOptions);
 

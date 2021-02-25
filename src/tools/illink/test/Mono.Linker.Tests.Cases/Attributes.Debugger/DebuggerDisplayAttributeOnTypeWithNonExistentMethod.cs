@@ -7,7 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
 #if !NETCOREAPP
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168

@@ -7,7 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.ComponentModel
 {
 	// Keep framework code that calls TypeConverter methods like ConvertFrom
-	[SetupLinkerCoreAction ("skip")]
+	[SetupLinkerTrimMode ("skip")]
 	[Reference ("System.dll")]
 	public class TypeConverterOnMembers
 	{

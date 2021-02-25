@@ -19,6 +19,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (directory.ToString ());
 		}
 
+		public virtual void AddReference (NPath path)
+		{
+			Append ("-reference");
+			Append (path.ToString ());
+		}
+
 		public virtual void AddOutputDirectory (NPath directory)
 		{
 			Append ("-o");
@@ -36,15 +42,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append ($"@{path}");
 		}
 
-		public virtual void AddCoreLink (string value)
+		public virtual void AddTrimMode (string value)
 		{
-			Append ("-c");
+			Append ("--trim-mode");
 			Append (value);
 		}
 
-		public virtual void AddUserLink (string value)
+		public virtual void AddDefaultAction (string value)
 		{
-			Append ("-u");
+			Append ("--action");
 			Append (value);
 		}
 
@@ -110,7 +116,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddAssemblyAction (string action, string assembly)
 		{
-			Append ("-p");
+			Append ("--action");
 			Append (action);
 			Append (assembly);
 		}
@@ -188,13 +194,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void ProcessOptions (TestCaseLinkerOptions options)
 		{
-			if (options.CoreAssembliesAction != null)
-				AddCoreLink (options.CoreAssembliesAction);
-			else
-				AddCoreLink ("skip");
+			if (options.TrimMode != null)
+				AddTrimMode (options.TrimMode);
 
-			if (options.UserAssembliesAction != null)
-				AddUserLink (options.UserAssembliesAction);
+			if (options.DefaultAssembliesAction != null)
+				AddDefaultAction (options.DefaultAssembliesAction);
 
 			if (options.AssembliesAction != null) {
 				foreach (var entry in options.AssembliesAction)

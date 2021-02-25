@@ -261,6 +261,39 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--action": {
+							AssemblyAction? action = null;
+							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
+								return -1;
+
+							if (action == null)
+								return -1;
+
+							string assemblyName = GetNextStringValue ();
+							if (assemblyName == null) {
+								context.DefaultAction = action.Value;
+								continue;
+							}
+
+							if (!IsValidAssemblyName (assemblyName)) {
+								context.LogError ($"Invalid assembly name '{assemblyName}'", 1036);
+								return -1;
+							}
+
+							context.RegisterAssemblyAction (assemblyName, action.Value);
+							continue;
+						}
+					case "--trim-mode": {
+							AssemblyAction? action = null;
+							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
+								return -1;
+
+							if (action == null)
+								return -1;
+
+							context.TrimAction = action.Value;
+							continue;
+						}
 					case "--custom-step":
 						if (!GetStringParam (token, l => custom_steps.Push (l)))
 							return -1;
@@ -493,47 +526,6 @@ namespace Mono.Linker
 							return -1;
 
 						continue;
-					case "c": {
-							AssemblyAction? action = null;
-							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
-								return -1;
-
-							if (action == null)
-								return -1;
-
-							context.CoreAction = action.Value;
-							continue;
-						}
-					case "u": {
-							AssemblyAction? action = null;
-							if (!GetStringParam (token, l => action = ParseAssemblyAction (l)))
-								return -1;
-
-							if (action == null)
-								return -1;
-
-							context.UserAction = action.Value;
-							continue;
-						}
-					case "p": {
-							if (arguments.Count < 2) {
-								ErrorMissingArgument (token);
-								return -1;
-							}
-
-							var action = ParseAssemblyAction (arguments.Dequeue ());
-							if (action == null)
-								return -1;
-
-							string assemblyName = arguments.Dequeue ();
-							if (!IsValidAssemblyName (assemblyName)) {
-								context.LogError ($"Invalid assembly name '{assemblyName}'", 1036);
-								return -1;
-							}
-
-							context.RegisterAssemblyAction (assemblyName, action.Value);
-							continue;
-						}
 					case "t":
 						context.KeepTypeForwarderOnlyAssemblies = true;
 						continue;
@@ -1045,8 +1037,8 @@ namespace Mono.Linker
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
 		{
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger ()) {
-				CoreAction = AssemblyAction.Link,
-				UserAction = AssemblyAction.Link,
+				TrimAction = AssemblyAction.Link,
+				DefaultAction = AssemblyAction.Link,
 				OutputDirectory = "output",
 			};
 		}
@@ -1086,15 +1078,15 @@ namespace Mono.Linker
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
-			Console.WriteLine ("  -c ACTION           Sets action for all framework assemblies. Defaults to 'link'");
-			Console.WriteLine ("                        copy: Analyze whole assembly and save it to the output");
-			Console.WriteLine ("                        copyused: Same as copy but only for assemblies which are needed");
-			Console.WriteLine ("                        link: Remove any unused IL or metadata and optimizes the assembly");
-			Console.WriteLine ("                        skip: Do not process the assembly");
-			Console.WriteLine ("                        addbypassngen: Add BypassNGenAttribute to unused methods");
-			Console.WriteLine ("                        addbypassngenused: Same as addbypassngen but unused assemblies are removed");
-			Console.WriteLine ("  -u ACTION           Sets action for any user assembly. Defaults to 'link'");
-			Console.WriteLine ("  -p ACTION ASM       Overrides the default action for specific assembly name");
+			Console.WriteLine ("  --trim-mode ACTION  Sets action for assemblies annotated with IsTrimmable attribute. Defaults to 'link'");
+			Console.WriteLine ("                          copy: Analyze whole assembly and save it to the output");
+			Console.WriteLine ("                          copyused: Same as copy but only for assemblies which are needed");
+			Console.WriteLine ("                          link: Remove any unused IL or metadata and optimizes the assembly");
+			Console.WriteLine ("                          skip: Do not process the assembly");
+			Console.WriteLine ("                          addbypassngen: Add BypassNGenAttribute to unused methods");
+			Console.WriteLine ("                          addbypassngenused: Same as addbypassngen but unused assemblies are removed");
+			Console.WriteLine ("  --action ACTION       Sets action for assemblies that have no IsTrimmable attribute. Defaults to 'link'");
+			Console.WriteLine ("  --action ACTION ASM   Overrides the default action for specific assembly name");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Advanced Options");
@@ -1168,6 +1160,7 @@ namespace Mono.Linker
 		static Pipeline GetStandardPipeline ()
 		{
 			Pipeline p = new Pipeline ();
+			p.AppendStep (new ProcessReferencesStep ());
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new RemoveResourcesStep ());
 			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());

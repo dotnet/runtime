@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	// link - Forwarder.dll and Implementation.dll
 	// copy - this (test.dll) assembly
 
-	[SetupLinkerUserAction ("link")]
+	[SetupLinkerDefaultAction ("link")]
 	[SetupLinkerAction ("copy", "test")]
 	[KeepTypeForwarderOnlyAssemblies ("false")]
 

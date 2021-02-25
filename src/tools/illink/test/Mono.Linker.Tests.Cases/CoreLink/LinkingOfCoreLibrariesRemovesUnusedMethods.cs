@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 #if NETCOREAPP
 	[IgnoreTestCase("Not important for .NET Core build")]
 #endif
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
 	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (Stack), ".ctor(System.Int32)", "Pop()", "Push(System.Object)")]

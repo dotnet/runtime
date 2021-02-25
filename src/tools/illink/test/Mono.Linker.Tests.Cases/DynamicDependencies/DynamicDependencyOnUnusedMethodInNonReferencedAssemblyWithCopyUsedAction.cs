@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
-	[SetupLinkerUserAction ("copyused")]
+	[SetupLinkerDefaultAction ("copyused")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DynamicDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs" }, addAsReference: false)]
 	[RemovedAssembly ("library.dll")]
 	public class DynamicDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction

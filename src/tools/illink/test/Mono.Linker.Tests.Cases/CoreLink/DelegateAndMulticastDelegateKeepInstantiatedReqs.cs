@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	/// <summary>
 	/// Delegate and is created from 
 	/// </summary>
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[KeptBaseOnTypeInAssembly (PlatformAssemblies.CoreLib, typeof (MulticastDelegate), PlatformAssemblies.CoreLib, typeof (Delegate))]
 
 	// Check a couple override methods to verify they were not removed

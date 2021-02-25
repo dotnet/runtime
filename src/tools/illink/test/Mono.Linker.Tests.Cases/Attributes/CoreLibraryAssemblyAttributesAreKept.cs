@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes
 {
 	[Reference ("System.dll")]
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	// System.dll referenced by a dynamically (for example in TypeConverterAttribute on IComponent)
 	// has unresolved references.
 	[SetupLinkerArgument ("--skip-unresolved", "true")]

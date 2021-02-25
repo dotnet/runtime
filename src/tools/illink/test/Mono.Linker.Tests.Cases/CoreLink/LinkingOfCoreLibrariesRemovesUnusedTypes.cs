@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 #if NETCOREAPP
 	[IgnoreTestCase("Not important for .NET Core build")]
 #endif
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[Reference ("System.dll")]
 
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
