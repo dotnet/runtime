@@ -269,7 +269,7 @@ namespace System.Net.Http
         {
             // Only load response trailers if:
             // 1. WINHTTP_QUERY_FLAG_TRAILERS is supported by the OS
-            // 2. HTTP/2 or later
+            // 2. HTTP/2 or later (WINHTTP_QUERY_FLAG_TRAILERS does not work with HTTP/1.1)
             // 3. Response trailers not already loaded
             if (!WinHttpTrailersHelper.OsSupportsTrailers || _responseMessage.Version < WinHttpHandler.HttpVersion20 || _readTrailingHeaders)
             {
