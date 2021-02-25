@@ -211,10 +211,10 @@ namespace System
             DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public MemberInfo[] GetMember(string name) => GetMember(name, Type.DefaultLookup);
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public virtual MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => GetMember(name, MemberTypes.All, bindingAttr);
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public virtual MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [DynamicallyAccessedMembers(
@@ -226,7 +226,7 @@ namespace System
             DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public MemberInfo[] GetMembers() => GetMembers(Type.DefaultLookup);
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public abstract MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -567,7 +567,10 @@ namespace System
         public static readonly MemberFilter FilterNameIgnoreCase = (m, c) => FilterNameImpl(m, c!, StringComparison.OrdinalIgnoreCase);
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-        internal const DynamicallyAccessedMemberTypes MemberAnnotations = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+        // DynamicallyAccessedMemberTypes.All keeps more data than what a member can use, it will keep info about
+        // interfaces and nested types as a whole (the nested type and all its members). Instead this GetAllMembers
+        // constant will only keep the nested types body but not the members
+        internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
             DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |

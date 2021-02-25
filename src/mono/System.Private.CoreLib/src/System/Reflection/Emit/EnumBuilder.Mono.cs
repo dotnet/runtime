@@ -306,13 +306,13 @@ namespace System.Reflection.Emit
             return _tb.GetInterfaces();
         }
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             return _tb.GetMember(name, type, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             return _tb.GetMembers(bindingAttr);

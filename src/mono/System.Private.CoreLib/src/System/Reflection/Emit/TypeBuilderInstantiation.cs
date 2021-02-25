@@ -456,7 +456,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
-        [DynamicallyAccessedMembers(MemberAnnotations)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException();
