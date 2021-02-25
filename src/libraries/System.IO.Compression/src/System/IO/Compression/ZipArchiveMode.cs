@@ -3,29 +3,26 @@
 
 namespace System.IO.Compression
 {
+    /// <summary>Specifies values for interacting with zip archive entries.</summary>
+    /// <remarks>When you set the mode to Read, the underlying file or stream must support reading, but does not have to support seeking. If the underlying file or stream supports seeking, the files are read from the archive as they are requested. If the underlying file or stream does not support seeking, the entire archive is held in memory.
+    /// When you set the mode to Create, the underlying file or stream must support writing, but does not have to support seeking. Each entry in the archive can be opened only once for writing. If you create a single entry, the data is written to the underlying stream or file as soon as it is available. If you create multiple entries, such as by calling the <see cref="System.IO.Compression.ZipFile.CreateFromDirectory" /> method, the data is written to the underlying stream or file after all the entries are created.
+    /// When you set the mode to Update, the underlying file or stream must support reading, writing, and seeking. The content of the entire archive is held in memory, and no data is written to the underlying file or stream until the archive is disposed.
+    /// The following methods include a parameter named `mode` that lets you specify the archive mode:
+    /// -   <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%2Cbool%29" />
+    /// -   <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%29" />
+    /// -   <see cref="System.IO.Compression.ZipFile.Open%28string%2CSystem.IO.Compression.ZipArchiveMode%29" /></remarks>
+    /// <example>The following example shows how to specify a `ZipArchiveMode` value when creating a <see cref="System.IO.Compression.ZipArchive" /> object.
+    /// <format type="text/markdown"><![CDATA[
+    /// [!code-csharp[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/cs/program1.cs#1)]
+    /// [!code-vb[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/vb/program1.vb#1)]
+    /// ]]></format></example>
     public enum ZipArchiveMode
     {
-        /// <summary>
-        /// Only reading entries from the archive is permitted.
-        /// If the underlying file or stream is seekable, then files will be read from the archive on-demand as they are requested.
-        /// If the underlying file or stream is not seekable, the entire archive will be held in memory.
-        /// Requires that the underlying file or stream is readable.
-        /// </summary>
+        /// <summary>Only reading archive entries is permitted.</summary>
         Read,
-        /// <summary>
-        /// Only supports the creation of new archives.
-        /// Only writing to newly created entries in the archive is permitted.
-        /// Each entry in the archive can only be opened for writing once.
-        /// If only one entry is written to at a time, data will be written to the underlying stream or file as soon as it is available.
-        /// The underlying stream must be writable, but need not be seekable.
-        /// </summary>
+        /// <summary>Only creating new archive entries is permitted.</summary>
         Create,
-        /// <summary>
-        /// Reading and writing from entries in the archive is permitted.
-        /// Requires that the contents of the entire archive be held in memory.
-        /// The underlying file or stream must be readable, writable and seekable.
-        /// No data will be written to the underlying file or stream until the archive is disposed.
-        /// </summary>
+        /// <summary>Both read and write operations are permitted for archive entries.</summary>
         Update
     }
 }
