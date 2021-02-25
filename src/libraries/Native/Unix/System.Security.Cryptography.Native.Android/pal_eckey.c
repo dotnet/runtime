@@ -47,7 +47,6 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
 
 EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 {
-    LOG_DEBUG("Creating curve from oid '%s'", oid);
     JNIEnv* env = GetJNIEnv();
 
     // Older versions of Android don't support mapping an OID to a curve name,
@@ -108,23 +107,18 @@ EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 
     if (CheckJNIExceptions(env))
     {
-        LOG_DEBUG("Failed to create curve");
         ReleaseLRef(env, keySpec);
         ReleaseLRef(env, keyPair);
         return NULL;
     }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
-    
-    LOG_DEBUG("Created curve from oid '%s'", oid);
 
     jobject group = (*env)->CallObjectMethod(env, curveParameters, g_ECParameterSpecGetCurve);
 
     jobject field = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetField);
 
     int size = (*env)->CallIntMethod(env, field, g_ECFieldGetFieldSize);
-
-    LOG_DEBUG("Field size at creation is %d", size);
 
     ReleaseLRef(env, field);
     ReleaseLRef(env, group);
