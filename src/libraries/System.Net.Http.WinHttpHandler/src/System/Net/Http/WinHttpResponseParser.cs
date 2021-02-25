@@ -239,21 +239,12 @@ namespace System.Net.Http
             {
                 int lastError = Marshal.GetLastWin32Error();
 
-                if (!isTrailingHeaders)
-                {
-                    Debug.Assert(lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND);
+                Debug.Assert(isTrailingHeaders || lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND);
 
-                    if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
-                    {
-                        throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
-                    }
-                }
-                else
+                if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER &&
+                    (!isTrailingHeaders || lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND))
                 {
-                    if (!(lastError == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER || lastError == Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND))
-                    {
-                        throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
-                    }
+                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
                 }
             }
 
