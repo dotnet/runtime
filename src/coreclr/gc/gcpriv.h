@@ -344,7 +344,7 @@ class recursive_gc_sync;
 // card marking stealing only makes sense in server GC
 // but it works and is easier to debug for workstation GC
 // so turn it on for server GC, turn on for workstation GC if necessary
-//#define FEATURE_CARD_MARKING_STEALING
+#define FEATURE_CARD_MARKING_STEALING
 #endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_CARD_MARKING_STEALING
