@@ -12016,6 +12016,8 @@ gc_heap::init_semi_shared()
     if (conserve_mem_setting > 9)
         conserve_mem_setting = 9;
 
+    dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
+
     ret = 1;
 
 cleanup:
