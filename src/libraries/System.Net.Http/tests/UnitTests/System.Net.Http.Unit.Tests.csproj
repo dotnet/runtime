@@ -3,7 +3,7 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -244,9 +244,9 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" />
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true') and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
@@ -257,7 +257,7 @@
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\HttpTelemetry.cs" />
-    <Compile Include="Fakes\MacProxy.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))" />
+    <Compile Include="Fakes\MacProxy.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />

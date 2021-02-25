@@ -23,7 +23,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    internal sealed class ThreadPoolWorkQueue
+    internal sealed partial class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
         {
@@ -691,23 +691,21 @@ namespace System.Threading
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                     //
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                    if (ThreadPool.EnableDispatchAutoreleasePool)
+                    {
+                        DispatchItemWithAutoreleasePool(workItem, currentThread);
+                    }
+                    else
+#endif
 #pragma warning disable CS0162 // Unreachable code detected. EnableWorkerTracking may be a constant in some runtimes.
                     if (ThreadPool.EnableWorkerTracking)
                     {
                         DispatchWorkItemWithWorkerTracking(workItem, currentThread);
                     }
-                    else if (workItem is Task task)
-                    {
-                        // Check for Task first as it's currently faster to type check
-                        // for Task and then Unsafe.As for the interface, rather than
-                        // vice versa, in particular when the object implements a bunch
-                        // of interfaces.
-                        task.ExecuteFromThreadPool(currentThread);
-                    }
                     else
                     {
-                        Debug.Assert(workItem is IThreadPoolWorkItem);
-                        Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                        DispatchWorkItem(workItem, currentThread);
                     }
 #pragma warning restore CS0162
 
@@ -781,20 +779,26 @@ namespace System.Threading
             {
                 ThreadPool.ReportThreadStatus(isWorking: true);
                 reportedStatus = true;
-                if (workItem is Task task)
-                {
-                    task.ExecuteFromThreadPool(currentThread);
-                }
-                else
-                {
-                    Debug.Assert(workItem is IThreadPoolWorkItem);
-                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
-                }
+                DispatchWorkItem(workItem, currentThread);
             }
             finally
             {
                 if (reportedStatus)
                     ThreadPool.ReportThreadStatus(isWorking: false);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void DispatchWorkItem(object workItem, Thread currentThread)
+        {
+            if (workItem is Task task)
+            {
+                task.ExecuteFromThreadPool(currentThread);
+            }
+            else
+            {
+                Debug.Assert(workItem is IThreadPoolWorkItem);
+                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
             }
         }
     }
