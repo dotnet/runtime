@@ -332,13 +332,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the privileged processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the process has spent running code inside the operating system core.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <remarks></remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.PrivilegedProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>
@@ -355,13 +355,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the total processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the associated process has spent utilizing the CPU. This value is the sum of the <see cref="System.Diagnostics.Process.UserProcessorTime" /> and the <see cref="System.Diagnostics.Process.PrivilegedProcessorTime" />.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <remarks></remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.TotalProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>
@@ -372,13 +372,13 @@ namespace System.Diagnostics
 
         /// <summary>Gets the user processor time for this process.</summary>
         /// <value>A <see cref="System.TimeSpan" /> that indicates the amount of time that the associated process has spent running code inside the application portion of the process (not inside the operating system core).</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <remarks></remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.UserProcessorTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.UserProcessorTime"/>
         /// <altmember cref="System.Diagnostics.Process.PrivilegedProcessorTime"/>

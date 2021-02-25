@@ -79,16 +79,7 @@ namespace System.Diagnostics
 
         /// <summary>Occurs each time an application writes a line to its redirected <see cref="System.Diagnostics.Process.StandardOutput" /> stream.</summary>
         /// <remarks><format type="text/markdown"><![CDATA[
-        /// The <xref:System.Diagnostics.Process.OutputDataReceived> event indicates that the associated <xref:System.Diagnostics.Process> has written a line that's terminated with a newline (carriage return (CR), line feed (LF), or CR+LF) to its redirected <xref:System.Diagnostics.Process.StandardOutput%2A> stream.
-        /// The event is enabled during asynchronous read operations on <xref:System.Diagnostics.Process.StandardOutput%2A>. To start asynchronous read operations, you must redirect the <xref:System.Diagnostics.Process.StandardOutput%2A> stream of a <xref:System.Diagnostics.Process>, add your event handler to the <xref:System.Diagnostics.Process.OutputDataReceived> event, and call <xref:System.Diagnostics.Process.BeginOutputReadLine%2A>. Thereafter, the <xref:System.Diagnostics.Process.OutputDataReceived> event signals each time the process writes a line to the redirected <xref:System.Diagnostics.Process.StandardOutput%2A> stream, until the process exits or calls <xref:System.Diagnostics.Process.CancelOutputRead%2A>.
-        /// > [!NOTE]
-        /// >  The application that is processing the asynchronous output should call the <xref:System.Diagnostics.Process.WaitForExit%2A> method to ensure that the output buffer has been flushed.
-        /// ## Examples
-        /// The following example illustrates how to perform asynchronous read operations on the redirected <xref:System.Diagnostics.Process.StandardOutput%2A> stream of the `ipconfig` command.
-        /// The example creates an event delegate for the `OutputHandler` event handler and associates it with the <xref:System.Diagnostics.Process.OutputDataReceived> event. The event handler receives text lines from the redirected <xref:System.Diagnostics.Process.StandardOutput%2A> stream, formats the text, and saves it in an output string that's later shown in the example's console window.
-        /// [!code-cpp[Process_AsyncStreams#4](~/samples/snippets/cpp/VS_Snippets_CLR/process_asyncstreams/CPP/datareceivedevent.cpp#4)]
-        /// [!code-csharp[Process_AsyncStreams#4](~/samples/snippets/csharp/VS_Snippets_CLR/process_asyncstreams/CS/datareceivedevent.cs#4)]
-        /// [!code-vb[Process_AsyncStreams#4](~/samples/snippets/visualbasic/VS_Snippets_CLR/process_asyncstreams/VB/datareceivedevent.vb#4)]
+        /// [!INCLUDE[remarks](~/includes/remarks/System.Diagnostics/Process/OutputDataReceived.md)]
         /// ]]></format></remarks>
         /// <altmember cref="System.Diagnostics.ProcessStartInfo.RedirectStandardOutput"/>
         /// <altmember cref="System.Diagnostics.Process.StandardOutput"/>
@@ -279,13 +270,12 @@ namespace System.Diagnostics
 
         /// <summary>Gets the time that the associated process exited.</summary>
         /// <value>A <see cref="System.DateTime" /> that indicates when the associated process was terminated.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// If the process has not terminated, attempting to retrieve the <xref:System.Diagnostics.Process.ExitTime%2A> property throws an exception. Use <xref:System.Diagnostics.Process.HasExited%2A> before getting the <xref:System.Diagnostics.Process.ExitTime%2A> property to determine whether the associated process has terminated.
-        /// ## Examples
-        /// The following code example creates a process that prints a file. The process raises the <xref:System.Diagnostics.Process.Exited> event when it exits, and the event handler displays the <xref:System.Diagnostics.Process.ExitTime%2A> property and other process information.
+        /// <remarks>If the process has not terminated, attempting to retrieve the <see cref="System.Diagnostics.Process.ExitTime" /> property throws an exception. Use <see cref="System.Diagnostics.Process.HasExited" /> before getting the <see cref="System.Diagnostics.Process.ExitTime" /> property to determine whether the associated process has terminated.</remarks>
+        /// <example>The following code example creates a process that prints a file. The process raises the <see cref="System.Diagnostics.Process.Exited" /> event when it exits, and the event handler displays the <see cref="System.Diagnostics.Process.ExitTime" /> property and other process information.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.Diagnostics.Process.EnableExited#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.Diagnostics.Process.EnableExited/CS/processexitedevent.cs#1)]
         /// [!code-vb[System.Diagnostics.Process.EnableExited#1](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.Diagnostics.Process.EnableExited/VB/processexitedevent.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.NotSupportedException">You are trying to access the <see cref="System.Diagnostics.Process.ExitTime" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.Handle"/>
         /// <altmember cref="System.Diagnostics.Process.ExitCode"/>
@@ -324,15 +314,16 @@ namespace System.Diagnostics
 
         /// <summary>Gets the name of the computer the associated process is running on.</summary>
         /// <value>The name of the computer that the associated process is running on.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// You can view statistical data and process information for processes running on remote computers but you cannot call <xref:System.Diagnostics.Process.Start%2A>, <xref:System.Diagnostics.Process.CloseMainWindow%2A>, or <xref:System.Diagnostics.Process.Kill%2A> on remote computers.
+        /// <remarks>You can view statistical data and process information for processes running on remote computers but you cannot call <see cref="O:System.Diagnostics.Process.Start" />, <see cref="System.Diagnostics.Process.CloseMainWindow" />, or <see cref="O:System.Diagnostics.Process.Kill" /> on remote computers.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  When the associated process is executing on the local machine, this property returns a period (".") for the machine name. You should use the <xref:System.Environment.MachineName%2A?displayProperty=nameWithType> property to get the correct machine name.
-        /// ## Examples
-        /// To use the following example you must first start at least one instance of Notepad on a remote computer. The example requests the name of the remote computer on which Notepad is running, and then displays the respective <xref:System.Diagnostics.Process.ProcessName%2A>, <xref:System.Diagnostics.Process.Id%2A>, and <xref:System.Diagnostics.Process.MachineName%2A> properties for each instance.
+        /// ]]></format></remarks>
+        /// <example>To use the following example you must first start at least one instance of Notepad on a remote computer. The example requests the name of the remote computer on which Notepad is running, and then displays the respective <see cref="System.Diagnostics.Process.ProcessName" />, <see cref="System.Diagnostics.Process.Id" />, and <see cref="System.Diagnostics.Process.MachineName" /> properties for each instance.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[process_GetProcessesByName2_2#2](~/samples/snippets/csharp/VS_Snippets_CLR/Process_GetProcessesByName2_2/CS/process_getprocessesbyname2_2.cs#2)]
         /// [!code-vb[process_GetProcessesByName2_2#2](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process_GetProcessesByName2_2/VB/process_getprocessesbyname2_2.vb#2)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.InvalidOperationException">There is no process associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
         /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
@@ -348,11 +339,11 @@ namespace System.Diagnostics
 
         /// <summary>Gets or sets the maximum allowable working set size, in bytes, for the associated process.</summary>
         /// <value>The maximum working set size that is allowed in memory for the process, in bytes.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
+        /// <remarks>The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that your application executes, including the pages in your .dll files and the system.dll files. As the working set size increases, memory demand increases.
         /// A process has minimum and maximum working set sizes. Each time a process resource is created, the system reserves an amount of memory equal to the minimum working set size for the process. The virtual memory manager attempts to keep at least the minimum amount of memory resident when the process is active, but it never keeps more than the maximum size.
-        /// The system sets the default working set sizes. You can modify these sizes using the <xref:System.Diagnostics.Process.MaxWorkingSet%2A> and <xref:System.Diagnostics.Process.MinWorkingSet%2A> members. However, setting these values does not guarantee that the memory will be reserved or resident.
+        /// The system sets the default working set sizes. You can modify these sizes using the <see cref="System.Diagnostics.Process.MaxWorkingSet" /> and <see cref="System.Diagnostics.Process.MinWorkingSet" /> members. However, setting these values does not guarantee that the memory will be reserved or resident.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  When you increase the working set size of a process, you take physical memory away from the rest of the system. Ensure that you do not request a minimum or maximum working set size that is too large, because doing so can degrade system performance.
         /// ]]></format></remarks>
@@ -385,11 +376,11 @@ namespace System.Diagnostics
 
         /// <summary>Gets or sets the minimum allowable working set size, in bytes, for the associated process.</summary>
         /// <value>The minimum working set size that is required in memory for the process, in bytes.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
+        /// <remarks>The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that your application executes, including the pages in your .dll files and the system.dll files. As the working set size increases, memory demand increases.
         /// A process has minimum and maximum working set sizes. Each time a process resource is created, the system reserves an amount of memory equal to the minimum working set size for the process. The virtual memory manager attempts to keep at least the minimum amount of memory resident when the process is active, but it never keeps more than the maximum size.
-        /// The system sets the default working set sizes. You can modify these sizes using the <xref:System.Diagnostics.Process.MaxWorkingSet%2A> and <xref:System.Diagnostics.Process.MinWorkingSet%2A> members. However, setting these values does not guarantee that the memory will be reserved or resident.
+        /// The system sets the default working set sizes. You can modify these sizes using the <see cref="System.Diagnostics.Process.MaxWorkingSet" /> and <see cref="System.Diagnostics.Process.MinWorkingSet" /> members. However, setting these values does not guarantee that the memory will be reserved or resident.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  When you increase the working set size of a process, you take physical memory away from the rest of the system. Ensure that you do not request a minimum or maximum working set size that is too large, because doing so can degrade system performance.
         /// ]]></format></remarks>
@@ -445,16 +436,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of nonpaged system memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of system memory, in bytes, allocated for the associated process that cannot be written to the virtual memory paging file.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of nonpaged system memory used by the process, in bytes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of nonpaged system memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// System memory is the physical memory used by the operating system, and is divided into paged and nonpaged pools. Nonpaged memory allocations remain in system memory and are not paged out to the virtual memory paging file.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Nonpaged Bytes** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Nonpaged Bytes** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.PagedSystemMemorySize64"/>
         public long NonpagedSystemMemorySize64
         {
@@ -480,16 +470,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of paged memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of memory, in bytes, allocated in the virtual memory paging file for the associated process.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of memory in the virtual memory paging file used by the process, in bytes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
-        /// The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of memory used by the operating system for the process, use the <xref:System.Diagnostics.Process.PagedSystemMemorySize64%2A> property.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application, and then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of memory in the virtual memory paging file used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
+        /// The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of memory used by the operating system for the process, use the <see cref="System.Diagnostics.Process.PagedSystemMemorySize64" /> property.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application, and then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.PeakPagedMemorySize64"/>
         /// <altmember cref="System.Diagnostics.Process.PagedSystemMemorySize64"/>
         public long PagedMemorySize64
@@ -516,15 +505,14 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of pageable system memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of system memory, in bytes, allocated for the associated process that can be written to the virtual memory paging file.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property value represents the current size of pageable system memory used by the process, in bytes. System memory is the physical memory used by the operating system, and is divided into paged and nonpaged pools. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of the application memory used by the process, use the <xref:System.Diagnostics.Process.PagedMemorySize64%2A> property.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Paged Bytes** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <remarks>The value returned by this property value represents the current size of pageable system memory used by the process, in bytes. System memory is the physical memory used by the operating system, and is divided into paged and nonpaged pools. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of the application memory used by the process, use the <see cref="System.Diagnostics.Process.PagedMemorySize64" /> property.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Paged Bytes** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.PagedSystemMemorySize64"/>
         /// <altmember cref="System.Diagnostics.Process.NonpagedSystemMemorySize64"/>
         public long PagedSystemMemorySize64
@@ -551,15 +539,14 @@ namespace System.Diagnostics
 
         /// <summary>Gets the maximum amount of memory in the virtual memory paging file, in bytes, used by the associated process.</summary>
         /// <value>The maximum amount of memory, in bytes, allocated in the virtual memory paging file for the associated process since it was started.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property value represents the maximum size of memory in the virtual memory paging file used by the process since it started, in bytes. The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes Peak** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <remarks>The value returned by this property value represents the maximum size of memory in the virtual memory paging file used by the process since it started, in bytes. The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes Peak** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.PagedMemorySize64"/>
         public long PeakPagedMemorySize64
         {
@@ -585,16 +572,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets the maximum amount of physical memory, in bytes, used by the associated process.</summary>
         /// <value>The maximum amount of physical memory, in bytes, allocated for the associated process since it was started.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the maximum size of working set memory used by the process since it started, in bytes. The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
+        /// <remarks>The value returned by this property represents the maximum size of working set memory used by the process since it started, in bytes. The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including instructions from the process modules and the system libraries.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set Peak** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set Peak** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.WorkingSet64"/>
         /// <altmember cref="System.Diagnostics.Process.MinWorkingSet"/>
         /// <altmember cref="System.Diagnostics.Process.MaxWorkingSet"/>
@@ -627,15 +613,14 @@ namespace System.Diagnostics
 
         /// <summary>Gets the maximum amount of virtual memory, in bytes, used by the associated process.</summary>
         /// <value>The maximum amount of virtual memory, in bytes, allocated for the associated process since it was started.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the maximum size of virtual memory used by the process since it started, in bytes. The operating system maps the virtual address space for each process either to pages loaded in physical memory, or to pages stored in the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes Peak** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <remarks>The value returned by this property represents the maximum size of virtual memory used by the process since it started, in bytes. The operating system maps the virtual address space for each process either to pages loaded in physical memory, or to pages stored in the virtual memory paging file on disk.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes Peak** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.VirtualMemorySize64"/>
         public long PeakVirtualMemorySize64
         {
@@ -661,9 +646,9 @@ namespace System.Diagnostics
 
         /// <summary>Gets or sets a value indicating whether the associated process priority should temporarily be boosted by the operating system when the main window has the focus.</summary>
         /// <value><see langword="true" /> if dynamic boosting of the process priority should take place for a process when it is taken out of the wait state; otherwise, <see langword="false" />. The default is <see langword="false" />.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed temporary priority boost. To get the most up to date value, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
-        /// When a thread runs in a process for which the priority class has one of the dynamic priority enumeration values (<xref:System.Diagnostics.ProcessPriorityClass.Normal>, <xref:System.Diagnostics.ProcessPriorityClass.High>, or <xref:System.Diagnostics.ProcessPriorityClass.RealTime>), the system temporarily boosts the thread's priority when it is taken out of a wait state. This action prevents other processes from interrupting the processing of the current thread. The <xref:System.Diagnostics.Process.PriorityBoostEnabled%2A> setting affects all the existing threads and any threads subsequently created by the process. To restore normal behavior, set the <xref:System.Diagnostics.Process.PriorityBoostEnabled%2A> property to `false`.
+        /// <remarks>The value returned by this property represents the most recently refreshed temporary priority boost. To get the most up to date value, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
+        /// When a thread runs in a process for which the priority class has one of the dynamic priority enumeration values (<see cref="System.Diagnostics.ProcessPriorityClass.Normal" />, <see cref="System.Diagnostics.ProcessPriorityClass.High" />, or <see cref="System.Diagnostics.ProcessPriorityClass.RealTime" />), the system temporarily boosts the thread's priority when it is taken out of a wait state. This action prevents other processes from interrupting the processing of the current thread. The <see cref="System.Diagnostics.Process.PriorityBoostEnabled" /> setting affects all the existing threads and any threads subsequently created by the process. To restore normal behavior, set the <see cref="System.Diagnostics.Process.PriorityBoostEnabled" /> property to <see langword="false" />.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  Boosting the priority too high can drain resources from essential operating system and network functions, causing problems with other operating system tasks.
         /// ]]></format></remarks>
@@ -731,15 +716,14 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of memory, in bytes, allocated for the associated process that cannot be shared with other processes.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of memory used by the process, in bytes, that cannot be shared with other processes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Private Bytes** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of memory used by the process, in bytes, that cannot be shared with other processes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Private Bytes** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         public long PrivateMemorySize64
         {
             get
@@ -932,16 +916,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of the virtual memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of virtual memory, in bytes, allocated for the associated process.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of virtual memory used by the process, in bytes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of virtual memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The operating system maps the virtual address space for each process either to pages loaded in physical memory, or to pages stored in the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.PeakVirtualMemorySize64"/>
         public long VirtualMemorySize64
         {
@@ -1006,16 +989,17 @@ namespace System.Diagnostics
 
         /// <summary>Gets a stream used to write the input of the application.</summary>
         /// <value>A <see cref="System.IO.StreamWriter" /> that can be used to write the standard input stream of the application.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// A <xref:System.Diagnostics.Process> can read input text from its standard input stream, typically the keyboard. By redirecting the <xref:System.Diagnostics.Process.StandardInput%2A> stream, you can programmatically specify the input. For example, instead of using keyboard input, you can provide text from the contents of a designated file or output from another application.
+        /// <remarks>A <see cref="System.Diagnostics.Process" /> can read input text from its standard input stream, typically the keyboard. By redirecting the <see cref="System.Diagnostics.Process.StandardInput" /> stream, you can programmatically specify the input. For example, instead of using keyboard input, you can provide text from the contents of a designated file or output from another application.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  To use <xref:System.Diagnostics.Process.StandardInput%2A>, you must set <xref:System.Diagnostics.ProcessStartInfo.UseShellExecute%2A?displayProperty=nameWithType> to `false`, and you must set <xref:System.Diagnostics.ProcessStartInfo.RedirectStandardInput%2A?displayProperty=nameWithType> to `true`. Otherwise, writing to the <xref:System.Diagnostics.Process.StandardInput%2A> stream throws an exception.
-        /// ## Examples
-        /// The following example illustrates how to redirect the <xref:System.Diagnostics.Process.StandardInput%2A> stream of a process. The example starts the `sort` command with redirected input. It then prompts the user for text, and passes that to the `sort` process by means of the redirected <xref:System.Diagnostics.Process.StandardInput%2A> stream. The `sort` results are displayed to the user on the console.
+        /// ]]></format></remarks>
+        /// <example>The following example illustrates how to redirect the <see cref="System.Diagnostics.Process.StandardInput" /> stream of a process. The example starts the `sort` command with redirected input. It then prompts the user for text, and passes that to the `sort` process by means of the redirected <see cref="System.Diagnostics.Process.StandardInput" /> stream. The `sort` results are displayed to the user on the console.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Process_StandardInput#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process_StandardInput/CPP/process_standardinput.cpp#1)]
         /// [!code-csharp[Process_StandardInput#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process_StandardInput/CS/process_standardinput.cs#1)]
         /// [!code-vb[Process_StandardInput#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process_StandardInput/VB/process_standardinput.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.InvalidOperationException">The <see cref="System.Diagnostics.Process.StandardInput" /> stream has not been defined because <see cref="System.Diagnostics.ProcessStartInfo.RedirectStandardInput" /> is set to <see langword="false" />.</exception>
         /// <altmember cref="System.Diagnostics.Process.StandardOutput"/>
         /// <altmember cref="System.Diagnostics.Process.StandardError"/>
@@ -1105,17 +1089,16 @@ namespace System.Diagnostics
 
         /// <summary>Gets the amount of physical memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of physical memory, in bytes, allocated for the associated process.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of working set memory used by the process, in bytes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of working set memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including instructions in the process modules and the system libraries.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set** performance counter for the process.
-        /// ## Examples
-        /// The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set** performance counter for the process.</remarks>
+        /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.MinWorkingSet"/>
         /// <altmember cref="System.Diagnostics.Process.MaxWorkingSet"/>
         /// <altmember cref="System.Diagnostics.Process.PeakWorkingSet64"/>
@@ -1130,16 +1113,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets the associated process's physical memory usage, in bytes.</summary>
         /// <value>The total amount of physical memory the associated process is using, in bytes.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed size of working set memory used by the process, in bytes. To get the most up to date size, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
+        /// <remarks>The value returned by this property represents the most recently refreshed size of working set memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
-        /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including the process modules and the system libraries.
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process' exit code.
+        /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including the process modules and the system libraries.</remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process' exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[process_sample#1](~/samples/snippets/cpp/VS_Snippets_CLR/process_sample/CPP/process_sample.cpp#1)]
         /// [!code-csharp[process_sample#1](~/samples/snippets/csharp/VS_Snippets_CLR/process_sample/CS/process_sample.cs#1)]
         /// [!code-vb[process_sample#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/process_sample/VB/process_sample.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.MinWorkingSet"/>
         /// <altmember cref="System.Diagnostics.Process.MaxWorkingSet"/>
         /// <altmember cref="System.Diagnostics.Process.PeakWorkingSet"/>
@@ -1204,16 +1186,15 @@ namespace System.Diagnostics
 
         /// <summary>Closes a process that has a user interface by sending a close message to its main window.</summary>
         /// <returns><see langword="true" /> if the close message was successfully sent; <see langword="false" /> if the associated process does not have a main window or if the main window is disabled (for example if a modal dialog is being shown).</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// When a process is executing, its message loop is in a wait state. The message loop executes every time a Windows message is sent to the process by the operating system. Calling <xref:System.Diagnostics.Process.CloseMainWindow%2A> sends a request to close the main window, which, in a well-formed application, closes child windows and revokes all running message loops for the application. The request to exit the process by calling <xref:System.Diagnostics.Process.CloseMainWindow%2A> does not force the application to quit. The application can ask for user verification before quitting, or it can refuse to quit. To force the application to quit, use the <xref:System.Diagnostics.Process.Kill%2A> method. The behavior of <xref:System.Diagnostics.Process.CloseMainWindow%2A> is identical to that of a user closing an application's main window using the system menu. Therefore, the request to exit the process by closing the main window does not force the application to quit immediately.
-        /// Data edited by the process or resources allocated to the process can be lost if you call <xref:System.Diagnostics.Process.Kill%2A>. <xref:System.Diagnostics.Process.Kill%2A> causes an abnormal process termination, and should be used only when necessary. <xref:System.Diagnostics.Process.CloseMainWindow%2A> enables an orderly termination of the process and closes all windows, so it is preferable for applications with an interface. If <xref:System.Diagnostics.Process.CloseMainWindow%2A> fails, you can use <xref:System.Diagnostics.Process.Kill%2A> to terminate the process. <xref:System.Diagnostics.Process.Kill%2A> is the only way to terminate processes that do not have graphical interfaces.
-        /// You can call <xref:System.Diagnostics.Process.Kill%2A> and <xref:System.Diagnostics.Process.CloseMainWindow%2A> only for processes that are running on the local computer. You cannot cause processes on remote computers to exit. You can only view information for processes running on remote computers.
-        /// ## Examples
-        /// The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2 second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// <remarks>When a process is executing, its message loop is in a wait state. The message loop executes every time a Windows message is sent to the process by the operating system. Calling <see cref="System.Diagnostics.Process.CloseMainWindow" /> sends a request to close the main window, which, in a well-formed application, closes child windows and revokes all running message loops for the application. The request to exit the process by calling <see cref="System.Diagnostics.Process.CloseMainWindow" /> does not force the application to quit. The application can ask for user verification before quitting, or it can refuse to quit. To force the application to quit, use the <see cref="O:System.Diagnostics.Process.Kill" /> method. The behavior of <see cref="System.Diagnostics.Process.CloseMainWindow" /> is identical to that of a user closing an application's main window using the system menu. Therefore, the request to exit the process by closing the main window does not force the application to quit immediately.
+        /// Data edited by the process or resources allocated to the process can be lost if you call <see cref="O:System.Diagnostics.Process.Kill" />. <see cref="O:System.Diagnostics.Process.Kill" /> causes an abnormal process termination, and should be used only when necessary. <see cref="System.Diagnostics.Process.CloseMainWindow" /> enables an orderly termination of the process and closes all windows, so it is preferable for applications with an interface. If <see cref="System.Diagnostics.Process.CloseMainWindow" /> fails, you can use <see cref="O:System.Diagnostics.Process.Kill" /> to terminate the process. <see cref="O:System.Diagnostics.Process.Kill" /> is the only way to terminate processes that do not have graphical interfaces.
+        /// You can call <see cref="O:System.Diagnostics.Process.Kill" /> and <see cref="System.Diagnostics.Process.CloseMainWindow" /> only for processes that are running on the local computer. You cannot cause processes on remote computers to exit. You can only view information for processes running on remote computers.</remarks>
+        /// <example>The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2 second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[process_refresh#1](~/samples/snippets/cpp/VS_Snippets_CLR/process_refresh/CPP/process_refresh.cpp#1)]
         /// [!code-csharp[process_refresh#1](~/samples/snippets/csharp/VS_Snippets_CLR/process_refresh/CS/process_refresh.cs#1)]
         /// [!code-vb[process_refresh#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/process_refresh/VB/process_refresh.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.InvalidOperationException">The process has already exited.
         /// -or-
         /// No process is associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
@@ -1244,12 +1225,10 @@ namespace System.Diagnostics
         /// <summary>Causes the <see cref="System.Diagnostics.Process" /> component to wait the specified number of milliseconds for the associated process to enter an idle state. This overload applies only to processes with a user interface and, therefore, a message loop.</summary>
         /// <param name="milliseconds">A value of 1 to <see cref="int.MaxValue" /> that specifies the amount of time, in milliseconds, to wait for the associated process to become idle. A value of 0 specifies an immediate return, and a value of -1 specifies an infinite wait.</param>
         /// <returns><see langword="true" /> if the associated process has reached an idle state; otherwise, <see langword="false" />.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// Use <xref:System.Diagnostics.Process.WaitForInputIdle%28int%29> to force the processing of your application to wait until the message loop has returned to the idle state. When a process with a user interface is executing, its message loop executes every time a Windows message is sent to the process by the operating system. The process then returns to the message loop. A process is said to be in an idle state when it is waiting for messages inside of a message loop. This state is useful, for example, when your application needs to wait for a starting process to finish creating its main window before the application communicates with that window.
-        /// If a process does not have a message loop, <xref:System.Diagnostics.Process.WaitForInputIdle%28int%29> throws an <xref:System.InvalidOperationException>.
-        /// The <xref:System.Diagnostics.Process.WaitForInputIdle%28int%29> overload instructs the <xref:System.Diagnostics.Process> component to wait a finite amount of time for the process to become idle in the message loop. If the associated process has not become idle by the end of the interval because the loop is still processing messages, `false` is returned to the calling procedure.
-        /// For more information about handling events, see [Handling and Raising Events](/dotnet/standard/events/).
-        /// ]]></format></remarks>
+        /// <remarks>Use <see cref="System.Diagnostics.Process.WaitForInputIdle(int)" /> to force the processing of your application to wait until the message loop has returned to the idle state. When a process with a user interface is executing, its message loop executes every time a Windows message is sent to the process by the operating system. The process then returns to the message loop. A process is said to be in an idle state when it is waiting for messages inside of a message loop. This state is useful, for example, when your application needs to wait for a starting process to finish creating its main window before the application communicates with that window.
+        /// If a process does not have a message loop, <see cref="System.Diagnostics.Process.WaitForInputIdle(int)" /> throws an <see cref="System.InvalidOperationException" />.
+        /// The <see cref="System.Diagnostics.Process.WaitForInputIdle(int)" /> overload instructs the <see cref="System.Diagnostics.Process" /> component to wait a finite amount of time for the process to become idle in the message loop. If the associated process has not become idle by the end of the interval because the loop is still processing messages, <see langword="false" /> is returned to the calling procedure.
+        /// For more information about handling events, see [Handling and Raising Events](/dotnet/standard/events/).</remarks>
         /// <exception cref="System.InvalidOperationException">The process does not have a graphical interface.
         /// -or-
         /// An unknown error occurred. The process failed to enter an idle state.
@@ -1273,16 +1252,17 @@ namespace System.Diagnostics
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         /// <summary>Frees all the resources that are associated with this component.</summary>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The <xref:System.Diagnostics.Process.Close%2A> method causes the process to stop waiting for exit if it was waiting, closes the process handle, and clears process-specific properties. <xref:System.Diagnostics.Process.Close%2A> does not close the standard output, input, and error readers and writers in case they are being referenced externally.
+        /// <remarks>The <see cref="System.Diagnostics.Process.Close" /> method causes the process to stop waiting for exit if it was waiting, closes the process handle, and clears process-specific properties. <see cref="System.Diagnostics.Process.Close" /> does not close the standard output, input, and error readers and writers in case they are being referenced externally.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  The <xref:System.Diagnostics.Process.Dispose%2A> method calls <xref:System.Diagnostics.Process.Close%2A>. Placing the <xref:System.Diagnostics.Process> object in a `using` block disposes of resources without the need to call <xref:System.Diagnostics.Process.Close%2A>.
-        /// ## Examples
-        /// The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2-second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// ]]></format></remarks>
+        /// <example>The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2-second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[process_refresh#1](~/samples/snippets/cpp/VS_Snippets_CLR/process_refresh/CPP/process_refresh.cpp#1)]
         /// [!code-csharp[process_refresh#1](~/samples/snippets/csharp/VS_Snippets_CLR/process_refresh/CS/process_refresh.cs#1)]
         /// [!code-vb[process_refresh#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/process_refresh/VB/process_refresh.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         public void Close()
         {
             if (Associated)
@@ -1547,15 +1527,14 @@ namespace System.Diagnostics
 
         /// <summary>Gets a new <see cref="System.Diagnostics.Process" /> component and associates it with the currently active process.</summary>
         /// <returns>A new <see cref="System.Diagnostics.Process" /> component associated with the process resource that is running the calling application.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// Use this method to create a new <xref:System.Diagnostics.Process> instance and associate it with the process resource on the local computer.
-        /// Like the similar <xref:System.Diagnostics.Process.GetProcessById%2A>, <xref:System.Diagnostics.Process.GetProcessesByName%2A>, and <xref:System.Diagnostics.Process.GetProcesses%2A> methods, <xref:System.Diagnostics.Process.GetCurrentProcess%2A> associates an existing resource with a new <xref:System.Diagnostics.Process> component.
-        /// ## Examples
-        /// The following example retrieves information of the current process, processes running on the local computer, all instances of Notepad running on the local computer, and a specific process on the local computer. It then retrieves information for the same processes on a remote computer.
+        /// <remarks>Use this method to create a new <see cref="System.Diagnostics.Process" /> instance and associate it with the process resource on the local computer.
+        /// Like the similar <see cref="O:System.Diagnostics.Process.GetProcessById" />, <see cref="O:System.Diagnostics.Process.GetProcessesByName" />, and <see cref="O:System.Diagnostics.Process.GetProcesses" /> methods, <see cref="System.Diagnostics.Process.GetCurrentProcess" /> associates an existing resource with a new <see cref="System.Diagnostics.Process" /> component.</remarks>
+        /// <example>The following example retrieves information of the current process, processes running on the local computer, all instances of Notepad running on the local computer, and a specific process on the local computer. It then retrieves information for the same processes on a remote computer.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Process.GetProcesses_noexception#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process.GetProcesses_noexception/CPP/processstaticget.cpp#1)]
         /// [!code-csharp[Process.GetProcesses_noexception#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process.GetProcesses_noexception/CS/processstaticget.cs#1)]
         /// [!code-vb[Process.GetProcesses_noexception#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process.GetProcesses_noexception/VB/processstaticget.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.GetProcessById(int,string)"/>
         /// <altmember cref="System.Diagnostics.Process.GetProcessesByName(string)"/>
         /// <altmember cref="O:System.Diagnostics.Process.GetProcesses"/>
@@ -1565,17 +1544,18 @@ namespace System.Diagnostics
         }
 
         /// <summary>Raises the <see cref="System.Diagnostics.Process.Exited" /> event.</summary>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// <xref:System.Diagnostics.Process.OnExited%2A> is the API method that raises the <xref:System.Diagnostics.Process.Exited> event. Calling <xref:System.Diagnostics.Process.OnExited%2A> causes the <xref:System.Diagnostics.Process.Exited> event to occur and is the only way to raise the event using the <xref:System.Diagnostics.Process> component. <xref:System.Diagnostics.Process.OnExited%2A> is primarily used when deriving classes from the component.
-        /// As an alternative to <xref:System.Diagnostics.Process.OnExited%2A>, you can write your own event handler. You create your own event handler delegate and your own event-handling method.
+        /// <remarks><see cref="System.Diagnostics.Process.OnExited" /> is the API method that raises the <see cref="System.Diagnostics.Process.Exited" /> event. Calling <see cref="System.Diagnostics.Process.OnExited" /> causes the <see cref="System.Diagnostics.Process.Exited" /> event to occur and is the only way to raise the event using the <see cref="System.Diagnostics.Process" /> component. <see cref="System.Diagnostics.Process.OnExited" /> is primarily used when deriving classes from the component.
+        /// As an alternative to <see cref="System.Diagnostics.Process.OnExited" />, you can write your own event handler. You create your own event handler delegate and your own event-handling method.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  If you are using the Visual Studio environment, an event handler delegate (AddOnExited) and an event-handling method (Process1_Exited) are created for you when you drag a <xref:System.Diagnostics.Process> component onto a form and double-click the icon. The code you create to run when the <xref:System.Diagnostics.Process.Exited> event occurs is entered into the Process1_Exited procedure. You do not need to create the <xref:System.Diagnostics.Process.OnExited%2A> member, because it is implemented for you.
-        /// Raising an event invokes the event handler through a delegate. For an overview, see [Handling and Raising Events](/dotnet/standard/events/).
-        /// ## Examples
-        /// The following example shows how to use the <xref:System.Diagnostics.Process.OnExited%2A> method in a derived class.
+        /// ]]></format>
+        /// Raising an event invokes the event handler through a delegate. For an overview, see [Handling and Raising Events](/dotnet/standard/events/).</remarks>
+        /// <example>The following example shows how to use the <see cref="System.Diagnostics.Process.OnExited" /> method in a derived class.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[OnExitSample#1](~/samples/snippets/csharp/VS_Snippets_CLR/onexitsample/cs/program.cs#1)]
         /// [!code-vb[OnExitSample#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/onexitsample/vb/program.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <altmember cref="System.Diagnostics.Process.Exited"/>
         protected void OnExited()
         {
@@ -1613,15 +1593,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>Discards any information about the associated process that has been cached inside the process component.</summary>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// After <xref:System.Diagnostics.Process.Refresh%2A> is called, the first request for information about each property causes the process component to obtain a new value from the associated process.
-        /// When a <xref:System.Diagnostics.Process> component is associated with a process resource, the property values of the <xref:System.Diagnostics.Process> are immediately populated according to the status of the associated process. If the information about the associated process subsequently changes, those changes are not reflected in the <xref:System.Diagnostics.Process> component's cached values. The <xref:System.Diagnostics.Process> component is a snapshot of the process resource at the time they are associated. To view the current values for the associated process, call the <xref:System.Diagnostics.Process.Refresh%2A> method.
-        /// ## Examples
-        /// The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2 second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// <remarks>After <see cref="System.Diagnostics.Process.Refresh" /> is called, the first request for information about each property causes the process component to obtain a new value from the associated process.
+        /// When a <see cref="System.Diagnostics.Process" /> component is associated with a process resource, the property values of the <see cref="System.Diagnostics.Process" /> are immediately populated according to the status of the associated process. If the information about the associated process subsequently changes, those changes are not reflected in the <see cref="System.Diagnostics.Process" /> component's cached values. The <see cref="System.Diagnostics.Process" /> component is a snapshot of the process resource at the time they are associated. To view the current values for the associated process, call the <see cref="System.Diagnostics.Process.Refresh" /> method.</remarks>
+        /// <example>The following example starts an instance of Notepad. It then retrieves the physical memory usage of the associated process at 2 second intervals for a maximum of 10 seconds. The example detects whether the process exits before 10 seconds have elapsed. The example closes the process if it is still running after 10 seconds.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[process_refresh#1](~/samples/snippets/cpp/VS_Snippets_CLR/process_refresh/CPP/process_refresh.cpp#1)]
         /// [!code-csharp[process_refresh#1](~/samples/snippets/csharp/VS_Snippets_CLR/process_refresh/CS/process_refresh.cs#1)]
         /// [!code-vb[process_refresh#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/process_refresh/VB/process_refresh.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         public void Refresh()
         {
             _processInfo = null;
@@ -1879,13 +1858,13 @@ namespace System.Diagnostics
 
         /// <summary>Formats the process's name as a string, combined with the parent component type, if applicable.</summary>
         /// <returns>The <see cref="System.Diagnostics.Process.ProcessName" />, combined with the base component's <see cref="object.ToString" /> return value.</returns>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <remarks></remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         public override string ToString()
         {
             if (Associated)

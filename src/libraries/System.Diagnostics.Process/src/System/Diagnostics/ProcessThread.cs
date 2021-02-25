@@ -7,20 +7,22 @@ using System.Runtime.Versioning;
 namespace System.Diagnostics
 {
     /// <summary>Represents an operating system process thread.</summary>
-    /// <remarks><format type="text/markdown"><![CDATA[
-    /// Use <xref:System.Diagnostics.ProcessThread> to obtain information about a thread that is currently running on the system. Doing so allows you, for example, to monitor the thread's performance characteristics.
+    /// <remarks>Use <see cref="System.Diagnostics.ProcessThread" /> to obtain information about a thread that is currently running on the system. Doing so allows you, for example, to monitor the thread's performance characteristics.
+    /// <format type="text/markdown"><![CDATA[
     /// > [!IMPORTANT]
     /// >  This type implements the <xref:System.IDisposable> interface. When you have finished using the type, you should dispose of it either directly or indirectly. To dispose of the type directly, call its <xref:System.IDisposable.Dispose%2A> method in a `try`/`catch` block. To dispose of it indirectly, use a language construct such as `using` (in C#) or `Using` (in Visual Basic). For more information, see the "Using an Object that Implements IDisposable" section in the <xref:System.IDisposable> interface topic.
+    /// ]]></format>
     /// A thread is a path of execution through a program. It is the smallest unit of execution that Win32 schedules. It consists of a stack, the state of the CPU registers, and an entry in the execution list of the system scheduler.
     /// A process consists of one or more threads and the code, data, and other resources of a program in memory. Typical program resources are open files, semaphores, and dynamically allocated memory. Each resource of a process is shared by all that process's threads.
     /// A program executes when the system scheduler gives execution control to one of the program's threads. The scheduler determines which threads should run and when. A lower-priority thread might be forced to wait while higher-priority threads complete their tasks. On multiprocessor computers, the scheduler can move individual threads to different processors, thus balancing the CPU load.
     /// Each process starts with a single thread, which is known as the primary thread. Any thread can create additional threads. All the threads within a process share the address space of that process.
     /// The primary thread is not necessarily located at the first index in the collection.
+    /// <format type="text/markdown"><![CDATA[
     /// > [!NOTE]
     /// >  Starting with the .NET Framework version 2.0, the ability to reference performance counter data on other computers has been eliminated for many of the .NET Framework methods and properties. This change was made to improve performance and to enable non-administrators to use the <xref:System.Diagnostics.ProcessThread> class. As a result, some applications that did not get exceptions in earlier versions of the .NET Framework may now get a <xref:System.NotSupportedException>. The methods and properties affected are too numerous to list here, but the exception information has been added to the affected member topics.
+    /// ]]></format>
     /// The threads of a process execute individually and are unaware of each other unless you make them visible to each other. Threads that share common resources, however, must coordinate their work by using semaphores or another method of interprocess communication.
-    /// To get a collection of all the <xref:System.Diagnostics.ProcessThread> objects associated with the current process, get the <xref:System.Diagnostics.Process.Threads%2A> property of the <xref:System.Diagnostics.Process> instance.
-    /// ]]></format></remarks>
+    /// To get a collection of all the <see cref="System.Diagnostics.ProcessThread" /> objects associated with the current process, get the <see cref="System.Diagnostics.Process.Threads" /> property of the <see cref="System.Diagnostics.Process" /> instance.</remarks>
     /// <altmember cref="System.Diagnostics.Process"/>
     /// <altmember cref="System.Diagnostics.Process.Threads"/>
     [Designer("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -77,9 +79,9 @@ namespace System.Diagnostics
 
         /// <summary>Gets or sets a value indicating whether the operating system should temporarily boost the priority of the associated thread whenever the main window of the thread's process receives the focus.</summary>
         /// <value><see langword="true" /> to boost the thread's priority when the user interacts with the process's interface; otherwise, <see langword="false" />. The default is <see langword="false" />.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// When <xref:System.Diagnostics.ProcessThread.PriorityBoostEnabled%2A> is `true`, the system temporarily boosts the thread's priority whenever its associated process is taken out of the wait state. This action prevents other processes from interrupting the processing of the current thread. The <xref:System.Diagnostics.ProcessThread.PriorityBoostEnabled%2A> setting affects all existing threads as well as any threads subsequently created by the process. To restore normal behavior, set the <xref:System.Diagnostics.Process.PriorityBoostEnabled%2A> property to `false`.
-        /// <xref:System.Diagnostics.ProcessThread.PriorityBoostEnabled%2A> has an effect only when the thread is running in a process that has a <xref:System.Diagnostics.Process.PriorityClass%2A> set to one of the dynamic priority enumeration values (<xref:System.Diagnostics.ProcessPriorityClass.Normal>, <xref:System.Diagnostics.ProcessPriorityClass.High>, or <xref:System.Diagnostics.ProcessPriorityClass.RealTime>).
+        /// <remarks>When <see cref="System.Diagnostics.ProcessThread.PriorityBoostEnabled" /> is <see langword="true" />, the system temporarily boosts the thread's priority whenever its associated process is taken out of the wait state. This action prevents other processes from interrupting the processing of the current thread. The <see cref="System.Diagnostics.ProcessThread.PriorityBoostEnabled" /> setting affects all existing threads as well as any threads subsequently created by the process. To restore normal behavior, set the <see cref="System.Diagnostics.Process.PriorityBoostEnabled" /> property to <see langword="false" />.
+        /// <see cref="System.Diagnostics.ProcessThread.PriorityBoostEnabled" /> has an effect only when the thread is running in a process that has a <see cref="System.Diagnostics.Process.PriorityClass" /> set to one of the dynamic priority enumeration values (<see cref="System.Diagnostics.ProcessPriorityClass.Normal" />, <see cref="System.Diagnostics.ProcessPriorityClass.High" />, or <see cref="System.Diagnostics.ProcessPriorityClass.RealTime" />).
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  Boosting the priority too high can drain resources from essential operating system and network functions. This could cause problems with other operating system tasks.
         /// ]]></format></remarks>

@@ -8,35 +8,36 @@ using System.Runtime.Versioning;
 namespace System.Diagnostics
 {
     /// <summary>Represents an operating system process thread.</summary>
-    /// <remarks><format type="text/markdown"><![CDATA[
-    /// Use <xref:System.Diagnostics.ProcessThread> to obtain information about a thread that is currently running on the system. Doing so allows you, for example, to monitor the thread's performance characteristics.
+    /// <remarks>Use <see cref="System.Diagnostics.ProcessThread" /> to obtain information about a thread that is currently running on the system. Doing so allows you, for example, to monitor the thread's performance characteristics.
+    /// <format type="text/markdown"><![CDATA[
     /// > [!IMPORTANT]
     /// >  This type implements the <xref:System.IDisposable> interface. When you have finished using the type, you should dispose of it either directly or indirectly. To dispose of the type directly, call its <xref:System.IDisposable.Dispose%2A> method in a `try`/`catch` block. To dispose of it indirectly, use a language construct such as `using` (in C#) or `Using` (in Visual Basic). For more information, see the "Using an Object that Implements IDisposable" section in the <xref:System.IDisposable> interface topic.
+    /// ]]></format>
     /// A thread is a path of execution through a program. It is the smallest unit of execution that Win32 schedules. It consists of a stack, the state of the CPU registers, and an entry in the execution list of the system scheduler.
     /// A process consists of one or more threads and the code, data, and other resources of a program in memory. Typical program resources are open files, semaphores, and dynamically allocated memory. Each resource of a process is shared by all that process's threads.
     /// A program executes when the system scheduler gives execution control to one of the program's threads. The scheduler determines which threads should run and when. A lower-priority thread might be forced to wait while higher-priority threads complete their tasks. On multiprocessor computers, the scheduler can move individual threads to different processors, thus balancing the CPU load.
     /// Each process starts with a single thread, which is known as the primary thread. Any thread can create additional threads. All the threads within a process share the address space of that process.
     /// The primary thread is not necessarily located at the first index in the collection.
+    /// <format type="text/markdown"><![CDATA[
     /// > [!NOTE]
     /// >  Starting with the .NET Framework version 2.0, the ability to reference performance counter data on other computers has been eliminated for many of the .NET Framework methods and properties. This change was made to improve performance and to enable non-administrators to use the <xref:System.Diagnostics.ProcessThread> class. As a result, some applications that did not get exceptions in earlier versions of the .NET Framework may now get a <xref:System.NotSupportedException>. The methods and properties affected are too numerous to list here, but the exception information has been added to the affected member topics.
+    /// ]]></format>
     /// The threads of a process execute individually and are unaware of each other unless you make them visible to each other. Threads that share common resources, however, must coordinate their work by using semaphores or another method of interprocess communication.
-    /// To get a collection of all the <xref:System.Diagnostics.ProcessThread> objects associated with the current process, get the <xref:System.Diagnostics.Process.Threads%2A> property of the <xref:System.Diagnostics.Process> instance.
-    /// ]]></format></remarks>
+    /// To get a collection of all the <see cref="System.Diagnostics.ProcessThread" /> objects associated with the current process, get the <see cref="System.Diagnostics.Process.Threads" /> property of the <see cref="System.Diagnostics.Process" /> instance.</remarks>
     /// <altmember cref="System.Diagnostics.Process"/>
     /// <altmember cref="System.Diagnostics.Process.Threads"/>
     public partial class ProcessThread
     {
         /// <summary>Sets the preferred processor for this thread to run on.</summary>
         /// <value>The preferred processor for the thread, used when the system schedules threads, to determine which processor to run the thread on.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The <xref:System.Diagnostics.ProcessThread.IdealProcessor%2A> value is zero-based.  In other words, to set the thread affinity for the first processor, set the property to zero.
+        /// <remarks>The <see cref="System.Diagnostics.ProcessThread.IdealProcessor" /> value is zero-based.  In other words, to set the thread affinity for the first processor, set the property to zero.
         /// The system schedules threads on their preferred processors whenever possible.
-        /// A process thread can migrate from processor to processor, with each migration reloading the processor cache. Specifying a processor for a thread can improve performance under heavy system loads by reducing the number of times the processor cache is reloaded.
-        /// ## Examples
-        /// The following example demonstrates how to set the <xref:System.Diagnostics.ProcessThread.IdealProcessor%2A> property for an instance of Notepad to the first processor.
+        /// A process thread can migrate from processor to processor, with each migration reloading the processor cache. Specifying a processor for a thread can improve performance under heavy system loads by reducing the number of times the processor cache is reloaded.</remarks>
+        /// <example>The following example demonstrates how to set the <see cref="System.Diagnostics.ProcessThread.IdealProcessor" /> property for an instance of Notepad to the first processor.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[ProcessThreadIdealProcessor#1](~/samples/snippets/csharp/VS_Snippets_CLR/ProcessThreadIdealProcessor/CS/program.cs#1)]
         /// [!code-vb[ProcessThreadIdealProcessor#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/ProcessThreadIdealProcessor/VB/program.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ComponentModel.Win32Exception">The system could not set the thread to start on the specified processor.</exception>
         /// <exception cref="System.NotSupportedException">The process is on a remote computer.</exception>
         public int IdealProcessor
@@ -125,9 +126,8 @@ namespace System.Diagnostics
 
         /// <summary>Sets the processors on which the associated thread can run.</summary>
         /// <value>An <see cref="System.IntPtr" /> that points to a set of bits, each of which represents a processor that the thread can run on.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The processor affinity of a thread is the set of processors it has a relationship to. In other words, those it can be scheduled to run on.
-        /// <xref:System.Diagnostics.ProcessThread.ProcessorAffinity%2A> represents each processor as a bit. Bit 0 represents processor one, bit 1 represents processor two, and so on. The following table shows a subset of the possible <xref:System.Diagnostics.ProcessThread.ProcessorAffinity%2A> for a four-processor system.
+        /// <remarks>The processor affinity of a thread is the set of processors it has a relationship to. In other words, those it can be scheduled to run on.
+        /// <see cref="System.Diagnostics.ProcessThread.ProcessorAffinity" /> represents each processor as a bit. Bit 0 represents processor one, bit 1 represents processor two, and so on. The following table shows a subset of the possible <see cref="System.Diagnostics.ProcessThread.ProcessorAffinity" /> for a four-processor system.
         /// |Property value (in hexadecimal)|Valid processors|
         /// |---------------------------------------|----------------------|
         /// |0x0001|1|
@@ -137,12 +137,12 @@ namespace System.Diagnostics
         /// |0x0005|1 or 3|
         /// |0x0007|1, 2, or 3|
         /// |0x000F|1, 2, 3, or 4|
-        /// You can also specify the single, preferred processor for a thread by setting the <xref:System.Diagnostics.ProcessThread.IdealProcessor%2A> property. A process thread can migrate from processor to processor, with each migration reloading the processor cache. Specifying a processor for a thread can improve performance under heavy system loads by reducing the number of times the processor cache is reloaded.
-        /// ## Examples
-        /// The following example shows how to set the <xref:System.Diagnostics.ProcessThread.ProcessorAffinity%2A> property for an instance of Notepad to the first processor.
+        /// You can also specify the single, preferred processor for a thread by setting the <see cref="System.Diagnostics.ProcessThread.IdealProcessor" /> property. A process thread can migrate from processor to processor, with each migration reloading the processor cache. Specifying a processor for a thread can improve performance under heavy system loads by reducing the number of times the processor cache is reloaded.</remarks>
+        /// <example>The following example shows how to set the <see cref="System.Diagnostics.ProcessThread.ProcessorAffinity" /> property for an instance of Notepad to the first processor.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[ProcessThreadIdealProcessor#1](~/samples/snippets/csharp/VS_Snippets_CLR/ProcessThreadIdealProcessor/CS/program.cs#1)]
         /// [!code-vb[ProcessThreadIdealProcessor#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/ProcessThreadIdealProcessor/VB/program.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.ComponentModel.Win32Exception">The processor affinity could not be set.</exception>
         /// <exception cref="System.NotSupportedException">The process is on a remote computer.</exception>
         /// <altmember cref="System.Diagnostics.ProcessThread.IdealProcessor"/>

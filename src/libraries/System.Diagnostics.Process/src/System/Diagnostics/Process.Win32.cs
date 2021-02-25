@@ -238,7 +238,7 @@ namespace System.Diagnostics
 
         /// <summary>Gets the window handle of the main window of the associated process.</summary>
         /// <value>The system-generated window handle of the main window of the associated process.</value>
-        /// <remarks>The main window is the window opened by the process that currently has the focus (the <see langword="System.Windows.Forms.Form.TopLevel" /> form). You must use the <see cref="System.Diagnostics.Process.Refresh" /> method to refresh the <see cref="System.Diagnostics.Process" /> object to get the most up to date main window handle if it has changed. In general, because the window handle is cached, use <see cref="System.Diagnostics.Process.Refresh" /> beforehand to guarantee that you'll retrieve the current handle.
+        /// <remarks>The main window is the window opened by the process that currently has the focus (the <see cref="System.Windows.Forms.Form.TopLevel" /> form). You must use the <see cref="System.Diagnostics.Process.Refresh" /> method to refresh the <see cref="System.Diagnostics.Process" /> object to get the most up to date main window handle if it has changed. In general, because the window handle is cached, use <see cref="System.Diagnostics.Process.Refresh" /> beforehand to guarantee that you'll retrieve the current handle.
         /// You can get the <see cref="System.Diagnostics.Process.MainWindowHandle" /> property only for processes that are running on the local computer. The <see cref="System.Diagnostics.Process.MainWindowHandle" /> property is a value that uniquely identifies the window that is associated with the process.
         /// A process has a main window associated with it only if the process has a graphical interface. If the associated process does not have a main window, the <see cref="System.Diagnostics.Process.MainWindowHandle" /> value is zero. The value is also zero for processes that have been hidden, that is, processes that are not visible in the taskbar. This can be the case for processes that appear as icons in the notification area, at the far right of the taskbar.
         /// If you have just started a process and want to use its main window handle, consider using the <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> method to allow the process to finish starting, ensuring that the main window handle has been created. Otherwise, an exception will be thrown.</remarks>
@@ -285,17 +285,18 @@ namespace System.Diagnostics
 
         /// <summary>Gets the caption of the main window of the process.</summary>
         /// <value>The main window title of the process.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// A process has a main window associated with it only if the process has a graphical interface. If the associated process does not have a main window (so that <xref:System.Diagnostics.Process.MainWindowHandle%2A> is zero), or if the system can't determine that there's a main window (such as may be the case on some Unix platforms), <xref:System.Diagnostics.Process.MainWindowTitle%2A> is an empty string ("").
-        /// If you have just started a process and want to use its main window title, consider using the <xref:System.Diagnostics.Process.WaitForInputIdle%2A> method to allow the process to finish starting, ensuring that the main window handle has been created. Otherwise, the system throws an exception.
+        /// <remarks>A process has a main window associated with it only if the process has a graphical interface. If the associated process does not have a main window (so that <see cref="System.Diagnostics.Process.MainWindowHandle" /> is zero), or if the system can't determine that there's a main window (such as may be the case on some Unix platforms), <see cref="System.Diagnostics.Process.MainWindowTitle" /> is an empty string ("").
+        /// If you have just started a process and want to use its main window title, consider using the <see cref="O:System.Diagnostics.Process.WaitForInputIdle" /> method to allow the process to finish starting, ensuring that the main window handle has been created. Otherwise, the system throws an exception.
+        /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
         /// >  The main window is the window that currently has the focus; note that this might not be the primary window for the process. You must use the <xref:System.Diagnostics.Process.Refresh%2A> method to refresh the <xref:System.Diagnostics.Process> object to get the most up to date main window handle if it has changed.
-        /// ## Examples
-        /// The following example starts an instance of Notepad and retrieves the caption of the main window of the process.
+        /// ]]></format></remarks>
+        /// <example>The following example starts an instance of Notepad and retrieves the caption of the main window of the process.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[process_MainWindowTitle#1](~/samples/snippets/cpp/VS_Snippets_CLR/Process_MainWindowTitle/CPP/process_mainwindowtitle.cpp#1)]
         /// [!code-csharp[process_MainWindowTitle#1](~/samples/snippets/csharp/VS_Snippets_CLR/Process_MainWindowTitle/CS/process_mainwindowtitle.cs#1)]
         /// [!code-vb[process_MainWindowTitle#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Process_MainWindowTitle/VB/process_mainwindowtitle.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.InvalidOperationException">The <see cref="System.Diagnostics.Process.MainWindowTitle" /> property is not defined because the process has exited.</exception>
         /// <exception cref="System.NotSupportedException">You are trying to access the <see cref="System.Diagnostics.Process.MainWindowTitle" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         public string MainWindowTitle
@@ -328,16 +329,15 @@ namespace System.Diagnostics
 
         /// <summary>Gets a value indicating whether the user interface of the process is responding.</summary>
         /// <value><see langword="true" /> if the user interface of the associated process is responding to the system; otherwise, <see langword="false" />.</value>
-        /// <remarks><format type="text/markdown"><![CDATA[
-        /// The value returned by this property represents the most recently refreshed status. To get the most up to date status, you need to call <xref:System.Diagnostics.Process.Refresh> method first.
-        /// If a process has a user interface, the <xref:System.Diagnostics.Process.Responding%2A> property contacts the user interface to determine whether the process is responding to user input. If the interface does not respond immediately, the <xref:System.Diagnostics.Process.Responding%2A> property returns `false`. Use this property to determine whether the interface of the associated process has stopped responding.
-        /// If the process does not have a <xref:System.Diagnostics.Process.MainWindowHandle%2A>, this property returns `true`.
-        /// ## Examples
-        /// The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <remarks>The value returned by this property represents the most recently refreshed status. To get the most up to date status, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
+        /// If a process has a user interface, the <see cref="System.Diagnostics.Process.Responding" /> property contacts the user interface to determine whether the process is responding to user input. If the interface does not respond immediately, the <see cref="System.Diagnostics.Process.Responding" /> property returns <see langword="false" />. Use this property to determine whether the interface of the associated process has stopped responding.
+        /// If the process does not have a <see cref="System.Diagnostics.Process.MainWindowHandle" />, this property returns <see langword="true" />.</remarks>
+        /// <example>The following example starts an instance of Notepad. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays the process's exit code.
+        /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
         /// [!code-csharp[Diag_Process_MemoryProperties64#1](~/samples/snippets/csharp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CS/source.cs#1)]
         /// [!code-vb[Diag_Process_MemoryProperties64#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/Diag_Process_MemoryProperties64/VB/source.vb#1)]
-        /// ]]></format></remarks>
+        /// ]]></format></example>
         /// <exception cref="System.InvalidOperationException">There is no process associated with this <see cref="System.Diagnostics.Process" /> object.</exception>
         /// <exception cref="System.NotSupportedException">You are attempting to access the <see cref="System.Diagnostics.Process.Responding" /> property for a process that is running on a remote computer. This property is available only for processes that are running on the local computer.</exception>
         /// <altmember cref="System.Diagnostics.Process.MainWindowHandle"/>
