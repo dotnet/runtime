@@ -271,6 +271,7 @@ replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
+replay_common_parser.add_argument("--jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1427,6 +1428,10 @@ class SuperPMIReplay:
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+            if self.coreclr_args.jitoption:
+               for o in self.coreclr_args.jitoption:
+                  repro_flags += "-jitoption", o
 
             common_flags += repro_flags
 
@@ -2967,6 +2972,11 @@ def setup_args(args):
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
     if coreclr_args.mode == "collect":
 
