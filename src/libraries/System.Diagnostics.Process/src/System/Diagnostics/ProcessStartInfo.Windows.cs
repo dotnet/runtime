@@ -66,7 +66,7 @@ namespace System.Diagnostics
         /// For more information about secure strings and an example of how to obtain a password to set this property, see the <see cref="System.Security.SecureString" /> class.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
-        /// >  If you provide a value for the <xref:System.Diagnostics.ProcessStartInfo.Password%2A> property, the <xref:System.Diagnostics.ProcessStartInfo.UseShellExecute%2A> property must be `false`, or an <xref:System.InvalidOperationException> will be thrown when the <xref:System.Diagnostics.Process.Start%28System.Diagnostics.ProcessStartInfo%29?displayProperty=nameWithType> method is called.
+        /// >  If you provide a value for the <xref:System.Diagnostics.ProcessStartInfo.Password%2A> property, the <xref:System.Diagnostics.ProcessStartInfo.UseShellExecute%2A> property must be `false`, or an <xref:System.InvalidOperationException> will be thrown when the <xref:System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)?displayProperty=nameWithType> method is called.
         /// ]]></format></remarks>
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]

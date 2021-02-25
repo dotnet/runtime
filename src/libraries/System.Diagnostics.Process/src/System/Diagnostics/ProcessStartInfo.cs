@@ -93,8 +93,8 @@ namespace System.Diagnostics
 
         /// <summary>Gets a collection of command-line arguments to use when starting the application. Strings added to the list don't need to be previously escaped.</summary>
         /// <value>A collection of command-line arguments.</value>
-        /// <remarks>`ArgumentList` and the <see cref="System.Diagnostics.ProcessStartInfo.Arguments" /> property are independent of one another and **only one of them can be used at the same time**. The main difference between both APIs is that `ArgumentList` takes care of escaping the provided arguments and **internally** builds a single string that is passed to operating system when calling `Process.Start(info)`. So if you are not sure how to properly escape your arguments, you should choose `ArgumentList` over <see cref="System.Diagnostics.ProcessStartInfo.Arguments" />.
-        /// ```</remarks>
+        /// <remarks>The <see cref="System.Diagnostics.ProcessStartInfo.ArgumentList" /> and <see cref="System.Diagnostics.ProcessStartInfo.Arguments" /> properties are independent of one another and <b>only one of them can be used at the same time</b>. The main difference between both APIs is that <see cref="System.Diagnostics.ProcessStartInfo.ArgumentList" /> takes care of escaping the provided arguments and <b>internally</b> builds a single string that is passed to operating system when calling <see cref="System.Diagnostics.Process.Start(ProcessStartInfo)" />. So if you are not sure how to properly escape your arguments, you should choose <see cref="System.Diagnostics.ProcessStartInfo.ArgumentList" /> over <see cref="System.Diagnostics.ProcessStartInfo.Arguments" />.
+        /// </remarks>
         /// <example>This example adds three arguments to the process start info.
         /// <code class="lang-csharp">
         /// var info = new System.Diagnostics.ProcessStartInfo("cmd.exe");
@@ -123,7 +123,8 @@ namespace System.Diagnostics
         /// info.ArgumentList.Add("C:\Program Files\dotnet")
         /// ' The corresponding assignment to the Arguments property is:
         /// info.Arguments = "/c dir ""C:\Program Files\dotnet"""
-        /// ```</example>
+        /// </code>
+        /// </example>
         public Collection<string> ArgumentList => _argumentList ??= new Collection<string>();
 
         internal bool HasArgumentList => _argumentList is not null && _argumentList.Count != 0;
@@ -202,7 +203,7 @@ namespace System.Diagnostics
         /// > [!NOTE]
         /// >  You must set <xref:System.Diagnostics.ProcessStartInfo.UseShellExecute%2A> to `false` if you want to set <xref:System.Diagnostics.ProcessStartInfo.RedirectStandardOutput%2A> to `true`. Otherwise, reading from the <xref:System.Diagnostics.Process.StandardOutput%2A> stream throws an exception.
         /// ]]></format>
-        /// The redirected <see cref="System.Diagnostics.Process.StandardOutput" /> stream can be read synchronously or asynchronously. Methods such as <see cref="System.IO.StreamReader.Read" />, <see cref="System.IO.StreamReader.ReadLine" />, and <see cref="System.IO.StreamReader.ReadToEnd" /> perform synchronous read operations on the output stream of the process. These synchronous read operations do not complete until the associated <see cref="System.Diagnostics.Process" /> writes to its <see cref="System.Diagnostics.Process.StandardOutput" /> stream, or closes the stream.
+        /// The redirected <see cref="System.Diagnostics.Process.StandardOutput" /> stream can be read synchronously or asynchronously. Methods such as <see cref="O:System.IO.StreamReader.Read" />, <see cref="System.IO.StreamReader.ReadLine" />, and <see cref="System.IO.StreamReader.ReadToEnd" /> perform synchronous read operations on the output stream of the process. These synchronous read operations do not complete until the associated <see cref="System.Diagnostics.Process" /> writes to its <see cref="System.Diagnostics.Process.StandardOutput" /> stream, or closes the stream.
         /// In contrast, <see cref="System.Diagnostics.Process.BeginOutputReadLine" /> starts asynchronous read operations on the <see cref="System.Diagnostics.Process.StandardOutput" /> stream. This method enables a designated event handler (see <see cref="System.Diagnostics.Process.OutputDataReceived" />) for the stream output and immediately returns to the caller, which can perform other work while the stream output is directed to the event handler.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
@@ -240,7 +241,7 @@ namespace System.Diagnostics
         /// > [!NOTE]
         /// >  You must set <xref:System.Diagnostics.ProcessStartInfo.UseShellExecute%2A> to `false` if you want to set <xref:System.Diagnostics.ProcessStartInfo.RedirectStandardError%2A> to `true`. Otherwise, reading from the <xref:System.Diagnostics.Process.StandardError%2A> stream throws an exception.
         /// ]]></format>
-        /// The redirected <see cref="System.Diagnostics.Process.StandardError" /> stream can be read synchronously or asynchronously. Methods such as <see cref="System.IO.StreamReader.Read" />, <see cref="System.IO.StreamReader.ReadLine" /> and <see cref="System.IO.StreamReader.ReadToEnd" /> perform synchronous read operations on the error output stream of the process. These synchronous read operations do not complete until the associated <see cref="System.Diagnostics.Process" /> writes to its <see cref="System.Diagnostics.Process.StandardError" /> stream, or closes the stream.
+        /// The redirected <see cref="System.Diagnostics.Process.StandardError" /> stream can be read synchronously or asynchronously. Methods such as <see cref="O:System.IO.StreamReader.Read" />, <see cref="System.IO.StreamReader.ReadLine" /> and <see cref="System.IO.StreamReader.ReadToEnd" /> perform synchronous read operations on the error output stream of the process. These synchronous read operations do not complete until the associated <see cref="System.Diagnostics.Process" /> writes to its <see cref="System.Diagnostics.Process.StandardError" /> stream, or closes the stream.
         /// In contrast, <see cref="System.Diagnostics.Process.BeginErrorReadLine" /> starts asynchronous read operations on the <see cref="System.Diagnostics.Process.StandardError" /> stream. This method enables a designated event handler for the stream output and immediately returns to the caller, which can perform other work while the stream output is directed to the event handler.
         /// <format type="text/markdown"><![CDATA[
         /// > [!NOTE]
@@ -339,13 +340,13 @@ namespace System.Diagnostics
         /// <remarks>If <see cref="System.Diagnostics.ProcessStartInfo.ErrorDialog" /> is <see langword="true" />, the <see cref="System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle" /> property specifies the parent window for the dialog box that is shown. It is useful to specify a parent to keep the dialog box in front of the application.</remarks>
         public IntPtr ErrorDialogParentHandle { get; set; }
 
-        /// <summary>Gets or sets the user name to use when starting the process. If you use the UPN format, <paramref name="user" />@<paramref name="DNS_domain_name" />, the <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> property must be <see langword="null" />.</summary>
-        /// <value>The user name to use when starting the process. If you use the UPN format, <paramref name="user" />@<paramref name="DNS_domain_name" />, the <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> property must be <see langword="null" />.</value>
+        /// <summary>Gets or sets the user name to use when starting the process. If you use the UPN format, <c>user</c>@<c>DNS_domain_name</c>, the <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> property must be <see langword="null" />.</summary>
+        /// <value>The user name to use when starting the process. If you use the UPN format, <c>user</c>@<c>DNS_domain_name</c>, the <see cref="System.Diagnostics.ProcessStartInfo.Domain" /> property must be <see langword="null" />.</value>
         /// <remarks><format type="text/markdown"><![CDATA[
         /// > [!IMPORTANT]
         /// >  The <xref:System.Diagnostics.ProcessStartInfo.WorkingDirectory%2A> property must be set if <xref:System.Diagnostics.ProcessStartInfo.UserName%2A> and <xref:System.Diagnostics.ProcessStartInfo.Password%2A> are provided. If the property is not set, the default working directory is %SYSTEMROOT%\system32.
         /// ]]></format>
-        /// If the <see cref="System.Diagnostics.ProcessStartInfo.UserName" /> property is not <see langword="null" /> or an empty string, the <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> property must be <see langword="false" />, or an <see cref="System.InvalidOperationException" /> will be thrown when the <see cref="System.Diagnostics.Process.Start%28System.Diagnostics.ProcessStartInfo%29" /> method is called.</remarks>
+        /// If the <see cref="System.Diagnostics.ProcessStartInfo.UserName" /> property is not <see langword="null" /> or an empty string, the <see cref="System.Diagnostics.ProcessStartInfo.UseShellExecute" /> property must be <see langword="false" />, or an <see cref="System.InvalidOperationException" /> will be thrown when the <see cref="System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)" /> method is called.</remarks>
         public string UserName
         {
             get => _userName ?? string.Empty;
