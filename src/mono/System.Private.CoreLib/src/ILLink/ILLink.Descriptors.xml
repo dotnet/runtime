@@ -308,8 +308,11 @@
 		<type fullname="System.RuntimeMethodHandle" preserve="fields" />
 
 		<!-- domain.c: mono_defaults.runtimetype_class -->
-		<!-- under mono, this has no runtime visible fields -->
-		<type fullname="System.RuntimeType" preserve="nothing" />
+		<!-- under mono, this has no runtime visible fields but the constructor can be called from unmanaged code in mono_type_get_object_checked -->
+		<!-- RuntimeType is a fundamental type and the constructor is called by the runtime to implement reflection primitives like Object.GetType() and typeof(C) -->
+		<type fullname="System.RuntimeType">
+			<method signature="System.Void .ctor()" />
+		</type>
 
 		<!-- domain.c: mono_defaults.typehandle_class -->
 		<type fullname="System.RuntimeTypeHandle" preserve="fields" />
@@ -548,11 +551,6 @@
 			<method signature="System.Void .ctor(System.Object)" />
 		</type>
 
-		<!-- Used by metadata update -->
-		<type fullname="System.Runtime.CompilerServices.RuntimeFeature">
-			<method name="LoadMetadataUpdate" />
-		</type>
-
 		<!-- domain.c: mono_defaults.marshal_class -->
 		<type fullname="System.Runtime.InteropServices.Marshal" preserve="fields" >
 			<!-- marshal.c (mono_marshal_get_struct_to_ptr) -->
@@ -637,5 +635,12 @@
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+    <!-- Used by metadata update -->
+    <!-- TODO: Remove this and add a debugger-libs command to invoke updates, see https://github.com/dotnet/runtime/issues/48458 -->
+		<type fullname="System.Reflection.Metadata.AssemblyExtensions">
+			<method name="ApplyUpdateSdb" />
+		</type>
+
 	</assembly>
 </linker>

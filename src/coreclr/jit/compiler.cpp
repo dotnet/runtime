@@ -5583,6 +5583,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        // Get the assembly name, to aid finding any particular SuperPMI method context function
+        (void)info.compCompHnd->getAssemblyName(
+            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+    }
+#endif // DEBUG
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
 #if defined(DEBUG) || defined(LATE_DISASM)

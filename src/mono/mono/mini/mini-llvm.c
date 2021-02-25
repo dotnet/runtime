@@ -287,7 +287,7 @@ static MonoLLVMModule aot_module;
 static GHashTable *intrins_id_to_intrins;
 static LLVMTypeRef sse_i1_t, sse_i2_t, sse_i4_t, sse_i8_t, sse_r4_t, sse_r8_t;
 
-static void init_jit_module (MonoDomain *domain);
+static MonoLLVMModule *init_jit_module (void);
 
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
 static void emit_default_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder);
@@ -9057,7 +9057,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XOP_I4_I4_I4:
 		case OP_XOP_I4_I4_I8: {
 			IntrinsicId id = (IntrinsicId)0;
-			gboolean zext_last = FALSE;
+			gboolean zext_last = FALSE, bitcast_result = FALSE, getElement = FALSE;
+			int element_idx = -1;
 			switch (ins->inst_c0) {
 			case SIMD_OP_ARM64_CRC32B: id = INTRINS_AARCH64_CRC32B; zext_last = TRUE; break;
 			case SIMD_OP_ARM64_CRC32H: id = INTRINS_AARCH64_CRC32H; zext_last = TRUE; break;
@@ -9079,32 +9080,50 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE; break;
 			case SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT; break;
 			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE; break;
+			case SIMD_OP_ARM64_PMULL64_LOWER:
+				id = INTRINS_AARCH64_PMULL64;
+				getElement = TRUE;
+				element_idx = 0;
+				bitcast_result = TRUE;
+				break;
+			case SIMD_OP_ARM64_PMULL64_UPPER:
+				id = INTRINS_AARCH64_PMULL64;
+				getElement = TRUE;
+				element_idx = 1;
+				bitcast_result = TRUE;
+				break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
 			if (zext_last)
 				arg1 = LLVMBuildZExt (ctx->builder, arg1, LLVMInt32Type (), "");
 			LLVMValueRef args [] = { lhs, arg1 };
+			if (getElement) {
+				args [0] = LLVMBuildExtractElement (ctx->builder, args [0], const_int32 (element_idx), "");
+				args [1] = LLVMBuildExtractElement (ctx->builder, args [1], const_int32 (element_idx), "");
+			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			if (bitcast_result)
+				values [ins->dreg] = convert (ctx, values [ins->dreg], LLVMVectorType (LLVMInt64Type (), 2));
 			break;
 		}
 		case OP_XOP_X_X_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
 			gboolean getLowerElement = FALSE;
-			int idx = -1;
+			int arg_idx = -1;
 			switch (ins->inst_c0) {
 			case SIMD_OP_ARM64_SHA1SU0: id = INTRINS_AARCH64_SHA1SU0; break;
 			case SIMD_OP_ARM64_SHA256H: id = INTRINS_AARCH64_SHA256H; break;
 			case SIMD_OP_ARM64_SHA256H2: id = INTRINS_AARCH64_SHA256H2; break;
 			case SIMD_OP_ARM64_SHA256SU1: id = INTRINS_AARCH64_SHA256SU1; break;
-			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; idx = 1; break;
-			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; idx = 1; break;
-			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; getLowerElement = TRUE; idx = 1; break;
+			case SIMD_OP_ARM64_SHA1C: id = INTRINS_AARCH64_SHA1C; getLowerElement = TRUE; arg_idx = 1; break;
+			case SIMD_OP_ARM64_SHA1M: id = INTRINS_AARCH64_SHA1M; getLowerElement = TRUE; arg_idx = 1; break;
+			case SIMD_OP_ARM64_SHA1P: id = INTRINS_AARCH64_SHA1P; getLowerElement = TRUE; arg_idx = 1; break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef args [] = { lhs, rhs, arg3 };
 			if (getLowerElement)
-				args [idx] = LLVMBuildExtractElement (ctx->builder, args [idx], const_int32 (0), "");
+				args [arg_idx] = LLVMBuildExtractElement (ctx->builder, args [arg_idx], const_int32 (0), "");
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
@@ -9575,8 +9594,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			method_name = mono_aot_get_method_name (cfg);
 		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
-		init_jit_module (cfg->domain);
-		ctx->module = (MonoLLVMModule*)domain_jit_info (cfg->domain)->llvm_module;
+		ctx->module = init_jit_module ();
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 	ctx->method_name = method_name;
@@ -10592,10 +10610,9 @@ mono_llvm_cleanup (void)
 }
 
 void
-mono_llvm_free_domain_info (MonoDomain *domain)
+mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
-	MonoJitDomainInfo *info = domain_jit_info (domain);
-	MonoLLVMModule *module = (MonoLLVMModule*)info->llvm_module;
+	MonoLLVMModule *module = (MonoLLVMModule*)mem_manager->llvm_module;
 	int i;
 
 	if (!module)
@@ -10614,7 +10631,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 
 	g_free (module);
 
-	info->llvm_module = NULL;
+	mem_manager->llvm_module = NULL;
 }
 
 void
@@ -11646,7 +11663,7 @@ mono_llvm_cleanup (void)
 }
 
 void
-mono_llvm_free_domain_info (MonoDomain *domain)
+mono_llvm_free_mem_manager (MonoJitMemoryManager *mem_manager)
 {
 }
 
@@ -11750,27 +11767,26 @@ decode_llvm_eh_info (EmitContext *ctx, gpointer eh_frame)
 	}
 }
 
-static void
-init_jit_module (MonoDomain *domain)
+static MonoLLVMModule*
+init_jit_module (void)
 {
-	MonoJitDomainInfo *dinfo;
+	MonoJitMemoryManager *jit_mm;
 	MonoLLVMModule *module;
-	char *name;
 
-	dinfo = domain_jit_info (domain);
-	if (dinfo->llvm_module)
-		return;
+	// FIXME:
+	jit_mm = get_default_jit_mm ();
+	if (jit_mm->llvm_module)
+		return (MonoLLVMModule*)jit_mm->llvm_module;
 
 	mono_loader_lock ();
 
-	if (dinfo->llvm_module) {
+	if (jit_mm->llvm_module) {
 		mono_loader_unlock ();
-		return;
+		return (MonoLLVMModule*)jit_mm->llvm_module;
 	}
 
 	module = g_new0 (MonoLLVMModule, 1);
 
-	name = g_strdup_printf ("mono-%s", domain->friendly_name);
 	module->context = LLVMGetGlobalContext ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
 
@@ -11785,17 +11801,17 @@ init_jit_module (MonoDomain *domain)
 
 	mono_memory_barrier ();
 
-	dinfo->llvm_module = module;
+	jit_mm->llvm_module = module;
 
 	mono_loader_unlock ();
+
+	return (MonoLLVMModule*)jit_mm->llvm_module;
 }
 
 static void
 llvm_jit_finalize_method (EmitContext *ctx)
 {
 	MonoCompile *cfg = ctx->cfg;
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitDomainInfo *domain_info;
 	int nvars = g_hash_table_size (ctx->jit_callees);
 	LLVMValueRef *callee_vars = g_new0 (LLVMValueRef, nvars); 
 	gpointer *callee_addrs = g_new0 (gpointer, nvars);
@@ -11832,25 +11848,27 @@ llvm_jit_finalize_method (EmitContext *ctx)
 
 	decode_llvm_eh_info (ctx, eh_frame);
 
-	mono_domain_lock (domain);
-	domain_info = domain_jit_info (domain);
-	if (!domain_info->llvm_jit_callees)
-		domain_info->llvm_jit_callees = g_hash_table_new (NULL, NULL);
+	// FIXME:
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+	jit_mm_lock (jit_mm);
+	if (!jit_mm->llvm_jit_callees)
+		jit_mm->llvm_jit_callees = g_hash_table_new (NULL, NULL);
 	g_hash_table_iter_init (&iter, ctx->jit_callees);
 	i = 0;
 	while (g_hash_table_iter_next (&iter, (void**)&callee, (void**)&var)) {
-		GSList *addrs = (GSList*)g_hash_table_lookup (domain_info->llvm_jit_callees, callee);
+		GSList *addrs = (GSList*)g_hash_table_lookup (jit_mm->llvm_jit_callees, callee);
 		addrs = g_slist_prepend (addrs, callee_addrs [i]);
-		g_hash_table_insert (domain_info->llvm_jit_callees, callee, addrs);
+		g_hash_table_insert (jit_mm->llvm_jit_callees, callee, addrs);
 		i ++;
 	}
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 }
 
 #else
 
-static void
-init_jit_module (MonoDomain *domain)
+static MonoLLVMModule*
+init_jit_module (void)
 {
 	g_assert_not_reached ();
 }
@@ -11889,7 +11907,7 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 #if defined(TARGET_ARM64)
 		{ "crc",	MONO_CPU_ARM64_CRC },
 		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
-		{ "neon",	MONO_CPU_ARM64_ADVSIMD }
+		{ "neon",	MONO_CPU_ARM64_NEON }
 #endif
 #if defined(TARGET_WASM)
 		{ "simd",	MONO_CPU_WASM_SIMD },

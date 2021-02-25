@@ -2189,7 +2189,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
 	if (klass != mono_defaults.runtimetype_class) {
-		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
@@ -2219,7 +2219,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	mono_class_set_runtime_vtable (klass, vt);
 
 	if (klass == mono_defaults.runtimetype_class) {
-		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_loader_unlock ();
@@ -3080,7 +3080,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		}
 
 		args [0] = ptr;
-		args [1] = mono_type_get_object_checked (mono_domain_get (), type, error);
+		args [1] = mono_type_get_object_checked (type, error);
 		goto_if_nok (error, return_null);
 
 		o = mono_runtime_invoke_checked (m, NULL, args, error);
@@ -4178,20 +4178,6 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObjectHandle delegate
 	}
 }
 
-static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
-
-/**
- * mono_runtime_unhandled_exception_policy_get:
- *
- * This is a VM internal routine.
- *
- * Gets the runtime policy for handling unhandled exceptions.
- */
-MonoRuntimeUnhandledExceptionPolicy
-mono_runtime_unhandled_exception_policy_get (void)
-{
-	return runtime_unhandled_exception_policy;
-}
 
 void
 mono_unhandled_exception_internal (MonoObject *exc_raw)
@@ -4379,12 +4365,8 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 
 leave:
 
-	/* set exitcode only if we will abort the process */
-	if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
-		 || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
-	{
-		mono_environment_exitcode_set (1);
-	}
+	/* set exitcode if we will abort the process */
+        mono_environment_exitcode_set (1);
 }
 
 /**
@@ -4646,7 +4628,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 						 * boxed object in the arg array with the copy.
 						 */
 						MonoObject *orig = mono_array_get_internal (params, MonoObject*, i);
-						MonoObject *copy = mono_value_box_checked (mono_domain_get (), orig->vtable->klass, mono_object_unbox_internal (orig), error);
+						MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
 						return_val_if_nok (error, NULL);
 						mono_array_setref_internal (params, i, copy);
 					}
@@ -4869,7 +4851,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			if (!params) {
 				goto_if_nok (error, exit_null);
 			} else {
-				res = mono_value_box_checked (mono_domain_get (), m_class_get_cast_class (method->klass), pa [0], error);
+				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
 				goto exit;
 			}
 		}
@@ -4884,7 +4866,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			else
 				o = obj;
 		} else if (m_class_is_valuetype (method->klass)) {
-			MonoObjectHandle obj_h = mono_value_box_handle (mono_domain_get (), method->klass, obj, error);
+			MonoObjectHandle obj_h = mono_value_box_handle (method->klass, obj, error);
 			goto_if_nok (error, exit_null);
 			obj = MONO_HANDLE_RAW (obj_h);
 		}
@@ -4906,7 +4888,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				goto_if_nok (error, exit_null);
 				MonoObject* nullable = MONO_HANDLE_RAW (nullable_h);
 
-				MonoObjectHandle boxed_h = mono_value_box_handle (mono_domain_get (), m_class_get_cast_class (method->klass), obj, error);
+				MonoObjectHandle boxed_h = mono_value_box_handle (m_class_get_cast_class (method->klass), obj, error);
 				goto_if_nok (error, exit_null);
 				mono_nullable_init ((guint8 *)mono_object_unbox_internal (nullable), MONO_HANDLE_RAW (boxed_h), method->klass);
 				obj = mono_object_unbox_internal (nullable);
@@ -4949,11 +4931,11 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
 				tmpret->byref = FALSE;
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (mono_domain_get (), tmpret, error);
+				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 				mono_metadata_free_type (tmpret);
 			} else {
-				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (mono_domain_get (), sig->ret, error);
+				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (sig->ret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 			}
 			goto_if_nok (error, exit_null);
@@ -5205,7 +5187,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 			vtable->domain->create_proxy_for_type_method = im;
 		}
 	
-		pa [0] = mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error);
+		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
 		if (!is_ok (error))
 			return NULL;
 
@@ -5252,7 +5234,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 		}
 
 		// FIXMEcoop
-		gpointer pa[ ] = { mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error) };
+		gpointer pa[ ] = { mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error) };
 		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 
 		// FIXMEcoop
@@ -5926,8 +5908,9 @@ mono_string_empty (MonoDomain *domain)
 }
 
 MonoStringHandle
-mono_string_empty_handle (MonoDomain *domain)
+mono_string_empty_handle (void)
 {
+	MonoDomain *domain = mono_get_root_domain ();
 	return MONO_HANDLE_NEW (MonoString, mono_string_empty_internal (domain));
 }
 
@@ -6310,7 +6293,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	MonoObject *result;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	result = mono_value_box_checked (domain, klass, value, error);
+	result = mono_value_box_checked (klass, value, error);
 	mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -6318,7 +6301,6 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 
 /**
  * mono_value_box_handle:
- * \param domain the domain of the new object
  * \param class the class of the value
  * \param value a pointer to the unboxed data
  * \param error set on error
@@ -6326,7 +6308,7 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
  * returns NULL and sets \p error.
  */
 MonoObjectHandle
-mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 {
 	// FIXMEcoop gpointer value needs more attention
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -6393,7 +6375,6 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 
 /**
  * mono_value_box_checked:
- * \param domain the domain of the new object
  * \param class the class of the value
  * \param value a pointer to the unboxed data
  * \param error set on error
@@ -6401,10 +6382,10 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
  * returns NULL and sets \p error.
  */
 MonoObject *
-mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+mono_value_box_checked (MonoClass *klass, gpointer value, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_OBJ (mono_value_box_handle (domain, klass, value,  error));
+	HANDLE_FUNCTION_RETURN_OBJ (mono_value_box_handle (klass, value,  error));
 }
 
 void

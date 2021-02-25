@@ -56,13 +56,14 @@ if(CLR_CMAKE_HOST_WIN32)
   add_definitions(-DWIN32_LEAN_AND_MEAN)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif(CLR_CMAKE_HOST_WIN32)
-if(CLR_CMAKE_TARGET_WIN32)
-  if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-    # Only enable edit and continue on windows x86 and x64
-    # exclude Linux, arm & arm64
-    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:EnC_SUPPORTED>)
-  endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-endif(CLR_CMAKE_TARGET_WIN32)
+
+# Only enable edit and continue on x86 and x64, exclude arm & arm64
+if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:EnC_SUPPORTED>)
+  if(CLR_CMAKE_TARGET_WIN32)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_ENC_SUPPORTED>)
+  endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 
 # Features - please keep them alphabetically sorted
 if(CLR_CMAKE_TARGET_WIN32)
@@ -104,7 +105,6 @@ add_definitions(-DFEATURE_DEFAULT_INTERFACES)
 if(FEATURE_EVENT_TRACE)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_EVENT_TRACE>)
     add_definitions(-DFEATURE_PERFTRACING)
-    add_definitions(-DFEATURE_PERFTRACING_C_LIB)
 else(FEATURE_EVENT_TRACE)
     add_custom_target(eventing_headers) # add a dummy target to avoid checking for FEATURE_EVENT_TRACE in multiple places
 endif(FEATURE_EVENT_TRACE)
