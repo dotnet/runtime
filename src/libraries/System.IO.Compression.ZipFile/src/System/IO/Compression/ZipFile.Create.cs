@@ -12,7 +12,6 @@ namespace System.IO.Compression
     /// <remarks><format type="text/markdown"><![CDATA[
     /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/ZipFile/ZipFile.md)]
     /// ]]></format></remarks>
-    /// <related type="Article" href="/visualstudio/ide/how-to-add-or-remove-references-by-using-the-reference-manager">How to: Add or Remove References By Using the Reference Manager</related>
     public static partial class ZipFile
     {
         /// <summary>Opens a zip archive for reading at the specified path.</summary>
