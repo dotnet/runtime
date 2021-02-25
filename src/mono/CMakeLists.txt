@@ -393,8 +393,9 @@ elseif(TARGET_ARCH STREQUAL "arm64")
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  # FIXME:
-  add_definitions("-DARM_FPU_VFP=1")
+  # FIXME: it needs to be passed dynamically
+  #add_definitions("-DARM_FPU_VFP=1")
+  add_definitions("-DARM_FPU_NONE")
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
 elseif(TARGET_ARCH STREQUAL "s390x")
