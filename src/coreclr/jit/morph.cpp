@@ -7637,10 +7637,58 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-    // This block is not longer any block's predecessor. If we end up
-    // converting this tail call to a branch, we'll add appropriate
-    // successor information then.
-    fgRemoveBlockAsPred(compCurBB);
+    // If this block has a flow successor, make suitable updates.
+    //
+    BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
+
+    if (nextBlock != nullptr)
+    {
+        // Flow no longer reaches nextBlock from here.
+        //
+        fgRemoveRefPred(nextBlock, compCurBB);
+
+        if (compCurBB->hasProfileWeight() && nextBlock->hasProfileWeight())
+        {
+            // Since we had linear flow we can update the next block weight.
+            //
+            // Note if this is a tail call to loop, further updates
+            // are needed once we install the loop edge.
+            //
+            // We should not need to handle the case where this block has already
+            // been "merged" to a common return.
+            //
+            assert(nextBlock->bbJumpKind == BBJ_RETURN);
+
+            BasicBlock::weight_t const blockWeight = compCurBB->bbWeight;
+            BasicBlock::weight_t const nextWeight  = nextBlock->bbWeight;
+            BasicBlock::weight_t const newWeight   = nextWeight - blockWeight;
+
+            // If the math would result in an negative weight then there's
+            // no local repair we can do; just leave things inconsistent.
+            //
+            if (newWeight >= 0)
+            {
+                // Note if we'd already morphed the IR in nextblock we might
+                // have done something profile sensitive that we should arguably reconsider.
+                //
+                JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
+                        nextWeight, newWeight);
+
+                nextBlock->setBBProfileWeight(newWeight);
+
+                if (newWeight == 0.0f)
+                {
+                    nextBlock->bbFlags |= BBF_RUN_RARELY;
+                }
+            }
+            else
+            {
+                JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                        " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                        nextBlock->bbNum, nextWeight, compCurBB->bbNum, blockWeight);
+            }
+        }
+    }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
@@ -17074,13 +17122,31 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             fgRemoveStmt(block, lastStmt);
         }
-#ifdef DEBUG
-        if (verbose)
+
+        JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
+        DISPBLOCK(block);
+
+        if (block->hasProfileWeight())
         {
-            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-            fgTableDispBasicBlock(block);
+            BasicBlock::weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : 0.0f;
+            BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
+
+            JITDUMP("merging profile weight %.6f from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+                    block->bbNum, genReturnBB->bbNum);
+
+            genReturnBB->setBBProfileWeight(newWeight);
+
+            if (newWeight > 0.0f)
+            {
+                genReturnBB->bbFlags &= ~BBF_RUN_RARELY;
+            }
+            else
+            {
+                genReturnBB->bbFlags |= BBF_RUN_RARELY;
+            }
+
+            DISPBLOCK(genReturnBB);
         }
-#endif
     }
 }
 

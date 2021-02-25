@@ -44,6 +44,9 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_BB "BB%02u"
 
+// And this format for profile weights
+#define FMT_WT "%.7f"
+
 /*****************************************************************************
  *
  *  Each basic block ends with a jump which is described as a value
@@ -1291,8 +1294,14 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
+    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
     void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
 
     flowList(BasicBlock* block, flowList* rest)

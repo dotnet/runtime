@@ -2505,6 +2505,32 @@ private:
                     // merged return block are lexically forward.
 
                     insertionPoints[index] = returnBlock;
+
+                    // Update profile information in the mergedReturnBlock to
+                    // reflect the additional flow.
+                    //
+                    if (returnBlock->hasProfileWeight())
+                    {
+                        BasicBlock::weight_t const oldWeight =
+                            mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : 0.0f;
+                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+
+                        JITDUMP("merging profile weight %.6f from " FMT_BB " to const return " FMT_BB "\n",
+                                returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
+
+                        mergedReturnBlock->setBBProfileWeight(newWeight);
+
+                        if (newWeight > 0.0f)
+                        {
+                            mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
+                        }
+                        else
+                        {
+                            mergedReturnBlock->bbFlags |= BBF_RUN_RARELY;
+                        }
+
+                        DISPBLOCK(mergedReturnBlock);
+                    }
                 }
             }
         }
@@ -2512,6 +2538,8 @@ private:
         if (mergedReturnBlock == nullptr)
         {
             // No constant return block for this return; use the general one.
+            // We defer flow update and profile update to morph.
+            //
             mergedReturnBlock = comp->genReturnBB;
             if (mergedReturnBlock == nullptr)
             {
@@ -2528,20 +2556,6 @@ private:
 
         if (returnBlock != nullptr)
         {
-            // Propagate profile weight and related annotations to the merged block.
-            // Return weight should never exceed entry weight, so cap it to avoid nonsensical
-            // hot returns in synthetic profile settings.
-            mergedReturnBlock->bbWeight =
-                min(mergedReturnBlock->bbWeight + returnBlock->bbWeight, comp->fgFirstBB->bbWeight);
-            if (!returnBlock->hasProfileWeight())
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_PROF_WEIGHT;
-            }
-            if (mergedReturnBlock->bbWeight > 0)
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
-            }
-
             // Update fgReturnCount to reflect or anticipate that `returnBlock` will no longer
             // be a return point.
             comp->fgReturnCount--;
