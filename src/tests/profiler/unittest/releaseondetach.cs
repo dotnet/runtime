@@ -46,7 +46,7 @@ namespace Profiler.Tests
             PassCallbackToProfiler(() => _profilerDone.Set());
             if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
-                Console.WriteLine("Profiler did net set the callback, test will fail.");
+                Console.WriteLine("Profiler did not set the callback, test will fail.");
             }
 
             return 100;

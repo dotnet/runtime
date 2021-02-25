@@ -3,24 +3,7 @@
 
 #include "releaseondetach.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#else // WIN32
-#include <dlfcn.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <chrono>
 #include <thread>
-
-using std::string;
-using std::ifstream;
-using std::getline;
-
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#endif // __APPLE__
-#endif // WIN32
 
 using std::thread;
 

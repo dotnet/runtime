@@ -5,7 +5,6 @@
 
 #include "../profiler.h"
 
-#include <string>
 #include <atomic>
 
 typedef void (*ProfilerCallback) (void);
