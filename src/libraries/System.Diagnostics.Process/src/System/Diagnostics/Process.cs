@@ -438,7 +438,7 @@ namespace System.Diagnostics
         /// <value>The amount of system memory, in bytes, allocated for the associated process that cannot be written to the virtual memory paging file.</value>
         /// <remarks>The value returned by this property represents the most recently refreshed size of nonpaged system memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// System memory is the physical memory used by the operating system, and is divided into paged and nonpaged pools. Nonpaged memory allocations remain in system memory and are not paged out to the virtual memory paging file.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Nonpaged Bytes** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Pool Nonpaged Bytes</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -472,7 +472,7 @@ namespace System.Diagnostics
         /// <value>The amount of memory, in bytes, allocated in the virtual memory paging file for the associated process.</value>
         /// <remarks>The value returned by this property represents the most recently refreshed size of memory in the virtual memory paging file used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of memory used by the operating system for the process, use the <see cref="System.Diagnostics.Process.PagedSystemMemorySize64" /> property.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Page File Bytes</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application, and then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -506,7 +506,7 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of pageable system memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of system memory, in bytes, allocated for the associated process that can be written to the virtual memory paging file.</value>
         /// <remarks>The value returned by this property value represents the current size of pageable system memory used by the process, in bytes. System memory is the physical memory used by the operating system, and is divided into paged and nonpaged pools. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk. To obtain the size of the application memory used by the process, use the <see cref="System.Diagnostics.Process.PagedMemorySize64" /> property.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Pool Paged Bytes** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Pool Paged Bytes</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -540,7 +540,7 @@ namespace System.Diagnostics
         /// <summary>Gets the maximum amount of memory in the virtual memory paging file, in bytes, used by the associated process.</summary>
         /// <value>The maximum amount of memory, in bytes, allocated in the virtual memory paging file for the associated process since it was started.</value>
         /// <remarks>The value returned by this property value represents the maximum size of memory in the virtual memory paging file used by the process since it started, in bytes. The operating system uses the virtual memory paging file in conjunction with physical memory to manage the virtual address space for each process. When pageable memory is not in use, it can be transferred to the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Page File Bytes Peak** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Page File Bytes Peak</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -574,7 +574,7 @@ namespace System.Diagnostics
         /// <value>The maximum amount of physical memory, in bytes, allocated for the associated process since it was started.</value>
         /// <remarks>The value returned by this property represents the maximum size of working set memory used by the process since it started, in bytes. The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including instructions from the process modules and the system libraries.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set Peak** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Working Set Peak</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -614,7 +614,7 @@ namespace System.Diagnostics
         /// <summary>Gets the maximum amount of virtual memory, in bytes, used by the associated process.</summary>
         /// <value>The maximum amount of virtual memory, in bytes, allocated for the associated process since it was started.</value>
         /// <remarks>The value returned by this property represents the maximum size of virtual memory used by the process since it started, in bytes. The operating system maps the virtual address space for each process either to pages loaded in physical memory, or to pages stored in the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes Peak** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Virtual Bytes Peak</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -717,7 +717,7 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
         /// <value>The amount of memory, in bytes, allocated for the associated process that cannot be shared with other processes.</value>
         /// <remarks>The value returned by this property represents the most recently refreshed size of memory used by the process, in bytes, that cannot be shared with other processes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Private Bytes** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Private Bytes</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -910,7 +910,7 @@ namespace System.Diagnostics
         /// <value>The amount of virtual memory, in bytes, allocated for the associated process.</value>
         /// <remarks>The value returned by this property represents the most recently refreshed size of virtual memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The operating system maps the virtual address space for each process either to pages loaded in physical memory, or to pages stored in the virtual memory paging file on disk.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Virtual Bytes** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Virtual Bytes</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
@@ -1084,7 +1084,7 @@ namespace System.Diagnostics
         /// <remarks>The value returned by this property represents the most recently refreshed size of working set memory used by the process, in bytes. To get the most up to date size, you need to call <see cref="System.Diagnostics.Process.Refresh" /> method first.
         /// The working set of a process is the set of memory pages currently visible to the process in physical RAM memory. These pages are resident and available for an application to use without triggering a page fault.
         /// The working set includes both shared and private data. The shared data includes the pages that contain all the instructions that the process executes, including instructions in the process modules and the system libraries.
-        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the **Working Set** performance counter for the process.</remarks>
+        /// This property can be used to monitor memory usage on computers with 32-bit processors or 64-bit processors. The property value is equivalent to the <b>Working Set</b> performance counter for the process.</remarks>
         /// <example>The following code example starts an instance of the Notepad application. The example then retrieves and displays various properties of the associated process. The example detects when the process exits, and displays its exit code and peak memory statistics.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-cpp[Diag_Process_MemoryProperties64#1](~/samples/snippets/cpp/VS_Snippets_CLR/Diag_Process_MemoryProperties64/CPP/source.cpp#1)]
