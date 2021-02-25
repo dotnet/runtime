@@ -117,6 +117,7 @@ namespace System.Linq
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                SkipLastIterator(source, count);
             }
 
             return count <= 0 ?
@@ -124,6 +125,11 @@ namespace System.Linq
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: false, startIndex: 0,
                     isEndIndexFromEnd: true, endIndex: count);
+        }
+
+        private static IEnumerable<TSource> SkipLastIterator<TSource>(IEnumerable<TSource> source, int count)
+        {
+            yield break;
         }
     }
 }
