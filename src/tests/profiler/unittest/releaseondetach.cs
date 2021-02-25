@@ -44,7 +44,10 @@ namespace Profiler.Tests
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
             PassCallbackToProfiler(() => _profilerDone.Set());
-            _profilerDone.WaitOne();
+            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
+            {
+                Console.WriteLine("Profiler did net set the callback, test will fail.");
+            }
 
             return 100;
         }
