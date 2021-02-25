@@ -106,8 +106,6 @@ error:
         *d = NULL;
     if (cbD)
         *cbD = 0;
-    ReleaseLRef(env, xBn);
-    ReleaseLRef(env, yBn);
     return FAIL;
 }
 
