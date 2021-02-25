@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Individual
 	[SetupLinkerAction ("copy", "copyassembly")]
 	[SetupLinkerAction ("link", "linkassembly")]
 	// Prevent dumping of pinvokes from core assemblies
-	[SetupLinkerCoreAction ("skip")]
+	[SetupLinkerTrimMode ("skip")]
 	[SetupCompileBefore ("copyassembly.dll", new[] { typeof (CanOutputPInvokes_CopyAssembly) })]
 	[SetupCompileBefore ("linkassembly.dll", new[] { typeof (CanOutputPInvokes_LinkAssembly) })]
 	[SetupLinkerArgument ("--output-pinvokes", new[] { "pinvokes.json" })]

@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.References.Dependencies;
 namespace Mono.Linker.Tests.Cases.References
 {
 	[SetupLinkerAction ("link", "test")]
-	[SetupLinkerUserAction ("copy")]
+	[SetupLinkerDefaultAction ("copy")]
 
 	// Used assembly references are kept
 	[SetupCompileBefore ("usedlibrary.dll", new[] { "Dependencies/UsedReferencedAssembly.cs" })]
@@ -35,14 +35,14 @@ namespace Mono.Linker.Tests.Cases.References
 	[KeptAllTypesAndMembersInAssembly ("unuseddynamiclibraryfromdynamiccopy.dll")]
 
 
-	// Unused dynamic references are not kept (from link assembly)
+	// Unused dynamic references from link assembly are kept (due to copy default action)
 	[SetupCompileBefore ("unuseddynamiclibrary.dll", new[] { "Dependencies/UnusedDynamicallyReferencedAssembly.cs" })]
-	[RemovedAssembly ("unuseddynamiclibrary.dll")]
+	[KeptAllTypesAndMembersInAssembly ("unuseddynamiclibrary.dll")]
 
 
-	// Unreferenced libraries are not kept
+	// Unreferenced libraries are kept (due to copy default action)
 	[SetupCompileBefore ("unreferencedlibrary.dll", new[] { "Dependencies/UnreferencedAssembly.cs" })]
-	[RemovedAssembly ("unreferencedlibrary.dll")]
+	[KeptAllTypesAndMembersInAssembly ("unreferencedlibrary.dll")]
 	class CopyAreKeptFully
 	{
 		public static void Main ()

@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	// Need to skip due to `Runtime critical type System.Reflection.CustomAttributeData not found` failure
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	public class InstantiatedStructWithOverridesFromObject

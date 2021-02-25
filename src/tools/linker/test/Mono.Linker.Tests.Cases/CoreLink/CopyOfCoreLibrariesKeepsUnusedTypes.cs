@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-	[SetupLinkerCoreAction ("copy")]
+	[SetupLinkerTrimMode ("copy")]
 	// System.dll referenced by a dynamically (for example in TypeConverterAttribute on IComponent)
 	// has unresolved references.
 	[SetupLinkerArgument ("--skip-unresolved")]

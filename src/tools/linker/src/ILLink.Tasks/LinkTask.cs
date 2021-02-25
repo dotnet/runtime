@@ -23,7 +23,7 @@ namespace ILLink.Tasks
 		///       UnusedInterfaces
 		///       IPConstProp
 		///       Sealer
-		///   Maps to '-reference', and possibly '-p', '--enable-opt', '--disable-opt'
+		///   Maps to '-reference', and possibly '--action', '--enable-opt', '--disable-opt'
 		/// </summary>
 		[Required]
 		public ITaskItem[] AssemblyPaths { get; set; }
@@ -31,7 +31,7 @@ namespace ILLink.Tasks
 		/// <summary>
 		///    Paths to assembly files that are reference assemblies,
 		///    representing the surface area for compilation.
-		///    Maps to '-reference', with action set to 'skip' via '-p'.
+		///    Maps to '-reference', with action set to 'skip' via '--action'.
 		/// </summary>
 		public ITaskItem[] ReferenceAssemblyPaths { get; set; }
 
@@ -180,10 +180,15 @@ namespace ILLink.Tasks
 		bool? _removeSymbols;
 
 		/// <summary>
-		///   Sets the default action for assemblies.
-		///   Maps to '-c' and '-u'.
+		///   Sets the default action for trimmable assemblies.
+		///   Maps to '--trim-mode'
 		/// </summary>
 		public string TrimMode { get; set; }
+
+		/// <summary>
+		///   Sets the default action for assemblies which have not opted into trimming.
+		///   Maps to '--action'
+		public string DefaultAction { get; set; }
 
 		/// <summary>
 		///   A list of custom steps to insert into the linker pipeline.
@@ -296,7 +301,7 @@ namespace ILLink.Tasks
 
 				string trimMode = assembly.GetMetadata ("TrimMode");
 				if (!String.IsNullOrEmpty (trimMode)) {
-					args.Append ("-p ");
+					args.Append ("--action ");
 					args.Append (trimMode);
 					args.Append (' ').AppendLine (Quote (assemblyName));
 				}
@@ -329,7 +334,7 @@ namespace ILLink.Tasks
 					// Treat reference assemblies as "skip". Ideally we
 					// would not even look at the IL, but only use them to
 					// resolve surface area.
-					args.Append ("-p skip ").AppendLine (Quote (assemblyName));
+					args.Append ("--action skip ").AppendLine (Quote (assemblyName));
 				}
 			}
 
@@ -396,7 +401,10 @@ namespace ILLink.Tasks
 				args.AppendLine ("-b");
 
 			if (TrimMode != null)
-				args.Append ("-c ").Append (TrimMode).Append (" -u ").AppendLine (TrimMode);
+				args.Append ("--trim-mode ").AppendLine (TrimMode);
+
+			if (DefaultAction != null)
+				args.Append ("--action ").AppendLine (DefaultAction);
 
 			if (CustomSteps != null) {
 				foreach (var customStep in CustomSteps) {

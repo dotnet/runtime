@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[Reference ("System.dll")]
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
 #if !NETCOREAPP

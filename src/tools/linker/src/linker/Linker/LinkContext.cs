@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -54,8 +55,6 @@ namespace Mono.Linker
 	{
 
 		readonly Pipeline _pipeline;
-		AssemblyAction _coreAction;
-		AssemblyAction _userAction;
 		readonly Dictionary<string, AssemblyAction> _actions;
 		string _outputDirectory;
 		readonly Dictionary<string, string> _parameters;
@@ -97,15 +96,9 @@ namespace Mono.Linker
 			set { _outputDirectory = value; }
 		}
 
-		public AssemblyAction CoreAction {
-			get { return _coreAction; }
-			set { _coreAction = value; }
-		}
+		public AssemblyAction TrimAction { get; set; }
 
-		public AssemblyAction UserAction {
-			get { return _userAction; }
-			set { _userAction = value; }
-		}
+		public AssemblyAction DefaultAction { get; set; }
 
 		public bool LinkSymbols {
 			get { return _linkSymbols; }
@@ -313,7 +306,7 @@ namespace Mono.Linker
 		{
 			if (SeenFirstTime (assembly)) {
 				SafeReadSymbols (assembly);
-				Annotations.SetAction (assembly, CalculateAssemblyAction (assembly.Name));
+				Annotations.SetAction (assembly, CalculateAssemblyAction (assembly));
 			}
 		}
 
@@ -394,37 +387,45 @@ namespace Mono.Linker
 			Annotations.SetAction (assembly, action);
 		}
 #endif
-		public AssemblyAction CalculateAssemblyAction (AssemblyNameDefinition name)
+		public AssemblyAction CalculateAssemblyAction (AssemblyDefinition assembly)
 		{
-			if (_actions.TryGetValue (name.Name, out AssemblyAction action))
+			if (_actions.TryGetValue (assembly.Name.Name, out AssemblyAction action))
 				return action;
 
-			if (IsCore (name))
-				return CoreAction;
+			if (IsTrimmable (assembly))
+				return TrimAction;
 
-			return UserAction;
+			return DefaultAction;
 		}
 
-		public static bool IsCore (AssemblyNameReference name)
+		bool IsTrimmable (AssemblyDefinition assembly)
 		{
-			switch (name.Name) {
-			case "mscorlib":
-			case "Accessibility":
-			case "Mono.Security":
-			// WPF
-			case "PresentationFramework":
-			case "PresentationCore":
-			case "WindowsBase":
-			case "UIAutomationProvider":
-			case "UIAutomationTypes":
-			case "PresentationUI":
-			case "ReachFramework":
-			case "netstandard":
-				return true;
-			default:
-				return name.Name.StartsWith ("System")
-					|| name.Name.StartsWith ("Microsoft");
+			if (!assembly.HasCustomAttributes)
+				return false;
+
+			bool isTrimmable = false;
+
+			foreach (var ca in assembly.CustomAttributes) {
+				if (!ca.AttributeType.IsTypeOf<AssemblyMetadataAttribute> ())
+					continue;
+
+				var args = ca.ConstructorArguments;
+				if (args.Count != 2)
+					continue;
+
+				if (args[0].Value is not string key || !key.Equals ("IsTrimmable", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				if (args[1].Value is not string value || !value.Equals ("True", StringComparison.OrdinalIgnoreCase)) {
+					var assemblyFileName = Resolver.GetAssemblyFileName (assembly);
+					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\"", 2102, assemblyFileName);
+					continue;
+				}
+
+				isTrimmable = true;
 			}
+
+			return isTrimmable;
 		}
 
 		public virtual AssemblyDefinition[] GetAssemblies ()

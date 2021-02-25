@@ -8,7 +8,7 @@ using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
-	[SetupLinkerCoreAction ("skip")]
+	[SetupLinkerTrimMode ("skip")]
 #if !NETCOREAPP
 	[Reference ("System.Core.dll")]
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]

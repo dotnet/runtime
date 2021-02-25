@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 #if NETCOREAPP
 	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
 #else
-	[SetupLinkerCoreAction ("link")]
+	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerKeepDebugMembers ("false")]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168

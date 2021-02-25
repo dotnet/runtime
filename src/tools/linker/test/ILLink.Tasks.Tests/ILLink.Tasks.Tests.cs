@@ -76,9 +76,7 @@ namespace ILLink.Tasks.Tests
 						continue;
 
 					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
-
-					var ad = new Mono.Cecil.AssemblyNameDefinition (Path.GetFileNameWithoutExtension (assemblyPath), new Version ());
-					AssemblyAction actualAction = context.CalculateAssemblyAction (ad);
+					AssemblyAction actualAction = (AssemblyAction) context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
 
 					Assert.Equal (expectedAction, actualAction);
 				}
@@ -113,8 +111,8 @@ namespace ILLink.Tasks.Tests
 				var actualReferences = driver.GetReferenceAssemblies ();
 				Assert.Equal (expectedReferences.OrderBy (a => a), actualReferences.OrderBy (a => a));
 				foreach (var reference in expectedReferences) {
-					var ad = new Mono.Cecil.AssemblyNameDefinition (Path.GetFileNameWithoutExtension (reference), new Version ());
-					AssemblyAction actualAction = driver.Context.CalculateAssemblyAction (ad);
+					var referenceName = Path.GetFileNameWithoutExtension (reference);
+					var actualAction = driver.Context.Actions[referenceName];
 					Assert.Equal (AssemblyAction.Skip, actualAction);
 				}
 			}
@@ -441,12 +439,12 @@ namespace ILLink.Tasks.Tests
 		{
 			var task = new MockTask () {
 				TrimMode = "copy",
-				ExtraArgs = "-c link"
+				ExtraArgs = "--trim-mode copyused"
 			};
 			using (var driver = task.CreateDriver ()) {
-				Assert.Equal (AssemblyAction.Copy, driver.Context.UserAction);
+				Assert.Equal (AssemblyAction.Link, driver.Context.DefaultAction);
 				// Check that ExtraArgs can override TrimMode
-				Assert.Equal (AssemblyAction.Link, driver.Context.CoreAction);
+				Assert.Equal (AssemblyAction.CopyUsed, driver.Context.TrimAction);
 			}
 		}
 
@@ -496,8 +494,24 @@ namespace ILLink.Tasks.Tests
 			};
 			using (var driver = task.CreateDriver ()) {
 				var expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
-				Assert.Equal (expectedAction, driver.Context.CoreAction);
-				Assert.Equal (expectedAction, driver.Context.UserAction);
+				Assert.Equal (expectedAction, driver.Context.TrimAction);
+				Assert.Equal (AssemblyAction.Link, driver.Context.DefaultAction);
+			}
+		}
+
+		[Theory]
+		[InlineData ("copy")]
+		[InlineData ("link")]
+		[InlineData ("copyused")]
+		public void TestDefaultAction (string defaultAction)
+		{
+			var task = new MockTask () {
+				DefaultAction = defaultAction
+			};
+			using (var driver = task.CreateDriver ()) {
+				var expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), defaultAction, ignoreCase: true);
+				Assert.Equal (expectedAction, driver.Context.DefaultAction);
+				Assert.Equal (AssemblyAction.Link, driver.Context.TrimAction);
 			}
 		}
 
