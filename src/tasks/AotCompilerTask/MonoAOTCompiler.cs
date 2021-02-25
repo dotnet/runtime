@@ -350,7 +350,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // values, which wont work.
         processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
-        processArgs.Add(assembly);
+        processArgs.Add($"\"{assembly}\"");
 
         var envVariables = new Dictionary<string, string>
         {
