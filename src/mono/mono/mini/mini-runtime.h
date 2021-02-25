@@ -15,9 +15,12 @@
 #include "mini.h"
 #include "ee.h"
 
-/* Per-domain information maintained by the JIT */
-typedef struct
-{
+/*
+ * Per-memory manager information maintained by the JIT.
+ */
+typedef struct {
+	MonoMemoryManager *mem_manager;
+
 	/* Maps MonoMethod's to a GSList of GOT slot addresses pointing to its code */
 	GHashTable *jump_target_got_slot_hash;
 	GHashTable *jump_target_hash;
@@ -27,7 +30,6 @@ typedef struct
 	GHashTable *delegate_trampoline_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
-	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
@@ -55,9 +57,36 @@ typedef struct
 	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
-} MonoJitDomainInfo;
+} MonoJitMemoryManager;
 
-#define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
+static inline MonoJitMemoryManager*
+get_default_jit_mm (void)
+{
+	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+}
+
+static inline MonoJitMemoryManager*
+jit_mm_for_method (MonoMethod *method)
+{
+	/*
+	 * Some places might not look up the correct memory manager because of generic instances/generic sharing etc.
+	 * So use the same memory manager everywhere, this is not a problem since we don't support unloading yet.
+	 */
+	//return (MonoJitMemoryManager*)m_method_get_mem_manager (method)->runtime_info;
+	return get_default_jit_mm ();
+}
+
+static inline void
+jit_mm_lock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_lock (jit_mm->mem_manager);
+}
+
+static inline void
+jit_mm_unlock (MonoJitMemoryManager *jit_mm)
+{
+	mono_mem_manager_unlock (jit_mm->mem_manager);
+}
 
 /*
  * Stores state need to resume exception handling when using LLVM
@@ -497,7 +526,7 @@ gint  mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
 MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target);
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);
-gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
+gpointer  mono_resolve_patch_target         (MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
 void mini_register_jump_site                (MonoDomain *domain, MonoMethod *method, gpointer ip);
 void mini_patch_jump_sites                  (MonoDomain *domain, MonoMethod *method, gpointer addr);
 void mini_patch_llvm_jit_callees            (MonoDomain *domain, MonoMethod *method, gpointer addr);
@@ -539,6 +568,9 @@ gboolean mono_jit_map_is_enabled (void);
 void mono_enable_jit_dump (void);
 void mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code);
 void mono_jit_dump_cleanup (void);
+
+gpointer mini_alloc_generic_virtual_trampoline (MonoVTable *vtable, int size);
+MonoException* mini_get_stack_overflow_ex (void);
 
 /*
  * Per-OS implementation functions.
@@ -644,4 +676,3 @@ void mini_register_sigterm_handler (void);
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */
-

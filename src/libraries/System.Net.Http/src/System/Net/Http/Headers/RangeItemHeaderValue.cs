@@ -46,7 +46,7 @@ namespace System.Net.Http.Headers
             _to = to;
         }
 
-        private RangeItemHeaderValue(RangeItemHeaderValue source)
+        internal RangeItemHeaderValue(RangeItemHeaderValue source)
         {
             Debug.Assert(source != null);
 

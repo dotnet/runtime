@@ -237,7 +237,7 @@ public struct Struct1 : IComparable
 {
     public long a;
     public long b;
-    public int CompareTo(object? obj)
+    public int CompareTo(object obj)
     {
         return b.CompareTo(((Struct1) obj).b);
     }

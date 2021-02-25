@@ -231,6 +231,12 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2067</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Runtime.Serialization.SurrogateDataContract.GetUninitializedObject(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Runtime.Serialization.ClassDataContract.ClassDataContractCriticalHelper.SetKeyValuePairAdapterFlags(System.Type)</property>
