@@ -2750,13 +2750,6 @@ void Compiler::fgAddInternal()
         // will expect to find it.
         BasicBlock* mergedReturn = merger.EagerCreate();
         assert(mergedReturn == genReturnBB);
-        // Assume weight equal to entry weight for this BB.
-        mergedReturn->bbFlags &= ~BBF_PROF_WEIGHT;
-        mergedReturn->bbWeight = fgFirstBB->bbWeight;
-        if (mergedReturn->bbWeight > 0)
-        {
-            mergedReturn->bbFlags &= ~BBF_RUN_RARELY;
-        }
     }
     else
     {
