@@ -656,7 +656,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.CallStack = frames;
 
                     }
-                    if (bp.Condition.Length > 0)
+                    if (bp.Condition != null && bp.Condition.Length > 0)
                     {
                         try {
                             JObject mono_frame = the_mono_frames.First();
@@ -680,6 +680,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         catch (Exception e)
                         {
                             Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{bp.Condition}");
+                            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                            return true;
                         }
                     }
                 }
