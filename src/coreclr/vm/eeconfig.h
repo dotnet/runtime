@@ -463,6 +463,7 @@ public:
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
+    bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
 
     // Optimizations to improve working set
 
@@ -691,6 +692,7 @@ private: //----------------------------------------------------------------
 
     bool fStressLog;
     bool fForceEnc;
+    bool fDebugAssembliesModifiable;
     bool fProbeForStackOverflow;
 
     // Stackwalk optimization flag
