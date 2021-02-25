@@ -13,7 +13,6 @@ include_directories(.)
 set(ILASM_SOURCES
   assem.cpp
   writer.cpp
-  writer_enc.cpp
   method.cpp
   asmman.cpp
   main.cpp

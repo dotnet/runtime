@@ -395,8 +395,6 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	}
 
 	image->image.assembly = (MonoAssembly*)assembly;
-	image->run = assembly->run;
-	image->save = assembly->save;
 	image->pe_kind = 0x1; /* ILOnly */
 	image->machine = 0x14c; /* I386 */
 	

@@ -1147,6 +1147,46 @@ namespace System.ComponentModel.Tests
             Assert.Equal("Derived", descriptionAttribute.Description);
         }
 
+        [Fact]
+        public void PropertyFilterAttributeMatch()
+        {
+            Assert.Equal(3, TypeDescriptor.GetProperties(typeof(PropertyFilterAttributeMatchPoco), new[] { new PropertyFilterAttribute() }).Count);
+        }
+
+        public class PropertyFilterAttribute : Attribute
+        {
+            public override bool Equals(object value) => ReferenceEquals(this, value);
+
+            public override int GetHashCode() => throw new NotImplementedException();
+
+            public override bool Match(object value)
+            {
+                Attribute attr = (Attribute)value;
+                if (attr.GetType().IsSubclassOf(this.GetType()))
+                    return attr.Match(value);
+
+                return true;
+            }
+
+            public static readonly PropertyFilterAttribute Default = new PropertyFilterAttribute();
+        }
+
+        public sealed class PropertyFilterFalseMatchAttribute : PropertyFilterAttribute
+        {
+            public override bool Match(object value) => false;
+        }
+
+        public class PropertyFilterAttributeMatchPoco
+        {
+            public string StringProp { get; set; }
+            public int IntProp { get; set; }
+            public double DoubleProp { get; set; }
+            public ClassWithFilterAttribute FilterProp { get; set; }
+        }
+
+        [PropertyFilterFalseMatch]
+        public class ClassWithFilterAttribute { }
+
         class FooBarBase
         {
             [Description("Base")]

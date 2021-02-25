@@ -5186,7 +5186,7 @@ void WalkValueTypeTypeDefOrRefs(
             IfFailThrow(sig.SkipExactlyOne());
 
             // Get number of parameters
-            ULONG argCnt;
+            uint32_t argCnt;
             IfFailThrow(sig.GetData(&argCnt));
             while (argCnt-- != 0)
             {   // Process and skip generic parameter

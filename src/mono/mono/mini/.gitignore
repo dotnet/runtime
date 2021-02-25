@@ -1,6 +1,3 @@
-/Makefile
-/Makefile.in
-/Makefile.am
 /*.o
 /*.g.c
 /*.so

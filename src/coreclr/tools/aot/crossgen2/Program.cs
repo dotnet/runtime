@@ -136,6 +136,7 @@ namespace ILCompiler
                     "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
                     "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
+                    "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -411,6 +412,7 @@ namespace ILCompiler
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
                     HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
+                    Guid? inputModuleMvid = null;
 
                     foreach (var inputFile in inputFilePaths)
                     {
@@ -418,6 +420,11 @@ namespace ILCompiler
                         inputModules.Add(module);
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+
+                        if (!_commandLineOptions.Composite && !inputModuleMvid.HasValue)
+                        {
+                            inputModuleMvid = module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid);
+                        }
 
                         if (!_commandLineOptions.CompositeOrInputBubble)
                         {
@@ -540,8 +547,10 @@ namespace ILCompiler
                         versionBubbleModules,
                         _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
                         mibcFiles,
+                        jsonProfile,
                         _typeSystemContext,
-                        compilationGroup);
+                        compilationGroup,
+                        _commandLineOptions.EmbedPgoData);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
@@ -592,7 +601,8 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
-                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, inputModuleMvid)
+                        .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)

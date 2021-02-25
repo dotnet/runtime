@@ -1,5 +1,6 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 

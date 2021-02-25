@@ -24,6 +24,7 @@ namespace R2RDump
             command.AddOption(new Option<string[]>(new[] { "--section", "-s" }, "Get section by keyword"));
             command.AddOption(new Option<bool>(new[] { "--unwind" }, "Dump unwindInfo"));
             command.AddOption(new Option<bool>(new[] { "--gc" }, "Dump gcInfo and slot table"));
+            command.AddOption(new Option<bool>(new[] { "--pgo" }, "Dump embedded pgo instrumentation data"));
             command.AddOption(new Option<bool>(new[] { "--sectionContents", "--sc" }, "Dump section contents"));
             command.AddOption(new Option<bool>(new[] { "--entrypoints", "-e" }, "Dump list of method / instance entrypoints in the R2R file"));
             command.AddOption(new Option<bool>(new[] { "--normalize", "-n" }, "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)"));

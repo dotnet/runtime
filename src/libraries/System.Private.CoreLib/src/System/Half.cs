@@ -412,7 +412,7 @@ namespace System
         /// <summary>
         /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
         /// </summary>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return (obj is Half other) && Equals(other);
         }

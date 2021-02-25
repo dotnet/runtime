@@ -207,6 +207,11 @@ public:
         m_pString[strLen] = L'\0';
     }
 
+    ~ZapWin32ResourceString()
+    {
+        delete[] m_pString;
+    }
+
     LPCWSTR GetString() { return m_pString; }
 
     virtual DWORD GetSize()

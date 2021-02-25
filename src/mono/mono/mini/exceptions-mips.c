@@ -19,7 +19,6 @@
 #include <string.h>
 
 #include <mono/arch/mips/mips-codegen.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
@@ -420,11 +419,11 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * Returns TRUE on success, FALSE otherwise.
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf, 
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
+						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoContext *new_ctx, MonoLMF **lmf, 
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
@@ -479,11 +478,9 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 		g_assert (((*lmf)->magic == MIPS_LMF_MAGIC1) || ((*lmf)->magic == MIPS_LMF_MAGIC2));
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL);
-		if (!ji) {
-			// FIXME: This can happen with multiple appdomains (bug #444383)
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->eip);
+		if (!ji)
 			return FALSE;
-		}
 
 		frame->ji = ji;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;

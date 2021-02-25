@@ -273,6 +273,11 @@ if %__SkipCrossArchNative% EQU 0 (
 
 REM Set the remaining variables based upon the determined build configuration
 
+REM PGO optimization is only applied to release builds (see pgosupport.cmake). Disable PGO by default if not building release.
+if NOT "%__BuildType%"=="Release" (
+    set __PgoOptimize=0
+)
+
 if %__PgoOptimize%==0 (
     set __RestoreOptData=0
 )
@@ -592,7 +597,7 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__BuildArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCBuildArch=x86_amd64
+    set __VCBuildArch=amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm

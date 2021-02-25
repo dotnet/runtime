@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
@@ -45,7 +46,7 @@ namespace System.Net.Http.Headers
             _to = to;
         }
 
-        private RangeItemHeaderValue(RangeItemHeaderValue source)
+        internal RangeItemHeaderValue(RangeItemHeaderValue source)
         {
             Debug.Assert(source != null);
 
@@ -68,7 +69,7 @@ namespace System.Net.Http.Headers
                 _to.Value.ToString(NumberFormatInfo.InvariantInfo);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             RangeItemHeaderValue? other = obj as RangeItemHeaderValue;
 

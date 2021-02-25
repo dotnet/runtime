@@ -2102,6 +2102,23 @@
     "any",
     "base"
   ],
+  "exherbo": [
+    "exherbo",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "exherbo-x64": [
+    "exherbo-x64",
+    "exherbo",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora": [
     "fedora",
     "linux",
@@ -3402,6 +3419,102 @@
     "debian",
     "linux-x64",
     "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst": [
+    "maccatalyst",
+    "ios",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst-arm64": [
+    "maccatalyst-arm64",
+    "maccatalyst",
+    "ios-arm64",
+    "ios",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst-x64": [
+    "maccatalyst-x64",
+    "maccatalyst",
+    "ios-x64",
+    "ios",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.13": [
+    "maccatalyst.13",
+    "maccatalyst",
+    "ios",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.13-arm64": [
+    "maccatalyst.13-arm64",
+    "maccatalyst.13",
+    "maccatalyst-arm64",
+    "maccatalyst",
+    "ios-arm64",
+    "ios",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.13-x64": [
+    "maccatalyst.13-x64",
+    "maccatalyst.13",
+    "maccatalyst-x64",
+    "maccatalyst",
+    "ios-x64",
+    "ios",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.14": [
+    "maccatalyst.14",
+    "maccatalyst.13",
+    "maccatalyst",
+    "ios",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.14-arm64": [
+    "maccatalyst.14-arm64",
+    "maccatalyst.14",
+    "maccatalyst.13-arm64",
+    "maccatalyst.13",
+    "maccatalyst-arm64",
+    "maccatalyst",
+    "ios-arm64",
+    "ios",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "maccatalyst.14-x64": [
+    "maccatalyst.14-x64",
+    "maccatalyst.14",
+    "maccatalyst.13-x64",
+    "maccatalyst.13",
+    "maccatalyst-x64",
+    "maccatalyst",
+    "ios-x64",
+    "ios",
     "unix-x64",
     "unix",
     "any",

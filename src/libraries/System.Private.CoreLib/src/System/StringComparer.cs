@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -182,7 +183,7 @@ namespace System
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return
                 obj is CultureAwareComparer comparer &&
@@ -265,7 +266,7 @@ namespace System
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is OrdinalComparer comparer))
             {

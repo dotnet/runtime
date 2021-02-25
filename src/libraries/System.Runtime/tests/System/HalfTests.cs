@@ -666,6 +666,26 @@ namespace System.Tests
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
 
+            // 2^11 + 1. Not exactly representable
+            yield return new object[] { "2049.0", defaultStyle, invariantFormat, 2048.0f };
+            yield return new object[] { "2049.000000000000001", defaultStyle, invariantFormat, 2050.0f };
+            yield return new object[] { "2049.0000000000000001", defaultStyle, invariantFormat, 2050.0f };
+            yield return new object[] { "2049.00000000000000001", defaultStyle, invariantFormat, 2050.0f };
+            yield return new object[] { "5.000000000000000004", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.0000000000000000004", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.004", defaultStyle, invariantFormat, 5.004f };
+            yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
+            yield return new object[] { "5.0040000000000000000", defaultStyle, invariantFormat, 5.004f };
+            yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
+
+            yield return new object[] { "5004.000000000000000", defaultStyle, invariantFormat, 5004.0f };
+            yield return new object[] { "50040.0", defaultStyle, invariantFormat, 50040.0f };
+            yield return new object[] { "5004", defaultStyle, invariantFormat, 5004.0f };
+            yield return new object[] { "050040", defaultStyle, invariantFormat, 50040.0f };
+            yield return new object[] { "0.000000000000000000", defaultStyle, invariantFormat, 0.0f };
+            yield return new object[] { "0.005", defaultStyle, invariantFormat, 0.005f };
+            yield return new object[] { "0.0400", defaultStyle, invariantFormat, 0.04f };
+
             yield return new object[] { (123.1f).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1f };
             yield return new object[] { (1000.0f).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0f };
 
@@ -834,6 +854,12 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { Half.Epsilon, "G", invariantFormat, "6E-08" };
+
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -870,6 +896,18 @@ namespace System.Tests
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
         }
+
+        [Fact]
+        public static void ToString_InvalidFormat_ThrowsFormatException()
+        {
+            Half f = (Half)123.0f;
+            Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
+            Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
+        }
+
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
@@ -991,16 +1029,16 @@ namespace System.Tests
             yield return new object[] { Half.MaxValue };
             yield return new object[] { Half.PositiveInfinity };
 
-            yield return new object[] { (UInt16BitsToHalf(0b0_00001_0000000000))}; // smallest normal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1111111111))}; // largest subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1000000000))}; // middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0111111111))}; // just below middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0000000001))}; // smallest subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0000000001))}; // highest negative subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0111111111))}; // just above negative middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1000000000))}; // negative middle subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1111111111))}; // lowest negative subnormal
-            yield return new object[] { (UInt16BitsToHalf(0b1_00001_0000000000))}; // highest negative normal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00001_0000000000)) }; // smallest normal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1111111111)) }; // largest subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_1000000000)) }; // middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0111111111)) }; // just below middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b0_00000_0000000001)) }; // smallest subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0000000001)) }; // highest negative subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_0111111111)) }; // just above negative middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1000000000)) }; // negative middle subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00000_1111111111)) }; // lowest negative subnormal
+            yield return new object[] { (UInt16BitsToHalf(0b1_00001_0000000000)) }; // highest negative normal
         }
 
         [Theory]
