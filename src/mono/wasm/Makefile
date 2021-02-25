@@ -78,6 +78,7 @@ ifeq ($(NOSTRIP),)
 STRIP_CMD=&& $(EMSDK_PATH)/upstream/bin/wasm-opt --strip-dwarf $(NATIVE_BIN_DIR)/dotnet.wasm -o $(NATIVE_BIN_DIR)/dotnet.wasm
 else
 STRIP_CMD=
+EMCC_RELEASE_FLAGS+= -g
 endif
 
 #
