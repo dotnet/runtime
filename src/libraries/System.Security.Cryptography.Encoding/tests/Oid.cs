@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests
@@ -299,12 +300,12 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.Android))] // Uses P/Invokes to search Oid in the lookup table
-        public static void LookupOidByValue_Method_UnixExceptOSXAndAndroid()
+        [PlatformSpecific(PlatformSupport.OpenSSL)] // Uses P/Invokes to search Oid in the lookup table
+        public static void LookupOidByValue_Method_OpenSSL()
         {
             // This needs to be an OID not in the static lookup table.  The purpose is to verify the
-            // NativeOidToFriendlyName fallback for Unix.  For Windows this is accomplished by
-            // using FromOidValue with an OidGroup other than OidGroup.All.
+            // NativeOidToFriendlyName fallback for platforms using OpenSSL.  For Windows this is
+            // accomplished by using FromOidValue with an OidGroup other than OidGroup.All.
             Oid oid = Oid.FromOidValue(ObsoleteSmime3desWrap_Oid, OidGroup.All);
 
             Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
@@ -312,12 +313,12 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.Android))]  // Uses P/Invokes to search Oid in the lookup table
-        public static void LookupOidByFriendlyName_Method_UnixExceptOSXAndAndroid()
+        [PlatformSpecific(PlatformSupport.OpenSSL)]  // Uses P/Invokes to search Oid in the lookup table
+        public static void LookupOidByFriendlyName_Method_OpenSSL()
         {
             // This needs to be a name not in the static lookup table.  The purpose is to verify the
-            // NativeFriendlyNameToOid fallback for Unix.  For Windows this is accomplished by
-            // using FromOidValue with an OidGroup other than OidGroup.All.
+            // NativeFriendlyNameToOid fallback for platforms using OpenSSL.  For Windows this is
+            // accomplished by using FromOidValue with an OidGroup other than OidGroup.All.
             Oid oid = Oid.FromFriendlyName(ObsoleteSmime3desWrap_Name, OidGroup.All);
 
             Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
