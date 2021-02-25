@@ -51,7 +51,7 @@ namespace System.IO.Compression
         /// <param name="destinationFileName">The path of the file to create from the contents of the entry. You can specify either a relative or an absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite"><see langword="true" /> to overwrite an existing file that has the same name as the destination file; otherwise, <see langword="false" />.</param>
         /// <remarks>The last write time of the file is set to the last time the entry in the zip archive was changed; this value is stored in the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property.
-        /// You cannot use this method to extract a directory; use the <see cref="System.IO.Compression.ZipFileExtensions.ExtractToDirectory" /> method instead.</remarks>
+        /// You cannot use this method to extract a directory; use the <see cref="O:System.IO.Compression.ZipFileExtensions.ExtractToDirectory" /> method instead.</remarks>
         /// <example>The following example shows how to iterate through the contents of a zip archive file, and extract files that have a .txt extension. It overwrites an existing file that has the same name in the destination folder. In order to compiler this code example, you must reference the `System.IO.Compression` and `System.IO.Compression.FileSystem` assemblies in your project.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchive#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program2.cs#2)]
