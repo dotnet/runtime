@@ -304,7 +304,7 @@
    </ItemGroup>
 
    <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
-     Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblyInternal->Count())" />
+          Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblyInternal->Count())" />
 
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
@@ -397,7 +397,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <WasmAssemblyFinal Include="@(_WasmAssemblyInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
 
-    <Error Condition="@(WasmAssemblyFinal->Count()) != @(WasmAssembly->Count())"
+    <!-- $(WasmResolveAssembliesBeforeBuild) can add more assemblies, so no point checking the count in that case -->
+    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssemblyFinal->Distinct()->Count()) != @(WasmAssembly->Distinct()->Count())"
       Text="Bug: The wasm build started with @(WasmAssembly->Count()) assemblies, but completed with @(WasmAssemblyFinal->Count()).
       WasmAssembly: @(WasmAssembly)
       WasmAssemblyFinal: @(WasmAssemblyFinal)" />
