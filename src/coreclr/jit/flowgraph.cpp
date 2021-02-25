@@ -2313,17 +2313,7 @@ private:
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
-#ifdef DEBUG
-        if (comp->verbose)
-        {
-            printf("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
-        }
-#endif
-
-        // We have profile weight, the weight is zero, and the block is run rarely,
-        // until we prove otherwise by merging other returns into this one.
-        newReturnBB->bbFlags |= (BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-        newReturnBB->bbWeight = 0;
+        JITDUMP("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
 
         GenTree* returnExpr;
 

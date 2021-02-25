@@ -2671,7 +2671,7 @@ void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::wei
 {
     assert(theMinWeight <= theMaxWeight);
 
-    JITDUMP("\nSetting edge weights for BB?? -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
+    JITDUMP("Setting edge weights for BB?? -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
             theMinWeight, theMaxWeight);
 
     flEdgeWeightMin = theMinWeight;

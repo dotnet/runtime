@@ -45,7 +45,7 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 #define FMT_BB "BB%02u"
 
 // And this format for profile weights
-#define FMT_WT "%.7f"
+#define FMT_WT "%.7g"
 
 /*****************************************************************************
  *
