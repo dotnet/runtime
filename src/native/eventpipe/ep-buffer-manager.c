@@ -1221,6 +1221,8 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 						ep_rt_thread_sequence_number_map_add (ep_sequence_point_get_thread_sequence_numbers_ref (sequence_point), session_state, last_read_sequence_number);
 					}
 
+					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
+
 					// if a session_state was exhausted during this sequence point, mark it for deletion
 					if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
 
@@ -1230,10 +1232,9 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 						if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (session_state))) > 0) {
 
 							ep_rt_thread_session_state_array_append (&session_states_to_delete, session_state);
+							ep_rt_thread_session_state_list_remove (&buffer_manager->thread_session_state_list, session_state);
 						}
 					}
-					ep_rt_thread_session_state_list_iterator_next (&thread_session_state_list_iterator);
-					ep_rt_thread_session_state_list_remove (&buffer_manager->thread_session_state_list, session_state);
 				}
 			EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section2)
 
