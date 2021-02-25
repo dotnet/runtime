@@ -57,5 +57,7 @@ SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
 void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 
 void PutArm64Rel28(UINT32* pCode, INT32 imm28);
+void PutArm64Rel21(UINT32* pCode, INT32 imm21);
+void PutArm64Rel12(UINT32* pCode, INT32 imm12);
 
 #endif // !_SPMIUtil

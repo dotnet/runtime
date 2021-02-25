@@ -257,3 +257,21 @@ void PutArm64Rel28(UINT32* pCode, INT32 imm28)
     branchInstr |= ((imm28 >> 2) & 0x03FFFFFF);
     *pCode = branchInstr;
 }
+
+void PutArm64Rel21(UINT32* pCode, INT32 imm21)
+{
+    UINT32 adrpInstr = *pCode;
+    adrpInstr &= 0x9F00001F;
+    INT32 immlo = imm21 & 0x03;
+    INT32 immhi = (imm21 & 0x1FFFFC) >> 2;
+    adrpInstr |= ((immlo << 29) | (immhi << 5));
+    *pCode = adrpInstr;
+}
+
+void PutArm64Rel12(UINT32* pCode, INT32 imm12)
+{
+    UINT32 addInstr = *pCode;
+    addInstr &= 0xFFC003FF;
+    addInstr |= (imm12 << 10);
+    *pCode = addInstr;
+}
