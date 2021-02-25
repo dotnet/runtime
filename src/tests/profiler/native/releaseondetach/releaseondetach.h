@@ -8,7 +8,7 @@
 #include <string>
 #include <atomic>
 
-typedef HRESULT (*GetDispenserFunc) (const CLSID &pClsid, const IID &pIid, void **ppv);
+typedef void (*ProfilerCallback) (void);
 
 // This test class is very small and doesn't do much. A repeated problem we had was that 
 // if an ICorProfilerCallback* interface was added the developer would forget to add
@@ -33,7 +33,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ProfilerAttachComplete();
     virtual HRESULT STDMETHODCALLTYPE ProfilerDetachSucceeded();
 
-    void SetBoolPtr(bool *done);
+    void SetCallback(ProfilerCallback callback);
 
 private:
 
@@ -42,5 +42,6 @@ private:
     IMetaDataDispenserEx* _dispenser;
     std::atomic<int> _failures;
     bool _detachSucceeded;
-    std::atomic<bool *> _doneFlag;
+    ProfilerCallback _callback;
+    ManualEvent _callbackSet;
 };

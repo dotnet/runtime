@@ -22,13 +22,16 @@ using std::getline;
 #endif // __APPLE__
 #endif // WIN32
 
+using std::thread;
+
 ReleaseOnDetach *ReleaseOnDetach::Instance;
 
 ReleaseOnDetach::ReleaseOnDetach() :
     _dispenser(NULL),
     _failures(0),
     _detachSucceeded(false),
-    _doneFlag(NULL)
+    _callback(NULL),
+    _callbackSet()
 {
     ReleaseOnDetach::Instance = this;
 }
@@ -54,20 +57,19 @@ ReleaseOnDetach::~ReleaseOnDetach()
     fflush(stdout);
 
 
-    for (int i = 0; i < 50000; ++i)
-    {
-        if  (_doneFlag != NULL)
-        {
-            break;
-        }
+    _callbackSet.Wait();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
 
-    if (_doneFlag != NULL)
+    thread callbackThread([&]()
     {
-        *_doneFlag = true;
-    }
+        // The destructor will be called from the profiler detach thread, which causes
+        // some crst order asserts if we call back in to managed code. Spin up
+        // a new thread to avoid that.
+        pCorProfilerInfo->InitializeCurrentThread();
+        _callback();
+    });
+
+    callbackThread.join();
 }
 
 GUID ReleaseOnDetach::GetClsid()
@@ -135,13 +137,14 @@ HRESULT ReleaseOnDetach::ProfilerDetachSucceeded()
     return S_OK;
 }
 
-void ReleaseOnDetach::SetBoolPtr(bool *done)
+void ReleaseOnDetach::SetCallback(ProfilerCallback callback)
 {
-    assert(done != NULL);
-    _doneFlag = reinterpret_cast<bool *>(done);
+    assert(callback != NULL);
+    _callback = callback;
+    _callbackSet.Signal();
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE PassBoolToProfiler(bool *done)
+extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
 {
-    ReleaseOnDetach::Instance->SetBoolPtr(done);
+    ReleaseOnDetach::Instance->SetCallback(callback);
 }
