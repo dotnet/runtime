@@ -720,122 +720,6 @@ namespace System.Net.WebSockets
                 new WebSocketException(error, innerException);
         }
 
-        /// <summary>Parses a message header from the buffer.</summary>
-        private static bool TryParseMessageHeader(
-            ReadOnlySpan<byte> buffer,
-            MessageHeader previousHeader,
-            bool isServer,
-            out MessageHeader header,
-            out string? error,
-            out int consumedBytes)
-        {
-            header = default;
-            consumedBytes = 0;
-            error = null;
-
-            if (buffer.Length < 2)
-            {
-                return false;
-            }
-            // Check first for reserved bits that should always be unset
-            if ((buffer[0] & 0b0111_0000) != 0)
-            {
-                return Error(ref error, SR.net_Websockets_ReservedBitsSet);
-            }
-            header.Fin = (buffer[0] & 0x80) != 0;
-            header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
-
-            bool masked = (buffer[1] & 0x80) != 0;
-            if (masked && !isServer)
-            {
-                return Error(ref error, SR.net_Websockets_ClientReceivedMaskedFrame);
-            }
-            header.PayloadLength = buffer[1] & 0x7F;
-
-            // We've consumed the first 2 bytes
-            buffer = buffer.Slice(2);
-            consumedBytes += 2;
-
-            // Read the remainder of the payload length, if necessary
-            if (header.PayloadLength == 126)
-            {
-                if (buffer.Length < 2)
-                {
-                    return false;
-                }
-                header.PayloadLength = (buffer[0] << 8) | buffer[1];
-                buffer = buffer.Slice(2);
-                consumedBytes += 2;
-            }
-            else if (header.PayloadLength == 127)
-            {
-                if (buffer.Length < 8)
-                {
-                    return false;
-                }
-                header.PayloadLength = 0;
-                for (int i = 0; i < 8; ++i)
-                {
-                    header.PayloadLength = (header.PayloadLength << 8) | buffer[i];
-                }
-                buffer = buffer.Slice(8);
-                consumedBytes += 8;
-            }
-
-            if (masked)
-            {
-                if (buffer.Length < MaskLength)
-                {
-                    return false;
-                }
-                header.Mask = BitConverter.ToInt32(buffer);
-                consumedBytes += MaskLength;
-            }
-
-            // Do basic validation of the header
-            switch (header.Opcode)
-            {
-                case MessageOpcode.Continuation:
-                    if (previousHeader.Fin)
-                    {
-                        // Can't continue from a final message
-                        return Error(ref error, SR.net_Websockets_ContinuationFromFinalFrame);
-                    }
-                    break;
-
-                case MessageOpcode.Binary:
-                case MessageOpcode.Text:
-                    if (!previousHeader.Fin)
-                    {
-                        // Must continue from a non-final message
-                        return Error(ref error, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
-                    }
-                    break;
-
-                case MessageOpcode.Close:
-                case MessageOpcode.Ping:
-                case MessageOpcode.Pong:
-                    if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
-                    {
-                        // Invalid control messgae
-                        return Error(ref error, SR.net_Websockets_InvalidControlMessage);
-                    }
-                    break;
-
-                default:
-                    // Unknown opcode
-                    return Error(ref error, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
-            }
-
-            return true;
-
-            static bool Error(ref string? target, string error)
-            {
-                target = error;
-                return false;
-            }
-        }
-
         /// <summary>Send a close message, then receive until we get a close response message.</summary>
         /// <param name="closeStatus">The close status to send.</param>
         /// <param name="statusDescription">The close status description to send.</param>
@@ -1186,15 +1070,6 @@ namespace System.Net.WebSockets
             Close = 0x8,
             Ping = 0x9,
             Pong = 0xA
-        }
-
-        [StructLayout(LayoutKind.Auto)]
-        private struct MessageHeader
-        {
-            internal MessageOpcode Opcode;
-            internal bool Fin;
-            internal long PayloadLength;
-            internal int Mask;
         }
 
         [StructLayout(LayoutKind.Auto)]

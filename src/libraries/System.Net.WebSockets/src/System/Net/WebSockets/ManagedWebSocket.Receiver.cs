@@ -220,8 +220,7 @@ namespace System.Net.WebSockets
 
                 while (true)
                 {
-                    if (TryParseMessageHeader(_readBuffer.AvailableSpan, _lastHeader, _isServer,
-                        out MessageHeader header, out string? error, out int consumedBytes))
+                    if (TryParseMessageHeader(out MessageHeader header, out string? error))
                     {
                         // If this is a continuation, replace the opcode with the one of the message it's continuing
                         if (header.Opcode == MessageOpcode.Continuation)
@@ -230,7 +229,6 @@ namespace System.Net.WebSockets
                         }
 
                         _lastHeader = header;
-                        _readBuffer.Consume(consumedBytes);
 
                         if (_isServer)
                         {
@@ -241,7 +239,7 @@ namespace System.Net.WebSockets
                             }
                         }
 
-                        break;
+                        return true;
                     }
                     else if (error is not null)
                     {
@@ -257,8 +255,6 @@ namespace System.Net.WebSockets
                     }
                     _readBuffer.Commit(byteCount);
                 }
-
-                return true;
             }
 
             private ReceiveResult Result(int count) => new ReceiveResult
@@ -295,7 +291,7 @@ namespace System.Net.WebSockets
                 // We can copy directly to output
                 written = Math.Min(available, output.Length);
                 consumed = written;
-                _readBuffer.AvailableSpan.Slice(0, written).CopyTo(output);
+                _readBuffer.AvailableReadOnlySpan.Slice(0, written).CopyTo(output);
 
                 _readBuffer.Consume(consumed);
                 _lastHeader.PayloadLength -= consumed;
@@ -311,41 +307,163 @@ namespace System.Net.WebSockets
                 return ConsumeResult.Continue;
             }
 
+            /// <summary>Parses a message header from the buffer.</summary>
+            private bool TryParseMessageHeader(out MessageHeader header, out string? error)
+            {
+                header = default;
+                error = null;
+
+                ReadOnlySpan<byte> buffer = _readBuffer.AvailableReadOnlySpan;
+
+                if (buffer.Length < 2)
+                {
+                    return false;
+                }
+                // Check first for reserved bits that should always be unset
+                if ((buffer[0] & 0b0111_0000) != 0)
+                {
+                    return Error(ref error, SR.net_Websockets_ReservedBitsSet);
+                }
+                header.Fin = (buffer[0] & 0x80) != 0;
+                header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
+
+                bool masked = (buffer[1] & 0x80) != 0;
+                if (masked && !_isServer)
+                {
+                    return Error(ref error, SR.net_Websockets_ClientReceivedMaskedFrame);
+                }
+                header.PayloadLength = buffer[1] & 0x7F;
+
+                // We've consumed the first 2 bytes
+                int consumedBytes = 2;
+
+                // Read the remainder of the payload length, if necessary
+                if (header.PayloadLength == 126)
+                {
+                    if (buffer.Length < 4)
+                    {
+                        return false;
+                    }
+                    header.PayloadLength = (buffer[2] << 8) | buffer[3];
+                    consumedBytes = 4;
+                }
+                else if (header.PayloadLength == 127)
+                {
+                    if (buffer.Length < 10)
+                    {
+                        return false;
+                    }
+                    header.PayloadLength = 0;
+                    for (int i = 2; i < 10; ++i)
+                    {
+                        header.PayloadLength = (header.PayloadLength << 8) | buffer[i];
+                    }
+                    consumedBytes = 10;
+                }
+
+                if (masked)
+                {
+                    if (buffer.Length < MaskLength + consumedBytes)
+                    {
+                        return false;
+                    }
+                    header.Mask = BitConverter.ToInt32(buffer.Slice(consumedBytes));
+                    consumedBytes += MaskLength;
+                }
+
+                // Do basic validation of the header
+                switch (header.Opcode)
+                {
+                    case MessageOpcode.Continuation:
+                        if (_lastHeader.Fin)
+                        {
+                            // Can't continue from a final message
+                            return Error(ref error, SR.net_Websockets_ContinuationFromFinalFrame);
+                        }
+                        break;
+
+                    case MessageOpcode.Binary:
+                    case MessageOpcode.Text:
+                        if (!_lastHeader.Fin)
+                        {
+                            // Must continue from a non-final message
+                            return Error(ref error, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
+                        }
+                        break;
+
+                    case MessageOpcode.Close:
+                    case MessageOpcode.Ping:
+                    case MessageOpcode.Pong:
+                        if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
+                        {
+                            // Invalid control messgae
+                            return Error(ref error, SR.net_Websockets_InvalidControlMessage);
+                        }
+                        break;
+
+                    default:
+                        // Unknown opcode
+                        return Error(ref error, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
+                }
+
+                _readBuffer.Consume(consumedBytes);
+                return true;
+
+                static bool Error(ref string? target, string error)
+                {
+                    target = error;
+                    return false;
+                }
+            }
+
             [StructLayout(LayoutKind.Auto)]
             private struct Buffer
             {
                 private readonly byte[] _bytes;
                 private int _position;
                 private int _consumed;
+                private int _available;
 
                 public Buffer(int capacity)
                 {
                     _bytes = GC.AllocateUninitializedArray<byte>(capacity, pinned: true);
                     _position = 0;
                     _consumed = 0;
+                    _available = 0;
                 }
 
-                public int AvailableLength => _position - _consumed;
+                public int AvailableLength => _available;
 
-                public Span<byte> AvailableSpan =>
-                    new Span<byte>(_bytes, start: _consumed, length: _position - _consumed);
+                public ReadOnlySpan<byte> AvailableReadOnlySpan
+                    => new ReadOnlySpan<byte>(_bytes, start: _consumed, length: _available);
 
-                public Memory<byte> AvailableMemory =>
-                    new Memory<byte>(_bytes, start: _consumed, length: _position - _consumed);
+                public Span<byte> AvailableSpan
+                    => new Span<byte>(_bytes, start: _consumed, length: _available);
+
+                public Memory<byte> AvailableMemory
+                    => new Memory<byte>(_bytes, start: _consumed, length: _available);
 
                 public Memory<byte> FreeMemory => _bytes.AsMemory(_position);
 
                 public int FreeLength => _bytes.Length - _position;
 
-                public void Commit(int count) => _position += count;
+                public void Commit(int count)
+                {
+                    _position += count;
+                    _available += count;
+                }
 
-                public void Consume(int count) => _consumed += count;
+                public void Consume(int count)
+                {
+                    _consumed += count;
+                    _available -= count;
+                }
 
                 public void DiscardConsumed()
                 {
-                    if (AvailableLength > 0)
+                    if (_available > 0)
                     {
-                        AvailableMemory.CopyTo(_bytes);
+                        AvailableReadOnlySpan.CopyTo(_bytes);
                     }
 
                     _position -= _consumed;
@@ -366,6 +484,15 @@ namespace System.Net.WebSockets
                 /// for the message and the output buffer is not full.
                 /// </summary>
                 Continue
+            }
+
+            [StructLayout(LayoutKind.Auto)]
+            private struct MessageHeader
+            {
+                internal MessageOpcode Opcode;
+                internal bool Fin;
+                internal long PayloadLength;
+                internal int Mask;
             }
         }
     }
