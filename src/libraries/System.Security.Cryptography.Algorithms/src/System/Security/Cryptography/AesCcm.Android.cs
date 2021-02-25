@@ -14,8 +14,6 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            // OpenSSL does not allow setting nonce length after setting the key
-            // we need to store it as bytes instead
             _key = key.ToArray();
         }
 
@@ -29,21 +27,24 @@ namespace System.Security.Cryptography
             // Convert key length to bits.
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
-                Interop.Crypto.CheckValidOpenSslHandle(ctx);
+                if (ctx.IsInvalid)
+                {
+                    throw new CryptographicException();
+                }
 
                 if (!Interop.Crypto.EvpCipherSetTagLength(ctx, tag.Length))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
-                Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
+                Interop.Crypto.EvpCipherSetNonceLength(ctx, nonce.Length);
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Encrypt);
 
                 if (associatedData.Length != 0)
                 {
                     if (!Interop.Crypto.EvpCipherUpdateAAD(ctx, associatedData))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        throw new CryptographicException();
                     }
                 }
 
@@ -53,7 +54,7 @@ namespace System.Security.Cryptography
                     Span<byte> ciphertextAndTag = stackalloc byte[0];
                     // Arbitrary limit.
                     const int StackAllocMax = 128;
-                    if (ciphertext.Length + tag.Length <= StackAllocMax)
+                    if (checked(ciphertext.Length + tag.Length) <= StackAllocMax)
                     {
                         ciphertextAndTag = stackalloc byte[ciphertext.Length + tag.Length];
                     }
@@ -65,7 +66,7 @@ namespace System.Security.Cryptography
 
                     if (!Interop.Crypto.EvpCipherUpdate(ctx, ciphertextAndTag, out int ciphertextBytesWritten, plaintext))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        throw new CryptographicException();
                     }
 
                     if (!Interop.Crypto.EvpCipherFinalEx(
@@ -73,7 +74,7 @@ namespace System.Security.Cryptography
                         ciphertextAndTag.Slice(ciphertextBytesWritten),
                         out int bytesWritten))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        throw new CryptographicException();
                     }
 
                     ciphertextBytesWritten += bytesWritten;
@@ -108,12 +109,15 @@ namespace System.Security.Cryptography
         {
             using (SafeEvpCipherCtxHandle ctx = Interop.Crypto.EvpCipherCreatePartial(GetCipher(_key.Length * 8)))
             {
-                Interop.Crypto.CheckValidOpenSslHandle(ctx);
-                Interop.Crypto.EvpCipherSetCcmNonceLength(ctx, nonce.Length);
+                if (ctx.IsInvalid)
+                {
+                    throw new CryptographicException();
+                }
+                Interop.Crypto.EvpCipherSetNonceLength(ctx, nonce.Length);
 
                 if (!Interop.Crypto.EvpCipherSetTagLength(ctx, tag.Length))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Decrypt);
@@ -122,7 +126,7 @@ namespace System.Security.Cryptography
                 {
                     if (!Interop.Crypto.EvpCipherUpdateAAD(ctx, associatedData))
                     {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                        throw new CryptographicException();
                     }
                 }
 
@@ -135,7 +139,7 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
                 {
                     plaintext.Clear();
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
                 }
 
                 plaintextBytesWritten += bytesWritten;

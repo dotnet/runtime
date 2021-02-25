@@ -606,8 +606,8 @@
     <Compile Include="System\Security\Cryptography\AesGcm.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EVP.Cipher.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EVP.Cipher.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
   </ItemGroup>

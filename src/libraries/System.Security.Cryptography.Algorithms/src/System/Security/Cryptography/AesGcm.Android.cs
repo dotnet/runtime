@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
                 key,
                 Span<byte>.Empty,
                 Interop.Crypto.EvpCipherDirection.NoChange);
-            Interop.Crypto.EvpCipherSetGcmNonceLength(_ctxHandle, NonceSize);
+            Interop.Crypto.EvpCipherSetNonceLength(_ctxHandle, NonceSize);
         }
 
         private void EncryptInternal(
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography
                 Span<byte> ciphertextAndTag = stackalloc byte[0];
                 // Arbitrary limit.
                 const int StackAllocMax = 128;
-                if (ciphertext.Length + tag.Length <= StackAllocMax)
+                if (checked(ciphertext.Length + tag.Length) <= StackAllocMax)
                 {
                     ciphertextAndTag = stackalloc byte[ciphertext.Length + tag.Length];
                 }
