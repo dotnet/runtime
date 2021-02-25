@@ -430,7 +430,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
     int error;
 
     // EINTR isn't documented, happens in practice on macOS.
-    while ((error = readdir_r(dir, entry, &result)) && error == EINTR);
+    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
 
     // positive error number returned -> failure
     if (error != 0)
