@@ -1806,15 +1806,6 @@ protected:
         m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
     }
 
-    void DisableEditAndContinue()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        // don't _ASSERTE(IsEditAndContinueCapable());
-        LOG((LF_ENC, LL_INFO100, "DisableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
-        m_dwTransientFlags = m_dwTransientFlags.Load() & (~IS_EDIT_AND_CONTINUE);
-    }
-
     BOOL IsTenured()
     {
         LIMITED_METHOD_CONTRACT;

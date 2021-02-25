@@ -686,14 +686,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
 
-    if (IsEditAndContinueCapable())
-    {
-        // If the program has the "ForceEnc" env variable set we ensure every eligible module has EnC turned on
-        // or if the debug built modifiable assemblies are enabled and the module is a debug built module.
-        if (g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits())))
-            EnableEditAndContinue();
-    }
-
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
@@ -1081,17 +1073,13 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED
-    BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable();
-
-    // The only way can change Enc is through debugger override.
-    if (setEnC)
+    if (IsEditAndContinueCapable())
     {
-        EnableEditAndContinue();
-    }
-    else
-    {
-        if (!(g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()))))
-            DisableEditAndContinue();
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        if (setEnC)
+        {
+            EnableEditAndContinue();
+        }
     }
 #endif // DEBUGGING_SUPPORTED
 
