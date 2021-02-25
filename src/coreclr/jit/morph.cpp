@@ -9310,7 +9310,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // only for BBJ_RETURN blocks.
         //
 
-        if (!call->IsTailCall() && (call->TypeIs(TYP_VOID) || (call->gtFlags & GTF_EXCEPT)))
+        if (!call->IsTailCall())
         {
             fgRemoveRestOfBlock = true;
         }
@@ -14748,7 +14748,6 @@ DONE_MORPHING_CHILDREN:
                 if (fgIsCommaThrow(op1, true))
                 {
                     GenTree* throwNode = op1->AsOp()->gtOp1;
-                    noway_assert(throwNode->gtType == TYP_VOID);
 
                     JITDUMP("Removing [%06d] GT_JTRUE as the block now unconditionally throws an exception.\n",
                             dspTreeID(tree));
