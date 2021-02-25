@@ -6494,8 +6494,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 if ((info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE) &&
                     !plsSpeculative)
                 {
-                    JITDUMP("Marking static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
                     tree->gtFlags |= GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
                     addr->gtFlags = GTF_ICON_CONST_PTR;
                 }
 
