@@ -82,7 +82,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblyInternal->Distinct())" Condition="'%(_WasmAssemblyInternal._InternalForceInterpret)' != 'true'">
+      <_AotInputAssemblies Include="@(_WasmAssemblyInternal)" Condition="'%(_WasmAssemblyInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
@@ -191,7 +191,7 @@
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
     <ItemGroup>
-        <_WasmAssemblyInternal Include="@(WasmAssembly)" />
+      <_WasmAssemblyInternal Include="@(WasmAssembly->Distinct())" />
     </ItemGroup>
   </Target>
 
