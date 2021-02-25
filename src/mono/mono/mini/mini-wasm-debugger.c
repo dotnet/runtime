@@ -953,6 +953,11 @@ nullable_try_get_value (guint8 *nullable, MonoClass *klass, gpointer* out_value)
 static gboolean
 describe_value(MonoType * type, gpointer addr, int gpflags)
 {
+	if (!type)
+		return FALSE;
+	else if (!addr)
+		return FALSE;
+
 	ERROR_DECL (error);
 	switch (type->type) {
 		case MONO_TYPE_BOOLEAN:
