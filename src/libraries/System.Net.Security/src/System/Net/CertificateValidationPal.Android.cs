@@ -64,13 +64,6 @@ namespace System.Net
                 return null;
 
             throw new NotImplementedException(nameof(GetRemoteCertificate));
-
-            // X509Certificate2? result = null;
-
-            // if (NetEventSource.Log.IsEnabled())
-            //     NetEventSource.Log.RemoteCertificate(result);
-
-            // return result;
         }
 
         //
