@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tracing
     // To prevent this, these events call directly into QCalls provided by the runtime (refer to NativeRuntimeEventSource.cs) which call
     // FireEtw* methods auto-generated from ClrEtwAll.man. This ensures that corresponding event sinks are being used
     // for the native platform. Refer to src/coreclr/vm/nativeruntimesource.cpp.
-    // For Mono implementation of these events, refer to NativeRuntimeEventSource.PortableThreadPool.Mono.cs.
+    // For Mono|CoreRT implementation of these events, refer to NativeRuntimeEventSource.PortableThreadPool.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // This value does not seem to be used, leaving it as zero for now. It may be useful for a scenario that may involve

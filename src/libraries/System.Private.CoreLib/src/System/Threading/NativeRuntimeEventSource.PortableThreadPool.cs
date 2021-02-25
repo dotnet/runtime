@@ -8,12 +8,12 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
-    // This is part of the NativeRuntimeEventsource for Mono, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // and contains the implementation of ThreadPool events.
+    // This is part of the NativeRuntimeEventsource for Mono|CoreRT, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
+    // and contains the implementation of ThreadPool events. Since file is shared between Mono|CoreRT it is kept in shared part of SPC.
     // To look at CoreCLR implementation of these events, refer to NativeRuntimeEventSource.PortableThreadPool.CoreCLR.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
-        // On Mono, we don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
+        // On Mono|CoreRT, we don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
         public class Keywords
         {
             public const EventKeywords GCKeyword = (EventKeywords)0x1;
