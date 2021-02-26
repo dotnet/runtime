@@ -12,18 +12,18 @@ using System.Text;
 namespace System.IO.Compression
 {
     /// <summary>Represents a package of compressed files in the zip archive format.</summary>
-    /// <remarks>The methods for manipulating zip archives and their file entries are spread across three classes: <see cref="System.IO.Compression.ZipFile" />, <see cref="System.IO.Compression.ZipArchive" />, and <see cref="System.IO.Compression.ZipArchiveEntry" />.
+    /// <remarks>The methods for manipulating zip archives and their file entries are spread across three classes: <see langword="System.IO.Compression.ZipFile" />, <see cref="System.IO.Compression.ZipArchive" />, and <see cref="System.IO.Compression.ZipArchiveEntry" />.
     /// |To|Use|
     /// |--------|---------|
-    /// |Create a zip archive from a directory|<see cref="System.IO.Compression.ZipFile.CreateFromDirectory" />|
-    /// |Extract the contents of a zip archive to a directory|<see cref="System.IO.Compression.ZipFile.ExtractToDirectory" />|
-    /// |Add new files to an existing zip archive|<see cref="System.IO.Compression.ZipArchive.CreateEntry" />|
+    /// |Create a zip archive from a directory|<see langword="System.IO.Compression.ZipFile.CreateFromDirectory" />|
+    /// |Extract the contents of a zip archive to a directory|<see langword="System.IO.Compression.ZipFile.ExtractToDirectory" />|
+    /// |Add new files to an existing zip archive|<see cref="O:System.IO.Compression.ZipArchive.CreateEntry" />|
     /// |Retrieve a file from a zip archive|<see cref="System.IO.Compression.ZipArchive.GetEntry" />|
     /// |Retrieve all the files from a zip archive|<see cref="System.IO.Compression.ZipArchive.Entries" />|
     /// |Open a stream to a single file contained in a zip archive|<see cref="System.IO.Compression.ZipArchiveEntry.Open" />|
     /// |Delete a file from a zip archive|<see cref="System.IO.Compression.ZipArchiveEntry.Delete" />|
-    /// When you create a new entry, the file is compressed and added to the zip package. The <see cref="System.IO.Compression.ZipArchive.CreateEntry" /> method enables you to specify a directory hierarchy when adding the entry. You include the relative path of the new entry within the zip package. For example, creating a new entry with a relative path of `AddedFolder\NewFile.txt` creates a compressed text file in a directory named AddedFolder.
-    /// If you reference the `System.IO.Compression.FileSystem` assembly in your project, you can access four extension methods (from the <see cref="System.IO.Compression.ZipFileExtensions" /> class) for the <see cref="System.IO.Compression.ZipArchive" /> class: <see cref="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile(System.IO.Compression.ZipArchive,string,string)" />, <see cref="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile(System.IO.Compression.ZipArchive,string,string,System.IO.Compression.CompressionLevel)" />, <see cref="System.IO.Compression.ZipFileExtensions.ExtractToDirectory(System.IO.Compression.ZipArchive,string)" />, and <see cref="System.IO.Compression.ZipFileExtensions.ExtractToDirectory(System.IO.Compression.ZipArchive,string,bool)" /> (available in .NET Core 2.0 and later versions). These extension methods enable you to compress and decompress the contents of the entry to a file. The `System.IO.Compression.FileSystem` assembly is not available for Windows 8.x Store apps. In Windows 8.x Store apps, you can compress and decompress files by using the <see cref="System.IO.Compression.DeflateStream" /> or <see cref="System.IO.Compression.GZipStream" /> class, or you can use the Windows Runtime types <a href="https://go.microsoft.com/fwlink/p/?LinkID=246358">Compressor](https://go.microsoft.com/fwlink/p/?LinkID=246357) and [Decompressor</a>.</remarks>
+    /// When you create a new entry, the file is compressed and added to the zip package. The <see cref="O:System.IO.Compression.ZipArchive.CreateEntry" /> method enables you to specify a directory hierarchy when adding the entry. You include the relative path of the new entry within the zip package. For example, creating a new entry with a relative path of `AddedFolder\NewFile.txt` creates a compressed text file in a directory named AddedFolder.
+    /// If you reference the `System.IO.Compression.FileSystem` assembly in your project, you can access four extension methods (from the <see langword="System.IO.Compression.ZipFileExtensions" /> class) for the <see cref="System.IO.Compression.ZipArchive" /> class: <see langword="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile(System.IO.Compression.ZipArchive,string,string)" />, <see langword="System.IO.Compression.ZipFileExtensions.CreateEntryFromFile(System.IO.Compression.ZipArchive,string,string,System.IO.Compression.CompressionLevel)" />, <see langword="System.IO.Compression.ZipFileExtensions.ExtractToDirectory(System.IO.Compression.ZipArchive,string)" />, and <see langword="System.IO.Compression.ZipFileExtensions.ExtractToDirectory(System.IO.Compression.ZipArchive,string,bool)" /> (available in .NET Core 2.0 and later versions). These extension methods enable you to compress and decompress the contents of the entry to a file. The `System.IO.Compression.FileSystem` assembly is not available for Windows 8.x Store apps. In Windows 8.x Store apps, you can compress and decompress files by using the <see cref="System.IO.Compression.DeflateStream" /> or <see cref="System.IO.Compression.GZipStream" /> class, or you can use the Windows Runtime types <a href="https://go.microsoft.com/fwlink/p/?LinkID=246358">Compressor](https://go.microsoft.com/fwlink/p/?LinkID=246357) and [Decompressor</a>.</remarks>
     /// <example>The first example shows how to create a new entry and write to it by using a stream.
     /// <format type="text/markdown"><![CDATA[
     /// [!code-csharp[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/cs/program1.cs#1)]
@@ -39,7 +39,7 @@ namespace System.IO.Compression
     /// [!code-csharp[System.IO.Compression.ZipArchive#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchive/cs/program3.cs#3)]
     /// [!code-vb[System.IO.Compression.ZipArchive#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.ziparchive/vb/program3.vb#3)]
     /// ]]></format></example>
-    /// <altmember cref="System.IO.Compression.ZipFile"/>
+    /// <altmember langword="System.IO.Compression.ZipFile"/>
     public class ZipArchive : IDisposable
     {
         private readonly Stream _archiveStream;
@@ -243,7 +243,7 @@ namespace System.IO.Compression
 
         /// <summary>Gets a value that describes the type of action the zip archive can perform on entries.</summary>
         /// <value>One of the enumeration values that describes the type of action (read, create, or update) the zip archive can perform on entries.</value>
-        /// <remarks>You specify a value for the <see cref="System.IO.Compression.ZipArchive" /> property when you create an instance of the <see cref="System.IO.Compression.ZipArchive" /> class. Use the <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%29" /> or <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%2Cbool%29" /> constructor to provide a value for the <see cref="System.IO.Compression.ZipArchive.Mode" /> property.</remarks>
+        /// <remarks>You specify a value for the <see cref="System.IO.Compression.ZipArchive" /> property when you create an instance of the <see cref="System.IO.Compression.ZipArchive" /> class. Use the <see cref="System.IO.Compression.ZipArchive.ZipArchive(System.IO.Stream,System.IO.Compression.ZipArchiveMode)" /> or <see cref="System.IO.Compression.ZipArchive.ZipArchive(System.IO.Stream,System.IO.Compression.ZipArchiveMode,bool)" /> constructor to provide a value for the <see cref="System.IO.Compression.ZipArchive.Mode" /> property.</remarks>
         public ZipArchiveMode Mode
         {
             get
@@ -256,7 +256,7 @@ namespace System.IO.Compression
         /// <param name="entryName">A path, relative to the root of the archive, that specifies the name of the entry to be created.</param>
         /// <returns>An empty entry in the zip archive.</returns>
         /// <remarks>The <paramref name="entryName" /> string should reflect the relative path of the entry you want to create within the zip archive. There is no restriction on the string you provide. However, if it is not formatted as a relative path, the entry is created, but you may get an exception when you extract the contents of the zip archive. If an entry with the specified path and name already exists in the archive, a second entry is created with the same path and name.
-        /// The value of the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property for the new entry is set to the current time. The entry is compressed using the default compression level of the underlying compression algorithm. If you want to specify a different compression level, use the <see cref="System.IO.Compression.ZipArchive.CreateEntry" /> method.</remarks>
+        /// The value of the <see cref="System.IO.Compression.ZipArchiveEntry.LastWriteTime" /> property for the new entry is set to the current time. The entry is compressed using the default compression level of the underlying compression algorithm. If you want to specify a different compression level, use the <see cref="O:System.IO.Compression.ZipArchive.CreateEntry" /> method.</remarks>
         /// <example>The following example shows how to create an entry and write to it by using a stream.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.ZipArchiveMode#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.ziparchivemode/cs/program1.cs#1)]
@@ -291,13 +291,13 @@ namespace System.IO.Compression
             return DoCreateEntry(entryName, compressionLevel);
         }
 
-        /// <summary>Called by the <see cref="System.IO.Compression.ZipArchive.Dispose" /> and <see cref="object.Finalize" /> methods to release the unmanaged resources used by the current instance of the <see cref="System.IO.Compression.ZipArchive" /> class, and optionally finishes writing the archive and releases the managed resources.</summary>
+        /// <summary>Called by the <see cref="O:System.IO.Compression.ZipArchive.Dispose" /> and <see cref="object.Finalize" /> methods to release the unmanaged resources used by the current instance of the <see cref="System.IO.Compression.ZipArchive" /> class, and optionally finishes writing the archive and releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to finish writing the archive and release unmanaged and managed resources; <see langword="false" /> to release only unmanaged resources.</param>
-        /// <remarks>If <paramref name="disposing" /> is set to <see langword="true" />, all underlying streams are closed and no longer available for subsequent write operations, unless you construct the object by using the <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%2Cbool%29" /> constructor overload and set its `leaveOpen` parameter to <see langword="true" />.
-        /// This method is called only by the public <see cref="System.IO.Compression.ZipArchive.Dispose" /> and <see cref="object.Finalize" /> methods; do not call this method directly.
-        /// When you implement the dispose pattern, the Boolean parameter of the <see cref="System.IO.Compression.ZipArchive.Dispose%28bool%29" /> method should be used as follows:
-        /// -   The <see cref="System.IO.Compression.ZipArchive.Dispose" /> method of the current object should call <see cref="System.IO.Compression.ZipArchive.Dispose%28bool%29" /> with the Boolean parameter set to <see langword="true" /> to release both managed and unmanaged resources.
-        /// -   The <see cref="object.Finalize" /> method of the current object should call <see cref="System.IO.Compression.ZipArchive.Dispose%28bool%29" /> with the Boolean parameter set to <see langword="false" /> to release only unmanaged resources.
+        /// <remarks>If <paramref name="disposing" /> is set to <see langword="true" />, all underlying streams are closed and no longer available for subsequent write operations, unless you construct the object by using the <see cref="System.IO.Compression.ZipArchive.ZipArchive(System.IO.Stream,System.IO.Compression.ZipArchiveMode,bool)" /> constructor overload and set its `leaveOpen` parameter to <see langword="true" />.
+        /// This method is called only by the public <see cref="O:System.IO.Compression.ZipArchive.Dispose" /> and <see cref="object.Finalize" /> methods; do not call this method directly.
+        /// When you implement the dispose pattern, the Boolean parameter of the <see cref="System.IO.Compression.ZipArchive.Dispose(bool)" /> method should be used as follows:
+        /// -   The <see cref="O:System.IO.Compression.ZipArchive.Dispose" /> method of the current object should call <see cref="System.IO.Compression.ZipArchive.Dispose(bool)" /> with the Boolean parameter set to <see langword="true" /> to release both managed and unmanaged resources.
+        /// -   The <see cref="object.Finalize" /> method of the current object should call <see cref="System.IO.Compression.ZipArchive.Dispose(bool)" /> with the Boolean parameter set to <see langword="false" /> to release only unmanaged resources.
         /// For more information, see [Implementing a Dispose method](/dotnet/standard/garbage-collection/implementing-dispose).</remarks>
         protected virtual void Dispose(bool disposing)
         {
@@ -326,9 +326,9 @@ namespace System.IO.Compression
         }
 
         /// <summary>Releases the resources used by the current instance of the <see cref="System.IO.Compression.ZipArchive" /> class.</summary>
-        /// <remarks>This method finishes writing the archive and releases all resources used by the <see cref="System.IO.Compression.ZipArchive" /> object. Unless you construct the object by using the <see cref="System.IO.Compression.ZipArchive.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.ZipArchiveMode%2Cbool%29" /> constructor overload and set its `leaveOpen` parameter to <see langword="true" />, all underlying streams are closed and no longer available for subsequent write operations.
-        /// When you are finished using this instance of <see cref="System.IO.Compression.ZipArchive" />, call <see cref="System.IO.Compression.ZipArchive.Dispose" /> to release all resources used by this instance. You should eliminate further references to this <see cref="System.IO.Compression.ZipArchive" /> instance so that the garbage collector can reclaim the memory of the instance instead of keeping it alive for finalization.
-        /// <see cref="System.IO.Compression.ZipArchive.Dispose" /> calls the <see cref="System.IO.Compression.ZipArchive.Dispose%28bool%29" /> method, which contains the code to release managed and unmanaged resources. For more information, see [Implementing a Dispose method](/dotnet/standard/garbage-collection/implementing-dispose).</remarks>
+        /// <remarks>This method finishes writing the archive and releases all resources used by the <see cref="System.IO.Compression.ZipArchive" /> object. Unless you construct the object by using the <see cref="System.IO.Compression.ZipArchive.ZipArchive(System.IO.Stream,System.IO.Compression.ZipArchiveMode,bool)" /> constructor overload and set its `leaveOpen` parameter to <see langword="true" />, all underlying streams are closed and no longer available for subsequent write operations.
+        /// When you are finished using this instance of <see cref="System.IO.Compression.ZipArchive" />, call <see cref="O:System.IO.Compression.ZipArchive.Dispose" /> to release all resources used by this instance. You should eliminate further references to this <see cref="System.IO.Compression.ZipArchive" /> instance so that the garbage collector can reclaim the memory of the instance instead of keeping it alive for finalization.
+        /// <see cref="O:System.IO.Compression.ZipArchive.Dispose" /> calls the <see cref="System.IO.Compression.ZipArchive.Dispose(bool)" /> method, which contains the code to release managed and unmanaged resources. For more information, see [Implementing a Dispose method](/dotnet/standard/garbage-collection/implementing-dispose).</remarks>
         public void Dispose()
         {
             Dispose(true);
