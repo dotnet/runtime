@@ -902,7 +902,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                         // since we assume that original compilation fit fine. This is only an issue for
                         // 32-bit offsets on 64-bit targets.
                         target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                        INT64 newdelta = (INT64)((BYTE*)target - baseAddr);
+                        INT64 newdelta = (INT64)(target - baseAddr);
 
                         LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
                                  delta, newdelta);
