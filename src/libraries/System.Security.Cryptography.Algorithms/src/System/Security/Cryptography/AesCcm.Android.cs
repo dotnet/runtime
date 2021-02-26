@@ -32,17 +32,17 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                if (!Interop.Crypto.EvpCipherSetTagLength(ctx, tag.Length))
+                if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
                 {
                     throw new CryptographicException();
                 }
 
-                Interop.Crypto.EvpCipherSetNonceLength(ctx, nonce.Length);
+                Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
                 Interop.Crypto.EvpCipherSetKeyAndIV(ctx, _key, nonce, Interop.Crypto.EvpCipherDirection.Encrypt);
 
                 if (associatedData.Length != 0)
                 {
-                    if (!Interop.Crypto.EvpCipherUpdateAAD(ctx, associatedData))
+                    if (!Interop.Crypto.CipherUpdateAAD(ctx, associatedData))
                     {
                         throw new CryptographicException();
                     }
@@ -113,9 +113,9 @@ namespace System.Security.Cryptography
                 {
                     throw new CryptographicException();
                 }
-                Interop.Crypto.EvpCipherSetNonceLength(ctx, nonce.Length);
+                Interop.Crypto.CipherSetNonceLength(ctx, nonce.Length);
 
-                if (!Interop.Crypto.EvpCipherSetTagLength(ctx, tag.Length))
+                if (!Interop.Crypto.CipherSetTagLength(ctx, tag.Length))
                 {
                     throw new CryptographicException();
                 }
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
 
                 if (associatedData.Length != 0)
                 {
-                    if (!Interop.Crypto.EvpCipherUpdateAAD(ctx, associatedData))
+                    if (!Interop.Crypto.CipherUpdateAAD(ctx, associatedData))
                     {
                         throw new CryptographicException();
                     }
@@ -132,14 +132,14 @@ namespace System.Security.Cryptography
 
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))
                 {
-                    plaintext.Clear();
-                    throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                    CryptographicOperations.ZeroMemory(plaintext);
+                    throw new CryptographicException();
                 }
 
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
                 {
-                    plaintext.Clear();
-                    throw new CryptographicException(SR.Cryptography_AuthTagMismatch);
+                    CryptographicOperations.ZeroMemory(plaintext);
+                    throw new CryptographicException();
                 }
 
                 plaintextBytesWritten += bytesWritten;

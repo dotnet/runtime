@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
                 key,
                 Span<byte>.Empty,
                 Interop.Crypto.EvpCipherDirection.NoChange);
-            Interop.Crypto.EvpCipherSetNonceLength(_ctxHandle, NonceSize);
+            Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSize);
         }
 
         private void EncryptInternal(
@@ -34,9 +34,9 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> associatedData = default)
         {
 
-            if (!Interop.Crypto.EvpCipherSetTagLength(_ctxHandle, tag.Length))
+            if (!Interop.Crypto.CipherSetTagLength(_ctxHandle, tag.Length))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
 
             Interop.Crypto.EvpCipherSetKeyAndIV(
@@ -47,9 +47,9 @@ namespace System.Security.Cryptography
 
             if (associatedData.Length != 0)
             {
-                if (!Interop.Crypto.EvpCipherUpdateAAD(_ctxHandle, associatedData))
+                if (!Interop.Crypto.CipherUpdateAAD(_ctxHandle, associatedData))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
             }
 
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
 
                 if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, ciphertextAndTag, out int ciphertextBytesWritten, plaintext))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 if (!Interop.Crypto.EvpCipherFinalEx(
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
                     ciphertextAndTag.Slice(ciphertextBytesWritten),
                     out int bytesWritten))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
 
                 ciphertextBytesWritten += bytesWritten;
@@ -111,9 +111,9 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            if (!Interop.Crypto.EvpCipherSetTagLength(_ctxHandle, tag.Length))
+            if (!Interop.Crypto.CipherSetTagLength(_ctxHandle, tag.Length))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
 
             Interop.Crypto.EvpCipherSetKeyAndIV(
@@ -124,20 +124,22 @@ namespace System.Security.Cryptography
 
             if (associatedData.Length != 0)
             {
-                if (!Interop.Crypto.EvpCipherUpdateAAD(_ctxHandle, associatedData))
+                if (!Interop.Crypto.CipherUpdateAAD(_ctxHandle, associatedData))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    throw new CryptographicException();
                 }
             }
 
             if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, plaintext, out int plaintextBytesWritten, ciphertext))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                CryptographicOperations.ZeroMemory(plaintext);
+                throw new CryptographicException();
             }
 
             if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, plaintext.Slice(plaintextBytesWritten), out int bytesWritten, tag))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                CryptographicOperations.ZeroMemory(plaintext);
+                throw new CryptographicException();
             }
 
             plaintextBytesWritten += bytesWritten;
