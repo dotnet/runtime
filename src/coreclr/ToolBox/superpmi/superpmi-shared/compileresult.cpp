@@ -861,9 +861,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             }
         }
 
-        const bool is64BitTarget = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
-
-        if (is64BitTarget)
+        if (IsSpmiTarget64Bit())
         {
             if (relocType == IMAGE_REL_BASED_DIR64)
             {
@@ -896,7 +894,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
                 INT64     delta         = (INT64)(target - baseAddr);
 
-                if (is64BitTarget)
+                if (IsSpmiTarget64Bit())
                 {
                     if (delta != (INT64)(int)delta)
                     {
