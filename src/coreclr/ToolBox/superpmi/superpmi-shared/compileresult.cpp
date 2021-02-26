@@ -742,10 +742,16 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
             printf("\n");
         }
 
-        switch (tmp.fRelocType)
+        const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
+
+        const DWORD relocType = tmp.fRelocType;
+        bool wasRelocHandled  = false;
+
+        // Do platform specific relocations first.
+
+        if ((targetArch == SPMI_TARGET_ARCHITECTURE_X86) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM))
         {
-#if defined(TARGET_X86)
-            case IMAGE_REL_BASED_HIGHLOW:
+            if (relocType == IMAGE_REL_BASED_HIGHLOW)
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -753,70 +759,111 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
                     LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
-                             (DWORD)tmp.target);
+                        (DWORD)tmp.target);
                     *(DWORD*)address = (DWORD)tmp.target;
                 }
+                wasRelocHandled = true;
             }
-            break;
-#endif // TARGET_X86
+        }
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-            case IMAGE_REL_BASED_REL32:
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM)
+        {
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
+            switch (relocType)
             {
-                DWORDLONG target        = tmp.target + tmp.addlDelta;
-                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
-                DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
-                INT64     delta         = (INT64)((BYTE*)target - baseAddr);
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-                if (delta != (INT64)(int)delta)
+                case IMAGE_REL_BASED_THUMB_MOV32:
+                case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
                 {
-                    // This isn't going to fit in a signed 32-bit address. Use something that will fit,
-                    // since we assume that original compilation fit fine. This is only an issue for
-                    // 32-bit offsets on 64-bit targets.
-                    target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                    INT64 newdelta = (INT64)((BYTE*)target - baseAddr);
-
-                    LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
-                             delta, newdelta);
-
-                    delta = newdelta;
+                    INT32 delta  = (INT32)(tmp.target - fixupLocation);
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        PutThumb2Mov32((UINT16*)address, (UINT32)delta);
+                    }
+                    wasRelocHandled = true;
                 }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+                break;
 
-                if (delta != (INT64)(int)delta)
+                case IMAGE_REL_BASED_THUMB_BRANCH24:
                 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
-#else
-                    LogError("REL32 relocation overflows field! delta=0x%08X", delta);
-#endif
+                    INT32 delta = (INT32)(tmp.target - fixupLocation);
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        if (!FitsInThumb2BlRel24(delta))
+                        {
+                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                            delta            = (INT32)(target - fixupLocation);
+                        }
+                        PutThumb2BlRel24((UINT16*)address, delta);
+                    }
+                    wasRelocHandled = true;
                 }
+                break;
 
-                // Write 32-bits into location
-                size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
-                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
-                {
-#if defined(TARGET_AMD64)
-                    // During an actual compile, recordRelocation() will be called before the compile
-                    // is actually finished, and it will write the relative offset into the fixupLocation.
-                    // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
-                    // to overestimation of instruction sizes. Because we're applying the relocs after the
-                    // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
-                    // that's now in the fixupLocation.
-                    INT32 adjustment = *(INT32*)address;
-                    delta += adjustment;
-#endif
-                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
-                             delta);
-                    *(DWORD*)address = (DWORD)delta;
-                }
+                default:
+                    break;
             }
-            break;
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+        }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-            case IMAGE_REL_BASED_DIR64:
+        if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
+        {
+            DWORDLONG fixupLocation = tmp.location;
+            DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+
+            switch (relocType)
+            {
+                case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT64 delta = (INT64)(tmp.target - fixupLocation);
+                        if (!FitsInRel28(delta))
+                        {
+                            // Assume here that we would need a jump stub for this relocation and pretend
+                            // that the jump stub is located right at the end of the method.
+                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                            delta = (INT64)(target - fixupLocation);
+                        }
+                        PutArm64Rel28((UINT32*)address, (INT32)delta);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT64 targetPage        = (INT64)tmp.target & 0xFFFFFFFFFFFFF000LL;
+                        INT64 fixupLocationPage = (INT64)fixupLocation & 0xFFFFFFFFFFFFF000LL;
+                        INT64 pageDelta         = (INT64)(targetPage - targetPage);
+                        INT32 imm21             = (INT32)(pageDelta >> 12) & 0x1FFFFF;
+                        PutArm64Rel21((UINT32*)address, imm21);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A: // ADD 12 bit page offset
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT32 imm12 = (INT32)(SIZE_T)tmp.target & 0xFFFLL;
+                        PutArm64Rel12((UINT32*)address, imm12);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                default:
+                    break;
+            }
+        }
+
+        if (IsSpmiTarget64Bit())
+        {
+            if (relocType == IMAGE_REL_BASED_DIR64)
             {
                 DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
 
@@ -825,20 +872,72 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                 {
                     LogDebug("  fixupLoc-%016llX (@%p) %016llX => %016llX", fixupLocation, address,
-                             *(DWORDLONG*)address, tmp.target);
+                        *(DWORDLONG*)address, tmp.target);
                     *(DWORDLONG*)address = tmp.target;
+                }
+
+                wasRelocHandled = true;
+            }
+        }
+
+        if (wasRelocHandled)
+            continue;
+
+        // Now do all-platform relocations.
+
+        switch (tmp.fRelocType)
+        {
+            case IMAGE_REL_BASED_REL32:
+            {
+                DWORDLONG target        = tmp.target + tmp.addlDelta;
+                DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
+                DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
+                INT64     delta         = (INT64)(target - baseAddr);
+
+                if (IsSpmiTarget64Bit())
+                {
+                    if (delta != (INT64)(int)delta)
+                    {
+                        // This isn't going to fit in a signed 32-bit address. Use something that will fit,
+                        // since we assume that original compilation fit fine. This is only an issue for
+                        // 32-bit offsets on 64-bit targets.
+                        target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
+                        INT64 newdelta = (INT64)(target - baseAddr);
+
+                        LogDebug("  REL32 overflow. Mapping target to %016llX. Mapping delta: %016llX => %016llX", target,
+                                 delta, newdelta);
+
+                        delta = newdelta;
+                    }
+                }
+
+                if (delta != (INT64)(int)delta)
+                {
+                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
+                }
+
+                // Write 32-bits into location
+                size_t address = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
+                if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                {
+                    if (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64)
+                    {
+                        // During an actual compile, recordRelocation() will be called before the compile
+                        // is actually finished, and it will write the relative offset into the fixupLocation.
+                        // Then, emitEndCodeGen() will patch forward jumps by subtracting any adjustment due
+                        // to overestimation of instruction sizes. Because we're applying the relocs after the
+                        // compile has finished, we need to reverse that: i.e. add in the (negative) adjustment
+                        // that's now in the fixupLocation.
+                        INT32 adjustment = *(INT32*)address;
+                        delta += adjustment;
+                    }
+
+                    LogDebug("  fixupLoc-%016llX (@%p) : %08X => %08X", fixupLocation, address, *(DWORD*)address,
+                             delta);
+                    *(DWORD*)address = (DWORD)delta;
                 }
             }
             break;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-#ifdef TARGET_ARM64
-            case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
-            case IMAGE_REL_ARM64_PAGEBASE_REL21:
-            case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                LogError("Unimplemented reloc type %u", tmp.fRelocType);
-                break;
-#endif // TARGET_ARM64
 
             default:
                 LogError("Unknown reloc type %u", tmp.fRelocType);

@@ -13,6 +13,7 @@
 
 #include "logging.h"
 #include "neardiffer.h"
+#include "spmiutil.h"
 
 #ifdef USE_COREDISTOOLS
 
@@ -1102,6 +1103,34 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &flag_2, &hotCodeBlock_2,
                      &coldCodeBlock_2, &roDataBlock_2, &orig_hotCodeBlock_2, &orig_coldCodeBlock_2,
                      &orig_roDataBlock_2);
+
+    // On Arm64 the constant pool is appended at the end of the method code section, hence hotCodeSize_{1,2}
+    // is a sum of their sizes. The following is to adjust their sizes and the roDataBlock_{1,2} pointers.
+    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
+    {
+        BYTE*        nativeEntry_1;
+        ULONG        nativeSizeOfCode_1;
+        CorJitResult jitResult_1;
+
+        BYTE*        nativeEntry_2;
+        ULONG        nativeSizeOfCode_2;
+        CorJitResult jitResult_2;
+
+        cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
+        cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
+
+        roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
+        roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
+
+        roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
+        roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
+
+        orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
+        orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
+
+        hotCodeSize_1 = nativeSizeOfCode_1;
+        hotCodeSize_2 = nativeSizeOfCode_2;
+    }
 
     LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
              coldCodeSize_1, roDataSize_1, xcptnsCount_1, flag_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
