@@ -19,6 +19,7 @@ namespace FPBehaviorApp
         CONVERT_SATURATING,
         CONVERT_NATIVECOMPILERBEHAVIOR,
         CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64,
+        CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
     }
 
     public enum ConversionType
@@ -110,6 +111,7 @@ namespace FPBehaviorApp
                     return (IsNaN(x) || (x<int.MinValue) || (x > int.MaxValue)) ? int.MinValue: (int) x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
+                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return IsNaN(x) ? 0 : (x< int.MinValue) ? int.MinValue : (x > int.MaxValue) ? int.MaxValue : (int) x;
             }
             return 0;
@@ -133,6 +135,7 @@ namespace FPBehaviorApp
                     return (IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
+                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     return (IsNaN(x) || (x < 0)) ? 0 : (x > uint.MaxValue) ? uint.MaxValue : (uint)x;
             }
 
@@ -156,11 +159,29 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x;
 
+                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
+                    if (x > 0)
+                    {
+                        return (long)CppNativeArm32ConvertDoubleToUnsignedLongLong(x);
+                    }
+                    else
+                    {
+                        return -(long)CppNativeArm32ConvertDoubleToUnsignedLongLong(-x);
+                    }
+
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return IsNaN(x) ? 0 : (x < long.MinValue) ? long.MinValue : (x >= llong_max_plus_1) ? long.MaxValue : (long)x;
             }
 
             return 0;
+
+            static ulong CppNativeArm32ConvertDoubleToUnsignedLongLong(double y)
+            {
+                const double uintmax_plus_1 = -2.0 * (double)int.MinValue;
+                uint hi32Bits = ConvertDoubleToUnsignedLong(y / uintmax_plus_1, FPtoIntegerConversionType.CONVERT_SATURATING);
+                uint lo32Bits = ConvertDoubleToUnsignedLong(y - (((double)hi32Bits) * uintmax_plus_1), FPtoIntegerConversionType.CONVERT_SATURATING);
+                return (((ulong)hi32Bits) << (int)32) + lo32Bits;
+            }
         }
 
         public static ulong ConvertDoubleToUnsignedLongLong(double x, FPtoIntegerConversionType t)
@@ -172,6 +193,7 @@ namespace FPBehaviorApp
 
             // (double)ULLONG_MAX cannot be represented exactly as double
             const double ullong_max_plus_1 = -2.0 * (double)long.MinValue;
+            const double two63 = 2147483648.0 * 4294967296.0;
 
             switch (t)
             {
@@ -184,8 +206,19 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                     return (IsNaN(x) || (x < 0)) ? 0 : (x >= ullong_max_plus_1) ? ulong.MaxValue : (ulong)x;
 
+                case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
+                    {
+                        if (x < two63)
+                        {
+                            return (ulong)ConvertDoubleToLongLong(x, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
+                        }
+                        else
+                        {
+                            return (ulong)ConvertDoubleToLongLong(x - two63, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
+                        }
+                    }
+
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
-                    const double two63 = 2147483648.0 * 4294967296.0;
 
                     if (x < two63)
                     {
@@ -277,6 +310,7 @@ namespace FPBehaviorApp
             if (!tValue.HasValue)
             {
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64);
+                TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_SATURATING);
                 TestBitValue(value, dblVal, FPtoIntegerConversionType.CONVERT_SENTINEL);
@@ -377,6 +411,9 @@ namespace FPBehaviorApp
                     break;
 
                 case Architecture.Arm:
+                    Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32;
+                    break;
+
                 case Architecture.Arm64:
                     Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;
                     break;

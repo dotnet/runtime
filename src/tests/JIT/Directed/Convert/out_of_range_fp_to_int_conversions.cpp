@@ -18,6 +18,7 @@ typedef enum {
     CONVERT_SATURATING,
     CONVERT_NATIVECOMPILERBEHAVIOR,
     CONVERT_MANAGED_BACKWARD_COMPATIBLE,
+    CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32,
 } FPtoIntegerConversionType;
 
 extern "C" DLLEXPORT int32_t ConvertDoubleToLong(double x, FPtoIntegerConversionType t)
@@ -33,6 +34,7 @@ extern "C" DLLEXPORT int32_t ConvertDoubleToLong(double x, FPtoIntegerConversion
     case CONVERT_SENTINEL:
         return ((x != x) || (x < INT32_MIN) || (x > INT32_MAX)) ? INT32_MIN : (int32_t)x;
 
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
     case CONVERT_SATURATING:
         return (x != x) ? 0 : (x < INT32_MIN) ? INT32_MIN : (x > INT32_MAX) ? INT32_MAX : (int32_t)x;
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
@@ -58,6 +60,7 @@ extern "C" DLLEXPORT uint32_t ConvertDoubleToUnsignedLong(double x, FPtoIntegerC
     case CONVERT_SENTINEL:
         return ((x != x) || (x < 0) || (x > UINT32_MAX)) ? UINT32_MAX  : (uint32_t)x;
 
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
     case CONVERT_SATURATING:
         return ((x != x) || (x < 0)) ? 0 : (x > UINT32_MAX) ? UINT32_MAX : (uint32_t)x;
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
@@ -65,6 +68,14 @@ extern "C" DLLEXPORT uint32_t ConvertDoubleToUnsignedLong(double x, FPtoIntegerC
     }
 
     return 0;
+}
+
+static uint64_t CppNativeArm32ConvertDoubleToUnsignedLongLong(double y)
+{
+    const double uintmax_plus_1 = -2.0 * (double)INT32_MIN;
+    uint32_t hi32Bits = ConvertDoubleToUnsignedLong(y / uintmax_plus_1, CONVERT_SATURATING);
+    uint32_t lo32Bits = ConvertDoubleToUnsignedLong(y - (((double)hi32Bits) * uintmax_plus_1), CONVERT_SATURATING);
+    return (((uint64_t)hi32Bits) << 32) + lo32Bits;
 }
 
 extern "C" DLLEXPORT int64_t ConvertDoubleToLongLong(double x, FPtoIntegerConversionType t)
@@ -88,6 +99,16 @@ extern "C" DLLEXPORT int64_t ConvertDoubleToLongLong(double x, FPtoIntegerConver
     case CONVERT_BACKWARD_COMPATIBLE:
     case CONVERT_SENTINEL:
         return ((x != x) || (x < INT64_MIN) || (x >= int64_max_plus_1)) ? INT64_MIN : (int64_t)x;
+
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
+        if (x > 0)
+        {
+            return (int64_t)CppNativeArm32ConvertDoubleToUnsignedLongLong(x);
+        }
+        else
+        {
+            return -(int64_t)CppNativeArm32ConvertDoubleToUnsignedLongLong(-x);
+        }
 
     case CONVERT_SATURATING:
         return (x != x) ? 0 : (x < INT64_MIN) ? INT64_MIN : (x >= int64_max_plus_1) ? INT64_MAX : (int64_t)x;
@@ -139,6 +160,18 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUnsignedLongLong(double x, FPtoInt
 
     case CONVERT_SATURATING:
         return ((x != x) || (x < 0)) ? 0 : (x >= uint64_max_plus_1) ? UINT64_MAX : (uint64_t)x;
+
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
+        {
+            if (x < int64_max_plus_1)
+            {
+                return (uint64_t)ConvertDoubleToLongLong(x, CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
+            }
+            else
+            {
+                return (uint64_t)ConvertDoubleToLongLong(x - int64_max_plus_1, CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
+            }
+        }
 
     case CONVERT_MANAGED_BACKWARD_COMPATIBLE:
         if (x < int64_max_plus_1)
