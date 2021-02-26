@@ -84,6 +84,8 @@ namespace System
         public static int SequenceCompareTo<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T> { throw null; }
         public static bool SequenceEqual<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T> { throw null; }
         public static bool SequenceEqual<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T> { throw null; }
+        public static bool SequenceEqual<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
+        public static bool SequenceEqual<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static void Sort<T>(this System.Span<T> span) { }
         public static void Sort<T>(this System.Span<T> span, System.Comparison<T> comparison) { }
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items) { }

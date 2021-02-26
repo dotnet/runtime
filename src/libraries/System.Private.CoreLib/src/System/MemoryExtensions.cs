@@ -909,13 +909,78 @@ namespace System
             {
                 nuint size = (nuint)Unsafe.SizeOf<T>();
                 return length == other.Length &&
-                SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                    ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    SpanHelpers.SequenceEqual(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                        ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
             }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null) =>
+            SequenceEqual((ReadOnlySpan<T>)span, other, comparer);
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
+        {
+            // If the spans differ in length, they're not equal.
+            if (span.Length != other.Length)
+            {
+                return false;
+            }
+
+            if (typeof(T).IsValueType)
+            {
+                if (comparer is null || comparer == EqualityComparer<T>.Default)
+                {
+                    // If no comparer was supplied and the type is bitwise equatable, take the fast path doing a bitwise comparison.
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>())
+                    {
+                        nuint size = (nuint)Unsafe.SizeOf<T>();
+                        return SpanHelpers.SequenceEqual(
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                            ((nuint)span.Length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
+                    }
+
+                    // Otherwise, compare each element using EqualityComparer<T>.Default.Equals in a way that will enable it to devirtualize.
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            // Use the comparer to compare each element.
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -62,22 +62,7 @@ namespace System.Data
 
             object[] childValues = row.GetKeyValues(_childKey, version);
 
-            bool allow = true;
-            if (childValues.Length != parentValues.Length)
-            {
-                allow = false;
-            }
-            else
-            {
-                for (int i = 0; i < childValues.Length; i++)
-                {
-                    if (!childValues[i].Equals(parentValues[i]))
-                    {
-                        allow = false;
-                        break;
-                    }
-                }
-            }
+            bool allow = childValues.AsSpan().SequenceEqual(parentValues);
 
             IFilter? baseFilter = base.GetFilter();
             if (baseFilter != null)

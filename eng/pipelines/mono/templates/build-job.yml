@@ -16,6 +16,7 @@ parameters:
   dependsOn: []
   monoCrossAOTTargetOS: []
   dependOnEvaluatePaths: false
+  pgoType: ''
 
 ### Product build
 jobs:
