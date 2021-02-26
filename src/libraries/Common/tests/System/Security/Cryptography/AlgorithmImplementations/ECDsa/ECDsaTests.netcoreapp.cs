@@ -227,7 +227,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         [Theory]
         [MemberData(nameof(TestCurves))]
-        [SkipOnMono("Checking if a curve is named is unsupported on Android", TestPlatforms.Android)]
         public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
         {
             if (!curveDef.Curve.IsNamed)

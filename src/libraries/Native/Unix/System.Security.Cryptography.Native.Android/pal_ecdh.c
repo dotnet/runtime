@@ -26,7 +26,7 @@ int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8
         return FAIL;
     }
 
-    jobject peerPublicKey = (*env)->CallObjectMethod(env, peerKey->keyPair, g_keyPairGetPublicMethod);\
+    jobject peerPublicKey = (*env)->CallObjectMethod(env, peerKey->keyPair, g_keyPairGetPublicMethod);
     ReleaseLRef(env, (*env)->CallObjectMethod(env, keyAgreement, g_KeyAgreementDoPhase, peerPublicKey, JNI_TRUE));
     ReleaseLRef(env, peerPublicKey);
     if (CheckJNIExceptions(env))

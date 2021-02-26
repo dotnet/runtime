@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
                 SafeEcKeyHandle? theirKey = null;
                 byte[]? rented = null;
                 // Calculate secretLength in bytes.
-                int secretLength = (KeySize + 7) / 8;
+                int secretLength = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
                 try
                 {
@@ -164,7 +164,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 
-                    secret = secret.Slice(0, usedBufferLength);
+                    Debug.Assert(secretLength == usedBufferLength, $"Expected secret length {secretLength} does not match actual secret length {usedBufferLength}.");
 
                     if (hasher == null)
                     {
