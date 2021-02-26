@@ -95,6 +95,9 @@ namespace System.Diagnostics.Tracing
             _count++;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "CounterPayload type has been trimmer safe")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CounterPayload))]
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             lock (this)

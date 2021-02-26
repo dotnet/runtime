@@ -5,6 +5,7 @@
 using System;
 #endif
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 #if ES_BUILD_STANDALONE
@@ -25,6 +26,10 @@ namespace System.Diagnostics.Tracing
         internal readonly EventOpcode opcode = (EventOpcode)(-1);
         internal readonly EventTags tags;
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "Trimmer does not support type recursion but is adding guards elsewhere")]
+#endif
         public TypeAnalysis(
             Type dataType,
             EventDataAttribute? eventAttrib,

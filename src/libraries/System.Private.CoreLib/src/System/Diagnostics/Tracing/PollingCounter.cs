@@ -8,6 +8,7 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
@@ -46,6 +47,9 @@ namespace System.Diagnostics.Tracing
         private readonly Func<double> _metricProvider;
         private double _lastVal;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "CounterPayload type has been trimmer safe")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CounterPayload))]
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             lock (this)

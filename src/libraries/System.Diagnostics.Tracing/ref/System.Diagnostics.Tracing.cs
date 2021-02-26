@@ -190,6 +190,7 @@ namespace System.Diagnostics.Tracing
         protected void WriteEvent(int eventId, long arg1, long arg2) { }
         protected void WriteEvent(int eventId, long arg1, long arg2, long arg3) { }
         protected void WriteEvent(int eventId, long arg1, string? arg2) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. Trimmer will not safely handle this case")]
         protected void WriteEvent(int eventId, params object?[] args) { }
         protected void WriteEvent(int eventId, string? arg1) { }
         protected void WriteEvent(int eventId, string? arg1, int arg2) { }
@@ -202,9 +203,13 @@ namespace System.Diagnostics.Tracing
         protected void WriteEventWithRelatedActivityId(int eventId, System.Guid relatedActivityId, params object?[] args) { }
         [System.CLSCompliantAttribute(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, System.Guid* relatedActivityId, int eventDataCount, System.Diagnostics.Tracing.EventSource.EventData* data) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. Trimmer will not safely handle this case")]
         public void Write<T>(string? eventName, System.Diagnostics.Tracing.EventSourceOptions options, T data) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. Trimmer will not safely handle this case")]
         public void Write<T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref System.Guid activityId, ref System.Guid relatedActivityId, ref T data) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. Trimmer will not safely handle this case")]
         public void Write<T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. Trimmer will not safely handle this case")]
         public void Write<T>(string? eventName, T data) { }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         protected internal partial struct EventData

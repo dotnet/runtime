@@ -1290,7 +1290,7 @@ namespace System.Diagnostics.Tracing
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
 #endif // MONO && !TARGET_BROWSER
-                            WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
+                        WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
                     }
                 }
                 catch (Exception ex)
@@ -1311,6 +1311,10 @@ namespace System.Diagnostics.Tracing
         /// method signature. Even if you use this for rare events, this call should be guarded by an <see cref="IsEnabled()"/>
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
+                "Trimmer will not safely handle this case")]
+#endif
         protected unsafe void WriteEvent(int eventId, params object?[] args)
         {
             WriteEventVarargs(eventId, null, args);

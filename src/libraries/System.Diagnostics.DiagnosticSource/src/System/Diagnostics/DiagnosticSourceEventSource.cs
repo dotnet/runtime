@@ -223,6 +223,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
@@ -243,6 +245,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -252,6 +256,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -261,6 +267,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -270,6 +278,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -279,6 +289,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -288,6 +300,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -311,8 +325,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(11, Keywords = Keywords.Events)]
+                [Event(11, Keywords = Keywords.Events)]
 #else
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
 #endif
@@ -325,8 +341,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(12, Keywords = Keywords.Events)]
+                [Event(12, Keywords = Keywords.Events)]
 #else
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
 #endif

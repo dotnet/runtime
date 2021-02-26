@@ -8,6 +8,7 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
@@ -69,6 +70,9 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "IncrementingCounterPayload type has been trimmer safe")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(IncrementingCounterPayload))]
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             UpdateMetric();

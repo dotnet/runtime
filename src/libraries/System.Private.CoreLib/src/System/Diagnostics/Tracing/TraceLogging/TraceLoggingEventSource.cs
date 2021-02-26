@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -151,6 +152,10 @@ namespace System.Diagnostics.Tracing
         /// public instance properties of data will be written recursively to
         /// create the fields of the event.
         /// </param>
+#if !ES_BUILD_STANDALONE
+        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
+                "Trimmer will not safely handle this case")]
+#endif
         public unsafe void Write<T>(
             string? eventName,
             T data)
@@ -187,6 +192,10 @@ namespace System.Diagnostics.Tracing
         /// public instance properties of data will be written recursively to
         /// create the fields of the event.
         /// </param>
+#if !ES_BUILD_STANDALONE
+        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
+                "Trimmer will not safely handle this case")]
+#endif
         public unsafe void Write<T>(
             string? eventName,
             EventSourceOptions options,
@@ -225,6 +234,10 @@ namespace System.Diagnostics.Tracing
         /// public instance properties of data will be written recursively to
         /// create the fields of the event.
         /// </param>
+#if !ES_BUILD_STANDALONE
+        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
+                "Trimmer will not safely handle this case")]
+#endif
         public unsafe void Write<T>(
             string? eventName,
             ref EventSourceOptions options,
@@ -270,6 +283,10 @@ namespace System.Diagnostics.Tracing
         /// public instance properties of data will be written recursively to
         /// create the fields of the event.
         /// </param>
+#if !ES_BUILD_STANDALONE
+        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
+                "Trimmer will not safely handle this case")]
+#endif
         public unsafe void Write<T>(
             string? eventName,
             ref EventSourceOptions options,
