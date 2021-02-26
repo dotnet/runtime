@@ -7641,42 +7641,45 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //
     BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
 
-    if (nextBlock != nullptr)
+    if (nextBlock == nullptr)
+    {
+        // No unique successor. compCurBB should be a return.
+        //
+        assert(compCurBB->bbJumpKind == BBJ_RETURN);
+    }
+    else
     {
         // Flow no longer reaches nextBlock from here.
         //
         fgRemoveRefPred(nextBlock, compCurBB);
 
+        // Adjust profile weights.
+        //
+        // Note if this is a tail call to loop, further updates
+        // are needed once we install the loop edge.
+        //
         if (compCurBB->hasProfileWeight() && nextBlock->hasProfileWeight())
         {
-            // Since we had linear flow we can update the next block weight.
+            // Since we have linear flow we can update the next block weight.
             //
-            // Note if this is a tail call to loop, further updates
-            // are needed once we install the loop edge.
-            //
-            // We should not need to handle the case where this block has already
-            // been "merged" to a common return.
-            //
-            assert(nextBlock->bbJumpKind == BBJ_RETURN);
-
-            BasicBlock::weight_t const blockWeight = compCurBB->bbWeight;
-            BasicBlock::weight_t const nextWeight  = nextBlock->bbWeight;
-            BasicBlock::weight_t const newWeight   = nextWeight - blockWeight;
+            BasicBlock::weight_t const blockWeight   = compCurBB->bbWeight;
+            BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
+            BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
 
             // If the math would result in an negative weight then there's
             // no local repair we can do; just leave things inconsistent.
             //
-            if (newWeight >= 0)
+            if (newNextWeight >= 0)
             {
                 // Note if we'd already morphed the IR in nextblock we might
                 // have done something profile sensitive that we should arguably reconsider.
                 //
                 JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
-                        nextWeight, newWeight);
+                        nextWeight, newNextWeight);
 
-                nextBlock->setBBProfileWeight(newWeight);
+                nextBlock->setBBProfileWeight(newNextWeight);
 
-                if (newWeight == 0.0f)
+                if (newNextWeight == 0.0f)
                 {
                     nextBlock->bbFlags |= BBF_RUN_RARELY;
                 }
@@ -7686,6 +7689,45 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
                         " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
                         nextBlock->bbNum, nextWeight, compCurBB->bbNum, blockWeight);
+            }
+
+            // If nextBlock is not a BBJ_RETURN, it should have a unique successor that
+            // is a BBJ_RETURN, as we allow a little bit of flow after a tail call.
+            //
+            if (nextBlock->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+
+                if (nextNextBlock->hasProfileWeight())
+                {
+                    // Do similar updates here.
+                    //
+                    BasicBlock::weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    BasicBlock::weight_t const newNextNextWeight = nextNextWeight - blockWeight;
+
+                    // If the math would result in an negative weight then there's
+                    // no local repair we can do; just leave things inconsistent.
+                    //
+                    if (newNextNextWeight >= 0)
+                    {
+                        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+
+                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+
+                        if (newNextNextWeight == 0.0f)
+                        {
+                            nextNextBlock->bbFlags |= BBF_RUN_RARELY;
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                                " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                    }
+                }
             }
         }
     }
