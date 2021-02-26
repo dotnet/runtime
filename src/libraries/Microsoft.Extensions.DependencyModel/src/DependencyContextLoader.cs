@@ -127,6 +127,13 @@ namespace Microsoft.Extensions.DependencyModel
 
         private string GetDepsJsonPath(Assembly assembly)
         {
+            // Assemblies loaded in memory (e.g. single file) return empty string from Location.
+            // In these cases, don't try probing next to the assembly.
+            if (string.IsNullOrEmpty(assembly.Location))
+            {
+                return null;
+            }
+
             string depsJsonFile = Path.ChangeExtension(assembly.Location, DepsJsonExtension);
             bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
 
