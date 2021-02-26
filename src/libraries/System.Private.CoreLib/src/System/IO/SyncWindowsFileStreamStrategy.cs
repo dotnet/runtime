@@ -93,6 +93,8 @@ namespace System.IO
                 base.WriteAsync(buffer, cancellationToken);
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
+
         private unsafe int ReadSpan(Span<byte> destination)
         {
             if (!CanRead)

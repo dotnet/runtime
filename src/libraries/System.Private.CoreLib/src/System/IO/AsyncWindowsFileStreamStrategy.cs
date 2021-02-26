@@ -250,6 +250,8 @@ namespace System.IO
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
+
         private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
             => new ValueTask(WriteAsyncInternalCore(source, cancellationToken));
 
