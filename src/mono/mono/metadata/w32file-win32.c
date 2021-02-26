@@ -43,6 +43,11 @@ mono_w32file_close (gpointer handle)
 	return res;
 }
 
+static void
+win32_io_interrupt_handler (gpointer ignored)
+{
+}
+
 gboolean
 mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
 {
