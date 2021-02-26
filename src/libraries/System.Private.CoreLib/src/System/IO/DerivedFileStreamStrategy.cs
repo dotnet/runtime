@@ -15,8 +15,21 @@ namespace System.IO
     internal sealed class DerivedFileStreamStrategy : FileStreamStrategy
     {
         private readonly FileStreamStrategy _strategy;
+        private readonly FileStream _fileStream;
 
-        internal DerivedFileStreamStrategy(FileStream fileStream, FileStreamStrategy strategy) : base(fileStream) => _strategy = strategy;
+        internal DerivedFileStreamStrategy(FileStream fileStream, FileStreamStrategy strategy)
+        {
+            _fileStream = fileStream;
+            _strategy = strategy;
+        }
+
+        ~DerivedFileStreamStrategy()
+        {
+            // Preserved for compatibility since FileStream has defined a
+            // finalizer in past releases and derived classes may depend
+            // on Dispose(false) call.
+            _fileStream.DisposeInternal(false);
+        }
 
         public override bool CanRead => _strategy.CanRead;
 
@@ -36,7 +49,14 @@ namespace System.IO
 
         internal override string Name => _strategy.Name;
 
-        internal override SafeFileHandle SafeFileHandle => _strategy.SafeFileHandle;
+        internal override SafeFileHandle SafeFileHandle
+        {
+            get
+            {
+                _fileStream.Flush(false);
+                return _strategy.SafeFileHandle;
+            }
+        }
 
         internal override bool IsClosed => _strategy.IsClosed;
 
@@ -136,6 +156,14 @@ namespace System.IO
 
         public override ValueTask DisposeAsync() => _fileStream.BaseDisposeAsync();
 
-        internal override void DisposeInternal(bool disposing) => _strategy.DisposeInternal(disposing);
+        internal override void DisposeInternal(bool disposing)
+        {
+            _strategy.DisposeInternal(disposing);
+
+            if (disposing)
+            {
+                GC.SuppressFinalize(this);
+            }
+        }
     }
 }

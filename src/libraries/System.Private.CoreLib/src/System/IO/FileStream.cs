@@ -46,7 +46,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync));
+                _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(safeHandle, access, bufferSize, isAsync));
             }
             catch
             {
@@ -95,7 +95,7 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync));
+            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(handle, access, bufferSize, isAsync));
         }
 
         public FileStream(string path, FileMode mode) :
@@ -164,7 +164,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options));
+            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(path, mode, access, share, bufferSize, options));
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -397,18 +397,9 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        ~FileStream()
-        {
-            // Preserved for compatibility since FileStream has defined a
-            // finalizer in past releases and derived classes may depend
-            // on Dispose(false) call.
-            Dispose(false);
-        }
+        protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        protected override void Dispose(bool disposing)
-        {
-            _strategy?.DisposeInternal(disposing); // null _strategy possible in finalizer
-        }
+        internal void DisposeInternal(bool disposing) => Dispose(disposing);
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 

@@ -61,7 +61,7 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal LegacyFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
+        internal LegacyFileStreamStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -78,7 +78,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        internal LegacyFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
+        internal LegacyFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -105,12 +105,7 @@ namespace System.IO
             }
         }
 
-        ~LegacyFileStreamStrategy()
-        {
-            // it looks like having this finalizer is mandatory,
-            // as we can not guarantee that the Strategy won't be null in FileStream finalizer
-            Dispose(false);
-        }
+        ~LegacyFileStreamStrategy() => Dispose(false); // mandatory to Flush the write buffer
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
@@ -272,8 +267,7 @@ namespace System.IO
             return WriteAsyncInternal(buffer, cancellationToken);
         }
 
-        // this method might call Derived type implenentation of Flush(flushToDisk)
-        public override void Flush() => _fileStream.Flush();
+        public override void Flush() => Flush(flushToDisk: false);
 
         internal override void Flush(bool flushToDisk)
         {

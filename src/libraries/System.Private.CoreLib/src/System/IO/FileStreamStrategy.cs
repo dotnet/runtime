@@ -7,10 +7,6 @@ namespace System.IO
 {
     internal abstract class FileStreamStrategy : Stream
     {
-        protected readonly FileStream _fileStream;
-
-        protected FileStreamStrategy(FileStream fileStream) => _fileStream = fileStream;
-
         internal abstract bool IsAsync { get; }
 
         internal abstract string Name { get; }

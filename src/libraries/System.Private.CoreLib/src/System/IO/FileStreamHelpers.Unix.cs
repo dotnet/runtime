@@ -14,11 +14,11 @@ namespace System.IO
     internal static class FileStreamHelpers
     {
         // in the future we are most probably going to introduce more strategies (io_uring etc)
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            => new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, isAsync);
+        internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+            => new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new LegacyFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
+        internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            => new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
         {

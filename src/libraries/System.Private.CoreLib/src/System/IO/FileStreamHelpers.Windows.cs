@@ -19,11 +19,11 @@ namespace System.IO
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            => new LegacyFileStreamStrategy(fileStream, handle, access, bufferSize, isAsync);
+        internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+            => new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new LegacyFileStreamStrategy(fileStream, path, mode, access, share, bufferSize, options);
+        internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+            => new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
             => CreateFileOpenHandle(path, mode, access, share, options);
