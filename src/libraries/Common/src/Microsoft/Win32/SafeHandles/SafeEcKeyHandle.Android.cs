@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Security;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -17,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.EcKeyDestroy(handle);
+            Interop.AndroidCrypto.EcKeyDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -35,9 +36,9 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeEcKeyHandle safeHandle = new SafeEcKeyHandle();
 
-            if (!Interop.Crypto.EcKeyUpRef(handle))
+            if (!Interop.AndroidCrypto.EcKeyUpRef(handle))
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException();
             }
 
             safeHandle.SetHandle(handle);
