@@ -45,7 +45,7 @@ namespace System.IO
 #if DEBUG
         private bool _cancellationHasBeenRegistered;
 #endif
-        internal NativeOverlapped* _overlapped; // Overlapped class responsible for operations in progress when an appdomain unload occurs
+        private NativeOverlapped* _overlapped; // Overlapped class responsible for operations in progress when an appdomain unload occurs
         private long _result; // Using long since this needs to be used in Interlocked APIs
 
         // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)

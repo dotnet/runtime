@@ -42,8 +42,6 @@ namespace System.IO
         private bool _isPipe;      // Whether to disable async buffering code.
         private long _appendStart; // When appending, prevent overwriting file.
 
-        private static readonly unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
-
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
@@ -546,7 +544,7 @@ namespace System.IO
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, _buffer);
         }
 
         SafeFileHandle IFileStreamCompletionSourceStrategy.FileHandle => _fileHandle;
