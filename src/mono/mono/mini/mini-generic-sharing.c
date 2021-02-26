@@ -2233,15 +2233,16 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		method = mono_class_inflate_generic_method_checked (method, context, error);
 		return_val_if_nok (error, NULL);
 
-		addr = mono_compile_method_checked (method, error);
-		return_val_if_nok (error, NULL);
 		if (mono_llvm_only) {
-			gpointer arg = NULL;
-			addr = mini_llvmonly_add_method_wrappers (method, addr, FALSE, FALSE, &arg);
+ 			gpointer arg = NULL;
+			addr = mini_llvmonly_load_method (method, FALSE, FALSE, &arg, error);
 
 			/* Returns an ftndesc */
 			return mini_llvmonly_create_ftndesc (domain, addr, arg);
 		} else {
+			addr = mono_compile_method_checked (method, error);
+			return_val_if_nok (error, NULL);
+
 			return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
 		}
 	}
