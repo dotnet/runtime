@@ -619,8 +619,7 @@ namespace System.Collections.Generic
                     break;
                 }
 
-                // Move the minimal child up by one node and
-                // continue recursively from its location.
+                // Move the minimal child up by one node and continue recursively from its location.
                 nodes[nodeIndex] = minChild;
                 nodeIndex = minChildIndex;
             }
