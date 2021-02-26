@@ -885,6 +885,8 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
         if (wasRelocHandled)
             continue;
 
+        // Now do all-platform relocations.
+
         switch (tmp.fRelocType)
         {
             case IMAGE_REL_BASED_REL32:
