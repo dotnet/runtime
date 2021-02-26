@@ -2,4 +2,4 @@
 
 cp /SHARED/apacheweb.keytab /etc/krb5.keytab
 
-exec httpd -DFOREGROUND "$@"
+exec /usr/sbin/apache2 -DFOREGROUND "$@"
