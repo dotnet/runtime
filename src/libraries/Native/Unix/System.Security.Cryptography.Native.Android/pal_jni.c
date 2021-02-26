@@ -106,6 +106,13 @@ jmethodID g_keyPairGenInitializeWithParamsMethod;
 jmethodID g_keyPairGenInitializeMethod;
 jmethodID g_keyPairGenGenKeyPairMethod;
 
+// java/security/KeyStore
+jclass    g_KeyStore;
+jmethodID g_KeyStoreGetInstance;
+jmethodID g_KeyStoreAliases;
+jmethodID g_KeyStoreGetCertificate;
+jmethodID g_KeyStoreLoad;
+
 // java/security/Signature
 jclass    g_SignatureClass;
 jmethodID g_SignatureGetInstance;
@@ -253,6 +260,11 @@ jmethodID g_CollectionSize;
 // java/util/Date
 jclass    g_DateClass;
 jmethodID g_DateGetTime;
+
+// java/util/Enumeration
+jclass    g_Enumeration;
+jmethodID g_EnumerationHasMoreElements;
+jmethodID g_EnumerationNextElement;
 
 // java/util/Iterator
 jclass    g_IteratorClass;
@@ -555,6 +567,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SignatureSign =                  GetMethod(env, false, g_SignatureClass, "sign", "()[B");
     g_SignatureVerify =                GetMethod(env, false, g_SignatureClass, "verify", "([B)Z");
 
+    g_KeyStore =                GetClassGRef(env, "java/security/KeyStore");
+    g_KeyStoreGetInstance =     GetMethod(env, true, g_KeyStore, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
+    g_KeyStoreAliases =         GetMethod(env, false, g_KeyStore, "aliases", "()Ljava/util/Enumeration;");
+    g_KeyStoreGetCertificate =  GetMethod(env, false, g_KeyStore, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
+    g_KeyStoreLoad =            GetMethod(env, false, g_KeyStore, "load", "(Ljava/io/InputStream;[C)V");
+
     g_RSAPrivateCrtKeyClass =          GetClassGRef(env, "java/security/interfaces/RSAPrivateCrtKey");
     g_RSAPrivateCrtKeyPubExpField =    GetMethod(env, false, g_RSAPrivateCrtKeyClass, "getPublicExponent", "()Ljava/math/BigInteger;");
     g_RSAPrivateCrtKeyPrimePField =    GetMethod(env, false, g_RSAPrivateCrtKeyClass, "getPrimeP", "()Ljava/math/BigInteger;");
@@ -653,6 +671,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
+
+    g_Enumeration =                 GetClassGRef(env, "java/util/Enumeration");
+    g_EnumerationHasMoreElements =  GetMethod(env, false, g_Enumeration, "hasMoreElements", "()Z");
+    g_EnumerationNextElement =      GetMethod(env, false, g_Enumeration, "nextElement", "()Ljava/lang/Object;");
 
     g_IteratorClass =   GetClassGRef(env, "java/util/Iterator");
     g_IteratorHasNext = GetMethod(env, false, g_IteratorClass, "hasNext", "()Z");

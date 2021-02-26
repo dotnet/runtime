@@ -133,6 +133,13 @@ extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
 
+// java/security/KeyStore
+extern jclass    g_KeyStore;
+extern jmethodID g_KeyStoreGetInstance;
+extern jmethodID g_KeyStoreAliases;
+extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreLoad;
+
 // java/security/Signature
 extern jclass    g_SignatureClass;
 extern jmethodID g_SignatureGetInstance;
@@ -262,6 +269,11 @@ extern jmethodID g_CollectionSize;
 // java/util/Date
 extern jclass    g_DateClass;
 extern jmethodID g_DateGetTime;
+
+// java/util/Enumeration
+extern jclass    g_Enumeration;
+extern jmethodID g_EnumerationHasMoreElements;
+extern jmethodID g_EnumerationNextElement;
 
 // java/util/Iterator
 extern jclass    g_IteratorClass;

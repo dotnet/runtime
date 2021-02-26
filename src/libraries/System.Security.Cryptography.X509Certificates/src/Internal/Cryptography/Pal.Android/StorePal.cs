@@ -53,7 +53,47 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
-            throw new NotImplementedException(nameof(FromSystemStore));
+            bool isReadWrite = (openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite;
+            if (isReadWrite && storeLocation == StoreLocation.LocalMachine)
+            {
+                // All LocalMachine stores are read-only
+                throw new CryptographicException(
+                    SR.Cryptography_Unix_X509_MachineStoresReadOnly,
+                    new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly));
+            }
+
+            StringComparer ordinalIgnoreCase = StringComparer.OrdinalIgnoreCase;
+            switch (storeLocation)
+            {
+                case StoreLocation.CurrentUser:
+                {
+                    // Matches Unix behaviour of getting a disallowed store that is always empty.
+                    if (ordinalIgnoreCase.Equals(X509Store.DisallowedStoreName, storeName))
+                        return new UnsupportedDisallowedStore(openFlags);
+
+                    if (ordinalIgnoreCase.Equals(X509Store.RootStoreName, storeName))
+                    {
+                        if (isReadWrite)
+                            throw new CryptographicException(SR.Security_AccessDenied);
+
+                        return new TrustedStore(storeLocation);
+                    }
+                    break;
+                }
+                case StoreLocation.LocalMachine:
+                {
+                    if (ordinalIgnoreCase.Equals(X509Store.RootStoreName, storeName))
+                        return new TrustedStore(storeLocation);
+
+                    break;
+                }
+            }
+
+            if ((openFlags & OpenFlags.OpenExistingOnly) == OpenFlags.OpenExistingOnly)
+                throw new CryptographicException(SR.Cryptography_X509_StoreNotFound);
+
+            string message = SR.Format(SR.Cryptography_X509_StoreCannotCreate, storeName, storeLocation);
+            throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
         private static ICertificatePal[] ReadPkcs12Collection(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
