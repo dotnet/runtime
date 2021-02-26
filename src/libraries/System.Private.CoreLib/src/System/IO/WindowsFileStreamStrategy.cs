@@ -113,6 +113,23 @@ namespace System.IO
             }
         }
 
+        // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
+        // their performance is going to be horrible
+        // TODO: should we consider adding a new event provider and log an event so it can be detected?
+        public override int ReadByte()
+        {
+            Span<byte> buffer = stackalloc byte[1];
+            int bytesRead = Read(buffer);
+            return bytesRead == 1 ? buffer[0] : -1;
+        }
+
+        public override void WriteByte(byte value)
+        {
+            Span<byte> buffer = stackalloc byte[1];
+            buffer[0] = value;
+            Write(buffer);
+        }
+
         // this method just disposes everything as there is no buffer here
         // and we don't really need to Flush anything here
         public override ValueTask DisposeAsync()
