@@ -485,6 +485,19 @@ namespace System.Net
             }
         }
 
+        /// <devdoc>
+        ///   <para>
+        ///     Determines if an address is an IPv6 Unique Local address
+        ///   </para>
+        /// </devdoc>
+        public bool IsIPv6UniqueLocal
+        {
+            get
+            {
+                return IsIPv6 && ((_numbers[0] & 0xFE00) == 0xFC00);
+            }
+        }
+
         // 0:0:0:0:0:FFFF:x.x.x.x
         public bool IsIPv4MappedToIPv6
         {
