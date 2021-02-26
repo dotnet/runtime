@@ -355,15 +355,17 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     {
         oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
 
+        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
+        // we just use the one that converts to a TYP_DOUBLE
+        // and then add a cast to TYP_FLOAT
+        //
         if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
         {
-            // oper is a helper call to CORINFO_HELP_LNG2DBL
-            // but fgMorphCastIntoHelper sets the return type wrong
-            // leading to problems if we try to CSE this call
+            // Fix the return type to be TYP_DOUBLE
             //
-            oper->gtType = TYP_DOUBLE; // CORINFO_HELP_LNG2DBL actually returns a TYP_DOUBLE
+            oper->gtType = TYP_DOUBLE;
 
-            // Add a Cast to TYP_FLOAT, nop on x86 using FPU stack
+            // Add a Cast to TYP_FLOAT
             //
             tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
             INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
