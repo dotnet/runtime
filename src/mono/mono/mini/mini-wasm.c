@@ -634,11 +634,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 
 #ifdef HOST_WASM
 
-/*
-The following functions don't belong here, but are due to laziness.
-*/
-gboolean mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize);
-
 G_BEGIN_DECLS
 
 void * getgrnam (const char *name);
@@ -649,25 +644,6 @@ int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
 int sem_timedwait (sem_t *sem, const struct timespec *abs_timeout);
 
 G_END_DECLS
-
-//w32file-wasm.c
-gboolean
-mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)
-{
-	glong len;
-	gboolean status = FALSE;
-
-	gunichar2 *ret = g_utf8_to_utf16 ("memfs", -1, NULL, &len, NULL);
-	if (ret != NULL && len < fsbuffersize) {
-		memcpy (fsbuffer, ret, len * sizeof (gunichar2));
-		fsbuffer [len] = 0;
-		status = TRUE;
-	}
-	if (ret != NULL)
-		g_free (ret);
-
-	return status;
-}
 
 G_BEGIN_DECLS
 

@@ -38,9 +38,3 @@ mono_w32event_set (gpointer handle)
 {
 	SetEvent (handle);
 }
-
-void
-mono_w32event_reset (gpointer handle)
-{
-	ResetEvent (handle);
-}

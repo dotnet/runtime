@@ -27,9 +27,6 @@
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
 #include "w32file.h"
-#include "w32mutex.h"
-#include "w32semaphore.h"
-#include "w32socket.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */

@@ -170,12 +170,6 @@ mono_w32event_set (gpointer handle)
 	ves_icall_System_Threading_Events_SetEvent_internal (handle);
 }
 
-void
-mono_w32event_reset (gpointer handle)
-{
-	ves_icall_System_Threading_Events_ResetEvent_internal (handle);
-}
-
 static gpointer event_handle_create (MonoW32HandleEvent *event_handle, MonoW32Type type, gboolean manual, gboolean initial)
 {
 	MonoW32Handle *handle_data;
@@ -306,52 +300,6 @@ ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 	} else {
 		mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 	}
-
-	mono_w32handle_unlock (handle_data);
-
-	mono_w32handle_unref (handle_data);
-	return TRUE;
-}
-
-gboolean
-ves_icall_System_Threading_Events_ResetEvent_internal (gpointer handle)
-{
-	MonoW32Handle *handle_data;
-	MonoW32HandleEvent *event_handle;
-
-	mono_w32error_set_last (ERROR_SUCCESS);
-
-	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		g_warning ("%s: unkown handle %p", __func__, handle);
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return FALSE;
-	}
-
-	if (handle_data->type != MONO_W32TYPE_EVENT && handle_data->type != MONO_W32TYPE_NAMEDEVENT) {
-		g_warning ("%s: unkown event handle %p", __func__, handle);
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		mono_w32handle_unref (handle_data);
-		return FALSE;
-	}
-
-	event_handle = (MonoW32HandleEvent*) handle_data->specific;
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: resetting %s handle %p",
-		__func__, mono_w32handle_get_typename (handle_data->type), handle);
-
-	mono_w32handle_lock (handle_data);
-
-	if (!mono_w32handle_issignalled (handle_data)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: no need to reset %s handle %p",
-			__func__, mono_w32handle_get_typename (handle_data->type), handle);
-	} else {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: obtained write lock on %s handle %p",
-			__func__, mono_w32handle_get_typename (handle_data->type), handle);
-
-		mono_w32handle_set_signal_state (handle_data, FALSE, FALSE);
-	}
-
-	event_handle->set_count = 0;
 
 	mono_w32handle_unlock (handle_data);
 

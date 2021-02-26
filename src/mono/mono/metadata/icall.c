@@ -53,7 +53,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/w32file.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
@@ -82,8 +81,6 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/metadata/icall-table.h>
 #include <mono/metadata/handle.h>
-#include <mono/metadata/w32mutex.h>
-#include <mono/metadata/w32semaphore.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/loader-internals.h>
@@ -6673,69 +6670,6 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-static MonoArrayHandle
-mono_icall_get_logical_drives (MonoError *error)
-{
-	gunichar2 buf [256], *ptr, *dname;
-	gunichar2 *u16;
-	guint initial_size = 127, size = 128;
-	gint ndrives;
-	MonoArrayHandle result = NULL_HANDLE_ARRAY;
-	MonoStringHandle drivestr;
-	gint len;
-
-	buf [0] = '\0';
-	ptr = buf;
-
-	while (size > initial_size) {
-		size = (guint) mono_w32file_get_logical_drive (initial_size, ptr, error);
-		if (!is_ok (error))
-			goto leave;
-		if (size > initial_size) {
-			if (ptr != buf)
-				g_free (ptr);
-			ptr = (gunichar2 *)g_malloc0 ((size + 1) * sizeof (gunichar2));
-			initial_size = size;
-			size++;
-		}
-	}
-
-	/* Count strings */
-	dname = ptr;
-	ndrives = 0;
-	do {
-		while (*dname++);
-		ndrives++;
-	} while (*dname);
-
-	dname = ptr;
-	result = mono_array_new_handle (mono_defaults.string_class, ndrives, error);
-	goto_if_nok (error, leave);
-
-	drivestr = MONO_HANDLE_NEW (MonoString, NULL);
-	ndrives = 0;
-	do {
-		len = 0;
-		u16 = dname;
-		while (*u16) {
-			u16++; len ++;
-		}
-		MonoString *s = mono_string_new_utf16_checked (dname, len, error);
-		goto_if_nok (error, leave);
-		MONO_HANDLE_ASSIGN_RAW (drivestr, s);
-
-		mono_array_handle_setref (result, ndrives, drivestr);
-		ndrives ++;
-		while (*dname++);
-	} while (*dname);
-
-leave:
-	if (ptr != buf)
-		g_free (ptr);
-
-	return result;
-}
-
 MonoBoolean
 ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
@@ -6754,32 +6688,6 @@ ves_icall_System_Environment_get_TickCount64 (void)
 {
 	return mono_msec_boottime ();
 }
-
-#ifndef PLATFORM_NO_DRIVEINFO
-MonoBoolean
-ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, gint32 path_name_length, guint64 *free_bytes_avail,
-						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
-						gint32 *error)
-{
-	g_assert (error);
-	g_assert (free_bytes_avail);
-	g_assert (total_number_of_bytes);
-	g_assert (total_number_of_free_bytes);
-
-	// FIXME check for embedded nuls here or managed
-
-	*error = ERROR_SUCCESS;
-	*free_bytes_avail = (guint64)-1;
-	*total_number_of_bytes = (guint64)-1;
-	*total_number_of_free_bytes = (guint64)-1;
-
-	gboolean result = mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes);
-	if (!result)
-		*error = mono_w32error_get_last ();
-
-	return result;
-}
-#endif /* PLATFORM_NO_DRIVEINFO */
 
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
