@@ -20,7 +20,8 @@
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
       <!-- Justification: The implementation of StackFrame for Mono doesn't use
        StackFrameHelper to get line information which is what is being annotated
-       and tested with this test. -->
+       and tested with this test. Issue https://github.com/dotnet/runtime/issues/48849 is
+       tracking investigation on why this test is failing if not skipped. -->
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">

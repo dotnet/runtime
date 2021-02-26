@@ -162,7 +162,9 @@
 
   </Target>
 
-  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
+  <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
+  should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
+  <Target Name="ConfigureTrimming" Condition="'$(EnableAggressiveTrimming)' == 'true' And '$(SkipConfigureTrimming)' != 'true'" AfterTargets="AddTestRunnersToPublishedFiles">
     <PropertyGroup>
       <TrimMode>link</TrimMode>
     </PropertyGroup>
