@@ -288,6 +288,11 @@ namespace System.Collections.Generic
             }
             else
             {
+                if (EnumerableHelpers.TryGetCount(items, out int count) && count > 0)
+                {
+                    EnsureCapacityCore(_size + count);
+                }
+
                 foreach ((TElement element, TPriority priority) in items)
                 {
                     Enqueue(element, priority);
@@ -303,6 +308,11 @@ namespace System.Collections.Generic
             if (elements is null)
             {
                 throw new ArgumentNullException(nameof(elements));
+            }
+
+            if (EnumerableHelpers.TryGetCount(elements, out int count) && count > 0)
+            {
+                EnsureCapacityCore(_size + count);
             }
 
             if (_size == 0)
