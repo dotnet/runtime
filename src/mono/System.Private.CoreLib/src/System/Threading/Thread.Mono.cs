@@ -37,7 +37,6 @@ namespace System.Threading
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;
-        private bool thread_interrupt_requested;
         /* These are used from managed code */
         internal byte apartment_state;
         internal int managed_id;
@@ -194,6 +193,9 @@ namespace System.Threading
 
         public void Interrupt()
         {
+#if TARGET_UNIX || TARGET_BROWSER
+            WaitSubsystem.Interrupt(this);
+#endif
             InterruptInternal(this);
         }
 

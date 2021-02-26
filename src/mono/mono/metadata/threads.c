@@ -1721,9 +1721,6 @@ mono_sleep_internal (gint32 ms, MonoBoolean allow_interruption, MonoError *error
 {
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
-	if (mono_thread_current_check_pending_interrupt ())
-		return;
-
 	MonoInternalThread * const thread = mono_thread_internal_current ();
 
 	HANDLE_LOOP_PREPARE;
@@ -1991,9 +1988,6 @@ mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError 
 MonoBoolean
 ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error)
 {
-	if (mono_thread_current_check_pending_interrupt ())
-		return FALSE;
-
 	// Internal threads are pinned so shallow coop/handle.
 	MonoInternalThread * const thread = thread_handle_to_internal_ptr (thread_handle);
 	MonoThreadHandle *handle = thread->handle;
@@ -2328,41 +2322,12 @@ ves_icall_System_Threading_Thread_Interrupt_internal (MonoThreadObjectHandle thr
 
 	LOCK_THREAD (thread);
 
-	thread->thread_interrupt_requested = TRUE;
 	gboolean const throw_ = current != thread && (thread->state & ThreadState_WaitSleepJoin);
 
 	UNLOCK_THREAD (thread);
 
 	if (throw_)
 		async_abort_internal (thread, FALSE);
-}
-
-/**
- * mono_thread_current_check_pending_interrupt:
- * Checks if there's a interruption request and set the pending exception if so.
- * \returns true if a pending exception was set
- */
-gboolean
-mono_thread_current_check_pending_interrupt (void)
-{
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	gboolean throw_ = FALSE;
-
-	LOCK_THREAD (thread);
-	
-	if (thread->thread_interrupt_requested) {
-		throw_ = TRUE;
-		thread->thread_interrupt_requested = FALSE;
-	}
-	
-	UNLOCK_THREAD (thread);
-
-	if (throw_) {
-		ERROR_DECL (error);
-		mono_error_set_thread_interrupted (error);
-		mono_error_set_pending_exception (error);
-	}
-	return throw_;
 }
 
 // state is a pointer to a handle in order to be optional,
@@ -3704,15 +3669,6 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 		/* calls UNLOCK_THREAD (thread) */
 		self_suspend_internal ();
 		unlock = FALSE;
-	} else if (MONO_HANDLE_GETVAL (thread, thread_interrupt_requested)) {
-		// thread->thread_interrupt_requested = FALSE
-		MONO_HANDLE_SETVAL (thread, thread_interrupt_requested, MonoBoolean, FALSE);
-		unlock_thread_handle (thread);
-		unlock = FALSE;
-		ERROR_DECL (error);
-		exc = mono_exception_new_thread_interrupted (error);
-		mono_error_assert_ok (error); // FIXME
-		fexc = TRUE;
 	}
 exit:
 	if (unlock)
