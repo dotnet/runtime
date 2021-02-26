@@ -577,9 +577,6 @@ var BindingSupportLib = {
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
 					return this.call_method(this.create_date_time, null, "d!", [ js_obj.getTime() ]);
-				case Array.isArray(js_obj) && js_obj.reduce((prev, curr) => prev && typeof (curr) == "string", true):
-					// handle arrays of strings directly
-					return this.js_array_to_mono_array (js_obj, true);
 				default:
 					return this.extract_mono_obj (js_obj);
 			}
@@ -1559,7 +1556,19 @@ var BindingSupportLib = {
 				signature = Module.mono_method_get_call_signature (method);
 
 			return function() {
-				return BINDING.call_method (method, null, signature, arguments);
+				try {
+					var args = [...arguments];
+					if (args.length > 0 && Array.isArray (args[0]))
+						args[0] = BINDING.js_array_to_mono_array (args[0], true);
+
+					let result = BINDING.call_method (method, null, signature, args);
+					if (typeof (result.then) == "function")
+						return result;
+
+					return new Promise ((resolve, _) => resolve (result));
+				} catch (error) {
+					return new Promise ((_, reject) => reject (error));
+				}
 			};
 		},
 		call_assembly_entry_point: function (assembly, args, signature) {

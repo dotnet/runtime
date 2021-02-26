@@ -290,9 +290,6 @@ const IGNORE_PARAM_COUNT = -1;
 
 var App = {
 	init: function () {
-
-		var string_from_js = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
-		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 
@@ -354,37 +351,22 @@ var App = {
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
-			function isThenable (js_obj) {
-				// When using an external Promise library the Promise.resolve may not be sufficient
-				// to identify the object as a Promise.
-				return Promise.resolve (js_obj) === js_obj ||
-						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
-			}
+			// Automatic signature isn't working correctly
+			let result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+			let onError = function (error)
+			{
+				console.error (error);
+				if (error.stack)
+					console.error (error.stack);
 
-			try {
-				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "o");
-
-				if (isThenable (exit_code))
-				{
-					exit_code.then (
-						(result) => {
-							test_exit (result);
-						},
-						(reason) => {
-							console.error (reason);
-							test_exit (1);
-						});
-				} else {
-					test_exit (exit_code);
-					return;
-				}
-			} catch (ex) {
-				print ("JS exception: " + ex);
-				print (ex.stack);
 				test_exit (1);
-				return;
 			}
+			try {
+				result.then (test_exit).catch (onError);
+			} catch (error) {
+				onError(error);
+			}
+
 		} else {
 			fail_exec ("Unhandled argument: " + args [0]);
 		}
