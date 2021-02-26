@@ -58,7 +58,7 @@ namespace System.Diagnostics.Tracing
         public override string ToString() => $"IncrementingEventCounter '{Name}' Increment {_increment}";
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "IncrementingCounterPayload type has been trimmer safe")]
+            Justification = "The DynamicDependency will preserve the properties of IncrementingCounterPayload")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(IncrementingCounterPayload))]
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {

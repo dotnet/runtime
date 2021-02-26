@@ -37,6 +37,7 @@ namespace System.Diagnostics.Tracing
         private byte[] ProviderMetadata => m_providerMetadata ?? Array.Empty<byte>();
 #else
         private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
+        private const string EventSourceRequiresUnreferenceMessage = "EventSource Write<T> will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type";
 #endif
 #endif
 
@@ -153,8 +154,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
 #if !ES_BUILD_STANDALONE
-        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
-                "Trimmer will not safely handle this case")]
+        [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         public unsafe void Write<T>(
             string? eventName,
@@ -193,8 +193,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
 #if !ES_BUILD_STANDALONE
-        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
-                "Trimmer will not safely handle this case")]
+        [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         public unsafe void Write<T>(
             string? eventName,
@@ -235,8 +234,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
 #if !ES_BUILD_STANDALONE
-        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
-                "Trimmer will not safely handle this case")]
+        [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         public unsafe void Write<T>(
             string? eventName,
@@ -284,8 +282,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
 #if !ES_BUILD_STANDALONE
-        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
-                "Trimmer will not safely handle this case")]
+        [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         public unsafe void Write<T>(
             string? eventName,

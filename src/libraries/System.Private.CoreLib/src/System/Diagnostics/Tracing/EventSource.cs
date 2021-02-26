@@ -1312,8 +1312,8 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
 #if !ES_BUILD_STANDALONE
-        [RequiresUnreferencedCode("EventSource Write Event is not safe due to type description data. " +
-                "Trimmer will not safely handle this case")]
+        [RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. " +
+                "Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
 #endif
         protected unsafe void WriteEvent(int eventId, params object?[] args)
         {
