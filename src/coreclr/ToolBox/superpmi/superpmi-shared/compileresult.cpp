@@ -913,14 +913,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
 
                 if (delta != (INT64)(int)delta)
                 {
-                    if (is64BitTarget)
-                    {
-                        LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
-                    }
-                    else
-                    {
-                        LogError("REL32 relocation overflows field! delta=0x%08X", delta);
-                    }
+                    LogError("REL32 relocation overflows field! delta=0x%016llX", delta);
                 }
 
                 // Write 32-bits into location
