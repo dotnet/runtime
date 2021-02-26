@@ -19,11 +19,31 @@ namespace System.IO
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
+        private static readonly bool UseLegacyStrategy = Environment.GetEnvironmentVariable("DOTNET_LEGACY_FILE_IO") == "1";
+
         internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            => new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+        {
+            if (!UseLegacyStrategy && bufferSize == 1)
+            {
+                return isAsync
+                    ? new AsyncWindowsFileStreamStrategy(handle, access)
+                    : new SyncWindowsFileStreamStrategy(handle, access);
+            }
+
+            return new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+        }
 
         internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+        {
+            if (!UseLegacyStrategy && bufferSize == 1)
+            {
+                return (options & FileOptions.Asynchronous) != 0
+                    ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options)
+                    : new SyncWindowsFileStreamStrategy(path, mode, access, share, options);
+            }
+
+            return new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+        }
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
             => CreateFileOpenHandle(path, mode, access, share, options);
