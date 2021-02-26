@@ -468,7 +468,6 @@ namespace System
         public static bool TryParse(Type enumType, string? value, bool ignoreCase, out object? result) =>
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
-
         /// <summary>
         /// Converts the span of chars representation of the name or numeric value of one or more enumerated constants to an equivalent enumerated object. A parameter specifies whether the operation is case-insensitive.
         /// </summary>
