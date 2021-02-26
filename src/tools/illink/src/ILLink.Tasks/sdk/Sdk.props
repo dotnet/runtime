@@ -11,6 +11,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.NET.ILLink.Tasks.props" />
+  <!-- Only import the build props if the ILLink.Tasks package isn't referenced via NuGet. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\build\Microsoft.NET.ILLink.Tasks.props" Condition="'$(UsingILLinkTasksSdk)' != 'true'" />
 
 </Project>
