@@ -24,7 +24,7 @@ parameters:
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
-  pgoInstrument: false
+  pgoType: ''
 
 ### Build managed test components (native components are getting built as part
 ### of the the product build job).
