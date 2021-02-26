@@ -56,7 +56,7 @@
     <Rule Id="CA1068" Action="None" />          <!-- CancellationToken parameters must come last -->
     <Rule Id="CA1069" Action="None" />          <!-- Enums values should not be duplicated -->
     <Rule Id="CA1070" Action="Info" />          <!-- Do not declare event fields as virtual -->
-    <Rule Id="CA1200" Action="Warning" />       <!-- Avoid using cref tags with a prefix -->
+    <Rule Id="CA1200" Action="Info" />          <!-- Avoid using cref tags with a prefix -->
     <Rule Id="CA1303" Action="None" />          <!-- Do not pass literals as localized parameters -->
     <Rule Id="CA1304" Action="None" />          <!-- Specify CultureInfo -->
     <Rule Id="CA1305" Action="None" />          <!-- Specify IFormatProvider -->

@@ -288,4 +288,12 @@
     <Message Condition="'$(TestPackages)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
     <Message Condition="'$(TestPackages)' == 'true'" Importance="High" Text="Doing Package Testing" />
   </Target>
+  
+  <!-- TODO: Remove after https://github.com/dotnet/arcade/pull/6975 is merged. -->
+  <Target Name="UpdateDotNetCliVersionForMobile"
+          BeforeTargets="AddDotNetSdk">
+    <PropertyGroup>
+      <DotNetCliVersion Condition="'$(DotNetCliPackageType)' == 'aspnetcore-runtime'">6.0.0-preview.1.21103.6</DotNetCliVersion>
+    </PropertyGroup>
+  </Target>
 </Project>

@@ -287,7 +287,7 @@ namespace System.Threading.Tasks.Dataflow
             // Try to receive the one item this block may have.
             // If we can, give back an array of one item. Otherwise,
             // give back null.
-            T item;
+            T? item;
             if (TryReceive(null, out item))
             {
                 items = new T[] { item };
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (consumeToAccept)
                 {
                     bool consumed;
-                    messageValue = source!.ConsumeMessage(messageHeader, this, out consumed);
+                    messageValue = source!.ConsumeMessage(messageHeader, this, out consumed)!;
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
 

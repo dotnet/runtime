@@ -1188,7 +1188,7 @@ public:
     }
 
     // Merge: perform the merging of each of the predecessor's liveness values (since this is a forward analysis)
-    void Merge(BasicBlock* block, BasicBlock* predBlock, flowList* preds)
+    void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
 #ifdef DEBUG
         if (m_comp->verbose)

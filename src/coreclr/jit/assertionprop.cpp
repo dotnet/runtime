@@ -4648,14 +4648,36 @@ public:
     }
 
     // During merge, perform the actual merging of the predecessor's (since this is a forward analysis) dataflow flags.
-    void Merge(BasicBlock* block, BasicBlock* predBlock, flowList* preds)
+    void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
-        ASSERT_TP pAssertionOut = ((predBlock->bbJumpKind == BBJ_COND) && (predBlock->bbJumpDest == block))
-                                      ? mJumpDestOut[predBlock->bbNum]
-                                      : predBlock->bbAssertionOut;
+        ASSERT_TP pAssertionOut;
+
+        if (predBlock->bbJumpKind == BBJ_COND && (predBlock->bbJumpDest == block))
+        {
+            pAssertionOut = mJumpDestOut[predBlock->bbNum];
+
+            if (dupCount > 1)
+            {
+                // Scenario where next block and conditional block, both point to the same block.
+                // In such case, intersect the assertions present on both the out edges of predBlock.
+                assert(predBlock->bbNext == block);
+                BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
+
+                JITDUMP("AssertionPropCallback::Merge     : Duplicate flow, " FMT_BB " in -> %s, predBlock " FMT_BB
+                        " out1 -> %s, out2 -> %s\n",
+                        block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
+                        BitVecOps::ToString(apTraits, mJumpDestOut[predBlock->bbNum]),
+                        BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
+            }
+        }
+        else
+        {
+            pAssertionOut = predBlock->bbAssertionOut;
+        }
+
         JITDUMP("AssertionPropCallback::Merge     : " FMT_BB " in -> %s, predBlock " FMT_BB " out -> %s\n",
                 block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
+                BitVecOps::ToString(apTraits, pAssertionOut));
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 

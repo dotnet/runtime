@@ -17,6 +17,7 @@ extern JavaVM* gJvm;
 // java/io/ByteArrayInputStream
 extern jclass    g_ByteArrayInputStreamClass;
 extern jmethodID g_ByteArrayInputStreamCtor;
+extern jmethodID g_ByteArrayInputStreamReset;
 
 // java/lang/Enum
 extern jclass    g_Enum;
@@ -89,6 +90,8 @@ extern jmethodID g_GCMParameterSpecCtor;
 extern jclass    g_CertFactoryClass;
 extern jmethodID g_CertFactoryGetInstance;
 extern jmethodID g_CertFactoryGenerateCertificate;
+extern jmethodID g_CertFactoryGenerateCertificates;
+extern jmethodID g_CertFactoryGenerateCertPath;
 extern jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/X509Certificate
@@ -159,6 +162,11 @@ extern jmethodID g_KeyFactoryGenPublicMethod;
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
+
+// java/util/Collection
+extern jclass    g_CollectionClass;
+extern jmethodID g_CollectionIterator;
+extern jmethodID g_CollectionSize;
 
 // java/util/Date
 extern jclass    g_DateClass;

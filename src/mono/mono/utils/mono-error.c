@@ -593,7 +593,7 @@ string_new_cleanup (const char *text)
 }
 
 static MonoStringHandle
-get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, MonoError *error_out)
+get_type_name_as_mono_string (MonoErrorInternal *error, MonoError *error_out)
 {
 	HANDLE_FUNCTION_ENTER ();
 
@@ -636,7 +636,6 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 
 	MonoExceptionHandle exception = MONO_HANDLE_CAST (MonoException, mono_new_null ());
-	MonoDomain *domain = mono_domain_get ();
 	char *type_name = NULL;
 	char *message = NULL;
 
@@ -671,7 +670,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		MonoStringHandle type_name;
 
 		if ((error->type_name && error->assembly_name) || error->exn.klass) {
-			type_name = get_type_name_as_mono_string (error, domain, error_out);
+			type_name = get_type_name_as_mono_string (error, error_out);
 			if (!is_ok (error_out))
 				break;
 
@@ -682,7 +681,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 					break;
 				}
 			} else {
-				assembly_name = mono_string_empty_handle (domain);
+				assembly_name = mono_string_empty_handle ();
 			}
 
 			exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", "TypeLoadException", type_name, assembly_name, error_out);
@@ -702,13 +701,14 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	}
 	break;
 
-	case MONO_ERROR_OUT_OF_MEMORY:
+	case MONO_ERROR_OUT_OF_MEMORY: {
+		MonoDomain *domain = mono_domain_get ();
 		if (domain)
 			exception = MONO_HANDLE_NEW (MonoException, domain->out_of_memory_ex);
 		if (MONO_HANDLE_IS_NULL (exception))
 			exception = mono_get_exception_out_of_memory_handle ();
 		break;
-
+	}
 	case MONO_ERROR_ARGUMENT:
 		exception = mono_exception_new_argument (error->first_argument, error->full_message, error_out);
 		break;

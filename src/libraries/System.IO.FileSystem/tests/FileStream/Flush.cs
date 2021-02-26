@@ -131,6 +131,18 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void SafeFileHandleCallsFlush_flushToDisk_False()
+        {
+            using (StoreFlushArgFileStream fs = new StoreFlushArgFileStream(GetTestFilePath(), FileMode.Create))
+            {
+                GC.KeepAlive(fs.SafeFileHandle); // this should call Flush, which should call StoreFlushArgFileStream.Flush(false)
+
+                Assert.True(fs.LastFlushArg.HasValue);
+                Assert.False(fs.LastFlushArg.Value);
+            }
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData(false)]
