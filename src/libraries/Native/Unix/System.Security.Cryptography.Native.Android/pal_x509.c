@@ -21,7 +21,7 @@
     } \
 } \
 
-#define BUFFER_FAIL FAIL
+#define INSUFFICIENT_BUFFER -1
 
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len);
 static int32_t PopulateString(JNIEnv *env, jstring source, char *dest, int32_t len);
@@ -64,7 +64,7 @@ int32_t AndroidCryptoNative_X509Encode(jobject /*X509Certificate*/ cert, uint8_t
 {
     assert(cert != NULL);
     JNIEnv *env = GetJNIEnv();
-    int32_t ret = BUFFER_FAIL;
+    int32_t ret = FAIL;
 
     // byte[] encoded = cert.getEncoded();
     // return encoded.length
@@ -77,12 +77,13 @@ cleanup:
     return ret;
 }
 
-int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t bufLen, jobject /*X509Certificate*/ *out, int32_t outLen)
+int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t bufLen, jobject /*X509Certificate*/ *out, int32_t *outLen)
 {
     assert(buf != NULL && bufLen > 0);
+    assert(outLen != NULL);
     JNIEnv *env = GetJNIEnv();
 
-    int32_t ret = BUFFER_FAIL;
+    int32_t ret = FAIL;
     INIT_LOCALS(loc, bytes, stream, certType, certFactory, certs, iter)
 
     // byte[] bytes = new byte[] { ... }
@@ -102,11 +103,18 @@ int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t buf
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     jint certCount = (*env)->CallIntMethod(env, loc[certs], g_CollectionSize);
+    bool insufficientBuffer = *outLen < certCount;
+    *outLen = certCount;
 
-    // Insufficient buffer
-    if (outLen < certCount)
+    if (certCount == 0)
     {
-        ret = -certCount;
+        ret = SUCCESS;
+        goto cleanup;
+    }
+
+    if (insufficientBuffer)
+    {
+        ret = INSUFFICIENT_BUFFER;
         goto cleanup;
     }
 
