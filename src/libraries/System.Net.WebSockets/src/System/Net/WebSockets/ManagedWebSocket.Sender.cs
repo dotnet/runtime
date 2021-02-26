@@ -24,9 +24,14 @@ namespace System.Net.WebSockets
             private readonly Stream _stream;
 
             /// <summary>
-            /// The current segment buffer segment.
+            /// The first buffer segment.
             /// </summary>
-            private BufferSegment _segment = new();
+            private BufferSegment _firstSegment;
+
+            /// <summary>
+            /// The buffer segment which is being written to.
+            /// </summary>
+            private BufferSegment _currentSegment;
 
             private int _headOffset;
 
@@ -62,6 +67,7 @@ namespace System.Net.WebSockets
                 _applyMask = !isServer;
                 _stream = stream;
                 _onCompleted = OnCompleted;
+                _firstSegment = _currentSegment = new BufferSegment();
 
                 if (_applyMask)
                 {
@@ -83,8 +89,8 @@ namespace System.Net.WebSockets
 
                 try
                 {
-                    ValueTask sendTask = _segment.Previous is null ?
-                        _stream.WriteAsync(_segment.WrittenMemory.Slice(_headOffset), cancellationToken) :
+                    ValueTask sendTask = _firstSegment == _currentSegment ?
+                        _stream.WriteAsync(_firstSegment.WrittenMemory.Slice(_headOffset), cancellationToken) :
                         WriteSegmentsAsync(cancellationToken);
 
                     if (sendTask.IsCompleted)
@@ -110,15 +116,15 @@ namespace System.Net.WebSockets
 
             private async ValueTask WriteSegmentsAsync(CancellationToken cancellationToken)
             {
-                BufferSegment segment = _segment.GetFirst();
+                BufferSegment segment = _firstSegment;
                 await _stream.WriteAsync(segment.WrittenMemory.Slice(_headOffset), cancellationToken).ConfigureAwait(false);
 
                 // Release the memory used by the segment as soon as we've sent it
                 segment.Reset();
 
-                while (segment.Next is not null && segment.Next.Initialized)
+                while (segment != _currentSegment)
                 {
-                    segment = segment.Next;
+                    segment = segment.Next!;
                     await _stream.WriteAsync(segment.WrittenMemory, cancellationToken).ConfigureAwait(false);
 
                     // Release the memory used by the segment as soon as we've sent it
@@ -128,7 +134,7 @@ namespace System.Net.WebSockets
 
             private void Initialize(int payloadSizeHint)
             {
-                Debug.Assert(_segment.Previous is null);
+                Debug.Assert(_firstSegment == _currentSegment);
 
                 if (_applyMask)
                 {
@@ -146,8 +152,8 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                _segment.Initialize(Math.Min(MaxSegmentCapacity, payloadSizeHint + MaxMessageHeaderLength));
-                _segment.Advance(MaxMessageHeaderLength);
+                _firstSegment.Initialize(Math.Min(MaxSegmentCapacity, payloadSizeHint + MaxMessageHeaderLength));
+                _firstSegment.Advance(MaxMessageHeaderLength);
             }
 
             private void EncodeUncompressed(ReadOnlySpan<byte> payload)
@@ -159,7 +165,7 @@ namespace System.Net.WebSockets
                 if (payload.Length <= MaxSegmentCapacity - MaxMessageHeaderLength)
                 {
                     // The payload can be placed on a sinle segment
-                    payload.CopyTo(_segment.AvailableSpan);
+                    payload.CopyTo(_firstSegment.AvailableSpan);
                     Advance(payload.Length);
                     return;
                 }
@@ -179,7 +185,8 @@ namespace System.Net.WebSockets
             private void Finalize(MessageOpcode opcode, bool endOfMessage)
             {
                 // Calculate the header's length
-                var headerLength = _payloadLength switch
+                int payloadLength = _payloadLength;
+                var headerLength = payloadLength switch
                 {
                     <= 125 => 2,
                     <= ushort.MaxValue => 4,
@@ -192,15 +199,11 @@ namespace System.Net.WebSockets
 
                 // Because we want the header to come just before to the payload
                 // we will use a slice that offsets the unused part.
-                var head = _segment.GetFirst();
                 _headOffset = MaxMessageHeaderLength - headerLength;
 
                 // Write the message header data to the buffer.
-                EncodeHeader(head.Span.Slice(_headOffset, headerLength), opcode, endOfMessage);
-            }
+                var buffer = _firstSegment.Span.Slice(_headOffset, headerLength);
 
-            private void EncodeHeader(Span<byte> buffer, MessageOpcode opcode, bool endOfMessage)
-            {
                 // Client header format:
                 // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
                 // 1 bit - RSV1 - Per-Message Deflate Compress
@@ -229,16 +232,15 @@ namespace System.Net.WebSockets
                 }
 
                 // Store the payload length.
-                int payloadLength = _payloadLength;
                 if (payloadLength <= 125)
                 {
                     buffer[1] = (byte)payloadLength;
                 }
                 else if (payloadLength <= ushort.MaxValue)
                 {
-                    buffer[1] = 126;
-                    buffer[2] = (byte)(payloadLength / 256);
                     buffer[3] = unchecked((byte)payloadLength);
+                    buffer[2] = (byte)(payloadLength / 256);
+                    buffer[1] = 126;
                 }
                 else
                 {
@@ -259,13 +261,15 @@ namespace System.Net.WebSockets
 
             private void Reset()
             {
-                while (_segment.Previous is not null)
+                BufferSegment? segment = _currentSegment;
+
+                while (segment is not null)
                 {
-                    _segment.Reset();
-                    _segment = _segment.Previous;
+                    segment.Reset();
+                    segment = segment.Previous;
                 }
 
-                _segment.Reset();
+                _currentSegment = _firstSegment;
                 _payloadLength = 0;
                 _maskIndex = 0;
             }
@@ -274,10 +278,10 @@ namespace System.Net.WebSockets
             {
                 if (_applyMask)
                 {
-                    _maskIndex = ApplyMask(_segment.AvailableSpan[0..count], _mask, _maskIndex);
+                    _maskIndex = ApplyMask(_currentSegment.AvailableSpan[0..count], _mask, _maskIndex);
                 }
 
-                _segment.Advance(count);
+                _currentSegment.Advance(count);
                 _payloadLength += count;
             }
 
@@ -285,7 +289,7 @@ namespace System.Net.WebSockets
             internal Span<byte> GetSpan(int sizeHint)
             {
                 Debug.Assert(sizeHint > 0);
-                var span = _segment.AvailableSpan;
+                var span = _currentSegment.AvailableSpan;
 
                 if (span.Length < sizeHint)
                 {
@@ -298,14 +302,14 @@ namespace System.Net.WebSockets
             [MethodImpl(MethodImplOptions.NoInlining)]
             private Span<byte> AllocateBufferSegment(int sizeHint)
             {
-                var newSegment = _segment.Next ?? new BufferSegment();
-                newSegment.Previous = _segment;
+                var newSegment = _currentSegment.Next ?? new BufferSegment();
+                newSegment.Previous = _currentSegment;
 
                 // When initializing a new segment, try to keep the capacity the same as the previous segment
-                newSegment.Initialize(Math.Max(_segment.Capacity, sizeHint));
+                newSegment.Initialize(Math.Max(_currentSegment.Capacity, sizeHint));
 
-                _segment.Next = newSegment;
-                _segment = newSegment;
+                _currentSegment.Next = newSegment;
+                _currentSegment = newSegment;
 
                 return newSegment.AvailableSpan;
             }
@@ -348,8 +352,6 @@ namespace System.Net.WebSockets
 
                 public BufferSegment? Next { get; set; }
 
-                public bool Initialized => _array is not null;
-
                 public int Capacity => _array is null ? 0 : _array.Length;
 
                 public Span<byte> AvailableSpan => _array.AsSpan(_index);
@@ -357,18 +359,6 @@ namespace System.Net.WebSockets
                 public Span<byte> Span => _array.AsSpan();
 
                 public ReadOnlyMemory<byte> WrittenMemory => new ReadOnlyMemory<byte>(_array, 0, _index);
-
-                public BufferSegment GetFirst()
-                {
-                    var segment = this;
-
-                    while (segment.Previous is not null)
-                    {
-                        segment = segment.Previous;
-                    }
-
-                    return segment;
-                }
 
                 public void Initialize(int capacity)
                 {

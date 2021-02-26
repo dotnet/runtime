@@ -82,9 +82,10 @@ namespace System.Net.WebSockets
         /// </summary>
         private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
         /// <summary>
-        /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.
+        /// Used to ensure that calls to SendFrameAsync don't run concurrently.
+        /// No readonly, mutable struct.
         /// </summary>
-        private readonly SemaphoreSlim _sendFrameAsyncLock = new SemaphoreSlim(1, 1);
+        private SendLock _sendFrameAsyncLock = new SendLock(enableThreadOwnerTracking: false);
 
         // We maintain the current WebSocketState in _state.  However, we separately maintain _sentCloseFrame and _receivedCloseFrame
         // as there isn't a strict ordering between CloseSent and CloseReceived.  If we receive a close frame from the server, we need to
@@ -385,7 +386,7 @@ namespace System.Net.WebSockets
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
-            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0, default) ?
+            return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.TryWait() ?
                 SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
@@ -396,19 +397,18 @@ namespace System.Net.WebSockets
         /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
         private ValueTask SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer)
         {
-            Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
+            Debug.Assert(!_sendFrameAsyncLock.IsLocked, "Caller should hold the _sendFrameAsyncLock");
 
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
-            // and we own the semaphore, so we don't need to asynchronously wait for it.
+            // and we own the send lock, so we don't need to asynchronously wait for it.
             ValueTask sendTask;
-            bool releaseSemaphore = true;
+            bool releaseLock = true;
             try
             {
-                // Write the payload synchronously to the buffer, then write that buffer out to the network.
                 sendTask = _sender.SendAsync(opcode, endOfMessage, payloadBuffer.Span, CancellationToken.None);
 
                 // If the operation happens to complete synchronously (or, more specifically, by
-                // the time we get from the previous line to here), release the semaphore, return
+                // the time we get from the previous line to here), release the lock, return
                 // the task, and we're done.
                 if (sendTask.IsCompleted)
                 {
@@ -416,9 +416,9 @@ namespace System.Net.WebSockets
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
-                // calling GetResult), we want to release the semaphore and the send buffer. After this point,
+                // calling GetResult), we want to release the lock. After this point,
                 // both need to be held until writeTask completes.
-                releaseSemaphore = false;
+                releaseLock = false;
             }
             catch (Exception exc)
             {
@@ -429,7 +429,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (releaseSemaphore)
+                if (releaseLock)
                 {
                     _sendFrameAsyncLock.Release();
                 }
@@ -477,8 +477,7 @@ namespace System.Net.WebSockets
 
         private void SendKeepAliveFrameAsync()
         {
-            bool acquiredLock = _sendFrameAsyncLock.Wait(0);
-            if (acquiredLock)
+            if (_sendFrameAsyncLock.TryWait())
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
