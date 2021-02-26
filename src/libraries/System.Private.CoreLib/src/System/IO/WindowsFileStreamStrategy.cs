@@ -123,8 +123,6 @@ namespace System.IO
                 _fileHandle.Dispose();
             }
 
-            GC.SuppressFinalize(this); // the handle is closed; nothing further for the finalizer to do
-
             return ValueTask.CompletedTask;
         }
 
