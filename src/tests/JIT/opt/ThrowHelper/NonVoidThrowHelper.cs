@@ -165,9 +165,12 @@ public unsafe class Program
             {
                 method.Invoke(null, null);
             }
-            catch (TargetInvocationException tie) when (tie.InnerException is ProgramException)
+            catch (TargetInvocationException tie)
             {
-                continue;
+                if (tie.InnerException is ProgramException)
+                {
+                    continue;
+                }
             }
 
             s_ReturnCode++;
