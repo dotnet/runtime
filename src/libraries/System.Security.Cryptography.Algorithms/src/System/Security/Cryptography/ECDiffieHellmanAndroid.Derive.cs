@@ -109,7 +109,8 @@ namespace System.Security.Cryptography
                 SafeEcKeyHandle? ourKey = null;
                 SafeEcKeyHandle? theirKey = null;
                 byte[]? rented = null;
-                int secretLength = KeySize;
+                // Calculate secretLength in bytes.
+                int secretLength = (KeySize + 7) / 8;
 
                 try
                 {
