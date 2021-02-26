@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Act and Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                createFunc(provider: null, type: type, args: new object[0]));
+                createFunc(provider: null, type: type, args: Array.Empty<object>()));
 
             Assert.Equal(expectedMessage, ex.Message);
         }
@@ -390,7 +390,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Equal(msg, ex.Message);
         }
 
-        abstract class AbstractFoo
+        private abstract class AbstractFoo
         {
             // The constructor should be public, since that is checked as well.
             public AbstractFoo()
@@ -398,7 +398,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        class Bar
+        private class Bar
         {
             public Bar()
             {
@@ -406,7 +406,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        class StaticConstructorClass
+        private class StaticConstructorClass
         {
             static StaticConstructorClass() { }
 
