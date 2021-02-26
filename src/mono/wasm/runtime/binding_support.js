@@ -1562,12 +1562,9 @@ var BindingSupportLib = {
 						args[0] = BINDING.js_array_to_mono_array (args[0], true);
 
 					let result = BINDING.call_method (method, null, signature, args);
-					if (typeof (result.then) == "function")
-						return result;
-
-					return new Promise ((resolve, _) => resolve (result));
+					return Promise.resolve (result);
 				} catch (error) {
-					return new Promise ((_, reject) => reject (error));
+					return Promise.reject (error);
 				}
 			};
 		},
