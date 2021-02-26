@@ -76,6 +76,7 @@ extern jmethodID g_valueOfMethod;
 extern jmethodID g_compareToMethod;
 extern jmethodID g_intValueMethod;
 extern jmethodID g_bitLengthMethod;
+extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_sslParamsClass;
@@ -328,7 +329,7 @@ jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
 void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
-jmethodID TryGetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
+jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
 int GetEnumAsInt(JNIEnv *env, jobject enumObj);

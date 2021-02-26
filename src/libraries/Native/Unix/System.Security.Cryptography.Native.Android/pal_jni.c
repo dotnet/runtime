@@ -67,6 +67,7 @@ jmethodID g_valueOfMethod;
 jmethodID g_intValueMethod;
 jmethodID g_compareToMethod;
 jmethodID g_bitLengthMethod;
+jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 jclass    g_sslParamsClass;
@@ -381,7 +382,7 @@ jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, 
     return mid;
 }
 
-jmethodID TryGetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
+jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
 {
     LOG_DEBUG("Finding %s method", name);
     jmethodID mid = isStatic ? (*env)->GetStaticMethodID(env, klass, name, sig) : (*env)->GetMethodID(env, klass, name, sig);
@@ -486,6 +487,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_intValueMethod =          GetMethod(env, false, g_bigNumClass, "intValue", "()I");
     g_compareToMethod =         GetMethod(env, false, g_bigNumClass, "compareTo", "(Ljava/math/BigInteger;)I");
     g_bitLengthMethod =         GetMethod(env, false, g_bigNumClass, "bitLength", "()I");
+    g_sigNumMethod =            GetMethod(env, false, g_bigNumClass, "signum", "()I");
 
     g_sslParamsClass =              GetClassGRef(env, "javax/net/ssl/SSLParameters");
     g_sslParamsGetProtocolsMethod = GetMethod(env, false,  g_sslParamsClass, "getProtocols", "()[Ljava/lang/String;");
@@ -584,7 +586,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ECParameterSpecGetGenerator =    GetMethod(env, false, g_ECParameterSpecClass, "getGenerator", "()Ljava/security/spec/ECPoint;");
     g_ECParameterSpecGetCofactor =     GetMethod(env, false, g_ECParameterSpecClass, "getCofactor", "()I");
     g_ECParameterSpecGetOrder =        GetMethod(env, false, g_ECParameterSpecClass, "getOrder", "()Ljava/math/BigInteger;");
-    g_ECParameterSpecGetCurveName =    TryGetMethod(env, false, g_ECParameterSpecClass, "getCurveName", "()Ljava/lang/String;");
+    g_ECParameterSpecGetCurveName =    GetOptionalMethod(env, false, g_ECParameterSpecClass, "getCurveName", "()Ljava/lang/String;");
 
     g_ECPointClass =                   GetClassGRef(env, "java/security/spec/ECPoint");
     g_ECPointCtor =                    GetMethod(env, false, g_ECPointClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;)V");

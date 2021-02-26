@@ -12,18 +12,21 @@ EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
 
     EC_KEY* keyInfo = malloc(sizeof(EC_KEY));
     memset(keyInfo, 0, sizeof(EC_KEY));
-    keyInfo->refCount = 1;
+    atomic_init(&keyInfo->refCount, 1);
     keyInfo->curveParameters = curveParameters;
     keyInfo->keyPair = keyPair;
     return keyInfo;
 }
 
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
 {
     if (r)
     {
-        r->refCount--;
-        if (r->refCount == 0)
+        int count = --r->refCount;
+        if (count == 0)
         {
             JNIEnv* env = GetJNIEnv();
             if (r->keyPair != NULL)
@@ -44,6 +47,15 @@ void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
         }
     }
 }
+
+int32_t AndroidCryptoNative_EcKeyUpRef(EC_KEY* r)
+{
+    if (!r)
+        return FAIL;
+    r->refCount++;
+    return SUCCESS;
+}
+#pragma clang diagnostic pop
 
 EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
 {
@@ -113,23 +125,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
     }
 
     jobject curveParameters = (*env)->CallObjectMethod(env, keySpec, g_ECPublicKeySpecGetParams);
-
-    jobject group = (*env)->CallObjectMethod(env, curveParameters, g_ECParameterSpecGetCurve);
-
-    jobject field = (*env)->CallObjectMethod(env, group, g_EllipticCurveGetField);
-
-    ReleaseLRef(env, field);
-    ReleaseLRef(env, group);
-
     return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
-}
-
-int32_t AndroidCryptoNative_EcKeyUpRef(EC_KEY* r)
-{
-    if (!r)
-        return FAIL;
-    r->refCount++;
-    return SUCCESS;
 }
 
 int32_t AndroidCryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)

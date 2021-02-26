@@ -6,10 +6,11 @@
 #include "pal_compiler.h"
 #include "pal_jni.h"
 #include "pal_types.h"
+#include "pal_atomic.h"
 
 typedef struct EC_KEY
 {
-    int32_t refCount;
+    atomic_int refCount;
     jobject curveParameters;
     jobject keyPair;
 } EC_KEY;

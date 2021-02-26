@@ -395,12 +395,8 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
 // Returns -1 if bigInteger < 0 or > INT32_MAX
 static int32_t ConvertBigIntegerToPositiveInt32(JNIEnv* env, jobject bigInteger)
 {
-    jobject zero = (*env)->CallStaticObjectMethod(env, g_bigNumClass, g_valueOfMethod, (int64_t)0);
-    int isPositive = (*env)->CallIntMethod(env, bigInteger, g_compareToMethod, zero);
-    (*env)->DeleteLocalRef(env, zero);
-
     // bigInteger is negative.
-    if (isPositive < 0)
+    if ((*env)->CallIntMethod(env, bigInteger, g_sigNumMethod) < 0)
     {
         return -1;
     }

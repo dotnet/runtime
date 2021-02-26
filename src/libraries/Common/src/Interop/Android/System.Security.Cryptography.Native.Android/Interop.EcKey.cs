@@ -55,7 +55,7 @@ internal static partial class Interop
                 }
 
                 string curveNameStr = Marshal.PtrToStringUni(curveName)!;
-                Marshal.ZeroFreeCoTaskMemUnicode(curveName);
+                Marshal.FreeHGlobal(curveName);
                 return curveNameStr;
             }
             throw new CryptographicException();
@@ -67,7 +67,7 @@ internal static partial class Interop
             if (rc == 1)
             {
                 bool hasName = curveName != IntPtr.Zero;
-                Marshal.ZeroFreeCoTaskMemUnicode(curveName);
+                Marshal.FreeHGlobal(curveName);
                 return hasName;
             }
             throw new CryptographicException();

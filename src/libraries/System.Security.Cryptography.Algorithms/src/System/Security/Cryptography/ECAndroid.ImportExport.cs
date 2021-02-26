@@ -48,9 +48,10 @@ namespace System.Security.Cryptography
         public static ECParameters ExportParameters(SafeEcKeyHandle currentKey, bool includePrivateParameters)
         {
             ECParameters ecparams;
-            if (Interop.AndroidCrypto.EcKeyHasCurveName(currentKey))
+            string curveName = Interop.AndroidCrypto.EcKeyGetCurveName(currentKey);
+            if (curveName is not null)
             {
-                ecparams = ExportNamedCurveParameters(currentKey, includePrivateParameters);
+                ecparams = ExportNamedCurveParameters(currentKey, curveName, includePrivateParameters);
             }
             else
             {
@@ -59,7 +60,7 @@ namespace System.Security.Cryptography
             return ecparams;
         }
 
-        private static ECParameters ExportNamedCurveParameters(SafeEcKeyHandle key, bool includePrivateParameters)
+        private static ECParameters ExportNamedCurveParameters(SafeEcKeyHandle key, string curveName, bool includePrivateParameters)
         {
             CheckInvalidKey(key);
 
@@ -73,7 +74,6 @@ namespace System.Security.Cryptography
             }
 
             // Assign Curve
-            string curveName = Interop.AndroidCrypto.EcKeyGetCurveName(key);
             parameters.Curve = ECCurve.CreateFromFriendlyName(curveName);
 
             return parameters;
