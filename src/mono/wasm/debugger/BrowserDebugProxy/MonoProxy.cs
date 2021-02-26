@@ -508,6 +508,36 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
+        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, string condition, CancellationToken token)
+        {
+            if (!string.IsNullOrEmpty(condition) && mono_frame != null)
+            {
+                try {
+                    var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
+
+                    JObject retValue = await resolver.Resolve(condition, token);
+                    if (retValue == null)
+                    {
+                        retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
+                    }
+
+                    if (retValue != null)
+                    {
+                        if (retValue["value"].Value<bool>() == false)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
@@ -656,33 +686,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.CallStack = frames;
 
                     }
-                    if (bp.Condition != null && bp.Condition.Length > 0)
+                    if (!await EvaluateCondition(sessionId, context, the_mono_frames?.First(), bp?.Condition, token))
                     {
-                        try {
-                            JObject mono_frame = the_mono_frames.First();
-                            var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
-
-                            JObject retValue = await resolver.Resolve(bp.Condition, token);
-                            if (retValue == null)
-                            {
-                                retValue = await EvaluateExpression.CompileAndRunTheExpression(bp.Condition, resolver, token);
-                            }
-
-                            if (retValue != null)
-                            {
-                                if (retValue["value"].Value<bool>() == false)
-                                {
-                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                    return true;
-                                }
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{bp.Condition}");
-                            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                            return true;
-                        }
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
                     }
                 }
                 else if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||

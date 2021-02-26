@@ -131,6 +131,9 @@ namespace DebuggerTests
                 }
                 else if (!String.IsNullOrEmpty(url))
                 {
+                    var dbgUrl = args["url"]?.Value<string>();
+                    var arrStr = dbgUrl.Split("/");
+                    dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                     dicFileToUrl[new Uri(url).AbsolutePath] = url;
                 }
                 await Task.FromResult(0);
@@ -807,8 +810,8 @@ namespace DebuggerTests
         internal async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
             var bp1_req = !use_regex ?
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition = condition}) :
-                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition = condition });
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition}) :
+                JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition});
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : bp1_res.IsErr);
