@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <IsTrimmingTest>true</IsTrimmingTest>
+    <UseDefaultBlazorWASMFeatureSwitches>false</UseDefaultBlazorWASMFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
     <TrimMode>link</TrimMode>

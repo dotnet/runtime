@@ -42,7 +42,6 @@
           Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'" />
 
   <!-- Overriding these targets as these projects won't need to binplace -->
-  <Target Name="GetBinPlaceTargetFramework" />
   <Target Name="PublishTestAsSelfContained" />
 
 </Project>

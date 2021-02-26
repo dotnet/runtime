@@ -82,7 +82,6 @@
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
-                                                 .Replace('{ILLinkTasksAssembly}', '$(ILLinkTasksAssembly)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile)"
