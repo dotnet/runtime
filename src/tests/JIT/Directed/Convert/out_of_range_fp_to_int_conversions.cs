@@ -127,7 +127,7 @@ namespace FPBehaviorApp
             {
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE:
-                    return (IsNaN(x) || (x < long.MinValue) || (x > llong_max_plus_1)) ? 0 : (uint)(long)x;
+                    return (IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? 0 : (uint)(long)x;
 
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
                     return (IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
