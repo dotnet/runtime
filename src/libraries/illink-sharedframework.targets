@@ -11,9 +11,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <!-- Link all assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c link</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -u link</ILLinkArgs>
       <!-- update debug symbols -->
       <ILLinkArgs>$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- suppress warnings with the following codes:
