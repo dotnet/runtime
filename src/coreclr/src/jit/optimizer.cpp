@@ -9391,40 +9391,43 @@ void Compiler::optRemoveRedundantZeroInits()
                         // The local hasn't been referenced before this assignment.
                         bool removedExplicitZeroInit = false;
 
-                        if (treeOp->gtOp2->IsIntegralConst(0))
+                        if (!bbInALoop || bbIsReturn)
                         {
-                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                            bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
-
-                            if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
-                                (lclDsc->lvIsStructField &&
-                                 BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                            if (treeOp->gtOp2->IsIntegralConst(0))
                             {
-                                // We are guaranteed to have a zero initialization in the prolog or a
-                                // dominating explicit zero initialization and the local hasn't been redefined
-                                // between the prolog and this explicit zero initialization so the assignment
-                                // can be safely removed.
-                                if (tree == stmt->GetRootNode())
-                                {
-                                    fgRemoveStmt(block, stmt);
-                                    removedExplicitZeroInit      = true;
-                                    lclDsc->lvSuppressedZeroInit = 1;
+                                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-                                    if (lclDsc->lvTracked)
+                                if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                    (lclDsc->lvIsStructField &&
+                                    BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                    (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                                {
+                                    // We are guaranteed to have a zero initialization in the prolog or a
+                                    // dominating explicit zero initialization and the local hasn't been redefined
+                                    // between the prolog and this explicit zero initialization so the assignment
+                                    // can be safely removed.
+                                    if (tree == stmt->GetRootNode())
                                     {
-                                        removedTrackedDefs   = true;
-                                        unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
-                                        *pDefsCount          = (*pDefsCount) - 1;
+                                        fgRemoveStmt(block, stmt);
+                                        removedExplicitZeroInit      = true;
+                                        lclDsc->lvSuppressedZeroInit = 1;
+
+                                        if (lclDsc->lvTracked)
+                                        {
+                                            removedTrackedDefs   = true;
+                                            unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                            *pDefsCount          = (*pDefsCount) - 1;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
-                            {
-                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                                {
+                                    BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                }
+                                *pRefCount = 0;
                             }
-                            *pRefCount = 0;
                         }
 
                         if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&
