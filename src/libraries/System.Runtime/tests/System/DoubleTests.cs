@@ -296,6 +296,7 @@ namespace System.Tests
             yield return new object[] { "625010.00e-4", defaultStyle, invariantFormat, 62.501 };
             yield return new object[] { "62500e-4", defaultStyle, invariantFormat, 6.25 };
             yield return new object[] { "62500", defaultStyle, invariantFormat, 62500.0 };
+            yield return new object[] { "10e-3", defaultStyle, invariantFormat, 0.01 };
 
             yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1 };
             yield return new object[] { (1000.0).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0 };

@@ -449,6 +449,7 @@ namespace System
                     if (numberOfFractionalDigits > 0)
                     {
                         numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
+                        Debug.Assert(numberOfTrailingZeros >= 0);
                         number.DigitsCount = digEnd - numberOfTrailingZeros;
                         number.Digits[number.DigitsCount] = (byte)('\0');
                     }
