@@ -109,7 +109,7 @@ namespace Legacy.Support
             // https://github.com/dotnet/runtime/issues/20149
             // https://github.com/dotnet/runtime/issues/20174
             // https://github.com/dotnet/runtime/issues/22159
-            // hardware tests are currently insufficiently stable on master CI
+            // hardware tests are currently insufficiently stable on main CI
             if (loopbackPortName == null && !nullModemPresent)
             {
                 // We don't have any supporting hardware - disable all the tests which would use just an open port
