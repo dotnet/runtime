@@ -530,6 +530,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
