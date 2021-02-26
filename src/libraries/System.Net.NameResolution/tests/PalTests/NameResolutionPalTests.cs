@@ -420,6 +420,8 @@ namespace System.Net.NameResolution.PalTests
             Assert.Equal(SocketError.HostNotFound, socketError);
         }
 
+#pragma warning restore CS0162
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Exception_HostNotFound_Success()
