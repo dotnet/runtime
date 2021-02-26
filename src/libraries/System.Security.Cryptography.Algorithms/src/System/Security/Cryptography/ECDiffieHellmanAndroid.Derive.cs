@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
