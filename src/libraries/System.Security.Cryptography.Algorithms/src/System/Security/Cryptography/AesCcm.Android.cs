@@ -42,10 +42,7 @@ namespace System.Security.Cryptography
 
                 if (associatedData.Length != 0)
                 {
-                    if (!Interop.Crypto.CipherUpdateAAD(ctx, associatedData))
-                    {
-                        throw new CryptographicException();
-                    }
+                    Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
                 }
 
                 byte[]? rented = null;
@@ -124,10 +121,7 @@ namespace System.Security.Cryptography
 
                 if (associatedData.Length != 0)
                 {
-                    if (!Interop.Crypto.CipherUpdateAAD(ctx, associatedData))
-                    {
-                        throw new CryptographicException();
-                    }
+                    Interop.Crypto.CipherUpdateAAD(ctx, associatedData);
                 }
 
                 if (!Interop.Crypto.EvpCipherUpdate(ctx, plaintext, out int plaintextBytesWritten, ciphertext))

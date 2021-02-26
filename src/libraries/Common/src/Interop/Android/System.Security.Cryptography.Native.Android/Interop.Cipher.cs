@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -104,7 +105,7 @@ internal static partial class Interop
             SafeEvpCipherCtxHandle ctx,
             ReadOnlySpan<byte> input)
         {
-            if(!CipherUpdateAAD(
+            if (!CipherUpdateAAD(
                 ctx,
                 ref MemoryMarshal.GetReference(input),
                 input.Length))
