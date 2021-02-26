@@ -2666,13 +2666,14 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
 // Arguments:
 //    theMinWeight - the new minimum lower (flEdgeWeightMin)
 //    theMaxWeight - the new maximum upper (flEdgeWeightMin)
+//    bDst         - the destination block for the edge
 //
-void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight)
+void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight, BasicBlock* bDst)
 {
     assert(theMinWeight <= theMaxWeight);
 
-    JITDUMP("Setting edge weights for BB?? -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
-            theMinWeight, theMaxWeight);
+    JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
+            bDst->bbNum, theMinWeight, theMaxWeight);
 
     flEdgeWeightMin = theMinWeight;
     flEdgeWeightMax = theMaxWeight;
@@ -2970,7 +2971,7 @@ void Compiler::fgComputeEdgeWeights()
 
             if (!bSrc->hasProfileWeight() || !bDst->hasProfileWeight())
             {
-                edge->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
+                edge->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, bDst);
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;

@@ -16321,7 +16321,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     // The edge weights for (block -> bTaken) are 100% of block's weight
 
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight);
+                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
 
                     if (!bTaken->hasProfileWeight())
                     {
@@ -16338,7 +16338,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     if (bTaken->countOfInEdges() == 1)
                     {
                         // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight);
+                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
 
                         // Update the weight of block
                         block->inheritWeight(bTaken);
@@ -16359,21 +16359,21 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         default:
