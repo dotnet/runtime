@@ -8,7 +8,7 @@ set(NATIVECRYPTO_SOURCES
     pal_bignum.c
     pal_err.c
     pal_evp.c
-    pal_evp_cipher.c
+    pal_cipher.c
     pal_hmac.c
     pal_jni.c
     pal_lifetime.c
