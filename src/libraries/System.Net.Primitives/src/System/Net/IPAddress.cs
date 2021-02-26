@@ -485,16 +485,12 @@ namespace System.Net
             }
         }
 
-        /// <devdoc>
-        ///   <para>
-        ///     Determines if an address is an IPv6 Unique Local address
-        ///   </para>
-        /// </devdoc>
+        /// <summary>Gets whether the address is an IPv6 Unique Local address.</summary>
         public bool IsIPv6UniqueLocal
         {
             get
             {
-                return IsIPv6 && ((_numbers[0] & 0xFE00) == 0xFC00);
+                return IsIPv6 && ((_numbers[0]! & 0xFE00) == 0xFC00);
             }
         }
 
