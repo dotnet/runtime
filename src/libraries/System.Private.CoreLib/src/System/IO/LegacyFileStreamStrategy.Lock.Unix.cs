@@ -3,12 +3,12 @@
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         /// <summary>Prevents other processes from reading from or writing to the FileStream.</summary>
         /// <param name="position">The beginning of the range to lock.</param>
         /// <param name="length">The range to be locked.</param>
-        private void LockInternal(long position, long length)
+        internal override void Lock(long position, long length)
         {
             CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, CanWrite ? Interop.Sys.LockType.F_WRLCK : Interop.Sys.LockType.F_RDLCK));
         }
@@ -16,7 +16,7 @@ namespace System.IO
         /// <summary>Allows access by other processes to all or part of a file that was previously locked.</summary>
         /// <param name="position">The beginning of the range to unlock.</param>
         /// <param name="length">The range to be unlocked.</param>
-        private void UnlockInternal(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             CheckFileCall(Interop.Sys.LockFileRegion(_fileHandle, position, length, Interop.Sys.LockType.F_UNLCK));
         }

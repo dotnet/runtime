@@ -1567,7 +1567,7 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		mono_class_init_internal (handle_class);
 		mono_class_init_internal (mono_class_from_mono_type_internal ((MonoType *)handle));
 
-		target = mono_type_get_object_checked (domain, (MonoType *)handle, error);
+		target = mono_type_get_object_checked ((MonoType *)handle, error);
 		if (!is_ok (error))
 			return NULL;
 		break;
@@ -3117,7 +3117,6 @@ static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoMethodSignature *sig = info->sig;
-	MonoDomain *domain = mono_domain_get ();
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
 	gpointer retval_ptr;
 	guint8 retval [256];
@@ -3184,7 +3183,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (info->ret_box_class)
-			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
+			return mono_value_box_checked (info->ret_box_class, retval, error);
 		else
 			return *(MonoObject**)retval;
 	} else {
@@ -3375,7 +3374,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (info->ret_box_class)
-			return mono_value_box_checked (domain, info->ret_box_class, retval, error);
+			return mono_value_box_checked (info->ret_box_class, retval, error);
 		else
 			return *(MonoObject**)retval;
 	}

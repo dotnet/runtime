@@ -39,7 +39,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    public partial class FileStream : Stream
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.
@@ -51,7 +51,7 @@ namespace System.IO
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
-        private void Init(FileMode mode, FileShare share, string originalPath)
+        private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
             if (!PathInternal.IsExtended(originalPath))
             {
@@ -172,7 +172,7 @@ namespace System.IO
             }
             else if (!useAsyncIO)
             {
-                VerifyHandleIsSync(handle);
+                FileStreamHelpers.VerifyHandleIsSync(handle);
             }
 
             if (_canSeek)
@@ -181,39 +181,28 @@ namespace System.IO
                 _filePosition = 0;
         }
 
-        private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
-        {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
-            return secAttrs;
-        }
-
         private bool HasActiveBufferOperation => !_activeBufferOperation.IsCompleted;
 
         public override bool CanSeek => _canSeek;
 
-        private unsafe long GetLengthInternal()
+        public unsafe override long Length
         {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
+            get
+            {
+                Interop.Kernel32.FILE_STANDARD_INFO info;
 
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            long len = info.EndOfFile;
+                if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
+                long len = info.EndOfFile;
 
-            // If we're writing near the end of the file, we must include our
-            // internal buffer in our Length calculation.  Don't flush because
-            // we use the length of the file in our async write method.
-            if (_writePos > 0 && _filePosition + _writePos > len)
-                len = _writePos + _filePosition;
+                // If we're writing near the end of the file, we must include our
+                // internal buffer in our Length calculation.  Don't flush because
+                // we use the length of the file in our async write method.
+                if (_writePos > 0 && _filePosition + _writePos > len)
+                    len = _writePos + _filePosition;
 
-            return len;
+                return len;
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -261,12 +250,7 @@ namespace System.IO
             }
         }
 
-        public override ValueTask DisposeAsync() =>
-            GetType() == typeof(FileStream) ?
-                DisposeAsyncCore() :
-                base.DisposeAsync();
-
-        private async ValueTask DisposeAsyncCore()
+        public override async ValueTask DisposeAsync()
         {
             // Same logic as in Dispose(), except with async counterparts.
             // TODO: https://github.com/dotnet/runtime/issues/27643: FlushAsync does synchronous work.
@@ -274,7 +258,7 @@ namespace System.IO
             {
                 if (_fileHandle != null && !_fileHandle.IsClosed && _writePos > 0)
                 {
-                    await FlushAsyncInternal(default).ConfigureAwait(false);
+                    await FlushAsync(default).ConfigureAwait(false);
                 }
             }
             finally
@@ -358,7 +342,7 @@ namespace System.IO
             _writePos = 0;
         }
 
-        private void SetLengthInternal(long value)
+        public override void SetLength(long value)
         {
             // Handle buffering updates.
             if (_writePos > 0)
@@ -1244,10 +1228,8 @@ namespace System.IO
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // If we're in sync mode, just use the shared CopyToAsync implementation that does
-            // typical read/write looping.  We also need to take this path if this is a derived
-            // instance from FileStream, as a derived type could have overridden ReadAsync, in which
-            // case our custom CopyToAsync implementation isn't necessarily correct.
-            if (!_useAsyncIO || GetType() != typeof(FileStream))
+            // typical read/write looping.
+            if (!_useAsyncIO)
             {
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
@@ -1474,7 +1456,7 @@ namespace System.IO
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
             /// <summary>The FileStream that owns this instance.</summary>
-            internal readonly FileStream _fileStream;
+            internal readonly LegacyFileStreamStrategy _fileStream;
 
             /// <summary>Tracked position representing the next location from which to read.</summary>
             internal long _position;
@@ -1495,7 +1477,7 @@ namespace System.IO
             internal object CancellationLock => this;
 
             /// <summary>Initialize the awaitable.</summary>
-            internal AsyncCopyToAwaitable(FileStream fileStream)
+            internal AsyncCopyToAwaitable(LegacyFileStreamStrategy fileStream)
             {
                 _fileStream = fileStream;
             }
@@ -1547,7 +1529,7 @@ namespace System.IO
             }
         }
 
-        private void LockInternal(long position, long length)
+        internal override void Lock(long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -1560,7 +1542,7 @@ namespace System.IO
             }
         }
 
-        private void UnlockInternal(long position, long length)
+        internal override void Unlock(long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -1571,27 +1553,6 @@ namespace System.IO
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             }
-        }
-
-        private SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle)
-        {
-            if (fileHandle.IsInvalid)
-            {
-                // Return a meaningful exception with the full path.
-
-                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
-                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
-                // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path!.Length == PathInternal.GetRootLength(_path))
-                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-            }
-
-            fileHandle.IsAsync = _useAsyncIO;
-            return fileHandle;
         }
     }
 }

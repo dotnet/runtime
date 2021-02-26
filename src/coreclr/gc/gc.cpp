@@ -6325,12 +6325,12 @@ void gc_heap::gc_thread_function ()
                 settings.init_mechanisms();
                 gc_start_event.Set();
             }
-            dprintf (3, ("%d gc thread waiting...", heap_number));
+            dprintf (3, (ThreadStressLog::gcServerThread0StartMsg(), heap_number));
         }
         else
         {
             gc_start_event.Wait(INFINITE, FALSE);
-            dprintf (3, ("%d gc thread waiting... Done", heap_number));
+            dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
         }
 
         assert ((heap_number == 0) || proceed_with_gc_p);
@@ -22858,7 +22858,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
-    dprintf(2,("---- Mark Phase condemning %d ----", condemned_gen_number));
+    dprintf (2, (ThreadStressLog::gcStartMarkMsg(), heap_number, condemned_gen_number));
     BOOL  full_p = (condemned_gen_number == max_generation);
 
     int gen_to_init = condemned_gen_number;
@@ -25185,7 +25185,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     assert (settings.concurrent == FALSE);
 
-    dprintf (2,("---- Plan Phase ---- Condemned generation %d, promotion: %d",
+    dprintf (2,(ThreadStressLog::gcStartPlanMsg(), heap_number,
                 condemned_gen_number, settings.promotion ? 1 : 0));
 
     generation*  condemned_gen1 = generation_of (condemned_gen_number);
@@ -25936,14 +25936,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     }
                     else
                     {
-#ifdef SIMPLE_DPRINTF
-                        dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)",
+                        dprintf (3, (ThreadStressLog::gcPlanPlugMsg(),
                             (size_t)(node_gap_size (plug_start)),
                             plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
                                 (size_t)new_address + ps, ps,
                                 (is_plug_padded (plug_start) ? 1 : 0), x,
                                 (allocated_in_older_p ? "O" : "C")));
-#endif //SIMPLE_DPRINTF
 
 #ifdef SHORT_PLUGS
                         if (is_plug_padded (plug_start))
@@ -25976,7 +25974,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
                 new_address = plug_start;
 
-                dprintf (3, ( "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)",
+                dprintf (3, (ThreadStressLog::gcPlanPinnedPlugMsg(),
                             (size_t)(node_gap_size (plug_start)), (size_t)plug_start,
                             (size_t)plug_end, ps,
                             (merge_with_last_pin_p ? 1 : 0)));
@@ -27592,7 +27590,6 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         }
 
         // We need to get a new region for the new gen0.
-        assert (num_free_regions > 0);
         generation* gen_gen0 = generation_of (0);
         heap_segment* gen0_region = get_free_region (0);
         thread_start_region (gen_gen0, gen0_region);
@@ -27764,7 +27761,7 @@ void gc_heap::uoh_thread_gap_front (uint8_t* gap_start, size_t size, generation*
 
 void gc_heap::make_unused_array (uint8_t* x, size_t size, BOOL clearp, BOOL resetp)
 {
-    dprintf (3, ("Making unused array [%Ix, %Ix[",
+    dprintf (3, (ThreadStressLog::gcMakeUnusedArrayMsg(),
         (size_t)x, (size_t)(x+size)));
     assert (size >= Align (min_obj_size));
 
@@ -28799,7 +28796,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     }
 #endif //MULTIPLE_HEAPS
 
-    dprintf (2,("---- Relocate phase -----"));
+    dprintf (2, (ThreadStressLog::gcStartRelocateMsg(), heap_number));
 
     dprintf(3,("Relocating roots"));
     GCScan::GcScanRoots(GCHeap::Relocate,
@@ -28942,7 +28939,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
     }
 #endif // MULTIPLE_HEAPS && FEATURE_CARD_MARKING_STEALING
 
-    dprintf(2,( "---- End of Relocate phase ----"));
+    dprintf(2, (ThreadStressLog::gcEndRelocateMsg(), heap_number));
 }
 
 // This compares to see if tree is the current pinned plug and returns info
@@ -29045,7 +29042,7 @@ void  gc_heap::gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_car
 #endif //DOUBLY_LINKED_FL
 
         //dprintf(3,(" Memcopy [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
-        dprintf(3,(" mc: [%Ix->%Ix, %Ix->%Ix[", (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
+        dprintf(3,(ThreadStressLog::gcMemCopyMsg(), (size_t)src, (size_t)dest, (size_t)src+len, (size_t)dest+len));
         memcopy (dest - plug_skew, src - plug_skew, len);
 
 #ifdef DOUBLY_LINKED_FL
@@ -29375,7 +29372,7 @@ void gc_heap::compact_phase (int condemned_gen_number,
     }
 #endif //MULTIPLE_HEAPS
 
-    dprintf (2,("---- Compact Phase: %Ix(%Ix)----",
+    dprintf (2, (ThreadStressLog::gcStartCompactMsg(), heap_number,
         first_condemned_address, brick_of (first_condemned_address)));
 
 #ifdef FEATURE_LOH_COMPACTION
@@ -29496,7 +29493,7 @@ void gc_heap::compact_phase (int condemned_gen_number,
 
     concurrent_print_time_delta ("compact end");
 
-    dprintf(2,("---- End of Compact phase ----"));
+    dprintf (2, (ThreadStressLog::gcEndCompactMsg(), heap_number));
 }
 
 #ifdef MULTIPLE_HEAPS
@@ -31516,7 +31513,7 @@ void gc_heap::bgc_thread_function()
             break;
         }
         gc_background_running = TRUE;
-        dprintf (2, ("beginning of bgc: gen2 FL: %d, FO: %d, frag: %d",
+        dprintf (2, (ThreadStressLog::gcStartBgcThread(), heap_number,
             generation_free_list_space (generation_of (max_generation)),
             generation_free_obj_space (generation_of (max_generation)),
             dd_fragmentation (dynamic_data_of (max_generation))));
@@ -35588,16 +35585,9 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
 
         dd_surv (dd) = cst;
 
-#ifdef SIMPLE_DPRINTF
-        dprintf (1, ("h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id",
+        dprintf (1, (ThreadStressLog::gcDesiredNewAllocationMsg(),
                     heap_number, gen_number, out, current_size, (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)),
                     (int)(cst*100), (int)(f*100), current_size + new_allocation, new_allocation));
-#else
-        dprintf (1,("gen: %d in: %Id out: %Id ", gen_number, generation_allocation_size (generation_of (gen_number)), out));
-        dprintf (1,("current: %Id alloc: %Id ", current_size, (dd_desired_allocation (dd) - dd_gc_new_allocation (dd))));
-        dprintf (1,(" surv: %d%% f: %d%% new-size: %Id new-alloc: %Id",
-                    (int)(cst*100), (int)(f*100), current_size + new_allocation, new_allocation));
-#endif //SIMPLE_DPRINTF
 
         return new_allocation_ret;
     }
@@ -38618,9 +38608,8 @@ void gc_heap::descr_generations (const char* msg)
                       (settings.heap_expansion ? "(EX)" : " "),
                       (settings.promotion ? "Promotion" : "NoPromotion")));
 #else
-        dprintf (2, ( "Generation %d: gap size: %d, generation size: %Id, fragmentation: %Id",
+        dprintf (2, ( "Generation %d: generation size: %Id, fragmentation: %Id",
                       curr_gen_number,
-                      size (generation_allocation_start (generation_of (curr_gen_number))),
                       total_gen_size,
                       dd_fragmentation (dynamic_data_of (curr_gen_number))));
 #endif //SIMPLE_DPRINTF
@@ -41243,7 +41232,7 @@ void gc_heap::do_pre_gc()
 #ifdef TRACE_GC
     size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
 #ifdef BACKGROUND_GC
-    dprintf (1, ("*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)",
+    dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -41660,8 +41649,7 @@ void gc_heap::do_post_gc()
     }
 #endif //BGC_SERVO_TUNING
 
-#ifdef SIMPLE_DPRINTF
-    dprintf (1, ("*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)",
+    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         (size_t)(GetHighPrecisionTimeStamp() / 1000),
@@ -41671,7 +41659,6 @@ void gc_heap::do_post_gc()
         (settings.promotion ? "P" : "S"),
         settings.entry_memory_load,
         current_memory_load));
-#endif //SIMPLE_DPRINTF
 
     // Now record the gc info.
     last_recorded_gc_info* last_gc_info = 0;
@@ -42792,7 +42779,7 @@ CFinalize::RegisterForFinalization (int gen, Object* obj, size_t size)
             {
                 // If the object is uninitialized, a valid size should have been passed.
                 assert (size >= Align (min_obj_size));
-                dprintf (3, ("Making unused array [%Ix, %Ix[", (size_t)obj, (size_t)(obj+size)));
+                dprintf (3, (ThreadStressLog::gcMakeUnusedArrayMsg(), (size_t)obj, (size_t)(obj+size)));
                 ((CObjectHeader*)obj)->SetFree(size);
             }
             STRESS_LOG_OOM_STACK(0);

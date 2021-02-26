@@ -4,7 +4,7 @@
     <DefineConstants>$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
@@ -67,7 +67,7 @@
     <Compile Include="RSAOther.cs" />
     <Compile Include="TestDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -89,7 +89,7 @@
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="HostnameMatchTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
              Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />

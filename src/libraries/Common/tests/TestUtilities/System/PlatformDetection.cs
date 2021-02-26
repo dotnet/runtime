@@ -284,8 +284,8 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows and macOS TLS1.0/1.1 are supported.
-            if (IsWindows || IsOSXLike)
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            if (IsWindows || IsOSXLike || IsAndroid)
             {
                 return true;
             }
@@ -295,13 +295,13 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows and macOS TLS1.0/1.1 are supported.
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
             if (IsWindows)
             {
                 return !IsWindows7;
             }
-            else if (IsOSXLike)
+            else if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
