@@ -1565,7 +1565,6 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitRequired": "1",
             "COMPlus_JitDisasmWithGC": "1" }
 
         if self.coreclr_args.gcinfo:
