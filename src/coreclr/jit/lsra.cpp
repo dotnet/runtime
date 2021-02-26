@@ -10761,7 +10761,7 @@ void LinearScan::verifyFinalAllocation()
         }
 
         LsraLocation newLocation = currentRefPosition->nodeLocation;
-        currentLocation = newLocation;
+        currentLocation          = newLocation;
 
         switch (currentRefPosition->refType)
         {
@@ -11006,11 +11006,11 @@ void LinearScan::verifyFinalAllocation()
                             // Clear the assigned interval of current register.
                             if (interval->physReg != REG_NA && interval->physReg != regNum)
                             {
-                                interval->assignedReg->assignedInterval = nullptr; 
+                                interval->assignedReg->assignedInterval = nullptr;
                             }
                         }
-                        interval->physReg     = regNum;
-                        interval->assignedReg = regRecord;
+                        interval->physReg           = regNum;
+                        interval->assignedReg       = regRecord;
                         regRecord->assignedInterval = interval;
                     }
                 }
