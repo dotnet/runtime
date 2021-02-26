@@ -51,6 +51,13 @@ namespace System.Collections.Generic
         /// </summary>
         private const int Log2Arity = 2;
 
+#if DEBUG
+        static PriorityQueue()
+        {
+            Debug.Assert(Log2Arity > 0 && Math.Pow(2, Log2Arity) == Arity);
+        }
+#endif
+
         /// <summary>
         /// Creates an empty priority queue.
         /// </summary>
