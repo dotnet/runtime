@@ -23,27 +23,35 @@ namespace System.IO
 
         internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            if (!UseLegacyStrategy && bufferSize == 1)
+            if (UseLegacyStrategy)
             {
-                return isAsync
-                    ? new AsyncWindowsFileStreamStrategy(handle, access)
-                    : new SyncWindowsFileStreamStrategy(handle, access);
+                return new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
             }
 
-            return new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
+            WindowsFileStreamStrategy strategy = isAsync
+                ? new AsyncWindowsFileStreamStrategy(handle, access)
+                : new SyncWindowsFileStreamStrategy(handle, access);
+
+            return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
         internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
-            if (!UseLegacyStrategy && bufferSize == 1)
+            if (UseLegacyStrategy)
             {
-                return (options & FileOptions.Asynchronous) != 0
-                    ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options)
-                    : new SyncWindowsFileStreamStrategy(path, mode, access, share, options);
+                return new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
             }
 
-            return new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
+            WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
+                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options)
+                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options);
+
+            return EnableBufferingIfNeeded(strategy, bufferSize);
         }
+
+        // TODO: we might want to consider strategy.IsPipe here and never enable buffering for async pipes
+        internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
+            => bufferSize == 1 ? strategy : new BufferedFileStreamStrategy(strategy, bufferSize);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
             => CreateFileOpenHandle(path, mode, access, share, options);

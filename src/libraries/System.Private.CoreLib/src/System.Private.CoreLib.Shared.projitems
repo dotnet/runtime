@@ -391,6 +391,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BufferedStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\BufferedFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DerivedFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EncodingCache.cs" />

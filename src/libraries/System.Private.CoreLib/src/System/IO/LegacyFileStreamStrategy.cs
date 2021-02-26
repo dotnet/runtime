@@ -377,22 +377,6 @@ namespace System.IO
 
         internal override bool IsClosed => _fileHandle.IsClosed;
 
-        private static bool IsIoRelatedException(Exception e) =>
-            // These all derive from IOException
-            //     DirectoryNotFoundException
-            //     DriveNotFoundException
-            //     EndOfStreamException
-            //     FileLoadException
-            //     FileNotFoundException
-            //     PathTooLongException
-            //     PipeException
-            e is IOException ||
-            // Note that SecurityException is only thrown on runtimes that support CAS
-            // e is SecurityException ||
-            e is UnauthorizedAccessException ||
-            e is NotSupportedException ||
-            (e is ArgumentException && !(e is ArgumentNullException));
-
         /// <summary>
         /// Gets the array used for buffering reading and writing.
         /// If the array hasn't been allocated, this will lazily allocate it.

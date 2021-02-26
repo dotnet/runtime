@@ -172,7 +172,7 @@ namespace System.IO
                     {
                         FlushWriteBuffer();
                     }
-                    catch (Exception e) when (IsIoRelatedException(e) && !disposing)
+                    catch (Exception e) when (!disposing && FileStream.IsIoRelatedException(e))
                     {
                         // On finalization, ignore failures from trying to flush the write buffer,
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
