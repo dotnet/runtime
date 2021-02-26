@@ -1105,7 +1105,7 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
                      &orig_roDataBlock_2);
 
     // On Arm64 the constant pool is appended at the end of the method code section, hence hotCodeSize_{1,2}
-    // is a sum of their sizes. The following is to adjust theor sizes and the roDataBlock_{1,2} pointers.
+    // is a sum of their sizes. The following is to adjust their sizes and the roDataBlock_{1,2} pointers.
     if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
     {
         BYTE*        nativeEntry_1;
