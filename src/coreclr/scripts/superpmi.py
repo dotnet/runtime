@@ -271,6 +271,7 @@ replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
+replay_common_parser.add_argument("--jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -337,6 +338,17 @@ def download_progress_hook(count, block_size, total_size):
     """
     sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
     sys.stdout.flush()
+
+def download_with_progress(uri, target_location):
+    """ Do an URI download, with logging.
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+    """
+    logging.info("Download: %s -> %s", uri, target_location)
+    urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+    sys.stdout.write("\n") # Add newline after progress hook
 
 def is_zero_length_file(fpath):
     """ Determine if a file system path refers to an existing file that is zero length
@@ -1428,6 +1440,10 @@ class SuperPMIReplay:
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
+            if self.coreclr_args.jitoption:
+               for o in self.coreclr_args.jitoption:
+                  repro_flags += "-jitoption", o
+
             common_flags += repro_flags
 
             # For each MCH file that we are going to replay, do the replay and replay post-processing.
@@ -1871,8 +1887,7 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location, reporthook=download_progress_hook)
+        download_with_progress(coredistools_uri, coredistools_location)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1908,8 +1923,7 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location, reporthook=download_progress_hook)
+                download_with_progress(pmi_uri, pmi_location)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2361,9 +2375,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(temp_location, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
+                    download_with_progress(url, download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
                         raise httperror
@@ -2392,9 +2404,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(target_dir, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
+                    download_with_progress(url, download_path)
                     local_files.append(download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
@@ -2967,6 +2977,11 @@ def setup_args(args):
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
     if coreclr_args.mode == "collect":
 

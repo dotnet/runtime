@@ -28,6 +28,10 @@ PALTEST(filemapping_memmgt_VirtualProtect_test4_paltest_virtualprotect_test4, "f
         ExitProcess(FAIL);
     }
     
+#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+    // AppleSilcon does not allow mapping general pages as RWX
+    printf("filemapping_memmgt_VirtualProtect_test4_paltest_virtualprotect_test4 has been disabled on this platform\n");
+#else // defined(TARGET_OSX) && defined(TARGET_ARM64)
     //Allocate the physical storage in memory or in the paging file on disk 
     lpVirtualAddress = VirtualAlloc(NULL,//determine where to allocate the region
             REGIONSIZE,      //specify the size
@@ -61,6 +65,7 @@ PALTEST(filemapping_memmgt_VirtualProtect_test4_paltest_virtualprotect_test4, "f
     {
         Fail("\nFailed to call VirtualFree API!\n");
     }
+#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 
     PAL_Terminate();
     return PASS;
