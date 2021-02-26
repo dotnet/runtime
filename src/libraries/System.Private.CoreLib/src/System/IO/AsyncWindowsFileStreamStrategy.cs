@@ -102,7 +102,7 @@ namespace System.IO
             }
         }
 
-        // called by BufferedStream. TODO: find a cleaner solution
+        // called by BufferedStream
         internal void OnBufferAllocated(byte[] buffer)
         {
             Debug.Assert(buffer != null);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,6 +52,12 @@ namespace System.IO
         private Stream? _stream;                            // Underlying stream.  Close sets _stream to null.
         private byte[]? _buffer;                            // Shared read/write buffer.  Alloc on first use.
         private readonly int _bufferSize;                   // Length of internal buffer (not counting the shadow buffer).
+        /// <summary>
+        /// allows for:
+        /// 1. blocking zero byte reads
+        /// 2. skipping the serialization of async operations that don't use the buffer
+        /// </summary>
+        private readonly bool _actLikeFileStream;
         private int _readPos;                               // Read pointer within shared buffer.
         private int _readLen;                               // Number of bytes read in buffer from _stream.
         private int _writePos;                              // Write pointer within shared buffer.
@@ -82,10 +89,17 @@ namespace System.IO
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
+        internal BufferedStream(Stream stream, int bufferSize, bool actLikeFileStream) : this(stream, bufferSize)
+        {
+            _actLikeFileStream = actLikeFileStream;
+        }
+
         private void EnsureNotClosed()
         {
             if (_stream == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                Throw();
+
+            static void Throw() => throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
         private void EnsureCanSeek()
@@ -93,7 +107,9 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanSeek)
-                throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+                Throw();
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
         private void EnsureCanRead()
@@ -101,7 +117,9 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanRead)
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+                Throw();
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
         private void EnsureCanWrite()
@@ -109,7 +127,9 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+                Throw();
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
 
         private void EnsureShadowBufferAllocated()
@@ -127,13 +147,23 @@ namespace System.IO
             _buffer = shadowBuffer;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureBufferAllocated()
         {
             Debug.Assert(_bufferSize > 0);
 
             // BufferedStream is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
+            {
                 _buffer = new byte[_bufferSize];
+
+#if TARGET_WINDOWS
+                if (_actLikeFileStream && _stream is AsyncWindowsFileStreamStrategy asyncStrategy)
+                {
+                    asyncStrategy.OnBufferAllocated(_buffer);
+                }
+#endif
+            }
         }
 
         public Stream UnderlyingStream
@@ -184,10 +214,25 @@ namespace System.IO
                 EnsureNotClosed();
 
                 if (_writePos > 0)
-                    FlushWrite();
+                    FlushWrite(true);
 
                 return _stream!.Length;
             }
+        }
+
+        // this method exists to keep old FileStream behaviour and don't perform a Flush when getting Length
+        internal long GetLengthWithoutFlushing()
+        {
+            Debug.Assert(_actLikeFileStream);
+
+            EnsureNotClosed();
+
+            long len = _stream!.Length;
+
+            if (_writePos > 0 && _stream!.Position + _writePos > len)
+                len = _writePos + _stream!.Position;
+
+            return len;
         }
 
         public override long Position
@@ -209,13 +254,26 @@ namespace System.IO
                 EnsureCanSeek();
 
                 if (_writePos > 0)
-                    FlushWrite();
+                    FlushWrite(true);
 
                 _readPos = 0;
                 _readLen = 0;
                 _stream!.Seek(value, SeekOrigin.Begin);
             }
         }
+
+        // this method exists to keep old FileStream behaviour and don't perform a Flush when getting Position
+        internal long GetPositionWithoutFlushing()
+        {
+            Debug.Assert(_actLikeFileStream);
+
+            EnsureNotClosed();
+            EnsureCanSeek();
+
+            return (_stream!.Position - _readLen) + _readPos + _writePos;
+        }
+
+        internal void DisposeInternal(bool disposing) => Dispose(disposing);
 
         protected override void Dispose(bool disposing)
         {
@@ -266,16 +324,24 @@ namespace System.IO
             }
         }
 
-        public override void Flush()
+        public override void Flush() => Flush(true);
+
+        internal void Flush(bool performActualFlush)
         {
             EnsureNotClosed();
 
             // Has write data in the buffer:
             if (_writePos > 0)
             {
-                FlushWrite();
-                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
-                return;
+                // EnsureNotClosed does not guarantee that the Stream has not been closed
+                // an example could be a call to fileStream.SafeFileHandle.Dispose()
+                // so to avoid getting exception here, we just ensure that we can Write before doing it
+                if (_stream!.CanWrite)
+                {
+                    FlushWrite(performActualFlush);
+                    Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
+                    return;
+                }
             }
 
             // Has read data in the buffer:
@@ -292,7 +358,7 @@ namespace System.IO
                 // User streams may have opted to throw from Flush if CanWrite is false (although the abstract Stream does not do so).
                 // However, if we do not forward the Flush to the underlying stream, we may have problems when chaining several streams.
                 // Let us make a best effort attempt:
-                if (_stream.CanWrite)
+                if (performActualFlush && _stream.CanWrite)
                     _stream.Flush();
 
                 // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
@@ -301,7 +367,7 @@ namespace System.IO
             }
 
             // We had no data in the buffer, but we still need to tell the underlying stream to flush.
-            if (_stream!.CanWrite)
+            if (performActualFlush && _stream!.CanWrite)
                 _stream.Flush();
 
             _writePos = _readPos = _readLen = 0;
@@ -314,14 +380,32 @@ namespace System.IO
 
             EnsureNotClosed();
 
-            return FlushAsyncInternal(cancellationToken);
+            // try to get the lock and exit in synchronous way if there is nothing to Flush
+            SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
+            Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
+            bool lockAcquired = semaphoreLockTask.IsCompletedSuccessfully;
+            if (lockAcquired)
+            {
+                if (_writePos == 0 && _readPos == _readLen)
+                {
+                    sem.Release();
+
+                    return CanWrite ? _stream!.FlushAsync(cancellationToken) : Task.CompletedTask;
+                }
+            }
+
+            return FlushAsyncInternal(semaphoreLockTask, lockAcquired, cancellationToken);
         }
 
-        private async Task FlushAsyncInternal(CancellationToken cancellationToken)
+        private async Task FlushAsyncInternal(Task semaphoreLockTask, bool lockAcquired, CancellationToken cancellationToken)
         {
             Debug.Assert(_stream != null);
 
-            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (!lockAcquired)
+            {
+                await semaphoreLockTask.ConfigureAwait(false);
+            }
+
             try
             {
                 if (_writePos > 0)
@@ -362,7 +446,7 @@ namespace System.IO
             }
             finally
             {
-                _asyncActiveSemaphore.Release();
+                _asyncActiveSemaphore!.Release();
             }
         }
 
@@ -384,6 +468,7 @@ namespace System.IO
         /// <summary>
         /// Called by Write methods to clear the Read Buffer
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ClearReadBufferBeforeWrite()
         {
             Debug.Assert(_stream != null);
@@ -403,12 +488,14 @@ namespace System.IO
             // However, since the user did not call a method that is intuitively expected to seek, a better message is in order.
             // Ideally, we would throw an InvalidOperation here, but for backward compat we have to stick with NotSupported.
             if (!_stream.CanSeek)
-                throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
+                Throw();
 
             FlushRead();
+
+            static void Throw() => throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
         }
 
-        private void FlushWrite()
+        private void FlushWrite(bool performActualFlush)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_readPos == 0 && _readLen == 0,
@@ -418,7 +505,11 @@ namespace System.IO
 
             _stream.Write(_buffer, 0, _writePos);
             _writePos = 0;
-            _stream.Flush();
+
+            if (performActualFlush)
+            {
+                _stream.Flush();
+            }
         }
 
         private async ValueTask FlushWriteAsync(CancellationToken cancellationToken)
@@ -434,6 +525,7 @@ namespace System.IO
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ReadFromBuffer(byte[] buffer, int offset, int count)
         {
             int readbytes = _readLen - _readPos;
@@ -493,7 +585,7 @@ namespace System.IO
             // BUT - this is a breaking change.
             // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
             // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-            if (bytesFromBuffer == count)
+            if (bytesFromBuffer == count && (count > 0 || !_actLikeFileStream))
                 return bytesFromBuffer;
 
             int alreadySatisfied = bytesFromBuffer;
@@ -509,7 +601,7 @@ namespace System.IO
 
             // If there was anything in the write buffer, clear it.
             if (_writePos > 0)
-                FlushWrite();
+                FlushWrite(true);
 
             // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
             if (count >= _bufferSize)
@@ -541,7 +633,7 @@ namespace System.IO
 
             // Try to read from the buffer.
             int bytesFromBuffer = ReadFromBuffer(destination);
-            if (bytesFromBuffer == destination.Length)
+            if (bytesFromBuffer == destination.Length && (destination.Length > 0 || !_actLikeFileStream))
             {
                 // We got as many bytes as were asked for; we're done.
                 return bytesFromBuffer;
@@ -561,7 +653,7 @@ namespace System.IO
             // If there was anything in the write buffer, clear it.
             if (_writePos > 0)
             {
-                FlushWrite();
+                FlushWrite(true);
             }
 
             if (destination.Length >= _bufferSize)
@@ -609,13 +701,13 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
-                bool completeSynchronously = true;
-                try
+                // hot path #1: there is data in the buffer
+                if (_readLen - _readPos > 0 || (count == 0 && !_actLikeFileStream))
                 {
-                    Exception? error;
-                    bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out error);
+                    bytesFromBuffer = ReadFromBuffer(buffer, offset, count, out Exception? error);
 
                     // If we satisfied enough data from the buffer, we can complete synchronously.
                     // Reading again for more data may cause us to block if we're using a device with no clear end of file,
@@ -624,27 +716,37 @@ namespace System.IO
                     // BUT - this is a breaking change.
                     // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
                     // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-                    completeSynchronously = (bytesFromBuffer == count || error != null);
-
-                    if (completeSynchronously)
+                    if (bytesFromBuffer == count || error != null)
                     {
+                        // if the above is false, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
+                        sem.Release();
 
                         return (error == null)
-                                    ? LastSyncCompletedReadTask(bytesFromBuffer)
-                                    : Task.FromException<int>(error);
+                            ? LastSyncCompletedReadTask(bytesFromBuffer)
+                            : Task.FromException<int>(error);
                     }
                 }
-                finally
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                // it's allowed only for FileStream, as the public contract is that BufferedStream
+                // serializes ALL async operations
+                else if (_actLikeFileStream &&  _writePos == 0 && count >= _bufferSize)
                 {
-                    if (completeSynchronously)  // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                        sem.Release();
+                    _readPos = _readLen = 0;
+
+                    // start the async operation
+                    ValueTask<int> result = _stream!.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
+
+                    // release the lock (we are not using shared state anymore)
+                    sem.Release();
+
+                    return result.AsTask();
                 }
             }
 
             // Delegate to the async implementation.
             return ReadFromUnderlyingStreamAsync(
                 new Memory<byte>(buffer, offset + bytesFromBuffer, count - bytesFromBuffer),
-                cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
+                cancellationToken, bytesFromBuffer, semaphoreLockTask, locked).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -660,30 +762,44 @@ namespace System.IO
             int bytesFromBuffer = 0;
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
-                bool completeSynchronously = true;
-                try
+                // hot path #1: there is data in the buffer
+                if (_readLen - _readPos > 0 || (buffer.Length == 0 && !_actLikeFileStream))
                 {
                     bytesFromBuffer = ReadFromBuffer(buffer.Span);
-                    completeSynchronously = bytesFromBuffer == buffer.Length;
-                    if (completeSynchronously)
+
+                    if (bytesFromBuffer == buffer.Length)
                     {
+                        // if above is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
+                        sem.Release();
+
                         // If we satisfied enough data from the buffer, we can complete synchronously.
                         return new ValueTask<int>(bytesFromBuffer);
                     }
+
+                    buffer = buffer.Slice(bytesFromBuffer);
                 }
-                finally
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                // it's allowed only for FileStream, as the public contract is that BufferedStream
+                // serializes ALL async operations
+                else if (_actLikeFileStream && _writePos == 0 && buffer.Length >= _bufferSize)
                 {
-                    if (completeSynchronously)  // if this is FALSE, we will be entering ReadFromUnderlyingStreamAsync and releasing there.
-                    {
-                        sem.Release();
-                    }
+                    _readPos = _readLen = 0;
+
+                    // start the async operation
+                    ValueTask<int> result = _stream!.ReadAsync(buffer, cancellationToken);
+
+                    // release the lock (we are not using shared state anymore)
+                    sem.Release();
+
+                    return result;
                 }
             }
 
             // Delegate to the async implementation.
-            return ReadFromUnderlyingStreamAsync(buffer.Slice(bytesFromBuffer), cancellationToken, bytesFromBuffer, semaphoreLockTask);
+            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask, locked);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want ReadAsync to delegate to
@@ -691,7 +807,7 @@ namespace System.IO
         /// This allows BufferedStream to affect the semantics of the stream it wraps as little as possible. </summary>
         /// <returns>-2 if _bufferSize was set to 0 while waiting on the semaphore; otherwise num of bytes read.</returns>
         private async ValueTask<int> ReadFromUnderlyingStreamAsync(
-            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask)
+            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask, bool locked)
         {
             // Same conditions validated with exceptions in ReadAsync:
             Debug.Assert(_stream != null);
@@ -700,22 +816,32 @@ namespace System.IO
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
-            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-            await semaphoreLockTask.ConfigureAwait(false);
+            if (!locked)
+            {
+                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+                await semaphoreLockTask.ConfigureAwait(false);
+            }
+
             try
             {
-                // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                // Check it now again.
-                int bytesFromBuffer = ReadFromBuffer(buffer.Span);
-                if (bytesFromBuffer == buffer.Length)
-                {
-                    return bytesAlreadySatisfied + bytesFromBuffer;
-                }
+                int bytesFromBuffer = 0;
 
-                if (bytesFromBuffer > 0)
+                // we have already tried to read it from the buffer
+                if (!locked && (buffer.Length > 0 || !_actLikeFileStream))
                 {
-                    buffer = buffer.Slice(bytesFromBuffer);
-                    bytesAlreadySatisfied += bytesFromBuffer;
+                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                    // Check it now again.
+                    bytesFromBuffer = ReadFromBuffer(buffer.Span);
+                    if (bytesFromBuffer == buffer.Length)
+                    {
+                        return bytesAlreadySatisfied + bytesFromBuffer;
+                    }
+
+                    if (bytesFromBuffer > 0)
+                    {
+                        buffer = buffer.Slice(bytesFromBuffer);
+                        bytesAlreadySatisfied += bytesFromBuffer;
+                    }
                 }
 
                 Debug.Assert(_readLen == _readPos);
@@ -773,7 +899,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (_writePos > 0)
-                FlushWrite();
+                FlushWrite(true);
 
             EnsureBufferAllocated();
             _readLen = _stream.Read(_buffer!, 0, _bufferSize);
@@ -1035,7 +1161,8 @@ namespace System.IO
             // Try to satisfy the request from the buffer synchronously.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            if (semaphoreLockTask.IsCompletedSuccessfully)
+            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
+            if (locked)
             {
                 bool completeSynchronously = true;
                 try
@@ -1047,7 +1174,7 @@ namespace System.IO
 
                     Debug.Assert(_writePos < _bufferSize);
 
-                    // If the write completely fits into the buffer, we can complete synchronously:
+                    // hot path #1 If the write completely fits into the buffer, we can complete synchronously:
                     completeSynchronously = buffer.Length < _bufferSize - _writePos;
                     if (completeSynchronously)
                     {
@@ -1061,10 +1188,22 @@ namespace System.IO
                     if (completeSynchronously)  // if this is FALSE, we will be entering WriteToUnderlyingStreamAsync and releasing there.
                         sem.Release();
                 }
+
+                // hot path #2: there is nothing to Flush and buffering would not be beneficial
+                // it's allowed only for FileStream, as the public contract is that BufferedStream
+                // serializes ALL async operations
+                if (_actLikeFileStream && _writePos == 0 && buffer.Length >= _bufferSize)
+                {
+                    ValueTask result = _stream!.WriteAsync(buffer, cancellationToken);
+
+                    sem.Release();
+
+                    return result;
+                }
             }
 
             // Delegate to the async implementation.
-            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask);
+            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask, locked);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1073,7 +1212,7 @@ namespace System.IO
         /// little as possible.
         /// </summary>
         private async ValueTask WriteToUnderlyingStreamAsync(
-            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask, bool locked)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
@@ -1083,14 +1222,23 @@ namespace System.IO
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
 
-            await semaphoreLockTask.ConfigureAwait(false);
+            if (!locked)
+            {
+                await semaphoreLockTask.ConfigureAwait(false);
+            }
+
             try
             {
-                // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
+                if (!locked)
+                {
+                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                    // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
 
-                if (_writePos == 0)
-                    ClearReadBufferBeforeWrite();
+                    if (_writePos == 0)
+                    {
+                        ClearReadBufferBeforeWrite();
+                    }
+                }
 
                 int totalUserBytes;
                 bool useBuffer;
@@ -1165,6 +1313,18 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
+            if (_writePos > 0 && _writePos < _bufferSize - 1)
+            {
+                _buffer![_writePos++] = value;
+            }
+            else
+            {
+                WriteByteSlow(value);
+            }
+        }
+
+        private void WriteByteSlow(byte value)
+        {
             EnsureNotClosed();
 
             if (_writePos == 0)
@@ -1176,7 +1336,7 @@ namespace System.IO
 
             // We should not be flushing here, but only writing to the underlying stream, but previous version flushed, so we keep this.
             if (_writePos >= _bufferSize - 1)
-                FlushWrite();
+                FlushWrite(true);
 
             _buffer![_writePos++] = value;
 
@@ -1194,7 +1354,7 @@ namespace System.IO
             {
                 // We should be only writing the buffer and not flushing,
                 // but the previous version did flush and we stick to it for back-compat reasons.
-                FlushWrite();
+                FlushWrite(true);
                 return _stream.Seek(offset, origin);
             }
 
@@ -1267,7 +1427,7 @@ namespace System.IO
             else if (_writePos > 0)
             {
                 // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
-                FlushWrite();
+                FlushWrite(true);
             }
 
             // Our buffer is now clear. Copy data directly from the source stream to the destination stream.

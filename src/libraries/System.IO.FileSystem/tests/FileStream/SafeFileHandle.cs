@@ -104,14 +104,7 @@ namespace System.IO.Tests
 
                     fs.WriteByte(0);
                     fsr.Position++;
-                    if (useAsync && OperatingSystem.IsWindows()) // Async I/O behaviors differ due to kernel-based implementation on Windows
-                    {
-                        Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
-                    }
-                    else
-                    {
-                        await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
-                    }
+                    await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
 
                     fs.WriteByte(0);
                     fsr.Position++;
