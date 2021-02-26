@@ -9391,13 +9391,13 @@ void Compiler::optRemoveRedundantZeroInits()
                         // The local hasn't been referenced before this assignment.
                         bool removedExplicitZeroInit = false;
 
-                        if (!bbInALoop || bbIsReturn)
+                        if (treeOp->gtOp2->IsIntegralConst(0))
                         {
-                            if (treeOp->gtOp2->IsIntegralConst(0))
-                            {
-                                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                            bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
+                            if (!bbInALoop || bbIsReturn)
+                            {
                                 if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
                                     (lclDsc->lvIsStructField &&
                                     BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
