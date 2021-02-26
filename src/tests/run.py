@@ -44,26 +44,15 @@ import fnmatch
 import json
 import math
 import os
-import platform
 import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import re
 import string
-import zipfile
-
 import xml.etree.ElementTree
 
 from collections import defaultdict
-from sys import platform as _platform
-
-# Version specific imports
-if sys.version_info.major < 3:
-    import urllib
-else:
-    import urllib.request
 
 # Import coreclr_arguments.py from src\coreclr\scripts
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "coreclr", "scripts"))
