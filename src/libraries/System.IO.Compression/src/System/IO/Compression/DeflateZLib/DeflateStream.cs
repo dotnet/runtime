@@ -11,15 +11,9 @@ using System.Threading.Tasks;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties for compressing and decompressing streams by using the Deflate algorithm.</summary>
-    /// <remarks>This class represents the Deflate algorithm, which is an industry-standard algorithm for lossless file compression and decompression. Starting with the .NET Framework 4.5, the <see cref="System.IO.Compression.DeflateStream" /> class uses the zlib library. As a result, it provides a better compression algorithm and, in most cases, a smaller compressed file than it provides in earlier versions of the .NET Framework.
-    /// This class does not inherently provide functionality for adding files to or extracting files from zip archives. To work with zip archives, use the <see cref="System.IO.Compression.ZipArchive" /> and the <see cref="System.IO.Compression.ZipArchiveEntry" /> classes.
-    /// The <see cref="System.IO.Compression.DeflateStream" /> class uses the same compression algorithm as the gzip data format used by the <see cref="System.IO.Compression.GZipStream" /> class.
-    /// The compression functionality in <see cref="System.IO.Compression.DeflateStream" /> and <see cref="System.IO.Compression.GZipStream" /> is exposed as a stream. Data is read on a byte-by-byte basis, so it is not possible to perform multiple passes to determine the best method for compressing entire files or large blocks of data. The <see cref="System.IO.Compression.DeflateStream" /> and <see cref="System.IO.Compression.GZipStream" /> classes are best used on uncompressed sources of data. If the source data is already compressed, using these classes may actually increase the size of the stream.</remarks>
-    /// <example>The following example shows how to use the <see cref="System.IO.Compression.DeflateStream" /> class to compress and decompress a directory of files.
-    /// <format type="text/markdown"><![CDATA[
-    /// [!code-csharp[IO.Compression.Deflate1#1](~/samples/snippets/csharp/VS_Snippets_CLR/IO.Compression.Deflate1/CS/deflatetest.cs#1)]
-    /// [!code-vb[IO.Compression.Deflate1#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/IO.Compression.Deflate1/VB/deflatetest.vb#1)]
-    /// ]]></format></example>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/DeflateStream.md)]
+    /// ]]></format></remarks>
     public partial class DeflateStream : Stream
     {
         private const int DefaultBufferSize = 8192;
@@ -40,15 +34,9 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.DeflateStream" /> class by using the specified stream and compression mode.</summary>
         /// <param name="stream">The stream to compress or decompress.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
-        /// <remarks>By default, <see cref="System.IO.Compression.DeflateStream" /> owns the underlying stream, so closing the stream also closes the underlying stream. Note that the state of the underlying stream can affect the usability of the stream. Also, no explicit checks are performed, so no additional exceptions are thrown when the new instance is created.
-        /// If an instance of the <see cref="System.IO.Compression.DeflateStream" /> class is created with the <paramref name="mode" /> parameter equal to `Compress`, header information is inserted immediately. If no further action occurs, the stream appears as a valid, empty, compressed file.
-        /// Using the <see cref="System.IO.Compression.DeflateStream" /> class to compress a file larger than 4 GB raises an exception.
-        /// By default, the compression level is set to <see cref="System.IO.Compression.CompressionLevel.Optimal" /> when the compression mode is <see cref="System.IO.Compression.CompressionMode.Compress" />.</remarks>
-        /// <example>The following example shows how to use the <see cref="System.IO.Compression.DeflateStream" /> class to compress and decompress a file.
-        /// <format type="text/markdown"><![CDATA[
-        /// [!code-csharp[IO.Compression.Deflate1#1](~/samples/snippets/csharp/VS_Snippets_CLR/IO.Compression.Deflate1/CS/deflatetest.cs#1)]
-        /// [!code-vb[IO.Compression.Deflate1#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/IO.Compression.Deflate1/VB/deflatetest.vb#1)]
-        /// ]]></format></example>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/.ctor_Stream_CompressionMode.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException"><paramref name="mode" /> is not a valid <see cref="System.IO.Compression.CompressionMode" /> value.
         /// -or-
@@ -63,15 +51,9 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to compress or decompress.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.DeflateStream" /> object; otherwise, <see langword="false" />.</param>
-        /// <remarks>By default, <see cref="System.IO.Compression.DeflateStream" /> owns the underlying stream, so closing the stream also closes the underlying stream. Note that the state of the underlying stream can affect the usability of the stream. Also, no explicit checks are performed, so no additional exceptions are thrown when the new instance is created.
-        /// If an instance of the <see cref="System.IO.Compression.DeflateStream" /> class is created with the <paramref name="mode" /> parameter equal to `Compress`, header information is inserted immediately. If no further action occurs, the stream appears as a valid, empty, compressed file.
-        /// Using the <see cref="System.IO.Compression.DeflateStream" /> class to compress a file larger than 4 GB raises an exception.
-        /// By default, the compression level is set to <see cref="System.IO.Compression.CompressionLevel.Optimal" /> when the compression mode is <see cref="System.IO.Compression.CompressionMode.Compress" />.</remarks>
-        /// <example>The following code example shows how to use the <see cref="System.IO.Compression.DeflateStream" /> class to compress and decompress a file.
-        /// <format type="text/markdown"><![CDATA[
-        /// [!code-csharp[IO.Compression.Deflate1#1](~/samples/snippets/csharp/VS_Snippets_CLR/IO.Compression.Deflate1/CS/deflatetest.cs#1)]
-        /// [!code-vb[IO.Compression.Deflate1#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/IO.Compression.Deflate1/VB/deflatetest.vb#1)]
-        /// ]]></format></example>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/.ctor_Stream_CompressionMode_Boolean.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException"><paramref name="mode" /> is not a valid <see cref="System.IO.Compression.CompressionMode" /> value.
         /// -or-
@@ -102,13 +84,9 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to compress.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="System.IO.Compression.DeflateStream" /> object; otherwise, <see langword="false" />.</param>
-        /// <remarks>You use this constructor when you want to specify whether compression efficiency or speed is more important for an instance of the <see cref="System.IO.Compression.DeflateStream" /> class, and whether to leave the stream object open after disposing the <see cref="System.IO.Compression.DeflateStream" /> object.
-        /// This constructor overload uses the compression mode <see cref="System.IO.Compression.CompressionMode.Compress" />. To set the compression mode to another value, use the <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode)" /> or <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode,bool)" /> overload.</remarks>
-        /// <example>The following example shows how to set the compression level when creating a <see cref="System.IO.Compression.DeflateStream" /> object and how to leave the stream open.
-        /// <format type="text/markdown"><![CDATA[
-        /// [!code-csharp[System.IO.Compression.DeflateStream#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.deflatestream/cs/program2.cs#2)]
-        /// [!code-vb[System.IO.Compression.DeflateStream#2](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.deflatestream/vb/program2.vb#2)]
-        /// ]]></format></example>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/.ctor_Stream_CompressionLevel_Boolean.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The stream does not support write operations such as compression. (The <see cref="System.IO.Stream.CanWrite" /> property on the stream object is <see langword="false" />.)</exception>
         public DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, compressionLevel, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
@@ -472,12 +450,9 @@ namespace System.IO.Compression
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the read operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
         /// <returns>An  object that represents the asynchronous read operation, which could still be pending.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="O:System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginRead" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see <a href="https://docs.microsoft.com/en-us/dotnet/standard/io/asynchronous-file-i-o">Asynchronous File I/O</a>.
-        /// Pass the <see cref="System.IAsyncResult" /> return value to the <see cref="System.IO.Compression.DeflateStream.EndRead" /> method of the stream to determine how many bytes were read and to release operating system resources used for reading. You can do this either by using the same code that called <see cref="System.IO.Compression.DeflateStream.BeginRead" /> or in a callback passed to <see cref="System.IO.Compression.DeflateStream.BeginRead" />.
-        /// The current position in the stream is updated when the asynchronous read or write operation is issued, not when the I/O operation completes.
-        /// Multiple simultaneous asynchronous requests render the request completion order uncertain.
-        /// Use the <see cref="System.IO.Compression.DeflateStream.CanRead" /> property to determine whether the current <see cref="System.IO.Compression.DeflateStream" /> object supports reading.
-        /// If a stream is closed or you pass an invalid argument, exceptions are thrown immediately from <see cref="System.IO.Compression.DeflateStream.BeginRead" />. Errors that occur during an asynchronous read request, such as a disk failure during the I/O request, occur on the thread pool thread and throw exceptions when calling <see cref="System.IO.Compression.DeflateStream.EndRead" />.</remarks>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/BeginRead_Byte_Int32_Int32_AsyncCallback_Object.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.IO.IOException">The method tried to read asynchronously past the end of the stream, or a disk error occurred.</exception>
         /// <exception cref="System.ArgumentException">One or more of the arguments is invalid.</exception>
         /// <exception cref="System.ObjectDisposedException">Methods were called after the stream was closed.</exception>
@@ -919,12 +894,9 @@ namespace System.IO.Compression
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the write operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
         /// <returns>An object that represents the asynchronous write operation, which could still be pending.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous write operations by using the <see cref="O:System.IO.Stream.WriteAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see <a href="https://docs.microsoft.com/en-us/dotnet/standard/io/asynchronous-file-i-o">Asynchronous File I/O</a>.
-        /// Pass the <see cref="System.IAsyncResult" /> object returned by the current method to <see cref="System.IO.Compression.DeflateStream.EndWrite" /> to ensure that the write completes and frees resources appropriately. You can do this either by using the same code that called <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> or in a callback passed to <see cref="System.IO.Compression.DeflateStream.BeginWrite" />. If an error occurs during an asynchronous write operation, an exception will not be thrown until <see cref="System.IO.Compression.DeflateStream.EndWrite" /> is called with the <see cref="System.IAsyncResult" /> returned by this method.
-        /// If a stream is writable, writing at the end of the stream expands the stream.
-        /// The current position in the stream is updated when you issue the asynchronous read or write operation, not when the I/O operation completes. Multiple simultaneous asynchronous requests render the request completion order uncertain.
-        /// Use the <see cref="System.IO.Compression.DeflateStream.CanWrite" /> property to determine whether the current <see cref="System.IO.Compression.DeflateStream" /> object supports writing.
-        /// If a stream is closed or you pass an invalid argument, exceptions are thrown immediately from <see cref="System.IO.Compression.DeflateStream.BeginWrite" />. Errors that occur during an asynchronous write request, such as a disk failure during the I/O request, occur on the thread pool thread and throw exceptions when calling <see cref="System.IO.Compression.DeflateStream.EndWrite" />.</remarks>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/DeflateStream/BeginWrite_Byte_Int32_Int32_AsyncCallback_Object.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.IO.IOException">The method tried to write asynchronously past the end of the stream, or a disk error occurred.</exception>
         /// <exception cref="System.ArgumentException">One or more of the arguments is invalid.</exception>
         /// <exception cref="System.ObjectDisposedException">Methods were called after the stream was closed.</exception>

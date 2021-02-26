@@ -8,15 +8,9 @@ using System.Threading.Tasks;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the GZip data format specification.</summary>
-    /// <remarks>This class represents the gzip data format, which uses an industry-standard algorithm for lossless file compression and decompression. The format includes a cyclic redundancy check value for detecting data corruption. The gzip data format uses the same algorithm as the <see cref="System.IO.Compression.DeflateStream" /> class, but can be extended to use other compression formats. The format can be readily implemented in a manner not covered by patents.
-    /// Starting with the .NET Framework 4.5, the <see cref="System.IO.Compression.DeflateStream" /> class uses the zlib library for compression. As a result, it provides a better compression algorithm and, in most cases, a smaller compressed file than it provides in earlier versions of the .NET Framework.
-    /// Compressed <see cref="System.IO.Compression.GZipStream" /> objects written to a file with an extension of .gz can be decompressed using many common compression tools; however, this class does not inherently provide functionality for adding files to or extracting files from zip archives.
-    /// The compression functionality in <see cref="System.IO.Compression.DeflateStream" /> and <see cref="System.IO.Compression.GZipStream" /> is exposed as a stream. Data is read on a byte-by-byte basis, so it is not possible to perform multiple passes to determine the best method for compressing entire files or large blocks of data. The <see cref="System.IO.Compression.DeflateStream" /> and <see cref="System.IO.Compression.GZipStream" /> classes are best used on uncompressed sources of data. If the source data is already compressed, using these classes may actually increase the size of the stream.</remarks>
-    /// <example>The following example shows how to use the <see cref="System.IO.Compression.GZipStream" /> class to compress and decompress a directory of files.
-    /// <format type="text/markdown"><![CDATA[
-    /// [!code-csharp[IO.Compression.GZip1#1](~/samples/snippets/csharp/VS_Snippets_CLR/IO.Compression.GZip1/CS/gziptest.cs#1)]
-    /// [!code-vb[IO.Compression.GZip1#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/IO.Compression.GZip1/VB/gziptest.vb#1)]
-    /// ]]></format></example>
+    /// <remarks><format type="text/markdown"><![CDATA[
+    /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/GZipStream/GZipStream.md)]
+    /// ]]></format></remarks>
     public class GZipStream : Stream
     {
         private DeflateStream _deflateStream;
@@ -167,17 +161,9 @@ namespace System.IO.Compression
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the read operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
         /// <returns>An object that represents the asynchronous read operation, which could still be pending.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="O:System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.GZipStream.BeginRead" /> method is still available in .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see <a href="https://docs.microsoft.com/en-us/dotnet/standard/io/asynchronous-file-i-o">Asynchronous File I/O</a>.
-        /// Pass the <see cref="System.IAsyncResult" /> return value to the <see cref="System.IO.Compression.GZipStream.EndRead" /> method of the stream to determine how many bytes were read and to release operating system resources used for reading. You can do this either by using the same code that called <see cref="System.IO.Compression.GZipStream.BeginRead" /> or in a callback passed to <see cref="System.IO.Compression.GZipStream.BeginRead" />.
-        /// The current position in the stream is updated when the asynchronous read or write is issued, not when the I/O operation completes.
-        /// Multiple simultaneous asynchronous requests render the request completion order uncertain.
-        /// Use the <see cref="System.IO.Compression.GZipStream.CanRead" /> property to determine whether the current <see cref="System.IO.Compression.GZipStream" /> object supports reading.
-        /// If a stream is closed or you pass an invalid argument, exceptions are thrown immediately from <see cref="System.IO.Compression.GZipStream.BeginRead" />. Errors that occur during an asynchronous read request, such as a disk failure during the I/O request, occur on the thread pool thread and throw exceptions when calling <see cref="System.IO.Compression.GZipStream.EndRead" />.</remarks>
-        /// <example>The following code example shows how to use the <see cref="System.IO.Compression.GZipStream" /> class to compress and decompress a file.
-        /// <format type="text/markdown"><![CDATA[
-        /// [!code-csharp[IO.Compression.GZip1#1](~/samples/snippets/csharp/VS_Snippets_CLR/IO.Compression.GZip1/CS/gziptest.cs#1)]
-        /// [!code-vb[IO.Compression.GZip1#1](~/samples/snippets/visualbasic/VS_Snippets_CLR/IO.Compression.GZip1/VB/gziptest.vb#1)]
-        /// ]]></format></example>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// [!INCLUDE[remarks](~/includes/remarks/System.IO.Compression/GZipStream/BeginRead_Byte_Int32_Int32_AsyncCallback_Object.md)]
+        /// ]]></format></remarks>
         /// <exception cref="System.IO.IOException">The method tried to  read asynchronously past the end of the stream, or a disk error occurred.</exception>
         /// <exception cref="System.ArgumentException">One or more of the arguments is invalid.</exception>
         /// <exception cref="System.ObjectDisposedException">Methods were called after the stream was closed.</exception>
