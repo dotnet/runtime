@@ -894,7 +894,7 @@ void CompileResult::applyRelocs(unsigned char* block1, ULONG blocksize1, void* o
                 DWORDLONG target        = tmp.target + tmp.addlDelta;
                 DWORDLONG fixupLocation = tmp.location + tmp.slotNum;
                 DWORDLONG baseAddr      = fixupLocation + sizeof(INT32);
-                INT64     delta         = (INT64)((BYTE*)target - baseAddr);
+                INT64     delta         = (INT64)(target - baseAddr);
 
                 if (is64BitTarget)
                 {
