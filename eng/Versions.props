@@ -155,7 +155,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21125.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.2.21126.1</MicrosoftNETILLinkTasksVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-preview.3.21123.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- Mono LLVM -->
