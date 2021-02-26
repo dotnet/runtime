@@ -129,7 +129,11 @@ namespace System.IO
 
         private unsafe Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
-            Debug.Assert(CanRead, "BufferedStream has already verified that");
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result
@@ -251,7 +255,11 @@ namespace System.IO
 
         private unsafe Task WriteAsyncInternalCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            Debug.Assert(CanWrite, "BufferedStream has already verified that");
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Create and store async stream class library specific data in the async result

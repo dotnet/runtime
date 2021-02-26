@@ -95,7 +95,11 @@ namespace System.IO
 
         private unsafe int ReadSpan(Span<byte> destination)
         {
-            Debug.Assert(CanRead, "BufferedStream has already verified that");
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Make sure we are reading from the right spot
@@ -126,7 +130,11 @@ namespace System.IO
 
         private unsafe void WriteSpan(ReadOnlySpan<byte> source)
         {
-            Debug.Assert(CanWrite, "BufferedStream has already verified that");
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
             // Make sure we are writing to the position that we think we are
