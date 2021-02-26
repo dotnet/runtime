@@ -386,7 +386,7 @@ emit_hardware_intrinsics (
 
 #if defined(TARGET_ARM64)
 		// HACK: Mark AdvSimd as unsupported until it's completely implemented
-		if (feature == MONO_CPU_ARM64_ADVSIMD) supported = FALSE;
+		if (feature == MONO_CPU_ARM64_NEON) supported = FALSE;
 #endif
 
 		ectx.id = ectx.info->id;
@@ -987,7 +987,7 @@ MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodS
 }
 
 static const struct IntrinGroup supported_arm_intrinsics [] = {
-	{ "AdvSimd", MONO_CPU_ARM64_ADVSIMD, advsimd_methods, sizeof (advsimd_methods) },
+	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
 	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
