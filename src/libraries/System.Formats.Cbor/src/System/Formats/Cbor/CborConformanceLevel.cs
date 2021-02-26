@@ -212,6 +212,7 @@ namespace System.Formats.Cbor
         {
             HashCode hash = default;
 
+            // TODO: Use https://github.com/dotnet/runtime/issues/48702 if/when it's available
             while (encoding.Length >= sizeof(int))
             {
                 hash.Add(MemoryMarshal.Read<int>(encoding));
