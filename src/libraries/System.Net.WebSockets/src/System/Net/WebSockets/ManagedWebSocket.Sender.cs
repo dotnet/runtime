@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -9,27 +10,25 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Net.WebSockets
 {
     internal partial class ManagedWebSocket
     {
-        private sealed class Sender : IDisposable
+        private sealed class Sender : IDisposable, IValueTaskSource
         {
-            public const int MaxSegmentCapacity = 1024 * 1024; // 1MB
+            private const int MaxSegmentCapacity = 1024 * 1024; // 1MB
+            private const int MaskQueueCapacity = 8;
 
             private readonly Stream _stream;
 
             /// <summary>
-            /// Available buffers to use when encoding messages. We use array because
-            /// the segment is a struct and we want amortized zero allocations if possible.
+            /// The current segment buffer segment.
             /// </summary>
-            private BufferSegment[] _segments = new BufferSegment[] { BufferSegment.Empty };
+            private BufferSegment _segment = new();
 
-            /// <summary>
-            /// The current segment index.
-            /// </summary>
-            private int _segmentIndex;
+            private int _headOffset;
 
             /// <summary>
             /// The encoded payload length that is about to be sent.
@@ -37,6 +36,12 @@ namespace System.Net.WebSockets
             private int _payloadLength;
 
             private readonly bool _applyMask;
+
+            /// <summary>
+            /// Calling into RandomNumberGenerator for just one mask is relatively expensive.
+            /// This is why we'll batch generate `MaskQueueCapacity` masks at a time.
+            /// </summary>
+            private readonly Queue<int>? _maskQueue;
             private int _mask;
 
             /// <summary>
@@ -45,10 +50,23 @@ namespace System.Net.WebSockets
             /// </summary>
             private int _maskIndex;
 
+            private ManualResetValueTaskSourceCore<object> _valueTaskSource = new()
+            {
+                RunContinuationsAsynchronously = true
+            };
+            private ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter _awaiter;
+            private readonly Action _onCompleted;
+
             public Sender(Stream stream, bool isServer)
             {
                 _applyMask = !isServer;
                 _stream = stream;
+                _onCompleted = OnCompleted;
+
+                if (_applyMask)
+                {
+                    _maskQueue = new Queue<int>(MaskQueueCapacity);
+                }
             }
 
             public void Dispose()
@@ -59,33 +77,27 @@ namespace System.Net.WebSockets
             public ValueTask SendAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payload, CancellationToken cancellationToken)
             {
                 Initialize(payload.Length);
-
-                while (!payload.IsEmpty)
-                {
-                    var span = GetSpan(sizeHint: 1);
-                    var length = Math.Min(payload.Length, span.Length);
-
-                    payload[0..length].CopyTo(span);
-                    payload = payload[length..];
-
-                    Advance(length);
-                }
-
+                EncodeUncompressed(payload);
                 Finalize(opcode, endOfMessage);
                 bool reset = true;
 
                 try
                 {
-                    ValueTask sendTask = _segmentIndex == 0 ?
-                        _stream.WriteAsync(_segments[0].WrittenMemory, cancellationToken) :
+                    ValueTask sendTask = _segment.Previous is null ?
+                        _stream.WriteAsync(_segment.WrittenMemory.Slice(_headOffset), cancellationToken) :
                         WriteSegmentsAsync(cancellationToken);
 
                     if (sendTask.IsCompleted)
                     {
                         return sendTask;
                     }
+
                     reset = false;
-                    return WaitAsync(sendTask);
+                    _valueTaskSource.Reset();
+                    _awaiter = sendTask.ConfigureAwait(false).GetAwaiter();
+                    _awaiter.UnsafeOnCompleted(_onCompleted);
+
+                    return new ValueTask(this, _valueTaskSource.Version);
                 }
                 finally
                 {
@@ -98,38 +110,74 @@ namespace System.Net.WebSockets
 
             private async ValueTask WriteSegmentsAsync(CancellationToken cancellationToken)
             {
-                for (var index = 0; index <= _segmentIndex; ++index)
+                BufferSegment segment = _segment.GetFirst();
+                await _stream.WriteAsync(segment.WrittenMemory.Slice(_headOffset), cancellationToken).ConfigureAwait(false);
+
+                // Release the memory used by the segment as soon as we've sent it
+                segment.Reset();
+
+                while (segment.Next is not null && segment.Next.Initialized)
                 {
-                    await _stream.WriteAsync(_segments[index].WrittenMemory, cancellationToken).ConfigureAwait(false);
+                    segment = segment.Next;
+                    await _stream.WriteAsync(segment.WrittenMemory, cancellationToken).ConfigureAwait(false);
 
                     // Release the memory used by the segment as soon as we've sent it
-                    _segments[index].Dispose();
+                    segment.Reset();
                 }
             }
 
             private void Initialize(int payloadSizeHint)
             {
-                Debug.Assert(_segmentIndex == 0);
+                Debug.Assert(_segment.Previous is null);
 
                 if (_applyMask)
                 {
-                    Span<int> mask = stackalloc int[1];
-                    RandomNumberGenerator.Fill(MemoryMarshal.AsBytes(mask));
-                    _mask = mask[0];
-                    _maskIndex = 0;
+                    Debug.Assert(_maskQueue is not null);
+                    if (!_maskQueue.TryDequeue(out _mask))
+                    {
+                        Span<int> masks = stackalloc int[1 + MaskQueueCapacity];
+                        RandomNumberGenerator.Fill(MemoryMarshal.AsBytes(masks));
+                        _mask = masks[MaskQueueCapacity];
+
+                        for (var i = 0; i < MaskQueueCapacity; ++i)
+                        {
+                            _maskQueue.Enqueue(masks[i]);
+                        }
+                    }
                 }
 
-                ref BufferSegment segment = ref _segments[0];
-                segment = new BufferSegment(Math.Min(MaxSegmentCapacity, payloadSizeHint + MaxMessageHeaderLength));
-                segment.Advance(MaxMessageHeaderLength);
+                _segment.Initialize(Math.Min(MaxSegmentCapacity, payloadSizeHint + MaxMessageHeaderLength));
+                _segment.Advance(MaxMessageHeaderLength);
+            }
 
-                _payloadLength = 0;
+            private void EncodeUncompressed(ReadOnlySpan<byte> payload)
+            {
+                if (payload.IsEmpty)
+                {
+                    return;
+                }
+                if (payload.Length <= MaxSegmentCapacity - MaxMessageHeaderLength)
+                {
+                    // The payload can be placed on a sinle segment
+                    payload.CopyTo(_segment.AvailableSpan);
+                    Advance(payload.Length);
+                    return;
+                }
+
+                while (!payload.IsEmpty)
+                {
+                    var span = GetSpan(sizeHint: 1);
+                    var length = Math.Min(payload.Length, span.Length);
+
+                    payload[0..length].CopyTo(span);
+                    payload = payload[length..];
+
+                    Advance(length);
+                }
             }
 
             private void Finalize(MessageOpcode opcode, bool endOfMessage)
             {
-                ref BufferSegment segment = ref _segments[0];
-
                 // Calculate the header's length
                 var headerLength = _payloadLength switch
                 {
@@ -144,13 +192,14 @@ namespace System.Net.WebSockets
 
                 // Because we want the header to come just before to the payload
                 // we will use a slice that offsets the unused part.
-                segment.Offset = MaxMessageHeaderLength - headerLength;
+                var head = _segment.GetFirst();
+                _headOffset = MaxMessageHeaderLength - headerLength;
 
                 // Write the message header data to the buffer.
-                EncodeHeader(segment.WrittenSpan[0..headerLength], opcode, endOfMessage);
+                EncodeHeader(head.Span.Slice(_headOffset, headerLength), opcode, endOfMessage);
             }
 
-            private void EncodeHeader(Span<byte> header, MessageOpcode opcode, bool endOfMessage)
+            private void EncodeHeader(Span<byte> buffer, MessageOpcode opcode, bool endOfMessage)
             {
                 // Client header format:
                 // 1 bit - FIN - 1 if this is the final fragment in the message (it could be the only fragment), otherwise 0
@@ -172,78 +221,63 @@ namespace System.Net.WebSockets
                 //     - For lengths 2^16+1 through 2^64, 7 bits storing the value 127, followed by 64 bytes storing the length
                 // 0 or 4 bytes - Mask, if Masked is 1 - random value XOR'd with each 4 bytes of the payload, round-robin
                 // Length bytes - Payload data
-                header[0] = (byte)opcode; // 4 bits for the opcode
+                buffer[0] = (byte)opcode; // 4 bits for the opcode
 
                 if (endOfMessage)
                 {
-                    header[0] |= 0b1000_0000; // 1 bit for FIN
+                    buffer[0] |= 0b1000_0000; // 1 bit for FIN
                 }
 
                 // Store the payload length.
                 int payloadLength = _payloadLength;
                 if (payloadLength <= 125)
                 {
-                    header[1] = (byte)payloadLength;
+                    buffer[1] = (byte)payloadLength;
                 }
                 else if (payloadLength <= ushort.MaxValue)
                 {
-                    header[1] = 126;
-                    header[2] = (byte)(payloadLength / 256);
-                    header[3] = unchecked((byte)payloadLength);
+                    buffer[1] = 126;
+                    buffer[2] = (byte)(payloadLength / 256);
+                    buffer[3] = unchecked((byte)payloadLength);
                 }
                 else
                 {
-                    header[1] = 127;
+                    buffer[1] = 127;
                     for (int i = 9; i >= 2; i--)
                     {
-                        header[i] = unchecked((byte)payloadLength);
+                        buffer[i] = unchecked((byte)payloadLength);
                         payloadLength = payloadLength / 256;
                     }
                 }
 
                 if (_applyMask)
                 {
-                    header[1] |= 0x80;
-                    BitConverter.TryWriteBytes(header.Slice(header.Length - MaskLength), _mask);
+                    buffer[1] |= 0x80;
+                    BitConverter.TryWriteBytes(buffer.Slice(buffer.Length - MaskLength), _mask);
                 }
             }
 
             private void Reset()
             {
-                while (_segmentIndex > 0)
+                while (_segment.Previous is not null)
                 {
-                    _segments[_segmentIndex].Dispose();
-                    _segmentIndex -= 1;
+                    _segment.Reset();
+                    _segment = _segment.Previous;
                 }
 
-                _segments[0].Dispose();
+                _segment.Reset();
                 _payloadLength = 0;
                 _maskIndex = 0;
-                _mask = 0;
-            }
-
-            private async ValueTask WaitAsync(ValueTask sendTask)
-            {
-                try
-                {
-                    await sendTask.ConfigureAwait(false);
-                }
-                finally
-                {
-                    Reset();
-                }
             }
 
             internal void Advance(int count)
             {
-                ref BufferSegment segment = ref _segments[_segmentIndex];
-
                 if (_applyMask)
                 {
-                    _maskIndex = ApplyMask(segment.AvailableSpan[0..count], _mask, _maskIndex);
+                    _maskIndex = ApplyMask(_segment.AvailableSpan[0..count], _mask, _maskIndex);
                 }
 
-                segment.Advance(count);
+                _segment.Advance(count);
                 _payloadLength += count;
             }
 
@@ -251,7 +285,7 @@ namespace System.Net.WebSockets
             internal Span<byte> GetSpan(int sizeHint)
             {
                 Debug.Assert(sizeHint > 0);
-                var span = _segments[_segmentIndex].AvailableSpan;
+                var span = _segment.AvailableSpan;
 
                 if (span.Length < sizeHint)
                 {
@@ -264,61 +298,95 @@ namespace System.Net.WebSockets
             [MethodImpl(MethodImplOptions.NoInlining)]
             private Span<byte> AllocateBufferSegment(int sizeHint)
             {
-                // When allocating new segment, try to keep the capacity the same as the previous segment
-                var newSegment = new BufferSegment(Math.Max(_segments[_segmentIndex].Capacity, sizeHint));
+                var newSegment = _segment.Next ?? new BufferSegment();
+                newSegment.Previous = _segment;
 
-                if (++_segmentIndex == _segments.Length)
-                {
-                    Array.Resize(ref _segments, _segments.Length + 1);
-                }
+                // When initializing a new segment, try to keep the capacity the same as the previous segment
+                newSegment.Initialize(Math.Max(_segment.Capacity, sizeHint));
 
-                _segments[_segmentIndex] = newSegment;
+                _segment.Next = newSegment;
+                _segment = newSegment;
+
                 return newSegment.AvailableSpan;
             }
 
-            [StructLayout(LayoutKind.Auto)]
-            private struct BufferSegment
-            {
-                public static readonly BufferSegment Empty = new BufferSegment
-                {
-                    _array = Array.Empty<byte>()
-                };
+            void IValueTaskSource.GetResult(short token) => _valueTaskSource.GetResult(token);
 
-                private byte[] _array;
+            ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _valueTaskSource.GetStatus(token);
+
+            void IValueTaskSource.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+                => _valueTaskSource.OnCompleted(continuation, state, token, flags);
+
+            private void OnCompleted()
+            {
+                var success = false;
+
+                try
+                {
+                    _awaiter.GetResult();
+                    Reset();
+                    success = true;
+
+                    _awaiter = default;
+                    _valueTaskSource.SetResult(this);
+                }
+                catch (Exception ex) when (!success)
+                {
+                    Reset();
+
+                    _awaiter = default;
+                    _valueTaskSource.SetException(ex);
+                }
+            }
+
+            private sealed class BufferSegment
+            {
+                private byte[]? _array;
                 private int _index;
 
-                public BufferSegment(int capacity)
+                public BufferSegment? Previous { get; set; }
+
+                public BufferSegment? Next { get; set; }
+
+                public bool Initialized => _array is not null;
+
+                public int Capacity => _array is null ? 0 : _array.Length;
+
+                public Span<byte> AvailableSpan => _array.AsSpan(_index);
+
+                public Span<byte> Span => _array.AsSpan();
+
+                public ReadOnlyMemory<byte> WrittenMemory => new ReadOnlyMemory<byte>(_array, 0, _index);
+
+                public BufferSegment GetFirst()
                 {
+                    var segment = this;
+
+                    while (segment.Previous is not null)
+                    {
+                        segment = segment.Previous;
+                    }
+
+                    return segment;
+                }
+
+                public void Initialize(int capacity)
+                {
+                    Debug.Assert(_array is null);
+
                     _array = ArrayPool<byte>.Shared.Rent(capacity);
-                    _index = 0;
-
-                    Offset = 0;
                 }
 
-                public int Capacity => _array.Length;
-
-                public int Offset { get; set; }
-
-                public Span<byte> AvailableSpan
+                public void Reset()
                 {
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    get => _array.AsSpan(_index);
-                }
-
-                public Span<byte> WrittenSpan => _array.AsSpan(Offset, _index - Offset);
-
-                public ReadOnlyMemory<byte> WrittenMemory => new ReadOnlyMemory<byte>(_array, Offset, _index - Offset);
-
-                public void Dispose()
-                {
-                    if (_array.Length > 0)
+                    if (_array is not null)
                     {
                         ArrayPool<byte>.Shared.Return(_array);
-                        _array = Array.Empty<byte>();
+                        _array = null;
+                        _index = 0;
                     }
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public void Advance(int count)
                 {
                     Debug.Assert(_array is not null);
