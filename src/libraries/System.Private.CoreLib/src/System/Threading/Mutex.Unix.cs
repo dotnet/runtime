@@ -13,10 +13,10 @@ namespace System.Threading
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
             // See https://github.com/dotnet/runtime/issues/48720
-            /*if (name != null)
+            if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-            }*/
+            }
 
             SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
             createdNew = true;
