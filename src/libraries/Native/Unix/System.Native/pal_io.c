@@ -427,7 +427,10 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         return errno == 0 ? -1 : errno;
     }
 #else
-    int error = readdir_r(dir, entry, &result);
+    int error;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
 
     // positive error number returned -> failure
     if (error != 0)
@@ -473,12 +476,27 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
 
 DIR* SystemNative_OpenDir(const char* path)
 {
-    return opendir(path);
+    DIR *result;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((result = opendir(path)) == NULL && errno == EINTR);
+
+    return result;
 }
 
 int32_t SystemNative_CloseDir(DIR* dir)
 {
-    return closedir(dir);
+    int32_t result;
+
+    result = closedir(dir);
+
+    // EINTR isn't documented, happens in practice on macOS.
+    if (result < 0 && errno == EINTR)
+    {
+        result = 0;
+    }
+
+    return result;
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)

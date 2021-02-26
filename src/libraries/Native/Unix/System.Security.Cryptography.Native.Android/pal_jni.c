@@ -8,6 +8,7 @@ JavaVM* gJvm;
 // java/io/ByteArrayInputStream
 jclass    g_ByteArrayInputStreamClass;
 jmethodID g_ByteArrayInputStreamCtor;
+jmethodID g_ByteArrayInputStreamReset;
 
 // java/lang/Enum
 jclass    g_Enum;
@@ -115,6 +116,8 @@ jmethodID g_SignatureVerify;
 jclass    g_CertFactoryClass;
 jmethodID g_CertFactoryGetInstance;
 jmethodID g_CertFactoryGenerateCertificate;
+jmethodID g_CertFactoryGenerateCertificates;
+jmethodID g_CertFactoryGenerateCertPath;
 jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/X509Certificate
@@ -230,6 +233,11 @@ jmethodID g_X509EncodedKeySpecCtor;
 // javax/security/auth
 jclass    g_DestroyableClass;
 jmethodID g_destroy;
+
+// java/util/Collection
+jclass    g_CollectionClass;
+jmethodID g_CollectionIterator;
+jmethodID g_CollectionSize;
 
 // java/util/Date
 jclass    g_DateClass;
@@ -434,6 +442,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     // cache some classes and methods while we're in the thread-safe JNI_OnLoad
     g_ByteArrayInputStreamClass =   GetClassGRef(env, "java/io/ByteArrayInputStream");
     g_ByteArrayInputStreamCtor =    GetMethod(env, false, g_ByteArrayInputStreamClass, "<init>", "([B)V");
+    g_ByteArrayInputStreamReset =    GetMethod(env, false, g_ByteArrayInputStreamClass, "reset", "()V");
 
     g_Enum =                    GetClassGRef(env, "java/lang/Enum");
     g_EnumOrdinal =             GetMethod(env, false, g_Enum, "ordinal", "()I");
@@ -499,6 +508,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertFactoryClass =                GetClassGRef(env, "java/security/cert/CertificateFactory");
     g_CertFactoryGetInstance =          GetMethod(env, true, g_CertFactoryClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertificateFactory;");
     g_CertFactoryGenerateCertificate =  GetMethod(env, false, g_CertFactoryClass, "generateCertificate", "(Ljava/io/InputStream;)Ljava/security/cert/Certificate;");
+    g_CertFactoryGenerateCertificates = GetMethod(env, false, g_CertFactoryClass, "generateCertificates", "(Ljava/io/InputStream;)Ljava/util/Collection;");
+    g_CertFactoryGenerateCertPath =     GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/io/InputStream;Ljava/lang/String;)Ljava/security/cert/CertPath;");
     g_CertFactoryGenerateCRL =          GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
 
     g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
@@ -619,6 +630,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DestroyableClass =               GetClassGRef(env, "javax/security/auth/Destroyable");
     g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
+
+    g_CollectionClass =     GetClassGRef(env, "java/util/Collection");
+    g_CollectionIterator =  GetMethod(env, false, g_CollectionClass, "iterator", "()Ljava/util/Iterator;");
+    g_CollectionSize =      GetMethod(env, false, g_CollectionClass, "size", "()I");
 
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");

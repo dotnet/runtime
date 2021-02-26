@@ -11085,11 +11085,15 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // TARGET_ARM
 
-        // Can't use field by field assignment if the src is a call.
+        // Don't use field by field assignment if the src is a call
+        //
+        // TODO: Document why do we have this restriction?
+        //       Maybe it isn't needed, or maybe it is only needed
+        //       for calls that return multiple registers
+        //
         if (src->OperGet() == GT_CALL)
         {
             JITDUMP(" src is a call");
-            // C++ style CopyBlock with holes
             requiresCopyBlock = true;
         }
 
@@ -11330,8 +11334,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // address value once...)
                 if (destLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(srcAddr); // addrSpill represents the 'srcAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill srcAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = srcAddr; // addrSpill represents the 'srcAddr'
                 }
             }
         }
@@ -11363,8 +11369,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // use the address value once...)
                 if (srcLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(destAddr); // addrSpill represents the 'destAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill destAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = destAddr; // addrSpill represents the 'destAddr'
                 }
             }
         }
@@ -11388,8 +11396,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (addrSpill != nullptr)
         {
-            // Simplify the address if possible, and mark as DONT_CSE as needed..
-            addrSpill = fgMorphTree(addrSpill);
+            // 'addrSpill' is already morphed
 
             // Spill the (complex) address to a BYREF temp.
             // Note, at most one address may need to be spilled.
@@ -11470,8 +11477,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        dstFld = gtCloneExpr(destAddr);
-                        noway_assert(dstFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal destAddr tree when i == 0
+                            dstFld = destAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            dstFld = gtCloneExpr(destAddr);
+                            noway_assert(dstFld != nullptr);
+
+                            JITDUMP("dstFld - Multiple Fields Clone created:\n");
+                            DISPTREE(dstFld);
+
+                            // Morph the newly created tree
+                            dstFld = fgMorphTree(dstFld);
+                        }
 
                         // Is the address of a local?
                         GenTreeLclVarCommon* lclVarTree = nullptr;
@@ -11550,8 +11574,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        srcFld = gtCloneExpr(srcAddr);
-                        noway_assert(srcFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal srcAddr tree when i == 0
+                            srcFld = srcAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            srcFld = gtCloneExpr(srcAddr);
+                            noway_assert(srcFld != nullptr);
+
+                            JITDUMP("srcFld - Multiple Fields Clone created:\n");
+                            DISPTREE(srcFld);
+
+                            // Morph the newly created tree
+                            srcFld = fgMorphTree(srcFld);
+                        }
                     }
 
                     CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].GetStructHnd();
@@ -16224,9 +16265,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
             }
-            // block is a BBJ_COND that we are folding the conditional for
-            // bTaken is the path that will always be taken from block
-            // bNotTaken is the path that will never be taken from block
+            // block is a BBJ_COND that we are folding the conditional for.
+            // bTaken is the path that will always be taken from block.
+            // bNotTaken is the path that will never be taken from block.
             //
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;

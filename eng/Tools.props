@@ -18,4 +18,14 @@
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
   </ItemGroup>
 
+  <!-- Mega hack to remove Newtonsoft.Json dependency which doesn't unify during runtime with the dependency in the SDK and causes MissingMethodExceptions. -->
+  <Target Name="RemovePackagingContentForMSBuildALC"
+          AfterTargets="Restore">
+    <PropertyGroup>
+      <_BuildTasksPackagingNewtonsoftDependency>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\netcoreapp3.1\Newtonsoft.Json.dll</_BuildTasksPackagingNewtonsoftDependency>
+    </PropertyGroup>
+
+    <Delete Files="$(_BuildTasksPackagingNewtonsoftDependency)" Condition="Exists('$(_BuildTasksPackagingNewtonsoftDependency)')" />
+  </Target>
+
 </Project>
