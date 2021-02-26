@@ -86,7 +86,7 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to compress.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
         /// <remarks>You use this constructor when you want to specify whether compression efficiency or speed is more important for an instance of the <see cref="System.IO.Compression.DeflateStream" /> class.
-        /// This constructor overload uses the compression mode <see cref="System.IO.Compression.CompressionMode.Compress" />. To set the compression mode to another value, use the <see cref="System.IO.Compression.DeflateStream.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.CompressionMode%29" /> or <see cref="System.IO.Compression.DeflateStream.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.CompressionMode%2Cbool%29" /> overload.</remarks>
+        /// This constructor overload uses the compression mode <see cref="System.IO.Compression.CompressionMode.Compress" />. To set the compression mode to another value, use the <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode)" /> or <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode,bool)" /> overload.</remarks>
         /// <example>The following example shows how to set the compression level when creating a <see cref="System.IO.Compression.DeflateStream" /> object.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.DeflateStream#1](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.deflatestream/cs/program1.cs#1)]
@@ -103,7 +103,7 @@ namespace System.IO.Compression
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="System.IO.Compression.DeflateStream" /> object; otherwise, <see langword="false" />.</param>
         /// <remarks>You use this constructor when you want to specify whether compression efficiency or speed is more important for an instance of the <see cref="System.IO.Compression.DeflateStream" /> class, and whether to leave the stream object open after disposing the <see cref="System.IO.Compression.DeflateStream" /> object.
-        /// This constructor overload uses the compression mode <see cref="System.IO.Compression.CompressionMode.Compress" />. To set the compression mode to another value, use the <see cref="System.IO.Compression.DeflateStream.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.CompressionMode%29" /> or <see cref="System.IO.Compression.DeflateStream.%23ctor%28System.IO.Stream%2CSystem.IO.Compression.CompressionMode%2Cbool%29" /> overload.</remarks>
+        /// This constructor overload uses the compression mode <see cref="System.IO.Compression.CompressionMode.Compress" />. To set the compression mode to another value, use the <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode)" /> or <see cref="System.IO.Compression.DeflateStream.DeflateStream(System.IO.Stream,System.IO.Compression.CompressionMode,bool)" /> overload.</remarks>
         /// <example>The following example shows how to set the compression level when creating a <see cref="System.IO.Compression.DeflateStream" /> object and how to leave the stream open.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.DeflateStream#2](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.deflatestream/cs/program2.cs#2)]
@@ -337,23 +337,23 @@ namespace System.IO.Compression
         }
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
-        /// <param name="array">The array to store decompressed bytes.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> at which the read bytes will be placed.</param>
+        /// <param name="buffer">The array to store decompressed bytes.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> at which the read bytes will be placed.</param>
         /// <param name="count">The maximum number of decompressed bytes to read.</param>
         /// <returns>The number of bytes that were read into the byte array.</returns>
         /// <remarks></remarks>
-        /// <example>The following example shows how to compress and decompress bytes by using the <see cref="System.IO.Compression.DeflateStream.Read" /> and <see cref="System.IO.Compression.DeflateStream.Write" /> methods.
+        /// <example>The following example shows how to compress and decompress bytes by using the <see cref="O:System.IO.Compression.DeflateStream.Read" /> and <see cref="O:System.IO.Compression.DeflateStream.Write" /> methods.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.DeflateStream#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.deflatestream/cs/program3.cs#3)]
         /// [!code-vb[System.IO.Compression.DeflateStream#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.deflatestream/vb/program3.vb#3)]
         /// ]]></format></example>
-        /// <exception cref="System.ArgumentNullException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
         /// <exception cref="System.InvalidOperationException">The <see cref="System.IO.Compression.CompressionMode" /> value was <see langword="Compress" /> when the object was created.
         /// -or-
         /// The underlying stream does not support reading.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is less than zero.
         /// -or-
-        /// <paramref name="array" /> length minus the index starting point is less than <paramref name="count" />.</exception>
+        /// <paramref name="buffer" /> length minus the index starting point is less than <paramref name="count" />.</exception>
         /// <exception cref="System.IO.InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="System.ObjectDisposedException">The stream is closed.</exception>
         public override int Read(byte[] buffer, int offset, int count)
@@ -365,7 +365,7 @@ namespace System.IO.Compression
         /// <summary>Reads a sequence of bytes from the current Deflate stream into a byte span and advances the position within the Deflate stream by the number of bytes read.</summary>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current source.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes allocated in the buffer if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
-        /// <remarks>Use the <see cref="System.IO.Compression.DeflateStream.CanRead" /> property to determine whether the current instance supports reading. Use the <see cref="System.IO.Compression.DeflateStream.ReadAsync" /> method to read asynchronously from the current stream.
+        /// <remarks>Use the <see cref="System.IO.Compression.DeflateStream.CanRead" /> property to determine whether the current instance supports reading. Use the <see cref="O:System.IO.Compression.DeflateStream.ReadAsync" /> method to read asynchronously from the current stream.
         /// This method read a maximum of `buffer.Length` bytes from the current stream and store them in <paramref name="buffer" />. The current position within the Deflate stream is advanced by the number of bytes read; however, if an exception occurs, the current position within the Deflate stream remains unchanged. This method will block until at least one byte of data can be read, in the event that no data is available. `Read` returns 0 only when there is no more data in the stream and no more is expected (such as a closed socket or end of file). The method is free to return fewer bytes than requested even if the end of the stream has not been reached.
         /// Use <see cref="System.IO.BinaryReader" /> for reading primitive data types.</remarks>
         public override int Read(Span<byte> buffer)
@@ -467,15 +467,12 @@ namespace System.IO.Compression
 
         /// <summary>Begins an asynchronous read operation. (Consider using the <see cref="System.IO.Stream.ReadAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="buffer">The byte array to read the data into.</param>
-        /// <param name="array">The byte array to read the data into.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> at which to begin reading data from the stream.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin reading data from the stream.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the read operation is complete.</param>
-        /// <param name="cback">An optional asynchronous callback, to be called when the read operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
-        /// <param name="state">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
         /// <returns>An  object that represents the asynchronous read operation, which could still be pending.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginRead" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
+        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="O:System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginRead" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
         /// Pass the <see cref="System.IAsyncResult" /> return value to the <see cref="System.IO.Compression.DeflateStream.EndRead" /> method of the stream to determine how many bytes were read and to release operating system resources used for reading. You can do this either by using the same code that called <see cref="System.IO.Compression.DeflateStream.BeginRead" /> or in a callback passed to <see cref="System.IO.Compression.DeflateStream.BeginRead" />.
         /// The current position in the stream is updated when the asynchronous read or write operation is issued, not when the I/O operation completes.
         /// Multiple simultaneous asynchronous requests render the request completion order uncertain.
@@ -491,14 +488,13 @@ namespace System.IO.Compression
 
         /// <summary>Waits for the pending asynchronous read to complete. (Consider using the <see cref="System.IO.Stream.ReadAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">The reference to the pending asynchronous request to finish.</param>
-        /// <param name="async_result">The reference to the pending asynchronous request to finish.</param>
         /// <returns>The number of bytes read from the stream, between 0 (zero) and the number of bytes you requested. <see cref="System.IO.Compression.DeflateStream" /> returns 0 only at the end of the stream; otherwise, it blocks until at least one byte is available.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.EndRead" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
+        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous read operations by using the <see cref="O:System.IO.Stream.ReadAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.EndRead" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
         /// Call this method to determine how many bytes were read from the stream. This method can be called once to return the amount of bytes read between calls to <see cref="System.IO.Compression.DeflateStream.BeginRead" /> and <see cref="System.IO.Compression.DeflateStream.EndRead" />.
         /// This method blocks until the I/O operation has completed.</remarks>
         /// <exception cref="System.ArgumentNullException"><paramref name="asyncResult" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException"><paramref name="asyncResult" /> did not originate from a <see cref="System.IO.Compression.DeflateStream.BeginRead(byte[],int,int,System.AsyncCallback,object)" /> method on the current stream.</exception>
-        /// <exception cref="System.SystemException">An exception was thrown during a call to <see cref="System.Threading.WaitHandle.WaitOne" />.</exception>
+        /// <exception cref="System.SystemException">An exception was thrown during a call to <see cref="O:System.Threading.WaitHandle.WaitOne" />.</exception>
         /// <exception cref="System.InvalidOperationException">The end call is invalid because asynchronous read operations for this stream are not yet complete.
         /// -or-
         /// The stream is <see langword="null" />.</exception>
@@ -510,11 +506,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>Asynchronously reads a sequence of bytes from the current Deflate stream, writes them to a byte array, advances the position within the Deflate stream by the number of bytes read, and monitors cancellation requests.</summary>
-        /// <param name="array">The buffer to write the data into.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> at which to begin writing data from the Deflate stream.</param>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin writing data from the Deflate stream.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
-        /// <returns>A task that represents the asynchronous read operation, which wraps the total number of bytes read into the <paramref name="array" />. The result value can be less than the number of bytes requested if the number of bytes currently available is less than the requested number, or it can be 0 (zero) if the end of the Deflate stream has been reached.</returns>
+        /// <returns>A task that represents the asynchronous read operation, which wraps the total number of bytes read into the <paramref name="buffer" />. The result value can be less than the number of bytes requested if the number of bytes currently available is less than the requested number, or it can be 0 (zero) if the end of the Deflate stream has been reached.</returns>
         /// <remarks>The `ReadAsync` method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in a Windows 8.x Store app or desktop app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.
         /// Use the <see cref="System.IO.Compression.DeflateStream.CanRead" /> property to determine whether the current instance supports reading.
         /// If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</remarks>
@@ -616,11 +612,11 @@ namespace System.IO.Compression
         }
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
-        /// <param name="array">The buffer that contains the data to compress.</param>
-        /// <param name="offset">The byte offset in <paramref name="array" /> from which the bytes will be read.</param>
+        /// <param name="buffer">The buffer that contains the data to compress.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <remarks></remarks>
-        /// <example>The following example shows how to compress and decompress bytes by using the <see cref="System.IO.Compression.DeflateStream.Read" /> and <see cref="System.IO.Compression.DeflateStream.Write" /> methods.
+        /// <example>The following example shows how to compress and decompress bytes by using the <see cref="O:System.IO.Compression.DeflateStream.Read" /> and <see cref="O:System.IO.Compression.DeflateStream.Write" /> methods.
         /// <format type="text/markdown"><![CDATA[
         /// [!code-csharp[System.IO.Compression.DeflateStream#3](~/samples/snippets/csharp/VS_Snippets_CLR_System/system.io.compression.deflatestream/cs/program3.cs#3)]
         /// [!code-vb[System.IO.Compression.DeflateStream#3](~/samples/snippets/visualbasic/VS_Snippets_CLR_System/system.io.compression.deflatestream/vb/program3.vb#3)]
@@ -633,7 +629,7 @@ namespace System.IO.Compression
 
         /// <summary>Writes a sequence of bytes to the current Deflate stream and advances the current position within this Deflate stream by the number of bytes written.</summary>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the current Deflate stream.</param>
-        /// <remarks>Use the <see cref="System.IO.Compression.DeflateStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see cref="System.IO.Compression.DeflateStream.WriteAsync" /> method to write asynchronously to the current stream.
+        /// <remarks>Use the <see cref="System.IO.Compression.DeflateStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see cref="O:System.IO.Compression.DeflateStream.WriteAsync" /> method to write asynchronously to the current stream.
         /// If the write operation is successful, the position within the Deflate stream advances by the number of bytes written. If an exception occurs, the position within the Deflate stream remains unchanged.</remarks>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -811,8 +807,8 @@ namespace System.IO.Compression
 
         /// <summary>Releases the unmanaged resources used by the <see cref="System.IO.Compression.DeflateStream" /> and optionally releases the managed resources.</summary>
         /// <param name="disposing"><see langword="true" /> to release both managed and unmanaged resources; <see langword="false" /> to release only unmanaged resources.</param>
-        /// <remarks>This method is called by the public <see cref="System.ComponentModel.Component.Dispose" /> method and the <see cref="object.Finalize" /> method. <see cref="System.ComponentModel.Component.Dispose" /> invokes the protected <see cref="System.IO.Compression.DeflateStream.Dispose" /> method with the <paramref name="disposing" /> parameter set to <see langword="true" />. <see cref="object.Finalize" /> invokes <see cref="System.IO.Compression.DeflateStream.Dispose" /> with <paramref name="disposing" /> set to <see langword="false" />.
-        /// When the <paramref name="disposing" /> parameter is <see langword="true" />, this method releases all resources held by any managed objects that this <see cref="System.IO.Compression.DeflateStream" /> references. This method invokes the <see cref="System.ComponentModel.Component.Dispose" /> method of each referenced object.</remarks>
+        /// <remarks>This method is called by the public <see langword="System.ComponentModel.Component.Dispose" /> method and the <see cref="object.Finalize" /> method. <see langword="System.ComponentModel.Component.Dispose" /> invokes the protected <see cref="System.IO.Compression.DeflateStream.Dispose" /> method with the <paramref name="disposing" /> parameter set to <see langword="true" />. <see cref="object.Finalize" /> invokes <see cref="System.IO.Compression.DeflateStream.Dispose" /> with <paramref name="disposing" /> set to <see langword="false" />.
+        /// When the <paramref name="disposing" /> parameter is <see langword="true" />, this method releases all resources held by any managed objects that this <see cref="System.IO.Compression.DeflateStream" /> references. This method invokes the <see langword="System.ComponentModel.Component.Dispose" /> method of each referenced object.</remarks>
         protected override void Dispose(bool disposing)
         {
             try
@@ -917,16 +913,13 @@ namespace System.IO.Compression
         }
 
         /// <summary>Begins an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
-        /// <param name="array">The buffer to write data from.</param>
         /// <param name="buffer">The buffer to write data from.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> to begin writing from.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the write operation is complete.</param>
-        /// <param name="cback">An optional asynchronous callback, to be called when the write operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
-        /// <param name="state">A user-provided object that distinguishes this particular asynchronous write request from other requests.</param>
         /// <returns>An object that represents the asynchronous write operation, which could still be pending.</returns>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous write operations by using the <see cref="System.IO.Stream.WriteAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
+        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous write operations by using the <see cref="O:System.IO.Stream.WriteAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
         /// Pass the <see cref="System.IAsyncResult" /> object returned by the current method to <see cref="System.IO.Compression.DeflateStream.EndWrite" /> to ensure that the write completes and frees resources appropriately. You can do this either by using the same code that called <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> or in a callback passed to <see cref="System.IO.Compression.DeflateStream.BeginWrite" />. If an error occurs during an asynchronous write operation, an exception will not be thrown until <see cref="System.IO.Compression.DeflateStream.EndWrite" /> is called with the <see cref="System.IAsyncResult" /> returned by this method.
         /// If a stream is writable, writing at the end of the stream expands the stream.
         /// The current position in the stream is updated when you issue the asynchronous read or write operation, not when the I/O operation completes. Multiple simultaneous asynchronous requests render the request completion order uncertain.
@@ -942,13 +935,12 @@ namespace System.IO.Compression
 
         /// <summary>Ends an asynchronous write operation. (Consider using the <see cref="System.IO.Stream.WriteAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="asyncResult">A reference to the outstanding asynchronous I/O request.</param>
-        /// <param name="async_result">A reference to the outstanding asynchronous I/O request.</param>
-        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous write operations by using the <see cref="System.IO.Stream.WriteAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.EndWrite" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
+        /// <remarks>Starting with the .NET Framework 4.5, you can perform asynchronous write operations by using the <see cref="O:System.IO.Stream.WriteAsync" /> method. The <see cref="System.IO.Compression.DeflateStream.EndWrite" /> method is still available in the .NET Framework 4.5 to support legacy code; however, you can implement asynchronous I/O operations more easily by using the new async methods. For more information, see [Asynchronous File I/O](/dotnet/standard/io/asynchronous-file-i-o).
         /// <see cref="System.IO.Compression.DeflateStream.EndWrite" /> must be called only once for every call to the <see cref="System.IO.Compression.DeflateStream.BeginWrite" /> method.
         /// This method blocks until the I/O operation has completed. Errors that occur during an asynchronous write request, such as a disk failure during the I/O request, occur on the thread pool thread and become visible upon a call to <see cref="System.IO.Compression.DeflateStream.EndWrite" />. Exceptions thrown by the thread pool thread will not be visible when calling <see cref="System.IO.Compression.DeflateStream.EndWrite" />.</remarks>
         /// <exception cref="System.ArgumentNullException"><paramref name="asyncResult" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException"><paramref name="asyncResult" /> did not originate from a <see cref="System.IO.Compression.DeflateStream.BeginWrite(byte[],int,int,System.AsyncCallback,object)" /> method on the current stream.</exception>
-        /// <exception cref="System.Exception">An exception was thrown during a call to <see cref="System.Threading.WaitHandle.WaitOne" />.</exception>
+        /// <exception cref="System.Exception">An exception was thrown during a call to <see cref="O:System.Threading.WaitHandle.WaitOne" />.</exception>
         /// <exception cref="System.InvalidOperationException">The stream is <see langword="null" />.
         /// -or-
         /// The end write call is invalid.</exception>
@@ -960,8 +952,8 @@ namespace System.IO.Compression
         }
 
         /// <summary>Asynchronously writes compressed bytes to the underlying Deflate stream from the specified byte array.</summary>
-        /// <param name="array">The buffer that contains the data to compress.</param>
-        /// <param name="offset">The zero-based byte offset in <paramref name="array" /> from which to begin copying bytes to the Deflate stream.</param>
+        /// <param name="buffer">The buffer that contains the data to compress.</param>
+        /// <param name="offset">The zero-based byte offset in <paramref name="buffer" /> from which to begin copying bytes to the Deflate stream.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
