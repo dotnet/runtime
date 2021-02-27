@@ -475,7 +475,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
+#ifndef INVARIANT_GLOBALIZATION
 	mono_wasm_link_icu_shim ();
+#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
