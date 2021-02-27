@@ -205,7 +205,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket server = CreateFromStream(stream, isServer: true, null, Timeout.InfiniteTimeSpan);
             using var cancellation = new CancellationTokenSource();
 
-            stream.Enqueue(0b1000_1001, 0x00);
+            stream.Enqueue(0b1000_1001, 0x80, 0x01, 0x02, 0x03, 0x04);
             var receiveTask = server.ReceiveAsync(Memory<byte>.Empty, cancellation.Token).AsTask();
 
             Assert.Equal(0, stream.Available);
