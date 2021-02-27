@@ -148,20 +148,25 @@ namespace System.Collections.Generic
         /// </summary>
         public void Enqueue(TElement element, TPriority priority)
         {
-
             // Virtually add the node at the end of the underlying array.
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
-            EnsureCapacityCore(++_size);
+
+            int currentSize = _size++;
             _version++;
+
+            if (_nodes.Length == currentSize)
+            {
+                Grow(currentSize + 1);
+            }
 
             if (_comparer == null)
             {
-                MoveUpDefaultComparer((element, priority), _size - 1);
+                MoveUpDefaultComparer((element, priority), currentSize);
             }
             else
             {
-                MoveUpCustomComparer((element, priority), _size - 1);
+                MoveUpCustomComparer((element, priority), currentSize);
             }
         }
 
@@ -290,7 +295,10 @@ namespace System.Collections.Generic
             {
                 if (EnumerableHelpers.TryGetCount(items, out int count) && count > 0)
                 {
-                    EnsureCapacityCore(_size + count);
+                    if (_nodes.Length < _size + count)
+                    {
+                        Grow(_size + count);
+                    }
                 }
 
                 foreach ((TElement element, TPriority priority) in items)
@@ -312,7 +320,10 @@ namespace System.Collections.Generic
 
             if (EnumerableHelpers.TryGetCount(elements, out int count) && count > 0)
             {
-                EnsureCapacityCore(_size + count);
+                if (_nodes.Length < _size + count)
+                {
+                    Grow(_size + count);
+                }
             }
 
             if (_size == 0)
@@ -320,7 +331,11 @@ namespace System.Collections.Generic
                 int i = 0;
                 foreach (TElement element in elements)
                 {
-                    EnsureCapacityCore(i + 1);
+                    if (_nodes.Length == i)
+                    {
+                        Grow(i + 1);
+                    }
+
                     _nodes[i++] = (element, priority);
                 }
 
@@ -368,7 +383,7 @@ namespace System.Collections.Generic
 
             if (_nodes.Length < capacity)
             {
-                EnsureCapacityCore(capacity);
+                Grow(capacity);
                 _version++;
             }
 
@@ -390,35 +405,31 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Ensures that the priority queue has the specified capacity
-        /// and resizes its underlying array if necessary.
+        /// Grows the priority queue to match the specified min capacity.
         /// </summary>
-        private void EnsureCapacityCore(int capacity)
+        private void Grow(int minCapacity)
         {
-            Debug.Assert(capacity >= 0);
+            Debug.Assert(_nodes.Length < minCapacity);
 
-            if (_nodes.Length < capacity)
-            {
-                // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
-                const int MaxArrayLength = 0X7FEFFFFF;
-                const int GrowFactor = 2;
-                const int MinimumGrow = 4;
+            // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
+            const int MaxArrayLength = 0X7FEFFFFF;
+            const int GrowFactor = 2;
+            const int MinimumGrow = 4;
 
-                int newcapacity = GrowFactor * _nodes.Length;
+            int newcapacity = GrowFactor * _nodes.Length;
 
-                // Allow the queue to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast
-                if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
+            // Allow the queue to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _nodes.Length overflowed thanks to the (uint) cast
+            if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
 
-                // Ensure minimum growth is respected.
-                newcapacity = Math.Max(newcapacity, _nodes.Length + MinimumGrow);
+            // Ensure minimum growth is respected.
+            newcapacity = Math.Max(newcapacity, _nodes.Length + MinimumGrow);
 
-                // If the computed capacity is still less than specified, set to the original argument.
-                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
-                if (newcapacity < capacity) newcapacity = capacity;
+            // If the computed capacity is still less than specified, set to the original argument.
+            // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+            if (newcapacity < minCapacity) newcapacity = minCapacity;
 
-                Array.Resize(ref _nodes, newcapacity);
-            }
+            Array.Resize(ref _nodes, newcapacity);
         }
 
         /// <summary>
