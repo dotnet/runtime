@@ -15,7 +15,9 @@ namespace System.Net.WebSockets
     {
         private enum ReceiveResultType
         {
-            Message,
+            Text = WebSocketMessageType.Text,
+            Binary = WebSocketMessageType.Binary,
+
             ConnectionClose,
             ControlMessage,
 
@@ -26,26 +28,31 @@ namespace System.Net.WebSockets
         [StructLayout(LayoutKind.Auto)]
         private readonly struct ReceiveResult
         {
+            /// <summary>
+            /// 1 bit EOF, 31 bits Count
+            /// </summary>
+            private readonly uint _count;
+
             public ReceiveResult(ReceiveResultType resultType)
             {
                 ResultType = resultType;
-                Count = default;
-                EndOfMessage = default;
-                MessageType = default;
+                _count = default;
             }
 
             public ReceiveResult(int count, MessageOpcode opcode, bool eof)
             {
-                Count = count;
-                ResultType = ReceiveResultType.Message;
-                EndOfMessage = eof;
-                MessageType = (WebSocketMessageType)(opcode - 1);
+                ResultType = (ReceiveResultType)(opcode - 1);
+                _count = (uint)count;
+
+                if (eof)
+                {
+                    _count |= 0b10000000_00000000_00000000_00000000;
+                }
             }
 
-            public int Count { get; }
-            public bool EndOfMessage { get; }
+            public int Count => (int)(_count & 0b01111111_11111111_11111111_11111111);
+            public bool EndOfMessage => (_count & 0b10000000_00000000_00000000_00000000) != 0;
             public ReceiveResultType ResultType { get; }
-            public WebSocketMessageType MessageType { get; }
         }
 
         private sealed class Receiver : IDisposable, IValueTaskSource<ReceiveResult>, IValueTaskSource<bool>
@@ -61,7 +68,10 @@ namespace System.Net.WebSockets
             /// remaining to be received for that header.  As a result, between fragments, the payload
             /// length in this header should be 0.
             /// </summary>
-            private MessageHeader _lastHeader = new() { Opcode = MessageOpcode.Text, Fin = true };
+            private MessageOpcode _lastOpcode = MessageOpcode.Text;
+            private long _remainingPayloadLength;
+            private bool _lastFrameFin = true;
+            private int _lastFrameMask;
 
             /// <summary>
             /// Buffer used for reading message header and control message payloads from the stream.
@@ -94,13 +104,14 @@ namespace System.Net.WebSockets
             private CancellationToken _cancellationToken;
 
             // Manual state machine implementation details to avoid any allocations
-            private readonly Action _headerReceived;
-            private readonly Action _payloadReceived;
             private ManualResetValueTaskSourceCore<ReceiveResult> _taskSource;
             private ConfiguredValueTaskAwaitable<bool>.ConfiguredValueTaskAwaiter _headerOrPayloadAwaiter;
 
             private ManualResetValueTaskSourceCore<bool> _streamTaskSource;
             private ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter _streamAwaiter;
+
+            private readonly Action _headerReceived;
+            private readonly Action _payloadReceived;
             private readonly Action _streamReadHeaderCompleted;
             private readonly Action _streamReadPayloadCompleted;
 
@@ -158,32 +169,32 @@ namespace System.Net.WebSockets
 
             public async ValueTask<ControlMessage?> ReceiveControlMessageAsync(CancellationToken cancellationToken)
             {
-                Debug.Assert(_lastHeader.Opcode > MessageOpcode.Binary);
+                Debug.Assert(_lastOpcode > MessageOpcode.Binary);
 
-                if (_lastHeader.PayloadLength == 0)
+                if (_remainingPayloadLength == 0)
                 {
-                    return new ControlMessage(_lastHeader.Opcode, ReadOnlyMemory<byte>.Empty);
+                    return new ControlMessage(_lastOpcode, ReadOnlyMemory<byte>.Empty);
                 }
                 _controlBuffer.Reset();
 
-                while (_lastHeader.PayloadLength > _controlBuffer.AvailableLength)
+                while (_remainingPayloadLength > _controlBuffer.AvailableLength)
                 {
                     int byteCount = await _stream.ReadAsync(_controlBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
                     if (byteCount <= 0)
                     {
                         return null;
                     }
-                    ApplyMask(_controlBuffer.FreeMemory.Span.Slice(0, (int)Math.Min(_lastHeader.PayloadLength, byteCount)));
+                    ApplyMask(_controlBuffer.FreeMemory.Span.Slice(0, (int)Math.Min(_remainingPayloadLength, byteCount)));
                     _controlBuffer.Commit(byteCount);
                 }
 
                 // Update the payload length in the header to indicate
                 // that we've received everything we need.
-                ReadOnlyMemory<byte> payload = _controlBuffer.AvailableMemory.Slice(0, (int)_lastHeader.PayloadLength);
+                ReadOnlyMemory<byte> payload = _controlBuffer.AvailableMemory.Slice(0, (int)_remainingPayloadLength);
 
-                _lastHeader.PayloadLength = 0;
+                _remainingPayloadLength = 0;
 
-                return new ControlMessage(_lastHeader.Opcode, payload);
+                return new ControlMessage(_lastOpcode, payload);
             }
 
             public ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> output, CancellationToken cancellationToken)
@@ -197,7 +208,7 @@ namespace System.Net.WebSockets
                 try
                 {
                     // When there's nothing left over to receive, start a new
-                    if (_lastHeader.PayloadLength == 0)
+                    if (_remainingPayloadLength == 0)
                     {
                         ValueTask<bool> headerTask = ReceiveHeaderAsync();
 
@@ -215,19 +226,19 @@ namespace System.Net.WebSockets
                                 ReceiveResultType.ProtocolError : ReceiveResultType.ConnectionClose));
                         }
 
-                        if (_lastHeader.Opcode > MessageOpcode.Binary)
+                        if (_lastOpcode > MessageOpcode.Binary)
                         {
                             // The received message is a control message and it's up to the websocket how to handle it.
                             return new ValueTask<ReceiveResult>(new ReceiveResult(ReceiveResultType.ControlMessage));
                         }
                     }
 
-                    if (_output.IsEmpty || _lastHeader.PayloadLength == 0)
+                    if (_output.IsEmpty || _remainingPayloadLength == 0)
                     {
                         return new ValueTask<ReceiveResult>(Result(count: 0));
                     }
 
-                    Debug.Assert(_lastHeader.PayloadLength > 0);
+                    Debug.Assert(_remainingPayloadLength > 0);
                     ValueTask<bool> receiveTask = ReceiveUncompressedAsync();
                     if (!receiveTask.IsCompleted)
                     {
@@ -269,11 +280,11 @@ namespace System.Net.WebSockets
                         SetReceiveResult(_headerOrPayloadError is not null ?
                             ReceiveResultType.ProtocolError : ReceiveResultType.ConnectionClose);
                     }
-                    else if (_lastHeader.Opcode > MessageOpcode.Binary)
+                    else if (_lastOpcode > MessageOpcode.Binary)
                     {
                         SetReceiveResult(ReceiveResultType.ControlMessage);
                     }
-                    else if (_output.IsEmpty || _lastHeader.PayloadLength == 0)
+                    else if (_output.IsEmpty || _remainingPayloadLength == 0)
                     {
                         SetReceiveResult();
                     }
@@ -381,7 +392,7 @@ namespace System.Net.WebSockets
             {
                 if (bytesRead > 0)
                 {
-                    _lastHeader.PayloadLength -= bytesRead;
+                    _remainingPayloadLength -= bytesRead;
                     _outputWrittenByteCount += bytesRead;
 
                     ApplyMask(_output.Span.Slice(0, bytesRead));
@@ -395,10 +406,10 @@ namespace System.Net.WebSockets
             {
                 ValueTask<int> readTask;
 
-                if (_output.Length > _lastHeader.PayloadLength)
+                if (_output.Length > _remainingPayloadLength)
                 {
                     // We don't want to receive more than we need
-                    readTask = _stream.ReadAsync(_output.Slice(0, (int)_lastHeader.PayloadLength), _cancellationToken);
+                    readTask = _stream.ReadAsync(_output.Slice(0, (int)_remainingPayloadLength), _cancellationToken);
                 }
                 else
                 {
@@ -420,7 +431,7 @@ namespace System.Net.WebSockets
 
             private ValueTask<bool> ReceiveHeaderAsync()
             {
-                Debug.Assert(_lastHeader.PayloadLength == 0);
+                Debug.Assert(_remainingPayloadLength == 0);
 
                 _receivedMaskOffset = 0;
                 _controlBuffer.Reset();
@@ -453,10 +464,10 @@ namespace System.Net.WebSockets
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ReceiveResult Result(int count)
             {
-                bool eof = _lastHeader.Fin && _lastHeader.PayloadLength == 0;
+                bool eof = _lastFrameFin && _remainingPayloadLength == 0;
 
                 // If this a text message, validate that it contains valid UTF8.
-                if (count > 0 && _lastHeader.Opcode == MessageOpcode.Text)
+                if (count > 0 && _lastOpcode == MessageOpcode.Text)
                 {
                     _utf8TextState ??= new Utf8MessageState();
 
@@ -466,21 +477,20 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                return new ReceiveResult(count, _lastHeader.Opcode, eof);
+                return new ReceiveResult(count, _lastOpcode, eof);
             }
 
             private void ApplyMask(Span<byte> input)
             {
                 if (_isServer)
                 {
-                    _receivedMaskOffset = ManagedWebSocket.ApplyMask(input, _lastHeader.Mask, _receivedMaskOffset);
+                    _receivedMaskOffset = ManagedWebSocket.ApplyMask(input, _lastFrameMask, _receivedMaskOffset);
                 }
             }
 
             /// <summary>Parses a message header from the buffer.</summary>
             private string? ParseMessageHeader()
             {
-                MessageHeader header = default;
                 ReadOnlySpan<byte> buffer = _controlBuffer.AvailableSpan;
 
                 // Check first for reserved bits that should always be unset
@@ -488,8 +498,8 @@ namespace System.Net.WebSockets
                 {
                     return SR.net_Websockets_ReservedBitsSet;
                 }
-                header.Fin = (buffer[0] & 0x80) != 0;
-                header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
+                bool fin = (buffer[0] & 0x80) != 0;
+                MessageOpcode opcode = (MessageOpcode)(buffer[0] & 0xF);
 
                 bool masked = (buffer[1] & 0x80) != 0;
                 if (masked && !_isServer)
@@ -500,36 +510,36 @@ namespace System.Net.WebSockets
                 {
                     return SR.net_Websockets_ServerReceivedUnmaskedFrame;
                 }
-                header.PayloadLength = buffer[1] & 0x7F;
+                long payloadLength = buffer[1] & 0x7F;
 
                 int consumedBytes = 2;
 
                 // Read the remainder of the payload length, if necessary
-                if (header.PayloadLength == 126)
+                if (payloadLength == 126)
                 {
-                    header.PayloadLength = (buffer[2] << 8) | buffer[3];
+                    payloadLength = (buffer[2] << 8) | buffer[3];
                     consumedBytes = 4;
                 }
-                else if (header.PayloadLength == 127)
+                else if (payloadLength == 127)
                 {
-                    header.PayloadLength = 0;
+                    payloadLength = 0;
                     for (int i = 2; i < 10; ++i)
                     {
-                        header.PayloadLength = (header.PayloadLength << 8) | buffer[i];
+                        payloadLength = (payloadLength << 8) | buffer[i];
                     }
                     consumedBytes = 10;
                 }
 
                 if (masked)
                 {
-                    header.Mask = BitConverter.ToInt32(buffer.Slice(consumedBytes));
+                    _lastFrameMask = BitConverter.ToInt32(buffer.Slice(consumedBytes));
                 }
 
                 // Do basic validation of the header
-                switch (header.Opcode)
+                switch (opcode)
                 {
                     case MessageOpcode.Continuation:
-                        if (_lastHeader.Fin)
+                        if (_lastFrameFin)
                         {
                             // Can't continue from a final message
                             return SR.net_Websockets_ContinuationFromFinalFrame;
@@ -538,7 +548,7 @@ namespace System.Net.WebSockets
 
                     case MessageOpcode.Binary:
                     case MessageOpcode.Text:
-                        if (!_lastHeader.Fin)
+                        if (!_lastFrameFin)
                         {
                             // Must continue from a non-final message
                             return SR.net_Websockets_NonContinuationAfterNonFinalFrame;
@@ -548,7 +558,7 @@ namespace System.Net.WebSockets
                     case MessageOpcode.Close:
                     case MessageOpcode.Ping:
                     case MessageOpcode.Pong:
-                        if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
+                        if (payloadLength > MaxControlPayloadLength || !fin)
                         {
                             // Invalid control messgae
                             return SR.net_Websockets_InvalidControlMessage;
@@ -557,16 +567,18 @@ namespace System.Net.WebSockets
 
                     default:
                         // Unknown opcode
-                        return SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode);
+                        return SR.Format(SR.net_Websockets_UnknownOpcode, opcode);
                 }
 
                 // If this is a continuation, replace the opcode with the one of the message it's continuing
-                if (header.Opcode == MessageOpcode.Continuation)
+                if (opcode == MessageOpcode.Continuation)
                 {
-                    header.Opcode = _lastHeader.Opcode;
+                    opcode = _lastOpcode;
                 }
 
-                _lastHeader = header;
+                _lastOpcode = opcode;
+                _remainingPayloadLength = payloadLength;
+                _lastFrameFin = fin;
 
                 return null;
             }
@@ -687,15 +699,6 @@ namespace System.Net.WebSockets
 
                     return false;
                 }
-            }
-
-            [StructLayout(LayoutKind.Auto)]
-            private struct MessageHeader
-            {
-                internal MessageOpcode Opcode;
-                internal bool Fin;
-                internal long PayloadLength;
-                internal int Mask;
             }
         }
     }

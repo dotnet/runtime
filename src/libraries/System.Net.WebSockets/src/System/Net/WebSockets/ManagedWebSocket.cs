@@ -561,11 +561,11 @@ namespace System.Net.WebSockets
                 if (resultTask.IsCompleted)
                 {
                     ReceiveResult result = resultTask.GetAwaiter().GetResult();
-                    if (result.ResultType == ReceiveResultType.Message)
+                    if (result.ResultType <= ReceiveResultType.Binary)
                     {
-                        return new ValueTask<TResult>( resultGetter.GetResult(
+                        return new ValueTask<TResult>(resultGetter.GetResult(
                             count: result.Count,
-                            messageType: result.MessageType,
+                            messageType: (WebSocketMessageType)result.ResultType,
                             endOfMessage: result.EndOfMessage,
                             closeStatus: null, closeDescription: null));
                     }
@@ -613,10 +613,11 @@ namespace System.Net.WebSockets
 
                     switch (result.ResultType)
                     {
-                        case ReceiveResultType.Message:
+                        case ReceiveResultType.Text:
+                        case ReceiveResultType.Binary:
                             return ((IWebSocketReceiveResultGetter<TResult>)_receiveResultGetter).GetResult(
                                 count: result.Count,
-                                messageType: result.MessageType,
+                                messageType: (WebSocketMessageType)result.ResultType,
                                 endOfMessage: result.EndOfMessage,
                                 closeStatus: null, closeDescription: null);
 
