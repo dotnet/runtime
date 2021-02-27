@@ -146,6 +146,8 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
