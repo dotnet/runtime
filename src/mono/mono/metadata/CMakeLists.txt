@@ -138,7 +138,6 @@ set(metadata_common_sources
     mono-perfcounters-def.h
     mono-ptr-array.h
     monitor.h
-    number-ms.h
     object.c
     object-forward.h
     object-internals.h
