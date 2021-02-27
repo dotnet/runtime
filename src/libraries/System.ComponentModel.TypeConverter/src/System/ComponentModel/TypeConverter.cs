@@ -232,6 +232,8 @@ namespace System.ComponentModel
         /// the specified context.
         ///
         /// </summary>
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(BrowsableAttribute))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
         public PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value)
         {
             return GetProperties(context, value, new Attribute[] { BrowsableAttribute.Yes });
@@ -243,6 +245,7 @@ namespace System.ComponentModel
         /// the specified context and attributes.
         ///
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return null;
@@ -364,7 +367,13 @@ namespace System.ComponentModel
             /// <summary>
             /// Gets a value indicating whether this property is read-only.
             /// </summary>
-            public override bool IsReadOnly => Attributes.Contains(ReadOnlyAttribute.Yes);
+
+            public override bool IsReadOnly
+            {
+                [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(ReadOnlyAttribute))]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+                get { return Attributes.Contains(ReadOnlyAttribute.Yes); }
+            }
 
             /// <summary>
             /// Gets the type of the property.

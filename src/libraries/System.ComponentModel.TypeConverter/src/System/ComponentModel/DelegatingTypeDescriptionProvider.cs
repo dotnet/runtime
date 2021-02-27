@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -89,7 +90,10 @@ namespace System.ComponentModel
         /// If no custom type descriptor can be located for an object, GetReflection
         /// is called to perform normal reflection against the object.
         /// </summary>
-        public override Type GetReflectionType(Type objectType, object instance)
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public override Type GetReflectionType(
+            [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+            object instance)
         {
             return Provider.GetReflectionType(objectType, instance);
         }

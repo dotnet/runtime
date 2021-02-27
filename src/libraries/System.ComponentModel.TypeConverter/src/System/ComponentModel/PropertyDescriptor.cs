@@ -212,15 +212,19 @@ namespace System.ComponentModel
             base.FillAttributes(attributeList);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         public PropertyDescriptorCollection GetChildProperties() => GetChildProperties(null, null);
 
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public PropertyDescriptorCollection GetChildProperties(Attribute[] filter) => GetChildProperties(null, filter);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         public PropertyDescriptorCollection GetChildProperties(object instance) => GetChildProperties(instance, null);
 
         /// <summary>
         /// Retrieves the properties
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
             if (instance == null)
@@ -232,7 +236,6 @@ namespace System.ComponentModel
                 return TypeDescriptor.GetProperties(instance, filter);
             }
         }
-
 
         /// <summary>
         /// Gets an editor of the specified type.

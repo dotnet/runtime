@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.ComponentModel
@@ -141,7 +142,8 @@ namespace System.ComponentModel
         /// If no custom type descriptor can be located for an object, GetReflectionType
         /// is called to perform normal reflection against the object.
         /// </summary>
-        public Type GetReflectionType(Type objectType) => GetReflectionType(objectType, null);
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public Type GetReflectionType([DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType) => GetReflectionType(objectType, null);
 
         /// <summary>
         /// The GetReflection method is a lower level version of GetTypeDescriptor.
@@ -152,6 +154,7 @@ namespace System.ComponentModel
         /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
+        [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public Type GetReflectionType(object instance)
         {
             if (instance == null)
@@ -171,7 +174,10 @@ namespace System.ComponentModel
         /// object type if no parent provider was passed. If a parent provider was passed, this
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
-        public virtual Type GetReflectionType(Type objectType, object instance)
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public virtual Type GetReflectionType(
+            [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+            object instance)
         {
             if (_parent != null)
             {

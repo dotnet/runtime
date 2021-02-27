@@ -450,6 +450,7 @@ namespace System.ComponentModel.Design
         {
             public override bool GetPropertiesSupported(ITypeDescriptorContext cxt) => true;
 
+            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext cxt, object value, Attribute[] attributes)
             {
                 PropertyDescriptorCollection props = new PropertyDescriptorCollection(null);

@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -172,10 +173,18 @@ namespace System.ComponentModel
             //
             [typeof(Array)] = new IntrinsicTypeConverterData((type) => new ArrayConverter()),
             [typeof(ICollection)] = new IntrinsicTypeConverterData((type) => new CollectionConverter()),
-            [typeof(Enum)] = new IntrinsicTypeConverterData((type) => new EnumConverter(type), cacheConverterInstance: false),
+            [typeof(Enum)] = new IntrinsicTypeConverterData((type) => CreateEnumConverter(type), cacheConverterInstance: false),
             [s_intrinsicNullableKey] = new IntrinsicTypeConverterData((type) => new NullableConverter(type), cacheConverterInstance: false),
             [s_intrinsicReferenceKey] = new IntrinsicTypeConverterData((type) => new ReferenceConverter(type), cacheConverterInstance: false),
         });
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "Trimmer does not trim enums")]
+        private static EnumConverter CreateEnumConverter(Type type)
+        {
+            Debug.Assert(type.IsEnum);
+            return new EnumConverter(type);
+        }
 
         private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 
@@ -829,7 +838,10 @@ namespace System.ComponentModel
         /// Returns an Type for the given type. Since type implements IReflect,
         /// we just return objectType.
         /// </summary>
-        public override Type GetReflectionType(Type objectType, object instance)
+        [return: DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)]
+        public override Type GetReflectionType(
+            [DynamicallyAccessedMembers(TypeDescriptor.ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+            object instance)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
             return objectType;

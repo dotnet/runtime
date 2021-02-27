@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -344,16 +345,19 @@ namespace System.Data.Common
             return new EventDescriptorCollection(null);
         }
 
+        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
         {
             return new EventDescriptorCollection(null);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return ((ICustomTypeDescriptor)this).GetProperties(null);
         }
 
+        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
             if (_propertyDescriptors == null)

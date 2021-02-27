@@ -129,6 +129,7 @@ namespace System.Drawing
 
         private static readonly string[] s_propertySort = { "X", "Y", "Width", "Height" };
 
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Rectangle), attributes);

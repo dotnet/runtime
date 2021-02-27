@@ -19,6 +19,8 @@ namespace System.ComponentModel
     /// </summary>
     public sealed class TypeDescriptor
     {
+        internal const DynamicallyAccessedMemberTypes ReflectTypesDynamicallyAccessedMembers = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields;
+
         // Note: this is initialized at class load because we
         // lock on it for thread safety. It is used from nearly
         // every call to this class, so it will be created soon after
@@ -504,6 +506,7 @@ namespace System.ComponentModel
         /// contains only the remaining members. The API returns
         /// NULL if it did not need to filter any members.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         private static ArrayList FilterMembers(IList members, Attribute[] attributes)
         {
             ArrayList newMembers = null;
@@ -975,6 +978,7 @@ namespace System.ComponentModel
         /// Gets a collection of events for a specified type of
         /// component using a specified array of attributes as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static EventDescriptorCollection GetEvents(Type componentType, Attribute[] attributes)
         {
             if (componentType == null)
@@ -1000,6 +1004,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of events for a specified component.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         public static EventDescriptorCollection GetEvents(object component)
         {
             return GetEvents(component, null, false);
@@ -1009,6 +1014,7 @@ namespace System.ComponentModel
         /// Gets a collection of events for a specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         public static EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc)
         {
             return GetEvents(component, null, noCustomTypeDesc);
@@ -1018,6 +1024,7 @@ namespace System.ComponentModel
         /// Gets a collection of events for a specified component
         /// using a specified array of attributes as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static EventDescriptorCollection GetEvents(object component, Attribute[] attributes)
         {
             return GetEvents(component, attributes, false);
@@ -1028,6 +1035,7 @@ namespace System.ComponentModel
         /// using a specified array of attributes as a filter.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static EventDescriptorCollection GetEvents(object component, Attribute[] attributes, bool noCustomTypeDesc)
         {
             if (component == null)
@@ -1194,6 +1202,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for a specified type of
         /// component using a specified array of attributes as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(Type componentType, Attribute[] attributes)
         {
             if (componentType == null)
@@ -1228,6 +1237,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for a specified component.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         public static PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, null, noCustomTypeDesc, true);
@@ -1238,6 +1248,7 @@ namespace System.ComponentModel
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes)
         {
             return GetProperties(component, attributes, false);
@@ -1248,6 +1259,7 @@ namespace System.ComponentModel
         /// component using a specified array of attributes
         /// as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public static PropertyDescriptorCollection GetProperties(object component, Attribute[] attributes, bool noCustomTypeDesc)
         {
             return GetPropertiesImpl(component, attributes, noCustomTypeDesc, false);
@@ -1258,6 +1270,7 @@ namespace System.ComponentModel
         /// only if noAttributes is false. This is to preserve backward compat for the case when
         /// no attribute filter was passed in (as against passing in null).
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         private static PropertyDescriptorCollection GetPropertiesImpl(object component, Attribute[] attributes, bool noCustomTypeDesc, bool noAttributes)
         {
             if (component == null)
@@ -1393,7 +1406,8 @@ namespace System.ComponentModel
         /// Returns an Type instance that can be used to perform reflection.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static Type GetReflectionType(Type type)
+        [return: DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)]
+        public static Type GetReflectionType([DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)] Type type)
         {
             if (type == null)
             {
@@ -1403,11 +1417,11 @@ namespace System.ComponentModel
             return NodeFor(type).GetReflectionType(type);
         }
 
-
         /// <summary>
         /// Returns an Type instance that can be used to perform reflection.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public static Type GetReflectionType(object instance)
         {
             if (instance == null)
@@ -1649,6 +1663,7 @@ namespace System.ComponentModel
         /// This is the last stage in our filtering pipeline. Here, we apply any
         /// user-defined filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         private static ICollection PipelineAttributeFilter(int pipelineType, ICollection members, Attribute[] filter, object instance, IDictionary cache)
         {
             Debug.Assert(pipelineType != PIPELINE_ATTRIBUTES, "PipelineAttributeFilter is not supported for attributes");
@@ -2542,6 +2557,7 @@ namespace System.ComponentModel
         /// contains the attribute or the member does not contain the attribute and the default
         /// for the attribute matches the passed in attribute.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         private static bool ShouldHideMember(MemberDescriptor member, Attribute attribute)
         {
             if (member == null || attribute == null)
@@ -2663,6 +2679,7 @@ namespace System.ComponentModel
                     return _handler.GetEvents(_instance);
                 }
 
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
                 {
                     return _handler.GetEvents(_instance, attributes);
@@ -2673,6 +2690,7 @@ namespace System.ComponentModel
                     return _handler.GetProperties(_instance, null);
                 }
 
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     return _handler.GetProperties(_instance, attributes);
@@ -2981,6 +2999,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
             {
                 EventDescriptorCollection events = _primary.GetEvents(attributes) ?? _secondary.GetEvents(attributes);
@@ -3003,6 +3022,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
+            [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
             PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
             {
                 PropertyDescriptorCollection properties = _primary.GetProperties(attributes);
@@ -3134,7 +3154,10 @@ namespace System.ComponentModel
             /// Implements GetReflectionType. This just walks the linked list
             /// looking for someone who implements the call.
             /// </summary>
-            public override Type GetReflectionType(Type objectType, object instance)
+            [return: DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)]
+            public override Type GetReflectionType(
+                [DynamicallyAccessedMembers(ReflectTypesDynamicallyAccessedMembers)] Type objectType,
+                object instance)
             {
                 if (objectType == null)
                 {
@@ -3372,6 +3395,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3419,6 +3443,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3698,6 +3723,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
@@ -3752,6 +3778,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
+                [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
                 PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.

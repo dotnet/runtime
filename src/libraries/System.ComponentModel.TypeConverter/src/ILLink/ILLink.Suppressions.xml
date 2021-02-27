@@ -185,25 +185,7 @@
       <argument>ILLink</argument>
       <argument>IL2075</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.AttributeCollection.GetDefaultAttribute(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ComponentResourceManager.ApplyResources(System.Object,System.String,System.Globalization.CultureInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.EnumConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.EnumConverter.GetStandardValues(System.ComponentModel.ITypeDescriptorContext)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -276,18 +258,6 @@
       <argument>IL2080</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ReflectPropertyDescriptor.get_SetMethodValue</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2087</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.BindingList`1.AddNewCore</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2090</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.BindingList`1.get_ItemTypeHasDefaultConstructor</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

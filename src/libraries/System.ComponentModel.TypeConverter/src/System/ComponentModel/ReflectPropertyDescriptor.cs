@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -639,7 +640,7 @@ namespace System.ComponentModel
                     }
                     catch { }
                 }
-                return Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
+                return AttributesContainsDesignerVisibilityContent();
             }
             else if (DefaultValue == s_noValue)
             {
@@ -655,6 +656,10 @@ namespace System.ComponentModel
             }
             return !Equals(DefaultValue, ExtenderGetValue(provider, component));
         }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(DesignerSerializationVisibilityAttribute))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+        private bool AttributesContainsDesignerVisibilityContent() => Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
 
         /// <summary>
         /// Indicates whether reset will change the value of the component. If there
@@ -1139,7 +1144,7 @@ namespace System.ComponentModel
                     }
                     catch { }
                 }
-                return Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
+                return AttributesContainsDesignerVisibilityContent();
             }
             else if (DefaultValue == s_noValue)
             {

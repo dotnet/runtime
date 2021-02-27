@@ -6,6 +6,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -29,6 +30,7 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
+        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             return GetPropertiesWithMetadata(base.GetProperties(attributes));

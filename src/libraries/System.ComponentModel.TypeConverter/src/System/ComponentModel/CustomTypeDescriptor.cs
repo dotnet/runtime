@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     public abstract class CustomTypeDescriptor : ICustomTypeDescriptor
@@ -119,6 +121,7 @@ namespace System.ComponentModel
         /// returned. If no parent is provided,this will return an empty
         /// event collection.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual EventDescriptorCollection GetEvents(Attribute[] attributes)
         {
             if (_parent != null)
@@ -153,6 +156,7 @@ namespace System.ComponentModel
         /// If no parent is provided,this will return an empty
         /// property collection.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             if (_parent != null)
