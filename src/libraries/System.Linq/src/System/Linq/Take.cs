@@ -73,20 +73,18 @@ namespace System.Linq
             // in order to convert fromEnd indices to regular indices.
             // Enumerable counts can change over time, so it is very
             // important that this check happens at enumeration time;
-            // do not move it outside of the iterator method.
+            // do not move outside of the iterator method.
             if (source.TryGetNonEnumeratedCount(out int count))
             {
                 startIndex = CalculateStartIndex(isStartIndexFromEnd, startIndex, count);
                 endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
 
-                if (startIndex >= endIndex)
+                if (startIndex < endIndex)
                 {
-                    yield break;
-                }
-
-                foreach (TSource element in TakeRangeIterator(source, startIndex, endIndex))
-                {
-                    yield return element;
+                    foreach (TSource element in TakeRangeIterator(source, startIndex, endIndex))
+                    {
+                        yield return element;
+                    }
                 }
 
                 yield break;
@@ -152,27 +150,25 @@ namespace System.Linq
                     ++count;
                 }
 
-                if (count < startIndex)
+                if (count == startIndex)
                 {
-                    yield break;
-                }
-
-                queue = new Queue<TSource>();
-                while (e.MoveNext())
-                {
-                    if (queue.Count == endIndex)
+                    queue = new Queue<TSource>();
+                    while (e.MoveNext())
                     {
-                        do
+                        if (queue.Count == endIndex)
+                        {
+                            do
+                            {
+                                queue.Enqueue(e.Current);
+                                yield return queue.Dequeue();
+                            } while (e.MoveNext());
+
+                            break;
+                        }
+                        else
                         {
                             queue.Enqueue(e.Current);
-                            yield return queue.Dequeue();
-                        } while (e.MoveNext());
-
-                        break;
-                    }
-                    else
-                    {
-                        queue.Enqueue(e.Current);
+                        }
                     }
                 }
             }
