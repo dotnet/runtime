@@ -453,6 +453,7 @@
 	brfalse		FAIL
 
     // Testing early folding logic
+
     ldc.r8		NEG_INF
 	ldc.r8		NEG_INF
 	clt.un
