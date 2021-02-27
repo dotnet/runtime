@@ -4,7 +4,6 @@
     <OutputType>Exe</OutputType>
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
-    <EventSourceSupport>true</EventSourceSupport>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
