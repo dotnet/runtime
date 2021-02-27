@@ -164,24 +164,29 @@ namespace DebuggerTests
         }
 
         [Theory]
-        [InlineData("invoke_add", "IntAdd", "c == 30", true)]
-        [InlineData("invoke_add", "IntAdd", "true", true)]
-        [InlineData("invoke_add", "IntAdd", "5", true)]
-        [InlineData("invoke_add", "IntAdd", "c < 40", true)]
-        [InlineData("invoke_add", "IntAdd", "c == 40", false)]
-        [InlineData("invoke_add", "IntAdd", "g == 40", false)]
-        [InlineData("invoke_add", "IntAdd", "c < 0", false)]
-        [InlineData("invoke_use_complex", "UseComplex", "complex.A == 10", true)]
-        public async Task ConditionalBreakpoint(string function_to_call, string method_to_stop, string condition, bool bp_index_expected)
+        [InlineData("invoke_add()", "IntAdd", "c == 30", true)]
+        [InlineData("invoke_add()", "IntAdd", "true", true)]
+        [InlineData("invoke_add()", "IntAdd", "1.0", true)]
+        [InlineData("invoke_add()", "IntAdd", "0.0", false)]
+        [InlineData("invoke_add()", "IntAdd", "\"foo\"", true)]
+        [InlineData("invoke_add()", "IntAdd", "\"true\"", true)]
+        [InlineData("invoke_add()", "IntAdd", "\"false\"", true)]
+        [InlineData("invoke_add()", "IntAdd", "c < 40", true)]
+        [InlineData("invoke_add()", "IntAdd", "c == 40", false)]
+        [InlineData("invoke_add()", "IntAdd", "g == 40", false)]
+        [InlineData("invoke_add()", "IntAdd", "c < 0", false)]
+        [InlineData("invoke_use_complex()", "UseComplex", "complex.A == 10", true)]
+        [InlineData("invoke_add()", "IntAdd", "null", false)]
+        public async Task ConditionalBreakpoint1(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
             bps[0] = await SetBreakpointInMethod("debugger-test.dll", "Math", method_to_stop, 3, condition:condition);
             bps[1] = await SetBreakpointInMethod("debugger-test.dll", "Math", method_to_stop, 4);
             await EvaluateAndCheck(
-                "window.setTimeout(function() { " + function_to_call + "(); }, 1);",
+                "window.setTimeout(function() { " + function_to_call + "; }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
-                bps[bp_index_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
-                bps[bp_index_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
+                bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
+                bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
                 method_to_stop);
         }
 
@@ -190,14 +195,18 @@ namespace DebuggerTests
         [InlineData("c == 17", 78, 3, 79, 3)]
         [InlineData("g == 17", 78, 3, 79, 3)]
         [InlineData("true", 78, 3, 78, 11)]
+        [InlineData("\"false\"", 78, 3, 78, 11)]
+        [InlineData("\"true\"", 78, 3, 78, 11)]
         [InlineData("5", 78, 3, 78, 11)]
+        [InlineData("p", 78, 3, 79, 3)]
+        [InlineData("0.0", 78, 3, 79, 3)]
         public async Task JSConditionalBreakpoint(string condition, int line_bp, int column_bp, int line_expected, int column_expected)
         {
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 79, 3);
 
             await EvaluateAndCheck(
-                "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
+                "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
 
@@ -205,7 +214,7 @@ namespace DebuggerTests
         [InlineData("invoke_add_with_parms(10, 20)", "invoke_add_with_parms(10, 20)",  "IntAdd", "c == 30", true, true)]
         [InlineData("invoke_add_with_parms(5, 10)", "invoke_add_with_parms(10, 20)",  "IntAdd", "c == 30", false, true)]
         [InlineData("invoke_add_with_parms(10, 20)", "invoke_add_with_parms(5, 10)",  "IntAdd", "c == 30", true, false)]
-        public async Task ConditionalBreakpointHitTwice(string function_to_call, string function_to_call2, string method_to_stop, string condition, bool bp_index_expected, bool bp_index_expected2)
+        public async Task ConditionalBreakpointHitTwice(string function_to_call, string function_to_call2, string method_to_stop, string condition, bool bp_stop_expected, bool bp_stop_expected2)
         {
             Result [] bps = new Result[2];
             bps[0] = await SetBreakpointInMethod("debugger-test.dll", "Math", method_to_stop, 3, condition:condition);
@@ -213,14 +222,14 @@ namespace DebuggerTests
             await EvaluateAndCheck(
                 "window.setTimeout(function() { " + function_to_call + "; " +  function_to_call2 + ";}, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs",
-                bps[bp_index_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
-                bps[bp_index_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
+                bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
+                bps[bp_stop_expected ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
                 method_to_stop);
 
             await SendCommandAndCheck(null, "Debugger.resume",
             null,
-            bps[bp_index_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
-            bps[bp_index_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
+            bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
+            bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
             method_to_stop);
         }
 

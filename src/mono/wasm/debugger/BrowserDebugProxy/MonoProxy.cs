@@ -523,8 +523,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject retValue = await resolver.Resolve(condition, token);
                 if (retValue == null)
                     retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
-
-                if (retValue?["value"]?.Value<bool>() == true)
+                if (retValue?["value"]?.Type == JTokenType.Boolean ||
+                    retValue?["value"]?.Type == JTokenType.Integer ||
+                    retValue?["value"]?.Type == JTokenType.Float) {
+                    if (retValue?["value"]?.Value<bool>() == true)
+                        return true;
+                }
+                else if (retValue?["value"]?.Type != JTokenType.Null)
                     return true;
             }
             catch (Exception e)
