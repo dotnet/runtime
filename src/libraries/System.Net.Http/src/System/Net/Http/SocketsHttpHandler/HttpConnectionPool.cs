@@ -29,6 +29,7 @@ namespace System.Net.Http
 
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
+        private readonly SocksConnectionKind _socksKind;
         private readonly Uri? _proxyUri;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
@@ -101,15 +102,17 @@ namespace System.Net.Http
         /// <summary>Initializes the pool.</summary>
         /// <param name="poolManager">The manager associated with this pool.</param>
         /// <param name="kind">The kind of HTTP connections stored in this pool.</param>
+        /// <param name="socksKind">The kind of SOCKS connection to use in this pool.</param>
         /// <param name="host">The host with which this pool is associated.</param>
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
         /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections)
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, SocksConnectionKind socksKind, string? host, int port, string? sslHostName, Uri? proxyUri, int maxConnections)
         {
             _poolManager = poolManager;
             _kind = kind;
+            _socksKind = socksKind;
             _proxyUri = proxyUri;
             _maxConnections = maxConnections;
 
@@ -179,7 +182,22 @@ namespace System.Net.Http
                     break;
 
                 default:
-                    Debug.Fail("Unkown HttpConnectionKind in HttpConnectionPool.ctor");
+                    Debug.Fail("Unknown HttpConnectionKind in HttpConnectionPool.ctor");
+                    break;
+            }
+
+            switch (socksKind)
+            {
+                case SocksConnectionKind.None:
+                    break;
+
+                case SocksConnectionKind.Socks5:
+                    Debug.Assert(kind == HttpConnectionKind.Http || kind == HttpConnectionKind.Https);
+                    Debug.Assert(proxyUri != null);
+                    break;
+
+                default:
+                    Debug.Fail("Unknown SocksConnectionKind in HttpConnectionPool.ctor");
                     break;
             }
 

@@ -260,7 +260,7 @@ namespace System.Net.Http
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, SocksConnectionKind.None, uri.IdnHost, uri.Port, null, proxyUri, GetIdentityIfDefaultCredentialsUsed(_settings._defaultCredentialsUsedForProxy));
             }
 
             string? sslHostName = null;
@@ -283,34 +283,46 @@ namespace System.Net.Http
             if (proxyUri != null)
             {
                 Debug.Assert(HttpUtilities.IsSupportedProxyScheme(proxyUri.Scheme));
-                if (sslHostName == null)
+                if (HttpUtilities.IsSocksScheme(proxyUri.Scheme))
+                {
+                    // Socks proxy
+                    if (sslHostName != null)
+                    {
+                        return new HttpConnectionKey(HttpConnectionKind.Https, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, sslHostName, null, identity);
+                    }
+                    else
+                    {
+                        return new HttpConnectionKey(HttpConnectionKind.Http, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, null, null, identity);
+                    }
+                }
+                else if (sslHostName == null)
                 {
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
                         // Non-secure websocket connection through proxy to the destination.
-                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, SocksConnectionKind.None, uri.IdnHost, uri.Port, null, proxyUri, identity);
                     }
                     else
                     {
                         // Standard HTTP proxy usage for non-secure requests
                         // The destination host and port are ignored here, since these connections
                         // will be shared across any requests that use the proxy.
-                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.Proxy, SocksConnectionKind.None, null, 0, null, proxyUri, identity);
                     }
                 }
                 else
                 {
                     // Tunnel SSL connection through proxy to the destination.
-                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
+                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, SocksConnectionKind.None, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
                 }
             }
             else if (sslHostName != null)
             {
-                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null, identity);
+                return new HttpConnectionKey(HttpConnectionKind.Https, SocksConnectionKind.None, uri.IdnHost, uri.Port, sslHostName, null, identity);
             }
             else
             {
-                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null, identity);
+                return new HttpConnectionKey(HttpConnectionKind.Http, SocksConnectionKind.None, uri.IdnHost, uri.Port, null, null, identity);
             }
         }
 
@@ -321,7 +333,7 @@ namespace System.Net.Http
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.SocksKind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
 
                 if (_cleaningTimer == null)
                 {
@@ -516,15 +528,17 @@ namespace System.Net.Http
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
         {
             public readonly HttpConnectionKind Kind;
+            public readonly SocksConnectionKind SocksKind;
             public readonly string? Host;
             public readonly int Port;
             public readonly string? SslHostName;     // null if not SSL
             public readonly Uri? ProxyUri;
             public readonly string Identity;
 
-            public HttpConnectionKey(HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string identity)
+            public HttpConnectionKey(HttpConnectionKind kind, SocksConnectionKind socksKind, string? host, int port, string? sslHostName, Uri? proxyUri, string identity)
             {
                 Kind = kind;
+                SocksKind = socksKind;
                 Host = host;
                 Port = port;
                 SslHostName = sslHostName;
@@ -535,8 +549,8 @@ namespace System.Net.Http
             // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
             public override int GetHashCode() =>
                 (SslHostName == Host ?
-                    HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
-                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
+                    HashCode.Combine(Kind, SocksKind, Host, Port, ProxyUri, Identity) :
+                    HashCode.Combine(Kind, SocksKind, Host, Port, SslHostName, ProxyUri, Identity));
 
             public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is HttpConnectionKey hck &&
@@ -544,6 +558,7 @@ namespace System.Net.Http
 
             public bool Equals(HttpConnectionKey other) =>
                 Kind == other.Kind &&
+                SocksKind == other.SocksKind &&
                 Host == other.Host &&
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
