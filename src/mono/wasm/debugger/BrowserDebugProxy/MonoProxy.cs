@@ -510,32 +510,24 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, string condition, CancellationToken token)
         {
-            if (!string.IsNullOrEmpty(condition) && mono_frame != null)
-            {
-                try {
-                    var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
+            if (string.IsNullOrEmpty(condition) || mono_frame == null)
+                return true;
+            try {
+                var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
 
-                    JObject retValue = await resolver.Resolve(condition, token);
-                    if (retValue == null)
-                    {
-                        retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
-                    }
+                JObject retValue = await resolver.Resolve(condition, token);
+                if (retValue == null)
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
 
-                    if (retValue != null)
-                    {
-                        if (retValue["value"].Value<bool>() == false)
-                        {
-                            return false;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
-                    return false;
-                }
+                if (retValue?["value"]?.Value<bool>() == true)
+                    return true;
             }
-            return true;
+            catch (Exception e)
+            {
+                Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                return false;
+            }
+            return false;
         }
 
         private async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)

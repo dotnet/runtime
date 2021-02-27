@@ -163,139 +163,55 @@ namespace DebuggerTests
             );
         }
 
-        [Fact]
-        public async Task ConditionalBreakpointTrue()
+        [Theory]
+        [InlineData("c == 30", 3, 0)]
+        [InlineData("true", 3, 0)]
+        [InlineData("5", 3, 0)]
+        [InlineData("c < 40", 3, 0)]
+        [InlineData("c == 40", 3, 1)]
+        [InlineData("g == 40", 3, 1)]
+        [InlineData("c < 0", 3, 1)]
+        public async Task ConditionalBreakpointTrue(string condition, int offset_bp, int bp_index_expected)
         {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"c == 30");
-
+            Result [] bps = new Result[2];
+            bps[0] = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset_bp, condition:condition);
+            bps[1] = await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset_bp + 1);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bps[bp_index_expected].Value["locations"][0]["lineNumber"].Value<int>(),
+                bps[bp_index_expected].Value["locations"][0]["columnNumber"].Value<int>(),
+                "IntAdd");
         }
 
-        [Fact]
-        public async Task ConditionalBreakpointFalse()
+        [Theory]
+        [InlineData("c == 15", 78, 3, 78, 11)]
+        [InlineData("c == 17", 78, 3, 79, 3)]
+        [InlineData("g == 17", 78, 3, 79, 3)]
+        [InlineData("true", 78, 3, 78, 11)]
+        [InlineData("5", 78, 3, 78, 11)]
+        public async Task JSConditionalBreakpoint(string condition, int line_bp, int column_bp, int line_expected, int column_expected)
         {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"c == 40");
-            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 13, 8);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 13, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task ConditionalBreakpointInvalidCondition() //testing with js debugger an invalid expression the debugger does not stop
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"g == 40");
-            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 13, 8);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 13, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task ConditionalBreakpointConst1()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"true");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task ConditionalBreakpointConst2()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"5");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task ConditionalBreakpointLower()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"c < 40");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task ConditionalBreakpointLowerFalse()
-        {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 12, 8, condition:"c < 0");
-            var bp2_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 13, 8);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 13, 8, "IntAdd");
-        }
-
-        [Fact]
-        public async Task JSConditionalBreakpointTrue()
-        {
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 78, 3, condition:"c == 15");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
-                "debugger-driver.html", 78, 11, "conditional_breakpoint_test");
-        }
-
-        [Fact]
-        public async Task JSConditionalBreakpointFalse()
-        {
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 78, 3, condition:"c == 17");
+            var bp1_res = await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             var bp2_res = await SetBreakpoint("/debugger-driver.html", 79, 3);
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
-                "debugger-driver.html", 79, 3, "conditional_breakpoint_test");
-        }
-
-        [Fact]
-        public async Task JSConditionalBreakpointInvalidCondition()
-        {
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 78, 3, condition:"g == 17");
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 79, 3);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
-                "debugger-driver.html", 79, 3, "conditional_breakpoint_test");
-        }
-
-        [Fact]
-        public async Task JSConditionalBreakpointConst1()
-        {
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 78, 3, condition:"true");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
-                "debugger-driver.html", 78, 11, "conditional_breakpoint_test");
-        }
-
-        [Fact]
-        public async Task JSConditionalBreakpointConst2()
-        {
-            var bp1_res = await SetBreakpoint("/debugger-driver.html", 78, 3, condition:"5");
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { conditional_breakpoint_test(5, 10); }, 1);",
-                "debugger-driver.html", 78, 11, "conditional_breakpoint_test");
+                "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
 
         [Fact]
         public async Task ConditionalBreakpointAttribute()
         {
-            var bp1_res = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 20, 8, condition:"complex.A == 10");
-
+            Result [] bps = new Result[2];
+            bps[0] = await SetBreakpointInMethod("debugger-test.dll", "Math", "UseComplex", 3, condition:"complex.A == 10");
+            bps[1] = await SetBreakpointInMethod("debugger-test.dll", "Math", "UseComplex", 4);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_use_complex(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 20, 8, "UseComplex");
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bps[0].Value["locations"][0]["lineNumber"].Value<int>(),
+                bps[0].Value["locations"][0]["columnNumber"].Value<int>(),
+                "UseComplex");
         }
     }
 }

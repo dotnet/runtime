@@ -825,7 +825,7 @@ namespace DebuggerTests
             return exc_res;
         }
 
-        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0)
+        internal async Task<Result> SetBreakpointInMethod(string assembly, string type, string method, int lineOffset = 0, int col = 0, string condition = "")
         {
             var req = JObject.FromObject(new { assemblyName = assembly, typeName = type, methodName = method, lineOffset = lineOffset });
 
@@ -840,7 +840,8 @@ namespace DebuggerTests
             {
                 lineNumber = m_line + lineOffset,
                 columnNumber = col,
-                url = m_url
+                url = m_url,
+                condition
             });
 
             res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
