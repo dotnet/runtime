@@ -3,9 +3,11 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.Net.WebSockets
 {
@@ -16,19 +18,37 @@ namespace System.Net.WebSockets
             Message,
             ConnectionClose,
             ControlMessage,
-            HeaderError
+
+            ProtocolError = WebSocketCloseStatus.ProtocolError,
+            InvalidPayloadData = WebSocketCloseStatus.InvalidPayloadData
         }
 
         [StructLayout(LayoutKind.Auto)]
         private readonly struct ReceiveResult
         {
-            public int Count { get; init; }
-            public bool EndOfMessage { get; init; }
-            public ReceiveResultType ResultType { get; init; }
-            public WebSocketMessageType MessageType { get; init; }
+            public ReceiveResult(ReceiveResultType resultType)
+            {
+                ResultType = resultType;
+                Count = default;
+                EndOfMessage = default;
+                MessageType = default;
+            }
+
+            public ReceiveResult(int count, MessageOpcode opcode, bool eof)
+            {
+                Count = count;
+                ResultType = ReceiveResultType.Message;
+                EndOfMessage = eof;
+                MessageType = (WebSocketMessageType)(opcode - 1);
+            }
+
+            public int Count { get; }
+            public bool EndOfMessage { get; }
+            public ReceiveResultType ResultType { get; }
+            public WebSocketMessageType MessageType { get; }
         }
 
-        private sealed class Receiver : IDisposable
+        private sealed class Receiver : IDisposable, IValueTaskSource<ReceiveResult>, IValueTaskSource<bool>
         {
             private readonly bool _isServer;
             private readonly Stream _stream;
@@ -44,10 +64,10 @@ namespace System.Net.WebSockets
             private MessageHeader _lastHeader = new() { Opcode = MessageOpcode.Text, Fin = true };
 
             /// <summary>
-            /// Buffer used for reading data from the network.
+            /// Buffer used for reading message header and control message payloads from the stream.
             /// Not readonly here because the buffer is mutable and is a struct.
             /// </summary>
-            private Buffer _readBuffer;
+            private ControlBuffer _controlBuffer;
 
             /// <summary>
             /// When dealing with partially read fragments of binary/text messages, a mask previously received may still
@@ -60,7 +80,29 @@ namespace System.Net.WebSockets
             /// When parsing message header if an error occurs the websocket is notified and this
             /// will contain the error message.
             /// </summary>
-            private string? _headerError;
+            private string? _headerOrPayloadError;
+
+            /// <summary>
+            /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
+            /// </summary>
+            private Utf8MessageState? _utf8TextState;
+
+            // Because we support only single receive at a time, we can store the input
+            // parameters so we can avoid having to allocate async state machines to do this for us.
+            private Memory<byte> _output;
+            private int _outputWrittenByteCount;
+            private CancellationToken _cancellationToken;
+
+            // Manual state machine implementation details to avoid any allocations
+            private readonly Action _headerReceived;
+            private readonly Action _payloadReceived;
+            private ManualResetValueTaskSourceCore<ReceiveResult> _taskSource;
+            private ConfiguredValueTaskAwaitable<bool>.ConfiguredValueTaskAwaiter _headerOrPayloadAwaiter;
+
+            private ManualResetValueTaskSourceCore<bool> _streamTaskSource;
+            private ConfiguredValueTaskAwaitable<int>.ConfiguredValueTaskAwaiter _streamAwaiter;
+            private readonly Action _streamReadHeaderCompleted;
+            private readonly Action _streamReadPayloadCompleted;
 
             public Receiver(Stream stream, bool isServer)
             {
@@ -70,29 +112,30 @@ namespace System.Net.WebSockets
                 // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
                 // control payloads (at most 125 bytes). Message payloads are read directly into the buffer
                 // supplied to ReceiveAsync.
-                _readBuffer = new Buffer(MaxControlPayloadLength + MaxMessageHeaderLength);
+                _controlBuffer = new ControlBuffer(MaxControlPayloadLength);
+
+                _headerReceived = OnHeaderReceived;
+                _payloadReceived = OnPayloadReceived;
+                _streamReadHeaderCompleted = () => OnStreamReadCompleted(payload: false);
+                _streamReadPayloadCompleted = () => OnStreamReadCompleted(payload: true);
             }
 
             public void Dispose()
             {
             }
 
-            public string? GetHeaderError() => _headerError;
+            public string? GetErrorMessage() => _headerOrPayloadError;
 
             /// <summary>Issues a read on the stream to wait for EOF.</summary>
             public async ValueTask WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
             {
-                if (_readBuffer.FreeLength == 0)
-                {
-                    // Because we are going to need only 1 byte buffer, do a discard
-                    // only when necessary (avoiding needless copying).
-                    _readBuffer.DiscardConsumed();
-                }
+                _controlBuffer.Reset();
+
                 // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
                 // We simply issue a read and don't care what we get back; we could validate that we don't get
                 // additional data, but at this point we're about to close the connection and we're just stalling
                 // to try to get the server to close first.
-                ValueTask<int> finalReadTask = _stream.ReadAsync(_readBuffer.FreeMemory.Slice(start: 0, length: 1), cancellationToken);
+                ValueTask<int> finalReadTask = _stream.ReadAsync(_controlBuffer.FreeMemory, cancellationToken);
 
                 if (!finalReadTask.IsCompletedSuccessfully)
                 {
@@ -121,154 +164,308 @@ namespace System.Net.WebSockets
                 {
                     return new ControlMessage(_lastHeader.Opcode, ReadOnlyMemory<byte>.Empty);
                 }
-                _readBuffer.DiscardConsumed();
+                _controlBuffer.Reset();
 
-                while (_lastHeader.PayloadLength > _readBuffer.AvailableLength)
+                while (_lastHeader.PayloadLength > _controlBuffer.AvailableLength)
                 {
-                    int byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
+                    int byteCount = await _stream.ReadAsync(_controlBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
                     if (byteCount <= 0)
                     {
                         return null;
                     }
-                    ApplyMask(_readBuffer.FreeMemory.Span.Slice(0, (int)Math.Min(_lastHeader.PayloadLength, byteCount)));
-                    _readBuffer.Commit(byteCount);
+                    ApplyMask(_controlBuffer.FreeMemory.Span.Slice(0, (int)Math.Min(_lastHeader.PayloadLength, byteCount)));
+                    _controlBuffer.Commit(byteCount);
                 }
 
                 // Update the payload length in the header to indicate
                 // that we've received everything we need.
-                ReadOnlyMemory<byte> payload = _readBuffer.AvailableMemory.Slice(0, (int)_lastHeader.PayloadLength);
+                ReadOnlyMemory<byte> payload = _controlBuffer.AvailableMemory.Slice(0, (int)_lastHeader.PayloadLength);
 
-                _readBuffer.Consume(payload.Length);
                 _lastHeader.PayloadLength = 0;
 
                 return new ControlMessage(_lastHeader.Opcode, payload);
             }
 
-            public async ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> output, CancellationToken cancellationToken)
+            public ValueTask<ReceiveResult> ReceiveAsync(Memory<byte> output, CancellationToken cancellationToken)
             {
-                // When there's nothing left over to receive, start a new
-                if (_lastHeader.PayloadLength == 0)
-                {
-                    _readBuffer.DiscardConsumed();
+                _output = output;
+                _cancellationToken = cancellationToken;
+                _taskSource.Reset();
 
-                    if (!await ReceiveHeaderAsync(cancellationToken).ConfigureAwait(false))
+                bool resetInputState = true;
+
+                try
+                {
+                    // When there's nothing left over to receive, start a new
+                    if (_lastHeader.PayloadLength == 0)
                     {
-                        return Result(_headerError is not null ? ReceiveResultType.HeaderError : ReceiveResultType.ConnectionClose);
+                        ValueTask<bool> headerTask = ReceiveHeaderAsync();
+
+                        if (!headerTask.IsCompleted)
+                        {
+                            _headerOrPayloadAwaiter = headerTask.ConfigureAwait(false).GetAwaiter();
+                            _headerOrPayloadAwaiter.UnsafeOnCompleted(_headerReceived);
+                            resetInputState = false;
+                            return new ValueTask<ReceiveResult>(this, _taskSource.Version);
+                        }
+
+                        if (!headerTask.GetAwaiter().GetResult())
+                        {
+                            return new ValueTask<ReceiveResult>(new ReceiveResult(_headerOrPayloadError is not null ?
+                                ReceiveResultType.ProtocolError : ReceiveResultType.ConnectionClose));
+                        }
+
+                        if (_lastHeader.Opcode > MessageOpcode.Binary)
+                        {
+                            // The received message is a control message and it's up to the websocket how to handle it.
+                            return new ValueTask<ReceiveResult>(new ReceiveResult(ReceiveResultType.ControlMessage));
+                        }
                     }
-                    if (_lastHeader.Opcode > MessageOpcode.Binary)
+
+                    if (_output.IsEmpty || _lastHeader.PayloadLength == 0)
                     {
-                        // The received message is a control message and it's up
-                        // to the websocket how to handle it.
-                        return Result(ReceiveResultType.ControlMessage);
+                        return new ValueTask<ReceiveResult>(Result(count: 0));
                     }
-                }
 
-                if (output.IsEmpty || _lastHeader.PayloadLength == 0)
-                {
-                    return Result(count: 0);
-                }
-                // The number of bytes that are written to the output buffer
-                int outputByteCount = 0;
-
-                if (_readBuffer.AvailableLength > 0)
-                {
-                    if (ConsumeReadBuffer(output.Span, out int written) == ConsumeResult.Done)
+                    Debug.Assert(_lastHeader.PayloadLength > 0);
+                    ValueTask<bool> receiveTask = ReceiveUncompressedAsync();
+                    if (!receiveTask.IsCompleted)
                     {
-                        return Result(written);
+                        _headerOrPayloadAwaiter = receiveTask.ConfigureAwait(false).GetAwaiter();
+                        _headerOrPayloadAwaiter.UnsafeOnCompleted(_payloadReceived);
+                        resetInputState = false;
+                        return new ValueTask<ReceiveResult>(this, _taskSource.Version);
                     }
-                    outputByteCount += written;
-                    output = output[written..];
+
+                    if (!receiveTask.GetAwaiter().GetResult())
+                    {
+                        return new ValueTask<ReceiveResult>(new ReceiveResult(ReceiveResultType.ConnectionClose));
+                    }
+
+                    return new ValueTask<ReceiveResult>(Result(_outputWrittenByteCount));
                 }
-
-                // At this point we should have consumed everything from the read buffer
-                // and should start issuing reads on the stream.
-                Debug.Assert(_readBuffer.AvailableLength == 0 && _lastHeader.PayloadLength > 0);
-
-                int receivedByteCount = await ReceiveUncompressedAsync(output, cancellationToken).ConfigureAwait(false);
-
-                if (receivedByteCount == 0)
+                finally
                 {
-                    return Result(ReceiveResultType.ConnectionClose);
+                    if (resetInputState)
+                    {
+                        ResetInputState();
+                    }
                 }
-
-                return Result(outputByteCount + receivedByteCount);
             }
 
-            private async ValueTask<int> ReceiveUncompressedAsync(Memory<byte> output, CancellationToken cancellationToken)
+            private void ResetInputState()
             {
-                if (output.Length > _lastHeader.PayloadLength)
+                _output = default;
+                _outputWrittenByteCount = 0;
+                _cancellationToken = default;
+            }
+
+            private void OnHeaderReceived()
+            {
+                try
                 {
-                    // We don't want to receive more than we need
-                    output = output.Slice(0, (int)_lastHeader.PayloadLength);
+                    if (!GetResult(ref _headerOrPayloadAwaiter))
+                    {
+                        SetReceiveResult(_headerOrPayloadError is not null ?
+                            ReceiveResultType.ProtocolError : ReceiveResultType.ConnectionClose);
+                    }
+                    else if (_lastHeader.Opcode > MessageOpcode.Binary)
+                    {
+                        SetReceiveResult(ReceiveResultType.ControlMessage);
+                    }
+                    else if (_output.IsEmpty || _lastHeader.PayloadLength == 0)
+                    {
+                        SetReceiveResult();
+                    }
+                    else
+                    {
+                        ValueTask<bool> receiveTask = ReceiveUncompressedAsync();
+                        if (!receiveTask.IsCompleted)
+                        {
+                            _headerOrPayloadAwaiter = receiveTask.ConfigureAwait(false).GetAwaiter();
+                            _headerOrPayloadAwaiter.UnsafeOnCompleted(_payloadReceived);
+                        }
+                        else
+                        {
+                            if (!receiveTask.GetAwaiter().GetResult())
+                            {
+                                SetReceiveResult(ReceiveResultType.ConnectionClose);
+                            }
+                            else
+                            {
+                                SetReceiveResult();
+                            }
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    SetReceiveResult(exc);
+                }
+            }
+
+            private void OnPayloadReceived()
+            {
+                try
+                {
+                    if (GetResult(ref _headerOrPayloadAwaiter))
+                    {
+                        SetReceiveResult();
+                    }
+                    else
+                    {
+                        SetReceiveResult(ReceiveResultType.ConnectionClose);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    SetReceiveResult(exc);
+                }
+            }
+
+            private void OnStreamReadCompleted(bool payload)
+            {
+                try
+                {
+                    int bytesRead = GetResult(ref _streamAwaiter);
+                    bool? success = payload ? OnPayloadReadCompleted(bytesRead) :
+                                              OnHeaderReadCompleted(bytesRead);
+
+                    if (success is not null)
+                    {
+                        _streamTaskSource.SetResult(success.GetValueOrDefault());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _streamTaskSource.SetException(ex);
+                }
+            }
+
+            private bool? OnHeaderReadCompleted(int bytesRead)
+            {
+                if (bytesRead <= 0)
+                {
+                    return false;
+                }
+                _controlBuffer.Commit(bytesRead);
+
+                while (_controlBuffer.NeedsMoreDataForHeader(_isServer, out int byteCount))
+                {
+                    // More data is neeed to parse the header
+                    ValueTask<int> readTask = _stream.ReadAsync(_controlBuffer.FreeMemory.Slice(0, byteCount), _cancellationToken);
+
+                    if (!readTask.IsCompleted)
+                    {
+                        // It is important here that we do NOT reset the value task source
+                        // because it will break the original value task that initiated this.
+                        _streamAwaiter = readTask.ConfigureAwait(false).GetAwaiter();
+                        _streamAwaiter.UnsafeOnCompleted(_streamReadHeaderCompleted);
+                        return null;
+                    }
+
+                    bytesRead = readTask.GetAwaiter().GetResult();
+
+                    if (bytesRead <= 0)
+                    {
+                        return false;
+                    }
+                    _controlBuffer.Commit(bytesRead);
                 }
 
-                int bytesRead = await _stream.ReadAsync(output, cancellationToken).ConfigureAwait(false);
+                _headerOrPayloadError = ParseMessageHeader();
+                return _headerOrPayloadError is null;
+            }
+
+            private bool OnPayloadReadCompleted(int bytesRead)
+            {
                 if (bytesRead > 0)
                 {
                     _lastHeader.PayloadLength -= bytesRead;
-                    ApplyMask(output.Span.Slice(0, bytesRead));
-                }
+                    _outputWrittenByteCount += bytesRead;
 
-                return bytesRead;
+                    ApplyMask(_output.Span.Slice(0, bytesRead));
+
+                    return true;
+                }
+                return false;
             }
 
-            private async ValueTask<bool> ReceiveHeaderAsync(CancellationToken cancellationToken)
+            private ValueTask<bool> ReceiveUncompressedAsync()
+            {
+                ValueTask<int> readTask;
+
+                if (_output.Length > _lastHeader.PayloadLength)
+                {
+                    // We don't want to receive more than we need
+                    readTask = _stream.ReadAsync(_output.Slice(0, (int)_lastHeader.PayloadLength), _cancellationToken);
+                }
+                else
+                {
+                    readTask = _stream.ReadAsync(_output, _cancellationToken);
+                }
+
+                if (!readTask.IsCompleted)
+                {
+                    _streamTaskSource.Reset();
+                    _streamAwaiter = readTask.ConfigureAwait(false).GetAwaiter();
+                    _streamAwaiter.UnsafeOnCompleted(_streamReadPayloadCompleted);
+
+                    return new ValueTask<bool>(this, _streamTaskSource.Version);
+                }
+
+                int bytesRead = readTask.GetAwaiter().GetResult();
+                return new ValueTask<bool>(OnPayloadReadCompleted(bytesRead));
+            }
+
+            private ValueTask<bool> ReceiveHeaderAsync()
             {
                 Debug.Assert(_lastHeader.PayloadLength == 0);
 
                 _receivedMaskOffset = 0;
+                _controlBuffer.Reset();
 
-                while (true)
+                while (_controlBuffer.NeedsMoreDataForHeader(_isServer, out int byteCount))
                 {
-                    if (TryParseMessageHeader(out MessageHeader header, out string? error))
-                    {
-                        // If this is a continuation, replace the opcode with the one of the message it's continuing
-                        if (header.Opcode == MessageOpcode.Continuation)
-                        {
-                            header.Opcode = _lastHeader.Opcode;
-                        }
-
-                        _lastHeader = header;
-
-                        if (_isServer)
-                        {
-                            // Unmask any payload that we've received
-                            if (header.PayloadLength > 0 && _readBuffer.AvailableLength > 0)
-                            {
-                                ApplyMask(_readBuffer.AvailableSpan.Slice(0, (int)Math.Min(_readBuffer.AvailableLength, header.PayloadLength)));
-                            }
-                        }
-
-                        return true;
-                    }
-                    else if (error is not null)
-                    {
-                        _headerError = error;
-                        return false;
-                    }
-
                     // More data is neeed to parse the header
-                    int byteCount = await _stream.ReadAsync(_readBuffer.FreeMemory, cancellationToken).ConfigureAwait(false);
+                    ValueTask<int> readTask = _stream.ReadAsync(_controlBuffer.FreeMemory.Slice(0, byteCount), _cancellationToken);
+                    if (!readTask.IsCompleted)
+                    {
+                        _streamTaskSource.Reset();
+                        _streamAwaiter = readTask.ConfigureAwait(false).GetAwaiter();
+                        _streamAwaiter.UnsafeOnCompleted(_streamReadHeaderCompleted);
+
+                        return new ValueTask<bool>(this, _streamTaskSource.Version);
+                    }
+
+                    byteCount = readTask.GetAwaiter().GetResult();
                     if (byteCount <= 0)
                     {
-                        return false;
+                        return new ValueTask<bool>(false);
                     }
-                    _readBuffer.Commit(byteCount);
+                    _controlBuffer.Commit(byteCount);
                 }
+
+                _headerOrPayloadError = ParseMessageHeader();
+                return new ValueTask<bool>(_headerOrPayloadError is null);
             }
 
-            private ReceiveResult Result(int count) => new ReceiveResult
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private ReceiveResult Result(int count)
             {
-                Count = count,
-                ResultType = ReceiveResultType.Message,
-                MessageType = _lastHeader.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                EndOfMessage = _lastHeader.Fin && _lastHeader.PayloadLength == 0
-            };
+                // If this a text message, validate that it contains valid UTF8.
+                if (count > 0 && _lastHeader.Opcode == MessageOpcode.Text)
+                {
+                    _utf8TextState ??= new Utf8MessageState();
 
-            private ReceiveResult Result(ReceiveResultType resultType) => new ReceiveResult
-            {
-                ResultType = resultType
-            };
+                    if (!TryValidateUtf8(_output.Span.Slice(0, count), _lastHeader.Fin, _utf8TextState))
+                    {
+                        return new ReceiveResult(ReceiveResultType.InvalidPayloadData);
+                    }
+                }
+
+                return new ReceiveResult(count, _lastHeader.Opcode, _lastHeader.Fin);
+            }
 
             private void ApplyMask(Span<byte> input)
             {
@@ -278,51 +475,16 @@ namespace System.Net.WebSockets
                 }
             }
 
-            /// <summary>
-            /// Tries to consume anything remaining in _readBuffer for the current message.s
-            /// </summary>
-            private ConsumeResult ConsumeReadBuffer(Span<byte> output, out int outputByteCount)
-            {
-                Debug.Assert(_readBuffer.AvailableLength > 0);
-
-                int consumed, written;
-                int available = (int)Math.Min(_readBuffer.AvailableLength, _lastHeader.PayloadLength);
-
-                // We can copy directly to output
-                written = Math.Min(available, output.Length);
-                consumed = written;
-                _readBuffer.AvailableReadOnlySpan.Slice(0, written).CopyTo(output);
-
-                _readBuffer.Consume(consumed);
-                _lastHeader.PayloadLength -= consumed;
-
-                outputByteCount = written;
-
-                if (_lastHeader.PayloadLength == 0 || output.Length == written)
-                {
-                    // We have either consumed everything or the output is full.
-                    return ConsumeResult.Done;
-                }
-
-                return ConsumeResult.Continue;
-            }
-
             /// <summary>Parses a message header from the buffer.</summary>
-            private bool TryParseMessageHeader(out MessageHeader header, out string? error)
+            private string? ParseMessageHeader()
             {
-                header = default;
-                error = null;
+                MessageHeader header = default;
+                ReadOnlySpan<byte> buffer = _controlBuffer.AvailableSpan;
 
-                ReadOnlySpan<byte> buffer = _readBuffer.AvailableReadOnlySpan;
-
-                if (buffer.Length < 2)
-                {
-                    return false;
-                }
                 // Check first for reserved bits that should always be unset
                 if ((buffer[0] & 0b0111_0000) != 0)
                 {
-                    return Error(ref error, SR.net_Websockets_ReservedBitsSet);
+                    return SR.net_Websockets_ReservedBitsSet;
                 }
                 header.Fin = (buffer[0] & 0x80) != 0;
                 header.Opcode = (MessageOpcode)(buffer[0] & 0xF);
@@ -330,29 +492,24 @@ namespace System.Net.WebSockets
                 bool masked = (buffer[1] & 0x80) != 0;
                 if (masked && !_isServer)
                 {
-                    return Error(ref error, SR.net_Websockets_ClientReceivedMaskedFrame);
+                    return SR.net_Websockets_ClientReceivedMaskedFrame;
+                }
+                else if (_isServer && !masked)
+                {
+                    return SR.net_Websockets_ServerReceivedUnmaskedFrame;
                 }
                 header.PayloadLength = buffer[1] & 0x7F;
 
-                // We've consumed the first 2 bytes
                 int consumedBytes = 2;
 
                 // Read the remainder of the payload length, if necessary
                 if (header.PayloadLength == 126)
                 {
-                    if (buffer.Length < 4)
-                    {
-                        return false;
-                    }
                     header.PayloadLength = (buffer[2] << 8) | buffer[3];
                     consumedBytes = 4;
                 }
                 else if (header.PayloadLength == 127)
                 {
-                    if (buffer.Length < 10)
-                    {
-                        return false;
-                    }
                     header.PayloadLength = 0;
                     for (int i = 2; i < 10; ++i)
                     {
@@ -363,12 +520,7 @@ namespace System.Net.WebSockets
 
                 if (masked)
                 {
-                    if (buffer.Length < MaskLength + consumedBytes)
-                    {
-                        return false;
-                    }
                     header.Mask = BitConverter.ToInt32(buffer.Slice(consumedBytes));
-                    consumedBytes += MaskLength;
                 }
 
                 // Do basic validation of the header
@@ -378,7 +530,7 @@ namespace System.Net.WebSockets
                         if (_lastHeader.Fin)
                         {
                             // Can't continue from a final message
-                            return Error(ref error, SR.net_Websockets_ContinuationFromFinalFrame);
+                            return SR.net_Websockets_ContinuationFromFinalFrame;
                         }
                         break;
 
@@ -387,7 +539,7 @@ namespace System.Net.WebSockets
                         if (!_lastHeader.Fin)
                         {
                             // Must continue from a non-final message
-                            return Error(ref error, SR.net_Websockets_NonContinuationAfterNonFinalFrame);
+                            return SR.net_Websockets_NonContinuationAfterNonFinalFrame;
                         }
                         break;
 
@@ -397,93 +549,142 @@ namespace System.Net.WebSockets
                         if (header.PayloadLength > MaxControlPayloadLength || !header.Fin)
                         {
                             // Invalid control messgae
-                            return Error(ref error, SR.net_Websockets_InvalidControlMessage);
+                            return SR.net_Websockets_InvalidControlMessage;
                         }
                         break;
 
                     default:
                         // Unknown opcode
-                        return Error(ref error, SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode));
+                        return SR.Format(SR.net_Websockets_UnknownOpcode, header.Opcode);
                 }
 
-                _readBuffer.Consume(consumedBytes);
-                return true;
-
-                static bool Error(ref string? target, string error)
+                // If this is a continuation, replace the opcode with the one of the message it's continuing
+                if (header.Opcode == MessageOpcode.Continuation)
                 {
-                    target = error;
-                    return false;
+                    header.Opcode = _lastHeader.Opcode;
+                }
+
+                _lastHeader = header;
+
+                return null;
+            }
+
+            /// <summary>
+            /// Gets the result from the awaiter and resets the instance.
+            /// </summary>
+            private static T GetResult<T>(ref ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter)
+            {
+                try
+                {
+                    return awaiter.GetResult();
+                }
+                finally
+                {
+                    awaiter = default;
                 }
             }
 
+            private void SetReceiveResult(Exception exc)
+            {
+                ResetInputState();
+                _taskSource.SetException(exc);
+            }
+
+            private void SetReceiveResult(ReceiveResultType resultType)
+            {
+                ResetInputState();
+                _taskSource.SetResult(new ReceiveResult(resultType));
+            }
+
+            private void SetReceiveResult()
+            {
+                ReceiveResult result = Result(_outputWrittenByteCount);
+                ResetInputState();
+                _taskSource.SetResult(result);
+            }
+
+            ReceiveResult IValueTaskSource<ReceiveResult>.GetResult(short token)
+                => _taskSource.GetResult(token);
+
+            ValueTaskSourceStatus IValueTaskSource<ReceiveResult>.GetStatus(short token)
+                => _taskSource.GetStatus(token);
+
+            void IValueTaskSource<ReceiveResult>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+                => _taskSource.OnCompleted(continuation, state, token, flags);
+
+            bool IValueTaskSource<bool>.GetResult(short token) => _streamTaskSource.GetResult(token);
+
+            ValueTaskSourceStatus IValueTaskSource<bool>.GetStatus(short token) => _streamTaskSource.GetStatus(token);
+
+            void IValueTaskSource<bool>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+                => _streamTaskSource.OnCompleted(continuation, state, token, flags);
+
             [StructLayout(LayoutKind.Auto)]
-            private struct Buffer
+            private struct ControlBuffer
             {
                 private readonly byte[] _bytes;
-                private int _position;
-                private int _consumed;
                 private int _available;
 
-                public Buffer(int capacity)
+                public ControlBuffer(int capacity)
                 {
                     _bytes = GC.AllocateUninitializedArray<byte>(capacity, pinned: true);
-                    _position = 0;
-                    _consumed = 0;
                     _available = 0;
                 }
 
                 public int AvailableLength => _available;
 
-                public ReadOnlySpan<byte> AvailableReadOnlySpan
-                    => new ReadOnlySpan<byte>(_bytes, start: _consumed, length: _available);
+                public ReadOnlySpan<byte> AvailableSpan => new ReadOnlySpan<byte>(_bytes, start: 0, length: _available);
 
-                public Span<byte> AvailableSpan
-                    => new Span<byte>(_bytes, start: _consumed, length: _available);
+                public Memory<byte> AvailableMemory => new Memory<byte>(_bytes, start: 0, length: _available);
 
-                public Memory<byte> AvailableMemory
-                    => new Memory<byte>(_bytes, start: _consumed, length: _available);
-
-                public Memory<byte> FreeMemory => _bytes.AsMemory(_position);
-
-                public int FreeLength => _bytes.Length - _position;
+                public Memory<byte> FreeMemory => _bytes.AsMemory(_available);
 
                 public void Commit(int count)
                 {
-                    _position += count;
                     _available += count;
                 }
 
-                public void Consume(int count)
+                public void Reset()
                 {
-                    _consumed += count;
-                    _available -= count;
+                    _available = 0;
                 }
 
-                public void DiscardConsumed()
+                public bool NeedsMoreDataForHeader(bool isServer, out int byteCount)
                 {
-                    if (_available > 0)
+                    byteCount = isServer ? 6/*All frames from client must include a mask*/ : 2;
+
+                    if (_available < 2)
                     {
-                        AvailableReadOnlySpan.CopyTo(_bytes);
+                        return true;
                     }
 
-                    _position -= _consumed;
-                    _consumed = 0;
+                    // Make sure masked is set correctly
+                    if (isServer && (_bytes[1] & 0x80) == 0)
+                    {
+                        // There is no need to try and receive any more because
+                        // parsing of the header would fail - we've received client frame without mask
+                        return false;
+                    }
+
+                    int payloadLength = _bytes[1] & 0x7F;
+
+                    if (payloadLength == 126)
+                    {
+                        byteCount += 2;
+                    }
+                    else if (payloadLength == 127)
+                    {
+                        byteCount += 8;
+                    }
+
+                    if (byteCount > _available)
+                    {
+                        byteCount -= _available;
+                        return true;
+                    }
+
+                    return false;
                 }
-            }
-
-            private enum ConsumeResult
-            {
-                /// <summary>
-                /// The consume operation completed because wither there is no more
-                /// message data or the output buffer is full.
-                /// </summary>
-                Done,
-
-                /// <summary>
-                /// The consume operation completed, but there is more data
-                /// for the message and the output buffer is not full.
-                /// </summary>
-                Continue
             }
 
             [StructLayout(LayoutKind.Auto)]

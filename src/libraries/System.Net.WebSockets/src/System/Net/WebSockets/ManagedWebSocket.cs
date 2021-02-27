@@ -78,10 +78,6 @@ namespace System.Net.WebSockets
         /// <summary>Timer used to send periodic pings to the server, at the interval specified</summary>
         private readonly Timer? _keepAliveTimer;
         /// <summary>
-        /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
-        /// </summary>
-        private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
-        /// <summary>
         /// Used to ensure that calls to SendFrameAsync don't run concurrently.
         /// No readonly, mutable struct.
         /// </summary>
@@ -123,7 +119,7 @@ namespace System.Net.WebSockets
         /// be pending while a Close{Output}Async is issued, which itself needs to loop until a close frame is received.
         /// As such, we need thread-safety in the management of <see cref="_lastReceiveAsync"/>.
         /// </summary>
-        private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
+        private object ReceiveAsyncLock => _receiver; // some object, as we're simply lock'ing on it
 
         /// <summary>Initializes the websocket.</summary>
         /// <param name="stream">The connected Stream.</param>
@@ -557,12 +553,6 @@ namespace System.Net.WebSockets
                     switch (result.ResultType)
                     {
                         case ReceiveResultType.Message:
-                            // If this a text message, validate that it contains valid UTF8.
-                            if (result.MessageType == WebSocketMessageType.Text && result.Count > 0 &&
-                            !TryValidateUtf8(payloadBuffer.Span.Slice(0, result.Count), result.EndOfMessage, _utf8TextState))
-                            {
-                                await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
-                            }
                             return resultGetter.GetResult(
                                 count: result.Count,
                                 messageType: result.MessageType,
@@ -577,13 +567,12 @@ namespace System.Net.WebSockets
                             continue;
 
                         case ReceiveResultType.ConnectionClose:
-                            ThrowIfEOFUnexpected(true);
+                            ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
                             break;
 
                         default:
-                            Debug.Assert(result.ResultType == ReceiveResultType.HeaderError);
-                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError,
-                                WebSocketError.Faulted, _receiver.GetHeaderError()).ConfigureAwait(false);
+                            await CloseWithReceiveErrorAndThrowAsync((WebSocketCloseStatus)result.ResultType,
+                                WebSocketError.Faulted, _receiver.GetErrorMessage()).ConfigureAwait(false);
                             break;
                     }
                 }
