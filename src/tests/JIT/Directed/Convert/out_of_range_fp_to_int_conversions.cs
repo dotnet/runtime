@@ -49,27 +49,11 @@ namespace FPBehaviorApp
         public static extern ulong ConvertDoubleToUnsignedLongLong(double x, FPtoIntegerConversionType t);
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    struct DoubleULongBitcaster
-    {
-        [FieldOffset(0)]
-        public ulong UintVal;
-        [FieldOffset(0)]
-        public double DoubleVal;
-    }
-
     public static class Managed
     {
-        public static bool IsNaN(double d)
-        {
-            return !(d == d);
-        }
-
         public static void DumpBits(double d)
         {
-            DoubleULongBitcaster bitCaster = default(DoubleULongBitcaster);
-            bitCaster.DoubleVal = d;
-            ulong uintVal = bitCaster.UintVal;
+            ulong uintVal = (ulong)BitConverter.DoubleToInt64Bits(d);
             bool signBit = (int)((uintVal >> 63) & 0x1) != 0;
             ulong mantissa = uintVal & 0x000F_FFFF_FFFF_FFFF;
             int exponent = (int)((uintVal >> 52) & 0x7FF);
@@ -79,9 +63,7 @@ namespace FPBehaviorApp
         // Equivalent to Math.Truncate, but written in C# to avoid Debug/Check penalties running on CoreCLR test builds
         public static double Truncate(double d)
         {
-            DoubleULongBitcaster bitCaster = default(DoubleULongBitcaster);
-            bitCaster.DoubleVal = d;
-            ulong uintVal = bitCaster.UintVal;
+            ulong uintVal = (ulong)BitConverter.DoubleToInt64Bits(d);
             int exponent = (int)((uintVal >> 52) & 0x7FF);
             if (exponent < 1023)
             {
@@ -91,9 +73,8 @@ namespace FPBehaviorApp
             {
                 uintVal &= (ulong)(~(0xF_FFFF_FFFF_FFFF >> (exponent - 1023)));
             }
-            bitCaster.UintVal = uintVal;
 
-            return bitCaster.DoubleVal;
+            return BitConverter.Int64BitsToDouble((long)uintVal);
         }
 
         public static int ConvertDoubleToLong(double x, FPtoIntegerConversionType t)
@@ -108,11 +89,11 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE:
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
-                    return (IsNaN(x) || (x<int.MinValue) || (x > int.MaxValue)) ? int.MinValue: (int) x;
+                    return (Double.IsNaN(x) || (x<int.MinValue) || (x > int.MaxValue)) ? int.MinValue: (int) x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
-                    return IsNaN(x) ? 0 : (x< int.MinValue) ? int.MinValue : (x > int.MaxValue) ? int.MaxValue : (int) x;
+                    return Double.IsNaN(x) ? 0 : (x< int.MinValue) ? int.MinValue : (x > int.MaxValue) ? int.MaxValue : (int) x;
             }
             return 0;
         }
@@ -129,14 +110,14 @@ namespace FPBehaviorApp
             {
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE:
-                    return (IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? 0 : (uint)(long)x;
+                    return (Double.IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? 0 : (uint)(long)x;
 
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
-                    return (IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
+                    return (Double.IsNaN(x) || (x < 0) || (x > uint.MaxValue)) ? uint.MaxValue : (uint)x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
-                    return (IsNaN(x) || (x < 0)) ? 0 : (x > uint.MaxValue) ? uint.MaxValue : (uint)x;
+                    return (Double.IsNaN(x) || (x < 0)) ? 0 : (x > uint.MaxValue) ? uint.MaxValue : (uint)x;
             }
 
             return 0;
@@ -157,7 +138,7 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
                 case FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE:
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
-                    return (IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x;
+                    return (Double.IsNaN(x) || (x < long.MinValue) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x;
 
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     if (x > 0)
@@ -170,7 +151,7 @@ namespace FPBehaviorApp
                     }
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
-                    return IsNaN(x) ? 0 : (x < long.MinValue) ? long.MinValue : (x >= llong_max_plus_1) ? long.MaxValue : (long)x;
+                    return Double.IsNaN(x) ? 0 : (x < long.MinValue) ? long.MinValue : (x >= llong_max_plus_1) ? long.MaxValue : (long)x;
             }
 
             return 0;
@@ -198,13 +179,13 @@ namespace FPBehaviorApp
             switch (t)
             {
                 case FPtoIntegerConversionType.CONVERT_BACKWARD_COMPATIBLE:
-                    return (IsNaN(x) || (x < long.MinValue) || (x >= ullong_max_plus_1)) ? unchecked((ulong)long.MinValue): (x < 0) ? (ulong)(long)x: (ulong)x;
+                    return (Double.IsNaN(x) || (x < long.MinValue) || (x >= ullong_max_plus_1)) ? unchecked((ulong)long.MinValue): (x < 0) ? (ulong)(long)x: (ulong)x;
 
                 case FPtoIntegerConversionType.CONVERT_SENTINEL:
-                    return (IsNaN(x) || (x < 0) || (x >= ullong_max_plus_1)) ? ulong.MaxValue : (ulong)x;
+                    return (Double.IsNaN(x) || (x < 0) || (x >= ullong_max_plus_1)) ? ulong.MaxValue : (ulong)x;
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
-                    return (IsNaN(x) || (x < 0)) ? 0 : (x >= ullong_max_plus_1) ? ulong.MaxValue : (ulong)x;
+                    return (Double.IsNaN(x) || (x < 0)) ? 0 : (x >= ullong_max_plus_1) ? ulong.MaxValue : (ulong)x;
 
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     {
@@ -230,7 +211,7 @@ namespace FPBehaviorApp
                         const double llong_max_plus_1 = (double)((ulong)long.MaxValue + 1);
                         x -= two63;
                         x = Math.Truncate(x);
-                        return (ulong)((IsNaN(x) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x) + (0x8000000000000000);
+                        return (ulong)((Double.IsNaN(x) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x) + (0x8000000000000000);
                     }
             }
 
@@ -278,15 +259,6 @@ namespace FPBehaviorApp
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    struct FloatUIntBitcaster
-    {
-        [FieldOffset(0)]
-        public uint UintVal;
-        [FieldOffset(0)]
-        public float FloatVal;
-    }
-
     class Program
     {
         static int failures = 0;
@@ -302,9 +274,7 @@ namespace FPBehaviorApp
             }
             else
             {
-                FloatUIntBitcaster bitCaster = new FloatUIntBitcaster();
-                bitCaster.UintVal = value;
-                dblVal = bitCaster.FloatVal;
+                dblVal = BitConverter.Int32BitsToSingle((int)value);
             }
 
             if (!tValue.HasValue)
