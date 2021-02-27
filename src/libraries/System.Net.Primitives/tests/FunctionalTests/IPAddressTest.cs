@@ -236,7 +236,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void IsIPv6UniqueLocal_Get_Success()
         {
-            Assert.True(IPAddress.Parse("FC00::/7").IsIPv6UniqueLocal);
+            Assert.True(IPAddress.Parse("FC00::1").IsIPv6UniqueLocal);
             Assert.False(IPAddress.Parse("Fe08::1").IsIPv6UniqueLocal);
             Assert.False(IPV4Address1().IsIPv6UniqueLocal);
         }
