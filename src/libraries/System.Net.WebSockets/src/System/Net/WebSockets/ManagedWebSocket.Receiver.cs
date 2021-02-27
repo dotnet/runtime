@@ -453,18 +453,20 @@ namespace System.Net.WebSockets
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private ReceiveResult Result(int count)
             {
+                bool eof = _lastHeader.Fin && _lastHeader.PayloadLength == 0;
+
                 // If this a text message, validate that it contains valid UTF8.
                 if (count > 0 && _lastHeader.Opcode == MessageOpcode.Text)
                 {
                     _utf8TextState ??= new Utf8MessageState();
 
-                    if (!TryValidateUtf8(_output.Span.Slice(0, count), _lastHeader.Fin, _utf8TextState))
+                    if (!TryValidateUtf8(_output.Span.Slice(0, count), eof, _utf8TextState))
                     {
                         return new ReceiveResult(ReceiveResultType.InvalidPayloadData);
                     }
                 }
 
-                return new ReceiveResult(count, _lastHeader.Opcode, _lastHeader.Fin);
+                return new ReceiveResult(count, _lastHeader.Opcode, eof);
             }
 
             private void ApplyMask(Span<byte> input)
