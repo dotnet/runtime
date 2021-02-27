@@ -163,21 +163,41 @@ namespace DebuggerTests
             );
         }
 
+        public static TheoryData<string, string, string, bool> FalseConditions = new TheoryData<string, string, string, bool>
+        {
+            { "invoke_add()", "IntAdd", "0.0", false },
+            { "invoke_add()", "IntAdd", "c == 40", false },
+            { "invoke_add()", "IntAdd", "c < 0", false },
+        };
+
+        public static TheoryData<string, string, string, bool> TrueConditions = new TheoryData<string, string, string, bool>
+        {
+            { "invoke_add()", "IntAdd", "c == 30", true },
+            { "invoke_add()", "IntAdd", "true", true },
+            { "invoke_add()", "IntAdd", "5", true },
+            { "invoke_add()", "IntAdd", "c < 40", true },
+            { "invoke_use_complex()", "UseComplex", "complex.A == 10", true },
+            { "invoke_add()", "IntAdd", "1.0", true },
+            { "invoke_add()", "IntAdd", "\"foo\"", true },
+            { "invoke_add()", "IntAdd", "\"true\"", true },
+            { "invoke_add()", "IntAdd", "\"false\"", true },
+        };
+
+        public static TheoryData<string, string, string, bool> InvalidConditions = new TheoryData<string, string, string, bool>
+        {
+            { "invoke_add()", "IntAdd", "foo.bar", false },
+            { "invoke_add()", "IntAdd", "Math.IntAdd()", false },
+            { "invoke_add()", "IntAdd", "c == \"xyz\"", false },
+            { "invoke_add()", "IntAdd", "Math.NonExistantProperty", false },
+            { "invoke_add()", "IntAdd", "g == 40", false },
+            { "invoke_add()", "IntAdd", "null", false },
+        };
+
         [Theory]
-        [InlineData("invoke_add()", "IntAdd", "c == 30", true)]
-        [InlineData("invoke_add()", "IntAdd", "true", true)]
-        [InlineData("invoke_add()", "IntAdd", "1.0", true)]
-        [InlineData("invoke_add()", "IntAdd", "0.0", false)]
-        [InlineData("invoke_add()", "IntAdd", "\"foo\"", true)]
-        [InlineData("invoke_add()", "IntAdd", "\"true\"", true)]
-        [InlineData("invoke_add()", "IntAdd", "\"false\"", true)]
-        [InlineData("invoke_add()", "IntAdd", "c < 40", true)]
-        [InlineData("invoke_add()", "IntAdd", "c == 40", false)]
-        [InlineData("invoke_add()", "IntAdd", "g == 40", false)]
-        [InlineData("invoke_add()", "IntAdd", "c < 0", false)]
-        [InlineData("invoke_use_complex()", "UseComplex", "complex.A == 10", true)]
-        [InlineData("invoke_add()", "IntAdd", "null", false)]
-        public async Task ConditionalBreakpoint1(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
+        [MemberData(nameof(FalseConditions))]
+        [MemberData(nameof(TrueConditions))]
+        [MemberData(nameof(InvalidConditions))]
+        public async Task ConditionalBreakpoint(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
             bps[0] = await SetBreakpointInMethod("debugger-test.dll", "Math", method_to_stop, 3, condition:condition);
