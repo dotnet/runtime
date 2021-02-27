@@ -490,7 +490,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers[0]! & 0xFE00) == 0xFC00);
+                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
             }
         }
 
