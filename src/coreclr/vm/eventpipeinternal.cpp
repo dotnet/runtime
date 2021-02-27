@@ -11,54 +11,6 @@
 
 #ifdef FEATURE_PERFTRACING
 
-UINT64 QCALLTYPE EventPipeInternal::Enable(
-    __in_z LPCWSTR outputFile,
-    EventPipeSerializationFormat format,
-    UINT32 circularBufferSizeInMB,
-    /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
-    UINT32 numProviders)
-{
-    QCALL_CONTRACT;
-
-    UINT64 sessionID = 0;
-
-    // Invalid input!
-    if (circularBufferSizeInMB == 0 ||
-        format >= EP_SERIALIZATION_FORMAT_COUNT ||
-        numProviders == 0 ||
-        pProviders == nullptr)
-    {
-        return 0;
-    }
-
-    BEGIN_QCALL;
-    {
-        EventPipeProviderConfigurationAdapter configAdapter(reinterpret_cast<const COR_PRF_EVENTPIPE_PROVIDER_CONFIG *>(pProviders), numProviders);
-        sessionID = EventPipeAdapter::Enable(
-            outputFile,
-            circularBufferSizeInMB,
-            configAdapter,
-            outputFile != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_LISTENER,
-            format,
-            true,
-            nullptr,
-            nullptr);
-        EventPipeAdapter::StartStreaming(sessionID);
-    }
-    END_QCALL;
-
-    return sessionID;
-}
-
-void QCALLTYPE EventPipeInternal::Disable(UINT64 sessionID)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    EventPipeAdapter::Disable(sessionID);
-    END_QCALL;
-}
-
 bool QCALLTYPE EventPipeInternal::GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo)
 {
     QCALL_CONTRACT;
