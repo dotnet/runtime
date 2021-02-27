@@ -33,13 +33,13 @@ mono_simd_intrinsics_init (void)
 static const struct msgstr_t {
 #define METHOD(name) char MSGSTRFIELD(__LINE__) [sizeof (#name)];
 #define METHOD2(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
-#include "simd-methods-netcore.h"
+#include "simd-methods.h"
 #undef METHOD
 #undef METHOD2
 } method_names = {
 #define METHOD(name) #name,
 #define METHOD2(str,name) str,
-#include "simd-methods-netcore.h"
+#include "simd-methods.h"
 #undef METHOD
 #undef METHOD2
 };
@@ -47,7 +47,7 @@ static const struct msgstr_t {
 enum {
 #define METHOD(name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #define METHOD2(str,name) SN_ ## name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
-#include "simd-methods-netcore.h"
+#include "simd-methods.h"
 };
 #define method_name(idx) ((const char*)&method_names + (idx))
 
