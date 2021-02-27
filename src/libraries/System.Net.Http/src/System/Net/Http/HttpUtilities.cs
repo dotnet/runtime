@@ -34,6 +34,9 @@ namespace System.Net.Http
         internal static bool IsSecureWebSocketScheme(string scheme) =>
             string.Equals(scheme, "wss", StringComparison.OrdinalIgnoreCase);
 
+        internal static bool IsSupportedProxyScheme(string scheme) =>
+            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase);
+
         // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
         //
         // Since we're not doing any CPU and/or I/O intensive operations, continue on the same thread.
