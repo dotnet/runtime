@@ -508,10 +508,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, string condition, CancellationToken token)
+        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, Breakpoint bp, CancellationToken token)
         {
-            if (string.IsNullOrEmpty(condition) || mono_frame == null)
+            if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
                 return true;
+
+            string condition = bp.Condition;
+
+            if (bp.ConditionAlreadyEvaluatedWithError)
+                return false;
             try {
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
 
@@ -525,6 +530,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception e)
             {
                 Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                bp.ConditionAlreadyEvaluatedWithError = true;
                 return false;
             }
             return false;
@@ -678,7 +684,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.CallStack = frames;
 
                     }
-                    if (!await EvaluateCondition(sessionId, context, the_mono_frames?.First(), bp?.Condition, token))
+                    if (!await EvaluateCondition(sessionId, context, the_mono_frames?.First(), bp, token))
                     {
                         await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                         return true;

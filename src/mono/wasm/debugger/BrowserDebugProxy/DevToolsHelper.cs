@@ -245,7 +245,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
         public string Condition { get; private set; }
-
+        public bool ConditionAlreadyEvaluatedWithError { get; set; }
         public static bool TryParseId(string stackId, out int id)
         {
             id = -1;
@@ -261,6 +261,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Location = loc;
             this.State = state;
             this.Condition = condition;
+            this.ConditionAlreadyEvaluatedWithError = false;
         }
     }
 
