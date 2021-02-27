@@ -252,17 +252,6 @@ struct _MonoAppContext {
 	ContextStaticData *data;
 };
 
-/* Lock-free allocator */
-typedef struct {
-	guint8 *mem;
-	gpointer prev;
-	int size, pos;
-} LockFreeMempoolChunk;
-
-typedef struct {
-	LockFreeMempoolChunk *current, *chunks;
-} LockFreeMempool;
-
 typedef struct _MonoThunkFreeList {
 	guint32 size;
 	int length;		/* only valid for the wait list */
@@ -333,7 +322,6 @@ struct _MonoDomain {
 	/* Used when loading assemblies */
 	gchar **search_path;
 	gchar *private_bin_path;
-	LockFreeMempool *lock_free_mp;
 	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
@@ -350,8 +338,6 @@ struct _MonoDomain {
 	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
-
-	GHashTable	   *generic_virtual_cases;
 
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
@@ -449,25 +435,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
-
-// TODO: remove these on netcore, we should always be explicit about allocating from ALCs
-//#ifndef ENABLE_NETCORE
-gpointer
-mono_domain_alloc  (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc(domain, size) (g_cast (mono_domain_alloc ((domain), (size))))
-
-gpointer
-mono_domain_alloc0 (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
-
-//#endif
-
-gpointer
-mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
 void
 mono_domain_unset (void);

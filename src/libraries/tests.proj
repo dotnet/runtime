@@ -261,9 +261,11 @@
                       Condition="'$(TestAssemblies)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
+    <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestTrimming)' == 'true'" />
+                      Condition="'$(TestTrimming)' == 'true'"
+                      AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
+    <ProjectReference Include="@(TrimmingTestProjects)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
@@ -297,5 +299,20 @@
           DependsOnTargets="GenerateCoverageReport"
           Condition="'$(TestAssemblies)' == 'true' and
                      '$(Coverage)' == 'true'" />
+
+  <!-- Restoring all trimming test projects upfront in one single call to RestoreTrimmingProjects
+  so as to avoid possible race conditions that could happen if we restore each individually. -->
+  <Target Name="RestoreTrimmingProjects"
+          BeforeTargets="Build"
+          Condition="'$(TestTrimming)' == 'true'">
+    <MSBuild Projects="@(TrimmingTestProjects)"
+             Targets="GetTrimmingProjectsToRestore">
+      <Output TaskParameter="TargetOutputs" ItemName="_TrimmingProjectsToRestore" />
+    </MSBuild>
+
+    <MSBuild Projects="@(_TrimmingProjectsToRestore)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
+  </Target>
 
 </Project>

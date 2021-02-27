@@ -17,6 +17,7 @@ extern JavaVM* gJvm;
 // java/io/ByteArrayInputStream
 extern jclass    g_ByteArrayInputStreamClass;
 extern jmethodID g_ByteArrayInputStreamCtor;
+extern jmethodID g_ByteArrayInputStreamReset;
 
 // java/lang/Enum
 extern jclass    g_Enum;
@@ -70,7 +71,13 @@ extern jmethodID g_ivPsCtor;
 // java/math/BigInteger
 extern jclass    g_bigNumClass;
 extern jmethodID g_bigNumCtor;
+extern jmethodID g_bigNumCtorWithSign;
 extern jmethodID g_toByteArrayMethod;
+extern jmethodID g_valueOfMethod;
+extern jmethodID g_compareToMethod;
+extern jmethodID g_intValueMethod;
+extern jmethodID g_bitLengthMethod;
+extern jmethodID g_sigNumMethod;
 
 // javax/net/ssl/SSLParameters
 extern jclass    g_sslParamsClass;
@@ -89,6 +96,8 @@ extern jmethodID g_GCMParameterSpecCtor;
 extern jclass    g_CertFactoryClass;
 extern jmethodID g_CertFactoryGetInstance;
 extern jmethodID g_CertFactoryGenerateCertificate;
+extern jmethodID g_CertFactoryGenerateCertificates;
+extern jmethodID g_CertFactoryGenerateCertPath;
 extern jmethodID g_CertFactoryGenerateCRL;
 
 // java/security/cert/X509Certificate
@@ -122,6 +131,7 @@ extern jmethodID g_RSAPublicKeyGetPubExpMethod;
 
 // java/security/KeyPair
 extern jclass    g_keyPairClass;
+extern jmethodID g_keyPairCtor;
 extern jmethodID g_keyPairGetPrivateMethod;
 extern jmethodID g_keyPairGetPublicMethod;
 
@@ -129,7 +139,17 @@ extern jmethodID g_keyPairGetPublicMethod;
 extern jclass    g_keyPairGenClass;
 extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
+extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
+
+// java/security/Signature
+extern jclass    g_SignatureClass;
+extern jmethodID g_SignatureGetInstance;
+extern jmethodID g_SignatureInitSign;
+extern jmethodID g_SignatureInitVerify;
+extern jmethodID g_SignatureUpdate;
+extern jmethodID g_SignatureSign;
+extern jmethodID g_SignatureVerify;
 
 // com/android/org/conscrypt/RSAPrivateCrtKey
 extern jclass    g_RSAPrivateCrtKeyClass;
@@ -155,10 +175,79 @@ extern jclass    g_KeyFactoryClass;
 extern jmethodID g_KeyFactoryGetInstanceMethod;
 extern jmethodID g_KeyFactoryGenPrivateMethod;
 extern jmethodID g_KeyFactoryGenPublicMethod;
+extern jmethodID g_KeyFactoryGetKeySpecMethod;
+
+// java/security/spec/ECField
+extern jclass    g_ECFieldClass;
+extern jmethodID g_ECFieldGetFieldSize;
+
+// java/security/spec/ECFieldFp
+extern jclass    g_ECFieldFpClass;
+extern jmethodID g_ECFieldFpCtor;
+extern jmethodID g_ECFieldFpGetP;
+
+// java/security/spec/ECFieldF2m
+extern jclass    g_ECFieldF2mClass;
+extern jmethodID g_ECFieldF2mCtorWithCoefficientBigInteger;
+extern jmethodID g_ECFieldF2mGetReductionPolynomial;
+
+// java/security/spec/ECGenParameterSpec
+extern jclass    g_ECGenParameterSpecClass;
+extern jmethodID g_ECGenParameterSpecCtor;
+
+// java/security/spec/ECParameterSpec
+extern jclass    g_ECParameterSpecClass;
+extern jmethodID g_ECParameterSpecCtor;
+extern jmethodID g_ECParameterSpecGetCurve;
+extern jmethodID g_ECParameterSpecGetGenerator;
+extern jmethodID g_ECParameterSpecGetCofactor;
+extern jmethodID g_ECParameterSpecGetOrder;
+extern jmethodID g_ECParameterSpecGetCurveName;
+
+// java/security/spec/ECPoint
+extern jclass    g_ECPointClass;
+extern jmethodID g_ECPointCtor;
+extern jmethodID g_ECPointGetAffineX;
+extern jmethodID g_ECPointGetAffineY;
+
+// java/security/interfaces/ECPrivateKey
+extern jclass    g_ECPrivateKeyClass;
+extern jmethodID g_ECPrivateKeyGetS;
+
+// java/security/spec/ECPrivateKeySpec
+extern jclass    g_ECPrivateKeySpecClass;
+extern jmethodID g_ECPrivateKeySpecCtor;
+
+// java/security/interfaces/ECPublicKey
+extern jclass    g_ECPublicKeyClass;
+extern jmethodID g_ECPublicKeyGetW;
+
+// java/security/spec/ECPublicKeySpec
+extern jclass    g_ECPublicKeySpecClass;
+extern jmethodID g_ECPublicKeySpecCtor;
+extern jmethodID g_ECPublicKeySpecGetParams;
+
+// java/security/spec/EllipticCurve
+extern jclass    g_EllipticCurveClass;
+extern jmethodID g_EllipticCurveCtor;
+extern jmethodID g_EllipticCurveCtorWithSeed;
+extern jmethodID g_EllipticCurveGetA;
+extern jmethodID g_EllipticCurveGetB;
+extern jmethodID g_EllipticCurveGetField;
+extern jmethodID g_EllipticCurveGetSeed;
 
 // java/security/spec/X509EncodedKeySpec
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
+
+// javax/security/auth
+extern jclass    g_DestroyableClass;
+extern jmethodID g_destroy;
+
+// java/util/Collection
+extern jclass    g_CollectionClass;
+extern jmethodID g_CollectionIterator;
+extern jmethodID g_CollectionSize;
 
 // java/util/Date
 extern jclass    g_DateClass;
@@ -225,6 +314,13 @@ extern jclass    g_X500PrincipalClass;
 extern jmethodID g_X500PrincipalGetEncoded;
 extern jmethodID g_X500PrincipalHashCode;
 
+// javax/crypto/KeyAgreement
+extern jclass    g_KeyAgreementClass;
+extern jmethodID g_KeyAgreementGetInstance;
+extern jmethodID g_KeyAgreementInit;
+extern jmethodID g_KeyAgreementDoPhase;
+extern jmethodID g_KeyAgreementGenerateSecret;
+
 // JNI helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
@@ -236,10 +332,12 @@ void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
+void ReleaseLRef(JNIEnv *env, jobject lref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
 void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
+jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
 int GetEnumAsInt(JNIEnv *env, jobject enumObj);

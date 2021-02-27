@@ -4475,13 +4475,6 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 
 #endif /* DISABLE_REFLECTION_EMIT */
 
-void
-mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
-{
-	MONO_GC_UNREGISTER_ROOT_IF_MOVING (entry->gparam);
-	g_free (entry);
-}
-
 gint32
 ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, MonoBoolean create_open_instance, MonoError *error)
 {

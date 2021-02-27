@@ -3,6 +3,7 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <Scenario>WasmTestOnBrowser</Scenario>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
   </PropertyGroup>
 

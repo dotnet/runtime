@@ -387,7 +387,7 @@ namespace System.Threading.Tasks.Dataflow
                             Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                             bool consumed;
-                            messageValue = source.ConsumeMessage(messageHeader, _owningBatch, out consumed);
+                            messageValue = source.ConsumeMessage(messageHeader, _owningBatch, out consumed)!;
                             if (!consumed) return DataflowMessageStatus.NotAvailable;
                         }
 
@@ -1004,7 +1004,7 @@ namespace System.Threading.Tasks.Dataflow
                     KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (!consumed)
                     {
                         // The protocol broke down, so throw an exception, as this is fatal.  Before doing so, though,
@@ -1056,7 +1056,7 @@ namespace System.Threading.Tasks.Dataflow
                     KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (consumed)
                     {
                         var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue!);

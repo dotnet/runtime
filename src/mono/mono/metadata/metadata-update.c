@@ -206,7 +206,7 @@ void
 mono_metadata_update_invoke_hook (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	if (mono_get_runtime_callbacks ()->metadata_update_published)
-		mono_get_runtime_callbacks ()->metadata_update_published (domain, alc, generation);
+		mono_get_runtime_callbacks ()->metadata_update_published (alc, generation);
 }
 
 static uint32_t update_published, update_alloc_frontier;

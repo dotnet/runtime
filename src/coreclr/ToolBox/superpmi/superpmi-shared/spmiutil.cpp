@@ -227,3 +227,94 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     return fullPath;
 }
+
+#ifdef TARGET_AMD64
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
+#elif defined(TARGET_X86)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+#elif defined(TARGET_ARM)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+#elif defined(TARGET_ARM64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+#else
+#error Unsupported architecture
+#endif
+
+SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture()
+{
+    return SpmiTargetArchitecture;
+}
+
+void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture)
+{
+    SpmiTargetArchitecture = spmiTargetArchitecture;
+}
+
+// The following functions are used for arm64/arm32 relocation processing.
+// They are copies of the code in src\coreclr\utilcode\util.cpp.
+// We decided to copy them instead of linking with utilcode library
+// to avoid introducing additional runtime dependencies.
+
+void PutArm64Rel28(UINT32* pCode, INT32 imm28)
+{
+    UINT32 branchInstr = *pCode;
+    branchInstr &= 0xFC000000;
+    branchInstr |= ((imm28 >> 2) & 0x03FFFFFF);
+    *pCode = branchInstr;
+}
+
+void PutArm64Rel21(UINT32* pCode, INT32 imm21)
+{
+    UINT32 adrpInstr = *pCode;
+    adrpInstr &= 0x9F00001F;
+    INT32 immlo = imm21 & 0x03;
+    INT32 immhi = (imm21 & 0x1FFFFC) >> 2;
+    adrpInstr |= ((immlo << 29) | (immhi << 5));
+    *pCode = adrpInstr;
+}
+
+void PutArm64Rel12(UINT32* pCode, INT32 imm12)
+{
+    UINT32 addInstr = *pCode;
+    addInstr &= 0xFFC003FF;
+    addInstr |= (imm12 << 10);
+    *pCode = addInstr;
+}
+
+void PutThumb2Imm16(UINT16* p, UINT16 imm16)
+{
+    USHORT Opcode0 = p[0];
+    USHORT Opcode1 = p[1];
+    Opcode0 &= ~((0xf000 >> 12) | (0x0800 >> 1));
+    Opcode1 &= ~((0x0700 << 4) | (0x00ff << 0));
+    Opcode0 |= (imm16 & 0xf000) >> 12;
+    Opcode0 |= (imm16 & 0x0800) >> 1;
+    Opcode1 |= (imm16 & 0x0700) << 4;
+    Opcode1 |= (imm16 & 0x00ff) << 0;
+    p[0] = Opcode0;
+    p[1] = Opcode1;
+}
+
+void PutThumb2Mov32(UINT16* p, UINT32 imm32)
+{
+    PutThumb2Imm16(p, (UINT16)imm32);
+    PutThumb2Imm16(p + 2, (UINT16)(imm32 >> 16));
+}
+
+void PutThumb2BlRel24(UINT16* p, INT32 imm24)
+{
+    USHORT Opcode0 = p[0];
+    USHORT Opcode1 = p[1];
+    Opcode0 &= 0xF800;
+    Opcode1 &= 0xD000;
+
+    UINT32 S = (imm24 & 0x1000000) >> 24;
+    UINT32 J1 = ((imm24 & 0x0800000) >> 23) ^ S ^ 1;
+    UINT32 J2 = ((imm24 & 0x0400000) >> 22) ^ S ^ 1;
+
+    Opcode0 |= ((imm24 & 0x03FF000) >> 12) | (S << 10);
+    Opcode1 |= ((imm24 & 0x0000FFE) >> 1) | (J1 << 13) | (J2 << 11);
+
+    p[0] = Opcode0;
+    p[1] = Opcode1;
+}

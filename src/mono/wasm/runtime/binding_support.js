@@ -442,6 +442,8 @@ var BindingSupportLib = {
 					return uriValue;
 				case 23: // clr .NET SafeHandle
 					return this._unbox_safehandle_rooted (mono_obj);
+				case 30:
+					return undefined;
 				default:
 					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
 			}
