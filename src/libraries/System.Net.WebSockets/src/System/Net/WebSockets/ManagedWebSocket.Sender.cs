@@ -55,10 +55,7 @@ namespace System.Net.WebSockets
             /// </summary>
             private int _maskIndex;
 
-            private ManualResetValueTaskSourceCore<object> _valueTaskSource = new()
-            {
-                RunContinuationsAsynchronously = true
-            };
+            private ManualResetValueTaskSourceCore<object> _valueTaskSource;
             private ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter _awaiter;
             private readonly Action _onCompleted;
 
@@ -323,24 +320,26 @@ namespace System.Net.WebSockets
 
             private void OnCompleted()
             {
-                var success = false;
-
                 try
                 {
-                    _awaiter.GetResult();
-                    Reset();
-                    success = true;
-
-                    _awaiter = default;
-                    _valueTaskSource.SetResult(this);
+                    try
+                    {
+                        _awaiter.GetResult();
+                    }
+                    finally
+                    {
+                        _awaiter = default;
+                    }
                 }
-                catch (Exception ex) when (!success)
+                catch (Exception ex)
                 {
                     Reset();
-
-                    _awaiter = default;
                     _valueTaskSource.SetException(ex);
+                    return;
                 }
+
+                Reset();
+                _valueTaskSource.SetResult(this);
             }
 
             private sealed class BufferSegment
