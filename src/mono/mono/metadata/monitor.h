@@ -130,10 +130,8 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset);
 #define MONO_THREADS_SYNC_MEMBER_OFFSET(o)	((o)>>8)
 #define MONO_THREADS_SYNC_MEMBER_SIZE(o)	((o)&0xff)
 
-#if ENABLE_NETCORE
 ICALL_EXPORT
 gint64
 ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void);
-#endif
 
 #endif /* _MONO_METADATA_MONITOR_H_ */

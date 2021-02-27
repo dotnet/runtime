@@ -14,6 +14,19 @@
 
 extern JavaVM* gJvm;
 
+// java/io/ByteArrayInputStream
+extern jclass    g_ByteArrayInputStreamClass;
+extern jmethodID g_ByteArrayInputStreamCtor;
+
+// java/lang/Enum
+extern jclass    g_Enum;
+extern jmethodID g_EnumOrdinal;
+
+// java/security/Key
+extern jclass    g_KeyClass;
+extern jmethodID g_KeyGetAlgorithm;
+extern jmethodID g_KeyGetEncoded;
+
 // java/security/SecureRandom
 extern jclass    g_randClass;
 extern jmethodID g_randCtor;
@@ -72,6 +85,33 @@ extern jmethodID g_sslCtxGetDefaultSslParamsMethod;
 extern jclass    g_GCMParameterSpecClass;
 extern jmethodID g_GCMParameterSpecCtor;
 
+// java/security/cert/CertificateFactory
+extern jclass    g_CertFactoryClass;
+extern jmethodID g_CertFactoryGetInstance;
+extern jmethodID g_CertFactoryGenerateCertificate;
+extern jmethodID g_CertFactoryGenerateCRL;
+
+// java/security/cert/X509Certificate
+extern jclass    g_X509CertClass;
+extern jmethodID g_X509CertGetEncoded;
+extern jmethodID g_X509CertGetIssuerX500Principal;
+extern jmethodID g_X509CertGetNotAfter;
+extern jmethodID g_X509CertGetNotBefore;
+extern jmethodID g_X509CertGetPublicKey;
+extern jmethodID g_X509CertGetSerialNumber;
+extern jmethodID g_X509CertGetSigAlgOID;
+extern jmethodID g_X509CertGetSubjectX500Principal;
+extern jmethodID g_X509CertGetVersion;
+
+// java/security/cert/X509Certificate implements java/security/cert/X509Extension
+extern jmethodID g_X509CertGetCriticalExtensionOIDs;
+extern jmethodID g_X509CertGetExtensionValue;
+extern jmethodID g_X509CertGetNonCriticalExtensionOIDs;
+
+// java/security/cert/X509CRL
+extern jclass    g_X509CRLClass;
+extern jmethodID g_X509CRLGetNextUpdate;
+
 // java/security/interfaces/RSAKey
 extern jclass    g_RSAKeyClass;
 extern jmethodID g_RSAKeyGetModulus;
@@ -120,21 +160,86 @@ extern jmethodID g_KeyFactoryGenPublicMethod;
 extern jclass    g_X509EncodedKeySpecClass;
 extern jmethodID g_X509EncodedKeySpecCtor;
 
+// java/util/Date
+extern jclass    g_DateClass;
+extern jmethodID g_DateGetTime;
+
+// java/util/Iterator
+extern jclass    g_IteratorClass;
+extern jmethodID g_IteratorHasNext;
+extern jmethodID g_IteratorNext;
+
+// java/util/Set
+extern jclass    g_SetClass;
+extern jmethodID g_SetIterator;
+
 // com/android/org/conscrypt/NativeCrypto
 extern jclass    g_NativeCryptoClass;
+
+// javax/net/ssl/SSLEngine
+extern jclass    g_SSLEngine;
+extern jmethodID g_SSLEngineSetUseClientModeMethod;
+extern jmethodID g_SSLEngineGetSessionMethod;
+extern jmethodID g_SSLEngineBeginHandshakeMethod;
+extern jmethodID g_SSLEngineWrapMethod;
+extern jmethodID g_SSLEngineUnwrapMethod;
+extern jmethodID g_SSLEngineCloseInboundMethod;
+extern jmethodID g_SSLEngineCloseOutboundMethod;
+extern jmethodID g_SSLEngineGetHandshakeStatusMethod;
+
+// java/nio/ByteBuffer
+extern jclass    g_ByteBuffer;
+extern jmethodID g_ByteBufferAllocateMethod;
+extern jmethodID g_ByteBufferPutMethod;
+extern jmethodID g_ByteBufferPut2Method;
+extern jmethodID g_ByteBufferPut3Method;
+extern jmethodID g_ByteBufferFlipMethod;
+extern jmethodID g_ByteBufferGetMethod;
+extern jmethodID g_ByteBufferLimitMethod;
+extern jmethodID g_ByteBufferRemainingMethod;
+extern jmethodID g_ByteBufferPutBufferMethod;
+extern jmethodID g_ByteBufferCompactMethod;
+extern jmethodID g_ByteBufferPositionMethod;
+
+// javax/net/ssl/SSLContext
+extern jclass    g_SSLContext;
+extern jmethodID g_SSLContextGetInstanceMethod;
+extern jmethodID g_SSLContextInitMethod;
+extern jmethodID g_SSLContextCreateSSLEngineMethod;
+
+// javax/net/ssl/SSLSession
+extern jclass    g_SSLSession;
+extern jmethodID g_SSLSessionGetApplicationBufferSizeMethod;
+extern jmethodID g_SSLSessionGetPacketBufferSizeMethod;
+
+// javax/net/ssl/SSLEngineResult
+extern jclass    g_SSLEngineResult;
+extern jmethodID g_SSLEngineResultGetStatusMethod;
+extern jmethodID g_SSLEngineResultGetHandshakeStatusMethod;
+
+// javax/net/ssl/TrustManager
+extern jclass    g_TrustManager;
+
+// javax/security/auth/x500/X500Principal
+extern jclass    g_X500PrincipalClass;
+extern jmethodID g_X500PrincipalGetEncoded;
+extern jmethodID g_X500PrincipalHashCode;
 
 // JNI helpers
 #define LOG_DEBUG(fmt, ...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_INFO(fmt, ...) ((void)__android_log_print(ANDROID_LOG_INFO, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define LOG_ERROR(fmt, ...) ((void)__android_log_print(ANDROID_LOG_ERROR, "DOTNET", "%s: " fmt, __FUNCTION__, ## __VA_ARGS__))
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
+#define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
 
-void SaveTo(uint8_t* src, uint8_t** dst, size_t len);
+void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
+void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 JNIEnv* GetJNIEnv(void);
+int GetEnumAsInt(JNIEnv *env, jobject enumObj);

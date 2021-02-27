@@ -225,14 +225,6 @@ inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
     return (IMAGE_SYMBOL*) (((BYTE*) pHead) + IMAGE_SIZEOF_SYMBOL * idx);
 }
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
-#ifdef ENC_DELTA_HACK
-    BOOL g_EnCMode = FALSE;
-#endif
-
 //*****************************************************************************
 // To get a new instance, call CreateNewInstance() or CreateNewInstanceEx() instead of new
 //*****************************************************************************
@@ -374,14 +366,6 @@ CeeFileGenWriter::CeeFileGenWriter() // ctor is protected
     m_sectionFixups = NULL;
     m_pDebugDir = NULL;
 
-#endif
-
-#ifdef ENC_DELTA_HACK
-    // for EnC we want the RVA to be right at the front of the IL stream
-    PathString szFileName;
-    DWORD len = WszGetEnvironmentVariable(W("COMP_ENC_EMIT"), szFileName);
-    if (len > 0)
-        g_EnCMode = TRUE;
 #endif
 
 } // CeeFileGenWriter::CeeFileGenWriter()
@@ -564,12 +548,8 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
     }
 #endif // !TARGET_UNIX
 
-#ifdef ENC_DELTA_HACK
-    // fixups break because we've set the base RVA to 0 for the delta stream
-    if (! g_EnCMode)
-#endif
-        if (!m_fixed)
-            IfFailGo(fixup());
+    if (!m_fixed)
+        IfFailGo(fixup());
 
     outputFileName = m_outputFileName;
 
@@ -715,14 +695,7 @@ HRESULT CeeFileGenWriter::checkForErrors()
 HRESULT CeeFileGenWriter::getMethodRVA(ULONG codeOffset, ULONG *codeRVA)
 {
     _ASSERTE(codeRVA);
-#ifdef ENC_DELTA_HACK
-    // for EnC we want the RVA to be right be relative to the front of the delta IL stream rather
-    // than take into account the .text section and the cor header as we would for a real PE file
-    if (g_EnCMode)
-        *codeRVA = codeOffset;
-    else
-#endif
-        *codeRVA = getPEWriter().getIlRva() + codeOffset;
+    *codeRVA = getPEWriter().getIlRva() + codeOffset;
     return S_OK;
 } // HRESULT CeeFileGenWriter::getMethodRVA()
 

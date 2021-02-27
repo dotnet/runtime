@@ -17,6 +17,107 @@
 
 namespace
 {
+    BOOL g_ReferenceTrackerInitialized;
+    ObjCBridgeNative::BeginEndCallback g_BeginEndCallback;
+    ObjCBridgeNative::IsReferencedCallback g_IsReferencedCallback;
+    ObjCBridgeNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
+
+    // Right now the begin/end values are defined to be
+    // positive for begin and negative for end. The actual
+    // value isn't important. Since CoreCLR is calling this
+    // during a gen2 that will be used but it isn't defined
+    // at this point. See documentation for further details.
+    const int BeginValue = 2;
+    const int EndValue = -BeginValue;
+}
+
+BOOL QCALLTYPE ObjCBridgeNative::TryInitializeReferenceTracker(
+    _In_ BeginEndCallback beginEndCallback,
+    _In_ IsReferencedCallback isReferencedCallback,
+    _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(beginEndCallback != NULL
+            && isReferencedCallback != NULL
+            && trackedObjectEnteredFinalization != NULL);
+
+    BOOL success = FALSE;
+
+    BEGIN_QCALL;
+
+    // Switch to Cooperative mode since we are setting callbacks that
+    // will be used during a GC and we want to ensure a GC isn't occuring
+    // while they are being set.
+    {
+        GCX_COOP();
+        if (FastInterlockCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
+        {
+            g_BeginEndCallback = beginEndCallback;
+            g_IsReferencedCallback = isReferencedCallback;
+            g_TrackedObjectEnteredFinalizationCallback = trackedObjectEnteredFinalization;
+
+            success = TRUE;
+        }
+    }
+
+    END_QCALL;
+
+    return success;
+}
+
+void* QCALLTYPE ObjCBridgeNative::CreateReferenceTrackingHandle(
+    _In_ QCall::ObjectHandleOnStack obj,
+    _Outptr_ void** scratchMemory)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(scratchMemory != NULL);
+
+    OBJECTHANDLE instHandle;
+    void* scratchMemoryLocal;
+
+    BEGIN_QCALL;
+
+    // The reference tracking system must be initialized.
+    if (!g_ReferenceTrackerInitialized)
+        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_ReferenceTrackerNotInitialized"));
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        struct
+        {
+            OBJECTREF objRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+        GCPROTECT_BEGIN(gc);
+
+        gc.objRef = obj.Get();
+
+        // The object's type must be marked appropriately and with a finalizer.
+        if (!gc.objRef->GetMethodTable()->IsTrackedReferenceWithFinalizer())
+            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_TrackedNativeReferenceNoFinalizer"));
+
+        // Initialize the syncblock for this instance.
+        SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
+        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+        scratchMemoryLocal = interopInfo->AllocReferenceTrackingScratchMemory();
+        _ASSERTE(scratchMemoryLocal != NULL);
+
+        instHandle = GetAppDomain()->CreateTypedHandle(gc.objRef, HNDTYPE_REFCOUNTED);
+
+        GCPROTECT_END();
+    }
+
+    END_QCALL;
+
+    *scratchMemory = scratchMemoryLocal;
+    return (void*)instHandle;
+}
+
+namespace
+{
     BOOL s_msgSendOverridden = FALSE;
     void* s_msgSendOverrides[ObjCBridgeNative::MsgSendFunction::Last + 1] = {};
 
@@ -78,31 +179,99 @@ BOOL QCALLTYPE ObjCBridgeNative::TrySetGlobalMessageSendCallback(
 
 namespace
 {
-    void* objc_alloc(void* self, void* sel)
+    bool TryGetReferenceTrackingScratchMemory(_In_ OBJECTREF object, _Out_ void** scratch)
     {
-        return NULL;
-    }
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            PRECONDITION(CheckPointer(scratch));
+        }
+        CONTRACTL_END;
 
-    void objc_dealloc(void* self, void* sel)
-    {
+        SyncBlock* syncBlock = object->PassiveGetSyncBlock();
+        if (syncBlock == NULL)
+            return false;
 
+        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+        if (interopInfo == NULL)
+            return false;
+
+        // If no scratch memory is allocated, then the instance is not
+        // being tracked.
+        void* scratchLocal = interopInfo->GetReferenceTrackingScratchMemory();
+        if (scratchLocal == NULL)
+            return false;
+
+        *scratch = scratchLocal;
+        return true;
     }
 }
 
-void QCALLTYPE ObjCBridgeNative::GetLifetimeMethods(
-    _Out_ void** allocImpl,
-    _Out_ void** deallocImpl)
+bool ObjCBridgeNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced)
 {
-    QCALL_CONTRACT;
-    _ASSERTE(allocImpl != NULL && deallocImpl != NULL);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(isReferenced));
+    }
+    CONTRACTL_END;
 
-    BEGIN_QCALL;
+    *isReferenced = false;
 
-    // [TODO] Call out to Objective-C bridge binary instead
-    *allocImpl = (void*)&objc_alloc;
-    *deallocImpl = (void*)&objc_dealloc;
+    void* scratchMemory;
+    if (!TryGetReferenceTrackingScratchMemory(object, &scratchMemory))
+        return false;
 
-    END_QCALL;
+    _ASSERTE(g_IsReferencedCallback != NULL);
+    int result = g_IsReferencedCallback(scratchMemory);
+
+    *isReferenced = (result != 0);
+    return true;
+}
+
+void ObjCBridgeNative::OnFullGCStarted()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (g_BeginEndCallback != NULL)
+        g_BeginEndCallback(BeginValue);
+}
+
+void ObjCBridgeNative::OnFullGCFinished()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (g_BeginEndCallback != NULL)
+        g_BeginEndCallback(EndValue);
+}
+
+void ObjCBridgeNative::OnEnteredFinalizerQueue(_In_ OBJECTREF object)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    void* scratchMemory;
+    if (!TryGetReferenceTrackingScratchMemory(object, &scratchMemory))
+        return;
+
+    _ASSERTE(g_TrackedObjectEnteredFinalizationCallback != NULL);
+    g_TrackedObjectEnteredFinalizationCallback(scratchMemory);
 }
 
 #endif // FEATURE_OBJCBRIDGE

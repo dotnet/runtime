@@ -1720,7 +1720,7 @@ bool ComWrappersNative::HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ 
     return cxt.HasWrapper;
 }
 
-void ComWrappersNative::OnBackgroundGCStarted()
+void ComWrappersNative::OnFullGCStarted()
 {
     CONTRACTL
     {
@@ -1748,7 +1748,7 @@ void ComWrappersNative::OnBackgroundGCStarted()
     }
 }
 
-void ComWrappersNative::OnBackgroundGCFinished()
+void ComWrappersNative::OnFullGCFinished()
 {
     CONTRACTL
     {

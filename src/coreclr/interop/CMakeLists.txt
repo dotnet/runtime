@@ -37,7 +37,3 @@ add_library_clr(interop_obj
 
 add_library(interop INTERFACE)
 target_sources(interop INTERFACE $<TARGET_OBJECTS:interop_obj>)
-
-if (FEATURE_OBJCBRIDGE)
-    add_subdirectory("${CLR_SRC_NATIVE_DIR}/System.ObjectiveC.Native" System.ObjectiveC.Native)
-endif()

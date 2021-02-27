@@ -903,4 +903,16 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_blrabz(p, rn) arm_format_blra ((p), 0, 1, (rn), 0b11111)
 #define arm_blrab(p, rn, rm) arm_format_blra ((p), 1, 1, (rn), (rm))
 
+/* AUTIA */
+
+#define arm_format_autia(p, crm, op2) arm_emit ((p), (0b11010101000000110010000000011111 << 0) | ((crm) << 8) | ((op2) << 5))
+
+#define arm_autiasp(p) arm_format_autia ((p), 0b0011, 0b101)
+
+/* AUTIB */
+
+#define arm_format_autib(p, crm, op2) arm_emit ((p), (0b11010101000000110010000000011111 << 0) | ((crm) << 8) | ((op2) << 5))
+
+#define arm_autibsp(p) arm_format_autib ((p), 0b0011, 0b111)
+
 #endif /* __arm_CODEGEN_H__ */

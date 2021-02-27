@@ -3,6 +3,7 @@
   <PropertyGroup>
     <AssemblyName>dotnet-pgo</AssemblyName>
     <OutputType>Exe</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>8.0</LangVersion>
@@ -10,12 +11,25 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotnet-pgo</ToolCommandName>
+    <PackAsToolShimRuntimeIdentifiers>win-x64;win-x86;win-arm;osx-x64</PackAsToolShimRuntimeIdentifiers>
+    <PackagedShimOutputRootDirectory>$(OutputPath)</PackagedShimOutputRootDirectory>
+    <IsShipping>false</IsShipping> <!-- This tool is not yet ready to ship, but may do so in the future -->
+    <Description>.NET Performance Guided Optimization Tool</Description>
+    <PackageTags>Optimization</PackageTags>
+    <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../aot/ILCompiler.TypeSystem.ReadyToRun/ILCompiler.TypeSystem.ReadyToRun.csproj" />
     <ProjectReference Include="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.55" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>

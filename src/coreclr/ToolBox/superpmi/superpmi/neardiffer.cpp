@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // nearDiffer.cpp - differ that handles code that is very similar
@@ -295,7 +293,8 @@ void NearDiffer::DumpCodeBlock(unsigned char* block, ULONG blocksize, void* orig
 struct DiffData
 {
     // Common Data
-    CompileResult* cr;
+    CompileResult* cr1;
+    CompileResult* cr2;
 
     // Details of the first block
     size_t blocksize1;
@@ -377,9 +376,14 @@ bool NearDiffer::compareOffsets(
     if (ocOffset1 == ocOffset2) // Would be nice to check to see if it fits in the other code block
         return true;
 
+    // In the below, it seems rather odd to pass artifacts from cr1 into queries for cr2.
+    //
+    // One would generally expect to ask if cr1->map(artifact1) == cr2->map(artifact2).
+    // Leaving things this way for now as it seems to work.
+
     // VSD calling case.
     size_t Offset1 = (ipRelOffset1 - 8);
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != -1)
+    if (data->cr2->CallTargetTypes->GetIndex((DWORDLONG)Offset1) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
@@ -389,13 +393,13 @@ bool NearDiffer::compareOffsets(
     // x86 VSD calling cases.
     size_t Offset1b = (size_t)offset1 - 4;
     size_t Offset2b = (size_t)offset2;
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != -1)
+    if (data->cr2->CallTargetTypes->GetIndex((DWORDLONG)Offset1b) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
     }
-    if (data->cr->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != -1)
+    if (data->cr2->CallTargetTypes->GetIndex((DWORDLONG)Offset2b) != -1)
     {
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
@@ -404,20 +408,30 @@ bool NearDiffer::compareOffsets(
 
     // Case might be a field address that we handed out to handle inlined values being loaded into
     // a register as an immediate value (and where the address is encoded as an indirect immediate load)
-    size_t realTargetAddr = (size_t)data->cr->searchAddressMap((void*)gOffset2);
+    size_t realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)gOffset2);
     if (realTargetAddr == gOffset1)
         return true;
 
     // Case might be a field address that we handed out to handle inlined values being loaded into
     // a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
-    realTargetAddr = (size_t)data->cr->searchAddressMap((void*)offset2);
+    realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)offset2);
     if (realTargetAddr == offset1)
         return true;
     if (realTargetAddr == 0x424242) // this offset matches what we got back from a getTailCallCopyArgsThunk
         return true;
 
-    realTargetAddr = (size_t)data->cr->searchAddressMap((void*)(gOffset2));
+    realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)(gOffset2));
     if (realTargetAddr != (size_t)-1) // we know this was passed out as a bbloc
+        return true;
+
+    // A new clause that tries to handle the case where neither cr1 or cr2 is the
+    // recorded CR (diff case with two jits, neither of which is the one used for
+    // collection)
+    //
+    size_t mapped1 = (size_t)data->cr1->searchAddressMap((void*)offset1);
+    size_t mapped2 = (size_t)data->cr2->searchAddressMap((void*)offset2);
+
+    if ((mapped1 == mapped2) && (mapped1 != (size_t)-1))
         return true;
 
     return false;
@@ -494,7 +508,8 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
                                     void*          otherCodeBlock2,
                                     ULONG          otherCodeBlockSize2)
 {
-    DiffData data = {cr2,
+    DiffData data = {cr1,
+                     cr2,
 
                      // Details of the first block
                      (size_t)blocksize1, (size_t)datablock1, (size_t)datablockSize1, (size_t)originalBlock1,

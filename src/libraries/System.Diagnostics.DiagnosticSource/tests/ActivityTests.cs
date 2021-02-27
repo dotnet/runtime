@@ -1695,6 +1695,46 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestStatus()
+        {
+            Activity a = new Activity("Status");
+            Assert.Equal(ActivityStatusCode.Unset, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, null); // explicit description null parameter
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Ignored Description"); // explicit non null description
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Error Code"); // Default description null parameter
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Error Code", a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Ok, "Description will reset to null");
+            Assert.Equal(ActivityStatusCode.Ok, a.Status);
+            Assert.Null(a.StatusDescription);
+
+            a.SetStatus(ActivityStatusCode.Error, "Another Error Code Description");
+            Assert.Equal(ActivityStatusCode.Error, a.Status);
+            Assert.Equal("Another Error Code Description", a.StatusDescription);
+
+            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            Assert.Null(a.StatusDescription);
+        }
+
+        [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
             // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
@@ -1709,6 +1749,68 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(method);
             Assert.False(method.ReturnType.IsInterface);
             Assert.True(method.ReturnType.IsValueType);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RestoreOriginalParentTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Assert.Null(Activity.Current);
+
+                Activity a = new Activity("Root");
+                a.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                // Create Activity with the parent context to not use Activity.Current as a parent
+                Activity b = new Activity("Child");
+                b.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom());
+                b.Start();
+
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Child", Activity.Current.OperationName);
+
+                b.Stop();
+
+                // Now the child activity stopped. We used to restore null to the Activity.Current but now we restore
+                // the original parent stored in Activity.Current before we started the Activity.
+                Assert.NotNull(Activity.Current);
+                Assert.Equal("Root", Activity.Current.OperationName);
+
+                a.Stop();
+                Assert.Null(Activity.Current);
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TraceIdCustomGenerationTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                Random random = new Random();
+                byte [] traceIdBytes = new byte[16];
+
+                Activity.TraceIdGenerator = () =>
+                {
+                    random.NextBytes(traceIdBytes);
+                    return ActivityTraceId.CreateFromBytes(traceIdBytes);
+                };
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Null(Activity.Current);
+                    Activity a = new Activity("CustomTraceId");
+                    a.Start();
+
+                    Assert.Equal(ActivityTraceId.CreateFromBytes(traceIdBytes), a.TraceId);
+
+                    a.Stop();
+                }
+            }).Dispose();
         }
 
         public void Dispose()

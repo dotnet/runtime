@@ -119,6 +119,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         // Methods
         private List<InstanceMethod> _instanceMethods;
 
+        // PgoData
+        private Dictionary<PgoInfoKey, PgoInfo> _pgoInfos;
+
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
         private Dictionary<int, ReadyToRunSignature> _importSignatures;
@@ -374,6 +377,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             Initialize(metadata: null);
         }
 
+        public static bool IsReadyToRunImage(PEReader peReader)
+        {
+            if (peReader.PEHeaders == null)
+                return false;
+
+            if (peReader.PEHeaders.CorHeader == null)
+                return false;
+
+            if ((peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+            {
+                return TryLocateNativeReadyToRunHeader(peReader, out _);
+            }
+            else
+            {
+                return peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory.Size != 0;
+            }
+        }
+
         private unsafe void Initialize(IAssemblyMetadata metadata)
         {
             _assemblyCache = new List<IAssemblyMetadata>();
@@ -429,6 +450,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
 
+            if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.PgoInstrumentationData, out _))
+            {
+                ParsePgoMethods();
+            }
+
             _instanceMethods = new List<InstanceMethod>();
             foreach (ReadyToRunAssembly assembly in _readyToRunAssemblies)
             {
@@ -479,24 +505,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
+        private static bool TryLocateNativeReadyToRunHeader(PEReader reader, out int readyToRunHeaderRVA)
+        {
+            PEExportTable exportTable = reader.GetExportTable();
+
+            return exportTable.TryGetValue("RTR_HEADER", out readyToRunHeaderRVA);
+        }
+
         private bool TryLocateNativeReadyToRunHeader()
         {
-            try
-            {
-                PEExportTable exportTable = CompositeReader.GetExportTable();
-                if (exportTable.TryGetValue("RTR_HEADER", out _readyToRunHeaderRVA))
-                {
-                    _composite = true;
-                    return true;
-                }
-            }
-            catch (BadImageFormatException)
-            {
-                // MSIL assemblies with no ready-to-run payload typically have no export table
-                return false;
-            }
+            _composite = TryLocateNativeReadyToRunHeader(CompositeReader, out _readyToRunHeaderRVA);
 
-            return false;
+            return _composite;
         }
 
         private IAssemblyMetadata GetSystemModuleMetadataReader()
@@ -897,6 +917,129 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureMethods();
                 return _readyToRunAssemblies.SelectMany(assembly => assembly.Methods).Concat(_instanceMethods.Select(im => im.Method));
+            }
+        }
+
+        public IEnumerable<PgoInfo> AllPgoInfos
+        {
+            get
+            {
+                EnsureMethods();
+                return _pgoInfos.Values;
+            }
+        }
+
+        public PgoInfo GetPgoInfoByKey(PgoInfoKey key)
+        {
+            EnsureMethods();
+            if (_pgoInfos != null)
+            {
+                _pgoInfos.TryGetValue(key, out var returnValue);
+                return returnValue;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Initialize generic method instances with argument types and runtime function indices from InstanceMethodEntrypoints
+        /// </summary>
+        private void ParsePgoMethods()
+        {
+            _pgoInfos = new Dictionary<PgoInfoKey, PgoInfo>();
+            if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.PgoInstrumentationData, out ReadyToRunSection pgoInstrumentationDataSection))
+            {
+                return;
+            }
+            int pgoInstrumentationDataOffset = GetOffset(pgoInstrumentationDataSection.RelativeVirtualAddress);
+            NativeParser parser = new NativeParser(Image, (uint)pgoInstrumentationDataOffset);
+            NativeHashtable pgoInstrumentationData = new NativeHashtable(Image, parser, (uint)(pgoInstrumentationDataOffset + pgoInstrumentationDataSection.Size));
+            NativeHashtable.AllEntriesEnumerator allEntriesEnum = pgoInstrumentationData.EnumerateAllEntries();
+            NativeParser curParser = allEntriesEnum.GetNext();
+            while (!curParser.IsNull())
+            {
+                IAssemblyMetadata mdReader = GetGlobalMetadata();
+                SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
+                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
+
+                string owningType = null;
+
+                uint methodFlags = decoder.ReadUInt();
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
+                {
+                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
+                    if ((_composite) && mdReader == null)
+                    {
+                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
+                        mdReader = GetSystemModuleMetadataReader();
+                    }
+                    owningType = decoder.ReadTypeSignatureNoEmit();
+                }
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
+                {
+                    throw new NotImplementedException();
+                }
+                EntityHandle methodHandle;
+                int rid = (int)decoder.ReadUInt();
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken) != 0)
+                {
+                    methodHandle = MetadataTokens.MemberReferenceHandle(rid);
+                }
+                else
+                {
+                    methodHandle = MetadataTokens.MethodDefinitionHandle(rid);
+                }
+                string[] methodTypeArgs = null;
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
+                {
+                    uint typeArgCount = decoder.ReadUInt();
+                    methodTypeArgs = new string[typeArgCount];
+                    for (int typeArgIndex = 0; typeArgIndex < typeArgCount; typeArgIndex++)
+                    {
+                        methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignatureNoEmit();
+                    }
+                }
+
+                string constrainedType = null;
+                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained) != 0)
+                {
+                    constrainedType = decoder.ReadTypeSignatureNoEmit();
+                }
+
+                GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
+
+                PgoInfoKey key = new PgoInfoKey(GetGlobalMetadata(), owningType, methodHandle, methodTypeArgs);
+                PgoInfo info = new PgoInfo(key, this, pgoFormatVersion, Image, pgoOffset);
+                _pgoInfos.Add(key, info);
+                curParser = allEntriesEnum.GetNext();
+            }
+
+            return;
+
+            // Broken out into helper function in case we ever implement pgo data that isn't tied to a signature
+            void GetPgoOffsetAndVersion(int offset, out int version, out int pgoDataOffset)
+            {
+                version = 0;
+                // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
+                uint versionAndFlags = 0; // the RUNTIME_FUNCTIONS index
+                offset = (int)NativeReader.DecodeUnsigned(Image, (uint)offset, ref versionAndFlags);
+
+                switch (versionAndFlags & 3)
+                {
+                    case 3:
+                        uint val = 0;
+                        NativeReader.DecodeUnsigned(Image, (uint)offset, ref val);
+                        offset -= (int)val;
+                        break;
+                    case 1:
+                        // Offset already correct
+                        break;
+                    default:
+                        throw new Exception("Invalid Pgo format");
+                }
+
+                version = (int)(versionAndFlags >> 2);
+                pgoDataOffset = offset;
             }
         }
 

@@ -104,7 +104,6 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	MonoBasicBlock *bb;
 	GSList *bb_seq_points, *l;
 	MonoInst *last;
-	MonoDomain *domain = cfg->domain;
 	int i, seq_info_size;
 	GSList **next = NULL;
 	SeqPoint* seq_points;
@@ -238,13 +237,15 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {
-		mono_domain_lock (domain);
+		// FIXME:
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+		jit_mm_lock (jit_mm);
 		// FIXME: The lookup can fail if the method is JITted recursively though a type cctor
-		if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, cfg->method_to_register))
-			g_hash_table_insert (domain_jit_info (domain)->seq_points, cfg->method_to_register, cfg->seq_point_info);
+		if (!g_hash_table_lookup (jit_mm->seq_points, cfg->method_to_register))
+			g_hash_table_insert (jit_mm->seq_points, cfg->method_to_register, cfg->seq_point_info);
 		else
 			mono_seq_point_info_free (cfg->seq_point_info);
-		mono_domain_unlock (domain);
+		jit_mm_unlock (jit_mm);
 
 		g_assert (jinfo);
 		jinfo->seq_points = cfg->seq_point_info;
@@ -261,6 +262,7 @@ mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 	ERROR_DECL (error);
 	MonoSeqPointInfo *seq_points;
 	MonoMethod *declaring_generic_method = NULL, *shared_method = NULL;
+	MonoJitMemoryManager *jit_mm;
 
 	if (method->is_inflated) {
 		declaring_generic_method = mono_method_get_declaring_generic_method (method);
@@ -268,15 +270,17 @@ mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 		mono_error_assert_ok (error);
 	}
 
-	mono_domain_lock (domain);
-	seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->seq_points, method);
+	// FIXME:
+	jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
+	seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, method);
 	if (!seq_points && method->is_inflated) {
 		/* generic sharing + aot */
-		seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->seq_points, declaring_generic_method);
+		seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, declaring_generic_method);
 		if (!seq_points)
-			seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->seq_points, shared_method);
+			seq_points = (MonoSeqPointInfo *)g_hash_table_lookup (jit_mm->seq_points, shared_method);
 	}
-	mono_domain_unlock (domain);
+	jit_mm_unlock (jit_mm);
 
 	return seq_points;
 }

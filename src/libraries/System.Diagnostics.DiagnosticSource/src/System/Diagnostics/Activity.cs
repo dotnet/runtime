@@ -82,6 +82,36 @@ namespace System.Diagnostics
         private LinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
+        private ActivityStatusCode _statusCode;
+        private string? _statusDescription;
+        private Activity? _previousActiveActivity;
+
+        /// <summary>
+        /// Gets status code of the current activity object.
+        /// </summary>
+        public ActivityStatusCode Status => _statusCode;
+
+        /// <summary>
+        /// Gets the status descrition of the current activity object.
+        /// </summary>
+        public string? StatusDescription => _statusDescription;
+
+        /// <summary>
+        /// Sets the status code and description on the current activity object.
+        /// </summary>
+        /// <param name="code">The status code</param>
+        /// <param name="description">The error status descrition</param>
+        /// <returns>'this' for convenient chaining</returns>
+        /// <remarks>
+        /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
+        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// </remarks>
+        public Activity SetStatus(ActivityStatusCode code, string? description = null)
+        {
+            _statusCode = code;
+            _statusDescription = code == ActivityStatusCode.Error ? description : null;
+            return this;
+        }
 
         /// <summary>
         /// Gets the relationship between the Activity, its parents, and its children in a Trace.
@@ -592,15 +622,15 @@ namespace System.Diagnostics
             }
             else
             {
+                _previousActiveActivity = Current;
                 if (_parentId == null && _parentSpanId is null)
                 {
-                    Activity? parent = Current;
-                    if (parent != null)
+                    if (_previousActiveActivity != null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
                         // 2. All started activities have a finite parent change (by inductive reasoning).
-                        Parent = parent;
+                        Parent = _previousActiveActivity;
                     }
                 }
 
@@ -657,8 +687,7 @@ namespace System.Diagnostics
                 }
 
                 Source.NotifyActivityStop(this);
-
-                SetCurrent(Parent);
+                SetCurrent(_previousActiveActivity);
             }
         }
 
@@ -802,6 +831,18 @@ namespace System.Diagnostics
                 return new ActivitySpanId(_parentSpanId);
             }
         }
+
+        /// <summary>
+        /// When starting an Activity which does not have a parent context, the Trace Id will automatically be generated using random numbers.
+        /// TraceIdGenerator can be used to override the runtime's default Trace Id generation algorithm.
+        /// </summary>
+        /// <remarks>
+        /// - TraceIdGenerator needs to be set only if the default Trace Id generation is not enough for the app scenario.
+        /// - When setting TraceIdGenerator, ensure it is performant enough to avoid any slowness in the Activity starting operation.
+        /// - If TraceIdGenerator is set multiple times, the last set will be the one used for the Trace Id generation.
+        /// - Setting TraceIdGenerator to null will re-enable the default Trace Id generation algorithm.
+        /// </remarks>
+        public static Func<ActivityTraceId>? TraceIdGenerator { get; set; }
 
         /* static state (configuration) */
         /// <summary>
@@ -966,55 +1007,15 @@ namespace System.Diagnostics
             return ret;
         }
 
-        internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request)
+        internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
+                                        IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
-
-            if (parentId != null)
-            {
-                activity._parentId = parentId;
-            }
-            else if (parentContext != default)
-            {
-                activity._traceId = parentContext.TraceId.ToString();
-
-                if (parentContext.SpanId != default)
-                {
-                    activity._parentSpanId = parentContext.SpanId.ToString();
-                }
-
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
-            }
-            else
-            {
-                Activity? parent = Current;
-                if (parent != null)
-                {
-                    // The parent change should not form a loop. We are actually guaranteed this because
-                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
-                    // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = parent;
-                }
-            }
-
-            activity.IdFormat =
-                ForceDefaultIdFormat ? DefaultIdFormat :
-                activity.Parent != null ? activity.Parent.IdFormat :
-                activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                activity._parentId == null ? DefaultIdFormat :
-                IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
-                ActivityIdFormat.Hierarchical;
-
-            if (activity.IdFormat == ActivityIdFormat.W3C)
-                activity.GenerateW3CId();
-            else
-                activity._id = activity.GenerateHierarchicalId();
+            activity.IdFormat = idFormat;
 
             if (links != null)
             {
@@ -1050,8 +1051,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? GetUtcNow() : startTime.UtcDateTime;
-
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
             if (request == ActivitySamplingResult.AllDataAndRecorded)
@@ -1059,7 +1058,32 @@ namespace System.Diagnostics
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
-            SetCurrent(activity);
+            if (parentId != null)
+            {
+                activity._parentId = parentId;
+            }
+            else if (parentContext != default)
+            {
+                activity._traceId = parentContext.TraceId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
+                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._traceState = parentContext.TraceState;
+            }
+
+            if (startTime != default)
+            {
+                activity.StartTimeUtc = startTime.UtcDateTime;
+            }
+
+            if (startIt)
+            {
+                activity.Start();
+            }
 
             return activity;
         }
@@ -1077,7 +1101,9 @@ namespace System.Diagnostics
             {
                 if (!TrySetTraceIdFromParent())
                 {
-                    _traceId = ActivityTraceId.CreateRandom().ToHexString();
+                    Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
+                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    _traceId = id.ToHexString();
                 }
             }
 
@@ -1734,7 +1760,7 @@ namespace System.Diagnostics
         {
             return _hexString == traceId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivityTraceId traceId)
                 return _hexString == traceId._hexString;
@@ -1919,7 +1945,7 @@ namespace System.Diagnostics
         {
             return _hexString == spanId._hexString;
         }
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is ActivitySpanId spanId)
                 return _hexString == spanId._hexString;

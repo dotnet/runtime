@@ -1973,6 +1973,33 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+#ifdef FEATURE_OBJCBRIDGE
+    // Check if this type has a finalizer and then if it is a referenced tracked type.
+    if (pMT->HasFinalizer() && !IsValueClass() && !IsInterface() && !IsDelegate())
+    {
+        BOOL isTrackedReference = FALSE;
+        if (HasParent())
+        {
+            MethodTable * pParentClass = GetParentMethodTable();
+            PREFIX_ASSUME(pParentClass != NULL);
+            isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
+        }
+
+        if (!isTrackedReference)
+        {
+            HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+                WellKnownAttribute::ObjCTrackedNativeReferenceAttribute,
+                NULL,
+                NULL);
+
+            isTrackedReference = hr == S_OK ? TRUE : FALSE;
+        }
+
+        if (isTrackedReference)
+            pMT->SetIsTrackedReferenceWithFinalizer();
+    }
+#endif // FEATURE_OBJCBRIDGE
+
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
     pModule->EnsureTypeDefCanBeStored(bmtInternal->pType->GetTypeDefToken());
@@ -2722,7 +2749,7 @@ MethodTableBuilder::EnumerateClassMethods()
 
         {
             SigParser genericArgParser(pMemberSignature, cMemberSignature);
-            ULONG ulCallConv;
+            uint32_t ulCallConv;
             hr = genericArgParser.GetCallingConvInfo(&ulCallConv);
             if (FAILED(hr))
             {
@@ -3031,13 +3058,13 @@ MethodTableBuilder::EnumerateClassMethods()
             if ((bmtGenerics->pVarianceInfo != NULL) && !IsMdStatic(dwMemberAttrs))
             {
                 SigPointer sp(pMemberSignature, cMemberSignature);
-                ULONG callConv;
+                uint32_t callConv;
                 IfFailThrow(sp.GetCallingConvInfo(&callConv));
 
                 if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
                     IfFailThrow(sp.GetData(NULL));
 
-                DWORD numArgs;
+                uint32_t numArgs;
                 IfFailThrow(sp.GetData(&numArgs));
 
                 // Return type behaves covariantly
@@ -3051,7 +3078,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     BuildMethodTableThrowException(IDS_CLASSLOAD_VARIANCE_IN_METHOD_RESULT, tok);
                 }
                 IfFailThrow(sp.SkipExactlyOne());
-                for (DWORD j = 0; j < numArgs; j++)
+                for (uint32_t j = 0; j < numArgs; j++)
                 {
                     // Argument types behave contravariantly
                     if (!EEClass::CheckVarianceInSig(bmtGenerics->GetNumGenericArgs(),

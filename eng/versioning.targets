@@ -20,6 +20,9 @@
     <AssemblyMetadata Include="PreferInbox">
       <Value>True</Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="IsTrimmable" Condition="'$(SetIsTrimmable)' != 'false'">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
@@ -83,7 +86,7 @@
       </AssemblyAttribute>
 
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
-                         Condition="'$(SkipFrameworkAssemblyMetadata)' != 'true' and '@(AssemblyMetadata)' != ''">
+                         Condition="'@(AssemblyMetadata)' != ''">
         <_Parameter1>%(AssemblyMetadata.Identity)</_Parameter1>
         <_Parameter2>%(AssemblyMetadata.Value)</_Parameter2>
       </AssemblyAttribute>
@@ -158,8 +161,8 @@
 
   </Target>
 
-  <!-- Removes assembly level attributes for Browser. -->
-  <Target Name="RemoveSupportedPlatformAssemblyAttributeForBrowser" AfterTargets="GetAssemblyAttributes" Condition="'$(TargetFrameworkSuffix)' == 'Browser' or '$(IsTestProject)' == 'true'">
+  <!-- Removes assembly level attributes from test projects. -->
+  <Target Name="RemoveSupportedOSPlatformAttributeFromTestProjects" AfterTargets="GetAssemblyAttributes" Condition="'$(IsTestProject)' == 'true'">
     <ItemGroup>
       <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
       <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />

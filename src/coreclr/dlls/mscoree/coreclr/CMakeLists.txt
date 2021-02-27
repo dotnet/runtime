@@ -1,3 +1,10 @@
+
+# we need to define this library before adding .def fiels to sources.
+add_library_clr(coreclr_static
+    STATIC
+    ${CLR_SOURCES}
+)
+
 if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
@@ -61,11 +68,6 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
 add_library_clr(coreclr
     SHARED
-    ${CLR_SOURCES}
-)
-
-add_library_clr(coreclr_static
-    STATIC
     ${CLR_SOURCES}
 )
 
@@ -165,12 +167,6 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
-if(FEATURE_OBJCBRIDGE)
-    list(APPEND CORECLR_LIBRARIES
-        System.ObjectiveC.Native
-    )
-endif()
-
 target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks)
 target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
@@ -227,9 +223,6 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr ADDITIONAL_DESTINATIONS sharedFramework)
-
-# publish coreclr_static lib
-_install(TARGETS coreclr_static DESTINATION lib)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

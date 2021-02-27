@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
     using System.Xml;
@@ -19,7 +21,7 @@ namespace System.Xml.Serialization
             _ns = ns;
         }
 
-        public override bool Equals(object? other)
+        public override bool Equals([NotNullWhen(true)] object? other)
         {
             if (!(other is NameKey)) return false;
             NameKey key = (NameKey)other;

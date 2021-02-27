@@ -270,7 +270,7 @@ namespace System.Security.AccessControl
         public System.Security.AccessControl.PropagationFlags PropagationFlags { get { throw null; } }
         public System.Security.AccessControl.GenericAce Copy() { throw null; }
         public static System.Security.AccessControl.GenericAce CreateFromBinaryForm(byte[] binaryForm, int offset) { throw null; }
-        public sealed override bool Equals(object? o) { throw null; }
+        public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public abstract void GetBinaryForm(byte[] binaryForm, int offset);
         public sealed override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.AccessControl.GenericAce? left, System.Security.AccessControl.GenericAce? right) { throw null; }

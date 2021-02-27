@@ -29,6 +29,8 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
+        private Guid? _perfMapMvid;
+        private bool _generateProfileFile;
         private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
@@ -146,10 +148,17 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, Guid? inputModuleMvid)
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapMvid = inputModuleMvid;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
+        {
+            _generateProfileFile = generateProfileFile;
             return this;
         }
 
@@ -226,6 +235,7 @@ namespace ILCompiler
             NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
+                _profileData,
                 _nameMangler,
                 corHeaderNode,
                 debugDirectoryNode,
@@ -245,14 +255,17 @@ namespace ILCompiler
 
                 case OptimizationMode.PreferSize:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SIZE_OPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
 
                 case OptimizationMode.PreferSpeed:
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_SPEED_OPT);
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
 
                 default:
                     // Not setting a flag results in BLENDED_CODE.
+                    corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
             }
 
@@ -279,6 +292,8 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
+                perfMapMvid: _perfMapMvid,
+                generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,
                 _r2rMethodLayoutAlgorithm,

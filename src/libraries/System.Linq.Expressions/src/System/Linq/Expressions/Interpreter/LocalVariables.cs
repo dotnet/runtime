@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Interpreter
         public int Index { get; }
         public ParameterExpression Parameter { get; }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is LocalDefinition)
             {

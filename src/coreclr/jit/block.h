@@ -726,8 +726,16 @@ struct BasicBlock : private LIR::Range
     };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
-    unsigned bbStkTempsIn;   // base# for input stack temps
-    unsigned bbStkTempsOut;  // base# for output stack temps
+
+    union {
+        unsigned bbStkTempsIn;       // base# for input stack temps
+        int      bbCountSchemaIndex; // schema index for count instrumentation
+    };
+
+    union {
+        unsigned bbStkTempsOut;      // base# for output stack temps
+        int      bbClassSchemaIndex; // schema index for class instrumentation
+    };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
@@ -874,9 +882,14 @@ struct BasicBlock : private LIR::Range
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet    bbReach; // Set of all blocks that can reach this one
-    BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
-                         // Dominator) used to compute the dominance tree.
+    BlockSet bbReach; // Set of all blocks that can reach this one
+
+    union {
+        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
+                                 // Dominator) used to compute the dominance tree.
+        void* bbSparseProbeList; // Used early on by fgInstrument
+        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+    };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
 

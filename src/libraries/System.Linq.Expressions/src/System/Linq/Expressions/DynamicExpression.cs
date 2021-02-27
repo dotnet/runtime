@@ -35,6 +35,9 @@ namespace System.Linq.Expressions
         /// Reduces the dynamic expression node to a simpler expression.
         /// </summary>
         /// <returns>The reduced expression.</returns>
+        [DynamicDependency("Target", typeof(CallSite<>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The field will be preserved by the DynamicDependency")]
         public override Expression Reduce()
         {
             var site = Expression.Constant(CallSite.Create(DelegateType, Binder));

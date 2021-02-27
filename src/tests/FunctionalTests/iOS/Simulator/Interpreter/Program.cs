@@ -9,10 +9,7 @@ using System.Runtime.InteropServices;
 public static class Program
 {
     [DllImport("__Internal")]
-    public extern static void mono_ios_append_output (string value);
-
-    [DllImport("__Internal")]
-    public extern static void mono_ios_set_summary (string value);
+    public static extern void mono_ios_set_summary (string value);
     
     public static async Task<int> Main(string[] args)
     {

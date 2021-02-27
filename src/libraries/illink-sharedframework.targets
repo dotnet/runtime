@@ -63,7 +63,7 @@
       <_LibrariesToLink Include="$(SystemPrivateCoreLibPath)" />
 
       <RootAssemblies Include="@(_LibrariesToLink)">
-        <RootMode>visible</RootMode>
+        <RootMode>library</RootMode>
       </RootAssemblies>
     </ItemGroup>
 
@@ -77,6 +77,7 @@
 
       <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.Shared.xml" />
+      <_SuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
       <_SuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
 
       <!-- netstandard2.1-only System.ComponentModel.Annotations XML file is not bin-placed during -allConfigurations builds

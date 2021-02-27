@@ -887,6 +887,34 @@ private:
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
 #endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCBRIDGE
+public:
+    void* AllocReferenceTrackingScratchMemory()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // The allocation is meant to indicate that memory
+        // has been made available by the system. Calling the 'get'
+        // without allocating memory indicates there has been
+        // no request for reference tracking scratch memory.
+        m_scratchMemory = m_scratchAlloc;
+        return m_scratchMemory;
+    }
+
+    void* GetReferenceTrackingScratchMemory()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_scratchMemory;
+    }
+
+private:
+    void* m_scratchMemory;
+
+    // Two pointers worth of bytes of the requirement for
+    // the current consuming implementation so that is what
+    // is being allocated.
+    BYTE m_scratchAlloc[2 * sizeof(void*)];
+#endif // FEATURE_OBJCBRIDGE
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;

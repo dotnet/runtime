@@ -61,8 +61,8 @@ public: // Unwrapping support
     static bool HasManagedObjectComWrapper(_In_ OBJECTREF object, _Out_ bool* isActive);
 
 public: // GC interaction
-    static void OnBackgroundGCStarted();
-    static void OnBackgroundGCFinished();
+    static void OnFullGCStarted();
+    static void OnFullGCFinished();
 };
 
 class GlobalComWrappersForMarshalling
@@ -113,6 +113,10 @@ public: // Functions operating on a registered global instance for tracker suppo
 class ObjCBridgeNative
 {
 public:
+    using BeginEndCallback = void(STDMETHODCALLTYPE *)(_In_ int);
+    using IsReferencedCallback = int(STDMETHODCALLTYPE *)(_In_ void*);
+    using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(_In_ void*);
+
     // See MsgSendFunction in Bridge.cs
     enum MsgSendFunction
     {
@@ -125,13 +129,26 @@ public:
     };
 
 public: // static
+    static BOOL QCALLTYPE TryInitializeReferenceTracker(
+        _In_ BeginEndCallback beginEndCallback,
+        _In_ IsReferencedCallback isReferencedCallback,
+        _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization);
+
+    static void* QCALLTYPE CreateReferenceTrackingHandle(
+        _In_ QCall::ObjectHandleOnStack obj,
+        _Outptr_ void** scratchMemory);
+
     static BOOL QCALLTYPE TrySetGlobalMessageSendCallback(
         _In_ MsgSendFunction msgSendFunction,
         _In_ void* fptr);
 
-    static void QCALLTYPE GetLifetimeMethods(
-        _Out_ void** allocImpl,
-        _Out_ void** deallocImpl);
+public: // Instance inspection
+    static bool IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced);
+
+public: // GC interaction
+    static void OnFullGCStarted();
+    static void OnFullGCFinished();
+    static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
 #endif // FEATURE_OBJCBRIDGE
