@@ -73,7 +73,7 @@ namespace System.Linq
             // in order to convert fromEnd indices to regular indices.
             // Enumerable counts can change over time, so it is very
             // important that this check happens at enumeration time;
-            // do not move outside of the iterator method.
+            // do not move it outside of the iterator method.
             if (source.TryGetNonEnumeratedCount(out int count))
             {
                 startIndex = CalculateStartIndex(isStartIndexFromEnd, startIndex, count);
