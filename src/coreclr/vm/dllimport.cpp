@@ -3143,7 +3143,7 @@ BOOL NDirect::MarshalingRequired(
             // Pending exceptions are handled by stub
             if (Interop::ShouldCheckForPendingException(pNMD))
                 return TRUE;
-#endif !CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
         }
 
         callConv = sigInfo.GetCallConv();
