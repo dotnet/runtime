@@ -133,6 +133,7 @@
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot Condition="$(IsFunctionalTest) != true">$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
     <TestArchiveTestsRoot Condition="$(IsFunctionalTest) == true">$(TestArchiveRoot)runonly/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot Condition="'$(Scenario)' == 'BuildWasmApps'">$(TestArchiveRoot)buildwasmapps/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
@@ -170,7 +171,7 @@
     <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(SkipTestUtilitiesReference)' != 'true'">
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 

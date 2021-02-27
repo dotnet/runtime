@@ -220,9 +220,26 @@
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+      <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
   </PropertyGroup>
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp;StageEmSdkForHelix" />
+
+  <!-- on the CI, we don't have emscripten provisioned in src/mono/wasm/emsdk. Instead we have
+    the path in $(EMSDK_PATH). But we can't use that for packaging emsdk as a helix correlation
+    payload because the helix tasks try to wrote a .payload file to that directory, which
+    we can't because it could be in `/usr/local/emscripten`. So, we copy the files over to
+  `src/mono/wasm/emsdk`, and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'BuildWasmApps' and '$(ContinuousIntegrationBuild)' == 'true' and !Exists($(EmSdkDir))">
+    <Error Condition="!Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDir) or in EMSDK_PATH=$(EMSDK_PATH)" />
+
+    <ItemGroup>
+      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(EmSdkDir)" />
+    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDir)\%(RecursiveDir)" />
+  </Target>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>
