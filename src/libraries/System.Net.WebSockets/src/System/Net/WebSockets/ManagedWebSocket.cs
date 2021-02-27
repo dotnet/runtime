@@ -397,7 +397,7 @@ namespace System.Net.WebSockets
         /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
         private ValueTask SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer)
         {
-            Debug.Assert(!_sendFrameAsyncLock.IsLocked, "Caller should hold the _sendFrameAsyncLock");
+            Debug.Assert(_sendFrameAsyncLock.IsLocked, "Caller should hold the _sendFrameAsyncLock");
 
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the send lock, so we don't need to asynchronously wait for it.
@@ -503,6 +503,35 @@ namespace System.Net.WebSockets
             }
         }
 
+        private async ValueTask<MessageOpcode> OnControlMessageAsync(CancellationToken cancellationToken)
+        {
+            var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
+            if (messageOrNull is null)
+            {
+                ThrowIfEOFUnexpected(true);
+            }
+            ControlMessage message = messageOrNull.GetValueOrDefault();
+
+            // If the header represents a ping or a pong, it's a control message meant
+            // to be transparent to the user, so handle it and then loop around to read again.
+            // Alternatively, if it's a close message, handle it and exit.
+            if (message.Opcode is MessageOpcode.Ping or MessageOpcode.Pong)
+            {
+                // If this was a ping, send back a pong response.
+                if (message.Opcode == MessageOpcode.Ping)
+                {
+                    await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, message.Payload, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                Debug.Assert(message.Opcode == MessageOpcode.Close);
+                await HandleReceivedCloseAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+            }
+
+            return message.Opcode;
+        }
+
         /// <summary>
         /// Receive the next text, binary, continuation, or close message, returning information about it and
         /// writing its payload into the supplied buffer.  Other control messages may be consumed and processed
@@ -525,62 +554,38 @@ namespace System.Net.WebSockets
                 {
                     ReceiveResult result = await _receiver.ReceiveAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
 
-                    if (result.ResultType != ReceiveResultType.Message)
+                    switch (result.ResultType)
                     {
-                        if (result.ResultType == ReceiveResultType.ControlMessage)
-                        {
-                            var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
-                            if (messageOrNull is null)
+                        case ReceiveResultType.Message:
+                            // If this a text message, validate that it contains valid UTF8.
+                            if (result.MessageType == WebSocketMessageType.Text && result.Count > 0 &&
+                            !TryValidateUtf8(payloadBuffer.Span.Slice(0, result.Count), result.EndOfMessage, _utf8TextState))
                             {
-                                ThrowIfEOFUnexpected(true);
+                                await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
                             }
-                            ControlMessage message = messageOrNull.GetValueOrDefault();
+                            return resultGetter.GetResult(
+                                count: result.Count,
+                                messageType: result.MessageType,
+                                endOfMessage: result.EndOfMessage,
+                                closeStatus: null, closeDescription: null);
 
-                            // If the header represents a ping or a pong, it's a control message meant
-                            // to be transparent to the user, so handle it and then loop around to read again.
-                            // Alternatively, if it's a close message, handle it and exit.
-                            if (message.Opcode is MessageOpcode.Ping or MessageOpcode.Pong)
+                        case ReceiveResultType.ControlMessage:
+                            if (await OnControlMessageAsync(cancellationToken).ConfigureAwait(false) == MessageOpcode.Close)
                             {
-                                // If this was a ping, send back a pong response.
-                                if (message.Opcode == MessageOpcode.Ping)
-                                {
-                                    await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, message.Payload, cancellationToken).ConfigureAwait(false);
-                                }
-                                continue;
-                            }
-                            else
-                            {
-                                Debug.Assert(message.Opcode == MessageOpcode.Close);
-
-                                await HandleReceivedCloseAsync(message.Payload, cancellationToken).ConfigureAwait(false);
                                 return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
                             }
-                        }
-                        else if (result.ResultType == ReceiveResultType.ConnectionClose)
-                        {
+                            continue;
+
+                        case ReceiveResultType.ConnectionClose:
                             ThrowIfEOFUnexpected(true);
-                        }
-                        else
-                        {
+                            break;
+
+                        default:
                             Debug.Assert(result.ResultType == ReceiveResultType.HeaderError);
-
-                            string? error = _receiver.GetHeaderError();
-                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, error).ConfigureAwait(false);
-                        }
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError,
+                                WebSocketError.Faulted, _receiver.GetHeaderError()).ConfigureAwait(false);
+                            break;
                     }
-
-                    // If this a text message, validate that it contains valid UTF8.
-                    if (result.MessageType == WebSocketMessageType.Text && result.Count > 0 &&
-                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, result.Count), result.EndOfMessage, _utf8TextState))
-                    {
-                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
-                    }
-
-                    return resultGetter.GetResult(
-                        count: result.Count,
-                        messageType: result.MessageType,
-                        endOfMessage: result.EndOfMessage,
-                        closeStatus: null, closeDescription: null);
                 }
             }
             catch (Exception exc) when (exc is not OperationCanceledException)
