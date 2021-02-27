@@ -6,15 +6,24 @@
 
 #include "interoplibinterface.h"
 
-bool Interop::CheckPendingExceptionSupported(
-    _In_z_ const char* libraryName,
-    _In_z_ const char* entrypointName)
+bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
 {
-#ifdef FEATURE_OBJCBRIDGE
-    if (ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+    CONTRACTL
     {
-        return true;
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(md != NULL);
     }
+    CONTRACTL_END;
+
+#ifdef FEATURE_OBJCBRIDGE
+    PTR_CUTF8 libraryName = md->GetLibNameRaw();
+    PTR_CUTF8 entrypointName = md->GetEntrypointName();
+    if (libraryName == NULL || entrypointName == NULL)
+        return false;
+
+    if (ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+        return true;
 #endif // FEATURE_OBJCBRIDGE
 
     return false;

@@ -1386,7 +1386,7 @@ private:
         {
             dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
         }
-        if (CheckPendingExceptionSupported(pTargetMD))
+        if (HasCheckForPendingException(pTargetMD))
         {
             dwStubFlags |= NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION;
         }
@@ -1417,7 +1417,7 @@ private:
         return SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition();
     }
 
-    static BOOL CheckPendingExceptionSupported(MethodDesc* pTargetMD)
+    static BOOL HasCheckForPendingException(MethodDesc* pTargetMD)
     {
 #ifdef CROSSGEN_COMPILE
         return FALSE;
@@ -1426,13 +1426,7 @@ private:
             return FALSE;
 
         auto pNMD = (NDirectMethodDesc*)pTargetMD;
-
-        PTR_CUTF8 libName = pNMD->GetLibNameRaw();
-        PTR_CUTF8 entrypointName = pNMD->GetEntrypointName();
-        if (libName == NULL || entrypointName == NULL)
-            return FALSE;
-
-        if (!Interop::CheckPendingExceptionSupported(libName, entrypointName))
+        if (!Interop::ShouldCheckForPendingException(pNMD))
             return FALSE;
 
         return TRUE;
@@ -3112,10 +3106,10 @@ BOOL NDirect::MarshalingRequired(
 
     if (pMD != NULL)
     {
+        // HRESULT swapping is handled by stub
         if (pMD->IsNDirect() || pMD->IsComPlusCall())
         {
-            // HRESULT swapping is handled by stub
-            if ((pMD->GetImplAttrs() & miPreserveSig) == 0)
+            if (!IsMiPreserveSig(pMD->GetImplAttrs()))
                 return TRUE;
         }
 
@@ -3144,6 +3138,12 @@ BOOL NDirect::MarshalingRequired(
             // Make sure running cctor can be handled by stub
             if (pNMD->IsClassConstructorTriggeredByILStub())
                 return TRUE;
+
+#ifndef CROSSGEN_COMPILE
+            // Pending exceptions are handled by stub
+            if (Interop::ShouldCheckForPendingException(pNMD))
+                return TRUE;
+#endif !CROSSGEN_COMPILE
         }
 
         callConv = sigInfo.GetCallConv();

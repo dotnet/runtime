@@ -161,10 +161,8 @@ public: // GC interaction
 class Interop
 {
 public:
-    // Check if pending exceptions are supported for the following native export.
-    static bool CheckPendingExceptionSupported(
-        _In_z_ const char* libraryName,
-        _In_z_ const char* entrypointName);
+    // Check if pending exceptions are possible for the following native export.
+    static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
 
     // Notify when GC started
     static void OnGCStarted(_In_ int nCondemnedGeneration);
