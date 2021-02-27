@@ -59,12 +59,12 @@ mono_ldftn (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 		addr = mono_compile_method_checked (method, error);
 	else
-		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+		addr = mono_create_jump_trampoline (method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	return mono_create_ftnptr (mono_domain_get (), addr);
+	return mono_create_ftnptr (addr);
 }
 
 static void*

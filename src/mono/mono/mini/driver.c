@@ -521,7 +521,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 #ifdef DISABLE_JIT
 #ifdef MONO_USE_AOT_COMPILER
 			ERROR_DECL (error);
-			func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
+			func = (TestMethod)mono_aot_get_method (method, error);
 			mono_error_cleanup (error);
 #else
 			g_error ("No JIT or AOT available, regression testing not possible!");
@@ -529,12 +529,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 
 #else
 			comp_time -= start_time;
-			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), mono_get_root_domain (), JIT_FLAG_RUN_CCTORS, 0, -1);
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), JIT_FLAG_RUN_CCTORS, 0, -1);
 			comp_time += g_timer_elapsed (timer, NULL);
 			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 #ifdef MONO_USE_AOT_COMPILER
 				ERROR_DECL (error);
-				func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
+				func = (TestMethod)mono_aot_get_method (method, error);
 				mono_error_cleanup (error);
 				if (!func) {
 					func = (TestMethod)MINI_ADDR_TO_FTNPTR (cfg->native_code);
@@ -543,7 +543,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				func = (TestMethod)(gpointer)cfg->native_code;
 				func = MINI_ADDR_TO_FTNPTR (func);
 #endif
-				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), (gpointer)func);
+				func = (TestMethod)mono_create_ftnptr ((gpointer)func);
 			}
 #endif
 
@@ -757,7 +757,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	cfailed = failed = run = 0;
 	transform_time = elapsed = 0.0;
 
-	mini_get_interp_callbacks ()->invalidate_transformed (domain);
+	mini_get_interp_callbacks ()->invalidate_transformed ();
 
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
@@ -1273,7 +1273,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 			if (verbose && !is_ok (error))
 				g_print ("Compilation of %s failed\n", mono_method_full_name (method, TRUE));
 		} else {
-			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
 			if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 				const char *msg = cfg->exception_message;
 				if (cfg->exception_type == MONO_EXCEPTION_MONO_ERROR)
@@ -2739,10 +2739,10 @@ mono_main (int argc, char* argv[])
 			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			MonoMethod *nm;
 			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
-			cfg = mini_method_compile (nm, opt, mono_get_root_domain (), (JitFlags)0, part, -1);
+			cfg = mini_method_compile (nm, opt, (JitFlags)0, part, -1);
 		}
 		else
-			cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, part, -1);
+			cfg = mini_method_compile (method, opt, (JitFlags)0, part, -1);
 		if ((mono_graph_options & MONO_GRAPH_CFG_SSA) && !(cfg->comp_done & MONO_COMP_SSA)) {
 			g_warning ("no SSA info available (use -O=deadce)");
 			return 1;
@@ -2774,7 +2774,7 @@ mono_main (int argc, char* argv[])
 				opt = opt_sets [i];
 				g_timer_start (timer);
 				for (j = 0; j < count; ++j) {
-					cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+					cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 					mono_destroy_compile (cfg);
 				}
 				g_timer_stop (timer);
@@ -2797,12 +2797,12 @@ mono_main (int argc, char* argv[])
 					(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 					method = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
 
-				cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+				cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 				mono_destroy_compile (cfg);
 			}
 		}
 	} else {
-		cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+		cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 		mono_destroy_compile (cfg);
 	}
 #endif
