@@ -315,6 +315,7 @@ DEFINE_METASIG(SM(Dbl_RetLong, d, l))
 
 DEFINE_METASIG(SM(IntPtr_RetObj, I, j))
 DEFINE_METASIG_T(SM(Int_RetException, i, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(RetException, _, C(EXCEPTION)))
 DEFINE_METASIG(SM(Int_IntPtr_RetObj, i I, j))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetVoid, I I i, v))
 DEFINE_METASIG_T(SM(Exception_RetInt, C(EXCEPTION), i))

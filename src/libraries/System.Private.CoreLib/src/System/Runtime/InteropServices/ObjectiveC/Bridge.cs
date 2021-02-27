@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
 {
     [SupportedOSPlatform("macos")]
     [CLSCompliant(false)]
-    public static class Bridge
+    public static partial class Bridge
     {
         /// <summary>
         /// Initialize reference tracking for the Objective-C bridge API.
@@ -122,21 +122,5 @@ namespace System.Runtime.InteropServices.ObjectiveC
             if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);
         }
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool TrySetGlobalMessageSendCallback(
-            MsgSendFunction msgSendFunction,
-            IntPtr func);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static unsafe extern bool TryInitializeReferenceTracker(
-            delegate* unmanaged<int, void> beginEndCallback,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern IntPtr CreateReferenceTrackingHandleInternal(
-            ObjectHandleOnStack obj,
-            out IntPtr scratchMemory);
     }
 }

@@ -91,5 +91,17 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, IntPtr func)
             => throw new PlatformNotSupportedException();
+
+        /// <summary>
+        /// Sets a pending exception for this thread to be thrown
+        /// the next time the runtime is entered from an overridden
+        /// msgSend P/Invoke.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        /// <remarks>
+        /// If <c>null</c> is supplied any pending exception is discarded.
+        /// </remarks>
+        public static void SetMessageSendPendingExceptionForThread(Exception? exception)
+            => throw new PlatformNotSupportedException();
     }
 }

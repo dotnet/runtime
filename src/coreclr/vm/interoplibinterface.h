@@ -145,6 +145,11 @@ public: // static
 public: // Instance inspection
     static bool IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isReferenced);
 
+public: // Identification
+    static bool IsRuntimeMsgSendFunctionOverridden(
+        _In_z_ const char* libraryName,
+        _In_z_ const char* entrypointName);
+
 public: // GC interaction
     static void OnFullGCStarted();
     static void OnFullGCFinished();
@@ -156,6 +161,11 @@ public: // GC interaction
 class Interop
 {
 public:
+    // Check if pending exceptions are supported for the following native export.
+    static bool CheckPendingExceptionSupported(
+        _In_z_ const char* libraryName,
+        _In_z_ const char* entrypointName);
+
     // Notify when GC started
     static void OnGCStarted(_In_ int nCondemnedGeneration);
 

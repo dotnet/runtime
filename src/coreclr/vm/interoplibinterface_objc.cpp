@@ -231,6 +231,22 @@ bool ObjCBridgeNative::IsTrackedReference(_In_ OBJECTREF object, _Out_ bool* isR
     return true;
 }
 
+bool ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(
+    _In_z_ const char* libraryName,
+    _In_z_ const char* entrypointName)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(libraryName != NULL);
+        PRECONDITION(entrypointName != NULL);
+    }
+    CONTRACTL_END;
+
+    return MessageSendPInvokeOverride(libraryName, entrypointName) != NULL;
+}
+
 void ObjCBridgeNative::OnFullGCStarted()
 {
     CONTRACTL

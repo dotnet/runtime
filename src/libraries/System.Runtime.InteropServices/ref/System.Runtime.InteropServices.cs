@@ -1825,6 +1825,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ObjCMsgSendSuperStret,
         }
         public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, System.IntPtr func) => throw null;
+        public static void SetMessageSendPendingExceptionForThread(System.Exception? exception) => throw null;
     }
 }
 namespace System.Security

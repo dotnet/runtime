@@ -1229,6 +1229,24 @@ namespace System.StubHelpers
 
 #endif // FEATURE_COMINTEROP
 
+        [ThreadStatic]
+        private static Exception? s_pendingExceptionObject;
+
+        internal static Exception? GetPendingExceptionObject()
+        {
+            Exception? ex = s_pendingExceptionObject;
+            if (ex != null)
+                ex.InternalPreserveStackTrace();
+
+            s_pendingExceptionObject = null;
+            return ex;
+        }
+
+        internal static void SetPendingExceptionObject(Exception? exception)
+        {
+            s_pendingExceptionObject = exception;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
 

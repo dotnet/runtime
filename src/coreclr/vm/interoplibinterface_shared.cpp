@@ -6,6 +6,20 @@
 
 #include "interoplibinterface.h"
 
+bool Interop::CheckPendingExceptionSupported(
+    _In_z_ const char* libraryName,
+    _In_z_ const char* entrypointName)
+{
+#ifdef FEATURE_OBJCBRIDGE
+    if (ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(libraryName, entrypointName))
+    {
+        return true;
+    }
+#endif // FEATURE_OBJCBRIDGE
+
+    return false;
+}
+
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
 {
     CONTRACTL
