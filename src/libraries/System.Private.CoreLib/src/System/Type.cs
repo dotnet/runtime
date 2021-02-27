@@ -567,9 +567,14 @@ namespace System
         public static readonly MemberFilter FilterNameIgnoreCase = (m, c) => FilterNameImpl(m, c!, StringComparison.OrdinalIgnoreCase);
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-        // DynamicallyAccessedMemberTypes.All keeps more data than what a member can use, it will keep info about
-        // interfaces and nested types as a whole (the nested type and all its members). Instead this GetAllMembers
-        // constant will only keep the nested types body but not the members
+        // DynamicallyAccessedMemberTypes.All keeps more data than what a member can use:
+        // - Keeps info about interfaces
+        // - Complete Nested types (nested type body and all its members including other nested types)
+        // - Public and private base type information
+        // Instead, the GetAllMembers constant will keep:
+        // - The nested types body but not the members
+        // - Base type public information but not private information. This information should not
+        // be visible via the derived type and is ignored by reflection
         internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
             DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
