@@ -1426,7 +1426,13 @@ private:
             return FALSE;
 
         auto pNMD = (NDirectMethodDesc*)pTargetMD;
-        if (!Interop::CheckPendingExceptionSupported(pNMD->GetLibNameRaw(), pNMD->GetEntrypointName()))
+
+        PTR_CUTF8 libName = pNMD->GetLibNameRaw();
+        PTR_CUTF8 entrypointName = pNMD->GetEntrypointName();
+        if (libName == NULL || entrypointName == NULL)
+            return FALSE;
+
+        if (!Interop::CheckPendingExceptionSupported(libName, entrypointName))
             return FALSE;
 
         return TRUE;

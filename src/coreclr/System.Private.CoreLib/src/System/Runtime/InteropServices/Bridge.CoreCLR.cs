@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
-    [SupportedOSPlatform("macos")]
-    [CLSCompliant(false)]
     public static partial class Bridge
     {
         /// <summary>
@@ -21,7 +19,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendPendingExceptionForThread(Exception? exception)
         {
-            StubHelpers.SetPendingExceptionObject(exception);
+            System.StubHelpers.StubHelpers.SetPendingExceptionObject(exception);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
