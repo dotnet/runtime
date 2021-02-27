@@ -1949,18 +1949,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             canFold = false;
         }
 
-        // NaNs are unordered wrt to other floats. While an ordered
-        // comparison would return false, an unordered comparison
-        // will return true if any operands are a NaN. We only perform
-        // ordered NaN comparison in EvalComparison.
-        if ((arg0IsFloating && (((arg0VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg0VN))) ||
-                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg0VN))))) ||
-            (arg1IsFloating && (((arg1VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg1VN))) ||
-                                ((arg1VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg1VN))))))
-        {
-            canFold = true;
-        }
-
         if (typ == TYP_BYREF)
         {
             // We don't want to fold expressions that produce TYP_BYREF
