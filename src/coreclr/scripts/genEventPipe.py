@@ -181,7 +181,7 @@ def generateWriteEventBody(template, providerName, eventName):
     fnSig = template.signature
     pack_list = []
 
-    # Write out replacement for any instasnces of NULL for UnicodeString type input.
+    # Write out replacement for any instances of NULL for UnicodeString type input.
     # ETW translates these to "NULL", so we are doing the same for EventPipe.
     for paramName in fnSig.paramlist:
         parameter = fnSig.getParam(paramName)
