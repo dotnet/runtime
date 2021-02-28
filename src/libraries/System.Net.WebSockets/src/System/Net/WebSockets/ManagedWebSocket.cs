@@ -53,8 +53,10 @@ namespace System.Net.WebSockets
         /// <summary>Successfully completed task representing a close message.</summary>
         private static readonly Task<WebSocketReceiveResult> s_cachedCloseTask = Task.FromResult(new WebSocketReceiveResult(0, WebSocketMessageType.Close, true));
 
+        /// <summary>The minimum size in bytes of a message frame header.</summary>
+        private const int MinMessageHeaderLength = 2;
         /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
-        internal const int MaxMessageHeaderLength = 14;
+        private const int MaxMessageHeaderLength = 14;
         /// <summary>The maximum size of a control message payload.</summary>
         private const int MaxControlPayloadLength = 125;
         /// <summary>Length of the mask XOR'd with the payload data.</summary>

@@ -162,7 +162,7 @@ namespace System.Net.WebSockets
                 // We simply issue a read and don't care what we get back; we could validate that we don't get
                 // additional data, but at this point we're about to close the connection and we're just stalling
                 // to try to get the server to close first.
-                ValueTask<int> finalReadTask = _stream.ReadAsync(_headerBuffer.FreeMemory, cancellationToken);
+                ValueTask<int> finalReadTask = _stream.ReadAsync(_headerBuffer.RemainingMemory, cancellationToken);
 
                 if (!finalReadTask.IsCompletedSuccessfully)
                 {
@@ -375,10 +375,10 @@ namespace System.Net.WebSockets
                 }
                 _headerBuffer.Commit(bytesRead);
 
-                while (_headerBuffer.NeedsMoreData(_isServer, out int byteCount))
+                while (_headerBuffer.NeedsMoreData(_isServer))
                 {
                     // More data is neeed to parse the header
-                    ValueTask<int> readTask = _stream.ReadAsync(_headerBuffer.FreeMemory.Slice(0, byteCount), _cancellationToken);
+                    ValueTask<int> readTask = _stream.ReadAsync(_headerBuffer.RemainingMemory, _cancellationToken);
 
                     if (!readTask.IsCompleted)
                     {
@@ -450,10 +450,10 @@ namespace System.Net.WebSockets
                 _receivedMaskOffset = 0;
                 _headerBuffer.Reset();
 
-                while (_headerBuffer.NeedsMoreData(_isServer, out int byteCount))
+                while (_headerBuffer.NeedsMoreData(_isServer))
                 {
                     // More data is neeed to parse the header
-                    ValueTask<int> readTask = _stream.ReadAsync(_headerBuffer.FreeMemory.Slice(0, byteCount), _cancellationToken);
+                    ValueTask<int> readTask = _stream.ReadAsync(_headerBuffer.RemainingMemory, _cancellationToken);
                     if (!readTask.IsCompleted)
                     {
                         _streamTaskSource.Reset();
@@ -463,7 +463,7 @@ namespace System.Net.WebSockets
                         return new ValueTask<bool>(this, _streamTaskSource.Version);
                     }
 
-                    byteCount = readTask.GetAwaiter().GetResult();
+                    int byteCount = readTask.GetAwaiter().GetResult();
                     if (byteCount <= 0)
                     {
                         return new ValueTask<bool>(false);
@@ -652,16 +652,18 @@ namespace System.Net.WebSockets
             {
                 private readonly byte[] _bytes;
                 private int _available;
+                private int _count;
 
                 public HeaderBuffer(int capacity)
                 {
                     _bytes = GC.AllocateUninitializedArray<byte>(capacity, pinned: true);
                     _available = 0;
+                    _count = MinMessageHeaderLength;
                 }
 
                 public ReadOnlySpan<byte> AvailableSpan => new ReadOnlySpan<byte>(_bytes, start: 0, length: _available);
 
-                public Memory<byte> FreeMemory => _bytes.AsMemory(_available);
+                public Memory<byte> RemainingMemory => _bytes.AsMemory(_available, _count - _available);
 
                 public void Commit(int count)
                 {
@@ -671,13 +673,14 @@ namespace System.Net.WebSockets
                 public void Reset()
                 {
                     _available = 0;
+                    _count = MinMessageHeaderLength;
                 }
 
-                public bool NeedsMoreData(bool isServer, out int byteCount)
+                public bool NeedsMoreData(bool isServer)
                 {
-                    byteCount = isServer ? 6/*All frames from client must include a mask*/ : 2;
+                    _count = isServer ? MinMessageHeaderLength + MaskLength : MinMessageHeaderLength;
 
-                    if (_available < 2)
+                    if (_available < MinMessageHeaderLength)
                     {
                         return true;
                     }
@@ -694,16 +697,15 @@ namespace System.Net.WebSockets
 
                     if (payloadLength == 126)
                     {
-                        byteCount += 2;
+                        _count += 2;
                     }
                     else if (payloadLength == 127)
                     {
-                        byteCount += 8;
+                        _count += 8;
                     }
 
-                    if (byteCount > _available)
+                    if (_count > _available)
                     {
-                        byteCount -= _available;
                         return true;
                     }
 
