@@ -29,6 +29,12 @@ internal static partial class Interop
                 SetHandle(ptr);
             }
 
+            protected SafeJObjectHandle(IntPtr ptr, bool ownsHandle)
+                : base(IntPtr.Zero, ownsHandle)
+            {
+                SetHandle(ptr);
+            }
+
             protected override bool ReleaseHandle()
             {
                 Interop.JObjectLifetime.DeleteGlobalReference(handle);

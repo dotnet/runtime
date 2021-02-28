@@ -113,7 +113,7 @@ int32_t AndroidCryptoNative_EcDsaSize(const EC_KEY* key)
     const int derEncodingBytes = 7;
     JNIEnv* env = GetJNIEnv();
     jobject order = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
-    int byteLength = CryptoNative_GetBigNumBytesIncludingPaddingByteForSign(order);
+    int byteLength = AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(order);
     ReleaseLRef(env, order);
     return 2 * byteLength + derEncodingBytes;
 }
