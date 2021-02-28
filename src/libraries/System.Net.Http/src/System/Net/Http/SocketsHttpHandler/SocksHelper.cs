@@ -23,9 +23,9 @@ namespace System.Net.Http
         private const byte CMD_CONNECT = 1;
         // private const byte CMD_BIND = 2;
         // private const byte CMD_UDP_ASSOCIATE = 3;
-        // private const byte ATYP_IPV4 = 1;
+        private const byte ATYP_IPV4 = 1;
         private const byte ATYP_DOMAIN_NAME = 3;
-        // private const byte ATYP_IPV6 = 4;
+        private const byte ATYP_IPV6 = 4;
         private const byte REP_SUCCESS = 0;
         // private const byte REP_FAILURE = 1;
         // private const byte REP_NOT_ALLOWED = 2;
@@ -145,13 +145,28 @@ namespace System.Net.Http
                 // +----+-----+-------+------+----------+----------+
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
-                await stream.ReadAsync(buffer.AsMemory(0, 5), cancellationToken).ConfigureAwait(false);
+                await stream.ReadAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion)
                     throw new Exception("Bad protocol version");
                 if (buffer[1] != REP_SUCCESS)
                     throw new Exception("Connection failed");
-                addressLength = buffer[4];
-                await stream.ReadAsync(buffer.AsMemory(0, addressLength + 2), cancellationToken).ConfigureAwait(false);
+                switch (buffer[3])
+                {
+                    case ATYP_IPV4:
+                        await stream.ReadAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
+                        break;
+                    case ATYP_IPV6:
+                        await stream.ReadAsync(buffer.AsMemory(0, 16), cancellationToken).ConfigureAwait(false);
+                        break;
+                    case ATYP_DOMAIN_NAME:
+                        await stream.ReadAsync(buffer.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+                        addressLength = buffer[0];
+                        await stream.ReadAsync(buffer.AsMemory(0, addressLength), cancellationToken).ConfigureAwait(false);
+                        break;
+                    default:
+                        throw new Exception("Unknown address type");
+                }
+                await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
                 // response address not used
             }
             finally
