@@ -130,7 +130,7 @@ namespace System.Net.Http
                     Debug.Assert(host != null);
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
-                    Debug.Assert(proxyUri == null);
+                    Debug.Assert(socksKind == SocksConnectionKind.None || proxyUri == null);
 
                     _http3Enabled = false;
                     break;
@@ -139,7 +139,7 @@ namespace System.Net.Http
                     Debug.Assert(host != null);
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
-                    Debug.Assert(proxyUri == null);
+                    Debug.Assert(socksKind == SocksConnectionKind.None || proxyUri == null);
                     break;
 
                 case HttpConnectionKind.Proxy:

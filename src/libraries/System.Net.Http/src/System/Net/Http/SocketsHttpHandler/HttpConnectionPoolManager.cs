@@ -288,11 +288,11 @@ namespace System.Net.Http
                     // Socks proxy
                     if (sslHostName != null)
                     {
-                        return new HttpConnectionKey(HttpConnectionKind.Https, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, sslHostName, null, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.Https, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
                     }
                     else
                     {
-                        return new HttpConnectionKey(HttpConnectionKind.Http, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, null, null, identity);
+                        return new HttpConnectionKey(HttpConnectionKind.Http, SocksConnectionKind.Socks5, uri.IdnHost, uri.Port, null, proxyUri, identity);
                     }
                 }
                 else if (sslHostName == null)
