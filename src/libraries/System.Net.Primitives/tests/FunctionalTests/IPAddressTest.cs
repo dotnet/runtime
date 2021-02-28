@@ -234,6 +234,14 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
+        public static void IsIPv6UniqueLocal_Get_Success()
+        {
+            Assert.True(IPAddress.Parse("FC00::1").IsIPv6UniqueLocal);
+            Assert.False(IPAddress.Parse("Fe08::1").IsIPv6UniqueLocal);
+            Assert.False(IPV4Address1().IsIPv6UniqueLocal);
+        }
+
+        [Fact]
         public static void Equals_Compare_Success()
         {
             IPAddress ip1 = IPAddress.Parse(IpV4AddressString1); //IpV4
