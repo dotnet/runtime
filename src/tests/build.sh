@@ -665,10 +665,12 @@ if [[ "$__RunTests" -ne 0 ]]; then
 
     echo "Tests run successful."
 else
-    echo "To run all tests use:"
+    echo "To run all the tests use:"
     echo ""
-    echo " src/tests/run.sh --testRootDir=$__TestBinDir $__BuildType"
-    echo " -------------------------------------------------- "
-    echo "To run single test use the following command:"
+    echo "    src/tests/run.sh $__BuildType"
+    echo ""
+    echo "To run a single test use:"
+    echo ""
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
+    echo ""
 fi

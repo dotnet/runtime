@@ -357,7 +357,7 @@ else
     echo \"CORE_ROOT set to ${CORE_ROOT}\"
 fi
 
-""" % (self.unique_name, self.core_root)
+""" % (self.unique_name, self.args.core_root)
 
         line_sep = os.linesep
 

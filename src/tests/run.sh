@@ -74,7 +74,6 @@ function check_cpu_architecture {
 ################################################################################
 
 ARCH=$(check_cpu_architecture)
-echo "Running on  CPU- $ARCH"
 
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
@@ -211,34 +210,28 @@ do
 done
 
 ################################################################################
-# Runtests
+# Set environment variables affecting tests.
+# (These should be run.py arguments.)
 ################################################################################
 
 if ((disableEventLogging == 0)); then
     export COMPlus_EnableEventLog=1
 fi
 
-export COMPlus_gcServer="$serverGC"
+if ((serverGC != 0)); then
+    export COMPlus_gcServer="$serverGC"
+fi
 
 ################################################################################
-# Run.py
+# Call run.py to run tests.
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
 scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 repoRootDir=$scriptPath/../..
 
-if [ -z "$testRootDir" ]; then
-    echo "testRootDir and other existing arguments is no longer required. If the "
-    echo "default location is incorrect or does not exist, please use "
-    echo "--testRootDir to explicitly override the defaults."
-
-    echo ""
-fi
-
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
-
 
 if [ "$buildArch" = "wasm" ]; then
     runtestPyArguments+=("-os" "Browser")
@@ -316,6 +309,6 @@ __Python=python
 fi
 
 # Run the tests using cross platform run.py
-echo "python $repoRootDir/src/tests/run.py ${runtestPyArguments[@]}"
+echo "$__Python $repoRootDir/src/tests/run.py ${runtestPyArguments[@]}"
 $__Python "$repoRootDir/src/tests/run.py" "${runtestPyArguments[@]}"
 exit "$?"
