@@ -1261,7 +1261,7 @@ namespace System.Net.Http
                             case SocksConnectionKind.Socks5:
                                 Debug.Assert(_proxyUri != null);
                                 stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                                await SocksHelper.EstablishSocks5TunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, cancellationToken).ConfigureAwait(false);
+                                await SocksHelper.EstablishSocks5TunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
                                 break;
                         }
                         break;

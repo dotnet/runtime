@@ -18,7 +18,7 @@ namespace System.Net.Http
         private const int ProtocolVersion = 5;
         private const byte METHOD_NO_AUTH = 0;
         // private const byte METHOD_GSSAPI = 1;
-        // private const byte METHOD_USERNAME_PASSWORD = 2;
+        private const byte METHOD_USERNAME_PASSWORD = 2;
         private const byte METHOD_NO_ACCEPTABLE = 0xFF;
         private const byte CMD_CONNECT = 1;
         // private const byte CMD_BIND = 2;
@@ -36,7 +36,7 @@ namespace System.Net.Http
         // private const byte REP_CMD_NOT_SUPPORT = 7;
         // private const byte REP_ATYP_NOT_SUPPORT = 8;
 
-        public static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, CancellationToken cancellationToken)
+        public static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -48,9 +48,19 @@ namespace System.Net.Http
                 // | 1  |    1     | 1 to 255 |
                 // +----+----------+----------+
                 buffer[0] = ProtocolVersion;
-                buffer[1] = 1;
-                buffer[2] = METHOD_NO_AUTH;
-                await stream.WriteAsync(buffer.AsMemory(0, 3), cancellationToken).ConfigureAwait(false);
+                var credentials = proxyCredentials?.GetCredential(proxyUri, "");
+                if (credentials != null)
+                {
+                    buffer[1] = 1;
+                    buffer[2] = METHOD_NO_AUTH;
+                }
+                else
+                {
+                    buffer[1] = 2;
+                    buffer[2] = METHOD_NO_AUTH;
+                    buffer[3] = METHOD_USERNAME_PASSWORD;
+                }
+                await stream.WriteAsync(buffer.AsMemory(0, buffer[1] + 2), cancellationToken).ConfigureAwait(false);
 
                 // +----+--------+
                 // |VER | METHOD |
@@ -66,6 +76,41 @@ namespace System.Net.Http
                     case METHOD_NO_AUTH:
                         // continue
                         break;
+
+                    case METHOD_USERNAME_PASSWORD:
+                        {
+                            // https://tools.ietf.org/html/rfc1929
+                            if (credentials == null)
+                                throw new Exception("Server choses bad auth method.");
+
+                            // +----+------+----------+------+----------+
+                            // |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+                            // +----+------+----------+------+----------+
+                            // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+                            // +----+------+----------+------+----------+
+                            buffer[0] = ProtocolVersion;
+                            int uLen = Encoding.UTF8.GetByteCount(credentials.UserName);
+                            buffer[1] = checked((byte)uLen);
+                            int uLenEncoded = Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2));
+                            Debug.Assert(uLen == uLenEncoded);
+                            int pLen = Encoding.UTF8.GetByteCount(credentials.Password);
+                            buffer[2 + uLen] = checked((byte)pLen);
+                            int pLenEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + uLen));
+                            Debug.Assert(pLen == pLenEncoded);
+                            await stream.WriteAsync(buffer.AsMemory(0, 4 + uLen + pLen), cancellationToken).ConfigureAwait(false);
+
+                            // +----+--------+
+                            // |VER | STATUS |
+                            // +----+--------+
+                            // | 1  |   1    |
+                            // +----+--------+
+                            await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
+                            if (buffer[0] != ProtocolVersion)
+                                throw new Exception("Bad protocol version");
+                            if (buffer[1] != REP_SUCCESS)
+                                throw new Exception("Authentication failed.");
+                            break;
+                        }
 
                     case METHOD_NO_ACCEPTABLE:
                     default:
