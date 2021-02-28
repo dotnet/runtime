@@ -1148,14 +1148,14 @@ namespace System.Net.Http
             Debug.Assert(_altSvcBlocklistTimerCancellation != null);
             if (added)
             {
-               _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
-                    .ContinueWith(t =>
-                    {
-                        lock (altSvcBlocklist)
-                        {
-                            altSvcBlocklist.Remove(badAuthority);
-                        }
-                    }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                _ = Task.Delay(AltSvcBlocklistTimeoutInMilliseconds)
+                     .ContinueWith(t =>
+                     {
+                         lock (altSvcBlocklist)
+                         {
+                             altSvcBlocklist.Remove(badAuthority);
+                         }
+                     }, _altSvcBlocklistTimerCancellation.Token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
             if (disabled)
@@ -1252,7 +1252,18 @@ namespace System.Net.Http
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
                         Debug.Assert(_originAuthority != null);
-                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        switch (_socksKind)
+                        {
+                            case SocksConnectionKind.None:
+                                stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                                break;
+
+                            case SocksConnectionKind.Socks5:
+                                Debug.Assert(_proxyUri != null);
+                                stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                                await SocksHelper.EstablishSocks5TunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, cancellationToken).ConfigureAwait(false);
+                                break;
+                        }
                         break;
 
                     case HttpConnectionKind.Proxy:
