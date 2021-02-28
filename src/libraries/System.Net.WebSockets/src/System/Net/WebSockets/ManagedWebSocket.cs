@@ -506,33 +506,39 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async ValueTask<MessageOpcode> OnControlMessageAsync(CancellationToken cancellationToken)
+        private async ValueTask OnControlMessageAsync()
         {
-            var messageOrNull = await _receiver.ReceiveControlMessageAsync(cancellationToken).ConfigureAwait(false);
-            if (messageOrNull is null)
-            {
-                ThrowIfEOFUnexpected(true);
-            }
-            ControlMessage message = messageOrNull.GetValueOrDefault();
+            var buffer = ArrayPool<byte>.Shared.Rent(MaxControlPayloadLength);
 
-            // If the header represents a ping or a pong, it's a control message meant
-            // to be transparent to the user, so handle it and then loop around to read again.
-            // Alternatively, if it's a close message, handle it and exit.
-            if (message.Opcode is MessageOpcode.Ping or MessageOpcode.Pong)
+            try
             {
-                // If this was a ping, send back a pong response.
-                if (message.Opcode == MessageOpcode.Ping)
+                ReceiveResult receiveResult = await _receiver.ReceiveControlMessageAsync(buffer, _receiveCancellation.Token).ConfigureAwait(false);
+                if (receiveResult.ResultType == ReceiveResultType.ConnectionClose)
                 {
-                    await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, message.Payload, cancellationToken).ConfigureAwait(false);
+                    ThrowIfEOFUnexpected(true);
+                }
+
+                // If the header represents a ping or a pong, it's a control message meant
+                // to be transparent to the user, so handle it and then loop around to read again.
+                // Alternatively, if it's a close message, handle it and exit.
+                if (receiveResult.ResultType is ReceiveResultType.Ping or ReceiveResultType.Pong)
+                {
+                    // If this was a ping, send back a pong response.
+                    if (receiveResult.ResultType == ReceiveResultType.Ping)
+                    {
+                        await SendFrameAsync(MessageOpcode.Pong, endOfMessage: true, buffer.AsMemory(0, receiveResult.Count), _receiveCancellation.Token).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(receiveResult.ResultType == ReceiveResultType.Close);
+                    await HandleReceivedCloseAsync(buffer.AsMemory(0, receiveResult.Count)).ConfigureAwait(false);
                 }
             }
-            else
+            finally
             {
-                Debug.Assert(message.Opcode == MessageOpcode.Close);
-                await HandleReceivedCloseAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                ArrayPool<byte>.Shared.Return(buffer);
             }
-
-            return message.Opcode;
         }
 
         /// <summary>
@@ -565,7 +571,7 @@ namespace System.Net.WebSockets
                     {
                         return new ValueTask<TResult>(resultGetter.GetResult(
                             count: result.Count,
-                            messageType: (WebSocketMessageType)result.ResultType,
+                            messageType: ToWebSocketMessageType(result.ResultType),
                             endOfMessage: result.EndOfMessage,
                             closeStatus: null, closeDescription: null));
                     }
@@ -617,12 +623,15 @@ namespace System.Net.WebSockets
                         case ReceiveResultType.Binary:
                             return ((IWebSocketReceiveResultGetter<TResult>)_receiveResultGetter).GetResult(
                                 count: result.Count,
-                                messageType: (WebSocketMessageType)result.ResultType,
+                                messageType: ToWebSocketMessageType(result.ResultType),
                                 endOfMessage: result.EndOfMessage,
                                 closeStatus: null, closeDescription: null);
 
-                        case ReceiveResultType.ControlMessage:
-                            if (await OnControlMessageAsync(_receiveCancellation.Token).ConfigureAwait(false) == MessageOpcode.Close)
+                        case ReceiveResultType.Close:
+                        case ReceiveResultType.Ping:
+                        case ReceiveResultType.Pong:
+                            await OnControlMessageAsync().ConfigureAwait(false);
+                            if (result.ResultType == ReceiveResultType.Close)
                             {
                                 return ((IWebSocketReceiveResultGetter<TResult>)_receiveResultGetter).GetResult(
                                     count: 0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
@@ -667,7 +676,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Processes a received close message.</summary>
-        private async ValueTask HandleReceivedCloseAsync(ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
+        private async ValueTask HandleReceivedCloseAsync(ReadOnlyMemory<byte> payload)
         {
             lock (StateUpdateLock)
             {
@@ -718,7 +727,7 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _sentCloseFrame)
             {
-                await _receiver.WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
+                await _receiver.WaitForServerToCloseConnectionAsync(_receiveCancellation.Token).ConfigureAwait(false);
             }
         }
 
@@ -1131,18 +1140,6 @@ namespace System.Net.WebSockets
             Close = 0x8,
             Ping = 0x9,
             Pong = 0xA
-        }
-
-        [StructLayout(LayoutKind.Auto)]
-        private readonly struct ControlMessage
-        {
-            internal ControlMessage(MessageOpcode opcode, ReadOnlyMemory<byte> payload)
-            {
-                Opcode = opcode;
-                Payload = payload;
-            }
-            internal MessageOpcode Opcode { get; }
-            internal ReadOnlyMemory<byte> Payload { get; }
         }
 
         /// <summary>
