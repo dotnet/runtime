@@ -7,14 +7,17 @@ namespace Microsoft.Extensions.Configuration.Xml
 {
     internal class XmlConfigurationElementTextContent
     {
-        public XmlConfigurationElementTextContent(string textContent, string lineInfo)
+        public XmlConfigurationElementTextContent(string textContent, int? linePosition, int? lineNumber)
         {
             TextContent = textContent ?? throw new ArgumentNullException(nameof(textContent));
-            LineInfo = lineInfo ?? throw new ArgumentNullException(nameof(lineInfo));
+            LineNumber = lineNumber;
+            LinePosition = linePosition;
         }
 
         public string TextContent { get; }
 
-        public string LineInfo { get; }
+        public int? LineNumber { get; }
+
+        public int? LinePosition { get; }
     }
 }
