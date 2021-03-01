@@ -6490,7 +6490,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             assert(pFldAddr == nullptr);
 
 #ifdef TARGET_64BIT
-            if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
+            bool isStaticReadOnlyInited = false;
+            bool plsSpeculative         = true;
+            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+            {
+                isStaticReadOnlyInited = !plsSpeculative;
+            }
+
+            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
+            // for static readonly fields of statically initialized classes - thus we can
+            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
+            if (isStaticReadOnlyInited || IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
             {
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
@@ -6510,9 +6520,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
 
-                bool plsSpeculative = true;
-                if ((info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE) &&
-                    !plsSpeculative)
+                if (isStaticReadOnlyInited)
                 {
                     JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
                     tree->gtFlags |= GTF_IND_INVARIANT;
