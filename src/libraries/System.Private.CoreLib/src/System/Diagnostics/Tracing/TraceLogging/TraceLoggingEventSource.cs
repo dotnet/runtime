@@ -195,7 +195,7 @@ namespace System.Diagnostics.Tracing
 #if !ES_BUILD_STANDALONE
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
-        public unsafe void Write<T>(
+        public unsafe void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
             string? eventName,
             EventSourceOptions options,
             T data)
