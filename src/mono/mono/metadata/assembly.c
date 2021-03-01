@@ -3178,8 +3178,7 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 MonoAssembly*
 mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameRequest *req, MonoImageOpenStatus *status)
 {
-	MonoDomain *domain = mono_alc_domain (req->request.alc);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in (domain %p, alc %p)", aname->name, domain, (gpointer)req->request.alc);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in alc %p", aname->name, (gpointer)req->request.alc);
 	MonoAssembly *result;
 	if (status)
 		*status = MONO_IMAGE_OK;

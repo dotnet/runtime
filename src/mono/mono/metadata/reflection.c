@@ -2215,7 +2215,7 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 
 	MonoType *type;
 	MonoReflectionAssemblyHandle reflection_assembly;
-	MonoDomain *domain = mono_alc_domain (alc);
+	MonoDomain *domain = mono_get_root_domain ();
 	GString *fullName = NULL;
 	GList *mod;
 

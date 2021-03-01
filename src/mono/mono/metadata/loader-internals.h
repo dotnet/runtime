@@ -213,12 +213,6 @@ mono_alc_get_ambient (void)
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 
-static inline MonoDomain *
-mono_alc_domain (MonoAssemblyLoadContext *alc)
-{
-	return mono_get_root_domain ();
-}
-
 MonoLoadedImages *
 mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);
 
@@ -226,7 +220,7 @@ MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible);
 
 void
 mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
