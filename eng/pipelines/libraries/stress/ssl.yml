@@ -10,7 +10,6 @@ schedules:
   displayName: SslStress nightly run
   branches:
     include:
-    - master
     - main
 
 variables:
