@@ -871,7 +871,7 @@ public:
             Object** lastIntReg  = (Object**)&this->GetContext()->R15;
 #elif defined(TARGET_X86)
             Object** firstIntReg = (Object**)&this->GetContext()->Edi;
-            Object** lastIntReg  = (Object**)&this->GetContext()->Eax;
+            Object** lastIntReg  = (Object**)&this->GetContext()->Ebp;
 #elif defined(TARGET_ARM)
             Object** firstIntReg = (Object**)&this->GetContext()->R0;
             Object** lastIntReg  = (Object**)&this->GetContext()->R12;
