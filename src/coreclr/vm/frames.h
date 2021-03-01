@@ -848,7 +848,7 @@ protected:
 class RedirectedThreadFrame : public ResumableFrame
 {
     VPTR_VTABLE_CLASS(RedirectedThreadFrame, ResumableFrame)
-        VPTR_UNIQUE(VPTR_UNIQUE_RedirectedThreadFrame)
+    VPTR_UNIQUE(VPTR_UNIQUE_RedirectedThreadFrame)
 
 public:
 #ifndef DACCESS_COMPILE
@@ -867,23 +867,23 @@ public:
         {
 
 #ifdef TARGET_AMD64
-            size_t* firstIntReg = &this->GetContext()->Rax;
-            size_t* lastIntReg  = &this->GetContext()->R15;
+            Object** firstIntReg = (Object**)&this->GetContext()->Rax;
+            Object** lastIntReg  = (Object**)&this->GetContext()->R15;
 #elif defined(TARGET_X86)
-            size_t* firstIntReg = &this->GetContext()->Edi;
-            size_t* lastIntReg  = &this->GetContext()->Eax;
+            Object** firstIntReg = (Object**)&this->GetContext()->Edi;
+            Object** lastIntReg  = (Object**)&this->GetContext()->Eax;
 #elif defined(TARGET_ARM)
-            size_t* firstIntReg = &this->GetContext()->r0;
-            size_t* lastIntReg  = &this->GetContext()->r12;
+            Object** firstIntReg = (Object**)&this->GetContext()->R0;
+            Object** lastIntReg  = (Object**)&this->GetContext()->R12;
 #elif defined(TARGET_ARM64)
-            size_t* firstIntReg = &this->GetContext()->X0;
-            size_t* lastIntReg  = &this->GetContext()->X28;
+            Object** firstIntReg = (Object**)&this->GetContext()->X0;
+            Object** lastIntReg  = (Object**)&this->GetContext()->X28;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
-            for (size_t* r = firstIntReg; r <= lastIntReg; r++)
+            for (Object** ppObj = firstIntReg; ppObj <= lastIntReg; ppObj++)
             {
-                fn((Object**)r, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
+                fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
             }
         }
 #endif
