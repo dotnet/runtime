@@ -182,7 +182,7 @@ namespace System.ComponentModel
             Justification = "Trimmer does not trim enums")]
         private static EnumConverter CreateEnumConverter(Type type)
         {
-            Debug.Assert(type.IsEnum);
+            Debug.Assert(type.IsEnum || type == typeof(Enum));
             return new EnumConverter(type);
         }
 
