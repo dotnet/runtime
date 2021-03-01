@@ -9,7 +9,7 @@
     <WasmSrcPath>$(HELIX_CORRELATION_PAYLOAD)/wasm-source/</WasmSrcPath>
     <WasmNativeLibPath>$(TestRootDir)/publish/</WasmNativeLibPath>
     <IntermediateOutputPath>$(HELIX_WORKITEM_ROOT)\obj</IntermediateOutputPath>
-    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\net5.0\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MonoAOTCompilerTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\monoaotcompiler\net6.0\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$(HELIX_CORRELATION_PAYLOAD)\wasmappbuilder\publish\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAotCrossCompilerPath>$(HELIX_CORRELATION_PAYLOAD)/cross/cross/browser-wasm/mono-aot-cross</MonoAotCrossCompilerPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(HELIX_WORKITEM_ROOT)</MicrosoftNetCoreAppRuntimePackRidDir>
