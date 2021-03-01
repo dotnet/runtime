@@ -636,10 +636,22 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
+        [InlineData("/", '/')]
+        public void RootDir_IsPathRoot_WithInMemory_AllOS(string rootDir, char separator)
+        {
+            RootDir_IsPathRoot_WithInMemory(rootDir, separator);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData("C:\\", '\\')]
         [InlineData("C:/", '/')]
-        [InlineData("/", '/')]
-        public void RootDir_IsPathRoot_WithInMemory(string rootDir, char separator)
+        public void RootDir_IsPathRoot_WithInMemory_WindowsOnly(string rootDir, char separator)
+        {
+            RootDir_IsPathRoot_WithInMemory(rootDir, separator);
+        }
+
+        private static void RootDir_IsPathRoot_WithInMemory(string rootDir, char separator)
         {
             var matcher = new Matcher();
             matcher.AddInclude($"**{separator}*.cs");
@@ -684,13 +696,25 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Theory]
+        [InlineData("/src/project", '/')]
+        [InlineData("/src/project/", '/')]
+        public void RootDir_IsAbsolutePath_WithInMemory_AllOS(string rootDir, char separator)
+        {
+            RootDir_IsAbsolutePath_WithInMemory(rootDir, separator);
+        }
+        
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData("C:\\src\\project", '\\')]
         [InlineData("C:\\src\\project\\", '\\')]
         [InlineData("C:/src/project", '/')]
         [InlineData("C:/src/project/", '/')]
-        [InlineData("/src/project", '/')]
-        [InlineData("/src/project/", '/')]
-        public void RootDir_IsAbsolutePath_WithInMemory(string rootDir, char separator)
+        public void RootDir_IsAbsolutePath_WithInMemory_WindowsOnly(string rootDir, char separator)
+        {
+            RootDir_IsAbsolutePath_WithInMemory(rootDir, separator);
+        }
+
+        private static void RootDir_IsAbsolutePath_WithInMemory(string rootDir, char separator)
         {
             var matcher = new Matcher();
             matcher.AddInclude($"**{separator}*.cs");
@@ -720,7 +744,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 StringComparer.OrdinalIgnoreCase);
         }
 
-        private IEnumerable<string> GetFileList(string rootDir = "", char directorySeparator = '/')
+        private static IEnumerable<string> GetFileList(string rootDir = "", char directorySeparator = '/')
         {
             var files = new List<string>
             {
@@ -801,30 +825,38 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
-        // https://github.com/dotnet/runtime/issues/44767
-        [Fact] 
+        [Fact] // https://github.com/dotnet/runtime/issues/44767
         public void VerifyAbsolutePaths_HasMatches()
         {
             var fileMatcher = new Matcher();
             fileMatcher.AddInclude("**/*");
 
-            string fakeWindowsPath = "C:\\This\\is\\a\\nested\\windows-like\\path\\somefile.cs";
-            Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath), fakeWindowsPath).HasMatches);
-
+            if (PlatformDetection.IsWindows)
+            {
+                // Windows-like absolute paths are not supported on Unix.
+                string fakeWindowsPath = "C:\\This\\is\\a\\nested\\windows-like\\path\\somefile.cs";
+                Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath), fakeWindowsPath).HasMatches);
+            }
+            
+            // Unix-like absolute paths are treated as relative paths on Windows.
             string fakeUnixPath = "/This/is/a/nested/unix-like/path/somefile.cs";
             Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeUnixPath), fakeUnixPath).HasMatches);
         }
 
-        // https://github.com/dotnet/runtime/issues/36415
-        [Fact]
+        [Fact] // https://github.com/dotnet/runtime/issues/36415
         public void VerifyInMemoryDirectoryInfo_IsNotEmpty()
         {
             IEnumerable<string> files = new[] { @"pagefile.sys" };
+            InMemoryDirectoryInfo directoryInfo;
+            IEnumerable<FileSystemInfoBase> fileSystemInfos;
 
-            var directoryInfo = new InMemoryDirectoryInfo(@"C:\", files);
-            IEnumerable<FileSystemInfoBase> fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
+            if (PlatformDetection.IsWindows)
+            {
+                directoryInfo = new InMemoryDirectoryInfo(@"C:\", files);
+                fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
 
-            Assert.NotEmpty(fileSystemInfos);
+                Assert.NotEmpty(fileSystemInfos);
+            }
 
             directoryInfo = new InMemoryDirectoryInfo("/", files);
             fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
