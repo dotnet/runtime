@@ -27,7 +27,7 @@ To use nightly builds of the entire runtime, follow the steps given in the rest 
 
 ## Install prerequisites
 
-1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/6.0/daily/Runtime/dotnet-sdk-win-x64.zip).
+1. Acquire the latest nightly .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.zip).
 
 2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use a locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
