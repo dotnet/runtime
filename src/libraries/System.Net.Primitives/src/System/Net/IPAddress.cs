@@ -484,6 +484,15 @@ namespace System.Net
             }
         }
 
+        /// <summary>Gets whether the address is an IPv6 Unique Local address.</summary>
+        public bool IsIPv6UniqueLocal
+        {
+            get
+            {
+                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
+            }
+        }
+
         // 0:0:0:0:0:FFFF:x.x.x.x
         public bool IsIPv4MappedToIPv6
         {

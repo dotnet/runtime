@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
         public static ECParameters ExportParameters(SafeEcKeyHandle currentKey, bool includePrivateParameters)
         {
             ECParameters ecparams;
-            string curveName = Interop.AndroidCrypto.EcKeyGetCurveName(currentKey);
+            string? curveName = Interop.AndroidCrypto.EcKeyGetCurveName(currentKey);
             if (curveName is not null)
             {
                 ecparams = ExportNamedCurveParameters(currentKey, curveName, includePrivateParameters);

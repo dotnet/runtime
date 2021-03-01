@@ -240,6 +240,7 @@ namespace System.Net
         public bool IsIPv6Multicast { get { throw null; } }
         public bool IsIPv6SiteLocal { get { throw null; } }
         public bool IsIPv6Teredo { get { throw null; } }
+        public bool IsIPv6UniqueLocal { get { throw null; } }
         public long ScopeId { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }

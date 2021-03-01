@@ -43,15 +43,14 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyGetCurveName")]
         private static extern int AndroidCryptoNative_EcKeyGetCurveName(SafeEcKeyHandle ecKey, out IntPtr curveName);
 
-        internal static string EcKeyGetCurveName(SafeEcKeyHandle key)
+        internal static string? EcKeyGetCurveName(SafeEcKeyHandle key)
         {
             int rc = AndroidCryptoNative_EcKeyGetCurveName(key, out IntPtr curveName);
             if (rc == 1)
             {
                 if (curveName == IntPtr.Zero)
                 {
-                    Debug.Fail("Key is invalid or doesn't have a curve");
-                    return string.Empty;
+                    return null;
                 }
 
                 string curveNameStr = Marshal.PtrToStringUni(curveName)!;

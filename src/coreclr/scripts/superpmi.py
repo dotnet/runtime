@@ -11,7 +11,7 @@
 # Script to orchestrate SuperPMI collections, replays, asm diffs, and SuperPMI
 # data management. Note that some of the options provided by this script are
 # also provided in our SuperPMI collect test. The test can be found here:
-# https://github.com/dotnet/runtime/blob/master/src/tests/JIT/superpmi/superpmicollect.cs.
+# https://github.com/dotnet/runtime/blob/main/src/tests/JIT/superpmi/superpmicollect.cs.
 #
 ################################################################################
 ################################################################################
@@ -2664,8 +2664,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `master` using:
-             git merge-base `git_hash` master
+        2. Determine the baseline: where does this hash meet `main` using:
+             git merge-base `git_hash` main
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2720,7 +2720,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "master" ]
+            command = [ "git", "merge-base", current_hash, "main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
