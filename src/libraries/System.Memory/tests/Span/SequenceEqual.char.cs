@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -14,8 +15,10 @@ namespace System.SpanTests
 
             Span<char> first = new Span<char>(a, 1, 0);
             Span<char> second = new Span<char>(a, 2, 0);
-            bool b = first.SequenceEqual(second);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual(second));
+            Assert.True(first.SequenceEqual(second, null));
+            Assert.True(first.SequenceEqual(second, EqualityComparer<char>.Default));
         }
 
         [Fact]
@@ -23,8 +26,10 @@ namespace System.SpanTests
         {
             char[] a = { '4', '5', '6' };
             Span<char> span = new Span<char>(a);
-            bool b = span.SequenceEqual(span);
-            Assert.True(b);
+
+            Assert.True(span.SequenceEqual(span));
+            Assert.True(span.SequenceEqual(span, null));
+            Assert.True(span.SequenceEqual(span, EqualityComparer<char>.Default));
         }
 
         [Fact]
@@ -33,8 +38,10 @@ namespace System.SpanTests
             char[] a = { '4', '5', '6' };
             Span<char> first = new Span<char>(a, 0, 3);
             Span<char> second = new Span<char>(a, 0, 2);
-            bool b = first.SequenceEqual(second);
-            Assert.False(b);
+
+            Assert.False(first.SequenceEqual(second));
+            Assert.False(first.SequenceEqual(second, null));
+            Assert.False(first.SequenceEqual(second, EqualityComparer<char>.Default));
         }
 
         [Fact]
@@ -55,8 +62,10 @@ namespace System.SpanTests
 
                     Span<char> firstSpan = new Span<char>(first);
                     ReadOnlySpan<char> secondSpan = new ReadOnlySpan<char>(second);
-                    bool b = firstSpan.SequenceEqual(secondSpan);
-                    Assert.False(b);
+
+                    Assert.False(firstSpan.SequenceEqual(secondSpan));
+                    Assert.False(firstSpan.SequenceEqual(secondSpan, null));
+                    Assert.False(firstSpan.SequenceEqual(secondSpan, EqualityComparer<char>.Default));
                 }
             }
         }
@@ -74,8 +83,10 @@ namespace System.SpanTests
                 second[length + 1] = 'a';
                 Span<char> span1 = new Span<char>(first, 1, length);
                 ReadOnlySpan<char> span2 = new ReadOnlySpan<char>(second, 1, length);
-                bool b = span1.SequenceEqual(span2);
-                Assert.True(b);
+
+                Assert.True(span1.SequenceEqual(span2));
+                Assert.True(span1.SequenceEqual(span2, null));
+                Assert.True(span1.SequenceEqual(span2, EqualityComparer<char>.Default));
             }
         }
     }

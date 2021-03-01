@@ -287,7 +287,7 @@ jobs:
         /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
         /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
     - name: RuntimeArtifactName
-      value: $(runtimeFlavorName)Product_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
+      value: $(runtimeFlavorName)Product_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(liveRuntimeLegName)
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
@@ -471,6 +471,7 @@ jobs:
       runtimeVariant: ${{ parameters.runtimeVariant }}
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
+      pgoType: ${{ parameters.pgoType }}
 
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: set -x && df -h

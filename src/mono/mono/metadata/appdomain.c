@@ -899,12 +899,6 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	g_assert (assembly);
 	g_assert (domain);
 
-	if (!MONO_BOOL (domain->domain))
-		goto leave; // This can happen during startup
-
-	if (mono_runtime_get_no_exec ())
-		goto leave;
-
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
 	mono_domain_assemblies_lock (domain);
@@ -916,7 +910,10 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	mono_alc_assemblies_unlock (alc);
 	mono_domain_assemblies_unlock (domain);
 
-	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!MONO_BOOL (domain->domain))
+		goto leave; // This can happen during startup
+
+	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:

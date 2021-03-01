@@ -2,7 +2,7 @@
 
 # Run CoreCLR OSS tests on Linux or Mac
 # Use the instructions here:
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/unix-test-instructions.md
 #
 # Summary:
 # 1. On Linux/Mac, in coreclr, ./build.sh

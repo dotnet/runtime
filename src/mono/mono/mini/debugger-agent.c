@@ -2158,7 +2158,6 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
-		data->domain = info->domain;
 		return TRUE;
 	}
 }
@@ -2701,17 +2700,17 @@ no_seq_points_found (MonoMethod *method, int offset)
 }
 
 static int
-calc_il_offset (MonoDomain *domain, MonoMethod *method, int native_offset, gboolean is_top_frame)
+calc_il_offset (MonoMethod *method, int native_offset, gboolean is_top_frame)
 {
 	int ret = -1;
 	if (is_top_frame) {
 		SeqPoint sp;
 		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
-		if (mono_find_prev_seq_point_for_native_offset (domain, method, native_offset, NULL, &sp))
+		if (mono_find_prev_seq_point_for_native_offset (method, native_offset, NULL, &sp))
 			ret = sp.il_offset;
 	}
 	if (ret == -1)
-		ret = mono_debug_il_offset_from_address (method, domain, native_offset);
+		ret = mono_debug_il_offset_from_address (method, NULL, native_offset);
 	return ret;
 }
 
@@ -2760,7 +2759,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	}
 
 	if (info->il_offset == -1) {
-		info->il_offset = calc_il_offset (info->domain, method, info->native_offset, ud->frames == NULL);
+		info->il_offset = calc_il_offset (method, info->native_offset, ud->frames == NULL);
 	}
 
 	PRINT_DEBUG_MSG (1, "\tFrame: %s:[il=0x%x, native=0x%x] %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed);
@@ -2788,7 +2787,6 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
 	frame->de.method = method;
 	frame->de.native_offset = info->native_offset;
 
@@ -3000,7 +2998,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 			StackFrame *top_frame = tls->frames [0];
 			if (interp_resume_frame == top_frame->interp_frame) {
 				int native_offset = (int) ((uintptr_t) interp_resume_ip - (uintptr_t) top_frame->de.ji->code_start);
-				top_frame->il_offset = calc_il_offset (top_frame->de.domain, top_frame->de.method, native_offset, TRUE);
+				top_frame->il_offset = calc_il_offset (top_frame->de.method, native_offset, TRUE);
 			}
 		}
 	}
@@ -4460,7 +4458,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		 * Find the seq point corresponding to the landing site ip, which is the first seq
 		 * point after ip.
 		 */
-		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &args->sp);
+		found_sp = mono_find_next_seq_point_for_native_offset (frame.method, frame.native_offset, &info, &args->sp);
 		if (!found_sp)
 			no_seq_points_found (frame.method, frame.native_offset);
 		if (!found_sp) {
@@ -4508,7 +4506,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		if (frame) {
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &args->sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.method, frame->de.native_offset, &info, &args->sp);
 				if (!found_sp)
 					no_seq_points_found (frame->de.method, frame->de.native_offset);
 				if (!found_sp) {
@@ -8659,7 +8657,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = mono_find_seq_point (domain, method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (method, il_offset, &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -8810,7 +8808,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	sig = mono_method_signature_internal (frame->actual_method);
 
-	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->de.domain, frame->actual_method))
+	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->actual_method))
 		/*
 		 * The method is probably from an aot image compiled without soft-debug, variables might be dead, etc.
 		 */

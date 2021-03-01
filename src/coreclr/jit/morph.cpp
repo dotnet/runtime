@@ -353,7 +353,29 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
     else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
+        // we just use the one that converts to a TYP_DOUBLE
+        // and then add a cast to TYP_FLOAT
+        //
+        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        {
+            // Fix the return type to be TYP_DOUBLE
+            //
+            oper->gtType = TYP_DOUBLE;
+
+            // Add a Cast to TYP_FLOAT
+            //
+            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return tree;
+        }
+        else
+        {
+            return oper;
+        }
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))

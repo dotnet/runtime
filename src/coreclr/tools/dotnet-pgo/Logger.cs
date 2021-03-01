@@ -9,6 +9,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 {
     class Logger
     {
+        private bool _hideMessages;
+
         public void PrintWarning(string warning)
         {
             ConsoleColor oldColor = Console.ForegroundColor;
@@ -25,7 +27,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             Console.ForegroundColor = oldColor;
         }
 
+        public void HideMessages()
+        {
+            _hideMessages = true;
+        }
+
         public void PrintMessage(string message)
+        {
+            if (!_hideMessages)
+                Console.WriteLine(message);
+        }
+
+        public void PrintOutput(string message)
         {
             Console.WriteLine(message);
         }
