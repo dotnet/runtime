@@ -522,17 +522,6 @@ mono_domain_set_fast (MonoDomain *domain, gboolean force);
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
-static inline
-MonoAssemblyLoadContext *
-mono_domain_ambient_alc (MonoDomain *domain)
-{
-	/*
-	 * FIXME: All the callers of mono_domain_ambient_alc should get an ALC
-	 * passed to them from their callers.
-	 */
-	return mono_domain_default_alc (domain);
-}
-
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {

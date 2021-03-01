@@ -199,6 +199,17 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 MonoAssemblyLoadContext *
 mono_alc_get_default (void);
 
+static inline
+MonoAssemblyLoadContext *
+mono_alc_get_ambient (void)
+{
+	/*
+	 * FIXME: All the callers of mono_alc_get_ambient () should get an ALC
+	 * passed to them from their callers.
+	 */
+	return mono_alc_get_default ();
+}
+
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 
