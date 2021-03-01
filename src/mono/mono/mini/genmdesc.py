@@ -91,8 +91,12 @@ def parse_mini_ops (target_define):
                     if m != None:
                         opcodes [m.group (1)] = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
                     else:
-                        print ("Unable to parse line: '{0}'".format (line))
-                        exit (1)
+                        m = re.search (r"MINI_OP4\(\w+\s*\,\s*\"([^\"]+)\", (\w+), (\w+), (\w+), (\w+), (\w+)\)", line)
+                        if m != None:
+                            opcodes [m.group (1)] = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
+                        else:
+                            print ("Unable to parse line: '{0}'".format (line))
+                            exit (1)
                 opcode_id += 1
     opcode_file.close ()
     return opcodes

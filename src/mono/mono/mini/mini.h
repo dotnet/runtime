@@ -717,7 +717,7 @@ typedef struct {
 	LLVMArgInfo args [1];
 } LLVMCallInfo;
 
-#define MONO_MAX_SRC_REGS	3
+#define MONO_MAX_SRC_REGS	4
 
 struct MonoInst {
  	guint16 opcode;
@@ -725,7 +725,7 @@ struct MonoInst {
 	guint8  flags;
 	
 	/* used by the register allocator */
-	gint32 dreg, sreg1, sreg2, sreg3;
+	gint32 dreg, sreg1, sreg2, sreg3, sreg4;
 
 	MonoInst *next, *prev;
 
@@ -1728,8 +1728,12 @@ extern MonoJitStats mono_jit_stats;
 #ifdef MINI_OP3
 #undef MINI_OP3
 #endif
+#ifdef MINI_OP4
+#undef MINI_OP4
+#endif
 #define MINI_OP(a,b,dest,src1,src2) a,
 #define MINI_OP3(a,b,dest,src1,src2,src3) a,
+#define MINI_OP4(a,b,dest,src1,src2,src3,src4) a,
 enum {
 	OP_START = MONO_CEE_LAST - 1,
 #include "mini-ops.h"
@@ -1737,6 +1741,7 @@ enum {
 };
 #undef MINI_OP
 #undef MINI_OP3
+#undef MINI_OP4
 
 #if TARGET_SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST

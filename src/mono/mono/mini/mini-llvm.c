@@ -210,8 +210,12 @@ typedef struct {
 #ifdef MINI_OP3
 #undef MINI_OP3
 #endif
-#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2, ' ',
-#define MINI_OP3(a,b,dest,src1,src2,src3) dest, src1, src2, src3,
+#ifdef MINI_OP4
+#undef MINI_OP4
+#endif
+#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2, ' ', ' ',
+#define MINI_OP3(a,b,dest,src1,src2,src3) dest, src1, src2, src3, ' ',
+#define MINI_OP4(a,b,dest,src1,src2,src3,src4) dest, src1, src2, src3, src4,
 #define NONE ' '
 #define IREG 'i'
 #define FREG 'f'
@@ -225,6 +229,7 @@ mini_llvm_ins_info[] = {
 };
 #undef MINI_OP
 #undef MINI_OP3
+#undef MINI_OP4
 
 #if TARGET_SIZEOF_VOID_P == 4
 #define GET_LONG_IMM(ins) ((ins)->inst_l)

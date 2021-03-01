@@ -201,8 +201,12 @@ static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic",
 #ifdef MINI_OP3
 #undef MINI_OP3
 #endif
-#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2, ' ',
-#define MINI_OP3(a,b,dest,src1,src2,src3) dest, src1, src2, src3,
+#ifdef MINI_OP4
+#undef MINI_OP4
+#endif
+#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2, ' ', ' ',
+#define MINI_OP3(a,b,dest,src1,src2,src3) dest, src1, src2, src3, ' ',
+#define MINI_OP4(a,b,dest,src1,src2,src3,src4) dest, src1, src2, src3, src4,
 #define NONE ' '
 #define IREG 'i'
 #define FREG 'f'
@@ -220,9 +224,11 @@ mini_ins_info[] = {
 };
 #undef MINI_OP
 #undef MINI_OP3
+#undef MINI_OP4
 
 #define MINI_OP(a,b,dest,src1,src2) ((src2) != NONE ? 2 : ((src1) != NONE ? 1 : 0)),
 #define MINI_OP3(a,b,dest,src1,src2,src3) ((src3) != NONE ? 3 : ((src2) != NONE ? 2 : ((src1) != NONE ? 1 : 0))),
+#define MINI_OP4(a,b,dest,src1,src2,src3,src4) ((src4) != NONE ? 4 : ((src3) != NONE ? 3 : ((src2) != NONE ? 2 : ((src1) != NONE ? 1 : 0)))),
 /* 
  * This should contain the index of the last sreg + 1. This is not the same
  * as the number of sregs for opcodes like IA64_CMP_EQ_IMM.
@@ -232,6 +238,7 @@ const gint8 mini_ins_sreg_counts[] = {
 };
 #undef MINI_OP
 #undef MINI_OP3
+#undef MINI_OP4
 
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
