@@ -22,7 +22,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
-        private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, out int handlesLen);
+        private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
         {
             const int INSUFFICIENT_BUFFER = -1;
