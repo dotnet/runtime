@@ -1203,7 +1203,7 @@ mono_class_describe_statics (MonoClass* klass)
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
-	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 	const char *addr;
 
 	if (!vtable || !is_ok (error)) {

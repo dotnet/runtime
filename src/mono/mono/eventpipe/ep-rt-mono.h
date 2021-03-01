@@ -426,6 +426,7 @@ typedef char* (*ep_rt_mono_get_os_cmd_line_func)(void);
 typedef char* (*ep_rt_mono_get_managed_cmd_line_func)(void);
 typedef gboolean (*ep_rt_mono_execute_rundown_func)(ep_rt_mono_fire_domain_rundown_events_func domain_events_func, ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func, ep_rt_mono_fire_method_rundown_events_func methods_events_func);
 typedef gboolean (*ep_rt_mono_walk_managed_stack_for_thread_func)(ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents);
+typedef gboolean (*ep_rt_mono_sample_profiler_write_sampling_event_for_threads_func)(ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
 typedef gboolean (*ep_rt_mono_method_get_simple_assembly_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 typedef gboolean (*ep_rt_mono_method_get_full_name_func)(ep_rt_method_desc_t *method, ep_char8_t *name, size_t name_len);
 
@@ -458,6 +459,7 @@ typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_get_managed_cmd_line_func ep_rt_mono_get_managed_cmd_line;
 	ep_rt_mono_execute_rundown_func ep_rt_mono_execute_rundown;
 	ep_rt_mono_walk_managed_stack_for_thread_func ep_rt_mono_walk_managed_stack_for_thread;
+	ep_rt_mono_sample_profiler_write_sampling_event_for_threads_func ep_rt_mono_sample_profiler_write_sampling_event_for_threads;
 	ep_rt_mono_method_get_simple_assembly_name_func ep_rt_mono_method_get_simple_assembly_name;
 	ep_rt_mono_method_get_full_name_func ep_rt_mono_method_get_full_name;
 } EventPipeMonoFuncTable;
@@ -1079,17 +1081,14 @@ static
 void
 ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event)
 {
-	// TODO: Implement.
-	// Suspend threads.
-	// Stack walk each thread, write sample event.
-	// Resume threads.
+	ep_rt_mono_func_table_get ()->ep_rt_mono_sample_profiler_write_sampling_event_for_threads (sampling_thread, sampling_event);
 }
 
 static
 void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
-	// TODO: Not supported.
+	;
 }
 
 /*
@@ -1830,6 +1829,22 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = g_new(ep_char8_t, byte_len + 1);
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -1844,6 +1859,37 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 g_snprintf ((gchar *)str, (gulong)str_len, (const gchar *)format, __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  g_new(ep_char8_t, newStrSize);
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 inline

@@ -18,10 +18,6 @@ The `MonoAOTCompiler` MSBuild task is also useful outside the context of `dotnet
     <PackageReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task" Version="<desired-dotnet-6-sdk-version>" />
 </ItemGroup>
 
-<!-- Set up the MSBuild task using the assembly path provided by the NuGet package -->
-<UsingTask TaskName="MonoAOTCompiler"
-           AssemblyFile="$(MonoAOTCompilerTaskAssemblyPath)"/>
-
 <!-- Use the MonoAOTCompiler task in a target -->
 <Target>
     <MonoAOTCompiler 

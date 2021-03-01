@@ -17,7 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Branch Include="Master" Abbr="6.0.X" />
+      <Branch Include="Main" Abbr="6.0.X" />
 
       <Platform Include="Windows (x64)" Abbr="win-x64" />
       <Platform Include="Windows (x86)" Abbr="win-x86" />

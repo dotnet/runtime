@@ -4,6 +4,7 @@
 #include "../../AnyOS/entrypoints.h"
 
 // Include System.Native headers
+#include "pal_autoreleasepool.h"
 #include "pal_console.h"
 #include "pal_datetime.h"
 #include "pal_errno.h"
@@ -223,6 +224,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Acquire)
     DllImportEntry(SystemNative_LowLevelMonitor_Release)
     DllImportEntry(SystemNative_LowLevelMonitor_Wait)
+    DllImportEntry(SystemNative_LowLevelMonitor_TimedWait)
     DllImportEntry(SystemNative_LowLevelMonitor_Signal_Release)
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_GetTimestamp)
@@ -235,6 +237,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupList)
     DllImportEntry(SystemNative_GetUid)
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
+    DllImportEntry(SystemNative_CreateAutoreleasePool)
+    DllImportEntry(SystemNative_DrainAutoreleasePool)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

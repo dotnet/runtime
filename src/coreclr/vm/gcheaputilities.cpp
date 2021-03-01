@@ -120,6 +120,8 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
     g_gc_module_base = pGcModuleBase;
     LOG((LF_GC, LL_INFO100, "GC load successful\n"));
+
+    StressLog::AddModule((uint8_t*)pGcModuleBase);
 }
 
 void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)

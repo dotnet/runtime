@@ -445,9 +445,6 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
-CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
-CONFIG_INTEGER(JitGuardedDeivrtualizationUseProfile, W("JitGuardedDevirtualizationUseProfile"), 0)
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
@@ -458,6 +455,11 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
+
+// Control when Virtual Calls are expanded
+CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
+                                                                 // phase)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

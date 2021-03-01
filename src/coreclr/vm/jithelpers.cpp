@@ -3160,7 +3160,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-     ULONG dictionaryIndex = 0;
+     uint32_t dictionaryIndex = 0;
      MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
@@ -3178,7 +3178,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         {
             SigPointer ptr((PCCOR_SIGNATURE)signature);
 
-            ULONG kind; // DictionaryEntryKind
+            uint32_t kind; // DictionaryEntryKind
             IfFailThrow(ptr.GetData(&kind));
 
             // We need to normalize the class passed in (if any) for reliability purposes. That's because preparation of a code region that

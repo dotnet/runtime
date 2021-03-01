@@ -324,6 +324,7 @@ namespace System
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
+            int numberOfTrailingZeros = 0;
 
             while (true)
             {
@@ -335,10 +336,10 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount++] = (byte)(ch);
+                            number.Digits[digCount] = (byte)(ch);
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
-                                digEnd = digCount;
+                                digEnd = digCount + 1;
                             }
                         }
                         else if (ch != '0')
@@ -357,6 +358,20 @@ namespace System
                         {
                             number.Scale++;
                         }
+
+                        if (digCount < maxDigCount)
+                        {
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part for floating point numbers, so we keep a count of the number of trailing zeros and update digCount later
+                            if (ch == '0')
+                            {
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
+                            }
+                        }
+                        digCount++;
                         state |= StateNonZero;
                     }
                     else if ((state & StateDecimal) != 0)
@@ -426,6 +441,20 @@ namespace System
                         ch = p < strEnd ? *p : '\0';
                     }
                 }
+
+                if (number.Kind == NumberBufferKind.FloatingPoint && !number.HasNonZeroTail)
+                {
+                    // Adjust the number buffer for trailing zeros
+                    int numberOfFractionalDigits = digEnd - number.Scale;
+                    if (numberOfFractionalDigits > 0)
+                    {
+                        numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
+                        Debug.Assert(numberOfTrailingZeros >= 0);
+                        number.DigitsCount = digEnd - numberOfTrailingZeros;
+                        number.Digits[number.DigitsCount] = (byte)('\0');
+                    }
+                }
+
                 while (true)
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
@@ -2002,7 +2031,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
         {
-            char *ret = MatchChars(p, pEnd, info.NegativeSign);
+            char* ret = MatchChars(p, pEnd, info.NegativeSign);
             if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
             {
                 ret = p + 1;
@@ -2113,7 +2142,7 @@ namespace System
             }
             else
             {
-                ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+                ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
                 result = BitConverter.Int64BitsToDouble((long)(bits));
             }
 
@@ -2135,7 +2164,7 @@ namespace System
             }
             else
             {
-                ushort bits = (ushort)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Half));
+                ushort bits = NumberToHalfFloatingPointBits(ref number, in FloatingPointInfo.Half);
                 result = new Half(bits);
             }
 
@@ -2157,7 +2186,7 @@ namespace System
             }
             else
             {
-                uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+                uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
                 result = BitConverter.Int32BitsToSingle((int)(bits));
             }
 

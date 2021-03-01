@@ -112,116 +112,11 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v4.0.30319"
 
-/* Callbacks installed by the JIT */
-static MonoCreateDomainFunc create_domain_hook;
-static MonoFreeDomainFunc free_domain_hook;
-
-/* AOT cache configuration */
-static MonoAotCacheConfig aot_cache_config;
-
 static GSList*
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
-
-static LockFreeMempool*
-lock_free_mempool_new (void)
-{
-	return g_new0 (LockFreeMempool, 1);
-}
-
-static void
-lock_free_mempool_free (LockFreeMempool *mp)
-{
-	LockFreeMempoolChunk *chunk, *next;
-
-	chunk = mp->chunks;
-	while (chunk) {
-		next = (LockFreeMempoolChunk *)chunk->prev;
-		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_DOMAIN);
-		chunk = next;
-	}
-	g_free (mp);
-}
-
-/*
- * This is async safe
- */
-static LockFreeMempoolChunk*
-lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
-{
-	LockFreeMempoolChunk *chunk, *prev;
-	int size;
-
-	size = mono_pagesize ();
-	while (size - sizeof (LockFreeMempoolChunk) < len)
-		size += mono_pagesize ();
-	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_DOMAIN);
-	g_assert (chunk);
-	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
-	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
-	chunk->pos = 0;
-
-	/* Add to list of chunks lock-free */
-	while (TRUE) {
-		prev = mp->chunks;
-		if (mono_atomic_cas_ptr ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
-			break;
-	}
-	chunk->prev = prev;
-
-	return chunk;
-}
-
-/*
- * This is async safe
- */
-static gpointer
-lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
-{
-	LockFreeMempoolChunk *chunk;
-	gpointer res;
-	int oldpos;
-
-	// FIXME: Free the allocator
-
-	size = ALIGN_TO (size, 8);
-	chunk = mp->current;
-	if (!chunk) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		mono_memory_barrier ();
-		/* Publish */
-		mp->current = chunk;
-	}
-
-	/* The code below is lock-free, 'chunk' is shared state */
-	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
-	if (oldpos + size > chunk->size) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		g_assert (chunk->pos + size <= chunk->size);
-		res = chunk->mem;
-		chunk->pos += size;
-		mono_memory_barrier ();
-		mp->current = chunk;
-	} else {
-		res = (char*)chunk->mem + oldpos;
-	}
-
-	return res;
-}
-
-void
-mono_install_create_domain_hook (MonoCreateDomainFunc func)
-{
-	create_domain_hook = func;
-}
-
-void
-mono_install_free_domain_hook (MonoFreeDomainFunc func)
-{
-	free_domain_hook = func;
-}
 
 gboolean
 mono_string_equal_internal (MonoString *s1, MonoString *s2)
@@ -424,10 +319,8 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
-	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
 	domain->num_jit_info_table_duplicates = 0;
@@ -453,12 +346,7 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
 
-	mono_debug_domain_create (domain);
-
 	mono_alc_create_default (domain);
-
-	if (create_domain_hook)
-		create_domain_hook (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -698,21 +586,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
 
-#ifndef DISABLE_REMOTING
-	mono_defaults.transparent_proxy_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "TransparentProxy");
-
-	mono_defaults.real_proxy_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System.Runtime.Remoting.Proxies", "RealProxy");
-
-	mono_defaults.marshalbyrefobject_class =  mono_class_load_from_name (
-	        mono_defaults.corlib, "System", "MarshalByRefObject");
-
-	mono_defaults.iremotingtypeinfo_class = mono_class_load_from_name (
-	        mono_defaults.corlib, "System.Runtime.Remoting", "IRemotingTypeInfo");
-
-#endif
-
 	mono_defaults.field_info_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Reflection", "FieldInfo");
 
@@ -836,7 +709,6 @@ mono_cleanup (void)
 
 	mono_defaults.corlib = NULL;
 
-	mono_config_cleanup ();
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
 	mono_assemblies_cleanup ();
@@ -1076,38 +948,6 @@ const char *
 mono_domain_get_friendly_name (MonoDomain *domain)
 {
 	return domain->friendly_name;
-}
-
-/*
- * mono_domain_alloc:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc (memory_manager, size);
-}
-
-/*
- * mono_domain_alloc0:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc0) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc0 (memory_manager, size);
-}
-
-gpointer
-(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
-{
-	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
 }
 
 /**
@@ -1415,123 +1255,6 @@ mono_get_exception_class (void)
 	return mono_defaults.exception_class;
 }
 
-
-static char* get_attribute_value (const gchar **attribute_names, 
-					const gchar **attribute_values, 
-					const char *att_name)
-{
-	int n;
-	for (n=0; attribute_names[n] != NULL; n++) {
-		if (strcmp (attribute_names[n], att_name) == 0)
-			return g_strdup (attribute_values[n]);
-	}
-	return NULL;
-}
-
-static void start_element (GMarkupParseContext *context, 
-                           const gchar         *element_name,
-			   const gchar        **attribute_names,
-			   const gchar        **attribute_values,
-			   gpointer             user_data,
-			   GError             **gerror)
-{
-	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
-	
-	if (strcmp (element_name, "configuration") == 0) {
-		app_config->configuration_count++;
-		return;
-	}
-	if (strcmp (element_name, "startup") == 0) {
-		app_config->startup_count++;
-		return;
-	}
-	
-	if (app_config->configuration_count != 1 || app_config->startup_count != 1)
-		return;
-	
-	if (strcmp (element_name, "requiredRuntime") == 0) {
-		app_config->required_runtime = get_attribute_value (attribute_names, attribute_values, "version");
-	} else if (strcmp (element_name, "supportedRuntime") == 0) {
-		char *version = get_attribute_value (attribute_names, attribute_values, "version");
-		app_config->supported_runtimes = g_slist_append (app_config->supported_runtimes, version);
-	}
-}
-
-static void end_element   (GMarkupParseContext *context,
-                           const gchar         *element_name,
-			   gpointer             user_data,
-			   GError             **gerror)
-{
-	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
-	
-	if (strcmp (element_name, "configuration") == 0) {
-		app_config->configuration_count--;
-	} else if (strcmp (element_name, "startup") == 0) {
-		app_config->startup_count--;
-	}
-}
-
-static const GMarkupParser 
-mono_parser = {
-	start_element,
-	end_element,
-	NULL,
-	NULL,
-	NULL
-};
-
-static AppConfigInfo *
-app_config_parse (const char *exe_filename)
-{
-	AppConfigInfo *app_config;
-	GMarkupParseContext *context;
-	char *text;
-	gsize len;
-	const char *bundled_config;
-	char *config_filename;
-
-	bundled_config = mono_config_string_for_assembly_file (exe_filename);
-
-	if (bundled_config) {
-		text = g_strdup (bundled_config);
-		len = strlen (text);
-	} else {
-		config_filename = g_strconcat (exe_filename, ".config", (const char*)NULL);
-
-		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
-			g_free (config_filename);
-			return NULL;
-		}
-		g_free (config_filename);
-	}
-
-	app_config = g_new0 (AppConfigInfo, 1);
-
-	context = g_markup_parse_context_new (&mono_parser, (GMarkupParseFlags)0, app_config, NULL);
-	if (g_markup_parse_context_parse (context, text, len, NULL)) {
-		g_markup_parse_context_end_parse (context, NULL);
-	}
-	g_markup_parse_context_free (context);
-	g_free (text);
-	return app_config;
-}
-
-static void 
-app_config_free (AppConfigInfo* app_config)
-{
-	char *rt;
-	GSList *list = app_config->supported_runtimes;
-	while (list != NULL) {
-		rt = (char*)list->data;
-		g_free (rt);
-		list = g_slist_next (list);
-	}
-	g_slist_free (app_config->supported_runtimes);
-	g_free (app_config->required_runtime);
-	g_free (app_config);
-}
-
-
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version)
 {
@@ -1561,42 +1284,9 @@ get_runtime_by_version (const char *version)
 static GSList*
 get_runtimes_from_exe (const char *file, MonoImage **out_image)
 {
-	AppConfigInfo* app_config;
-	char *version;
 	const MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
 	GSList *runtimes = NULL;
-	
-	app_config = app_config_parse (file);
-	
-	if (app_config != NULL) {
-		/* Check supportedRuntime elements, if none is supported, fail.
-		 * If there are no such elements, look for a requiredRuntime element.
-		 */
-		if (app_config->supported_runtimes != NULL) {
-			GSList *list = app_config->supported_runtimes;
-			while (list != NULL) {
-				version = (char*) list->data;
-				runtime = get_runtime_by_version (version);
-				if (runtime != NULL)
-					runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
-				list = g_slist_next (list);
-			}
-			runtimes = g_slist_reverse (runtimes);
-			app_config_free (app_config);
-			return runtimes;
-		}
-		
-		/* Check the requiredRuntime element. This is for 1.0 apps only. */
-		if (app_config->required_runtime != NULL) {
-			const MonoRuntimeInfo* runtime = get_runtime_by_version (app_config->required_runtime);
-			if (runtime != NULL)
-				runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
-			app_config_free (app_config);
-			return runtimes;
-		}
-		app_config_free (app_config);
-	}
 	
 	/* Look for a runtime with the exact version */
 	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, NULL);
@@ -1632,12 +1322,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-MonoAotCacheConfig *
-mono_get_aot_cache_config (void)
-{
-	return &aot_cache_config;
 }
 
 void

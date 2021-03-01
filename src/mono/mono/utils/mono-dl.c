@@ -21,7 +21,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#ifdef TARGET_ANDROID
+
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
 #endif
 
@@ -180,7 +181,8 @@ fix_libc_name (const char *name)
 MonoDl*
 mono_dl_open_self (char **error_msg)
 {
-#ifdef TARGET_ANDROID
+
+#if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
 	if (error_msg)
 		*error_msg = NULL;

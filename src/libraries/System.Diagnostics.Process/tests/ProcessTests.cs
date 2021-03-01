@@ -1468,6 +1468,56 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void StandardInput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardInput);
+        }
+
+        [Fact]
+        public void StandardError_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardError);
+        }
+
+        [Fact]
+        public void StandardOutput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardOutput);
+        }
+
+        [Fact]
+        public void CancelOutputRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelOutputRead());
+        }
+
+        [Fact]
+        public void CancelErrorRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelErrorRead());
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         public void TestHandleCount()
         {
@@ -2360,7 +2410,7 @@ namespace System.Diagnostics.Tests
         {
             string folderNameWithSpaces = "folder name with spaces"; // this needs escaping
             string fullPath = Path.Combine(TestDirectory, folderNameWithSpaces);
-            string[] arguments = new string[] { "/c", "mkdir", "-p", fullPath };
+            string[] arguments = new string[] { "/c", "mkdir", fullPath };
 
             if (Directory.Exists(fullPath))
             {

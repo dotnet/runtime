@@ -17,7 +17,7 @@ jobs:
       runtimeFlavorDisplayName: 'CoreCLR'
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
-    
+
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
@@ -26,7 +26,7 @@ jobs:
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
-      # warnings and errors into our build timelines that make it hard to track down 
+      # warnings and errors into our build timelines that make it hard to track down
       # real errors in the build
       - name: skipComponentGovernanceDetection
         value: true
@@ -90,7 +90,7 @@ jobs:
           value: Mono
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
-      
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -119,7 +119,7 @@ jobs:
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
-        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+        ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'tvOS') }}:
           vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool
@@ -135,7 +135,7 @@ jobs:
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       # macOS hosted pool machines are slower so we need to give a greater timeout than the 60 mins default.
-      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'iOS', 'tvOS')) }}:
+      ${{ if and(eq(parameters.jobParameters.timeoutInMinutes, ''), in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'tvOS')) }}:
         timeoutInMinutes: 120
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:

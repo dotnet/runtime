@@ -1829,8 +1829,12 @@ namespace System
         public bool HasFlag(System.Enum flag) { throw null; }
         public static bool IsDefined(System.Type enumType, object value) { throw null; }
         public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
+        public static object Parse(System.Type enumType, System.ReadOnlySpan<char> value) { throw null; }
+        public static object Parse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase) { throw null; }
         public static object Parse(System.Type enumType, string value) { throw null; }
         public static object Parse(System.Type enumType, string value, bool ignoreCase) { throw null; }
+        public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value) where TEnum : struct { throw null; }
+        public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct { throw null; }
         public static TEnum Parse<TEnum>(string value) where TEnum : struct { throw null; }
         public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
@@ -1867,9 +1871,13 @@ namespace System
         public string ToString(string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Please use ToString(String).")]
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, out object? result) { throw null; }
+        public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, out object? result) { throw null; }
+        public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
+        public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out TEnum result) where TEnum : struct { throw null; }
     }
     public static partial class Environment
@@ -7172,6 +7180,7 @@ namespace System.IO
         public override void Flush() { }
         public virtual void Flush(bool flushToDisk) { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public virtual void Lock(long position, long length) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
@@ -7180,6 +7189,7 @@ namespace System.IO
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public virtual void Unlock(long position, long length) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
@@ -7652,6 +7662,12 @@ namespace System.Numerics
 {
     public static partial class BitOperations
     {
+        public static bool IsPow2(int value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(uint value) { throw null; }
+        public static bool IsPow2(long value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]

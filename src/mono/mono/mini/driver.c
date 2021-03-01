@@ -41,13 +41,11 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
-#include <mono/metadata/attach.h>
 #include <mono/metadata/w32process.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
@@ -132,7 +130,7 @@ static const gint16 opt_names [] = {
 	MONO_OPT_AOT | \
 	MONO_OPT_FLOAT32)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
+#define EXCLUDED_FROM_ALL (MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
 
 static char *mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
 static char *mono_parse_response_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend);
@@ -328,7 +326,6 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_CMOV,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_ABCREM,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM,
-       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM | MONO_OPT_SHARED,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_EXCEPTION | MONO_OPT_CMOV,
        DEFAULT_OPTIMIZATIONS, 
 };
@@ -497,13 +494,11 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	comp_time = elapsed = 0.0;
 	int local_skip_index = 0;
 
-	/* fixme: ugly hack - delete all previously compiled methods */
-	if (domain_jit_info (domain)) {
-		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
-		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-		mono_jit_code_hash_init (&(domain->jit_code_hash));
-	}
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	g_hash_table_destroy (jit_mm->jit_trampoline_hash);
+	jit_mm->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+	mono_jit_code_hash_init (&(domain->jit_code_hash));
 
 	g_timer_start (timer);
 	if (mini_stats_fd)
@@ -526,7 +521,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 #ifdef DISABLE_JIT
 #ifdef MONO_USE_AOT_COMPILER
 			ERROR_DECL (error);
-			func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
+			func = (TestMethod)mono_aot_get_method (method, error);
 			mono_error_cleanup (error);
 #else
 			g_error ("No JIT or AOT available, regression testing not possible!");
@@ -534,12 +529,12 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 
 #else
 			comp_time -= start_time;
-			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), mono_get_root_domain (), JIT_FLAG_RUN_CCTORS, 0, -1);
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), JIT_FLAG_RUN_CCTORS, 0, -1);
 			comp_time += g_timer_elapsed (timer, NULL);
 			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 #ifdef MONO_USE_AOT_COMPILER
 				ERROR_DECL (error);
-				func = (TestMethod)mono_aot_get_method (mono_get_root_domain (), method, error);
+				func = (TestMethod)mono_aot_get_method (method, error);
 				mono_error_cleanup (error);
 				if (!func) {
 					func = (TestMethod)MINI_ADDR_TO_FTNPTR (cfg->native_code);
@@ -548,7 +543,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 				func = (TestMethod)(gpointer)cfg->native_code;
 				func = MINI_ADDR_TO_FTNPTR (func);
 #endif
-				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), (gpointer)func);
+				func = (TestMethod)mono_create_ftnptr ((gpointer)func);
 			}
 #endif
 
@@ -762,7 +757,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	cfailed = failed = run = 0;
 	transform_time = elapsed = 0.0;
 
-	mini_get_interp_callbacks ()->invalidate_transformed (domain);
+	mini_get_interp_callbacks ()->invalidate_transformed ();
 
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
@@ -1278,7 +1273,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 			if (verbose && !is_ok (error))
 				g_print ("Compilation of %s failed\n", mono_method_full_name (method, TRUE));
 		} else {
-			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), mono_get_root_domain (), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, args->opts), (JitFlags)JIT_FLAG_DISCARD_RESULTS, 0, -1);
 			if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 				const char *msg = cfg->exception_message;
 				if (cfg->exception_type == MONO_EXCEPTION_MONO_ERROR)
@@ -1356,7 +1351,7 @@ mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
     // (https://github.com/Fody/Costura) to work properly, as they inject
     // a module initializer which sets up event handlers (e.g. AssemblyResolve)
     // that allow the main method to run properly
-    if (!mono_runtime_run_module_cctor(image, domain, error)) {
+    if (!mono_runtime_run_module_cctor(image, error)) {
         g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
         return 1;
     }
@@ -1527,14 +1522,14 @@ load_agent (MonoDomain *domain, char *desc)
 	mono_thread_set_main (mono_thread_current ());
 
 	if (args) {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 1, error);
 		if (main_args) {
-			MonoString *str = mono_string_new_checked (domain, args, error);
+			MonoString *str = mono_string_new_checked (args, error);
 			if (str)
 				mono_array_set_internal (main_args, MonoString*, 0, str);
 		}
 	} else {
-		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, error);
+		main_args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 0, error);
 	}
 	if (!main_args) {
 		g_print ("Could not allocate array for main args of assembly '%s' due to %s\n", agent, mono_error_get_message (error));
@@ -2091,7 +2086,6 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
-	char *attach_options = NULL;
 	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
@@ -2285,7 +2279,7 @@ mono_main (int argc, char* argv[])
 			}
 			mono_inject_async_exc_pos = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--verify-all") == 0) {
-			mono_verifier_enable_verify_all ();
+			g_warning ("--verify-all is obsolete, ignoring");
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
 			mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 		} else if (strcmp (argv [i], "--llvmonly") == 0) {
@@ -2354,7 +2348,7 @@ mono_main (int argc, char* argv[])
 				agents = g_ptr_array_new ();
 			g_ptr_array_add (agents, argv [i] + 8);
 		} else if (strncmp (argv [i], "--attach=", 9) == 0) {
-			attach_options = argv [i] + 9;
+			g_warning ("--attach= option no longer supported.");
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
@@ -2412,9 +2406,11 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "error: --security=cas is obsolete.");
 				return 1;
 			} else if (strcmp (argv [i] + 11, "validil") == 0) {
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VALID);
+                                fprintf (stderr, "error: --security=validil is obsolete.");
+                                return 1;
 			} else if (strcmp (argv [i] + 11, "verifiable") == 0) {
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+                                fprintf (stderr, "error: --securty=verifiable is obsolete.");
+                                return 1;
 			} else {
 				fprintf (stderr, "error: --security= option has invalid argument (cas, core-clr, verifiable or validil)\n");
 				return 1;
@@ -2552,8 +2548,6 @@ mono_main (int argc, char* argv[])
 	/* Set rootdir before loading config */
 	mono_set_rootdir ();
 
-	mono_attach_parse_options (attach_options);
-
 	if (trace_options != NULL){
 		/* 
 		 * Need to call this before mini_init () so we can trace methods 
@@ -2582,11 +2576,6 @@ mono_main (int argc, char* argv[])
 	if (mixed_mode)
 		mono_load_coree (argv [i]);
 #endif
-
-	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER || action == DO_REGRESSION) {
-		mono_config_parse (config_file);
-	}
 
 	mono_set_defaults (mini_verbose_level, opt);
 	mono_set_os_args (argc, argv);
@@ -2750,10 +2739,10 @@ mono_main (int argc, char* argv[])
 			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			MonoMethod *nm;
 			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
-			cfg = mini_method_compile (nm, opt, mono_get_root_domain (), (JitFlags)0, part, -1);
+			cfg = mini_method_compile (nm, opt, (JitFlags)0, part, -1);
 		}
 		else
-			cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, part, -1);
+			cfg = mini_method_compile (method, opt, (JitFlags)0, part, -1);
 		if ((mono_graph_options & MONO_GRAPH_CFG_SSA) && !(cfg->comp_done & MONO_COMP_SSA)) {
 			g_warning ("no SSA info available (use -O=deadce)");
 			return 1;
@@ -2785,7 +2774,7 @@ mono_main (int argc, char* argv[])
 				opt = opt_sets [i];
 				g_timer_start (timer);
 				for (j = 0; j < count; ++j) {
-					cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+					cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 					mono_destroy_compile (cfg);
 				}
 				g_timer_stop (timer);
@@ -2808,12 +2797,12 @@ mono_main (int argc, char* argv[])
 					(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 					method = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
 
-				cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+				cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 				mono_destroy_compile (cfg);
 			}
 		}
 	} else {
-		cfg = mini_method_compile (method, opt, mono_get_root_domain (), (JitFlags)0, 0, -1);
+		cfg = mini_method_compile (method, opt, (JitFlags)0, 0, -1);
 		mono_destroy_compile (cfg);
 	}
 #endif

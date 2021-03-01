@@ -2080,8 +2080,9 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 }
 
 static void
-free_item (gpointer val, gpointer user_data)
+free_assembly_name_item (gpointer val, gpointer user_data)
 {
+	mono_assembly_name_free_internal ((MonoAssemblyName *)val);
 	g_free (val);
 }
 
@@ -2105,7 +2106,6 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	ERROR_DECL (error);
 	int i;
 	MonoCustomAttrInfo* attrs;
-	GSList *list;
 
 	if (ass->friend_assembly_names_inited)
 		return;
@@ -2126,7 +2126,9 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	}
 	mono_assemblies_unlock ();
 
-	list = NULL;
+	GSList *visible_list = NULL;
+	GSList *ignores_list = NULL;
+
 	/* 
 	 * We build the list outside the assemblies lock, the worse that can happen
 	 * is that we'll need to free the allocated list.
@@ -2138,7 +2140,16 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		uint32_t data_length;
 		gchar *data_with_terminator;
 		/* Do some sanity checking */
-		if (!attr->ctor || attr->ctor->klass != mono_class_try_get_internals_visible_class ())
+		if (!attr->ctor)
+			continue;
+		gboolean has_visible = FALSE;
+		gboolean has_ignores = FALSE;
+		has_visible = attr->ctor->klass == mono_class_try_get_internals_visible_class ();
+		/* IgnoresAccessChecksToAttribute is dynamically generated, so it's not necessarily in CoreLib */
+		/* FIXME: should we only check for it in dynamic modules? */
+		has_ignores = (!strcmp ("IgnoresAccessChecksToAttribute", m_class_get_name (attr->ctor->klass)) &&
+			       !strcmp ("System.Runtime.CompilerServices", m_class_get_name_space (attr->ctor->klass)));
+		if (!has_visible && !has_ignores)
 			continue;
 		if (attr->data_size < 4)
 			continue;
@@ -2152,7 +2163,10 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
 		if (mono_assembly_name_parse_full (data_with_terminator, aname, TRUE, NULL, NULL)) {
-			list = g_slist_prepend (list, aname);
+			if (has_visible)
+				visible_list = g_slist_prepend (visible_list, aname);
+			if (has_ignores)
+				ignores_list = g_slist_prepend (ignores_list, aname);
 		} else {
 			g_free (aname);
 		}
@@ -2163,11 +2177,14 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	mono_assemblies_lock ();
 	if (ass->friend_assembly_names_inited) {
 		mono_assemblies_unlock ();
-		g_slist_foreach (list, free_item, NULL);
-		g_slist_free (list);
+		g_slist_foreach (visible_list, free_assembly_name_item, NULL);
+		g_slist_free (visible_list);
+		g_slist_foreach (ignores_list, free_assembly_name_item, NULL);
+		g_slist_free (ignores_list);
 		return;
 	}
-	ass->friend_assembly_names = list;
+	ass->friend_assembly_names = visible_list;
+	ass->ignores_checks_assembly_names = ignores_list;
 
 	/* Because of the double checked locking pattern above */
 	mono_memory_barrier ();
@@ -3318,7 +3335,6 @@ mono_assembly_release_gc_roots (MonoAssembly *assembly)
 gboolean
 mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 {
-	GSList *tmp;
 	g_return_val_if_fail (assembly != NULL, FALSE);
 
 	if (assembly == REFERENCE_MISSING)
@@ -3343,12 +3359,10 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 	if (!mono_image_close_except_pools (assembly->image))
 		assembly->image = NULL;
 
-	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
-		MonoAssemblyName *fname = (MonoAssemblyName *)tmp->data;
-		mono_assembly_name_free_internal (fname);
-		g_free (fname);
-	}
+	g_slist_foreach (assembly->friend_assembly_names, free_assembly_name_item, NULL);
+	g_slist_foreach (assembly->ignores_checks_assembly_names, free_assembly_name_item, NULL);
 	g_slist_free (assembly->friend_assembly_names);
+	g_slist_free (assembly->ignores_checks_assembly_names);
 	g_free (assembly->basedir);
 
 	MONO_PROFILER_RAISE (assembly_unloaded, (assembly));

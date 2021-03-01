@@ -597,7 +597,7 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__BuildArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCBuildArch=x86_amd64
+    set __VCBuildArch=amd64
     if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
     if /i "%__BuildArch%" == "arm" (
         set __VCBuildArch=x86_arm
@@ -851,7 +851,7 @@ exit /b 1
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md ^
 Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

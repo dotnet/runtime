@@ -394,12 +394,16 @@ namespace Microsoft.VisualBasic
         public static void Input(int FileNumber, ref object Value) { }
         public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static string InputString(int FileNumber, int CharCount) { throw null; }
         public static void Kill(string PathName) { }
         public static string LineInput(int FileNumber) { throw null; }
         public static long Loc(int FileNumber) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber, long Record) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
         public static long LOF(int FileNumber) { throw null; }
         public static void MkDir(string Path) { }
@@ -415,8 +419,11 @@ namespace Microsoft.VisualBasic
         public static Microsoft.VisualBasic.SpcInfo SPC(short Count) { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB() { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB(short Column) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber, long Record) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("macos")]
         public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
         public static void Write(int FileNumber, params object[] Output) { }
         public static void WriteLine(int FileNumber, params object[] Output) { }
