@@ -30,7 +30,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, to_native_trampoline, (gpointer addr, gpointer ccontext)) \
 	MONO_EE_CALLBACK (gpointer, create_method_pointer, (MonoMethod *method, gboolean compile, MonoError *error)) \
 	MONO_EE_CALLBACK (MonoFtnDesc*, create_method_pointer_llvmonly, (MonoMethod *method, gboolean unbox, MonoError *error)) \
-	MONO_EE_CALLBACK (void, free_method, (MonoDomain *domain, MonoMethod *method)) \
+	MONO_EE_CALLBACK (void, free_method, (MonoMethod *method)) \
 	MONO_EE_CALLBACK (MonoObject*, runtime_invoke, (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)) \
 	MONO_EE_CALLBACK (void, init_delegate, (MonoDelegate *del, MonoError *error)) \
 	MONO_EE_CALLBACK (void, delegate_ctor, (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)) \
@@ -57,7 +57,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, free_context, (gpointer)) \
 	MONO_EE_CALLBACK (void, set_optimizations, (guint32)) \
 	MONO_EE_CALLBACK (void, metadata_update_init, (MonoError *error)) \
-	MONO_EE_CALLBACK (void, invalidate_transformed, (MonoDomain *domain)) \
+	MONO_EE_CALLBACK (void, invalidate_transformed, (void)) \
 	MONO_EE_CALLBACK (void, cleanup, (void)) \
 	MONO_EE_CALLBACK (void, mark_stack, (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise)) \
 

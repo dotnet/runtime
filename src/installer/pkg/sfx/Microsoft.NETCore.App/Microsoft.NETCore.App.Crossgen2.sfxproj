@@ -5,8 +5,8 @@
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
-    <SharedFrameworkName>Microsoft.NETCore.App.Crossgen2</SharedFrameworkName>
-    <OverridePackageId>Microsoft.NETCore.App.Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
+    <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
+    <OverridePackageId>$(SharedFrameworkName).Crossgen2.$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-x64;osx-arm64;win-x64</RuntimeIdentifiers>

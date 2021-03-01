@@ -219,6 +219,7 @@ struct _MonoAssembly {
 	MonoAssemblyName aname;
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
+	GSList *ignores_checks_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
 	guint8 dynamic;
 	MonoAssemblyContext context;

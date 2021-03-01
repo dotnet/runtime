@@ -11,10 +11,10 @@ namespace Internal.Cryptography
 {
     internal abstract partial class AsnFormatter
     {
-        private static readonly AsnFormatter s_instance = new AppleAsnFormatter();
+        private static readonly AsnFormatter s_instance = new ManagedAsnFormatter();
     }
 
-    internal class AppleAsnFormatter : AsnFormatter
+    internal class ManagedAsnFormatter : AsnFormatter
     {
         protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {

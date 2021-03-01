@@ -207,7 +207,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
-                        messageValue = source.ConsumeMessage(messageHeader, _owningTarget, out consumed);
+                        messageValue = source.ConsumeMessage(messageHeader, _owningTarget, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
 
@@ -661,7 +661,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 } // Must not call to source while holding lock
 
                 bool consumed;
-                TInput consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
+                TInput? consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
                 if (consumed)
                 {
                     result = new KeyValuePair<TInput, long>(consumedValue!, messageId);
