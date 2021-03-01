@@ -1290,7 +1290,7 @@ namespace System.Diagnostics.Tracing
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
 #endif // MONO && !TARGET_BROWSER
-                        WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
+                            WriteToAllListeners(eventId, pActivityId, relatedActivityId, eventDataCount, data);
                     }
                 }
                 catch (Exception ex)
