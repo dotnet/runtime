@@ -15,7 +15,7 @@ Porting the .NET Runtime to a new architecture typically follows along the
 following path.
 
 As engineering continues along the development path, it is best if the logic can
-be placed into the master repository of the runtime as soon as possible. This
+be placed into the main branch of the runtime as soon as possible. This
 will have 2 major effects.
 
 1.  Individual commits are easier to review.
