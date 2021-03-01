@@ -849,6 +849,15 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].splitEdgeCount     = 0;
 #endif // TRACK_LSRA_STATS
 
+
+        // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
+        // insert resolution moves into those blocks.
+        if (block->isBBCallAlwaysPairTail())
+        {
+            blockInfo[block->bbNum].hasEHBoundaryIn  = true;
+            blockInfo[block->bbNum].hasEHBoundaryOut = true;
+        }
+
         bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
@@ -866,15 +875,11 @@ void LinearScan::setBlockSequence()
                 }
             }
 
-            // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
-            // insert resolution moves into those blocks.
-            if (block->isBBCallAlwaysPairTail())
+            if (!block->isBBCallAlwaysPairTail() &&
+                (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail()))
             {
-                blockInfo[block->bbNum].hasEHBoundaryIn  = true;
-                blockInfo[block->bbNum].hasEHBoundaryOut = true;
-            }
-            else if (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail())
-            {
+                assert(!block->isBBCallAlwaysPairTail());
+
                 if (hasUniquePred)
                 {
                     // A unique pred with an EH out edge won't allow us to keep any variables enregistered.
@@ -886,17 +891,6 @@ void LinearScan::setBlockSequence()
                 }
             }
         }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // For ARM, if this block is BBCallAlwaysPairTail, then it won't have any preds
-        // since we use "lr" mechanism to jump to the block that is executed after try block is done.
-        // In such case, mark that we do not want to insert resolution moves in it.
-        if (block->bbPreds == nullptr && block->isBBCallAlwaysPairTail())
-        {
-            blockInfo[block->bbNum].hasEHBoundaryIn  = true;
-            blockInfo[block->bbNum].hasEHBoundaryOut = true;
-        }
-#endif
 
         // Determine which block to schedule next.
 
@@ -8221,7 +8215,7 @@ void LinearScan::addResolution(
     }
 
     // We should never add resolution move inside BBCallAlwaysPairTail.
-    assert(!block->isBBCallAlwaysPairTail());
+    noway_assert(!block->isBBCallAlwaysPairTail());
 
 #endif // DEBUG
 
