@@ -18,6 +18,7 @@ CordbFunctionBreakpoint::CordbFunctionBreakpoint(Connection* conn, CordbCode* co
     this->m_pCode  = code;
     this->m_offset = offset;
     conn->GetProcess()->AddBreakpoint(this);
+    m_debuggerId = -1;
 }
 
 CordbFunctionBreakpoint::~CordbFunctionBreakpoint() {}
@@ -48,9 +49,15 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL bActive)
         m_dbgprot_buffer_add_byte(&sendbuf, MDBGPROT_MOD_KIND_LOCATION_ONLY);
         m_dbgprot_buffer_add_id(&sendbuf, this->GetCode()->GetFunction()->GetDebuggerId());
         m_dbgprot_buffer_add_long(&sendbuf, m_offset);
-        conn->SendEvent(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_SET, &sendbuf);
         m_dbgprot_buffer_free(&sendbuf);
         LOG((LF_CORDB, LL_INFO1000000, "CordbFunctionBreakpoint - Activate - IMPLEMENTED\n"));
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+
+        m_debuggerId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
     }
     else
     {

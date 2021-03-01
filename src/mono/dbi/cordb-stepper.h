@@ -12,7 +12,7 @@
 class CordbStepper : public CordbBaseMono, public ICorDebugStepper, public ICorDebugStepper2
 {
     CordbThread* m_pThread;
-    int          m_commandId;
+    int          m_debuggerId;
 
 public:
     CordbStepper(Connection* conn, CordbThread* thread);
@@ -38,8 +38,11 @@ public:
     HRESULT STDMETHODCALLTYPE StepOut(void);
     HRESULT STDMETHODCALLTYPE SetRangeIL(BOOL bIL);
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
-
     HRESULT STDMETHODCALLTYPE SetJMC(BOOL fIsJMCStepper);
+    int     GetDebuggerId() const
+    {
+        return m_debuggerId;
+    }
 };
 
 #endif

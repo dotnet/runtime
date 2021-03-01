@@ -72,10 +72,6 @@ public:
     {
         return m_threadId;
     }
-    CordbStepper* GetStepper() const
-    {
-        return m_pStepper;
-    }
 };
 
 #endif

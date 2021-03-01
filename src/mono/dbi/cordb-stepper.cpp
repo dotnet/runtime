@@ -15,7 +15,8 @@ using namespace std;
 CordbStepper::CordbStepper(Connection* conn, CordbThread* thread) : CordbBaseMono(conn)
 {
     m_pThread   = thread;
-    m_commandId = -1;
+    m_debuggerId = -1;
+    conn->GetProcess()->AddStepper(this);
 }
 
 CordbStepper::~CordbStepper() {}
@@ -33,7 +34,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::Deactivate(void)
     int            buflen = 128;
     m_dbgprot_buffer_init(&sendbuf, buflen);
     m_dbgprot_buffer_add_byte(&sendbuf, MDBGPROT_EVENT_KIND_STEP);
-    m_dbgprot_buffer_add_int(&sendbuf, m_commandId);
+    m_dbgprot_buffer_add_int(&sendbuf, m_debuggerId);
     conn->SendEvent(MDBGPROT_CMD_SET_EVENT_REQUEST, MDBGPROT_CMD_EVENT_REQUEST_CLEAR, &sendbuf);
     m_dbgprot_buffer_free(&sendbuf);
     return S_OK;
@@ -83,7 +84,7 @@ HRESULT STDMETHODCALLTYPE CordbStepper::StepRange(BOOL bStepIn, COR_DEBUG_STEP_R
         CHECK_ERROR_RETURN_FALSE(received_reply_packet);
         MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-        m_commandId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
+        m_debuggerId = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
     }
     EX_CATCH_HRESULT(hr);
     return hr;

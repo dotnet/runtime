@@ -13,6 +13,7 @@ class CordbFunctionBreakpoint : public CordbBaseMono, public ICorDebugFunctionBr
 {
     CordbCode* m_pCode;
     ULONG32    m_offset;
+    int        m_debuggerId;
 
 public:
     CordbFunctionBreakpoint(Connection* conn, CordbCode* code, ULONG32 offset);
@@ -42,6 +43,10 @@ public:
     HRESULT STDMETHODCALLTYPE Activate(BOOL bActive);
     HRESULT STDMETHODCALLTYPE IsActive(BOOL* pbActive);
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, _COM_Outptr_ void __RPC_FAR* __RPC_FAR* pInterface);
+    int     GetDebuggerId() const
+    {
+        return m_debuggerId;
+    }
 };
 
 #endif

@@ -26,6 +26,7 @@ class CordbProcess : public CordbBaseMono,
     ArrayList*          m_pFunctions;
     ArrayList*          m_pModules;
     ArrayList*          m_pPendingEval;
+    ArrayList*          m_pSteppers;
     CordbAppDomainEnum* m_pAppDomainEnum;
     Cordb*              m_pCordb;
     BOOL                m_bIsJustMyCode;
@@ -117,11 +118,13 @@ public:
     void                     AddAppDomain(CordbAppDomain* appDomain);
     void                     AddBreakpoint(CordbFunctionBreakpoint* bp);
     void                     AddPendingEval(CordbEval* eval);
+    void                     AddStepper(CordbStepper* step);
     CordbFunction*           FindFunction(int id);
     CordbModule*             GetModule(int module_id);
+    CordbStepper*            GetStepper(int id);
     CordbAppDomain*          GetCurrentAppDomain();
     CordbThread*             FindThread(long thread_id);
-    CordbFunctionBreakpoint* GetBreakpointByOffsetAndFuncId(int64_t offset, int method_id);
+    CordbFunctionBreakpoint* GetBreakpoint(int id);
     void                     CheckPendingEval();
     void                     SetJMCStatus(BOOL bIsJustMyCode);
     BOOL                     GetJMCStatus();

@@ -96,9 +96,6 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG* pcelt)
             m_ppFrames[i] = frame;
         }
 
-        if (!m_pThread->GetStepper())
-            m_pThread->SetRegisterSet(new CordbRegisterSet(conn, 0, 0));
-
         *pcelt = m_nFrames;
     }
     EX_CATCH_HRESULT(hr);

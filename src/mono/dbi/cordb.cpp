@@ -374,7 +374,7 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                     m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
                 }
                 DWORD                    i          = 0;
-                CordbFunctionBreakpoint* breakpoint = GetProcess()->GetBreakpointByOffsetAndFuncId(offset, method_id);
+                CordbFunctionBreakpoint* breakpoint = GetProcess()->GetBreakpoint(req_id);
                 m_pCordb->GetCallback()->Breakpoint(pCorDebugAppDomain, thread,
                                                   static_cast<ICorDebugFunctionBreakpoint*>(breakpoint));
             }
@@ -390,7 +390,8 @@ void Connection::ProcessPacketInternal(MdbgProtBuffer* recvbuf)
                     GetProcess()->Stop(false);
                     m_pCordb->GetCallback()->CreateThread(pCorDebugAppDomain, thread);
                 }
-                m_pCordb->GetCallback()->StepComplete(pCorDebugAppDomain, thread, thread->GetStepper(), STEP_NORMAL);
+                CordbStepper* stepper = GetProcess()->GetStepper(req_id);
+                m_pCordb->GetCallback()->StepComplete(pCorDebugAppDomain, thread, stepper, STEP_NORMAL);
             }
             break;
             default:

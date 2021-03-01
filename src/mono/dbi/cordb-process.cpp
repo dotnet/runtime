@@ -12,6 +12,7 @@
 #include <cordb-function.h>
 #include <cordb-process.h>
 #include <cordb-thread.h>
+#include <cordb-stepper.h>
 #include <cordb.h>
 
 using namespace std;
@@ -23,8 +24,9 @@ CordbProcess::CordbProcess(Cordb* cordb) : CordbBaseMono(NULL)
     m_pThreads       = new ArrayList();
     m_pFunctions     = new ArrayList();
     m_pModules       = new ArrayList();
-    m_pAddDomains       = new ArrayList();
+    m_pAddDomains    = new ArrayList();
     m_pPendingEval   = new ArrayList();
+    m_pSteppers      = new ArrayList();
     this->m_pCordb   = cordb;
     m_bIsJustMyCode  = false;
 }
@@ -39,6 +41,13 @@ CordbProcess::~CordbProcess()
         CordbFunctionBreakpoint* breakpoint = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
         if (breakpoint)
             breakpoint->InternalRelease();
+    }
+
+    for (DWORD i = 0; i < m_pSteppers->GetCount(); i++)
+    {
+        CordbStepper* stepper = (CordbStepper*)m_pSteppers->Get(i);
+        if (stepper)
+            stepper->InternalRelease();
     }
 
     for (DWORD i = 0; i < m_pThreads->GetCount(); i++)
@@ -552,23 +561,41 @@ void CordbProcess::AddPendingEval(CordbEval* eval)
     m_pPendingEval->Append(eval);
     eval->InternalAddRef();
 }
+
 void CordbProcess::AddBreakpoint(CordbFunctionBreakpoint* bp)
 {
     m_pBreakpoints->Append(bp);
     bp->InternalAddRef();
 }
 
+void CordbProcess::AddStepper(CordbStepper* step)
+{
+    m_pSteppers->Append(step);
+    step->InternalAddRef();
+}
+
 CordbFunction* CordbProcess::FindFunction(int id)
 {
-    DWORD i = 0;
-    while (i < m_pFunctions->GetCount())
+    for (DWORD i = 0; i < m_pFunctions->GetCount(); i++)
     {
         CordbFunction* function = (CordbFunction*)m_pFunctions->Get(i);
         if (function->GetDebuggerId() == id)
         {
             return function;
         }
-        i++;
+    }
+    return NULL;
+}
+
+CordbStepper* CordbProcess::GetStepper(int id)
+{
+    for (DWORD i = 0; i < m_pSteppers->GetCount(); i++)
+    {
+        CordbStepper* stepper = (CordbStepper*)m_pSteppers->Get(i);
+        if (stepper->GetDebuggerId() == id)
+        {
+            return stepper;
+        }
     }
     return NULL;
 }
@@ -608,18 +635,15 @@ CordbThread* CordbProcess::FindThread(long thread_id)
     return NULL;
 }
 
-CordbFunctionBreakpoint* CordbProcess::GetBreakpointByOffsetAndFuncId(int64_t offset, int method_id)
+CordbFunctionBreakpoint* CordbProcess::GetBreakpoint(int id)
 {
-    DWORD                    i          = 0;
-    CordbFunctionBreakpoint* breakpoint = NULL;
-    while (i < m_pBreakpoints->GetCount())
+    for (DWORD i = 0; i < m_pBreakpoints->GetCount(); i++)
     {
-        breakpoint = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
-        if (breakpoint->GetOffset() == offset && breakpoint->GetCode()->GetFunction()->GetDebuggerId() == method_id)
+        CordbFunctionBreakpoint* bp = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
+        if (bp->GetDebuggerId() == id)
         {
-            return breakpoint;
+            return bp;
         }
-        i++;
     }
     return NULL;
 }

@@ -21,7 +21,6 @@ CordbThread::CordbThread(Connection* conn, CordbProcess* ppProcess, long thread_
 {
     this->m_pProcess  = ppProcess;
     this->m_threadId  = thread_id;
-    m_pStepper        = NULL;
     m_pRegisterSet    = NULL;
     m_pCurrentFrame   = NULL;
     m_pBlockingObject = NULL;
@@ -36,8 +35,6 @@ CordbThread::~CordbThread()
         m_pBlockingObject->InternalRelease();
     if (m_pRegisterSet)
         m_pRegisterSet->InternalRelease();
-    if (m_pStepper)
-        m_pStepper->InternalRelease();
 }
 
 void CordbThread::SetRegisterSet(CordbRegisterSet* rs)
@@ -184,8 +181,6 @@ HRESULT STDMETHODCALLTYPE CordbThread::ClearCurrentException(void)
 
 HRESULT STDMETHODCALLTYPE CordbThread::CreateStepper(ICorDebugStepper** ppStepper)
 {
-    if (m_pStepper)
-        m_pStepper->InternalRelease();
     m_pStepper = new CordbStepper(conn, this);
     m_pStepper->InternalAddRef();
     m_pStepper->QueryInterface(IID_ICorDebugStepper, (void**)ppStepper);
