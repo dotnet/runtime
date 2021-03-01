@@ -324,7 +324,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
-	mono_domain_fire_assembly_load (mono_domain_default_alc (domain), mono_defaults.corlib->assembly, NULL, error);
+	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);
 	goto_if_nok (error, exit);
 
 exit:

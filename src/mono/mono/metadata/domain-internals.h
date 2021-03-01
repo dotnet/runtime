@@ -519,13 +519,10 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain);
-
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {
-	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline MonoMemoryManager *

@@ -1196,8 +1196,8 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
-	MonoDomain *domain = mono_object_domain (assemblyb);
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoDomain *domain = mono_get_root_domain ();
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	
 	if (assemblyb->dynamic_assembly)
 		return;

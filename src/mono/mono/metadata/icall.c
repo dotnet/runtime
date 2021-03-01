@@ -5213,13 +5213,12 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	error_init (error);
 
-	MonoDomain *domain = MONO_HANDLE_DOMAIN (fname);
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
 
 	if (!image){

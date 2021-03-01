@@ -435,7 +435,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, NULL);
+			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (domain), exe_filename, NULL, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -847,7 +847,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_domain_assembly_open_internal (domain, mono_domain_default_alc (domain), name);
+	result = mono_domain_assembly_open_internal (domain, mono_alc_get_default (), name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1287,7 +1287,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	GSList *runtimes = NULL;
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, NULL);
+	image = mono_assembly_open_from_bundle (mono_alc_get_default (), file, NULL, NULL);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);
@@ -1349,10 +1349,4 @@ mono_domain_get_assemblies (MonoDomain *domain)
 	}
 	mono_domain_assemblies_unlock (domain);
 	return assemblies;
-}
-
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain)
-{
-	return mono_alc_get_default ();
 }
