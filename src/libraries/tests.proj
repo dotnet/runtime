@@ -158,6 +158,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'false' and '$(EnableAggressiveTrimming)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext/tests/System.Reflection.MetadataLoadContext.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
