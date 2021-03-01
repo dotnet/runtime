@@ -307,7 +307,7 @@ namespace System.Net.Http
         public HttpAuthority? OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
-        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel;
+        public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public bool AnyProxyKind => (_proxyUri != null);
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
@@ -330,10 +330,10 @@ namespace System.Net.Http
 
                     Debug.Assert(_originAuthority != null);
                     sb
-                        .Append(_kind == HttpConnectionKind.Https ? "https://" : "http://")
+                        .Append(IsSecure ? "https://" : "http://")
                         .Append(_originAuthority.IdnHost);
 
-                    if (_originAuthority.Port != (_kind == HttpConnectionKind.Https ? DefaultHttpsPort : DefaultHttpPort))
+                    if (_originAuthority.Port != (IsSecure ? DefaultHttpsPort : DefaultHttpPort))
                     {
                         sb
                             .Append(':')
@@ -559,7 +559,7 @@ namespace System.Net.Http
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
+            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
             // See if we have an HTTP2 connection
             Http2Connection? http2Connection = GetExistingHttp2Connection();
@@ -621,7 +621,7 @@ namespace System.Net.Http
 
                     sslStream = stream as SslStream;
 
-                    if (_kind == HttpConnectionKind.Http)
+                    if (!IsSecure)
                     {
                         http2Connection = await ConstructHttp2ConnectionAsync(stream, request, cancellationToken).ConfigureAwait(false);
 
