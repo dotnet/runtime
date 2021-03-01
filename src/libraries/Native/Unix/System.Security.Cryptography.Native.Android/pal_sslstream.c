@@ -5,7 +5,7 @@
 
 void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus);
 
-int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
+static int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
 {
     AssertOnJNIExceptions(env);
     int status = -1;
@@ -17,7 +17,7 @@ int getHandshakeStatus(JNIEnv* env, SSLStream* sslStream, jobject engineResult)
     return status;
 }
 
-void close(JNIEnv* env, SSLStream* sslStream) {
+static void close(JNIEnv* env, SSLStream* sslStream) {
     /*
         sslEngine.closeOutbound();
         checkHandshakeStatus();
@@ -28,7 +28,7 @@ void close(JNIEnv* env, SSLStream* sslStream) {
     checkHandshakeStatus(env, sslStream, getHandshakeStatus(env, sslStream, NULL));
 }
 
-void handleEndOfStream(JNIEnv* env, SSLStream* sslStream)  {
+static void handleEndOfStream(JNIEnv* env, SSLStream* sslStream)  {
     /*
         sslEngine.closeInbound();
         close();
@@ -40,7 +40,7 @@ void handleEndOfStream(JNIEnv* env, SSLStream* sslStream)  {
     AssertOnJNIExceptions(env);
 }
 
-void flush(JNIEnv* env, SSLStream* sslStream)
+static void flush(JNIEnv* env, SSLStream* sslStream)
 {
     /*
         netOutBuffer.flip();
@@ -60,16 +60,16 @@ void flush(JNIEnv* env, SSLStream* sslStream)
     // DeleteLocalRef because we don't need the return value (Buffer)
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferGetMethod, data));
 
-    uint8_t* dataPtr = malloc(bufferLimit);
+    uint8_t* dataPtr = (uint8_t*)malloc((size_t)bufferLimit);
     (*env)->GetByteArrayRegion(env, data, 0, bufferLimit, (jbyte*) dataPtr);
-    sslStream->streamWriter(dataPtr, 0, bufferLimit);
+    sslStream->streamWriter(dataPtr, 0, (uint32_t)bufferLimit);
     free(dataPtr);
     // DeleteLocalRef because we don't need the return value (Buffer)
     (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->netOutBuffer, g_ByteBufferCompactMethod));
     AssertOnJNIExceptions(env);
 }
 
-jobject ensureRemaining(JNIEnv* env, SSLStream* sslStream, jobject oldBuffer, int newRemaining)
+static jobject ensureRemaining(JNIEnv* env, SSLStream* sslStream, jobject oldBuffer, int newRemaining)
 {
     /*
         if (oldBuffer.remaining() < newRemaining) {
@@ -101,7 +101,7 @@ jobject ensureRemaining(JNIEnv* env, SSLStream* sslStream, jobject oldBuffer, in
     }
 }
 
-void doWrap(JNIEnv* env, SSLStream* sslStream)
+static void doWrap(JNIEnv* env, SSLStream* sslStream)
 {
     /*
         appOutBuffer.flip();
@@ -159,7 +159,7 @@ void doWrap(JNIEnv* env, SSLStream* sslStream)
     }
 }
 
-void doUnwrap(JNIEnv* env, SSLStream* sslStream)
+static void doUnwrap(JNIEnv* env, SSLStream* sslStream)
 {
     /*
         if (netInBuffer.position() == 0)
@@ -208,8 +208,8 @@ void doUnwrap(JNIEnv* env, SSLStream* sslStream)
     {
         int netInBufferLimit = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferLimitMethod);
         jbyteArray tmp = (*env)->NewByteArray(env, netInBufferLimit);
-        uint8_t* tmpNative = malloc(netInBufferLimit);
-        int count = sslStream->streamReader(tmpNative, 0, netInBufferLimit);
+        uint8_t* tmpNative = (uint8_t*)malloc((size_t)netInBufferLimit);
+        int count = sslStream->streamReader(tmpNative, 0, (uint32_t)netInBufferLimit);
         if (count == -1)
         {
             handleEndOfStream(env, sslStream);
@@ -278,7 +278,12 @@ void checkHandshakeStatus(JNIEnv* env, SSLStream* sslStream, int handshakeStatus
     }
 }
 
-SSLStream* AndroidCrypto_CreateSSLStreamAndStartHandshake(STREAM_READER streamReader, STREAM_WRITER streamWriter, int tlsVersion, int appOutBufferSize, int appInBufferSize)
+SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(
+    STREAM_READER streamReader,
+    STREAM_WRITER streamWriter,
+    int tlsVersion,
+    int appOutBufferSize,
+    int appInBufferSize)
 {
     JNIEnv* env = GetJNIEnv();
     /*
@@ -337,7 +342,7 @@ SSLStream* AndroidCrypto_CreateSSLStreamAndStartHandshake(STREAM_READER streamRe
     return sslStream;
 }
 
-int AndroidCrypto_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length)
+int AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length)
 {
     JNIEnv* env = GetJNIEnv();
 
@@ -374,11 +379,11 @@ int AndroidCrypto_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offse
         (*env)->DeleteLocalRef(env, (*env)->CallObjectMethod(env, sslStream->appInBuffer, g_ByteBufferCompactMethod));
         doUnwrap(env, sslStream);
         AssertOnJNIExceptions(env);
-        return AndroidCrypto_SSLStreamRead(sslStream, buffer, offset, length);
+        return AndroidCryptoNative_SSLStreamRead(sslStream, buffer, offset, length);
     }
 }
 
-void AndroidCrypto_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length)
+void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length)
 {
     /*
         appOutBuffer.put(message);
@@ -394,7 +399,7 @@ void AndroidCrypto_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int off
     AssertOnJNIExceptions(env);
 }
 
-void AndroidCrypto_Dispose(SSLStream* sslStream)
+void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream)
 {
     JNIEnv* env = GetJNIEnv();
     ReleaseGRef(env, sslStream->sslContext);

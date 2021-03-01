@@ -207,8 +207,9 @@ public class ApkBuilder
 
         // 3. Generate APK
 
+        string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar}", workingDir: OutputDir);
+        Utils.RunProcess(aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));

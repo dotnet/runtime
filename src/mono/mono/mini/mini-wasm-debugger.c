@@ -174,13 +174,13 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 
 	PRINT_DEBUG_MSG (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
-	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
+	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
 		PRINT_DEBUG_MSG (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
  
 	StackFrame *frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
+	frame->de.domain = mono_get_root_domain ();
 	frame->de.method = method;
 	frame->de.native_offset = info->native_offset;
 
@@ -376,7 +376,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	DbgEngineStackFrame *frame = (DbgEngineStackFrame*)g_ptr_array_index (frames, 0);
 	ss_req->start_method = ss_args->method = frame->method;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
+	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
 	if (!found_sp)
 		no_seq_points_found (frame->method, frame->native_offset);
 	g_assert (found_sp);
@@ -695,7 +695,7 @@ mono_wasm_current_bp_id (void)
 
 	MonoSeqPointInfo *info = NULL;
 	SeqPoint sp;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
+	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (method, native_offset, &info, &sp);
 	if (!found_sp)
 		PRINT_DEBUG_MSG (1, "Could not find SP\n");
 
@@ -758,7 +758,7 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 
 	PRINT_DEBUG_MSG (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
-	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
+	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
 		PRINT_DEBUG_MSG (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
 
 	method_full_name = mono_method_full_name (method, FALSE);

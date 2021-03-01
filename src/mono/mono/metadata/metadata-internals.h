@@ -219,6 +219,7 @@ struct _MonoAssembly {
 	MonoAssemblyName aname;
 	MonoImage *image;
 	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
+	GSList *ignores_checks_assembly_names; /* Computed by mono_assembly_load_friends () */
 	guint8 friend_assembly_names_inited;
 	guint8 dynamic;
 	MonoAssemblyContext context;
@@ -674,17 +675,9 @@ struct _MonoDynamicImage {
 	GHashTable *blob_cache;
 	GHashTable *standalonesig_cache;
 	GList *array_methods;
-	GPtrArray *gen_params;
-	MonoGHashTable *token_fixups;
-	GHashTable *method_to_table_idx;
-	GHashTable *field_to_table_idx;
 	GHashTable *method_aux_hash;
 	GHashTable *vararg_aux_hash;
 	MonoGHashTable *generic_def_objects;
-	/*
-	 * Maps final token values to the object they describe.
-	 */
-	MonoGHashTable *remapped_tokens;
 	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;
@@ -1170,7 +1163,6 @@ MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token
 
 void mono_type_set_alignment (MonoTypeEnum type, int align);
 
-MonoAotCacheConfig *mono_get_aot_cache_config (void);
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error);
 

@@ -51,6 +51,17 @@ struct _MonoDllMap {
 };
 #endif
 
+/* Lock-free allocator */
+typedef struct {
+	guint8 *mem;
+	gpointer prev;
+	int size, pos;
+} LockFreeMempoolChunk;
+
+typedef struct {
+	LockFreeMempoolChunk *current, *chunks;
+} LockFreeMempool;
+
 struct _MonoAssemblyLoadContext {
 	MonoDomain *domain;
 	MonoLoadedImages *loaded_images;
@@ -90,8 +101,16 @@ struct _MonoMemoryManager {
 
 	MonoMemPool *mp;
 	MonoCodeManager *code_mp;
+	LockFreeMempool *lock_free_mp;
 
 	GPtrArray *class_vtable_array;
+	GHashTable *generic_virtual_cases;
+
+	/* Information maintained by mono-debug.c */
+	gpointer debug_info;
+
+	/* Information maintained by the execution engine */
+	gpointer runtime_info;
 
 	// !!! REGISTERED AS GC ROOTS !!!
 	// Hashtables for Reflection handles
@@ -217,6 +236,11 @@ mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
 void *
 mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
 
+gpointer
+mono_mem_manager_alloc0_lock_free (MonoMemoryManager *memory_manager, guint size);
+
+#define mono_mem_manager_alloc0_lock_free(memory_manager, size) (g_cast (mono_mem_manager_alloc0_lock_free ((memory_manager), (size))))
+
 void *
 mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);
 
@@ -233,6 +257,9 @@ mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManage
 
 char*
 mono_mem_manager_strdup (MonoMemoryManager *memory_manager, const char *s);
+
+void
+mono_mem_manager_free_debug_info (MonoMemoryManager *memory_manager);
 
 G_END_DECLS
 

@@ -619,98 +619,8 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
-        {
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
-            {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
-                {
-                    ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 2)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
-                    }
-                    else
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            span.Length,
-                            ref valueRef,
-                            values.Length);
-                    }
-                }
-
-                if (Unsafe.SizeOf<T>() == sizeof(char))
-                {
-                    ref char valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 5)
-                    {
-                        // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            Unsafe.Add(ref valueRef, 3),
-                            Unsafe.Add(ref valueRef, 4),
-                            span.Length);
-                    }
-                    else if (values.Length == 2)
-                    {
-                        // Length 2 is a common length for simple wildcards (*, ?),  directory separators (/, \), quotes (", '), brackets, etc
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 4)
-                    {
-                        // Length 4 before 3 as 3 has an explicit overload
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            Unsafe.Add(ref valueRef, 3),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
-                    }
-                    else if (values.Length == 1)
-                    {
-                        // Length 1 last, as ctoring a ReadOnlySpan to call this overload for a single value
-                        // is already throwing away a bunch of performance vs just calling IndexOf
-                        return SpanHelpers.IndexOf(
-                            ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            span.Length);
-                    }
-                }
-            }
-
-            return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
-        }
+        public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T> =>
+            IndexOfAny((ReadOnlySpan<T>)span, values);
 
         /// <summary>
         /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
@@ -999,13 +909,78 @@ namespace System
             {
                 nuint size = (nuint)Unsafe.SizeOf<T>();
                 return length == other.Length &&
-                SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
-                    ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+                    SpanHelpers.SequenceEqual(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                        ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
             }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null) =>
+            SequenceEqual((ReadOnlySpan<T>)span, other, comparer);
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>true if the two sequences are equal; otherwise, false.</returns>
+        public static bool SequenceEqual<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
+        {
+            // If the spans differ in length, they're not equal.
+            if (span.Length != other.Length)
+            {
+                return false;
+            }
+
+            if (typeof(T).IsValueType)
+            {
+                if (comparer is null || comparer == EqualityComparer<T>.Default)
+                {
+                    // If no comparer was supplied and the type is bitwise equatable, take the fast path doing a bitwise comparison.
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>())
+                    {
+                        nuint size = (nuint)Unsafe.SizeOf<T>();
+                        return SpanHelpers.SequenceEqual(
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                            ((nuint)span.Length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this API in such a case so we choose not to take the overhead of checking.
+                    }
+
+                    // Otherwise, compare each element using EqualityComparer<T>.Default.Equals in a way that will enable it to devirtualize.
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            // Use the comparer to compare each element.
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

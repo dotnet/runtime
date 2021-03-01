@@ -93,10 +93,12 @@
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.EnsureCapacity.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.Tests.cs" />
+    <Compile Include="Generic\PriorityQueue\PriorityQueue.PropertyTests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Tests.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.cs" />
     <Compile Include="Generic\Queue\Queue.Generic.Tests.cs" />

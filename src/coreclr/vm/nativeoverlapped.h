@@ -21,8 +21,8 @@ struct NATIVEOVERLAPPED_AND_HANDLE
     OBJECTHANDLE m_handle;
 };
 
-// This should match the managed Overlapped object.
-// If you make any change here, you need to change the managed part Overlapped.
+// This should match the managed OverlappedData object.
+// If you make any change here, you need to change the managed part OverlappedData.
 class OverlappedDataObject : public Object
 {
 public:

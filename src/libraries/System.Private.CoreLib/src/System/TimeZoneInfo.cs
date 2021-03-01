@@ -827,38 +827,15 @@ namespace System
                 return false;
             }
 
-            bool sameRules;
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            sameRules =
-                (currentRules == null && otherRules == null) ||
-                (currentRules != null && otherRules != null);
-
-            if (!sameRules)
+            if (currentRules is null || otherRules is null)
             {
-                // AdjustmentRule array mismatch
-                return false;
+                return currentRules == otherRules;
             }
 
-            if (currentRules != null)
-            {
-                if (currentRules.Length != otherRules!.Length)
-                {
-                    // AdjustmentRule array length mismatch
-                    return false;
-                }
-
-                for (int i = 0; i < currentRules.Length; i++)
-                {
-                    if (!(currentRules[i]).Equals(otherRules[i]))
-                    {
-                        // AdjustmentRule value-equality mismatch
-                        return false;
-                    }
-                }
-            }
-            return sameRules;
+            return currentRules.AsSpan().SequenceEqual(otherRules);
         }
 
         /// <summary>

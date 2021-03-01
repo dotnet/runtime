@@ -144,7 +144,7 @@ The implementation for TieredPGO was intentionally kept simple (in part to allow
 
 If we want to externalize data for offline analysis or to feed into a subsequent run of the program, we also need to produce some keying data so that the per-method data can be matched up properly later on.
 
-This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core JIT must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/master/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
+This is surprisingly challenging in .NET as there's not a strong external notion of method identity from one run to the next. We currently rely on token, hash, and il size as keys. Note things like the multi-core JIT must solve similar problems. We will leverage David Wrighton's [dotnet-pgo](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/dotnet-pgo/dotnet-pgo-experiment.md) work here.
 
 We may also wish to externalize flow graphs to allow offline analysis or to allow some kind of fuzzy matching of old profile data in a new version of the program (this is done by MSVC for example).
 

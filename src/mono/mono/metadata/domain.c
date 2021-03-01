@@ -112,116 +112,11 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v4.0.30319"
 
-/* Callbacks installed by the JIT */
-static MonoCreateDomainFunc create_domain_hook;
-static MonoFreeDomainFunc free_domain_hook;
-
-/* AOT cache configuration */
-static MonoAotCacheConfig aot_cache_config;
-
 static GSList*
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
-
-static LockFreeMempool*
-lock_free_mempool_new (void)
-{
-	return g_new0 (LockFreeMempool, 1);
-}
-
-static void
-lock_free_mempool_free (LockFreeMempool *mp)
-{
-	LockFreeMempoolChunk *chunk, *next;
-
-	chunk = mp->chunks;
-	while (chunk) {
-		next = (LockFreeMempoolChunk *)chunk->prev;
-		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_DOMAIN);
-		chunk = next;
-	}
-	g_free (mp);
-}
-
-/*
- * This is async safe
- */
-static LockFreeMempoolChunk*
-lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
-{
-	LockFreeMempoolChunk *chunk, *prev;
-	int size;
-
-	size = mono_pagesize ();
-	while (size - sizeof (LockFreeMempoolChunk) < len)
-		size += mono_pagesize ();
-	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_DOMAIN);
-	g_assert (chunk);
-	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
-	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
-	chunk->pos = 0;
-
-	/* Add to list of chunks lock-free */
-	while (TRUE) {
-		prev = mp->chunks;
-		if (mono_atomic_cas_ptr ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
-			break;
-	}
-	chunk->prev = prev;
-
-	return chunk;
-}
-
-/*
- * This is async safe
- */
-static gpointer
-lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
-{
-	LockFreeMempoolChunk *chunk;
-	gpointer res;
-	int oldpos;
-
-	// FIXME: Free the allocator
-
-	size = ALIGN_TO (size, 8);
-	chunk = mp->current;
-	if (!chunk) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		mono_memory_barrier ();
-		/* Publish */
-		mp->current = chunk;
-	}
-
-	/* The code below is lock-free, 'chunk' is shared state */
-	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
-	if (oldpos + size > chunk->size) {
-		chunk = lock_free_mempool_chunk_new (mp, size);
-		g_assert (chunk->pos + size <= chunk->size);
-		res = chunk->mem;
-		chunk->pos += size;
-		mono_memory_barrier ();
-		mp->current = chunk;
-	} else {
-		res = (char*)chunk->mem + oldpos;
-	}
-
-	return res;
-}
-
-void
-mono_install_create_domain_hook (MonoCreateDomainFunc func)
-{
-	create_domain_hook = func;
-}
-
-void
-mono_install_free_domain_hook (MonoFreeDomainFunc func)
-{
-	free_domain_hook = func;
-}
 
 gboolean
 mono_string_equal_internal (MonoString *s1, MonoString *s2)
@@ -424,7 +319,6 @@ mono_domain_create (void)
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->lock_free_mp = lock_free_mempool_new ();
 	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
@@ -452,12 +346,7 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
 
-	mono_debug_domain_create (domain);
-
 	mono_alc_create_default (domain);
-
-	if (create_domain_hook)
-		create_domain_hook (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -1061,38 +950,6 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 	return domain->friendly_name;
 }
 
-/*
- * mono_domain_alloc:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc (memory_manager, size);
-}
-
-/*
- * mono_domain_alloc0:
- *
- * LOCKING: Acquires the default memory manager lock.
- */
-gpointer
-(mono_domain_alloc0) (MonoDomain *domain, guint size)
-{
-	MonoMemoryManager *memory_manager = mono_domain_memory_manager (domain);
-
-	return mono_mem_manager_alloc0 (memory_manager, size);
-}
-
-gpointer
-(mono_domain_alloc0_lock_free) (MonoDomain *domain, guint size)
-{
-	return lock_free_mempool_alloc0 (domain->lock_free_mp, size);
-}
-
 /**
  * mono_context_set:
  */
@@ -1465,12 +1322,6 @@ const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
-}
-
-MonoAotCacheConfig *
-mono_get_aot_cache_config (void)
-{
-	return &aot_cache_config;
 }
 
 void

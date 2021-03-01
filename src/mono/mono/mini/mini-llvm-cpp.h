@@ -219,6 +219,9 @@ mono_llvm_register_intrinsic (LLVMModuleRef module, IntrinsicId id);
 LLVMValueRef
 mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, LLVMTypeRef *types, int ntypes);
 
+unsigned int
+mono_llvm_get_prim_size_bits (LLVMTypeRef type);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  

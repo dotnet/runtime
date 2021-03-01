@@ -625,7 +625,7 @@ create_thread_object (void)
 	MonoInternalThread *thread;
 	MonoVTable *vt;
 
-	vt = mono_class_vtable_checked (mono_get_root_domain (), mono_defaults.internal_thread_class, error);
+	vt = mono_class_vtable_checked (mono_defaults.internal_thread_class, error);
 	mono_error_assert_ok (error);
 	thread = (MonoInternalThread*) mono_object_new_mature (vt, error);
 	/* only possible failure mode is OOM, from which we don't exect to recover */
@@ -1157,8 +1157,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 			g_assert (ex != NULL);
 			MonoClass *klass = mono_object_class (ex);
-			if ((mono_runtime_unhandled_exception_policy_get () != MONO_UNHANDLED_POLICY_LEGACY) &&
-			    !is_threadabort_exception (klass)) {
+			if (!is_threadabort_exception (klass)) {
 				mono_unhandled_exception_internal (&ex->object);
 				mono_invoke_unhandled_exception_hook (&ex->object);
 				g_assert_not_reached ();
@@ -3511,7 +3510,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {
-			gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
+			gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 			g_string_append_printf (text, "  %s\n", location);
 			g_free (location);
 		} else {
@@ -5174,7 +5173,7 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 	MonoClass *klass = exc->vtable->klass;
 	if (is_threadabort_exception (klass)) {
 		mono_thread_internal_reset_abort (mono_thread_internal_current ());
-	} else if (mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
+	} else {
 		mono_unhandled_exception_internal (exc);
 		if (mono_environment_exitcode_get () == 1) {
 			mono_environment_exitcode_set (255);

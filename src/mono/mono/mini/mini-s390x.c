@@ -5339,7 +5339,6 @@ mono_arch_register_lowlevel_calls (void)
  * 
  * @param[in] @cfg - Compile control block
  * @param[in] @method - Current method
- * @param[in] @domain - Current Mono Domain
  * @param[in] @code - Current innstruction pointer
  * @param[in] @ji - Jump information 
  * @param[in] @run_cctors - Whether class constructors need to be initialized 
@@ -5350,8 +5349,8 @@ mono_arch_register_lowlevel_calls (void)
  */
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, 
-		          guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg,
+						  guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
 	gint64 displace;
@@ -6473,14 +6472,13 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
  */
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, 
+mono_arch_build_imt_trampoline (MonoVTable *vtable,
 								MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guchar *code, *start;
-	char trampName[64];
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -6514,10 +6512,10 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 	}
 
 	if (fail_tramp) {
-		code = (guint8 *) mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size);
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
-		code = (guint8 *) mono_mem_manager_code_reserve (mem_manager, size);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
+		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 
 	start = code;
@@ -6603,8 +6601,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 
 	g_assert (code - start <= size);
 
-	snprintf(trampName, sizeof(trampName), "%d_imt_trampoline", domain->domain_id);
-	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return (start);
 }
@@ -6844,17 +6841,20 @@ mono_arch_skip_single_step (MonoContext *ctx)
  */
 
 SeqPointInfo *
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;
+	MonoJitMemoryManager *jit_mm;
 
-	mono_domain_lock (domain);
-	info = (SeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points, code);
-	mono_domain_unlock (domain);
+	jit_mm = get_default_jit_mm ();
+
+	jit_mm_lock (jit_mm);
+	info = (SeqPointInfo *)g_hash_table_lookup (jit_mm->arch_seq_points, code);
+	jit_mm_unlock (jit_mm);
 
 	if (!info) {
-		ji = mono_jit_info_table_find (domain, code);
+		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
 		// FIXME: Optimize the size
@@ -6862,9 +6862,9 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 		info->ss_tramp_addr = &ss_trampoline;
 
-		mono_domain_lock (domain);
-		g_hash_table_insert (domain_jit_info(domain)->arch_seq_points, code, info);
-		mono_domain_unlock (domain);
+		jit_mm_lock (jit_mm);
+		g_hash_table_insert (jit_mm->arch_seq_points, code, info);
+		jit_mm_unlock (jit_mm);
 	}
 
 	return info;

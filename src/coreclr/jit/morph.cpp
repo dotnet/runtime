@@ -353,7 +353,29 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
     else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
+        // we just use the one that converts to a TYP_DOUBLE
+        // and then add a cast to TYP_FLOAT
+        //
+        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        {
+            // Fix the return type to be TYP_DOUBLE
+            //
+            oper->gtType = TYP_DOUBLE;
+
+            // Add a Cast to TYP_FLOAT
+            //
+            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return tree;
+        }
+        else
+        {
+            return oper;
+        }
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
@@ -1340,9 +1362,7 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
-                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
-                // side effect free leaf nodes that like constant can be evaluated at any point.
-                if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
+                if (!prevArgTabEntry->GetNode()->IsInvariant())
                 {
                     prevArgTabEntry->needTmp = true;
                     needsTemps               = true;
@@ -5481,9 +5501,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            int     length;
-            LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                             asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+            int             length;
+            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
@@ -11087,11 +11107,15 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // TARGET_ARM
 
-        // Can't use field by field assignment if the src is a call.
+        // Don't use field by field assignment if the src is a call
+        //
+        // TODO: Document why do we have this restriction?
+        //       Maybe it isn't needed, or maybe it is only needed
+        //       for calls that return multiple registers
+        //
         if (src->OperGet() == GT_CALL)
         {
             JITDUMP(" src is a call");
-            // C++ style CopyBlock with holes
             requiresCopyBlock = true;
         }
 
@@ -11332,8 +11356,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // address value once...)
                 if (destLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(srcAddr); // addrSpill represents the 'srcAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill srcAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = srcAddr; // addrSpill represents the 'srcAddr'
                 }
             }
         }
@@ -11365,8 +11391,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // use the address value once...)
                 if (srcLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(destAddr); // addrSpill represents the 'destAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill destAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = destAddr; // addrSpill represents the 'destAddr'
                 }
             }
         }
@@ -11390,8 +11418,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (addrSpill != nullptr)
         {
-            // Simplify the address if possible, and mark as DONT_CSE as needed..
-            addrSpill = fgMorphTree(addrSpill);
+            // 'addrSpill' is already morphed
 
             // Spill the (complex) address to a BYREF temp.
             // Note, at most one address may need to be spilled.
@@ -11472,8 +11499,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        dstFld = gtCloneExpr(destAddr);
-                        noway_assert(dstFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal destAddr tree when i == 0
+                            dstFld = destAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            dstFld = gtCloneExpr(destAddr);
+                            noway_assert(dstFld != nullptr);
+
+                            JITDUMP("dstFld - Multiple Fields Clone created:\n");
+                            DISPTREE(dstFld);
+
+                            // Morph the newly created tree
+                            dstFld = fgMorphTree(dstFld);
+                        }
 
                         // Is the address of a local?
                         GenTreeLclVarCommon* lclVarTree = nullptr;
@@ -11552,8 +11596,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        srcFld = gtCloneExpr(srcAddr);
-                        noway_assert(srcFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal srcAddr tree when i == 0
+                            srcFld = srcAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            srcFld = gtCloneExpr(srcAddr);
+                            noway_assert(srcFld != nullptr);
+
+                            JITDUMP("srcFld - Multiple Fields Clone created:\n");
+                            DISPTREE(srcFld);
+
+                            // Morph the newly created tree
+                            srcFld = fgMorphTree(srcFld);
+                        }
                     }
 
                     CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].GetStructHnd();
@@ -12673,10 +12734,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         default:
             break;
     }
-
-#if !CPU_HAS_FP_SUPPORT
-    tree = fgMorphToEmulatedFP(tree);
-#endif
 
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
@@ -15673,200 +15730,6 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     return tree;
 }
 
-#if !CPU_HAS_FP_SUPPORT
-GenTree* Compiler::fgMorphToEmulatedFP(GenTree* tree)
-{
-
-    genTreeOps oper = tree->OperGet();
-    var_types  typ  = tree->TypeGet();
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->gtGetOp2IfPresent();
-
-    /*
-        We have to use helper calls for all FP operations:
-
-            FP operators that operate on FP values
-            casts to and from FP
-            comparisons of FP values
-     */
-
-    if (varTypeIsFloating(typ) || (op1 && varTypeIsFloating(op1->TypeGet())))
-    {
-        int      helper;
-        GenTree* args;
-
-        /* Not all FP operations need helper calls */
-
-        switch (oper)
-        {
-            case GT_ASG:
-            case GT_IND:
-            case GT_LIST:
-            case GT_ADDR:
-            case GT_COMMA:
-                return tree;
-        }
-
-#ifdef DEBUG
-
-        /* If the result isn't FP, it better be a compare or cast */
-
-        if (!(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST))
-            gtDispTree(tree);
-
-        noway_assert(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST);
-#endif
-
-        /* Keep track of how many arguments we're passing */
-
-        /* Is this a binary operator? */
-
-        if (op2)
-        {
-            /* What kind of an operator do we have? */
-
-            switch (oper)
-            {
-                case GT_ADD:
-                    helper = CPX_R4_ADD;
-                    break;
-                case GT_SUB:
-                    helper = CPX_R4_SUB;
-                    break;
-                case GT_MUL:
-                    helper = CPX_R4_MUL;
-                    break;
-                case GT_DIV:
-                    helper = CPX_R4_DIV;
-                    break;
-                // case GT_MOD: helper = CPX_R4_REM; break;
-
-                case GT_EQ:
-                    helper = CPX_R4_EQ;
-                    break;
-                case GT_NE:
-                    helper = CPX_R4_NE;
-                    break;
-                case GT_LT:
-                    helper = CPX_R4_LT;
-                    break;
-                case GT_LE:
-                    helper = CPX_R4_LE;
-                    break;
-                case GT_GE:
-                    helper = CPX_R4_GE;
-                    break;
-                case GT_GT:
-                    helper = CPX_R4_GT;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP binary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp2, tree->AsOp()->gtOp1);
-        }
-        else
-        {
-            switch (oper)
-            {
-                case GT_RETURN:
-                    return tree;
-
-                case GT_CAST:
-                    noway_assert(!"FP cast");
-
-                case GT_NEG:
-                    helper = CPX_R4_NEG;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP unary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp1);
-        }
-
-        /* If we have double result/operands, modify the helper */
-
-        if (typ == TYP_DOUBLE)
-        {
-            static_assert_no_msg(CPX_R4_NEG + 1 == CPX_R8_NEG);
-            static_assert_no_msg(CPX_R4_ADD + 1 == CPX_R8_ADD);
-            static_assert_no_msg(CPX_R4_SUB + 1 == CPX_R8_SUB);
-            static_assert_no_msg(CPX_R4_MUL + 1 == CPX_R8_MUL);
-            static_assert_no_msg(CPX_R4_DIV + 1 == CPX_R8_DIV);
-
-            helper++;
-        }
-        else
-        {
-            noway_assert(tree->OperIsCompare());
-
-            static_assert_no_msg(CPX_R4_EQ + 1 == CPX_R8_EQ);
-            static_assert_no_msg(CPX_R4_NE + 1 == CPX_R8_NE);
-            static_assert_no_msg(CPX_R4_LT + 1 == CPX_R8_LT);
-            static_assert_no_msg(CPX_R4_LE + 1 == CPX_R8_LE);
-            static_assert_no_msg(CPX_R4_GE + 1 == CPX_R8_GE);
-            static_assert_no_msg(CPX_R4_GT + 1 == CPX_R8_GT);
-        }
-
-        tree = fgMorphIntoHelperCall(tree, helper, args);
-
-        return tree;
-
-        case GT_RETURN:
-
-            if (op1)
-            {
-
-                if (compCurBB == genReturnBB)
-                {
-                    /* This is the 'exitCrit' call at the exit label */
-
-                    noway_assert(op1->gtType == TYP_VOID);
-                    noway_assert(op2 == 0);
-
-                    tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
-
-                    return tree;
-                }
-
-                /* This is a (real) return value -- check its type */
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                if (genActualType(op1->TypeGet()) != genActualType(info.compRetType))
-                {
-                    bool allowMismatch = false;
-
-                    // Allow TYP_BYREF to be returned as TYP_I_IMPL and vice versa
-                    if ((info.compRetType == TYP_BYREF && genActualType(op1->TypeGet()) == TYP_I_IMPL) ||
-                        (op1->TypeGet() == TYP_BYREF && genActualType(info.compRetType) == TYP_I_IMPL))
-                        allowMismatch = true;
-
-                    if (varTypeIsFloating(info.compRetType) && varTypeIsFloating(op1->TypeGet()))
-                        allowMismatch = true;
-
-                    if (!allowMismatch)
-                        NO_WAY("Return type mismatch");
-                }
-#endif
-            }
-            break;
-    }
-    return tree;
-}
-#endif
-
 /*****************************************************************************
  *
  *  Transform the given tree for code generation and return an equivalent tree.
@@ -16424,9 +16287,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
             }
-            // block is a BBJ_COND that we are folding the conditional for
-            // bTaken is the path that will always be taken from block
-            // bNotTaken is the path that will never be taken from block
+            // block is a BBJ_COND that we are folding the conditional for.
+            // bTaken is the path that will always be taken from block.
+            // bNotTaken is the path that will never be taken from block.
             //
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;

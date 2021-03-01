@@ -8,11 +8,11 @@ Contains source files for the networking test servers in Azure or a private IIS 
 1. Open .\Deployment\config.ps1 in an editor.
 2. Fill in the _Machine Selection_ section with the names and IP addresses of the target machines. In most cases the default options for _Test Parameters_ should be enough.
 
-Note: the `config.ps1` file has been added to .gitignore to prevent it being updated in the master branch.
+Note: the `config.ps1` file has been added to .gitignore to prevent it being updated in the main branch.
 
 ### Build the server applications
 
-Prepare the $DOTNET_TEST_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md. Ensure that you can build and test CoreFX on this machine.
+Prepare the $DOTNET_TEST_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md. Ensure that you can build and test CoreFX on this machine.
 In addition, you will also need to install the _Azure development_ workload for Visual Studio 2017.
 
 From a Visual Studio command prompt:
