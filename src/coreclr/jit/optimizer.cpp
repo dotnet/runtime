@@ -8562,7 +8562,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     if (si->gtOper == GT_LSH)
     {
         GenTree* scale = si->gtGetOp2();
-        index = si->gtGetOp1();
+        index          = si->gtGetOp1();
         if (scale->gtOper != GT_CNS_INT)
         {
             return false;
