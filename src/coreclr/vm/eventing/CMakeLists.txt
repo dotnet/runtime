@@ -24,14 +24,17 @@ endif()
 
 set(GENEVENTING_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
-add_custom_target(eventing_headers
-  ${PYTHON_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventing_headers.timestamp
+  COMMAND ${PYTHON_EXECUTABLE} ${GENEVENTING_SCRIPT} --man ${EVENT_MANIFEST} --inc ${GENERATED_INCLUDE_DIR} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventing_headers.timestamp
   DEPENDS ${EVENT_MANIFEST} ${GENEVENTING_SCRIPT}
   VERBATIM
 )
 
 set_source_files_properties(${EventingHeaders} PROPERTIES GENERATED TRUE)
 
+add_custom_target(eventing_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventing_headers.timestamp)
 add_dependencies(eventing_headers eventprovider)
 
 add_subdirectory(eventpipe)
