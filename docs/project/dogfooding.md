@@ -201,7 +201,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 [win-x86-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/dotnet-runtime-win-x86.zip
 [win-x86-zip-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/dotnet-runtime-win-x86.zip.sha512
 [win-x86-nethost-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/dotnet-nethost-win-x86.zip
-[win-x86-symbols-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtimedotnet-runtime-symbols-win-x86.zip
+[win-x86-symbols-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/dotnet-runtime-symbols-win-x86.zip
 
 [win-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/sharedfx_win-arm64_Release_version_badge.svg?no-cache
 [win-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/Runtime/runtime-productVersion.txt
