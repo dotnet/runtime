@@ -26,11 +26,6 @@
 # prone to failure; however, copying into the Core_Root directory may create
 # naming conflicts.
 #
-# If you are running tests on a different target than the host that built, the
-# native tests components must be copied from:
-# artifacts/obj/<OS>.<Arch>.<BuildType>/tests to the target. If the location is not
-# standard please pass the -test_native_bin_location flag to the script.
-#
 # Use the instructions here:
 #    https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/windows-test-instructions.md
 #    https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/unix-test-instructions.md
@@ -78,12 +73,7 @@ Note that for linux targets the native components to the tests are still built
 by the product build. This requires all native components to be either copied
 into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
-naming conflicts.
-
-If you are running tests on a different target than the host that built, the
-native tests components must be copied from:
-artifacts/obj/<OS>.<Arch>.<BuildType>/tests to the target. If the location is not
-standard please pass the -test_native_bin_location flag to the script.""")
+naming conflicts.""")
 
 parser = argparse.ArgumentParser(description=description)
 
@@ -92,17 +82,11 @@ parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 parser.add_argument("-build_type", dest="build_type", nargs='?', default="Debug")
 parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
-parser.add_argument("-product_location", dest="product_location", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
 parser.add_argument("-crossgen_altjit", dest="crossgen_altjit", default=None)
 
 # Optional arguments which change execution.
-
-# Rid is used only for restoring packages. This is a unspecified and undocumented
-# environment variable that needs to be passed to build.proj. Do not use this
-# unless you are attempting to target package restoration for another host/arch/os
-parser.add_argument("-rid", dest="rid", nargs="?", default=None)
 
 parser.add_argument("--il_link", dest="il_link", action="store_true", default=False)
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
@@ -119,9 +103,6 @@ parser.add_argument("--analyze_results_only", dest="analyze_results_only", actio
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
-
-# Only used on Unix
-parser.add_argument("-test_native_bin_location", dest="test_native_bin_location", nargs='?', default=None)
 
 ################################################################################
 # Globals
@@ -376,7 +357,7 @@ else
     echo \"CORE_ROOT set to ${CORE_ROOT}\"
 fi
 
-""" % (self.unique_name, self.core_root)
+""" % (self.unique_name, self.args.core_root)
 
         line_sep = os.linesep
 
@@ -1052,50 +1033,16 @@ def setup_args(args):
                               "Error setting limited_core_dumps")
 
     coreclr_setup_args.verify(args,
-                              "test_native_bin_location",
-                              lambda arg: True,
-                              "Error setting test_native_bin_location")
-
-    coreclr_setup_args.verify(args,
                               "run_in_context",
                               lambda arg: True,
                               "Error setting run_in_context")
-
-    is_same_os = False
-    is_same_arch = False
-    is_same_build_type = False
-
-    # We will write out build information into the test directory. This is used
-    # by run.py to determine whether we need to rebuild the test wrappers.
-    if os.path.isfile(os.path.join(coreclr_setup_args.test_location, "build_info.json")):
-        with open(os.path.join(coreclr_setup_args.test_location, "build_info.json")) as file_handle:
-            build_info = json.load(file_handle)
-        is_same_os = build_info["build_os"] == coreclr_setup_args.host_os
-        is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
-        is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
-
-    if coreclr_setup_args.host_os != "windows" and not (is_same_os and is_same_arch and is_same_build_type):
-        test_native_bin_location = None
-        if args.test_native_bin_location is None:
-            test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
-        else:
-            test_native_bin_location = args.test_native_bin_location
-
-        coreclr_setup_args.verify(test_native_bin_location,
-                                  "test_native_bin_location",
-                                  lambda test_native_bin_location: os.path.isdir(test_native_bin_location),
-                                  "Error setting test_native_bin_location")
-    else:
-        setattr(coreclr_setup_args, "test_native_bin_location", None)
 
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
     print("runtime_repo_location    : %s" % coreclr_setup_args.runtime_repo_location)
-    print("product_location         : %s" % coreclr_setup_args.product_location)
     print("core_root                : %s" % coreclr_setup_args.core_root)
     print("test_location            : %s" % coreclr_setup_args.test_location)
-    print("test_native_bin_location : %s" % coreclr_setup_args.test_native_bin_location)
 
     coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
