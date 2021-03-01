@@ -2,7 +2,6 @@ trigger:
   batch: false
   branches:
     include:
-    - master
     - main
   paths:
     include:

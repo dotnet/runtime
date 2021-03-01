@@ -3,7 +3,6 @@ trigger: none
 pr:
   branches:
     include:
-    - master
     - main
   paths:
     include:
@@ -15,7 +14,6 @@ schedules:
   displayName: Sat at 11:00 AM (UTC-8:00)
   branches:
     include:
-    - master
     - main
   always: true
 
