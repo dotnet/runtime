@@ -4513,7 +4513,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (impStackTop().val->IsIntegralConst())
                 {
                     typeInfo argType = verParseArgSigToTypeInfo(sig, sig->args).NormaliseForStack();
-                    ssize_t  cns     = impPopStack().val->AsIntConCommon()->IconValue();
+                    INT64    cns     = impPopStack().val->AsIntConCommon()->IntegralValue();
                     if (argType.IsType(TI_LONG))
                     {
                         retNode = gtNewIconNode(genCountBits(cns), callType);
