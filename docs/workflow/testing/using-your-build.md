@@ -27,7 +27,7 @@ After setting up dotnet you can verify you are using the newer version by:
 
 `dotnet --info` -- the version should be greater than 3.0.0-*
 
-For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
+For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
 
 ## Create sample self-contained application
 
