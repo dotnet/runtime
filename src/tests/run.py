@@ -44,26 +44,15 @@ import fnmatch
 import json
 import math
 import os
-import platform
 import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import re
 import string
-import zipfile
-
 import xml.etree.ElementTree
 
 from collections import defaultdict
-from sys import platform as _platform
-
-# Version specific imports
-if sys.version_info.major < 3:
-    import urllib
-else:
-    import urllib.request
 
 # Import coreclr_arguments.py from src\coreclr\scripts
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "coreclr", "scripts"))
@@ -942,52 +931,6 @@ def run_tests(args,
     if test_env_script_path is not None:
         print("Setting __TestEnv=%s" % test_env_script_path)
         os.environ["__TestEnv"] = test_env_script_path
-
-    #=====================================================================================================================================================
-    #
-    # This is a workaround needed to unblock our CI (in particular, Linux/arm and Linux/arm64 jobs) from the following failures appearing almost in every
-    # pull request (but hard to reproduce locally)
-    #
-    #   System.IO.FileLoadException: Could not load file or assembly 'Exceptions.Finalization.XUnitWrapper, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.
-    #   An operation is not legal in the current state. (Exception from HRESULT: 0x80131509 (COR_E_INVALIDOPERATION))
-    #
-    # COR_E_INVALIDOPERATION comes from System.InvalidOperationException that is thrown during AssemblyLoadContext.ResolveUsingResolvingEvent
-    # when multiple threads attempt to modify an instance of Dictionary (managedAssemblyCache) during Xunit.DependencyContextAssemblyCache.LoadManagedDll call.
-    #
-    # In order to mitigate the failure we built our own xunit.console.dll with ConcurrentDictionary used for managedAssemblyCache and use this instead of
-    # the one pulled from NuGet. The exact code that got built can be found at the following fork of Xunit
-    #  * https://github.com/echesakovMSFT/xunit/tree/UseConcurrentDictionaryInDependencyContextAssemblyCache
-    #
-    # The assembly was built using Microsoft Visual Studio v15.9.0-pre.4.0 Developer Command Prompt using the following commands
-    #  1) git clone https://github.com/echesakovMSFT/xunit.git --branch UseConcurrentDictionaryInDependencyContextAssemblyCache --single-branch
-    #  2) cd xunit
-    #  3) git submodule update --init
-    #  4) powershell .\build.ps1 -target packages -buildAssemblyVersion 2.4.1 -buildSemanticVersion 2.4.1-coreclr
-    #
-    # Then file "xunit\src\xunit.console\bin\Release\netcoreapp2.0\xunit.console.dll" was archived and uploaded to the clrjit blob storage.
-    #
-    # Ideally, this code should be removed when we find a more robust way of running Xunit tests.
-    #
-    # References:
-    #  * https://github.com/dotnet/runtime/issues/11232
-    #  * https://github.com/dotnet/runtime/issues/11320
-    #  * https://github.com/xunit/xunit/issues/1842
-    #  * https://github.com/xunit/xunit/pull/1846
-    #
-    #=====================================================================================================================================================
-
-    print("Download and overwrite xunit.console.dll in Core_Root")
-
-    urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
-    zipfilename = os.path.join(tempfile.gettempdir(), "xunit.console.dll.zip")
-    url = r"https://clrjit.blob.core.windows.net/xunit-console/xunit.console.dll-v2.4.1.zip"
-    urlretrieve(url, zipfilename)
-
-    with zipfile.ZipFile(zipfilename,"r") as ziparch:
-        ziparch.extractall(os.path.join(args.core_root, "xunit"))
-
-    os.remove(zipfilename)
-    assert not os.path.isfile(zipfilename)
 
     return call_msbuild(args)
 
