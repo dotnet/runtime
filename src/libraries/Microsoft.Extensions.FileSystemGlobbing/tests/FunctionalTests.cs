@@ -855,13 +855,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 directoryInfo = new InMemoryDirectoryInfo(@"C:\", files);
                 fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
 
-                Assert.NotEmpty(fileSystemInfos);
+                Assert.Equal(1, fileSystemInfos.Count());
             }
 
             directoryInfo = new InMemoryDirectoryInfo("/", files);
             fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
 
-            Assert.NotEmpty(fileSystemInfos);
+            Assert.Equal(1, fileSystemInfos.Count());
         }
     }
 }
