@@ -159,6 +159,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'false' and '$(EnableAggressiveTrimming)' == 'true'">
+    <!-- mscorlib.dll not found -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext/tests/System.Reflection.MetadataLoadContext.Tests.csproj" />
   </ItemGroup>
 
