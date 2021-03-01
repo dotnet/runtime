@@ -120,29 +120,29 @@ namespace Mono.Linker.Tests.Cases.Reflection
 #if NETCOREAPP
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (int), typeof (Type []) },
-			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) } )]
+			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (Type[]) },
+			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) })]
 		static void TestNameWithIntAndType ()
 		{
-			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
-			method.Invoke (null, new object [] { });
+			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type[] { typeof (int) });
+			method.Invoke (null, new object[] { });
 		}
 
 		[Kept]
 		static void TestNameWithIntAndBindingFlags ()
 		{
-			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type [] { }, null);
-			method.Invoke (null, new object [] { });
+			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type[] { }, null);
+			method.Invoke (null, new object[] { });
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (int), typeof (BindingFlags), typeof (Binder), typeof(CallingConventions), typeof (Type []), typeof (ParameterModifier []) },
-			typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass), nameof (TestNameWithIntBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type [0])]
-		static void TestNameWithIntBindingFlagsCallingConventionParameter()
+			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
+			typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass), nameof (TestNameWithIntBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type[0])]
+		static void TestNameWithIntBindingFlagsCallingConventionParameter ()
 		{
-			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type [] { }, null);
-			method.Invoke (null, new object [] { });
+			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { }, null);
+			method.Invoke (null, new object[] { });
 		}
 #endif
 

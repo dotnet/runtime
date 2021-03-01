@@ -7,7 +7,6 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Mono.Linker;
 using Mono.Linker.Steps;
-using Xunit;
 
 namespace ILLink.Tasks.Tests
 {
@@ -107,7 +106,7 @@ namespace ILLink.Tasks.Tests
 				if (!(step is RootAssemblyInput))
 					continue;
 
-				var assemblyName = (string) (typeof (RootAssemblyInput).GetField ("fileName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step));
+				var assemblyName = (string) typeof (RootAssemblyInput).GetField ("fileName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step);
 				if (assemblyName == null)
 					continue;
 
@@ -121,7 +120,7 @@ namespace ILLink.Tasks.Tests
 				if (!(step is ResolveFromXmlStep))
 					continue;
 
-				var descriptor = (string) (typeof (ResolveFromXmlStep).GetField ("_xmlDocumentLocation", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step));
+				var descriptor = (string) typeof (ResolveFromXmlStep).GetField ("_xmlDocumentLocation", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (step);
 
 				yield return descriptor;
 			}
@@ -129,7 +128,7 @@ namespace ILLink.Tasks.Tests
 
 		public IEnumerable<string> GetReferenceAssemblies ()
 		{
-			return (IEnumerable<string>) (typeof (AssemblyResolver).GetField ("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Resolver));
+			return (IEnumerable<string>) typeof (AssemblyResolver).GetField ("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Resolver);
 		}
 
 		protected override void AddResolveFromXmlStep (Pipeline pipeline, string file)
@@ -146,7 +145,7 @@ namespace ILLink.Tasks.Tests
 
 		public IEnumerable<IDependencyRecorder> GetDependencyRecorders ()
 		{
-			return (IEnumerable<IDependencyRecorder>) (typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Tracer));
+			return (IEnumerable<IDependencyRecorder>) typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Tracer);
 		}
 
 		public new bool GetOptimizationName (string optimization, out CodeOptimizations codeOptimizations)

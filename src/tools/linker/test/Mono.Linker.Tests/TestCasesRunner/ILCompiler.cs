@@ -55,8 +55,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var args = new StringBuilder ();
 #if NETCOREAPP
-			args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
-			args.Append($" -out:{options.OutputPath.InQuotes ()}");
+			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
+			args.Append ($" -out:{options.OutputPath.InQuotes ()}");
 #else
 			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
 			args.Append ($" /out:{options.OutputPath.InQuotes ()}");

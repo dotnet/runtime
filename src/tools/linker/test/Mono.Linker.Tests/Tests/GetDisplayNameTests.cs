@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.TestCasesRunner;
@@ -78,27 +77,27 @@ namespace Mono.Linker.Tests
 
 			// PointerType
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.CommonPointerPointerTypeParameter(Int32*)")]
-			unsafe public void CommonPointerPointerTypeParameter (int* p)
+			public unsafe void CommonPointerPointerTypeParameter (int* p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToPointerPointerTypeParameter(Int32**)")]
-			unsafe public void PointerToPointerPointerTypeParameter (int** p)
+			public unsafe void PointerToPointerPointerTypeParameter (int** p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToArrayPointerTypeParameter(Int32*[,,,])")]
-			unsafe public void PointerToArrayPointerTypeParameter (int*[,,,] p)
+			public unsafe void PointerToArrayPointerTypeParameter (int*[,,,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerToArrayPointerTypeParameter(Int32*[,][,,])")]
-			unsafe public void PointerToArrayPointerTypeParameter (int*[,][,,] p)
+			public unsafe void PointerToArrayPointerTypeParameter (int*[,][,,] p)
 			{
 			}
 
 			[DisplayName ("Mono.Linker.Tests.GetDisplayNameTests.A.PointerTypeToUnknownTypeParameter(Void*)")]
-			unsafe public void PointerTypeToUnknownTypeParameter (void* p)
+			public unsafe void PointerTypeToUnknownTypeParameter (void* p)
 			{
 			}
 		}

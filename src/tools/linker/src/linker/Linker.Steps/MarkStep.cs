@@ -3138,7 +3138,7 @@ namespace Mono.Linker.Steps
 						Code.Newobj => DependencyKind.Newobj,
 						Code.Ldvirtftn => DependencyKind.Ldvirtftn,
 						Code.Ldftn => DependencyKind.Ldftn,
-						_ => throw new Exception ($"unexpected opcode {instruction.OpCode}")
+						_ => throw new InvalidOperationException ($"unexpected opcode {instruction.OpCode}")
 					};
 					requiresReflectionMethodBodyScanner |=
 						ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite (_context, (MethodReference) instruction.Operand);

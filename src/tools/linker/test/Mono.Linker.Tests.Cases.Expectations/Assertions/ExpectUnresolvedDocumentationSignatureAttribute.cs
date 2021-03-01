@@ -1,5 +1,3 @@
-using System;
-
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
 	/// Asserts that the given documentation signature string does not resolve

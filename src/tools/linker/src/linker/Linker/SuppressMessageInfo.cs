@@ -1,6 +1,4 @@
-﻿using Mono.Cecil;
-
-namespace Mono.Linker
+﻿namespace Mono.Linker
 {
 	public struct SuppressMessageInfo
 	{
