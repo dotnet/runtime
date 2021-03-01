@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_rsa.h"
+#include "pal_utilities.h"
+#include "pal_signature.h"
 
 #define RSA_FAIL -1
 
@@ -80,6 +82,9 @@ PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uin
 PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
+        return RSA_FAIL;
+
+    if (!rsa->privateKey)
         return RSA_FAIL;
 
     JNIEnv* env = GetJNIEnv();
@@ -217,18 +222,86 @@ PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* f
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t CryptoNative_RsaSign(int32_t type, uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
+static jobject GetRsaSignatureObject(JNIEnv* env, const char* hashAlgorithmName)
 {
-    // TODO:
-    LOG_ERROR("RSA signing NYI");
-    return RSA_FAIL;
+    if (hashAlgorithmName == NULL)
+    {
+        hashAlgorithmName = "NONE";
+    }
+    const char withRsaSuffix[] = "withRSA";
+    const size_t suffixLen = sizeof(withRsaSuffix) / sizeof(withRsaSuffix[0]);
+    size_t rsaAlgorithmNameSize = strlen(hashAlgorithmName) + suffixLen;
+    char* rsaAlgorithmNameStr = malloc(rsaAlgorithmNameSize);
+    if (!rsaAlgorithmNameStr)
+    {
+        return NULL;
+    }
+    LOG_DEBUG("Creating signature object for RSA algorithm %s%s", hashAlgorithmName, withRsaSuffix);
+    SafeStringConcat(rsaAlgorithmNameStr, rsaAlgorithmNameSize, hashAlgorithmName, withRsaSuffix);
+    jstring rsaAlgorithmName = JSTRING(rsaAlgorithmNameStr);
+    free(rsaAlgorithmNameStr);
+    jobject signatureObject =
+        (*env)->CallStaticObjectMethod(env, g_SignatureClass, g_SignatureGetInstance, rsaAlgorithmName);
+    (*env)->DeleteLocalRef(env, rsaAlgorithmName);
+    if (CheckJNIExceptions(env))
+        return NULL;
+    return signatureObject;
 }
 
-PALEXPORT int32_t CryptoNative_RsaVerify(int32_t type, uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
+PALEXPORT int32_t CryptoNative_RsaSign(const char* hashAlgorithm, uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {
-    // TODO:
-    LOG_ERROR("RSA signing NYI");
-    return RSA_FAIL;
+    assert(m);
+    assert(sigret);
+    assert(rsa);
+    if (!siglen)
+    {
+        return FAIL;
+    }
+
+    if (!rsa->privateKey)
+    {
+        return FAIL;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject signatureObject = GetRsaSignatureObject(env, hashAlgorithm);
+    if (!signatureObject)
+    {
+        return FAIL;
+    }
+
+    int32_t returnValue = AndroidCryptoNative_SignWithSignatureObject(env, signatureObject, rsa->privateKey, m, mlen, sigret, siglen);
+    ReleaseLRef(env, signatureObject);
+    return returnValue;
+}
+
+PALEXPORT int32_t CryptoNative_RsaVerify(const char* hashAlgorithm, uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
+{
+    assert(m);
+    assert(sigbuf);
+    assert(rsa);
+    if (!siglen)
+    {
+        return RSA_FAIL;
+    }
+
+    if (!rsa->publicKey)
+    {
+        return RSA_FAIL;
+    }
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject signatureObject = GetRsaSignatureObject(env, hashAlgorithm);
+    if (!signatureObject)
+    {
+        return RSA_FAIL;
+    }
+
+    int32_t returnValue = AndroidCryptoNative_VerifyWithSignatureObject(env, signatureObject, rsa->publicKey, m, mlen, sigbuf, siglen);
+    ReleaseLRef(env, signatureObject);
+    return returnValue;
 }
 
 PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
@@ -326,7 +399,7 @@ jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
     assert(len > 0);
     jbyteArray buffArray = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
-    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtor, buffArray);
+    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, buffArray);
     (*env)->DeleteLocalRef(env, buffArray);
     return bigNum;
 }
@@ -344,7 +417,7 @@ PALEXPORT int32_t CryptoNative_SetRsaParameters(RSA* rsa,
     jobject nObj = BigNumFromBinary(env, n, nLength);
     jobject eObj = BigNumFromBinary(env, e, eLength);
 
-    rsa->keyWidth = (nLength - 1) * 8; // Android SDK has an extra byte in Modulus(?)
+    rsa->keyWidth = nLength * 8;
 
     jobject algName = JSTRING("RSA");
     jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algName);
