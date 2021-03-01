@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
     - master
+    - main
     - release/*
   paths:
     include:
@@ -28,6 +29,7 @@ schedules:
   branches:
     include:
     - master
+    - main
   always: true
 
 jobs:
