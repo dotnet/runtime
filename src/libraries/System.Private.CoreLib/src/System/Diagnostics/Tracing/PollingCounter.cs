@@ -47,9 +47,11 @@ namespace System.Diagnostics.Tracing
         private readonly Func<double> _metricProvider;
         private double _lastVal;
 
+#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The DynamicDependency will preserve the properties of CounterPayload")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CounterPayload))]
+#endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             lock (this)
