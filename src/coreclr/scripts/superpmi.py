@@ -2944,6 +2944,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
 
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
+
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")
             sys.exit(1)
@@ -2976,11 +2981,6 @@ def setup_args(args):
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
-
-        coreclr_args.verify(args,
-                            "jitoption",
-                            lambda unused: True,
-                            "Unable to set jitoption")
 
     if coreclr_args.mode == "collect":
 
