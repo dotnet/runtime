@@ -1276,7 +1276,23 @@ namespace System.Net.Http
                         Debug.Assert(_originAuthority != null);
                         Debug.Assert(_proxyUri != null);
                         stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                        await SocksHelper.EstablishSocks5TunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
+
+                        if (string.Equals(_proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await SocksHelper.EstablishSocks5TunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (string.Equals(_proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await SocksHelper.EstablishSocks4TunnelAsync(stream, true, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (string.Equals(_proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await SocksHelper.EstablishSocks4TunnelAsync(stream, false, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Debug.Fail("Bad socks version.");
+                        }
                         break;
                 }
 

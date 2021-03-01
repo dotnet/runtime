@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    // https://tools.ietf.org/html/rfc1928
     internal static class SocksHelper
     {
         // socks protocol limits address length to 1 byte, thus the maximum possible buffer is 256+other fields
         private const int BufferSize = 512;
-        private const int ProtocolVersion = 5;
+        private const int ProtocolVersion4 = 4;
+        private const int ProtocolVersion5 = 5;
         private const byte METHOD_NO_AUTH = 0;
         // private const byte METHOD_GSSAPI = 1;
         private const byte METHOD_USERNAME_PASSWORD = 2;
@@ -35,6 +35,7 @@ namespace System.Net.Http
         // private const byte REP_TTL_EXPIRED = 6;
         // private const byte REP_CMD_NOT_SUPPORT = 7;
         // private const byte REP_ATYP_NOT_SUPPORT = 8;
+        private const byte CD_SUCCESS = 90;
 
         public static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
         {
@@ -42,12 +43,14 @@ namespace System.Net.Http
 
             try
             {
+                // https://tools.ietf.org/html/rfc1928
+
                 // +----+----------+----------+
                 // |VER | NMETHODS | METHODS  |
                 // +----+----------+----------+
                 // | 1  |    1     | 1 to 255 |
                 // +----+----------+----------+
-                buffer[0] = ProtocolVersion;
+                buffer[0] = ProtocolVersion5;
                 var credentials = proxyCredentials?.GetCredential(proxyUri, "");
                 if (credentials != null)
                 {
@@ -68,7 +71,7 @@ namespace System.Net.Http
                 // | 1  |   1    |
                 // +----+--------+
                 await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
-                if (buffer[0] != ProtocolVersion)
+                if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
 
                 switch (buffer[1])
@@ -88,7 +91,7 @@ namespace System.Net.Http
                             // +----+------+----------+------+----------+
                             // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
                             // +----+------+----------+------+----------+
-                            buffer[0] = ProtocolVersion;
+                            buffer[0] = ProtocolVersion5;
                             int uLen = Encoding.UTF8.GetByteCount(credentials.UserName);
                             buffer[1] = checked((byte)uLen);
                             int uLenEncoded = Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2));
@@ -105,7 +108,7 @@ namespace System.Net.Http
                             // | 1  |   1    |
                             // +----+--------+
                             await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
-                            if (buffer[0] != ProtocolVersion)
+                            if (buffer[0] != ProtocolVersion5)
                                 throw new Exception("Bad protocol version");
                             if (buffer[1] != REP_SUCCESS)
                                 throw new Exception("Authentication failed.");
@@ -123,7 +126,7 @@ namespace System.Net.Http
                 // +----+-----+-------+------+----------+----------+
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
-                buffer[0] = ProtocolVersion;
+                buffer[0] = ProtocolVersion5;
                 buffer[1] = CMD_CONNECT;
                 buffer[2] = 0;
                 buffer[3] = ATYP_DOMAIN_NAME;
@@ -146,7 +149,7 @@ namespace System.Net.Http
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
                 await stream.ReadAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
-                if (buffer[0] != ProtocolVersion)
+                if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
                 if (buffer[1] != REP_SUCCESS)
                     throw new Exception("Connection failed");
@@ -167,6 +170,89 @@ namespace System.Net.Http
                         throw new Exception("Unknown address type");
                 }
                 await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
+                // response address not used
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        public static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+
+            try
+            {
+                // https://www.openssh.com/txt/socks4.protocol
+
+                // +----+----+----+----+----+----+----+----+----+----+....+----+
+                // | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
+                // +----+----+----+----+----+----+----+----+----+----+....+----+
+                //    1    1      2              4           variable       1
+                string? username = proxyCredentials?.GetCredential(proxyUri, "")?.UserName;
+                buffer[0] = ProtocolVersion4;
+                buffer[1] = CMD_CONNECT;
+
+                Debug.Assert(port > 0);
+                Debug.Assert(port < ushort.MaxValue);
+                buffer[2] = (byte)(port >> 8);
+                buffer[3] = (byte)port;
+
+                if (isVersion4a)
+                {
+                    buffer[4] = 0;
+                    buffer[5] = 0;
+                    buffer[6] = 0;
+                    buffer[7] = 255;
+                }
+                else
+                {
+                    bool addressWritten = false;
+                    foreach (var address in await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false))
+                    {
+                        // SOCKS4 supports only IPv4
+                        if (address.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                        {
+                            address.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
+                            Debug.Assert(bytesWritten == 4);
+                            addressWritten = true;
+                            break;
+                        }
+                    }
+                    if (!addressWritten)
+                    {
+                        throw new Exception("No suitable IPv4 address.");
+                    }
+                }
+
+                int uLen = Encoding.UTF8.GetBytes(username, buffer.AsSpan(8));
+                buffer[8 + uLen] = 0;
+                int totalLength = 9 + uLen;
+
+                if (isVersion4a)
+                {
+                    // https://www.openssh.com/txt/socks4a.protocol
+                    int aLen = Encoding.UTF8.GetBytes(host, buffer.AsSpan(9 + uLen));
+                    buffer[9 + uLen + aLen] = 0;
+                    totalLength += aLen + 1;
+                }
+
+                await stream.WriteAsync(buffer.AsMemory(0, totalLength), cancellationToken).ConfigureAwait(false);
+
+                // +----+----+----+----+----+----+----+----+
+                // | VN | CD | DSTPORT |      DSTIP        |
+                // +----+----+----+----+----+----+----+----+
+                //    1    1      2              4
+                await stream.ReadAsync(buffer.AsMemory(0, 8), cancellationToken).ConfigureAwait(false);
+                if (buffer[0] != ProtocolVersion4)
+                {
+                    throw new Exception("Bad protocol version");
+                }
+                if (buffer[1] != CD_SUCCESS)
+                {
+                    throw new Exception("Connection failed");
+                }
                 // response address not used
             }
             finally

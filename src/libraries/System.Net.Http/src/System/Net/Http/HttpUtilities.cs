@@ -38,7 +38,9 @@ namespace System.Net.Http
             string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsSocksScheme(scheme);
 
         internal static bool IsSocksScheme(string scheme) =>
-            string.Equals(scheme, "socks5", StringComparison.OrdinalIgnoreCase);
+            string.Equals(scheme, "socks5", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scheme, "socks4a", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scheme, "socks4", StringComparison.OrdinalIgnoreCase);
 
         // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
         //
