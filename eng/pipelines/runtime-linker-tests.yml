@@ -7,7 +7,7 @@ trigger:
   branches:
     include:
     - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -28,7 +28,7 @@ pr:
   branches:
     include:
     - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:

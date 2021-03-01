@@ -4,6 +4,7 @@ pr:
   branches:
     include:
     - master
+    - main
   paths:
     include:
     - src/coreclr/ilasm/*
@@ -15,6 +16,7 @@ schedules:
   branches:
     include:
     - master
+    - main
   always: true
 
 jobs:

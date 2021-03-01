@@ -7,7 +7,7 @@ trigger:
   branches:
     include:
     - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -29,7 +29,7 @@ pr:
   branches:
     include:
     - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -163,7 +163,7 @@ jobs:
 
 #
 # Build CoreCLR Formatting Job
-# Only when CoreCLR is changed, and only in the 'master' branch (no release branches;
+# Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
 # both CI and PR builds).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -177,8 +177,8 @@ jobs:
       condition: >-
         and(
           or(
-            eq(variables['Build.SourceBranchName'], 'master'),
-            eq(variables['System.PullRequest.TargetBranch'], 'master')),
+            eq(variables['Build.SourceBranchName'], 'main'),
+            eq(variables['System.PullRequest.TargetBranch'], 'main')),
           or(
             eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
