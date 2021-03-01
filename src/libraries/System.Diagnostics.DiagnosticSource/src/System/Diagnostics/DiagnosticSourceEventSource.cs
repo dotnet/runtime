@@ -344,7 +344,7 @@ namespace System.Diagnostics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-                [Event(12, Keywords = Keywords.Events)]
+        [Event(12, Keywords = Keywords.Events)]
 #else
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
 #endif
