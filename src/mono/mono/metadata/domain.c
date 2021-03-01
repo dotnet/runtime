@@ -335,8 +335,6 @@ mono_domain_create (void)
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
-	mono_coop_mutex_init (&domain->alcs_lock);
-
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -345,8 +343,6 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
-
-	mono_alc_create_default (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -419,6 +415,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
+
+	mono_alcs_init ();
 
 	SET_APPDOMAIN (domain);
 
@@ -1356,5 +1354,5 @@ mono_domain_get_assemblies (MonoDomain *domain)
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain)
 {
-	return domain->default_alc;
+	return mono_alc_get_default ();
 }
