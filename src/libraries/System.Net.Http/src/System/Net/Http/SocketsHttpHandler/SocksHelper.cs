@@ -37,7 +37,28 @@ namespace System.Net.Http
         // private const byte REP_ATYP_NOT_SUPPORT = 8;
         private const byte CD_SUCCESS = 90;
 
-        public static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        public static ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        {
+            if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
+            {
+                return EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, cancellationToken);
+            }
+            else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
+            {
+                return EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, cancellationToken);
+            }
+            else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
+            {
+                return EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, cancellationToken);
+            }
+            else
+            {
+                Debug.Fail("Bad socks version.");
+                return default;
+            }
+        }
+
+        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -178,7 +199,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        private static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
