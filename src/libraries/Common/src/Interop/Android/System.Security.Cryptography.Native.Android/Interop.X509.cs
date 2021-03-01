@@ -30,7 +30,7 @@ internal static partial class Interop
 
             ref byte buf = ref MemoryMarshal.GetReference(data);
             int size = 0;
-            int ret = X509DecodeCollection(ref buf, data.Length, null, out size);
+            int ret = X509DecodeCollection(ref buf, data.Length, null, ref size);
             if (ret == SUCCESS && size == 0)
                 return Array.Empty<SafeX509Handle>();
 
@@ -38,7 +38,7 @@ internal static partial class Interop
                 throw new CryptographicException();
 
             IntPtr[] ptrs = new IntPtr[size];
-            ret = X509DecodeCollection(ref buf, data.Length, ptrs, out size);
+            ret = X509DecodeCollection(ref buf, data.Length, ptrs, ref size);
             if (ret != SUCCESS)
                 throw new CryptographicException();
 
