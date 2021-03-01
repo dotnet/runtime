@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
 
@@ -19,6 +17,7 @@
 #include "methodcontextreader.h"
 #include "mclist.h"
 #include "methodstatsemitter.h"
+#include "spmiutil.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 
@@ -31,43 +30,27 @@ const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedC
 
 //#define SuperPMI_ChewMemory 0x7FFFFFFF //Amount of address space to consume on startup
 
-SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture;
-
 void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 {
-    // Set the default
-
-#ifdef TARGET_AMD64
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
-#elif defined(TARGET_X86)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
-#elif defined(TARGET_ARM)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
-#elif defined(TARGET_ARM64)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
-#else
-#error Unsupported architecture
-#endif
-
     // Allow overriding the default.
 
     if (targetArchitecture != nullptr)
     {
         if ((0 == _stricmp(targetArchitecture, "x64")) || (0 == _stricmp(targetArchitecture, "amd64")))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_AMD64);
         }
         else if (0 == _stricmp(targetArchitecture, "x86"))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_X86);
         }
         else if ((0 == _stricmp(targetArchitecture, "arm")) || (0 == _stricmp(targetArchitecture, "arm32")))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM);
         }
         else if (0 == _stricmp(targetArchitecture, "arm64"))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
         else
         {
@@ -130,7 +113,7 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
     {
-        SpmiException e(&param.exceptionPointers);
+        SpmiException e(&param);
 
         LogError("main method %d of size %d failed to load and compile correctly.", (*reader)->GetMethodContextIndex(),
                  (*mc)->methodSize);
@@ -537,8 +520,12 @@ int __cdecl main(int argc, char* argv[])
         {
             failToReplayCount++;
 
+            // Methods that don't compile due to missing JIT-EE information
+            // should still be added to the failing MC list but we don't create MC repro for them.
             if (o.mclFilename != nullptr)
+            {
                 failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+            }
 
             // The following only apply specifically to failures caused by errors (as opposed
             // to, for instance, failures caused by missing JIT-EE details).

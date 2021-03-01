@@ -59,12 +59,12 @@ mono_ldftn (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 		addr = mono_compile_method_checked (method, error);
 	else
-		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+		addr = mono_create_jump_trampoline (method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	return mono_create_ftnptr (mono_domain_get (), addr);
+	return mono_create_ftnptr (addr);
 }
 
 static void*
@@ -745,8 +745,7 @@ mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 		lengths += rank;
 	}
 
-	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
-		cm->klass, lengths, lower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -765,8 +764,7 @@ mono_array_new_n (MonoMethod *cm, int n, uintptr_t lengths [], intptr_t lower_bo
 	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY)
 		plower_bounds = lower_bounds;
 
-	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
-		cm->klass, lengths, plower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, plower_bounds, error);
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -805,9 +803,10 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 }
 
 gpointer
-mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
+mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
+	MonoDomain *domain = mono_get_root_domain ();
 	MonoVTable *vtable;
 	gpointer addr;
 	
@@ -815,7 +814,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 
 	mono_class_init_internal (field->parent);
 
-	vtable = mono_class_vtable_checked (domain, field->parent, error);
+	vtable = mono_class_vtable_checked (field->parent, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1124,19 +1123,10 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 }
 
 MonoString*
-ves_icall_mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
-{
-	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (domain, image, idx, error);
-	mono_error_set_pending_exception (error);
-	return result;
-}
-
-MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (mono_domain_get (), image, idx, error);
+	MonoString *result = mono_ldstr_checked (image, idx, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1145,7 +1135,7 @@ MonoString*
 mono_helper_ldstr_mscorlib (guint32 idx)
 {
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (mono_domain_get (), mono_defaults.corlib, idx, error);
+	MonoString *result = mono_ldstr_checked (mono_defaults.corlib, idx, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -1161,7 +1151,7 @@ mono_helper_newobj_mscorlib (guint32 idx)
 		return NULL;
 	}
 
-	MonoObject *obj = mono_object_new_checked (mono_domain_get (), klass, error);
+	MonoObject *obj = mono_object_new_checked (klass, error);
 	if (!is_ok (error))
 		mono_error_set_pending_exception (error);
 	return obj;
@@ -1379,7 +1369,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
-		*this_arg = mono_value_box_checked (mono_domain_get (), klass, mp, error);
+		*this_arg = mono_value_box_checked (klass, mp, error);
 	} else if (m_class_is_valuetype (klass)) {
 		if (is_iface) {
 			/*
@@ -1424,7 +1414,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
 		MonoVTable *vt;
 
-		vt = mono_class_vtable_checked (mono_domain_get (), klass, error);
+		vt = mono_class_vtable_checked (klass, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
@@ -1564,7 +1554,7 @@ MonoObject*
 mono_get_assembly_object (MonoImage *image)
 {
 	ICALL_ENTRY();
-	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (mono_domain_get (), image->assembly, error));
+	MonoObjectHandle result = MONO_HANDLE_CAST (MonoObject, mono_assembly_get_object_handle (image->assembly, error));
 	ICALL_RETURN_OBJ (result);
 }
 
@@ -1573,7 +1563,7 @@ mono_get_method_object (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoObject * result;
-	result = (MonoObject*)mono_method_get_object_checked (mono_domain_get (), method, method->klass, error);
+	result = (MonoObject*)mono_method_get_object_checked (method, method->klass, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }

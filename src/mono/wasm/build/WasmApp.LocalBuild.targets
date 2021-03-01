@@ -24,7 +24,6 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <WasmSkipBundleGeneration>true</WasmSkipBundleGeneration>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
   </PropertyGroup>

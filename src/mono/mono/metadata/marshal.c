@@ -42,7 +42,6 @@
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/cominterop.h"
-#include "mono/metadata/remoting.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
@@ -193,7 +192,7 @@ ves_icall_mono_string_to_utf8_impl (MonoStringHandle str, MonoError *error)
 MonoStringHandle
 ves_icall_string_new_wrapper_impl (const char *text, MonoError *error)
 {
-	return text ? mono_string_new_handle (mono_domain_get (), text, error) : NULL_HANDLE_STRING;
+	return text ? mono_string_new_handle (text, error) : NULL_HANDLE_STRING;
 }
 
 void
@@ -263,7 +262,6 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
 
 		mono_cominterop_init ();
-		mono_remoting_init ();
 
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
@@ -495,7 +493,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, error));
+			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_defaults.int_class, &ftn, error));
 			goto_if_nok (error, leave);
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
@@ -517,7 +515,7 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 			g_free (sig);
 		}
 
-		MONO_HANDLE_ASSIGN (d, mono_object_new_handle (mono_domain_get (), klass, error));
+		MONO_HANDLE_ASSIGN (d, mono_object_new_handle (klass, error));
 		goto_if_nok (error, leave);
 		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
 		goto_if_nok (error, leave);
@@ -584,7 +582,7 @@ mono_string_from_byvalstr_impl (const char *data, int max_len, MonoError *error)
 		len++;
 
 	// FIXMEcoop
-	MonoString *s = mono_string_new_len_checked (mono_domain_get (), data, len, error);
+	MonoString *s = mono_string_new_len_checked (data, len, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
@@ -600,7 +598,7 @@ mono_string_from_byvalwstr_impl (const gunichar2 *data, int max_len, MonoError *
 	// FIXME Check max_len while scanning data? mono_string_from_byvalstr does.
 	const int len = g_utf16_len (data);
 
-	return mono_string_new_utf16_handle (mono_domain_get (), data, MIN (len, max_len), error);
+	return mono_string_new_utf16_handle (data, MIN (len, max_len), error);
 }
 
 gpointer
@@ -758,7 +756,7 @@ mono_string_builder_new (int starting_string_length, MonoError *error)
 	// array will always be garbage collected.
 	args [0] = &initial_len;
 
-	MonoStringBuilderHandle sb = MONO_HANDLE_CAST (MonoStringBuilder, mono_object_new_handle (mono_domain_get (), string_builder_class, error));
+	MonoStringBuilderHandle sb = MONO_HANDLE_CAST (MonoStringBuilder, mono_object_new_handle (string_builder_class, error));
 	mono_error_assert_ok (error);
 
 	mono_runtime_try_invoke_handle (sb_ctor, MONO_HANDLE_CAST (MonoObject, sb), args, error);
@@ -1025,7 +1023,7 @@ mono_string_from_ansibstr_impl (const char *data, MonoError *error)
 	if (!data)
 		return NULL_HANDLE_STRING;
 
-	return mono_string_new_utf8_len (mono_domain_get (), data, *((guint32 *)data - 1) / sizeof (char), error);
+	return mono_string_new_utf8_len (data, *((guint32 *)data - 1) / sizeof (char), error);
 }
 
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
@@ -1113,7 +1111,7 @@ mono_string_to_byvalwstr_impl (gunichar2 *dst, MonoStringHandle src, int size, M
 MonoStringHandle
 mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *error)
 {
-	MonoString *s = mono_string_new_len_checked (mono_domain_get (), text, length, error);
+	MonoString *s = mono_string_new_len_checked (text, length, error);
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
@@ -1540,22 +1538,6 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	info = mono_marshal_get_wrapper_info (wrapper);
 
 	switch (wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-	case MONO_WRAPPER_XDOMAIN_INVOKE:
-		m = info->d.remoting.method;
-		if (wrapper->is_inflated) {
-			ERROR_DECL (error);
-			MonoMethod *result;
-			/*
-			 * A method cannot be inflated and a wrapper at the same time, so the wrapper info
-			 * contains an uninflated method.
-			 */
-			result = mono_class_inflate_generic_method_checked (m, mono_method_get_context (wrapper), error);
-			g_assert (is_ok (error)); /* FIXME don't swallow the error */
-			return result;
-		}
-		return m;
 	case MONO_WRAPPER_SYNCHRONIZED:
 		m = info->d.synchronized.method;
 		if (wrapper->is_inflated) {
@@ -3938,9 +3920,6 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 	if (mono_error_set_pending_exception (error))
 		return NULL;
 
-	if (mono_object_is_transparent_proxy (obj))
-		return isinst;
-
 	uintptr_t cache_update = (uintptr_t)obj->vtable;
 	if (!isinst)
 		cache_update = cache_update | 0x1;
@@ -4301,7 +4280,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_INTERFACE;
 #endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (mono_class_is_marshalbyref (element_class) || m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
+	if (m_class_get_rank (element_class) || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (mono_class_is_sealed (element_class))
 		return STELEMREF_SEALED_CLASS;
@@ -4814,42 +4793,6 @@ mono_marshal_clear_last_error (void)
 #else
 	errno = 0;
 #endif
-}
-
-static gsize
-copy_managed_common (MonoArrayHandle managed, gconstpointer native, gint32 start_index,
-		gint32 length, gpointer *managed_addr, MonoGCHandle *gchandle, MonoError *error)
-{
-	MONO_CHECK_ARG_NULL_HANDLE (managed, 0);
-	MONO_CHECK_ARG_NULL (native, 0);
-
-	MonoClass *klass = mono_handle_class (managed);
-
-	// FIXME? move checks to managed
-	if (m_class_get_rank (klass) != 1) {
-		mono_error_set_argument (error, "array", "array is multi-dimensional");
-		return 0;
-	}
-	if (start_index < 0) {
-		mono_error_set_argument (error, "startIndex", "Must be >= 0");
-		return 0;
-	}
-	if (length < 0) {
-		mono_error_set_argument (error, "length", "Must be >= 0");
-		return 0;
-	}
-	if (start_index + length > mono_array_handle_length (managed)) {
-		mono_error_set_argument (error, "length", "start_index + length > array length");
-		return 0;
-	}
-
-	gsize const element_size = mono_array_element_size (klass);
-
-	// Handle generic arrays, which do not allow fixed.
-	if (!*managed_addr)
-		*managed_addr = mono_array_handle_pin_with_size (managed, element_size, start_index, gchandle);
-
-	return element_size * length;
 }
 
 guint32 
@@ -6031,7 +5974,7 @@ mono_marshal_get_type_object (MonoClass *klass)
 {
 	ERROR_DECL (error);
 	MonoType *type = m_class_get_byval_arg (klass);
-	MonoObject *result = (MonoObject*)mono_type_get_object_checked (mono_domain_get (), type, error);
+	MonoObject *result = (MonoObject*)mono_type_get_object_checked (type, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }

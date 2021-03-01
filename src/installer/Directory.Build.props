@@ -1,104 +1,31 @@
 <Project>
   <Import Project="..\..\Directory.Build.props" />
 
-  <!--
-    Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
-    sets it, so MSBuild packages with targets files will be found and imported.
-  -->
   <PropertyGroup>
-    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
-    <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
-
     <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. -->
     <AssemblyVersion />
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
-  </PropertyGroup>
-
-  <!-- Platform detection -->
-  <PropertyGroup>
-    <RunningOnUnix Condition="'$(OS)' != 'Windows_NT'">true</RunningOnUnix>
     <!-- Don't set platform too early as test app paths are currently hardcoded. -->
     <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
-  </PropertyGroup>
-
-  <!-- Set up Default symbol and optimization for Configuration -->
-  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-  </PropertyGroup>
-
-  <PropertyGroup>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants),DEBUG,TRACE</DefineConstants>
+    <DefineConstants Condition="'$(Configuration)' == 'Release'">$(DefineConstants),TRACE</DefineConstants>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(EnsureRuntimeIdentifierSet)' == 'true'">$(OutputRid)</RuntimeIdentifier>
     <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(OutputRid)</TestTargetRid>
-  </PropertyGroup>
-
-  <!-- Produce assets into the specified blob feed. -->
-  <PropertyGroup Condition="'$(DotNetOutputBlobFeedDir)' != ''">
-    <AssetOutputPath>$(DotNetOutputBlobFeedDir)assets/</AssetOutputPath>
+    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build.
+      The NuGet fallback folder can/will contain packages we are building in this repo, and we
+      want to ensure we use the correct packages. -->
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(OutputRid).$(Configuration)</OSPlatformConfig>
-
     <BaseOutputRootPath>$(ArtifactsBinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
-    <CrossGenRootPath>$(BaseOutputRootPath)crossgen\</CrossGenRootPath>
+    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OSPlatformConfig)\</IntermediateOutputRootPath>
 
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(ArtifactsObjDir)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-
-    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(ArtifactsBinDir)$(OSPlatformConfig)/</PackagesBasePath>
-    <PackageSymbolsBinDir Condition="'$(PackageSymbolsBinDir)' == ''">$(PackagesBasePath)symbols/</PackageSymbolsBinDir>
-
+    <!-- Produce assets into the specified blob feed. -->
+    <AssetOutputPath Condition="'$(DotNetOutputBlobFeedDir)' != ''">$(DotNetOutputBlobFeedDir)assets/</AssetOutputPath>
     <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(ArtifactsShippingPackagesDir)</AssetOutputPath>
+
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <DisableCrossgen>false</DisableCrossgen>
-    <DisableCrossgen Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
-    <!-- Disable cross-gen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">true</DisableCrossgen>
-    <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <DotnetHostString>dotnet-host-</DotnetHostString>
-    <DotnetHostFxrString>dotnet-hostfxr-</DotnetHostFxrString>
-    <DotnetRuntimeString>dotnet-runtime-</DotnetRuntimeString>
-    <DotnetRuntimeDependenciesPackageString>dotnet-runtime-deps-</DotnetRuntimeDependenciesPackageString>
-
-    <CombinedInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</CombinedInstallerStart>
-    <SharedHostInstallerStart>$(AssetOutputPath)$(DotnetHostString)</SharedHostInstallerStart>
-    <HostFxrInstallerStart>$(AssetOutputPath)$(DotnetHostFxrString)</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
-    <DotnetRuntimeDependenciesPackageInstallerStart>$(AssetOutputPath)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
-
-    <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
-         and runtime ( earlier as dotnet-sharedframework-*)	-->
-    <InstallerStartSuffix Condition="'$(TargetOS)' == 'OSX'">internal</InstallerStartSuffix>
-    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
-    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build.
-         The NuGet fallback folder can/will contain packages we are building in this repo, and we
-         want to ensure we use the correct packages.
-    -->
-    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
 </Project>

@@ -736,17 +736,6 @@ struct BindIoCompletion_Args
     LPOVERLAPPED lpOverlapped;
 };
 
-void SetAsyncResultProperties(
-    OVERLAPPEDDATAREF overlapped,
-    DWORD dwErrorCode,
-    DWORD dwNumBytes
-)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-}
-
 VOID BindIoCompletionCallBack_Worker(LPVOID args)
 {
     STATIC_CONTRACT_THROWS;
@@ -783,9 +772,6 @@ VOID BindIoCompletionCallBack_Worker(LPVOID args)
     {
         // no user delegate to callback
         _ASSERTE((overlapped->m_callback == NULL) || !"This is benign, but should be optimized");
-
-
-        SetAsyncResultProperties(overlapped, ErrorCode, numBytesTransferred);
     }
     GCPROTECT_END();
 }
@@ -830,21 +816,6 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
 {
     WRAPPER_NO_CONTRACT;
     BindIoCompletionCallbackStubEx(ErrorCode, numBytesTransferred, lpOverlapped, TRUE);
-
-#ifndef TARGET_UNIX
-    extern Volatile<ULONG> g_fCompletionPortDrainNeeded;
-
-    Thread *pThread = GetThread();
-    if (g_fCompletionPortDrainNeeded && pThread)
-    {
-        // We have started draining completion port.
-        // The next job picked up by this thread is going to be after our special marker.
-        if (!pThread->IsCompletionPortDrained())
-        {
-            pThread->MarkCompletionPortDrained();
-        }
-    }
-#endif // !TARGET_UNIX
 }
 
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileHandle)

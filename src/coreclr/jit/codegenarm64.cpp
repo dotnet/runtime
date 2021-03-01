@@ -9658,8 +9658,15 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     {
         lastTouchDelta = frameSize;
     }
-    else if (frameSize < compiler->getVeryLargeFrameSize())
+    else if (frameSize < 3 * pageSize)
     {
+        // The probing loop in "else"-case below would require at least 6 instructions (and more if
+        // 'frameSize' or 'pageSize' can not be encoded with mov-instruction immediate).
+        // Hence for frames that are smaller than 3 * PAGE_SIZE the JIT inlines the following probing code
+        // to decrease code size.
+        // TODO-ARM64: The probing mechanisms should be replaced by a call to stack probe helper
+        // as it is done on other platforms.
+
         lastTouchDelta = frameSize;
 
         for (target_size_t probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
@@ -9681,8 +9688,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-        assert(frameSize >= compiler->getVeryLargeFrameSize());
-
         // Emit the following sequence to 'tickle' the pages. Note it is important that stack pointer not change
         // until this is complete since the tickles could cause a stack overflow, and we need to be able to crawl
         // the stack afterward (which means the stack pointer needs to be known).

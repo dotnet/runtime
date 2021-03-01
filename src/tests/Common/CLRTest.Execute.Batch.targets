@@ -63,7 +63,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).cmd"
-    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetJitDisasmBatchScript;GetIlasmRoundTripBatchScript">
+    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -433,8 +433,6 @@ REM Environment Variables
 $(BatchEnvironmentVariables)
 
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-
-$(JitDisasmBatchScript)
 
 $(IlasmRoundTripBatchScript)
 

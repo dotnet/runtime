@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Logging.Console
                 writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IReadOnlyCollection<KeyValuePair<string, object>> scopes)
+                    if (scope is IEnumerable<KeyValuePair<string, object>> scopes)
                     {
                         state.WriteStartObject();
                         state.WriteString("Message", scope.ToString());

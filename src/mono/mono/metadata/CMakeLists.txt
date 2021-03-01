@@ -66,8 +66,6 @@ set(metadata_common_sources
     appdomain-icalls.h
     assembly.c
     assembly-internals.h
-    attach.h
-    attach.c
     cil-coff.h
     class.c
     class-getters.h
@@ -139,9 +137,7 @@ set(metadata_common_sources
     mono-perfcounters.h
     mono-perfcounters-def.h
     mono-ptr-array.h
-    mono-route.c
     monitor.h
-    number-ms.h
     object.c
     object-forward.h
     object-internals.h
@@ -153,8 +149,6 @@ set(metadata_common_sources
     w32process.h
     profiler.c
     profiler-private.h
-    remoting.h
-    remoting.c
     runtime.c
     security.h
     security-core-clr.c

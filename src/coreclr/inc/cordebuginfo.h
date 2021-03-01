@@ -51,8 +51,8 @@ public:
 
     struct OffsetMapping
     {
-        DWORD           nativeOffset;
-        DWORD           ilOffset;
+        uint32_t        nativeOffset;
+        uint32_t        ilOffset;
         SourceTypes     source; // The debugger needs this so that
                                 // we don't put Edit and Continue breakpoints where
                                 // the stack isn't empty.  We can put regular breakpoints
@@ -215,7 +215,7 @@ public:
         signed      vlsOffset;
     };
 
-    // VLT_REG_REG -- TYP_LONG with both DWords enregistred
+    // VLT_REG_REG -- TYP_LONG with both uint32_ts enregistred
     // eg. RBM_EAXEDX
 
     struct vlRegReg
@@ -321,16 +321,16 @@ public:
 
     struct ILVarInfo
     {
-        DWORD           startOffset;
-        DWORD           endOffset;
-        DWORD           varNumber;
+        uint32_t        startOffset;
+        uint32_t        endOffset;
+        uint32_t        varNumber;
     };
 
     struct NativeVarInfo
     {
-        DWORD           startOffset;
-        DWORD           endOffset;
-        DWORD           varNumber;
+        uint32_t        startOffset;
+        uint32_t        endOffset;
+        uint32_t        varNumber;
         VarLoc          loc;
     };
 };

@@ -77,6 +77,40 @@ internal static partial class Interop
             }
         }
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pbkdf2")]
+        private static unsafe extern int Pbkdf2(
+            byte* pPassword,
+            int passwordLength,
+            byte* pSalt,
+            int saltLength,
+            int iterations,
+            IntPtr digestEvp,
+            byte* pDestination,
+            int destinationLength);
+
+        internal static unsafe int Pbkdf2(
+            ReadOnlySpan<byte> password,
+            ReadOnlySpan<byte> salt,
+            int iterations,
+            IntPtr digestEvp,
+            Span<byte> destination)
+        {
+            fixed (byte* pPassword = password)
+            fixed (byte* pSalt = salt)
+            fixed (byte* pDestination = destination)
+            {
+                return Pbkdf2(
+                    pPassword,
+                    password.Length,
+                    pSalt,
+                    salt.Length,
+                    iterations,
+                    digestEvp,
+                    pDestination,
+                    destination.Length);
+            }
+        }
+
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }
 }

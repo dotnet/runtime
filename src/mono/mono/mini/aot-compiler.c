@@ -3656,24 +3656,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		encode_value (method->wrapper_type, p, &p);
 
 		switch (method->wrapper_type) {
-		case MONO_WRAPPER_REMOTING_INVOKE:
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-		case MONO_WRAPPER_XDOMAIN_INVOKE: {
-			MonoMethod *m;
-
-			m = mono_marshal_method_from_wrapper (method);
-			g_assert (m);
-			encode_method_ref (acfg, m, p, &p);
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST:
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD: {
-			g_assert (info);
-			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
-			break;
-		}
 		case MONO_WRAPPER_ALLOC: {
 			/* The GC name is saved once in MonoAotFileInfo */
 			g_assert (info->d.alloc.alloc_type != -1);
@@ -4242,12 +4224,18 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 	ERROR_DECL (error);
 
 	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
+		MonoMethod *orig = method;
+
 		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
 		if (!is_ok (error)) {
 			/* vtype constraint */
 			mono_error_cleanup (error);
 			return;
 		}
+
+		/* Add it to profile_methods so its not skipped later */
+		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
+			g_hash_table_insert (acfg->profile_methods, method, method);
 	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
@@ -4606,7 +4594,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
-		if (!mono_class_is_contextbound (method->klass)) {
+		{
 			MonoDynCallInfo *info = mono_arch_dyn_call_prepare (sig);
 			gboolean has_nullable = FALSE;
 
@@ -6885,8 +6873,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Encode method info */
 	/**********************/
 
-	g_assert (!(cfg->opt & MONO_OPT_SHARED));
-
 	guint32 *got_offsets = g_new0 (guint32, patches->len);
 
 	n_patches = 0;
@@ -7706,10 +7692,6 @@ emit_trampolines (MonoAotCompile *acfg)
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
 			/* we overload the boolean here to indicate the slightly different trampoline needed, see mono_arch_create_generic_trampoline() */
-#ifdef DISABLE_REMOTING
-			if (tramp_type == MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING)
-				continue;
-#endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, info);
 			mono_tramp_info_free (info);
@@ -8209,7 +8191,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
 	else if (!strcmp (attr + prefix, "simd"))
-		feature = MONO_CPU_ARM64_ADVSIMD;
+		feature = MONO_CPU_ARM64_NEON;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
@@ -8512,15 +8494,8 @@ can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
 		if (method->wrapper_type) {
 			switch (method->wrapper_type) {
 			case MONO_WRAPPER_NONE:
-			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-			case MONO_WRAPPER_XDOMAIN_INVOKE:
-			case MONO_WRAPPER_STFLD:
-			case MONO_WRAPPER_LDFLD:
-			case MONO_WRAPPER_LDFLDA:
 			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_ALLOC:
-			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_OTHER:
 			case MONO_WRAPPER_WRITE_BARRIER:
 			case MONO_WRAPPER_DELEGATE_INVOKE:
@@ -8835,7 +8810,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_CODE_EXEC_ONLY);
 
 	jit_time_start = mono_time_track_start ();
-	cfg = mini_method_compile (method, acfg->jit_opts, mono_get_root_domain (), flags, 0, index);
+	cfg = mini_method_compile (method, acfg->jit_opts, flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_time_start);
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
@@ -9361,27 +9336,6 @@ append_mangled_wrapper_type (GString *s, guint32 wrapper_type)
 	const char *label;
 
 	switch (wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-		label = "remoting_invoke";
-		break;
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-		label = "remoting_invoke_check";
-		break;
-	case MONO_WRAPPER_XDOMAIN_INVOKE:
-		label = "remoting_invoke_xdomain";
-		break;
-	case MONO_WRAPPER_PROXY_ISINST:
-		label = "proxy_isinst";
-		break;
-	case MONO_WRAPPER_LDFLD:
-		label = "ldfld";
-		break;
-	case MONO_WRAPPER_LDFLDA:
-		label = "ldflda";
-		break;
-	case MONO_WRAPPER_STFLD: 
-		label = "stfld";
-		break;
 	case MONO_WRAPPER_ALLOC:
 		label = "alloc";
 		break;
@@ -9634,22 +9588,6 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 		append_mangled_wrapper_type (s, method->wrapper_type);
 
 	switch (method->wrapper_type) {
-	case MONO_WRAPPER_REMOTING_INVOKE:
-	case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-	case MONO_WRAPPER_XDOMAIN_INVOKE: {
-		MonoMethod *m = mono_marshal_method_from_wrapper (method);
-		g_assert (m);
-		success = success && append_mangled_method (s, m);
-		break;
-	}
-	case MONO_WRAPPER_PROXY_ISINST:
-	case MONO_WRAPPER_LDFLD:
-	case MONO_WRAPPER_LDFLDA:
-	case MONO_WRAPPER_STFLD: {
-		g_assert (info);
-		success = success && append_mangled_klass (s, info->d.proxy.klass);
-		break;
-	}
 	case MONO_WRAPPER_ALLOC: {
 		/* The GC name is saved once in MonoAotFileInfo */
 		g_assert (info->d.alloc.alloc_type != -1);
@@ -10590,7 +10528,7 @@ mono_aot_method_hash (MonoMethod *method)
 	hashes = hashes_start;
 
 	/* Some wrappers are assigned to random classes */
-	if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+	if (!method->wrapper_type)
 		klass = method->klass;
 	else
 		klass = mono_defaults.object_class;
@@ -10610,11 +10548,7 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [0] = mono_metadata_str_hash (m_class_get_name (klass));
 		hashes [1] = mono_metadata_str_hash (m_class_get_name_space (klass));
 	}
-	if (method->wrapper_type == MONO_WRAPPER_STFLD || method->wrapper_type == MONO_WRAPPER_LDFLD || method->wrapper_type == MONO_WRAPPER_LDFLDA)
-		/* The method name includes a stringified pointer */
-		hashes [2] = 0;
-	else
-		hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	hindex = 5;
@@ -12860,7 +12794,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 
 		if (!strcmp (current->aname.name, idata->name)) {
 			idata->image = current->image;
-			break;
+			continue;
 		}
 
 		for (i = 0; i < assemblies->len; ++i) {
@@ -12985,6 +12919,13 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 }
 
 static void
+add_profile_method (MonoAotCompile *acfg, MonoMethod *m)
+{
+	g_hash_table_insert (acfg->profile_methods, m, m);
+	add_extra_method (acfg, m);
+}
+
+static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 {
 	GHashTableIter iter;
@@ -13005,8 +12946,9 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 				continue;
 			if (m->is_inflated)
 				continue;
-			add_extra_method (acfg, m);
-			g_hash_table_insert (acfg->profile_methods, m, m);
+			if (m_class_get_image (m->klass) != acfg->image)
+				continue;
+			add_profile_method (acfg, m);
 			count ++;
 		}
 	}
@@ -13031,7 +12973,7 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) &&
 			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
 			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_extra_method (acfg, m);
+			add_profile_method (acfg, m);
 			count ++;
 		} else if (m_class_get_image (m->klass) == acfg->image &&
 			((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
@@ -13039,7 +12981,7 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))  {
 			/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
 			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_extra_method (acfg, m);
+			add_profile_method (acfg, m);
 			count ++;
 		}
 		/*

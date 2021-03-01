@@ -20,6 +20,9 @@
     <AssemblyMetadata Include="PreferInbox">
       <Value>True</Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="IsTrimmable" Condition="'$(SetIsTrimmable)' != 'false'">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
@@ -50,17 +53,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
-          Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
-
-    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all DotNet assemblies (non test) that have a reference to System.Runtime.InteropServices -->
-    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'==''">
-      <IncludeDllSafeSearchPathAttribute>false</IncludeDllSafeSearchPathAttribute> <!-- We don't need to include it by default. -->
-      <IncludeDllSafeSearchPathAttribute Condition="'%(ProjectReference.Filename)'=='System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'%(Reference.Identity)'=='System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
-    </PropertyGroup>
-  </Target>
-
   <PropertyGroup>
     <!-- corefx has never generated these attributes so don't let the SDK generate them -->
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -71,7 +63,6 @@
   </PropertyGroup>
 
   <Target Name="_ComputeBuildToolsAssemblyInfoAttributes"
-          DependsOnTargets="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
           BeforeTargets="GetAssemblyAttributes">
     <ItemGroup>
       <AssemblyAttribute Include="System.Reflection.AssemblyDefaultAliasAttribute">
@@ -83,7 +74,7 @@
       </AssemblyAttribute>
 
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
-                         Condition="'$(SkipFrameworkAssemblyMetadata)' != 'true' and '@(AssemblyMetadata)' != ''">
+                         Condition="'@(AssemblyMetadata)' != ''">
         <_Parameter1>%(AssemblyMetadata.Identity)</_Parameter1>
         <_Parameter2>%(AssemblyMetadata.Value)</_Parameter2>
       </AssemblyAttribute>
@@ -93,10 +84,21 @@
   <!-- Work around https://github.com/Microsoft/msbuild/issues/3412 by writing the non-string assembly attributes manually -->
   <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
   <Target Name="_WriteNonStringAssemblyInfoAttributes"
+          DependsOnTargets="ResolveReferences"
           AfterTargets="CoreGenerateAssemblyInfo"
           BeforeTargets="BeforeCompile;CoreCompile"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(AssemblyInfoFile)">
+
+    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
+    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'=='' and '$(IsSourceProject)'== 'true'">
+      <IncludeDllSafeSearchPathAttribute>false</IncludeDllSafeSearchPathAttribute>
+      <!-- We don't need to include it by default. -->
+      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Private.CoreLib'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and '%(ReferencePath.Filename)' == 'netstandard'">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '%(ReferencePath.Filename)' == 'mscorlib'">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
 
     <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
       <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="[assembly:System.CLSCompliant(true)]" />

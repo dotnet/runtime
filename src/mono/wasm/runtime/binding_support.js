@@ -171,8 +171,8 @@ var BindingSupportLib = {
 		_store_string_in_intern_table: function (string, ptr, internIt) {
 			if (!ptr)
 				throw new Error ("null pointer passed to _store_string_in_intern_table");
-
-			var originalArg = ptr;
+			else if (typeof (ptr) !== "number")
+				throw new Error (`non-pointer passed to _store_string_in_intern_table: ${typeof(ptr)}`);
 			
 			const internBufferSize = 8192;
 
@@ -226,7 +226,9 @@ var BindingSupportLib = {
 		},
 
 		js_string_to_mono_string: function (string) {
-			if (typeof (string) === "symbol")
+			if (string === null)
+				return null;
+			else if (typeof (string) === "symbol")
 				return this.js_string_to_mono_string_interned (string);
 			else if (typeof (string) !== "string")
 				throw new Error ("Expected string argument");
@@ -298,13 +300,13 @@ var BindingSupportLib = {
 
 			var arrayRoot = MONO.mono_wasm_new_root (mono_array);
 			try {
-				return this._mono_array_to_js_array_rooted (arrayRoot);
+				return this._mono_array_root_to_js_array (arrayRoot);
 			} finally {
 				arrayRoot.release();
 			}
 		},
 
-		_mono_array_to_js_array_rooted: function (arrayRoot) {
+		_mono_array_root_to_js_array: function (arrayRoot) {
 			if (arrayRoot.value === 0)
 				return null;
 
@@ -318,9 +320,9 @@ var BindingSupportLib = {
 					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
 
 					if (this.is_nested_array (elemRoot.value))
-						res[i] = this._mono_array_to_js_array_rooted (elemRoot);
+						res[i] = this._mono_array_root_to_js_array (elemRoot);
 					else
-						res[i] = this._unbox_mono_obj_rooted (elemRoot);
+						res[i] = this._unbox_mono_obj_root (elemRoot);
 				}
 			} finally {
 				elemRoot.release ();
@@ -351,7 +353,7 @@ var BindingSupportLib = {
 
 			var root = MONO.mono_wasm_new_root (mono_obj);
 			try {
-				return this._unbox_mono_obj_rooted (root);
+				return this._unbox_mono_obj_root (root);
 			} finally {
 				root.release();
 			}
@@ -440,12 +442,14 @@ var BindingSupportLib = {
 					return uriValue;
 				case 23: // clr .NET SafeHandle
 					return this._unbox_safehandle_rooted (mono_obj);
+				case 30:
+					return undefined;
 				default:
 					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
 			}
 		},
 
-		_unbox_mono_obj_rooted: function (root) {
+		_unbox_mono_obj_root: function (root) {
 			var mono_obj = root.value;
 			if (mono_obj === 0)
 				return undefined;
@@ -1293,7 +1297,7 @@ var BindingSupportLib = {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
 			if (is_result_marshaled)
-				result = this._unbox_mono_obj_rooted (resultRoot);
+				result = this._unbox_mono_obj_root (resultRoot);
 			else
 				result = resultRoot.value;
 
@@ -1426,7 +1430,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultRoot, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
 				"    }",
 				"}",
 				"",
