@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +17,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestCaseCompiler
 	{
-		static string _cachedWindowsCscPath = null;
 		protected readonly TestCaseMetadaProvider _metadataProvider;
 		protected readonly TestCaseSandbox _sandbox;
 		protected readonly ILCompiler _ilCompiler;
@@ -244,29 +242,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (options.AdditionalArguments != null) {
 				foreach (var option in options.AdditionalArguments) {
 					switch (option) {
-						case "/unsafe":
-							compilationOptions = compilationOptions.WithAllowUnsafe(true);
-							break;
-						case "/optimize+":
-							compilationOptions = compilationOptions.WithOptimizationLevel(OptimizationLevel.Release);
-							break;
-						case "/debug:full":
-						case "/debug:pdbonly":
-							// Use platform's default debug info. This behavior is the same as csc.
-							emitPdb = true;
-							break;
-						case "/debug:portable":
-							emitPdb = true;
-							debugType = DebugInformationFormat.PortablePdb;
-							break;
-						case "/debug:embedded":
-							emitPdb = true;
-							debugType = DebugInformationFormat.Embedded;
-							break;
-						case "/langversion:7.3":
-							languageVersion = LanguageVersion.CSharp7_3;
-							break;
-							
+					case "/unsafe":
+						compilationOptions = compilationOptions.WithAllowUnsafe (true);
+						break;
+					case "/optimize+":
+						compilationOptions = compilationOptions.WithOptimizationLevel (OptimizationLevel.Release);
+						break;
+					case "/debug:full":
+					case "/debug:pdbonly":
+						// Use platform's default debug info. This behavior is the same as csc.
+						emitPdb = true;
+						break;
+					case "/debug:portable":
+						emitPdb = true;
+						debugType = DebugInformationFormat.PortablePdb;
+						break;
+					case "/debug:embedded":
+						emitPdb = true;
+						debugType = DebugInformationFormat.Embedded;
+						break;
+					case "/langversion:7.3":
+						languageVersion = LanguageVersion.CSharp7_3;
+						break;
+
 					}
 				}
 			}
@@ -299,8 +297,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			EmitResult result;
 			using (var outputStream = File.Create (options.OutputPath.ToString ()))
-			using (var pdbStream = (pdbPath == null ? null : File.Create (pdbPath))) {
-				result = compilation.Emit(
+			using (var pdbStream = pdbPath == null ? null : File.Create (pdbPath)) {
+				result = compilation.Emit (
 					peStream: outputStream,
 					pdbStream: pdbStream,
 					manifestResources: manifestResources,
@@ -354,57 +352,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.Fail ($"Failed to compile assembly with csc: {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
 
 			return options.OutputPath;
-		}
-
-		static string LocateCscExecutable ()
-		{
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-				return "csc";
-
-			if (_cachedWindowsCscPath != null)
-				return _cachedWindowsCscPath;
-
-			var capturedOutput = new List<string> ();
-			var process = new Process ();
-
-			var vswherePath = Environment.ExpandEnvironmentVariables ("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe");
-			if (!File.Exists (vswherePath))
-				Assert.Fail ($"Unable to locate csc.exe on windows because vshwere.exe was not found at {vswherePath}");
-
-			process.StartInfo.FileName = vswherePath;
-			process.StartInfo.Arguments = "-latest -products * -requires Microsoft.Component.MSBuild -property installationPath";
-			process.StartInfo.UseShellExecute = false;
-			process.StartInfo.CreateNoWindow = true;
-			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-			process.StartInfo.RedirectStandardOutput = true;
-			process.OutputDataReceived += (sender, args) => capturedOutput.Add (args.Data);
-			process.Start ();
-			process.BeginOutputReadLine ();
-			process.WaitForExit ();
-
-			if (process.ExitCode != 0)
-				Assert.Fail ($"vswhere.exe failed with :\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
-
-			if (capturedOutput.Count == 0 || string.IsNullOrEmpty (capturedOutput[0]))
-				Assert.Fail ("vswhere.exe was unable to locate an install directory");
-
-			var installPath = capturedOutput[0].Trim ().ToNPath ();
-
-			if (!installPath.Exists ())
-				Assert.Fail ($"No install found at {installPath}");
-
-			// Do a search for the roslyn directory for a little bit of future proofing since it normally lives under
-			// a versioned msbuild directory
-			foreach (var roslynDirectory in installPath.Directories ("Roslyn", true)) {
-				var possibleCscPath = roslynDirectory.Combine ("csc.exe");
-				if (possibleCscPath.Exists ()) {
-					_cachedWindowsCscPath = possibleCscPath.ToString ();
-					return _cachedWindowsCscPath;
-				}
-			}
-
-			Assert.Fail ("Unable to locate a roslyn csc.exe");
-			return null;
 		}
 
 		static string LocateMcsExecutable ()

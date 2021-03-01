@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -699,7 +698,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 								Assert.IsTrue (
 									matchedMessages.Count > 0,
-									$"Expected to find warning: {(fileName != null ? (fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "")) + ": " : "")}" +
+									$"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
 									$"warning {expectedWarningCode}: {(fileName == null ? (actualMethod?.GetDisplayName () ?? attrProvider.FullName) + ": " : "")}" +
 									$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
 									$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
@@ -740,7 +739,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach ((var attrProvider, var attr) in expectedNoWarningsAttributes) {
-				var unexpectedWarningCode = attr.ConstructorArguments.Count == 0 ? (string) null : (string) attr.GetConstructorArgumentValue (0);
+				var unexpectedWarningCode = attr.ConstructorArguments.Count == 0 ? null : (string) attr.GetConstructorArgumentValue (0);
 				if (unexpectedWarningCode != null && !unexpectedWarningCode.StartsWith ("IL")) {
 					Assert.Fail ($"The warning code specified in ExpectedWarning attribute must start with the 'IL' prefix. Specified value: '{unexpectedWarningCode}'.");
 				}
@@ -980,7 +979,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var memberName = (string) inAssemblyAttribute.ConstructorArguments[2].Value;
 
 			if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)) {
-				Func<MethodDefinition, string[]> valueCollector = m => m.Body.Instructions.Select (ins => AssemblyChecker.FormatInstruction (ins).ToLower ()).ToArray ();
+				static string[] valueCollector (MethodDefinition m) => m.Body.Instructions.Select (ins => AssemblyChecker.FormatInstruction (ins).ToLower ()).ToArray ();
 				var linkedValues = valueCollector (linkedMethod);
 				var srcValues = valueCollector (originalMethod);
 

@@ -119,12 +119,20 @@ dotnet_diagnostic.IDE0082.severity = warning
 dotnet_analyzer_diagnostic.category-performance.severity = warning
 dotnet_analyzer_diagnostic.category-maintainability.severity = warning
 dotnet_analyzer_diagnostic.category-reliability.severity = warning
+dotnet_analyzer_diagnostic.category-usage.severity = warning
+#dotnet_analyzer_diagnostic.category-style.severity = warning
+
+# call GC.SuppressFinalize(object)
+dotnet_diagnostic.CA1816.severity = none
 
 # CA1834: Use 'StringBuilder.Append(char)'
 dotnet_diagnostic.CA1834.severity = none
 
 # RS2008 Ignore analyzer release tracking
 dotnet_diagnostic.RS2008.severity = none
+
+# Exception type is not sufficiently specific
+dotnet_diagnostic.CA2201.severity = none
 
 [external**]
 dotnet_analyzer_diagnostic.severity = none

@@ -176,7 +176,7 @@ namespace Mono.Linker.Tests.TestCases
 				Assert.Ignore ("These tests are not valid when linking against .NET Framework");
 
 #if NETCOREAPP
-			Assert.Ignore("These tests are not valid when linking against .NET Core");
+			Assert.Ignore ("These tests are not valid when linking against .NET Core");
 #endif
 			Run (testCase);
 		}

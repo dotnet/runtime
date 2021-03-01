@@ -76,7 +76,7 @@ namespace ILLink.Tasks.Tests
 						continue;
 
 					AssemblyAction expectedAction = (AssemblyAction) Enum.Parse (typeof (AssemblyAction), trimMode, ignoreCase: true);
-					AssemblyAction actualAction = (AssemblyAction) context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
+					AssemblyAction actualAction = context.Actions[Path.GetFileNameWithoutExtension (assemblyPath)];
 
 					Assert.Equal (expectedAction, actualAction);
 				}

@@ -1,5 +1,3 @@
-using System;
-
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
 	/// Asserts that the member to which this attribute is applied has the given

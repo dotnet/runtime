@@ -79,7 +79,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);
 		}
 
-		private static IVerifier DefaultVerifier = new DefaultVerifier ();
+		private static readonly IVerifier DefaultVerifier = new DefaultVerifier ();
 
 		/// <summary>
 		/// Gets the default full name of the first source file added for a test.

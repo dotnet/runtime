@@ -794,7 +794,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var removals = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (RemovedPseudoAttributeAttribute)).ToArray ();
 			var adds = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (AddedPseudoAttributeAttribute)).ToArray ();
 
-			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments[0].Value)) |
+			return removals.Aggregate (sourceValue, (accum, item) => accum & ~(uint) item.ConstructorArguments[0].Value) |
 				adds.Aggregate ((uint) 0, (acum, item) => acum | (uint) item.ConstructorArguments[0].Value);
 		}
 
@@ -807,7 +807,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected static IEnumerable<string> GetStringOrTypeArrayAttributeValue (CustomAttribute attribute)
 		{
-			foreach (var arg in ((CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value)) {
+			foreach (var arg in (CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value) {
 				if (arg.Value is TypeReference tRef)
 					yield return tRef.ToString ();
 				else

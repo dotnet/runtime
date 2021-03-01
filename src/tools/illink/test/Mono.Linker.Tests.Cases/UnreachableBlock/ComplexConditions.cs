@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 #if !NETCOREAPP
 		[ExpectBodyModified]
 #else
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"nop",
 			"ldarg.0",
 			"isinst",
@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 #if !NETCOREAPP
 		[ExpectBodyModified]
 #else
-		[ExpectedInstructionSequence (new [] {
+		[ExpectedInstructionSequence (new[] {
 			"nop",
 			"call",
 			"stloc.1",

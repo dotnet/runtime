@@ -28,7 +28,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Xml;
 using Mono.Cecil;
-using Mono.Linker.Steps;
 
 namespace Mono.Linker
 {

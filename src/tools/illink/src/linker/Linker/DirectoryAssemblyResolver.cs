@@ -83,7 +83,7 @@ namespace Mono.Linker
 			throw new AssemblyResolutionException (name, new FileNotFoundException ($"Unable to find '{name.Name}.dll' or '{name.Name}.exe' file"));
 		}
 
-		public static string[] Extensions = new[] { ".dll", ".exe" };
+		protected static readonly string[] Extensions = new[] { ".dll", ".exe" };
 
 		AssemblyDefinition SearchDirectory (AssemblyNameReference name, IEnumerable<string> directories, ReaderParameters parameters)
 		{
