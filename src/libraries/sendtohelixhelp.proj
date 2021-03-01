@@ -244,8 +244,8 @@
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/*.Browser.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
