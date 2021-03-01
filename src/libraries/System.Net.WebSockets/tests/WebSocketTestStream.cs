@@ -108,6 +108,10 @@ namespace System.Net.WebSockets.Tests
                 {
                     await _inputLock.WaitAsync(cancellation.Token).ConfigureAwait(false);
                 }
+                catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
                 catch (OperationCanceledException) when (_disposed.IsCancellationRequested)
                 {
                     return 0;
