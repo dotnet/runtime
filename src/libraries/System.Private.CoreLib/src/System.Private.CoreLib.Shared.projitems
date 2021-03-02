@@ -1637,7 +1637,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamHelpers.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\LegacyFileStreamStrategy.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
