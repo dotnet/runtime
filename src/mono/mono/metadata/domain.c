@@ -335,8 +335,6 @@ mono_domain_create (void)
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
-	mono_coop_mutex_init (&domain->alcs_lock);
-
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -345,8 +343,6 @@ mono_domain_create (void)
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_appdomains);
 	mono_atomic_inc_i32 (&mono_perfcounters->loader_total_appdomains);
 #endif
-
-	mono_alc_create_default (domain);
 
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
@@ -420,6 +416,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
 
+	mono_alcs_init ();
+
 	SET_APPDOMAIN (domain);
 
 #if defined(ENABLE_EXPERIMENT_null)
@@ -437,7 +435,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, NULL);
+			exe_image = mono_assembly_open_from_bundle (mono_alc_get_default (domain), exe_filename, NULL, NULL);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -849,7 +847,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_domain_assembly_open_internal (domain, mono_domain_default_alc (domain), name);
+	result = mono_domain_assembly_open_internal (domain, mono_alc_get_default (), name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1289,7 +1287,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	GSList *runtimes = NULL;
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, NULL);
+	image = mono_assembly_open_from_bundle (mono_alc_get_default (), file, NULL, NULL);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);
@@ -1351,10 +1349,4 @@ mono_domain_get_assemblies (MonoDomain *domain)
 	}
 	mono_domain_assemblies_unlock (domain);
 	return assemblies;
-}
-
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain)
-{
-	return domain->default_alc;
 }
