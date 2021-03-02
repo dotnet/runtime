@@ -96,8 +96,8 @@ jobs:
         parameters:
           unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
           cleanUnpackFolder: false
-          artifactFileName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
-          artifactName: 'MonoProduct_${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
+          artifactFileName: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)$(archiveExtension)'
+          artifactName: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)_$(archType)_$(buildConfig)'
           displayName: 'Mono runtime'
 
     # Download wasm
