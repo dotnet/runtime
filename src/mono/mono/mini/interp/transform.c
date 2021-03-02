@@ -1253,13 +1253,10 @@ create_interp_local (TransformData *td, MonoType *type)
 }
 
 static int
-get_interp_local_offset (TransformData *td, int local, gboolean resolve_stack_locals)
+get_interp_local_offset (TransformData *td, int local)
 {
 	// FIXME MINT_PROF_EXIT when void
 	if (local == -1)
-		return -1;
-
-	if ((td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) && !resolve_stack_locals)
 		return -1;
 
 	if (td->locals [local].offset != -1)
@@ -7301,7 +7298,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	*ip++ = opcode;
 	if (opcode == MINT_SWITCH) {
 		int labels = READ32 (&ins->data [0]);
-		*ip++ = get_interp_local_offset (td, ins->sregs [0], TRUE);
+		*ip++ = get_interp_local_offset (td, ins->sregs [0]);
 		// Write number of switch labels
 		*ip++ = ins->data [0];
 		*ip++ = ins->data [1];
@@ -7320,7 +7317,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK || opcode == MINT_CALL_HANDLER_S) {
 		const int br_offset = start_ip - td->new_code;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = get_interp_local_offset (td, ins->sregs [i], TRUE);
+			*ip++ = get_interp_local_offset (td, ins->sregs [i]);
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it.
 			*ip++ = ins->info.target_bb->native_offset - br_offset;
@@ -7341,7 +7338,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			opcode == MINT_BR || opcode == MINT_LEAVE || opcode == MINT_LEAVE_CHECK || opcode == MINT_CALL_HANDLER) {
 		const int br_offset = start_ip - td->new_code;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = get_interp_local_offset (td, ins->sregs [i], TRUE);
+			*ip++ = get_interp_local_offset (td, ins->sregs [i]);
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it
 			int target_offset = ins->info.target_bb->native_offset - br_offset;
@@ -7407,14 +7404,14 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 #endif
 	} else {
 		if (mono_interp_op_dregs [opcode])
-			*ip++ = get_interp_local_offset (td, ins->dreg, TRUE);
+			*ip++ = get_interp_local_offset (td, ins->dreg);
 
 		if (mono_interp_op_sregs [opcode]) {
 			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-				*ip++ = get_interp_local_offset (td, ins->sregs [i], TRUE);
+				*ip++ = get_interp_local_offset (td, ins->sregs [i]);
 		} else if (opcode == MINT_LDLOCA_S) {
 			// This opcode receives a local but it is not viewed as a sreg since we don't load the value
-			*ip++ = get_interp_local_offset (td, ins->sregs [0], TRUE);
+			*ip++ = get_interp_local_offset (td, ins->sregs [0]);
 		}
 
 		int left = get_inst_length (ins) - (ip - start_ip);
@@ -7431,15 +7428,21 @@ alloc_ins_locals (TransformData *td, InterpInst *ins)
 {
 	int opcode = ins->opcode;
 	if (mono_interp_op_sregs [opcode]) {
-		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			get_interp_local_offset (td, ins->sregs [i], FALSE);
+		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+			int local = ins->sregs [i];
+			if (!(td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK))
+				get_interp_local_offset (td, local);
+		}
 	} else if (opcode == MINT_LDLOCA_S) {
 		// This opcode receives a local but it is not viewed as a sreg since we don't load the value
-		get_interp_local_offset (td, ins->sregs [0], FALSE);
+		get_interp_local_offset (td, ins->sregs [0]);
 	}
 
-	if (mono_interp_op_dregs [opcode])
-		get_interp_local_offset (td, ins->dreg, FALSE);
+	if (mono_interp_op_dregs [opcode]) {
+		int local = ins->dreg;
+		if (!(td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK))
+			get_interp_local_offset (td, local);
+	}
 }
 
 // Generates the final code, after we are done with all the passes
