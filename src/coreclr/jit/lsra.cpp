@@ -849,7 +849,6 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].splitEdgeCount     = 0;
 #endif // TRACK_LSRA_STATS
 
-
         // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
         // insert resolution moves into those blocks.
         if (block->isBBCallAlwaysPairTail())
