@@ -623,10 +623,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Android.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Android.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeKeyHandle.Android.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeKeyHandle.Android.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
              Link="Common\System\Security\Cryptography\ECAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.ImportExport.cs"

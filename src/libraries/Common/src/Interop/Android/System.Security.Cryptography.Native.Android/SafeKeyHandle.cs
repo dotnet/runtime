@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Win32.SafeHandles
+namespace System.Security.Cryptography
 {
     internal abstract class SafeKeyHandle : SafeHandle
     {
