@@ -11,7 +11,6 @@
 #include "mini.h"
 #include "mini-runtime.h"
 #include "interp/interp.h"
-#include "tasklets.h"
 #include <mono/metadata/abi-details.h>
 
 void

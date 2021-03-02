@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -482,6 +481,15 @@ namespace System.Net
                 return IsIPv6 &&
                        (_numbers![0] == 0x2001) &&
                        (_numbers![1] == 0);
+            }
+        }
+
+        /// <summary>Gets whether the address is an IPv6 Unique Local address.</summary>
+        public bool IsIPv6UniqueLocal
+        {
+            get
+            {
+                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
             }
         }
 

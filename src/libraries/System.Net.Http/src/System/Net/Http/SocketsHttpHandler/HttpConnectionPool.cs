@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -14,7 +13,6 @@ using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Text;
@@ -398,6 +396,27 @@ namespace System.Net.Http
             return GetHttpConnectionAsync(request, async, cancellationToken);
         }
 
+        private static bool IsUsableHttp11Connection(HttpConnection connection, long nowTicks, TimeSpan lifetime, bool async)
+        {
+            if (connection.LifetimeExpired(nowTicks, lifetime))
+            {
+                return false;
+            }
+
+            // Check to see if we've received anything on the connection; if we have, that's
+            // either erroneous data (we shouldn't have received anything yet) or the connection
+            // has been closed; either way, we can't use it.  If this is an async request, we
+            // perform an async read on the stream, since we're going to need to read from it
+            // anyway, and in doing so we can avoid the extra syscall.  For sync requests, we
+            // try to directly poll the socket rather than doing an async read, so that we can
+            // issue an appropriate sync read when we actually need it.  We don't have the
+            // underlying socket in all cases, though, so PollRead may fall back to an async
+            // read in some cases.
+            return async ?
+                !connection.EnsureReadAheadAndPollRead() :
+                !connection.PollRead();
+        }
+
         private ValueTask<HttpConnection?> GetOrReserveHttp11ConnectionAsync(bool async, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -405,25 +424,24 @@ namespace System.Net.Http
                 return ValueTask.FromCanceled<HttpConnection?>(cancellationToken);
             }
 
-            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+            List<CachedConnection> idleConnections = _idleConnections;
             long nowTicks = Environment.TickCount64;
-            List<CachedConnection> list = _idleConnections;
 
-            // Try to find a usable cached connection.
+            // Look for a usable idle connection.
             // If we can't find one, we will either wait for one to become available (if at the connection limit)
             // or just increment the connection count and return null so the caller can create a new connection.
             TaskCompletionSourceWithCancellation<HttpConnection?> waiter;
             while (true)
             {
-                CachedConnection cachedConnection;
+                HttpConnection connection;
                 lock (SyncObj)
                 {
-                    if (list.Count > 0)
+                    if (idleConnections.Count > 0)
                     {
                         // We have a cached connection that we can attempt to use.
                         // Test it below outside the lock, to avoid doing expensive validation while holding the lock.
-                        cachedConnection = list[list.Count - 1];
-                        list.RemoveAt(list.Count - 1);
+                        connection = idleConnections[idleConnections.Count - 1]._connection;
+                        idleConnections.RemoveAt(idleConnections.Count - 1);
                     }
                     else
                     {
@@ -456,35 +474,16 @@ namespace System.Net.Http
                     }
                 }
 
-                HttpConnection conn = cachedConnection._connection;
-                if (!conn.LifetimeExpired(nowTicks, pooledConnectionLifetime))
+                if (IsUsableHttp11Connection(connection, nowTicks, _poolManager.Settings._pooledConnectionLifetime, async))
                 {
-                    // Check to see if we've received anything on the connection; if we have, that's
-                    // either erroneous data (we shouldn't have received anything yet) or the connection
-                    // has been closed; either way, we can't use it.  If this is an async request, we
-                    // perform an async read on the stream, since we're going to need to read from it
-                    // anyway, and in doing so we can avoid the extra syscall.  For sync requests, we
-                    // try to directly poll the socket rather than doing an async read, so that we can
-                    // issue an appropriate sync read when we actually need it.  We don't have the
-                    // underlying socket in all cases, though, so PollRead may fall back to an async
-                    // read in some cases.
-                    bool validConnection = async ?
-                        !conn.EnsureReadAheadAndPollRead() :
-                        !conn.PollRead();
-
-                    if (validConnection)
-                    {
-                        // We found a valid connection.  Return it.
-                        if (NetEventSource.Log.IsEnabled()) conn.Trace("Found usable connection in pool.");
-                        return new ValueTask<HttpConnection?>(conn);
-                    }
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable connection in pool.");
+                    return new ValueTask<HttpConnection?>(connection);
                 }
-
-                // We got a connection, but it was already closed by the server or the
-                // server sent unexpected data or the connection is too old.  In any case,
-                // we can't use the connection, so get rid of it and loop around to try again.
-                if (NetEventSource.Log.IsEnabled()) conn.Trace("Found invalid connection in pool.");
-                conn.Dispose();
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Found invalid connection in pool.");
+                    connection.Dispose();
+                }
             }
 
             // We are at the connection limit. Wait for an available connection or connection count.
@@ -1773,7 +1772,7 @@ namespace System.Net.Http
 
                 // Find the first item which needs to be removed.
                 int freeIndex = 0;
-                while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
+                while (freeIndex < list.Count && list[freeIndex].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                 {
                     freeIndex++;
                 }
@@ -1791,7 +1790,7 @@ namespace System.Net.Http
                     {
                         // Look for the first item to be kept.  Along the way, any
                         // that shouldn't be kept are disposed of.
-                        while (current < list.Count && !list[current].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout, poll: true))
+                        while (current < list.Count && !list[current].IsUsable(nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                         {
                             toDispose.Add(list[current]._connection);
                             current++;
@@ -1910,7 +1909,6 @@ namespace System.Net.Http
             /// <param name="nowTicks">The current tick count.  Passed in to amortize the cost of calling Environment.TickCount.</param>
             /// <param name="pooledConnectionLifetime">How long a connection can be open to be considered reusable.</param>
             /// <param name="pooledConnectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
-            /// <param name="poll">true to poll the connection to check if it's usable; otherwise, false. Defaults to false.</param>
             /// <returns>
             /// true if we believe the connection can be reused; otherwise, false.  There is an inherent race condition here,
             /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,
@@ -1921,8 +1919,7 @@ namespace System.Net.Http
             public bool IsUsable(
                 long nowTicks,
                 TimeSpan pooledConnectionLifetime,
-                TimeSpan pooledConnectionIdleTimeout,
-                bool poll = false)
+                TimeSpan pooledConnectionIdleTimeout)
             {
                 // Validate that the connection hasn't been idle in the pool for longer than is allowed.
                 if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
@@ -1932,21 +1929,7 @@ namespace System.Net.Http
                     return false;
                 }
 
-                // Validate that the connection hasn't been alive for longer than is allowed.
-                if (_connection.LifetimeExpired(nowTicks, pooledConnectionLifetime))
-                {
-                    return false;
-                }
-
-                // Validate that the connection hasn't received any stray data while in the pool.
-                if (poll && _connection.PollRead())
-                {
-                    if (NetEventSource.Log.IsEnabled()) _connection.Trace($"Connection no longer usable. Unexpected data received.");
-                    return false;
-                }
-
-                // The connection is usable.
-                return true;
+                return IsUsableHttp11Connection(_connection, nowTicks, pooledConnectionLifetime, false);
             }
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);

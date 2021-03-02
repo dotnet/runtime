@@ -282,10 +282,56 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushWithResize(T item)
         {
-            Array.Resize(ref _array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
+            Debug.Assert(_size == _array.Length);
+            EnsureCapacityCore(_size + 1);
             _array[_size] = item;
             _version++;
             _size++;
+        }
+
+        /// <summary>
+        /// Ensures that the capacity of this Stack is at least the specified <paramref name="capacity"/>.
+        /// If the current capacity of the Stack is less than specified <paramref name="capacity"/>,
+        /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_array.Length < capacity)
+            {
+                EnsureCapacityCore(capacity);
+                _version++;
+            }
+
+            return _array.Length;
+        }
+
+        private void EnsureCapacityCore(int capacity)
+        {
+            Debug.Assert(capacity >= 0);
+
+            if (_array.Length < capacity)
+            {
+                // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
+                const int MaxArrayLength = 0X7FEFFFFF;
+
+                int newcapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
+
+                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast.
+                if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
+
+                // If computed capacity is still less than specified, set to the original argument.
+                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+                if (newcapacity < capacity) newcapacity = capacity;
+
+                Array.Resize(ref _array, newcapacity);
+            }
         }
 
         // Copies the Stack to an array, in the same order Pop would return the items.

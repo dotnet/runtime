@@ -71,7 +71,6 @@ namespace System.Reflection.Emit
         private PackingSize packing_size;
         private IntPtr generic_container;
         private GenericTypeParameterBuilder[]? generic_params;
-        private object? permissions;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
@@ -1107,7 +1106,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type,
                                                 BindingFlags bindingAttr)
         {
@@ -1115,7 +1114,7 @@ namespace System.Reflection.Emit
             return created!.GetMember(name, type, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             check_created();

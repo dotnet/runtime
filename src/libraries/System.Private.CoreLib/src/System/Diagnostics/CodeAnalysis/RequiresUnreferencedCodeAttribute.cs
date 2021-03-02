@@ -12,7 +12,12 @@ namespace System.Diagnostics.CodeAnalysis
     /// code from an application.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    public sealed class RequiresUnreferencedCodeAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class RequiresUnreferencedCodeAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RequiresUnreferencedCodeAttribute"/> class

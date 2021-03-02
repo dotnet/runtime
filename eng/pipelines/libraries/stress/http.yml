@@ -10,7 +10,7 @@ schedules:
   displayName: HttpStress nightly run
   branches:
     include:
-    - master
+    - main
 
 variables:
   - template: ../variables.yml

@@ -1106,7 +1106,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
 
                     Assert.True(
                         e is PlatformNotSupportedException || e is CryptographicException,
-                        "e is PlatformNotSupportedException || e is CryptographicException");
+                        $"e should be PlatformNotSupportedException or CryptographicException.\n\te is {e.ToString()}");
                 }
             }
         }

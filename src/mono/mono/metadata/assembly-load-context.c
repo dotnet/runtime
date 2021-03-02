@@ -1,8 +1,6 @@
 #include "config.h"
 #include "mono/utils/mono-compiler.h"
 
-#ifdef ENABLE_NETCORE // MonoAssemblyLoadContext support only in netcore Mono
-
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/exception-internals.h"
@@ -287,7 +285,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	aname_str = mono_stringify_assembly_name (aname);
 
-	MonoStringHandle aname_obj = mono_string_new_handle (mono_alc_domain (alc), aname_str, error);
+	MonoStringHandle aname_obj = mono_string_new_handle (aname_str, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
@@ -410,7 +408,3 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 	return result;
 }
-
-#endif /* ENABLE_NETCORE */
-
-MONO_EMPTY_SOURCE_FILE (assembly_load_context)

@@ -70,12 +70,11 @@ namespace System.Reflection.Emit
         private Type[]? returnModOpt;
         private Type[][]? paramModReq;
         private Type[][]? paramModOpt;
-        private object? permissions;
 #endregion
 
         private RuntimeMethodInfo? created;
 
-        [DynamicDependency(nameof(permissions))]  // Automatically keeps all previous fields too due to StructLayout
+        [DynamicDependency(nameof(paramModOpt))]  // Automatically keeps all previous fields too due to StructLayout
         internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;

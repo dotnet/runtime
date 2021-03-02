@@ -2,9 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
+    <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
+    <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
+    <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
+    <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <TargetFramework>{NetCoreAppCurrent}</TargetFramework>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
-    <RuntimePackDir>{RuntimePackDir}</RuntimePackDir>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
@@ -28,21 +33,11 @@
 
   <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
   we use in dotnet/runtime repo -->
-
-  <PropertyGroup>
-    <_ILLinkTasksDirectoryRoot>$(PkgMicrosoft_NET_ILLink_Tasks)\tools\</_ILLinkTasksDirectoryRoot>
-    <_ILLinkTasksTFM>net5.0</_ILLinkTasksTFM>
-    <_ILLinkTasksDirectory>$(_ILLinkTasksDirectoryRoot)$(_ILLinkTasksTFM)\</_ILLinkTasksDirectory>
-    <ILLinkTasksAssembly>$(_ILLinkTasksDirectory)ILLink.Tasks.dll</ILLinkTasksAssembly>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.ILLink.Tasks"
                       Version="{MicrosoftNETILLinkTasksVersion}"
                       PrivateAssets="all"
-                      IsImplicitlyDefined="true"
-                      ExcludeAssets="build"
-                      GeneratePathProperty="true" />
+                      IsImplicitlyDefined="true" />
   </ItemGroup>
 
 </Project>

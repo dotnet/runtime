@@ -502,13 +502,12 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
-    INT64 size = pOwner->GetSize();
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
 
 #ifndef TARGET_UNIX
-
+    _ASSERTE(!pOwner->IsInBundle());
 
     // Let OS map file for us
 
@@ -539,19 +538,16 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
         return;
     }
 
-    DWORD offsetLowPart = (DWORD)offset;
-    DWORD offsetHighPart = (DWORD)(offset >> 32);
-
 #ifdef _DEBUG
     // Force relocs by occuping the preferred base while the actual mapping is performed
     CLRMapViewHolder forceRelocs;
     if (PEDecoder::GetForceRelocs())
     {
-        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
+        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
     }
 #endif // _DEBUG
 
-    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
     if (m_FileView == NULL)
         ThrowLastError();
     IfFailThrow(Init((void *) m_FileView));

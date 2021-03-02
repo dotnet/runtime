@@ -206,7 +206,7 @@ void
 mono_metadata_update_invoke_hook (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	if (mono_get_runtime_callbacks ()->metadata_update_published)
-		mono_get_runtime_callbacks ()->metadata_update_published (domain, alc, generation);
+		mono_get_runtime_callbacks ()->metadata_update_published (alc, generation);
 }
 
 static uint32_t update_published, update_alloc_frontier;
@@ -348,7 +348,7 @@ MonoImage*
 mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length, MonoImageOpenStatus *status)
 {
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (base_image);
-	MonoImage *dmeta_image = mono_image_open_from_data_internal (alc, (char*)dmeta_bytes, dmeta_length, TRUE, status, FALSE, TRUE, NULL, NULL);
+	MonoImage *dmeta_image = mono_image_open_from_data_internal (alc, (char*)dmeta_bytes, dmeta_length, TRUE, status, TRUE, NULL, NULL);
 
 	dmeta_image->generation = generation;
 

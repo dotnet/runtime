@@ -1523,12 +1523,9 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 
     switch (genActualType(varDsc->TypeGet()))
     {
-#if CPU_HAS_FP_SUPPORT
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return !compiler->opts.compDbgCode;
-
-#endif // CPU_HAS_FP_SUPPORT
 
         case TYP_INT:
         case TYP_LONG:
@@ -6535,6 +6532,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
+        interval->isActive    = false;
+
         // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
         // if all uses are from spill, but that adds complexity.
         if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())

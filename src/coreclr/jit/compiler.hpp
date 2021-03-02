@@ -2265,11 +2265,11 @@ inline bool Compiler::lvaIsRegArgument(unsigned varNum)
     return varDsc->lvIsRegArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
+inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
 {
     assert(varNum < lvaCount);
 
-    BOOL isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
+    bool isOriginalThisArg = (varNum == info.compThisArg) && (info.compIsStatic == false);
 
 #ifdef DEBUG
     if (isOriginalThisArg)
@@ -2294,7 +2294,7 @@ inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
     return isOriginalThisArg;
 }
 
-inline BOOL Compiler::lvaIsOriginalThisReadOnly()
+inline bool Compiler::lvaIsOriginalThisReadOnly()
 {
     return lvaArg0Var == info.compThisArg;
 }

@@ -248,7 +248,7 @@ RegMeta::CreateNewMD()
     IfFailGo(m_pStgdb->InitNew());
 
     // Set up the Module record.
-    ULONG      iRecord;
+    uint32_t   iRecord;
     ModuleRec *pModule;
     GUID       mvid;
     IfFailGo(m_pStgdb->m_MiniMd.AddModuleRecord(&pModule, &iRecord));
