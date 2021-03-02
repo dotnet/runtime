@@ -11,6 +11,7 @@
   </assembly>
   <assembly fullname="xunit.core"/>
   <assembly fullname="Microsoft.DotNet.XUnitExtensions"/>
+  <assembly fullname="mscorlib" />
   <assembly fullname="TestUtilities">
     <namespace fullname="System" />
   </assembly>
