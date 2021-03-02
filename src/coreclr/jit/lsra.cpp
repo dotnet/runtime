@@ -849,6 +849,14 @@ void LinearScan::setBlockSequence()
         blockInfo[block->bbNum].splitEdgeCount     = 0;
 #endif // TRACK_LSRA_STATS
 
+        // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
+        // insert resolution moves into those blocks.
+        if (block->isBBCallAlwaysPairTail())
+        {
+            blockInfo[block->bbNum].hasEHBoundaryIn  = true;
+            blockInfo[block->bbNum].hasEHBoundaryOut = true;
+        }
+
         bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
         for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
         {
@@ -866,15 +874,11 @@ void LinearScan::setBlockSequence()
                 }
             }
 
-            // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
-            // insert resolution moves into those blocks.
-            if (block->isBBCallAlwaysPairTail())
+            if (!block->isBBCallAlwaysPairTail() &&
+                (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail()))
             {
-                blockInfo[block->bbNum].hasEHBoundaryIn  = true;
-                blockInfo[block->bbNum].hasEHBoundaryOut = true;
-            }
-            else if (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail())
-            {
+                assert(!block->isBBCallAlwaysPairTail());
+
                 if (hasUniquePred)
                 {
                     // A unique pred with an EH out edge won't allow us to keep any variables enregistered.
@@ -1523,12 +1527,9 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 
     switch (genActualType(varDsc->TypeGet()))
     {
-#if CPU_HAS_FP_SUPPORT
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return !compiler->opts.compDbgCode;
-
-#endif // CPU_HAS_FP_SUPPORT
 
         case TYP_INT:
         case TYP_LONG:
@@ -6535,6 +6536,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
+        interval->isActive    = false;
+
         // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
         // if all uses are from spill, but that adds complexity.
         if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())
@@ -8211,6 +8214,10 @@ void LinearScan::addResolution(
                !blockInfo[block->bbNum].hasEHBoundaryIn);
         insertionPointString = "top";
     }
+
+    // We should never add resolution move inside BBCallAlwaysPairTail.
+    noway_assert(!block->isBBCallAlwaysPairTail());
+
 #endif // DEBUG
 
     JITDUMP("   " FMT_BB " %s: move V%02u from ", block->bbNum, insertionPointString, interval->varNum);
@@ -8583,7 +8590,6 @@ void LinearScan::resolveEdges()
         }
 
         unsigned    succCount       = block->NumSucc(compiler);
-        flowList*   preds           = block->bbPreds;
         BasicBlock* uniquePredBlock = block->GetUniquePred(compiler);
 
         // First, if this block has a single predecessor,

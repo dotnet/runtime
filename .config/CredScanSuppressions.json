@@ -55,7 +55,8 @@
                 "src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
                 "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs",
                 "src/libraries/System.Security.Cryptography.Csp/tests/PasswordDeriveBytesTests.cs",
-                "src/libraries/System.Security.Cryptography.Csp/tests/TrimmingTests/PasswordDeriveBytesTest.cs"
+                "src/libraries/System.Security.Cryptography.Csp/tests/TrimmingTests/PasswordDeriveBytesTest.cs",
+                "src/libraries/System.Security.Cryptography.Algorithms/tests/Rfc2898OneShotTests.cs"
             ],
             "placeholder": [
                 "\"anotherpassword\"",
@@ -67,7 +68,8 @@
                 "\"unused\"",
                 "\"wrongpassword\"",
                 "\"PasswordGoesHere\"",
-                "\"FakePasswordsAreHard\""
+                "\"FakePasswordsAreHard\"",
+                "\"tired\""
             ]
         }
     ]

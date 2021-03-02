@@ -2,12 +2,18 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true'">
     <NoWarn>$(NoWarn);CS8769</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage>SR.SystemSecurityCryptographyX509Certificates_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Use Android native crypto when ANDROID_OPENSSL_AAR is not defined.
+         TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
+    <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
+    <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
@@ -282,7 +288,8 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <!-- Used in Unix except Android (native crypto) and Apple -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -291,12 +298,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
-             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
-             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ReasonFlagsAsn.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CachedDirectoryStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CachedSystemStoreProvider.cs" />
@@ -309,8 +310,8 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\ExportProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslCertificateFinder.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
@@ -391,7 +392,26 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(IsPartialFacadeAssembly)' != 'true'">
+  <!-- Used in Android (native crypto) -->
+  <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Crypto.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Crypto.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
              Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs"
@@ -452,12 +472,6 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanSecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
-             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
-             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
@@ -526,7 +540,6 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\AppleCertificatePal.Pkcs12.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ApplePkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.OSX\CertificateData.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
@@ -535,8 +548,15 @@
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PasswordBasedEncryption.cs"
+             Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
+             Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\DigestInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DigestInfoAsn.xml</Link>
     </AsnXml>
@@ -684,11 +704,14 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Security.Cryptography.Csp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAppleCrypto)' != 'true'">
     <Reference Include="System.Diagnostics.StackTrace" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' == 'true'">
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup>
     <None Include="@(AsnXml)" />

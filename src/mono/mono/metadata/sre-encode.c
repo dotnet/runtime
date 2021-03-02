@@ -513,7 +513,7 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 
 	buflen = buf.p - buf.buf;
 	MonoArrayHandle result;
-	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	result = mono_array_new_handle (mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
 	MonoGCHandle gchandle;
 	void *base;
@@ -549,7 +549,7 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 
 	buflen = buf.p - buf.buf;
 	MonoArrayHandle result;
-	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
+	result = mono_array_new_handle (mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
 	MonoGCHandle gchandle;
 	void *base;

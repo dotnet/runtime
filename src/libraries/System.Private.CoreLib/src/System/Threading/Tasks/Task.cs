@@ -6489,7 +6489,7 @@ namespace System.Threading.Tasks
         PreferFairness = 0x01,
 
         /// <summary>
-        /// Specifies that a task will be a long-running, course-grained operation.  It provides
+        /// Specifies that a task will be a long-running, coarse-grained operation.  It provides
         /// a hint to the <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> that
         /// oversubscription may be warranted.
         /// </summary>

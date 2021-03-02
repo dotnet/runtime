@@ -144,7 +144,7 @@
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', '$(SharedFrameworkName)', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>

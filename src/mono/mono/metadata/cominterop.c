@@ -358,7 +358,6 @@ cominterop_object_is_rcw_handle (MonoObjectHandle obj, MonoRealProxyHandle *real
 
 	return  !MONO_HANDLE_IS_NULL (obj)
 		&& (klass = mono_handle_class (obj))
-		&& mono_class_is_transparent_proxy (klass)
 		&& !MONO_HANDLE_IS_NULL (*real_proxy = MONO_HANDLE_NEW_GET (MonoRealProxy, MONO_HANDLE_CAST (MonoTransparentProxy, obj), rp))
 		&& (klass = mono_handle_class (*real_proxy))
 		&& klass == mono_class_get_interop_proxy_class ();
@@ -796,17 +795,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, com_interop_proxy_get_proxy)
 
-#ifndef DISABLE_REMOTING
-		MONO_STATIC_POINTER_INIT (MonoMethod, get_transparent_proxy)
-
-			ERROR_DECL (error);
-			get_transparent_proxy = mono_class_get_method_from_name_checked (mono_defaults.real_proxy_class, "GetTransparentProxy", 0, 0, error);
-			mono_error_assert_ok (error);
-
-		MONO_STATIC_POINTER_INIT_END (MonoMethod, get_transparent_proxy)
-#else
 		static MonoMethod* const get_transparent_proxy = NULL; // FIXME?
-#endif
 
 		mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_interop_proxy_class ()));
 
@@ -1806,7 +1795,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 	 * is called by the corresponding real proxy to create the real RCW.
 	 * Constructor does not need to be called. Will be called later.
 	 */
-	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+	MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return mono_object_new_alloc_by_vtable (vtable, error);
 }
@@ -3229,21 +3218,21 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 		return NULL_HANDLE_STRING;
 #ifdef HOST_WIN32
 #if HAVE_API_SUPPORT_WIN32_BSTR
-	return mono_string_new_utf16_handle (mono_domain_get (), bstr, SysStringLen ((BSTR)bstr), error);
+	return mono_string_new_utf16_handle (bstr, SysStringLen ((BSTR)bstr), error);
 #else
-	return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+	return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
 #endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT)
 #endif
-		return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+		return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
 #ifndef DISABLE_COM
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		glong written = 0;
 		// FIXME mono_string_new_utf32_handle to combine g_ucs4_to_utf16 and mono_string_new_utf16_handle.
 		gunichar2* utf16 = g_ucs4_to_utf16 ((const gunichar *)bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		MonoStringHandle res = mono_string_new_utf16_handle (mono_domain_get (), utf16, written, error);
+		MonoStringHandle res = mono_string_new_utf16_handle (utf16, written, error);
 		g_free (utf16);
 		return res;
 	} else {
@@ -4236,7 +4225,7 @@ mono_cominterop_get_com_interface_internal (gboolean icall, MonoObjectHandle obj
 	if (cominterop_object_is_rcw_handle (object, &real_proxy)) {
 		MonoClass *klass = NULL;
 		klass = mono_handle_class (object);
-		if (!mono_class_is_transparent_proxy (klass)) {
+		if (TRUE) {
 			g_assertf (!icall, "Class is not transparent");
 			mono_error_set_invalid_operation (error, "Class is not transparent");
 			return NULL;

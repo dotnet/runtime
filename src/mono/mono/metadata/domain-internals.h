@@ -204,8 +204,6 @@ struct _MonoJitInfo {
 	guint32     unwind_info;
 	int         code_size;
 	guint32     num_clauses:15;
-	/* Whenever the code is domain neutral or 'shared' */
-	gboolean    domain_neutral:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
 	gboolean    has_arch_eh_info:1;
@@ -253,17 +251,6 @@ struct _MonoAppContext {
 	gpointer *static_data;
 	ContextStaticData *data;
 };
-
-/* Lock-free allocator */
-typedef struct {
-	guint8 *mem;
-	gpointer prev;
-	int size, pos;
-} LockFreeMempoolChunk;
-
-typedef struct {
-	LockFreeMempoolChunk *current, *chunks;
-} LockFreeMempool;
 
 typedef struct _MonoThunkFreeList {
 	guint32 size;
@@ -319,8 +306,6 @@ struct _MonoDomain {
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
-	/* maps remote class key -> MonoRemoteClass */
-	GHashTable         *proxy_vtable_hash;
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	mono_mutex_t    jit_code_hash_lock;
@@ -337,7 +322,6 @@ struct _MonoDomain {
 	/* Used when loading assemblies */
 	gchar **search_path;
 	gchar *private_bin_path;
-	LockFreeMempool *lock_free_mp;
 	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
@@ -355,22 +339,8 @@ struct _MonoDomain {
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
 
-	GHashTable	   *generic_virtual_cases;
-
-	/* Information maintained by the JIT engine */
-	gpointer runtime_info;
-
-	/* Information maintained by mono-debug.c */
-	gpointer debug_info;
-
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
-
-	/* Contains the compiled runtime invoke wrapper used by async resylt creation to capture thread context*/
-	gpointer            capture_context_runtime_invoke;
-
-	/* Contains the compiled method used by async resylt creation to capture thread context*/
-	gpointer            capture_context_method;
 
 	/* Cache function pointers for architectures  */
 	/* that require wrappers */
@@ -383,10 +353,6 @@ struct _MonoDomain {
 	gboolean throw_unobserved_task_exceptions;
 
 	guint32 execution_context_field_offset;
-
-	GSList *alcs;
-	MonoAssemblyLoadContext *default_alc;
-	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
 };
 
 typedef struct  {
@@ -425,16 +391,6 @@ mono_install_runtime_load  (MonoLoadFunc func);
 
 MonoDomain*
 mono_runtime_load (const char *filename, const char *runtime_version);
-
-typedef void (*MonoCreateDomainFunc) (MonoDomain *domain);
-
-void
-mono_install_create_domain_hook (MonoCreateDomainFunc func);
-
-typedef void (*MonoFreeDomainFunc) (MonoDomain *domain);
-
-void
-mono_install_free_domain_hook (MonoFreeDomainFunc func);
 
 void
 mono_runtime_quit_internal (void);
@@ -475,25 +431,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
-
-// TODO: remove these on netcore, we should always be explicit about allocating from ALCs
-//#ifndef ENABLE_NETCORE
-gpointer
-mono_domain_alloc  (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc(domain, size) (g_cast (mono_domain_alloc ((domain), (size))))
-
-gpointer
-mono_domain_alloc0 (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
-
-//#endif
-
-gpointer
-mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
 void
 mono_domain_unset (void);
@@ -582,36 +519,10 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain);
-
-static inline void
-mono_domain_alcs_lock (MonoDomain *domain)
-{
-	mono_coop_mutex_lock (&domain->alcs_lock);
-}
-
-static inline void
-mono_domain_alcs_unlock (MonoDomain *domain)
-{
-	mono_coop_mutex_unlock (&domain->alcs_lock);
-}
-
-static inline
-MonoAssemblyLoadContext *
-mono_domain_ambient_alc (MonoDomain *domain)
-{
-	/*
-	 * FIXME: All the callers of mono_domain_ambient_alc should get an ALC
-	 * passed to them from their callers.
-	 */
-	return mono_domain_default_alc (domain);
-}
-
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {
-	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline MonoMemoryManager *

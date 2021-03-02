@@ -216,8 +216,8 @@ CMiniMdRW::ApplyDelta(
 {
     HRESULT hr = S_OK;
     ULONG   iENC;       // Loop control.
-    ULONG   iRid;       // RID of some record.
-    ULONG   iNew;       // RID of a new record.
+    RID     iRid;       // RID of some record.
+    RID     iNew;       // RID of a new record.
     int     i;          // Loop control.
     ULONG   ixTbl;      // A table.
 

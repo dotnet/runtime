@@ -85,6 +85,11 @@ jobs:
         # Limiting interp runs as we don't need as much coverage.
         - Debian.9.Amd64.Open
 
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - OSX.1100.ARM64.Open
+
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:

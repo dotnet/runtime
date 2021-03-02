@@ -3673,4 +3673,13 @@
   <data name="ResourceManager_ReflectionNotAllowed" xml:space="preserve">
     <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
   </data>
+  <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
+    <value>The assembly can not be edited or changed.</value>
+  </data>
+  <data name="InvalidOperation_EditFailed" xml:space="preserve">
+    <value>The assembly update failed.</value>
+  </data>
+  <data name="NotSupported_MethodBodyReplacement" xml:space="preserve">
+    <value>Method body replacement not supported in this runtime.</value>
+  </data>
 </root>

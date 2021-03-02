@@ -473,7 +473,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
-        SourceDir="$(BuildDir)"
+        AppDir="$(BuildDir)"
         OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />

@@ -36,7 +36,7 @@
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
 /src/mono/mono/mini/*riscv* @alexrp
 /src/mono/mono/mini/*type-check* @lambdageek
-/src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @DavidKarlas @lambdageek
+/src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
 /src/mono/mono/mini/interp/* @BrzVlad @vargaz
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
