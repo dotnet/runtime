@@ -51,13 +51,11 @@ mono_alc_create (gboolean collectible)
 {
 	MonoAssemblyLoadContext *alc = NULL;
 
-	alcs_lock ();
-
 	alc = g_new0 (MonoAssemblyLoadContext, 1);
 	mono_alc_init (alc, collectible);
 
+	alcs_lock ();
 	alcs = g_slist_prepend (alcs, alc);
-
 	alcs_unlock ();
 
 	return alc;
