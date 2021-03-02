@@ -151,7 +151,7 @@ namespace System.Security.Cryptography
                         tmp.CopyTo(destination);
                     }
 
-                    CryptographicOperations.ZeroMemory(tmp.Slice(0, bytesWritten));
+                    CryptographicOperations.ZeroMemory(tmp);
                 }
 
                 if (rent != null)

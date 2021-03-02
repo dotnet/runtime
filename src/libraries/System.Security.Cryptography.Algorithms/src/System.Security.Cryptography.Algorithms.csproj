@@ -480,7 +480,6 @@
              Link="Common\System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\Pbkdf2Implementation.Unix.cs" />
@@ -616,6 +615,7 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' == 'true'">
@@ -644,6 +644,7 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Android.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs" />
+    <Compile Include="Internal\Cryptography\HashProviderDispenser.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.cs"/>
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
