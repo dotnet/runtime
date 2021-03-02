@@ -288,7 +288,7 @@ namespace System.Globalization.Tests
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "I", "i" };
             }
@@ -303,7 +303,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [MemberData(nameof(ToLower_TestData))]
         public void ToLower(string name, string str, string expected)
         {
@@ -411,7 +411,7 @@ namespace System.Globalization.Tests
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "i", "I" };
             }
@@ -426,7 +426,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [Theory]
         [MemberData(nameof(ToUpper_TestData))]
         public void ToUpper(string name, string str, string expected)
         {

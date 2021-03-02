@@ -35,7 +35,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void Parent_ParentChain()
         {
-            if (PlatformDetection.IsNotPredefinedCulturesOnly)
+            if (PlatformDetection.IsNotBrowser)
             {
                 CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");
                 Assert.Equal("uz-Cyrl", myExpectParentCulture.Parent.Name);
