@@ -28,7 +28,6 @@
 
 using System;
 using System.Collections.Generic;
-
 using Mono.Linker.Steps;
 
 namespace Mono.Linker
@@ -38,10 +37,12 @@ namespace Mono.Linker
 	{
 
 		readonly List<IStep> _steps;
+		public List<IMarkHandler> MarkHandlers { get; }
 
 		public Pipeline ()
 		{
 			_steps = new List<IStep> ();
+			MarkHandlers = new List<IMarkHandler> ();
 		}
 
 		public void PrependStep (IStep step)
@@ -54,6 +55,11 @@ namespace Mono.Linker
 			_steps.Add (step);
 		}
 
+		public void AppendMarkHandler (IMarkHandler step)
+		{
+			MarkHandlers.Add (step);
+		}
+
 		public void AddStepBefore (Type target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
@@ -62,8 +68,7 @@ namespace Mono.Linker
 					return;
 				}
 			}
-			string msg = String.Format ("Step {0} could not be inserted before (not found) {1}", step, target);
-			throw new InvalidOperationException (msg);
+			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
 		}
 
 		public void AddStepBefore (IStep target, IStep step)
@@ -74,6 +79,18 @@ namespace Mono.Linker
 					return;
 				}
 			}
+			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
+		}
+
+		public void AddMarkHandlerBefore (IMarkHandler target, IMarkHandler step)
+		{
+			for (int i = 0; i < MarkHandlers.Count; i++) {
+				if (MarkHandlers[i] == target) {
+					MarkHandlers.Insert (i, step);
+					return;
+				}
+			}
+			throw new InternalErrorException ($"Step {step} could not be inserted before (not found) {target}");
 		}
 
 		public void ReplaceStep (Type target, IStep step)
@@ -93,8 +110,7 @@ namespace Mono.Linker
 					return;
 				}
 			}
-			string msg = String.Format ("Step {0} could not be inserted after (not found) {1}", step, target);
-			throw new InvalidOperationException (msg);
+			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
 		}
 
 		public void AddStepAfter (IStep target, IStep step)
@@ -108,6 +124,21 @@ namespace Mono.Linker
 					return;
 				}
 			}
+			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
+		}
+
+		public void AddMarkHandlerAfter (IMarkHandler target, IMarkHandler step)
+		{
+			for (int i = 0; i < MarkHandlers.Count; i++) {
+				if (MarkHandlers[i] == target) {
+					if (i == MarkHandlers.Count - 1)
+						MarkHandlers.Add (step);
+					else
+						MarkHandlers.Insert (i + 1, step);
+					return;
+				}
+			}
+			throw new InternalErrorException ($"Step {step} could not be inserted after (not found) {target}");
 		}
 
 		public void RemoveStep (Type target)
@@ -138,6 +169,15 @@ namespace Mono.Linker
 		public IStep[] GetSteps ()
 		{
 			return _steps.ToArray ();
+		}
+
+		public void InitializeMarkHandlers (LinkContext context, MarkContext markContext)
+		{
+			while (MarkHandlers.Count > 0) {
+				IMarkHandler markHandler = MarkHandlers[0];
+				markHandler.Initialize (context, markContext);
+				MarkHandlers.Remove (markHandler);
+			}
 		}
 
 		public bool ContainsStep (Type type)
