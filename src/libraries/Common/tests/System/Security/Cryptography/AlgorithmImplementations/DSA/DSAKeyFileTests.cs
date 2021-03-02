@@ -4,6 +4,7 @@
 using System.Text;
 using Test.Cryptography;
 using Xunit;
+using System.Security.Cryptography.Encryption.RC2.Tests;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
@@ -105,8 +106,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
                 DSATestData.Dsa2048DeficientXParameters);
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
@@ -126,8 +126,7 @@ UCouQg==",
                 DSATestData.Dsa512Parameters);
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)

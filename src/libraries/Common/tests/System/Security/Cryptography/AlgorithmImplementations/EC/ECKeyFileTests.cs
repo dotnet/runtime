@@ -4,6 +4,7 @@
 using System.Text;
 using Test.Cryptography;
 using Xunit;
+using System.Security.Cryptography.Encryption.RC2.Tests;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -200,8 +201,7 @@ qtlbnispri1a/EghiaPQ0po=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"
