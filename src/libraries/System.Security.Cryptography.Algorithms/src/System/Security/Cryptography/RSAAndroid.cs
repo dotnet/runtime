@@ -722,7 +722,7 @@ namespace System.Security.Cryptography
 
                 if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
                 {
-                    processor.EncodePkcs1(hash, encodedBytes, KeySize);
+                    processor.PadPkcs1Signature(hash, encodedBytes);
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
@@ -811,7 +811,12 @@ namespace System.Security.Cryptography
 
                     if (padding == RSASignaturePadding.Pkcs1)
                     {
-                        return processor.VerifyPkcs1(hash, unwrapped, KeySize);
+                        byte[] repadRent = CryptoPool.Rent(unwrapped.Length);
+                        Span<byte> repadded = repadRent.AsSpan(0, requiredBytes);
+                        processor.PadPkcs1Signature(hash, repadRent);
+                        bool valid = CryptographicOperations.FixedTimeEquals(repadded, unwrapped);
+                        CryptoPool.Return(repadRent, requiredBytes);
+                        return valid;
                     }
                     else if (padding == RSASignaturePadding.Pss)
                     {
