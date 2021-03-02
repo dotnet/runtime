@@ -130,8 +130,7 @@ namespace System.IO
             Write(buffer);
         }
 
-        // this method just disposes everything as there is no buffer here
-        // and we don't really need to Flush anything here
+        // this method just disposes everything (no buffer, no need to flush)
         public override ValueTask DisposeAsync()
         {
             if (_fileHandle != null && !_fileHandle.IsClosed)
@@ -143,10 +142,9 @@ namespace System.IO
             return ValueTask.CompletedTask;
         }
 
-        // this method in the future will be called in no-buffering scenarios
         internal sealed override void DisposeInternal(bool disposing) => Dispose(disposing);
 
-        // this method is called from BufferedStream.Dispose so the content is already flushed
+        // this method just disposes everything (no buffer, no need to flush)
         protected override void Dispose(bool disposing)
         {
             if (_fileHandle != null && !_fileHandle.IsClosed)
@@ -154,10 +152,6 @@ namespace System.IO
                 _fileHandle.ThreadPoolBinding?.Dispose();
                 _fileHandle.Dispose();
             }
-
-            // Don't set the buffer to null, to avoid a NullReferenceException
-            // when users have a race condition in their code (i.e. they call
-            // Close when calling another method on Stream like Read).
         }
 
         public sealed override void Flush() => Flush(flushToDisk: false); // we have nothing to flush as there is no buffer here
