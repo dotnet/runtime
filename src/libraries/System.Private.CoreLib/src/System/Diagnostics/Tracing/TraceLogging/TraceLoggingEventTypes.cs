@@ -48,6 +48,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="types">
         /// The types of the fields in the event. This value must not be null.
         /// </param>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         internal TraceLoggingEventTypes(
             string name,
             EventTags tags,
@@ -82,6 +83,7 @@ namespace System.Diagnostics.Tracing
         {
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         internal TraceLoggingEventTypes(
             string name,
             EventTags tags,
@@ -180,6 +182,7 @@ namespace System.Diagnostics.Tracing
             this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
                 this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
             if (paramInfos == null)
@@ -197,6 +200,7 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private static TraceLoggingTypeInfo[] MakeArray(Type[] types)
         {
             if (types == null)

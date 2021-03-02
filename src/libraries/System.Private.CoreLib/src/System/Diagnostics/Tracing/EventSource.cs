@@ -1184,6 +1184,7 @@ namespace System.Diagnostics.Tracing
         ///    }
         /// </code>
         /// </remarks>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         [CLSCompliant(false)]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventSource.EventData* data)
         {
@@ -1215,6 +1216,7 @@ namespace System.Diagnostics.Tracing
         ///    }
         /// </code>
         /// </remarks>
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
@@ -1765,6 +1767,7 @@ namespace System.Diagnostics.Tracing
             return dispatcher;
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -1890,6 +1893,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
@@ -2044,6 +2048,7 @@ namespace System.Diagnostics.Tracing
         // ETW and EventPipe providers. It is not a general purpose API, it will
         // log the message with Level=LogAlways and Keywords=All to make sure whoever
         // is listening gets the message.
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private unsafe void WriteEventString(string msgString)
         {
 #if FEATURE_MANAGED_ETW || FEATURE_PERFTRACING

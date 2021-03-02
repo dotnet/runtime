@@ -381,6 +381,7 @@ namespace System.Diagnostics.Tracing
             return type.IsGenericType && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
             Type dataType,
             List<Type> recursionCheck)
