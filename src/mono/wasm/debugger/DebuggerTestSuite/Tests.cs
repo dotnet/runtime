@@ -1008,9 +1008,9 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task DebugAssemblyWithDependencyOnCecilLoad()
+        public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
         {
-            int line = 12;
+            int line = 7;
             await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
                     Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
