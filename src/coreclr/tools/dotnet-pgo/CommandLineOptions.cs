@@ -134,6 +134,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
+                ExcludeEventsAfter = Double.MinValue;
                 syntax.DefineOption(
                     name: "exclude-events-before",
                     value: ref ExcludeEventsBefore,
@@ -141,6 +142,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     valueConverter: Convert.ToDouble,
                     requireValue: true);
 
+                ExcludeEventsAfter = Double.MaxValue;
                 syntax.DefineOption(
                     name: "exclude-events-after",
                     value: ref ExcludeEventsAfter,

@@ -21,6 +21,7 @@
     <PackageTags>Optimization</PackageTags>
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
