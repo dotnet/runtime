@@ -162,7 +162,7 @@ Submit a PR request with the updated version, wait for all checks to pass and fo
 },
 ```
 
-Copy the docker image tag and replace it in [platform-matrix.yml](https://github.com/dotnet/runtime/blob/master/eng/pipelines/common/platform-matrix.yml#L172)
+Copy the docker image tag and replace it in [platform-matrix.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/common/platform-matrix.yml#L172)
 
 ```
 container:

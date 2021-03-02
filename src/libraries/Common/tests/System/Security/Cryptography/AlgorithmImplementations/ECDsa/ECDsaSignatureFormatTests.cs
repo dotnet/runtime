@@ -42,7 +42,10 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 yield return OpenKey(EccTestData.BrainpoolP160r1Key1);
             }
 
-            yield return CreateKey(ECCurve.NamedCurves.nistP384);
+            if (ECDsaFactory.IsCurveValid(ECCurve.NamedCurves.nistP384.Oid))
+            {
+                yield return CreateKey(ECCurve.NamedCurves.nistP384);
+            }
 
             yield return OpenKey(EccTestData.GetNistP521DiminishedCoordsParameters());
 

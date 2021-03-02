@@ -320,18 +320,40 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         }
         if (jitResult == CORJIT_SKIPPED)
         {
-            // For altjit, treat SKIPPED as OK
-#ifdef TARGET_AMD64
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
+            SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
+            bool matchesTargetArch              = false;
+
+            switch (pParam->pThis->mc->repGetExpectedTargetArchitecture())
+            {
+                case IMAGE_FILE_MACHINE_AMD64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_AMD64);
+                    break;
+
+                case IMAGE_FILE_MACHINE_I386:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_X86);
+                    break;
+
+                case IMAGE_FILE_MACHINE_ARMNT:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM);
+                    break;
+
+                case IMAGE_FILE_MACHINE_ARM64:
+                    matchesTargetArch = (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64);
+                    break;
+
+                default:
+                    LogError("Unknown target architecture");
+                break;
+            }
+
+            // If the target architecture doesn't match the expected target architecture
+            // then we have an altjit, so treat SKIPPED as OK to avoid counting the compilation as failed.
+
+            if (!matchesTargetArch)
             {
                 jitResult = CORJIT_OK;
             }
-#elif defined(TARGET_X86)
-            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
-            {
-                jitResult = CORJIT_OK;
-            }
-#endif
+
         }
         if (jitResult == CORJIT_OK)
         {

@@ -2352,29 +2352,29 @@ public:
             ehnBlockType = FaultNode;
         }
 
-        BOOL ehnIsTryBlock()
+        bool ehnIsTryBlock()
         {
             return ehnBlockType == TryNode;
         }
-        BOOL ehnIsFilterBlock()
+        bool ehnIsFilterBlock()
         {
             return ehnBlockType == FilterNode;
         }
-        BOOL ehnIsHandlerBlock()
+        bool ehnIsHandlerBlock()
         {
             return ehnBlockType == HandlerNode;
         }
-        BOOL ehnIsFinallyBlock()
+        bool ehnIsFinallyBlock()
         {
             return ehnBlockType == FinallyNode;
         }
-        BOOL ehnIsFaultBlock()
+        bool ehnIsFaultBlock()
         {
             return ehnBlockType == FaultNode;
         }
 
         // returns true if there is any overlap between the two nodes
-        static BOOL ehnIsOverlap(pEHNodeDsc node1, pEHNodeDsc node2)
+        static bool ehnIsOverlap(pEHNodeDsc node1, pEHNodeDsc node2)
         {
             if (node1->ehnStartOffset < node2->ehnStartOffset)
             {
@@ -2387,7 +2387,7 @@ public:
         }
 
         // fails with BADCODE if inner is not completely nested inside outer
-        static BOOL ehnIsNested(pEHNodeDsc inner, pEHNodeDsc outer)
+        static bool ehnIsNested(pEHNodeDsc inner, pEHNodeDsc outer)
         {
             return ((inner->ehnStartOffset >= outer->ehnStartOffset) && (inner->ehnEndOffset <= outer->ehnEndOffset));
         }
@@ -3543,8 +3543,8 @@ public:
 
     bool lvaIsParameter(unsigned varNum);
     bool lvaIsRegArgument(unsigned varNum);
-    BOOL lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
-    BOOL lvaIsOriginalThisReadOnly();           // return TRUE if there is no place in the code
+    bool lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
+    bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
     // For x64 this is 3, 5, 6, 7, >8 byte structs that are passed by reference.
@@ -4368,7 +4368,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static BOOL impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -4396,9 +4396,9 @@ private:
 
     GenTree* impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclTypeInfo);
 
-    BOOL impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
+    bool impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
 
-    BOOL impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
+    bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
                                                             GenTreeCall::Use* additionalCallArgs,
                                                             GenTree*          dereferencedAddress,
                                                             InlArgInfo*       inlArgInfo);
@@ -6539,6 +6539,7 @@ protected:
         ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
                                    // assignment
         unsigned csdIndex;         // 1..optCSECandidateCount
+        bool     csdIsSharedConst; // true if this CSE is a shared const
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6631,9 +6632,17 @@ protected:
         return ((key & TARGET_SIGN_BIT) != 0);
     }
 
-    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    // returns the encoded key
+    static size_t Encode_Shared_Const_CSE_Value(size_t key)
     {
-        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+        return TARGET_SIGN_BIT | (key >> CSE_CONST_SHARED_LOW_BITS);
+    }
+
+    // returns the orginal key
+    static size_t Decode_Shared_Const_CSE_Value(size_t enckey)
+    {
+        assert(Is_Shared_Const_CSE(enckey));
+        return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
 #endif // FEATURE_ANYCSE
@@ -7426,7 +7435,7 @@ public:
 
     // Get the flags
 
-    BOOL eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -7508,19 +7517,6 @@ public:
     target_size_t eeGetPageSize()
     {
         return (target_size_t)eeGetEEInfo()->osPageSize;
-    }
-
-    // Returns the frame size at which we will generate a loop to probe the stack.
-    target_size_t getVeryLargeFrameSize()
-    {
-#ifdef TARGET_ARM
-        // The looping probe code is 40 bytes, whereas the straight-line probing for
-        // the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
-        // or greater, to generate smaller code.
-        return 2 * eeGetPageSize();
-#else
-        return 3 * eeGetPageSize();
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9943,16 +9939,16 @@ public:
     // it is safe to have mismatches here (that tiCompatibleWith will not flag),
     // but when deciding if we need to reimport a block, we need to take these
     // in account
-    BOOL tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
+    bool tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
     // Returns TRUE if child is equal to or a subtype of parent.
     // normalisedForStack indicates that both types are normalised for the stack
-    BOOL tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
+    bool tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
     // Merges pDest and pSrc. Returns FALSE if merge is undefined.
     // *pDest is modified to represent the merged type.  Sets "*changed" to true
     // if this changes "*pDest".
-    BOOL tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
+    bool tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -9987,7 +9983,7 @@ public:
 
     // Merges the current verification state into the entry state of "block", return FALSE if that merge fails,
     // TRUE if it succeeds.  Further sets "*changed" to true if this changes the entry state of "block".
-    BOOL verMergeEntryStates(BasicBlock* block, bool* changed);
+    bool verMergeEntryStates(BasicBlock* block, bool* changed);
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
@@ -9995,15 +9991,15 @@ public:
                              bool bashStructToRef = false); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    BOOL verIsSDArray(const typeInfo& ti);
+    bool verIsSDArray(const typeInfo& ti);
     typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    BOOL verIsByRefLike(const typeInfo& ti);
-    BOOL verIsSafeToReturnByRef(const typeInfo& ti);
+    bool verIsByRefLike(const typeInfo& ti);
+    bool verIsSafeToReturnByRef(const typeInfo& ti);
 
     // generic type variables range over types that satisfy IsBoxable
-    BOOL verIsBoxable(const typeInfo& ti);
+    bool verIsBoxable(const typeInfo& ti);
 
     void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
                                                        DEBUGARG(unsigned line));
@@ -10028,7 +10024,7 @@ public:
                        const BYTE*             codeAddr,
                        CORINFO_CALL_INFO* callInfo DEBUGARG(const char* methodName));
 
-    BOOL verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
+    bool verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
 
     typeInfo verVerifySTIND(const typeInfo& ptr, const typeInfo& value, const typeInfo& instrType);
     typeInfo verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType);
@@ -10039,7 +10035,7 @@ public:
                         BOOL                      allowPlainStructAsThis = FALSE);
     void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
     void verVerifyThisPtrInitialised();
-    BOOL verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
+    bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
 
 #ifdef DEBUG
 

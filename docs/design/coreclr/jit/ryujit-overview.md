@@ -25,9 +25,9 @@ Depending upon the configuration, the EE and JIT may reside in the same or diffe
 implements the JIT side of the JIT/EE interfaces:
 
 * `ICorJitCompiler` – this is the interface that the JIT compiler implements. This interface is defined in
-[src/inc/corjit.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/corjit.h)
+[src/inc/corjit.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corjit.h)
 and its implementation is in
-[src/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/ee_il_dll.cpp).
+[src/jit/ee_il_dll.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/ee_il_dll.cpp).
 The following are the key methods on this interface:
   * `compileMethod` is the main entry point for the JIT. The EE passes it a `ICorJitInfo` object,
   and the "info" containing the IL, the method header, and various other useful tidbits.
@@ -38,9 +38,9 @@ The following are the key methods on this interface:
 * `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
 look up metadata tokens, traverse type signatures, compute field and vtable offsets, find method entry points,
 construct string literals, etc. This bulk of this interface is inherited from `ICorDynamicInfo` which is defined in
-[src/inc/corinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/corinfo.h). The implementation
+[src/inc/corinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corinfo.h). The implementation
 is defined in
-[src/vm/jitinterface.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/vm/jitinterface.cpp).
+[src/vm/jitinterface.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/jitinterface.cpp).
 
 # Internal Representation (IR)
 
@@ -131,7 +131,7 @@ bit vectors.
 ### Example of Post-Import IR
 
 For this snippet of code (extracted from
-[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/master/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
+[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/main/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
 
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
 
@@ -698,11 +698,11 @@ at points where accurate counts are valuable. Currently this happens before and 
 ## Instruction encoding
 
 Instruction encoding is performed by the emitter
-([emit.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/emit.h)), using the
+([emit.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/emit.h)), using the
 `insGroup`/`instrDesc` representation. The code generator calls methods on the emitter to construct `instrDescs`. The
 encodings information is captured in the following:
 
-* The "instruction" enumeration itemizes the different instructions available on each target, and is used as an index into the various encoding tables (e.g. `instInfo[]`, `emitInsModeFmtTab[]`) generated from the `instrs{tgt}.h` (e.g., [instrsxarch.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/instrsxarch.h)).
+* The "instruction" enumeration itemizes the different instructions available on each target, and is used as an index into the various encoding tables (e.g. `instInfo[]`, `emitInsModeFmtTab[]`) generated from the `instrs{tgt}.h` (e.g., [instrsxarch.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/instrsxarch.h)).
 * The skeleton encodings are contained in the tables, and then there are methods on the emitter that handle the special encoding constraints for the various instructions, addressing modes, register types, etc.
 
 ## GC Info
@@ -713,10 +713,10 @@ Reporting of live GC references is done in two ways:
 * For lclVars with tracked lifetimes, or for expression involving GC references, we report the range over which the reference is live. This is done by the emitter, which adds this information to the instruction group, and which terminates instruction groups when the GC info changes.
 
 The tracking of GC reference lifetimes is done via the `GCInfo` class in the JIT. It is declared in
-[src/jit/jitgcinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/jitgcinfo.h) (to
+[src/jit/jitgcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jitgcinfo.h) (to
 differentiate it from
-[src/inc/gcinfo.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/inc/gcinfo.h)), and implemented in
-[src/jit/gcinfo.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/gcinfo.cpp).
+[src/inc/gcinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfo.h)), and implemented in
+[src/jit/gcinfo.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/gcinfo.cpp).
 
 In a JitDump, the generated GC info can be seen following the "In gcInfoBlockHdrSave()" line.
 
@@ -729,15 +729,15 @@ Debug info consists primarily of two types of information in the JIT:
   * the `gtLclILoffs` on lclVar references (`GenTreeLclVar`)
   * The IL offsets are captured during CodeGen by calling `CodeGen::genIPmappingAdd()`, and then written to debug tables by `CodeGen::genIPmappingGen()`.
 * Mapping of user locals to location (register or stack). This is accomplished via:
-  * Struct `siVarLoc` (in [compiler.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/compiler.h)) captures the location
-  * `VarScopeDsc` ([compiler.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/compiler.h)) captures the live range of a local variable in a given location.
+  * Struct `siVarLoc` (in [compiler.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/compiler.h)) captures the location
+  * `VarScopeDsc` ([compiler.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/compiler.h)) captures the live range of a local variable in a given location.
 
 ## Exception handling
 
 Exception handling information is captured in an `EHblkDsc` for each exception handling region. Each region includes
 the first and last blocks of the try and handler regions, exception type, enclosing region, among other things. Look
-at [jiteh.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/jiteh.h) and
-[jiteh.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/jiteh.cpp), especially, for details.
+at [jiteh.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jiteh.h) and
+[jiteh.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/jiteh.cpp), especially, for details.
 Look at `Compiler::fgVerifyHandlerTab()` to see how the exception table constraints are verified.
 
 # Reading a JitDump
@@ -838,7 +838,7 @@ STMT00000 (IL 0x010...  ???)
 
 Tree nodes are identified by their `gtTreeID`. This field only exists in DEBUG builds, but is quite useful for
 debugging, since all tree nodes are created from the routine `gtNewNode` (in
-[src/jit/gentree.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/jit/gentree.cpp)). If you find a
+[src/jit/gentree.cpp](https://github.com/dotnet/runtime/blob/main/src/coreclr/jit/gentree.cpp)). If you find a
 bad tree and wish to understand how it got corrupted, you can place a conditional breakpoint at the end of
 `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 

@@ -2753,7 +2753,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 }
 
 static void
-interp_constrained_box (TransformData *td, MonoDomain *domain, MonoClass *constrained_class, MonoMethodSignature *csignature, MonoError *error)
+interp_constrained_box (TransformData *td, MonoClass *constrained_class, MonoMethodSignature *csignature, MonoError *error)
 {
 	int mt = mint_type (m_class_get_byval_arg (constrained_class));
 	StackInfo *sp = td->sp - 1 - csignature->param_count;
@@ -2784,7 +2784,7 @@ interp_get_method (MonoMethod *method, guint32 token, MonoImage *image, MonoGene
 
 /* Return FALSE if error, including inline failure */
 static gboolean
-interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
+interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
 {
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodSignature *csignature;
@@ -2901,7 +2901,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 */
 			int this_type = (td->sp - csignature->param_count - 1)->type;
 			g_assert (this_type == STACK_TYPE_I || this_type == STACK_TYPE_MP);
-			interp_constrained_box (td, domain, constrained_class, csignature, error);
+			interp_constrained_box (td, constrained_class, csignature, error);
 			return_val_if_nok (error, FALSE);
 		} else {
 			is_virtual = FALSE;
@@ -3072,7 +3072,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
-		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
+		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (target_method, error));
 		mono_error_assert_ok (error);
 	} else {
 		if (is_delegate_invoke) {
@@ -3117,7 +3117,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 					WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 					if (info) {
 						MonoMethod *pinvoke_method = info->d.managed_to_native.method;
-						imethod = mono_interp_get_imethod (domain, pinvoke_method, error);
+						imethod = mono_interp_get_imethod (pinvoke_method, error);
 						return_val_if_nok (error, FALSE);
 					}
 				}
@@ -3136,7 +3136,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			}
 		} else {
-			InterpMethod *imethod = mono_interp_get_imethod (domain, target_method, error);
+			InterpMethod *imethod = mono_interp_get_imethod (target_method, error);
 			return_val_if_nok (error, FALSE);
 
 			if (csignature->call_convention == MONO_CALL_VARARG) {
@@ -3352,7 +3352,7 @@ interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformDa
 
 	for (i = 0; i < dinfo->num_line_numbers; i++)
 		dinfo->line_numbers [i] = g_array_index (line_numbers, MonoDebugLineNumberEntry, i);
-	mono_debug_add_method (rtm->method, dinfo, rtm->domain);
+	mono_debug_add_method (rtm->method, dinfo, NULL);
 
 	mono_debug_free_method_jit_info (dinfo);
 }
@@ -3708,7 +3708,7 @@ interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr
 static void
 interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
-	MonoDomain *domain = td->rtm->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 	// Initialize the offset for the field
 	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
@@ -3817,7 +3817,7 @@ emit_convert (TransformData *td, int stype, MonoType *ftype)
 static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
-	MonoDomain *domain = td->rtm->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 	// Initialize the offset for the field
 	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
@@ -4044,7 +4044,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	MonoClassField *field;
 	MonoImage *image = m_class_get_image (method->klass);
 	InterpMethod *rtm = td->rtm;
-	MonoDomain *domain = rtm->domain;
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	int num_args = signature->hasthis + signature->param_count;
 	int arglist_local = -1;
@@ -4554,7 +4553,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			m = mono_get_method_checked (image, token, NULL, generic_context, error);
 			goto_if_nok (error, exit);
 			interp_add_ins (td, MINT_JMP);
-			td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+			td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 			goto_if_nok (error, exit);
 			td->ip += 5;
 			break;
@@ -4567,7 +4566,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (sym_seq_points && !mono_bitset_test_fast (seq_point_locs, td->ip + 5 - header->code))
 				need_seq_point = TRUE;
 
-			if (!interp_transform_call (td, method, NULL, domain, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
+			if (!interp_transform_call (td, method, NULL, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
 				goto exit;
 
 			if (need_seq_point) {
@@ -5362,7 +5361,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 
 				interp_add_ins (td, MINT_NEWOBJ_STRING);
-				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 				td->last_ins->data [1] = params_stack_size;
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -5463,7 +5462,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						}
 					}
 					// Inlining failed. Set the method to be executed as part of newobj instruction
-					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 					/* The constructor was not inlined, abort inlining of current method */
 					if (!td->aggressive_inlining)
 						INLINE_FAILURE;
@@ -5471,7 +5470,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, MINT_NEWOBJ);
 					g_assert (!m_class_is_valuetype (klass));
 					interp_ins_set_dreg (td->last_ins, dreg);
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 					td->last_ins->data [1] = params_stack_size;
 				}
 				goto_if_nok (error, exit);
@@ -5524,7 +5523,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					target_method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
 				goto_if_nok (error, exit);
 				/* td->ip is incremented by interp_transform_call */
-				if (!interp_transform_call (td, method, target_method, domain, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
+				if (!interp_transform_call (td, method, target_method, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
 					goto exit;
 				/*
 				 * CEE_UNBOX needs to push address of vtype while Nullable.Unbox returns the value type
@@ -5585,7 +5584,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					target_method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
 				goto_if_nok (error, exit);
 				/* td->ip is incremented by interp_transform_call */
-				if (!interp_transform_call (td, method, target_method, domain, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
+				if (!interp_transform_call (td, method, target_method, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
 					goto exit;
 			} else {
 				interp_add_ins (td, MINT_UNBOX);
@@ -5905,7 +5904,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoMethod *target_method = mono_class_get_method_from_name_checked (klass, "Box", 1, 0, error);
 				goto_if_nok (error, exit);
 				/* td->ip is incremented by interp_transform_call */
-				if (!interp_transform_call (td, method, target_method, domain, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
+				if (!interp_transform_call (td, method, target_method, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
 					goto exit;
 			} else if (!m_class_is_valuetype (klass)) {
 				/* already boxed, do nothing. */
@@ -6594,7 +6593,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->sp [-1].local = saved_local;
 					td->locals [saved_local].stack_offset = td->sp [-1].offset;
 
-					if (!interp_transform_call (td, method, NULL, domain, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
+					if (!interp_transform_call (td, method, NULL, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
 						goto exit;
 					break;
 				}
@@ -6946,7 +6945,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				}
 			
-				int index = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+				int index = get_data_item_index (td, mono_interp_get_imethod (m, error));
 				goto_if_nok (error, exit);
 				if (*td->ip == CEE_LDVIRTFTN) {
 					CHECK_STACK (td, 1);
@@ -8378,7 +8377,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	save_seq_points (td, jinfo);
 #ifdef ENABLE_EXPERIMENT_TIERED
 	/* debugging aid, it makes `mono_pmip` work. */
-	mono_jit_info_table_add (domain, jinfo);
+	mono_jit_info_table_add (mono_get_root_domain (), jinfo);
 #endif
 
 exit:
@@ -8417,7 +8416,7 @@ tiered_patcher (MiniTieredPatchPointContext *ctx, gpointer patchsite)
 
 	/* TODO: Force compilation here. Currently the JIT will be invoked upon
 	 *       first execution of `MINT_JIT_CALL2`. */
-	InterpMethod *rmethod = mono_interp_get_imethod (ctx->domain, m, error);
+	InterpMethod *rmethod = mono_interp_get_imethod (cm, error);
 	mono_error_assert_ok (error);
 
 	guint16 *ip = ((guint16 *) patchsite);
@@ -8449,7 +8448,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	MonoVTable *method_class_vt;
 	MonoGenericContext *generic_context = NULL;
-	MonoDomain *domain = imethod->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 	InterpMethod tmp_imethod;
 	InterpMethod *real_imethod;
 

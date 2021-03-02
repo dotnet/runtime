@@ -4,6 +4,92 @@
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/debug-internals.h>
 
+static LockFreeMempool*
+lock_free_mempool_new (void)
+{
+	return g_new0 (LockFreeMempool, 1);
+}
+
+static void
+lock_free_mempool_free (LockFreeMempool *mp)
+{
+	LockFreeMempoolChunk *chunk, *next;
+
+	chunk = mp->chunks;
+	while (chunk) {
+		next = (LockFreeMempoolChunk *)chunk->prev;
+		mono_vfree (chunk, mono_pagesize (), MONO_MEM_ACCOUNT_DOMAIN);
+		chunk = next;
+	}
+	g_free (mp);
+}
+
+/*
+ * This is async safe
+ */
+static LockFreeMempoolChunk*
+lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
+{
+	LockFreeMempoolChunk *chunk, *prev;
+	int size;
+
+	size = mono_pagesize ();
+	while (size - sizeof (LockFreeMempoolChunk) < len)
+		size += mono_pagesize ();
+	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_DOMAIN);
+	g_assert (chunk);
+	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
+	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
+	chunk->pos = 0;
+
+	/* Add to list of chunks lock-free */
+	while (TRUE) {
+		prev = mp->chunks;
+		if (mono_atomic_cas_ptr ((volatile gpointer*)&mp->chunks, chunk, prev) == prev)
+			break;
+	}
+	chunk->prev = prev;
+
+	return chunk;
+}
+
+/*
+ * This is async safe
+ */
+static gpointer
+lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
+{
+	LockFreeMempoolChunk *chunk;
+	gpointer res;
+	int oldpos;
+
+	// FIXME: Free the allocator
+
+	size = ALIGN_TO (size, 8);
+	chunk = mp->current;
+	if (!chunk) {
+		chunk = lock_free_mempool_chunk_new (mp, size);
+		mono_memory_barrier ();
+		/* Publish */
+		mp->current = chunk;
+	}
+
+	/* The code below is lock-free, 'chunk' is shared state */
+	oldpos = mono_atomic_fetch_add_i32 (&chunk->pos, size);
+	if (oldpos + size > chunk->size) {
+		chunk = lock_free_mempool_chunk_new (mp, size);
+		g_assert (chunk->pos + size <= chunk->size);
+		res = chunk->mem;
+		chunk->pos += size;
+		mono_memory_barrier ();
+		mp->current = chunk;
+	} else {
+		res = (char*)chunk->mem + oldpos;
+	}
+
+	return res;
+}
+
 static void
 memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
 {
@@ -14,6 +100,7 @@ memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboo
 
 	memory_manager->mp = mono_mempool_new ();
 	memory_manager->code_mp = mono_code_manager_new ();
+	memory_manager->lock_free_mp = lock_free_mempool_new ();
 
 	memory_manager->class_vtable_array = g_ptr_array_new ();
 
@@ -239,4 +326,10 @@ mono_mem_manager_code_foreach (MonoMemoryManager *memory_manager, MonoCodeManage
 	mono_mem_manager_lock (memory_manager);
 	mono_code_manager_foreach (memory_manager->code_mp, func, user_data);
 	mono_mem_manager_unlock (memory_manager);
+}
+
+gpointer
+(mono_mem_manager_alloc0_lock_free) (MonoMemoryManager *memory_manager, guint size)
+{
+	return lock_free_mempool_alloc0 (memory_manager->lock_free_mp, size);
 }
