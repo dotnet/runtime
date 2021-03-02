@@ -215,7 +215,7 @@
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <PropertyGroup>
-      <_WasmSrcPath Condition="'$(WasmSrcPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)</_WasmSrcPath>
+      <_WasmSrcPath Condition="'$(WasmSrcPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidDir)native\</_WasmSrcPath>
       <_WasmSrcPath Condition="'$(WasmSrcPath)' != ''">$(WasmSrcPath)</_WasmSrcPath>
 
       <EmccFlagsFile>$(_WasmSrcPath)\src\emcc-flags.txt</EmccFlagsFile>
