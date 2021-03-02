@@ -86,7 +86,7 @@ namespace System.Linq
         public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source)
             => source.SingleOrDefault(default(TSource));
 
-        public static TSource? SingleOrDefault<TSource>(this IEnumerable<TSource> source, TSource? defaultValue)
+        public static TSource SingleOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
             if (source == null)
             {

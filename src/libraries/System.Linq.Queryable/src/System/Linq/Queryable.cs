@@ -865,7 +865,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("FirstOrDefault`1", typeof(Enumerable))]
-        public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source, TSource? defaultValue)
+        public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -892,7 +892,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("FirstOrDefault`1", typeof(Enumerable))]
-        public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource? defaultValue)
+        public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -944,7 +944,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("LastOrDefault`1", typeof(Enumerable))]
-        public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source, TSource? defaultValue)
+        public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -971,7 +971,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("LastOrDefault`1", typeof(Enumerable))]
-        public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource? defaultValue)
+        public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1023,7 +1023,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("SingleOrDefault`1", typeof(Enumerable))]
-        public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source, TSource? defaultValue)
+        public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -1051,7 +1051,7 @@ namespace System.Linq
         }
 
         [DynamicDependency("SingleOrDefault`1", typeof(Enumerable))]
-        public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource? defaultValue)
+        public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate, TSource defaultValue)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));

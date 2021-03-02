@@ -33,19 +33,19 @@ namespace System.Linq
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
             source.TryGetFirst(out _);
 
-        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource? defaultValue) =>
-            source.TryGetFirst(defaultValue, out _);
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue) =>
+            source.TryGetFirst(defaultValue, out _)!;
 
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
             source.TryGetFirst(predicate, out _);
 
-        public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource? defaultValue) =>
-            source.TryGetFirst(predicate, defaultValue, out _);
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue) =>
+            source.TryGetFirst(predicate, defaultValue, out _)!;
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, out bool found) =>
             source.TryGetFirst(default(TSource), out found);
 
-        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, TSource? defaultValue, out bool found)
+        private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, TSource defaultValue, out bool found)
         {
             if (source == null)
             {
@@ -82,7 +82,7 @@ namespace System.Linq
         }
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found) =>
-            source.TryGetFirst(predicate, default(TSource), out found);
+            source.TryGetFirst(predicate, default, out found);
 
         private static TSource? TryGetFirst<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource? defaultValue, out bool found)
         {

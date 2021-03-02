@@ -32,17 +32,17 @@ namespace System.Linq
 
         public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source)
             => source.TryGetLast(out _);
-        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source, TSource? defaultValue)
-            => source.TryGetLast(defaultValue, out _);
+        public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
+            => source.TryGetLast(defaultValue, out _)!;
 
         public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
             => source.TryGetLast(predicate, out bool _);
-        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource? defaultValue)
-            => source.TryGetLast(predicate, defaultValue, out bool _);
+        public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
+            => source.TryGetLast(predicate, defaultValue, out bool _)!;
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, out bool found)
-            => source.TryGetLast(default(TSource?), out found);
-        private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, TSource? defaultValue, out bool found)
+            => source.TryGetLast(default(TSource), out found);
+        private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, TSource defaultValue, out bool found)
         {
             if (source == null)
             {
@@ -87,7 +87,7 @@ namespace System.Linq
         }
 
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, out bool found)
-            => source.TryGetLast(predicate, default(TSource?), out found);
+            => source.TryGetLast(predicate, default, out found);
         private static TSource? TryGetLast<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource? defaultValue, out bool found)
         {
             if (source == null)
