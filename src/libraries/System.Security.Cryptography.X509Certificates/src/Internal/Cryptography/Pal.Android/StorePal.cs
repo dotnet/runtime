@@ -58,22 +58,26 @@ namespace Internal.Cryptography.Pal
 
         private static ICertificatePal[] ReadPkcs12Collection(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
         {
-            using var reader = new AndroidPkcs12Reader(rawData);
-            reader.Decrypt(password);
-
-            ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];
-            int idx = 0;
-            foreach (UnixPkcs12Reader.CertAndKey certAndKey in reader.EnumerateAll())
+            using (var reader = new AndroidPkcs12Reader(rawData))
             {
-                AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
-                if (certAndKey.Key != null)
-                    pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                reader.Decrypt(password);
 
-                certs[idx] = pal;
-                idx++;
+                ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];
+                int idx = 0;
+                foreach (UnixPkcs12Reader.CertAndKey certAndKey in reader.EnumerateAll())
+                {
+                    AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
+                    if (certAndKey.Key != null)
+                    {
+                        pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                    }
+
+                    certs[idx] = pal;
+                    idx++;
+                }
+
+                return certs;
             }
-
-            return certs;
         }
     }
 }

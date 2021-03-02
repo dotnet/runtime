@@ -6,7 +6,6 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -68,10 +67,14 @@ namespace Internal.Cryptography.Pal
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);
                 if (contentType != X509ContentType.Unknown)
+                {
                     return contentType;
+                }
 
                 if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                {
                     return X509ContentType.Pkcs12;
+                }
 
                 // Throw on unknown type to match Unix and Windows
                 throw new CryptographicException();

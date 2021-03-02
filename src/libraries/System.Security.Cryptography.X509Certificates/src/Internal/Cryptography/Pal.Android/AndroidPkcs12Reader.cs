@@ -23,8 +23,10 @@ namespace Internal.Cryptography.Pal
         {
             try
             {
-                using var reader = new AndroidPkcs12Reader(data);
-                return true;
+                using (var reader = new AndroidPkcs12Reader(data))
+                {
+                    return true;
+                }
             }
             catch (CryptographicException)
             {
@@ -63,7 +65,6 @@ namespace Internal.Cryptography.Pal
             }
 
             key.ImportPkcs8PrivateKey(pkcs8.Span, out int bytesRead);
-
             if (bytesRead != pkcs8.Length)
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
 
@@ -73,7 +74,9 @@ namespace Internal.Cryptography.Pal
         internal static SafeKeyHandle GetPrivateKey(AsymmetricAlgorithm key)
         {
             if (key is ECDsaImplementation.ECDsaAndroid ecdsa)
+            {
                 return ecdsa.DuplicateKeyHandle();
+            }
 
             // TODO: [AndroidCrypto] Handle RSA / DSA
             throw new NotImplementedException($"{nameof(GetPrivateKey)} ({key.GetType()})");
