@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
             PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(pkcs8, AsnEncodingRules.BER);
             AsymmetricAlgorithm key;
 
-            var algorithm = privateKeyInfo.PrivateKeyAlgorithm.Algorithm;
+            string algorithm = privateKeyInfo.PrivateKeyAlgorithm.Algorithm;
             switch (algorithm)
             {
                 case Oids.Rsa:
