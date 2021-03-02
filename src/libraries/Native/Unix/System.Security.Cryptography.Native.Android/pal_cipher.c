@@ -124,7 +124,6 @@ static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
 
-
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV); or GCMParameterSpec for GCM/CCM
     // cipher.init(encMode, keySpec, ivSpec);
@@ -297,19 +296,20 @@ int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx)
     if (!ctx)
         return FAIL;
 
-    free(ctx->iv);
-    ctx->iv = NULL;
-    ctx->ivLength = 0;
-
     JNIEnv* env = GetJNIEnv();
     ReleaseGRef(env, ctx->cipher);
     jobject algName = GetAlgorithmName(env, ctx->type);
     if (!algName)
         return FAIL;
 
+    // Resetting is only for the cipher, not the context.
+    // We recreate and reinitialize a cipher with the same context.
     ctx->cipher = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName));
     (*env)->DeleteLocalRef(env, algName);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    if (CheckJNIExceptions(env))
+        return FAIL;
+
+    return ReinitializeCipher(ctx);
 }
 
 int32_t AndroidCryptoNative_CipherSetNonceLength(CipherCtx* ctx, int32_t ivLength)
