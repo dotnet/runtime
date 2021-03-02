@@ -735,6 +735,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -838,6 +839,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
         }
 
         [ConditionalFact(nameof(Supports384BitPrivateKey))]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void ReadPbes1Rc2EncryptedRsa384()
         {
             // PbeWithSha1AndRC2CBC

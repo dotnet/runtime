@@ -106,6 +106,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
@@ -126,6 +127,7 @@ UCouQg==",
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public static void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)

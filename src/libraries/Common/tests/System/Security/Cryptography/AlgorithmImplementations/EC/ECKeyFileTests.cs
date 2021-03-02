@@ -201,6 +201,7 @@ qtlbnispri1a/EghiaPQ0po=";
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Android)]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"
