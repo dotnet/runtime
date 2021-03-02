@@ -8277,9 +8277,12 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
-    // Next, if this blocks ends with a switch table, we have to make sure not to copy
-    // into the registers that it uses.
-    regMaskTP switchRegs = RBM_NONE;
+    // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP instruction,
+    // make sure to not copy into the registers that are consumed at the end of this block.
+    //
+    // Note: Only switches and JCMP (for Arm4) have input regs (and so can be fed by copies), so those
+    // are the only block-ending branches that need special handling.
+    regMaskTP consumedRegs = RBM_NONE;
     if (block->bbJumpKind == BBJ_SWITCH)
     {
         // At this point, Lowering has transformed any non-switch-table blocks into
@@ -8287,7 +8290,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         GenTree* switchTable = LIR::AsRange(block).LastNode();
         assert(switchTable != nullptr && switchTable->OperGet() == GT_SWITCH_TABLE);
 
-        switchRegs   = switchTable->gtRsvdRegs;
+        consumedRegs = switchTable->gtRsvdRegs;
         GenTree* op1 = switchTable->gtGetOp1();
         GenTree* op2 = switchTable->gtGetOp2();
         noway_assert(op1 != nullptr && op2 != nullptr);
@@ -8295,8 +8298,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         // No floating point values, so no need to worry about the register type
         // (i.e. for ARM32, where we used the genRegMask overload with a type).
         assert(varTypeIsIntegralOrI(op1) && varTypeIsIntegralOrI(op2));
-        switchRegs |= genRegMask(op1->GetRegNum());
-        switchRegs |= genRegMask(op2->GetRegNum());
+        consumedRegs |= genRegMask(op1->GetRegNum());
+        consumedRegs |= genRegMask(op2->GetRegNum());
     }
 
 #ifdef TARGET_ARM64
@@ -8309,7 +8312,11 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //          ; mov w0, w19  <-- should not resolve in w0 here.
     //          mov w21, w0
     //          JCMP w21, BRANCH
-    // 3. Modify the local variable it must consume
+    // 3. Not to modify the local variable it must consume
+
+    // Note: GT_COPY has special handling in codegen and its generation is merged with the
+    // node that consumes its result. So both, the input and output regs of GT_COPY must be
+    // excluded from the set available for resolution.
     LclVarDsc* jcmpLocalVarDsc = nullptr;
     if (block->bbJumpKind == BBJ_COND)
     {
@@ -8318,12 +8325,12 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         if (lastNode->OperIs(GT_JCMP))
         {
             GenTree* op1 = lastNode->gtGetOp1();
-            switchRegs |= genRegMask(op1->GetRegNum());
+            consumedRegs |= genRegMask(op1->GetRegNum());
 
             if (op1->OperIs(GT_COPY))
             {
                 GenTree* srcOp1 = op1->gtGetOp1();
-                switchRegs |= genRegMask(srcOp1->GetRegNum());
+                consumedRegs |= genRegMask(srcOp1->GetRegNum());
             }
 
             if (op1->IsLocal())
@@ -8402,9 +8409,10 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 sameToReg = REG_NA;
             }
-            // If this register is used by a switch table at the end of the block, we can't do the copy
-            // in this block (since we can't insert it after the switch).
-            if ((sameToRegMask & switchRegs) != RBM_NONE)
+            // If this register is busy because it is used by a switch table at the end of the block
+            // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't insert it after the switch
+            // (or for Arm64, can't insert and overwrite the operand/source of operand of JCMP).
+            if ((sameToRegMask & consumedRegs) != RBM_NONE)
             {
                 sameToReg = REG_NA;
             }
