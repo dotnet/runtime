@@ -9,10 +9,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
     {
         public bool IsCurveValid(Oid oid)
         {
-            if (PlatformDetection.IsOSXLike)
-            {
-                return false;
-            }
             if (!string.IsNullOrEmpty(oid.Value))
             {
                 // Value is passed before FriendlyName

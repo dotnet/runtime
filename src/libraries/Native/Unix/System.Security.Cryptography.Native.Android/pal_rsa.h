@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_jni.h"
+#include "pal_atomic.h"
 
 typedef enum
 {
@@ -17,7 +18,7 @@ typedef struct RSA
     jobject pubExp;
     jobject privateKey; // RSAPrivateCrtKey
     jobject publicKey;  // RSAPublicCrtKey
-    int32_t refCount;
+    atomic_int refCount;
     int32_t keyWidth;
 } RSA;
 

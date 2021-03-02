@@ -4,10 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Security;
-using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Win32.SafeHandles
+namespace System.Security.Cryptography
 {
     internal sealed class SafeRsaHandle : SafeHandle
     {

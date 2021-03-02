@@ -6,7 +6,7 @@
 #include "pal_signature.h"
 #include "pal_utilities.h"
 
-static jobject AndroidCryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
+static jobject GetEcDsaSignatureObject(JNIEnv* env)
 {
     jstring algorithmName = JSTRING("NONEwithECDSA");
     jobject signatureObject =
@@ -29,7 +29,7 @@ int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint
 
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = GetEcDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
@@ -55,7 +55,7 @@ int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, co
     assert(key);
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = GetEcDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;

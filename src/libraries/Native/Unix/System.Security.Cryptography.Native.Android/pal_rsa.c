@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_rsa.h"
+#include "pal_bignum.h"
 #include "pal_utilities.h"
 #include "pal_signature.h"
 
@@ -14,10 +15,13 @@ PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
     rsa->publicKey = NULL;
     rsa->pubExp = NULL;
     rsa->keyWidth = 0;
-    rsa->refCount = 1;
+    atomic_init(&rsa->refCount, 1);
     return rsa;
 }
 
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa)
 {
     if (!rsa)
@@ -41,6 +45,7 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
         }
     }
 }
+#pragma clang diagnostic pop
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
@@ -318,16 +323,6 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-static jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
-{
-    assert(len > 0);
-    jbyteArray buffArray = (*env)->NewByteArray(env, len);
-    (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)bytes);
-    jobject bigNum = (*env)->NewObject(env, g_bigNumClass, g_bigNumCtorWithSign, 1, buffArray);
-    (*env)->DeleteLocalRef(env, buffArray);
-    return bigNum;
-}
-
 PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, 
     uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength, 
     uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength, 
@@ -338,8 +333,8 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
 
     JNIEnv* env = GetJNIEnv();
 
-    jobject nObj = BigNumFromBinary(env, n, nLength);
-    jobject eObj = BigNumFromBinary(env, e, eLength);
+    jobject nObj = AndroidCryptoNative_BigNumFromBinary(n, nLength);
+    jobject eObj = AndroidCryptoNative_BigNumFromBinary(e, eLength);
 
     rsa->keyWidth = nLength * 8;
 
@@ -349,12 +344,12 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
     if (dLength > 0)
     {
         // private key section
-        jobject dObj = BigNumFromBinary(env, d, dLength);
-        jobject pObj = BigNumFromBinary(env, p, pLength);
-        jobject qObj = BigNumFromBinary(env, q, qLength);
-        jobject dmp1Obj = BigNumFromBinary(env, dmp1, dmp1Length);
-        jobject dmq1Obj = BigNumFromBinary(env, dmq1, dmq1Length);
-        jobject iqmpObj = BigNumFromBinary(env, iqmp, iqmpLength);
+        jobject dObj = AndroidCryptoNative_BigNumFromBinary(d, dLength);
+        jobject pObj = AndroidCryptoNative_BigNumFromBinary(p, pLength);
+        jobject qObj = AndroidCryptoNative_BigNumFromBinary(q, qLength);
+        jobject dmp1Obj = AndroidCryptoNative_BigNumFromBinary(dmp1, dmp1Length);
+        jobject dmq1Obj = AndroidCryptoNative_BigNumFromBinary(dmq1, dmq1Length);
+        jobject iqmpObj = AndroidCryptoNative_BigNumFromBinary(iqmp, iqmpLength);
 
         jobject rsaPrivateKeySpec = (*env)->NewObject(env, g_RSAPrivateCrtKeySpecClass, g_RSAPrivateCrtKeySpecCtor,
             nObj, eObj, dObj, pObj, qObj, dmp1Obj, dmq1Obj, iqmpObj);
@@ -362,13 +357,13 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
         ReleaseGRef(env, rsa->privateKey);
         rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPrivateMethod, rsaPrivateKeySpec));
 
-        (*env)->DeleteLocalRef(env, dObj);
-        (*env)->DeleteLocalRef(env, pObj);
-        (*env)->DeleteLocalRef(env, qObj);
-        (*env)->DeleteLocalRef(env, dmp1Obj);
-        (*env)->DeleteLocalRef(env, dmq1Obj);
-        (*env)->DeleteLocalRef(env, iqmpObj);
-        (*env)->DeleteLocalRef(env, rsaPrivateKeySpec);
+        (*env)->DeleteGlobalRef(env, dObj);
+        (*env)->DeleteGlobalRef(env, pObj);
+        (*env)->DeleteGlobalRef(env, qObj);
+        (*env)->DeleteGlobalRef(env, dmp1Obj);
+        (*env)->DeleteGlobalRef(env, dmq1Obj);
+        (*env)->DeleteGlobalRef(env, iqmpObj);
+        (*env)->DeleteGlobalRef(env, rsaPrivateKeySpec);
     }
 
     jobject rsaPubKeySpec = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, nObj, eObj);
@@ -378,8 +373,8 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
 
     (*env)->DeleteLocalRef(env, algName);
     (*env)->DeleteLocalRef(env, keyFactory);
-    (*env)->DeleteLocalRef(env, nObj);
-    (*env)->DeleteLocalRef(env, eObj);
+    (*env)->DeleteGlobalRef(env, nObj);
+    (*env)->DeleteGlobalRef(env, eObj);
     (*env)->DeleteLocalRef(env, rsaPubKeySpec);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;

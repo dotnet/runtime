@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
 
             if (source.Length != expectedLength)
             {
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
             }
 
             int tLen = digestInfoPrefix.Length + expectedLength;
