@@ -398,32 +398,14 @@ namespace System.IO
 
             EnsureNotClosed();
 
-            // try to get the lock and exit in synchronous way if there is nothing to Flush
-            SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
-            Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool lockAcquired = semaphoreLockTask.IsCompletedSuccessfully;
-            if (lockAcquired)
-            {
-                if (_writePos == 0 && _readPos == _readLen)
-                {
-                    sem.Release();
-
-                    return CanWrite ? _stream!.FlushAsync(cancellationToken) : Task.CompletedTask;
-                }
-            }
-
-            return FlushAsyncInternal(semaphoreLockTask, lockAcquired, cancellationToken);
+            return FlushAsyncInternal(cancellationToken);
         }
 
-        private async Task FlushAsyncInternal(Task semaphoreLockTask, bool lockAcquired, CancellationToken cancellationToken)
+        private async Task FlushAsyncInternal(CancellationToken cancellationToken)
         {
             Debug.Assert(_stream != null);
 
-            if (!lockAcquired)
-            {
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (_writePos > 0)
@@ -464,7 +446,7 @@ namespace System.IO
             }
             finally
             {
-                _asyncActiveSemaphore!.Release();
+                _asyncActiveSemaphore.Release();
             }
         }
 
