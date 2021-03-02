@@ -732,7 +732,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class CustomResolver : DefaultAssemblyResolver
     {
 
-        public void Register(AssemblyDefinition assembly)
+        public void RegisterAssembly(AssemblyDefinition assembly)
         {
             this.RegisterAssembly(assembly);
         }
