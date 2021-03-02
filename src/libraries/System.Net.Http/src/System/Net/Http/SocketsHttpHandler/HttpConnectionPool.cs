@@ -1276,7 +1276,7 @@ namespace System.Net.Http
                         Debug.Assert(_originAuthority != null);
                         Debug.Assert(_proxyUri != null);
                         stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                        await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, cancellationToken).ConfigureAwait(false);
+                        await SocksHelper.EstablishSocksTunnelAsync(stream, _originAuthority.IdnHost, _originAuthority.Port, _proxyUri, ProxyCredentials, async, cancellationToken).ConfigureAwait(false);
                         break;
                 }
 

@@ -37,19 +37,19 @@ namespace System.Net.Http
         // private const byte REP_ATYP_NOT_SUPPORT = 8;
         private const byte CD_SUCCESS = 90;
 
-        public static ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        public static ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
             if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
             {
-                return EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, cancellationToken);
+                return EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async, cancellationToken);
             }
             else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
             {
-                return EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, cancellationToken);
+                return EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, async, cancellationToken);
             }
             else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
             {
-                return EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, cancellationToken);
+                return EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, async, cancellationToken);
             }
             else
             {
@@ -58,7 +58,7 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -84,14 +84,21 @@ namespace System.Net.Http
                     buffer[2] = METHOD_NO_AUTH;
                     buffer[3] = METHOD_USERNAME_PASSWORD;
                 }
-                await stream.WriteAsync(buffer.AsMemory(0, buffer[1] + 2), cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await stream.WriteAsync(buffer.AsMemory(0, buffer[1] + 2), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    stream.Write(buffer.AsSpan(0, buffer[1] + 2));
+                }
 
                 // +----+--------+
                 // |VER | METHOD |
                 // +----+--------+
                 // | 1  |   1    |
                 // +----+--------+
-                await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async, cancellationToken).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
 
@@ -121,14 +128,21 @@ namespace System.Net.Http
                             buffer[2 + uLen] = checked((byte)pLen);
                             int pLenEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + uLen));
                             Debug.Assert(pLen == pLenEncoded);
-                            await stream.WriteAsync(buffer.AsMemory(0, 4 + uLen + pLen), cancellationToken).ConfigureAwait(false);
+                            if (async)
+                            {
+                                await stream.WriteAsync(buffer.AsMemory(0, 4 + uLen + pLen), cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                stream.Write(buffer.AsSpan(0, 4 + uLen + pLen));
+                            }
 
                             // +----+--------+
                             // |VER | STATUS |
                             // +----+--------+
                             // | 1  |   1    |
                             // +----+--------+
-                            await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
+                            await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async, cancellationToken).ConfigureAwait(false);
                             if (buffer[0] != ProtocolVersion5)
                                 throw new Exception("Bad protocol version");
                             if (buffer[1] != REP_SUCCESS)
@@ -162,14 +176,21 @@ namespace System.Net.Http
                 buffer[addressLength + 5] = (byte)(port >> 8);
                 buffer[addressLength + 6] = (byte)port;
 
-                await stream.WriteAsync(buffer.AsMemory(0, addressLength + 7), cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await stream.WriteAsync(buffer.AsMemory(0, addressLength + 7), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    stream.Write(buffer.AsSpan(0, addressLength + 7));
+                }
 
                 // +----+-----+-------+------+----------+----------+
                 // |VER | REP |  RSV  | ATYP | DST.ADDR | DST.PORT |
                 // +----+-----+-------+------+----------+----------+
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
-                await stream.ReadAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 4), async, cancellationToken).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
                 if (buffer[1] != REP_SUCCESS)
@@ -177,20 +198,20 @@ namespace System.Net.Http
                 switch (buffer[3])
                 {
                     case ATYP_IPV4:
-                        await stream.ReadAsync(buffer.AsMemory(0, 4), cancellationToken).ConfigureAwait(false);
+                        await ReadToFillAsync(stream, buffer.AsMemory(0, 4), async, cancellationToken).ConfigureAwait(false);
                         break;
                     case ATYP_IPV6:
-                        await stream.ReadAsync(buffer.AsMemory(0, 16), cancellationToken).ConfigureAwait(false);
+                        await ReadToFillAsync(stream, buffer.AsMemory(0, 16), async, cancellationToken).ConfigureAwait(false);
                         break;
                     case ATYP_DOMAIN_NAME:
-                        await stream.ReadAsync(buffer.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+                        await ReadToFillAsync(stream, buffer.AsMemory(0, 1), async, cancellationToken).ConfigureAwait(false);
                         addressLength = buffer[0];
                         await stream.ReadAsync(buffer.AsMemory(0, addressLength), cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         throw new Exception("Unknown address type");
                 }
-                await stream.ReadAsync(buffer.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async, cancellationToken).ConfigureAwait(false);
                 // response address not used
             }
             finally
@@ -199,7 +220,7 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, CancellationToken cancellationToken)
+        private static async ValueTask EstablishSocks4TunnelAsync(Stream stream, bool isVersion4a, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -259,13 +280,20 @@ namespace System.Net.Http
                     totalLength += aLen + 1;
                 }
 
-                await stream.WriteAsync(buffer.AsMemory(0, totalLength), cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await stream.WriteAsync(buffer.AsMemory(0, totalLength), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    stream.Write(buffer.AsSpan(0, totalLength));
+                }
 
                 // +----+----+----+----+----+----+----+----+
                 // | VN | CD | DSTPORT |      DSTIP        |
                 // +----+----+----+----+----+----+----+----+
                 //    1    1      2              4
-                await stream.ReadAsync(buffer.AsMemory(0, 8), cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async, cancellationToken).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion4)
                 {
                     throw new Exception("Bad protocol version");
@@ -279,6 +307,23 @@ namespace System.Net.Http
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private static async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer, bool async, CancellationToken cancellationToken)
+        {
+            while (!buffer.IsEmpty)
+            {
+                int bytesRead = async
+                    ? await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)
+                    : stream.Read(buffer.Span);
+
+                if (bytesRead == 0)
+                {
+                    throw new Exception("Early EOF");
+                }
+
+                buffer = buffer[bytesRead..];
             }
         }
     }
