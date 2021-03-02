@@ -15,7 +15,6 @@ typedef enum
 
 typedef struct RSA
 {
-    jobject pubExp;
     jobject privateKey; // RSAPrivateCrtKey
     jobject publicKey;  // RSAPublicCrtKey
     atomic_int refCount;
@@ -34,7 +33,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
 PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
 PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
 PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa);
-PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp);
+PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits);
 PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa, 
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp);
 PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, 

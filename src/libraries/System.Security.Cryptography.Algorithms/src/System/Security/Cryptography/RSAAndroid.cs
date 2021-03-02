@@ -21,9 +21,6 @@ namespace System.Security.Cryptography
         {
             private const int BitsPerByte = 8;
 
-            // 65537 (0x10001) in big-endian form
-            private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
-
             private Lazy<SafeRsaHandle> _key;
 
             public RSAAndroid()
@@ -593,19 +590,15 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
-                    {
-                        // The documentation for RSA_generate_key_ex does not say that it returns only
-                        // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
-                        // of 1 explicitly.
-                        int response = Interop.AndroidCrypto.RsaGenerateKeyEx(
-                            key,
-                            KeySize,
-                            exponent);
+                    // The documentation for RSA_generate_key_ex does not say that it returns only
+                    // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
+                    // of 1 explicitly.
+                    int response = Interop.AndroidCrypto.RsaGenerateKeyEx(
+                        key,
+                        KeySize);
 
-                        CheckBoolReturn(response);
-                        generated = true;
-                    }
+                    CheckBoolReturn(response);
+                    generated = true;
                 }
                 finally
                 {

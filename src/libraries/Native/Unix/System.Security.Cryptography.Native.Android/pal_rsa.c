@@ -13,7 +13,6 @@ PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
     RSA* rsa = malloc(sizeof(RSA));
     rsa->privateKey = NULL;
     rsa->publicKey = NULL;
-    rsa->pubExp = NULL;
     rsa->keyWidth = 0;
     atomic_init(&rsa->refCount, 1);
     return rsa;
@@ -40,7 +39,6 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
             JNIEnv* env = GetJNIEnv();
             ReleaseGRef(env, rsa->privateKey);
             ReleaseGRef(env, rsa->publicKey);
-            ReleaseGRef(env, rsa->pubExp);
             free(rsa);
         }
     }
@@ -233,7 +231,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
+PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
 {
     if (!rsa)
         return FAIL;
@@ -251,8 +249,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, j
     rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPrivateMethod));
     rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod));
     rsa->keyWidth = bits;
-    // pubExp is already expected to be a gref at this point but we need to create another one.
-    rsa->pubExp = AddGRef(env, pubExp);
+    rsa->keyWidth = bits;
 
     (*env)->DeleteLocalRef(env, rsaStr);
     (*env)->DeleteLocalRef(env, kpgObj);

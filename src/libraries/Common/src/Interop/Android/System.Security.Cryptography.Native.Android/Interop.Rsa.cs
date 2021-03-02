@@ -89,7 +89,7 @@ internal static partial class Interop
         internal static extern int RsaSize(SafeRsaHandle rsa);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_RsaGenerateKeyEx")]
-        internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
+        internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits);
 
         internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
