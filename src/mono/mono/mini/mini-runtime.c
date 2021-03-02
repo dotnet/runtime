@@ -4450,7 +4450,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
-		mono_code_manager_set_read_only (mono_domain_ambient_memory_manager (domain)->code_mp);
+		mono_code_manager_set_read_only (mono_mem_manager_get_ambient ()->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
@@ -5223,7 +5223,7 @@ mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc G_GNUC_
 MonoMemoryManager*
 mini_get_default_mem_manager (void)
 {
-	return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+	return mono_mem_manager_get_ambient ();
 }
 
 gpointer

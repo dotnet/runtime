@@ -62,7 +62,7 @@ typedef struct {
 static inline MonoJitMemoryManager*
 get_default_jit_mm (void)
 {
-	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+	return (MonoJitMemoryManager*)(mono_mem_manager_get_ambient ())->runtime_info;
 }
 
 // FIXME: Review uses and change them to a more specific mem manager

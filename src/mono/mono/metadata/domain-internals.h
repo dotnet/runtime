@@ -525,11 +525,11 @@ mono_domain_memory_manager (MonoDomain *domain)
 	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
-static inline MonoMemoryManager *
-mono_domain_ambient_memory_manager (MonoDomain *domain)
+static inline MonoMemoryManager*
+mono_mem_manager_get_ambient (void)
 {
-	// FIXME: All callers of mono_domain_ambient_memory_manager should get a MemoryManager from their callers or context
-	return mono_domain_memory_manager (domain);
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return mono_domain_memory_manager (mono_get_root_domain ());
 }
 
 G_END_DECLS

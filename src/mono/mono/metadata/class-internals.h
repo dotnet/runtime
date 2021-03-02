@@ -1566,7 +1566,7 @@ m_class_get_mem_manager (MonoClass *klass)
 		return (MonoMemoryManager*)alc->memory_manager;
 	else
 		/* Dynamic assemblies */
-		return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+		return mono_mem_manager_get_ambient ();
 }
 
 static inline void *

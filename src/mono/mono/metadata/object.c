@@ -329,9 +329,8 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	MonoException *ex;
 	gchar *full_name;
 
@@ -444,8 +443,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
-	MonoDomain *domain = mono_get_root_domain ();
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor (klass_image, error)) {
@@ -798,7 +796,7 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 	if (callbacks.free_method)
 		callbacks.free_method (method);
 
-	mono_method_clear_object (domain, method);
+	mono_method_clear_object (method);
 
 	mono_free_method (method);
 }
@@ -2199,7 +2197,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	memory_manager = mono_domain_ambient_memory_manager (domain);
+	memory_manager = mono_mem_manager_get_ambient ();
 	mono_mem_manager_lock (memory_manager);
 	g_ptr_array_add (memory_manager->class_vtable_array, vt);
 	mono_mem_manager_unlock (memory_manager);

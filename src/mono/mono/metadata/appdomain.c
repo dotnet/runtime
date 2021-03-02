@@ -654,7 +654,7 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	gboolean res;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	mono_mem_manager_lock (memory_manager);
 	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
