@@ -36,8 +36,6 @@ PALEXPORT int32_t CryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uin
 PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
 PALEXPORT int32_t CryptoNative_RsaSize(RSA* rsa);
 PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp);
-PALEXPORT int32_t CryptoNative_RsaSign(const char* hashAlgorithm, uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa);
-PALEXPORT int32_t CryptoNative_RsaVerify(const char* hashAlgorithm, uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
 PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa, 
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp);
 PALEXPORT int32_t CryptoNative_SetRsaParameters(RSA* rsa, 

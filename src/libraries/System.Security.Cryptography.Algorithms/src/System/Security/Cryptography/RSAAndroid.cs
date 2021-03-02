@@ -692,83 +692,60 @@ namespace System.Security.Cryptography
             {
                 Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
                 Debug.Assert(padding != null);
-
                 signature = null;
 
-                // Do not factor out getting _key.Value, since the key creation should not happen on
-                // invalid padding modes.
+                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
+                {
+                    throw PaddingModeNotSupported();
+                }
+
+                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
+                SafeRsaHandle rsa = GetKey();
+
+                int bytesRequired = Interop.Crypto.RsaSize(rsa);
+
+                if (allocateSignature)
+                {
+                    Debug.Assert(destination.Length == 0);
+                    signature = new byte[bytesRequired];
+                    destination = signature;
+                }
+
+                if (destination.Length < bytesRequired)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                byte[] encodedRented = CryptoPool.Rent(bytesRequired);
+                Span<byte> encodedBytes = new Span<byte>(encodedRented, 0, bytesRequired);
 
                 if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
                 {
-                    SafeRsaHandle rsa = GetKey();
-
-                    int bytesRequired = Interop.Crypto.RsaSize(rsa);
-
-                    if (allocateSignature)
-                    {
-                        Debug.Assert(destination.Length == 0);
-                        signature = new byte[bytesRequired];
-                        destination = signature;
-                    }
-
-                    if (destination.Length < bytesRequired)
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    if (!Interop.Crypto.RsaSign(hashAlgorithm.Name, hash, hash.Length, destination, out int signatureSize, rsa))
-                    {
-                        throw new CryptographicException();
-                    }
-
-                    Debug.Assert(
-                        signatureSize == bytesRequired,
-                        $"RSA_sign reported signatureSize was {signatureSize}, when {bytesRequired} was expected");
-
-                    bytesWritten = signatureSize;
-                    return true;
+                    processor.EncodePkcs1(hash, encodedBytes, KeySize);
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
-                    RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                    SafeRsaHandle rsa = GetKey();
-
-                    int bytesRequired = Interop.Crypto.RsaSize(rsa);
-
-                    if (allocateSignature)
-                    {
-                        Debug.Assert(destination.Length == 0);
-                        signature = new byte[bytesRequired];
-                        destination = signature;
-                    }
-
-                    if (destination.Length < bytesRequired)
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    byte[] pssRented = CryptoPool.Rent(bytesRequired);
-                    Span<byte> pssBytes = new Span<byte>(pssRented, 0, bytesRequired);
-
-                    processor.EncodePss(hash, pssBytes, KeySize);
-
-                    int ret = Interop.Crypto.RsaSignPrimitive(pssBytes, destination, rsa);
-
-                    CryptoPool.Return(pssRented, bytesRequired);
-
-                    CheckReturn(ret);
-
-                    Debug.Assert(
-                        ret == bytesRequired,
-                        $"RSA_private_encrypt returned {ret} when {bytesRequired} was expected");
-
-                    bytesWritten = ret;
-                    return true;
+                    processor.EncodePss(hash, encodedBytes, KeySize);
+                }
+                else
+                {
+                    Debug.Fail("Padding mode should be checked prior to this point.");
+                    throw PaddingModeNotSupported();
                 }
 
-                throw PaddingModeNotSupported();
+                int ret = Interop.Crypto.RsaSignPrimitive(encodedBytes, destination, rsa);
+
+                CryptoPool.Return(encodedRented, bytesRequired);
+
+                CheckReturn(ret);
+
+                Debug.Assert(
+                    ret == bytesRequired,
+                    $"RSA_private_encrypt returned {ret} when {bytesRequired} was expected");
+
+                bytesWritten = ret;
+                return true;
             }
 
             public override bool VerifyHash(
@@ -799,48 +776,56 @@ namespace System.Security.Cryptography
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
-
-                if (padding == RSASignaturePadding.Pkcs1)
+                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
                 {
-                    SafeRsaHandle rsa = GetKey();
-                    return Interop.Crypto.RsaVerify(hashAlgorithm.Name, hash, signature, rsa);
+                    throw PaddingModeNotSupported();
                 }
-                else if (padding == RSASignaturePadding.Pss)
+
+                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
+                SafeRsaHandle rsa = GetKey();
+
+                int requiredBytes = Interop.Crypto.RsaSize(rsa);
+
+                if (signature.Length != requiredBytes)
                 {
-                    RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                    SafeRsaHandle rsa = GetKey();
+                    return false;
+                }
 
-                    int requiredBytes = Interop.Crypto.RsaSize(rsa);
+                if (hash.Length != processor.HashLength)
+                {
+                    return false;
+                }
 
-                    if (signature.Length != requiredBytes)
+                byte[] rented = CryptoPool.Rent(requiredBytes);
+                Span<byte> unwrapped = new Span<byte>(rented, 0, requiredBytes);
+
+                try
+                {
+                    int ret = Interop.Crypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
+
+                    CheckReturn(ret);
+
+                    Debug.Assert(
+                        ret == requiredBytes,
+                        $"RSA_private_encrypt returned {ret} when {requiredBytes} was expected");
+
+                    if (padding == RSASignaturePadding.Pkcs1)
                     {
-                        return false;
+                        return processor.VerifyPkcs1(hash, unwrapped, KeySize);
                     }
-
-                    if (hash.Length != processor.HashLength)
+                    else if (padding == RSASignaturePadding.Pss)
                     {
-                        return false;
-                    }
-
-                    byte[] rented = CryptoPool.Rent(requiredBytes);
-                    Span<byte> unwrapped = new Span<byte>(rented, 0, requiredBytes);
-
-                    try
-                    {
-                        int ret = Interop.Crypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
-
-                        CheckReturn(ret);
-
-                        Debug.Assert(
-                            ret == requiredBytes,
-                            $"RSA_private_encrypt returned {ret} when {requiredBytes} was expected");
-
                         return processor.VerifyPss(hash, unwrapped, KeySize);
                     }
-                    finally
+                    else
                     {
-                        CryptoPool.Return(rented, requiredBytes);
+                        Debug.Fail("Padding mode should be checked prior to this point.");
+                        throw PaddingModeNotSupported();
                     }
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, requiredBytes);
                 }
 
                 throw PaddingModeNotSupported();

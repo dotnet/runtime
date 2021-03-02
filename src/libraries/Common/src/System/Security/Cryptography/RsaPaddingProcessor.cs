@@ -459,6 +459,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal void EncodePkcs1(ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal bool VerifyPkcs1(ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
+        {
+            throw new NotImplementedException();
+        }
+
         // https://tools.ietf.org/html/rfc3447#appendix-B.2.1
         private void Mgf1(IncrementalHash hasher, ReadOnlySpan<byte> mgfSeed, Span<byte> mask)
         {

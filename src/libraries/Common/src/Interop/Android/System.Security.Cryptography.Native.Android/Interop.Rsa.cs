@@ -91,36 +91,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKeyEx")]
         internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
 
-        internal static bool RsaSign(string? hashAlgorithmName, ReadOnlySpan<byte> m, int m_len, Span<byte> sigret, out int siglen, SafeRsaHandle rsa) =>
-            RsaSign(hashAlgorithmName, ref MemoryMarshal.GetReference(m), m_len, ref MemoryMarshal.GetReference(sigret), out siglen, rsa);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSign", CharSet = CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool RsaSign(string? hashAlgorithmName, ref byte m, int m_len, ref byte sigret, out int siglen, SafeRsaHandle rsa);
-
-        internal static bool RsaVerify(string? hashAlgorithmName, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sigbuf, SafeRsaHandle rsa)
-        {
-            bool ret = RsaVerify(
-                hashAlgorithmName,
-                ref MemoryMarshal.GetReference(m),
-                m.Length,
-                ref MemoryMarshal.GetReference(sigbuf),
-                sigbuf.Length,
-                rsa);
-
-            if (!ret)
-            {
-                ErrClearError();
-            }
-
-            return ret;
-        }
-
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerify", CharSet = CharSet.Ansi)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool RsaVerify(string? hashAlgorithmName, ref byte m, int m_len, ref byte sigbuf, int siglen, SafeRsaHandle rsa);
-
         internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
             Debug.Assert(
