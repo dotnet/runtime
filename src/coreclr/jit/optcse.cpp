@@ -500,6 +500,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             // we don't allow/expect it to be set when we need a reloc
             //
             assert((key & TARGET_SIGN_BIT) == 0);
+
+            // Don't use the CoercedConstantValue value as the key
+            key = vnLibNorm;
         }
     }
     else // Not a GT_COMMA or a GT_CNS_INT
