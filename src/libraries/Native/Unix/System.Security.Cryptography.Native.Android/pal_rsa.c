@@ -7,7 +7,7 @@
 
 #define RSA_FAIL -1
 
-PALEXPORT RSA* CryptoNative_RsaCreate()
+PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
 {
     RSA* rsa = malloc(sizeof(RSA));
     rsa->privateKey = NULL;
@@ -18,7 +18,7 @@ PALEXPORT RSA* CryptoNative_RsaCreate()
     return rsa;
 }
 
-PALEXPORT int32_t CryptoNative_RsaUpRef(RSA* rsa)
+PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa)
 {
     if (!rsa)
         return FAIL;
@@ -26,7 +26,7 @@ PALEXPORT int32_t CryptoNative_RsaUpRef(RSA* rsa)
     return SUCCESS;
 }
 
-PALEXPORT void CryptoNative_RsaDestroy(RSA* rsa)
+PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 {
     if (rsa)
     {
@@ -42,7 +42,7 @@ PALEXPORT void CryptoNative_RsaDestroy(RSA* rsa)
     }
 }
 
-PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -79,7 +79,7 @@ PALEXPORT int32_t CryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uin
     return (int32_t)encryptedBytesLen;
 }
 
-PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -122,14 +122,14 @@ PALEXPORT int32_t CryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, ui
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t CryptoNative_RsaSize(RSA* rsa)
+PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
 {
     if (!rsa)
         return FAIL;
     return rsa->keyWidth / 8; 
 }
 
-PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
+PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
@@ -148,7 +148,7 @@ PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
     (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)buf);
     jobject x509keySpec = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, bytes);
 
-    RSA* rsa = CryptoNative_RsaCreate();
+    RSA* rsa = AndroidCryptoNative_RsaCreate();
     rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, x509keySpec));
 
     (*env)->DeleteLocalRef(env, algName);
@@ -158,14 +158,14 @@ PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
 
     if (CheckJNIExceptions(env))
     {
-        CryptoNative_RsaDestroy(rsa);
+        AndroidCryptoNative_RsaDestroy(rsa);
         return FAIL;
     }
 
     return rsa;
 }
 
-PALEXPORT int32_t CryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
+PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -203,7 +203,7 @@ PALEXPORT int32_t CryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uin
     return (int32_t)encryptedBytesLen;
 }
 
-PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
+PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa)
 {
     if (!rsa)
         return RSA_FAIL;
@@ -228,7 +228,7 @@ PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* f
     return (int32_t)decryptedBytesLen;
 }
 
-PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
+PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject pubExp)
 {
     if (!rsa)
         return FAIL;
@@ -256,7 +256,7 @@ PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, jobject 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa, 
+PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa, 
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp)
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
@@ -318,7 +318,7 @@ PALEXPORT int32_t CryptoNative_GetRsaParameters(RSA* rsa,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
+static jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
 {
     assert(len > 0);
     jbyteArray buffArray = (*env)->NewByteArray(env, len);
@@ -328,7 +328,7 @@ jobject BigNumFromBinary(JNIEnv* env, uint8_t* bytes, int32_t len)
     return bigNum;
 }
 
-PALEXPORT int32_t CryptoNative_SetRsaParameters(RSA* rsa, 
+PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, 
     uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength, 
     uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength, 
     uint8_t* dmq1, int32_t dmq1Length, uint8_t* iqmp, int32_t iqmpLength)

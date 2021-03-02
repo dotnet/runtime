@@ -79,10 +79,10 @@ namespace System.Security.Cryptography
                 if (padding == null)
                     throw new ArgumentNullException(nameof(padding));
 
-                Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
+                Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
-                int rsaSize = Interop.Crypto.RsaSize(key);
+                int rsaSize = Interop.AndroidCrypto.RsaSize(key);
                 byte[]? buf = null;
                 Span<byte> destination = default;
 
@@ -117,10 +117,10 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(padding));
                 }
 
-                Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
+                Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
-                int keySizeBytes = Interop.Crypto.RsaSize(key);
+                int keySizeBytes = Interop.AndroidCrypto.RsaSize(key);
 
                 // OpenSSL does not take a length value for the destination, so it can write out of bounds.
                 // To prevent the OOB write, decrypt into a temporary buffer.
@@ -175,20 +175,20 @@ namespace System.Security.Cryptography
                 SafeRsaHandle key,
                 ReadOnlySpan<byte> data,
                 Span<byte> destination,
-                Interop.Crypto.RsaPadding rsaPadding,
+                Interop.AndroidCrypto.RsaPadding rsaPadding,
                 RsaPaddingProcessor? rsaPaddingProcessor,
                 out int bytesWritten)
             {
                 // If rsaPadding is PKCS1 or OAEP-SHA1 then no depadding method should be present.
                 // If rsaPadding is NoPadding then a depadding method should be present.
                 Debug.Assert(
-                    (rsaPadding == Interop.Crypto.RsaPadding.NoPadding) ==
+                    (rsaPadding == Interop.AndroidCrypto.RsaPadding.NoPadding) ==
                     (rsaPaddingProcessor != null));
 
                 // Caller should have already checked this.
                 Debug.Assert(!key.IsInvalid);
 
-                int rsaSize = Interop.Crypto.RsaSize(key);
+                int rsaSize = Interop.AndroidCrypto.RsaSize(key);
 
                 if (data.Length != rsaSize)
                 {
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    int returnValue = Interop.Crypto.RsaPrivateDecrypt(data.Length, data, decryptBuf, key, rsaPadding);
+                    int returnValue = Interop.AndroidCrypto.RsaPrivateDecrypt(data.Length, data, decryptBuf, key, rsaPadding);
                     CheckReturn(returnValue);
 
                     if (rsaPaddingProcessor != null)
@@ -250,10 +250,10 @@ namespace System.Security.Cryptography
                 if (padding == null)
                     throw new ArgumentNullException(nameof(padding));
 
-                Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
+                Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
-                byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
+                byte[] buf = new byte[Interop.AndroidCrypto.RsaSize(key)];
 
                 bool encrypted = TryEncrypt(
                     key,
@@ -279,7 +279,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(padding));
                 }
 
-                Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
+                Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
                 return TryEncrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
@@ -289,11 +289,11 @@ namespace System.Security.Cryptography
                 SafeRsaHandle key,
                 ReadOnlySpan<byte> data,
                 Span<byte> destination,
-                Interop.Crypto.RsaPadding rsaPadding,
+                Interop.AndroidCrypto.RsaPadding rsaPadding,
                 RsaPaddingProcessor? rsaPaddingProcessor,
                 out int bytesWritten)
             {
-                int rsaSize = Interop.Crypto.RsaSize(key);
+                int rsaSize = Interop.AndroidCrypto.RsaSize(key);
 
                 if (destination.Length < rsaSize)
                 {
@@ -305,14 +305,14 @@ namespace System.Security.Cryptography
 
                 if (rsaPaddingProcessor != null)
                 {
-                    Debug.Assert(rsaPadding == Interop.Crypto.RsaPadding.NoPadding);
+                    Debug.Assert(rsaPadding == Interop.AndroidCrypto.RsaPadding.NoPadding);
                     byte[] rented = CryptoPool.Rent(rsaSize);
                     Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
 
                     try
                     {
                         rsaPaddingProcessor.PadOaep(data, tmp);
-                        returnValue = Interop.Crypto.RsaPublicEncrypt(tmp.Length, tmp, destination, key, rsaPadding);
+                        returnValue = Interop.AndroidCrypto.RsaPublicEncrypt(tmp.Length, tmp, destination, key, rsaPadding);
                     }
                     finally
                     {
@@ -322,9 +322,9 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    Debug.Assert(rsaPadding != Interop.Crypto.RsaPadding.NoPadding);
+                    Debug.Assert(rsaPadding != Interop.AndroidCrypto.RsaPadding.NoPadding);
 
-                    returnValue = Interop.Crypto.RsaPublicEncrypt(data.Length, data, destination, key, rsaPadding);
+                    returnValue = Interop.AndroidCrypto.RsaPublicEncrypt(data.Length, data, destination, key, rsaPadding);
                 }
 
                 CheckReturn(returnValue);
@@ -335,26 +335,26 @@ namespace System.Security.Cryptography
 
             }
 
-            private static Interop.Crypto.RsaPadding GetInteropPadding(
+            private static Interop.AndroidCrypto.RsaPadding GetInteropPadding(
                 RSAEncryptionPadding padding,
                 out RsaPaddingProcessor? rsaPaddingProcessor)
             {
                 if (padding == RSAEncryptionPadding.Pkcs1)
                 {
                     rsaPaddingProcessor = null;
-                    return Interop.Crypto.RsaPadding.Pkcs1;
+                    return Interop.AndroidCrypto.RsaPadding.Pkcs1;
                 }
 
                 if (padding == RSAEncryptionPadding.OaepSHA1)
                 {
                     rsaPaddingProcessor = null;
-                    return Interop.Crypto.RsaPadding.OaepSHA1;
+                    return Interop.AndroidCrypto.RsaPadding.OaepSHA1;
                 }
 
                 if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                 {
                     rsaPaddingProcessor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-                    return Interop.Crypto.RsaPadding.NoPadding;
+                    return Interop.AndroidCrypto.RsaPadding.NoPadding;
                 }
 
                 throw PaddingModeNotSupported();
@@ -365,7 +365,7 @@ namespace System.Security.Cryptography
                 // It's entirely possible that this line will cause the key to be generated in the first place.
                 SafeRsaHandle key = GetKey();
 
-                RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
+                RSAParameters rsaParameters = Interop.AndroidCrypto.ExportRsaParameters(key, includePrivateParameters);
                 bool hasPrivateKey = rsaParameters.D != null;
 
                 if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
@@ -381,7 +381,7 @@ namespace System.Security.Cryptography
                 ValidateParameters(ref parameters);
                 ThrowIfDisposed();
 
-                SafeRsaHandle key = Interop.Crypto.RsaCreate();
+                SafeRsaHandle key = Interop.AndroidCrypto.RsaCreate();
                 bool imported = false;
 
                 if (key is null || key.IsInvalid)
@@ -391,7 +391,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    if (!Interop.Crypto.SetRsaParameters(
+                    if (!Interop.AndroidCrypto.SetRsaParameters(
                         key,
                         parameters.Modulus,
                         parameters.Modulus != null ? parameters.Modulus.Length : 0,
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+                ForceSetKeySize(BitsPerByte * Interop.AndroidCrypto.RsaSize(key));
             }
 
             public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                 }
 
-                SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+                SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaPublicKey(source.Slice(0, read));
 
                 if (key is null || key.IsInvalid)
                 {
@@ -463,7 +463,7 @@ namespace System.Security.Cryptography
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+                ForceSetKeySize(BitsPerByte * Interop.AndroidCrypto.RsaSize(key));
 
                 bytesRead = read;
             }
@@ -583,7 +583,7 @@ namespace System.Security.Cryptography
 
             private SafeRsaHandle GenerateKey()
             {
-                SafeRsaHandle key = Interop.Crypto.RsaCreate();
+                SafeRsaHandle key = Interop.AndroidCrypto.RsaCreate();
                 bool generated = false;
 
                 if (key is null || key.IsInvalid)
@@ -598,7 +598,7 @@ namespace System.Security.Cryptography
                         // The documentation for RSA_generate_key_ex does not say that it returns only
                         // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
                         // of 1 explicitly.
-                        int response = Interop.Crypto.RsaGenerateKeyEx(
+                        int response = Interop.AndroidCrypto.RsaGenerateKeyEx(
                             key,
                             KeySize,
                             exponent);
@@ -702,7 +702,7 @@ namespace System.Security.Cryptography
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
                 SafeRsaHandle rsa = GetKey();
 
-                int bytesRequired = Interop.Crypto.RsaSize(rsa);
+                int bytesRequired = Interop.AndroidCrypto.RsaSize(rsa);
 
                 if (allocateSignature)
                 {
@@ -734,7 +734,7 @@ namespace System.Security.Cryptography
                     throw PaddingModeNotSupported();
                 }
 
-                int ret = Interop.Crypto.RsaSignPrimitive(encodedBytes, destination, rsa);
+                int ret = Interop.AndroidCrypto.RsaSignPrimitive(encodedBytes, destination, rsa);
 
                 CryptoPool.Return(encodedRented, bytesRequired);
 
@@ -784,7 +784,7 @@ namespace System.Security.Cryptography
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
                 SafeRsaHandle rsa = GetKey();
 
-                int requiredBytes = Interop.Crypto.RsaSize(rsa);
+                int requiredBytes = Interop.AndroidCrypto.RsaSize(rsa);
 
                 if (signature.Length != requiredBytes)
                 {
@@ -801,7 +801,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    int ret = Interop.Crypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
+                    int ret = Interop.AndroidCrypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
 
                     CheckReturn(ret);
 
