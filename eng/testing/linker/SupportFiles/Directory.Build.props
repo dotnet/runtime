@@ -2,6 +2,7 @@
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <UseDefaultBlazorWASMFeatureSwitches>false</UseDefaultBlazorWASMFeatureSwitches>
+    <UseDefaultAndroidFeatureSwitches>false</UseDefaultAndroidFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
     <TrimMode>link</TrimMode>
