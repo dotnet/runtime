@@ -2615,7 +2615,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
             noway_assert(lvaTable[i].lvIsStructField);
             lvaTable[i].lvLiveInOutOfHndlr = 1;
             // For now, only enregister an EH Var if it is a single def.
-            if (!lvaEnregEHVars || !lvaTable[i].lvSingleDef)
+            if (!lvaEnregEHVars || !lvaTable[i].lvEhWriteThruCandidate)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
             }
@@ -2623,7 +2623,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
     }
 
     // For now, only enregister an EH Var if it is a single def.
-    if (!lvaEnregEHVars || !varDsc->lvSingleDef)
+    if (!lvaEnregEHVars || !varDsc->lvEhWriteThruCandidate)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
@@ -4077,6 +4077,28 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 BlockSetOps::AddElemD(this, varDsc->lvRefBlks, block->bbNum);
             }
         }
+
+        if (!varDsc->lvDisqualifyForEhWriteThru)
+        {
+            if (tree->gtFlags & GTF_VAR_DEF)
+            {
+                bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
+                bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
+
+                if ((varDsc->lvEhWriteThruCandidate == true) || (needsExplicitZeroInit == true) ||
+                    (tree->gtFlags & GTF_COLON_COND) || (tree->gtFlags & GTF_VAR_USEASG))
+                {
+                    varDsc->lvEhWriteThruCandidate = false;
+                    varDsc->lvDisqualifyForEhWriteThru = true;
+                }
+                else
+                {
+                    varDsc->lvEhWriteThruCandidate = true;
+                }
+            }
+        }
+
 #endif // ASSERTION_PROP
 
         bool allowStructs = false;
@@ -4446,6 +4468,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         if (!isRecompute)
         {
             varDsc->lvSingleDef = varDsc->lvIsParam;
+            varDsc->lvEhWriteThruCandidate = varDsc->lvIsParam;
         }
     }
 

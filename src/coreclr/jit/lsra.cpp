@@ -874,6 +874,7 @@ void LinearScan::setBlockSequence()
                 }
             }
 
+
             if (!block->isBBCallAlwaysPairTail() &&
                 (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail()))
             {
@@ -1781,7 +1782,18 @@ void LinearScan::identifyCandidates()
 
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = varDsc->lvSingleDef;
+                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
+#ifdef DEBUG
+                if (newInt->isWriteThru)
+                {
+                    JITDUMP("Marking Interal %d as writeThru because V%02u is a single def.\n", newInt->intervalIndex, lclNum);
+                }
+                else
+                {
+                    JITDUMP("Skipping Interal %d as writeThru because V%02u is not a single def.\n",
+                            newInt->intervalIndex, lclNum);
+                }
+#endif
                 setIntervalAsSpilled(newInt);
             }
 
@@ -7949,6 +7961,18 @@ void LinearScan::insertMove(
             // These block kinds don't have a branch at the end.
             assert((lastNode == nullptr) || (!lastNode->OperIsConditionalJump() &&
                                              !lastNode->OperIs(GT_SWITCH_TABLE, GT_SWITCH, GT_RETURN, GT_RETFILT)));
+
+            /*if (lastNode != nullptr && lastNode->OperIs(GT_STORE_LCL_VAR))
+            {
+                regNumber prevToReg   = lastNode->GetReg();
+                GenTree*  op1         = lastNode->gtGetOp1();
+                regNumber prevFromReg = op1->GetReg();
+                if (op1->TypeGet() == varDsc->TypeGet() && (fromReg == prevToReg) && (toReg == prevFromReg))
+                {
+                    JITDUMP("Skipping redundant resoltion");
+                    return;
+                }
+            }*/
             blockRange.InsertAtEnd(std::move(treeRange));
         }
     }
