@@ -6293,7 +6293,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
 	mono_domain_assemblies_lock (domain);
@@ -7304,7 +7304,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoType *t;
 		gboolean type_resolve, res;
 		MonoDomain *d = mono_domain_get ();
-		MonoAssemblyLoadContext *alc = mono_domain_default_alc (d);
+		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 		/* This is needed to be able to find referenced assemblies */
 		res = mono_domain_set_fast (domain, FALSE);

@@ -7,7 +7,13 @@
 PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t *buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_X509Encode(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
 
-PALEXPORT int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t bufLen, jobject /*X509Certificate*/ *out, int32_t outLen);
+/*
+Decodes a collection of certificates.
+
+Returns 1 on success, -1 on insufficient buffer, 0 otherwise.
+The outLen parameter will be set to the length required for decoding the collection.
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t *buf, int32_t bufLen, jobject /*X509Certificate*/ *out, int32_t *outLen);
 
 // Matches managed X509ContentType enum
 enum

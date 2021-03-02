@@ -55,24 +55,24 @@ function(ac_check_type type suffix includes)
 endfunction()
 
 ac_check_headers (
-  sys/mkdev.h sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
-  sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/inotify.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
-  sys/event.h sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
-  memory.h strings.h string.h stdint.h signal.h inttypes.h stdlib.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
-  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h complex.h unwind.h poll.h grp.h wchar.h linux/magic.h
+  sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
+  sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
+  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
+  strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h
+  gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
-  CommonCrypto/CommonDigest.h curses.h term.h termios.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
+  CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
   /usr/include/malloc.h)
 
 ac_check_funcs (
-  sigaction kill clock_nanosleep getgrgid_r getgrnam_r getresuid setresuid kqueue backtrace_symbols mkstemp mmap
-  madvise getrusage getpriority setpriority dladdr sysconf getrlimit prctl nl_langinfo
-  sched_getaffinity sched_setaffinity getpwnam_r getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
-  gethostname getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
+  sigaction kill clock_nanosleep kqueue backtrace_symbols mkstemp mmap
+  madvise getrusage dladdr sysconf getrlimit prctl nl_langinfo
+  sched_getaffinity sched_setaffinity getpwuid_r readlink chmod lstat getdtablesize ftruncate msync
+  getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   shm_open poll getfsstat mremap posix_fadvise vsnprintf sendfile statfs statvfs setpgid system
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
-  gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs if_nametoindex
+  gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs)
 
 if(NOT HOST_DARWIN)
@@ -92,10 +92,6 @@ ac_check_funcs(
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
 check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
-check_symbol_exists(IP_PKTINFO "linux/in.h" HAVE_IP_PKTINFO)
-check_symbol_exists(IPV6_PKTINFO "netdb.h" HAVE_IPV6_PKTINFO)
-check_symbol_exists(IP_DONTFRAGMENT "Ws2ipdef.h" HAVE_IP_DONTFRAGMENT)
-check_symbol_exists(IP_MTU_DISCOVER "linux/in.h" HAVE_IP_MTU_DISCOVER)
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
@@ -135,7 +131,6 @@ try_compile(GLIBC_HAS_CPU_COUNT ${CMAKE_BINARY_DIR}/CMakeTmp SOURCES "${CMAKE_BI
 if(HOST_WIN32)
   # checking for this doesn't work for some reason, hardcode result
   set(HAVE_WINTERNL_H 1)
-  set(HAVE_SIGNAL 1)
   set(HAVE_CRYPT_RNG 1)
   set(HAVE_GETADDRINFO 1)
   set(HAVE_GETNAMEINFO 1)
@@ -143,7 +138,6 @@ if(HOST_WIN32)
   set(HAVE_INET_NTOP 1)
   set(HAVE_INET_PTON 1)
   set(HAVE_STRUCT_SOCKADDR_IN6 1)
-  set(HAVE_STRUCT_IP_MREQ 1)
   set(HAVE_STRTOK_R 1)
   set(HAVE_EXECVP 0)
 endif()
@@ -161,7 +155,6 @@ if(HOST_IOS)
     set(HAVE_EXECV 0)
     set(HAVE_EXECVE 0)
     set(HAVE_EXECVP 0)
-    set(HAVE_SIGNAL 0)
   endif()
 elseif(HOST_MACCATALYST)
   set(HAVE_SYSTEM 0)

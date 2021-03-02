@@ -4898,7 +4898,6 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 				g_assert (res->vtable->klass == mono_defaults.int_class);
 				box_args [0] = ((MonoIntPtr*)res)->m_value;
 			} else {
-				g_assert (sig->ret->byref);
 				box_args [0] = NULL;
 			}
 			if (sig->ret->byref) {

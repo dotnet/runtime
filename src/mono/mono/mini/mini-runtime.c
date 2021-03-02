@@ -3185,8 +3185,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	gboolean callee_gsharedvt = FALSE;
 	MonoJitMemoryManager *jit_mm;
 
-	if (mono_ee_features.force_use_interpreter)
+	if (mono_ee_features.force_use_interpreter) {
+		// FIXME: On wasm, if the callee throws an exception, this will return NULL, and the
+		// exception will be stored inside the interpreter, it won't show up in exc/error.
 		return mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
+	}
 
 	error_init (error);
 	if (exc)
@@ -4790,6 +4793,7 @@ register_icalls (void)
 	register_icall (mono_throw_method_access, mono_icall_sig_void_ptr_ptr, FALSE);
 	register_icall (mono_throw_bad_image, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
+	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 
