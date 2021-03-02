@@ -120,10 +120,6 @@ BOOL readTest_ReadFile_test2(DWORD dwByteCount, char cResult)
 
 PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/paltest_readfile_test2")
 {
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-    // Test hard codes PAGE_SIZE = 4096. Apple Silicon does not have 4K pages.
-    printf("file_io_ReadFile_test2_paltest_readfile_test2 has been disabled on this platform\n");
-#else // defined(TARGET_OSX) && defined(TARGET_ARM64)
     HANDLE hFile = NULL;
     const int BUFFER_SIZE = 2 * PAGESIZE;
 
@@ -191,7 +187,6 @@ PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/p
 	
 	VirtualFree(readBuffer_ReadFile_test2, BUFFER_SIZE, MEM_RELEASE);
     PAL_Terminate();
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
     return PASS;
 }
 

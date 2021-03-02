@@ -17,10 +17,6 @@
 
 PALTEST(miscellaneous_queryperformancecounter_test1_paltest_queryperformancecounter_test1, "miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1")
 {
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
-    // We are see > 100 ms of average error on this platform
-    printf("miscellaneous_queryperformancecounter_test1_paltest_queryperformancecounter_test1 has been disabled on this platform\n");
-#else // defined(TARGET_OSX) && defined(TARGET_ARM64)
     /* Milliseconds of error which are acceptable Function execution time, etc.
     FreeBSD has a "standard" resolution of 50ms for waiting operations, so we
     must take that into account as well */
@@ -104,7 +100,6 @@ PALTEST(miscellaneous_queryperformancecounter_test1_paltest_queryperformancecoun
     /* Terminate the PAL.
      */  
     PAL_Terminate();
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
     return PASS;
 }
 
