@@ -422,12 +422,30 @@ namespace System.Globalization
             {
                 return CultureData.Invariant;
             }
-
-            // First check if GetCultureData() can find it (ie: its a real culture)
-            CultureData? retVal = GetCultureData(cultureName, useUserOverride);
-            if (retVal != null && !retVal.IsNeutralCulture)
+            CultureData? retVal = null;
+            try
             {
-                return retVal;
+                // First check if GetCultureData() can find it (ie: its a real culture)
+                retVal = GetCultureData(cultureName, useUserOverride);
+                if (retVal != null && !retVal.IsNeutralCulture)
+                {
+                    return retVal;
+                }
+            }
+            catch (CultureNotFoundException) when (GlobalizationMode.PredefinedCulturesOnly)
+            {
+                // Catching this exception because GetCultureData will throw if the region name is not defined yet
+                // If not a valid mapping from the registry we'll have to try the hard coded table
+                if (retVal == null || retVal.IsNeutralCulture)
+                {
+                    // Not a valid mapping, try the hard coded table
+                    if (RegionNames.TryGetValue(cultureName, out string? name))
+                    {
+                        // Make sure we can get culture data for it
+                        retVal = GetCultureData(name, useUserOverride);
+                        return retVal;
+                    }
+                }
             }
 
             // Not a specific culture, perhaps it's region-only name
@@ -698,7 +716,6 @@ namespace System.Globalization
                     return retVal;
                 }
             }
-
             // Not found in the hash table, need to see if we can build one that works for us
             CultureData? culture = CreateCultureData(cultureName, useUserOverride);
             if (culture == null)

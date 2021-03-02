@@ -178,14 +178,15 @@ namespace System
             }
         }
 
-        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(GetIsInvariantGlobalization);
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(() => GetGlobalizationMode ("Invariant"));
+        private static readonly Lazy<bool> m_isPredefinedCulturesOnly = new Lazy<bool>(() => GetGlobalizationMode ("PredefinedCulturesOnly"));
 
-        private static bool GetIsInvariantGlobalization()
+        private static bool GetGlobalizationMode(string mode)
         {
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
             if (globalizationMode != null)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
+                MethodInfo methodInfo = globalizationMode.GetProperty(mode, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
                 if (methodInfo != null)
                 {
                     return (bool)methodInfo.Invoke(null, null);
@@ -202,6 +203,8 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+        public static bool IsPredefinedCulturesOnly => m_isPredefinedCulturesOnly.Value;
+        public static bool IsNotPredefinedCulturesOnly => !IsPredefinedCulturesOnly;
 
         private static Version GetICUVersion()
         {

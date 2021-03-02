@@ -57,9 +57,16 @@ namespace System.Globalization.Tests
         {
             using (new ThreadCultureChange("en-US"))
             {
-                RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
-                Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
-                Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
+                try
+                {
+                    RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
+                    Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
+                    Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
+                }
+                catch (CultureNotFoundException) when (PlatformDetection.IsPredefinedCulturesOnly)
+                {
+                    AssertExtensions.Throws<CultureNotFoundException>(() => new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName));
+                }
             }
         }
 
