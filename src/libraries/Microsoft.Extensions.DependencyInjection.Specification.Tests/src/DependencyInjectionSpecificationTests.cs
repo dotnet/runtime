@@ -10,7 +10,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public abstract partial class DependencyInjectionSpecificationTests
     {
         protected abstract IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection);
@@ -32,7 +31,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ServicesRegisteredWithImplementationType_ReturnDifferentInstancesPerResolution_ForTransientServices()
         {
             // Arrange
@@ -85,7 +83,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TransientServiceCanBeResolvedFromProvider()
         {
             // Arrange
@@ -103,7 +100,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TransientServiceCanBeResolvedFromScope()
         {
             // Arrange
@@ -176,7 +172,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void MultipleServiceCanBeIEnumerableResolved()
         {
             // Arrange
@@ -195,7 +190,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void RegistrationOrderIsPreservedWhenServicesAreIEnumerableResolved()
         {
             // Arrange
@@ -223,7 +217,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void OuterServiceCanHaveOtherServicesInjected()
         {
             // Arrange
@@ -273,7 +266,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void FactoryServicesAreCreatedAsPartOfCreatingObjectGraph()
         {
             // Arrange
@@ -318,7 +310,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void LastServiceReplacesPreviousServices()
         {
             // Arrange
@@ -366,7 +357,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ScopedServiceCanBeResolved()
         {
             // Arrange
@@ -388,7 +378,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void NestedScopedServiceCanBeResolved()
         {
             // Arrange
@@ -411,7 +400,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ScopedServices_FromCachedScopeFactory_CanBeResolvedAndDisposed()
         {
             // Arrange
@@ -447,7 +435,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void DisposingScopeDisposesService()
         {
             // Arrange
@@ -554,7 +541,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void NestedScopedServiceCanBeResolvedWithNoFallbackProvider()
         {
             // Arrange
@@ -767,7 +753,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         [Theory]
         [MemberData(nameof(ServiceContainerPicksConstructorWithLongestMatchesData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ServiceContainerPicksConstructorWithLongestMatches(
             IServiceCollection serviceCollection,
             TypeWithSupersetConstructors expected)
@@ -844,7 +829,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         [InlineData(typeof(IFakeService), typeof(FakeService), typeof(IFakeService), ServiceLifetime.Singleton)]
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceProvider>), ServiceLifetime.Scoped)]
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>), typeof(IFakeOpenGenericService<IServiceProvider>), ServiceLifetime.Singleton)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void ResolvesDifferentInstancesForServiceWhenResolvingEnumerable(Type serviceType, Type implementation, Type resolve, ServiceLifetime lifetime)
         {
             // Arrange
