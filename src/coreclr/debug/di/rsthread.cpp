@@ -8551,10 +8551,10 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
     {
-#if !defined(EnC_SUPPORTED)
+#if !defined(FEATURE_ENC_SUPPORTED)
         ThrowHR(E_NOTIMPL);
 
-#else  // EnC_SUPPORTED
+#else  // FEATURE_ENC_SUPPORTED
         // Can only be called on leaf frame.
         if (!m_nativeFrame->IsLeafFrame())
         {
@@ -8571,7 +8571,7 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
         // Tell the left-side to do the remap
         hr = m_nativeFrame->m_pThread->SetRemapIP(nOffset);
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
     }
     PUBLIC_API_END(hr);
 

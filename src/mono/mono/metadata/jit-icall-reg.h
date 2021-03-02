@@ -211,7 +211,6 @@ MONO_JIT_ICALL (mono_init_vtable_slot) \
 MONO_JIT_ICALL (mono_interp_entry_from_trampoline) \
 MONO_JIT_ICALL (mono_interp_to_native_trampoline) \
 MONO_JIT_ICALL (mono_isfinite_double) \
-MONO_JIT_ICALL (mono_jit_set_domain) \
 MONO_JIT_ICALL (mono_ldftn) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper_generic_shared) \

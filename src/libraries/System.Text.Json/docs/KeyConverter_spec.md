@@ -77,7 +77,7 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
 
 `Dictionary<String, TValue>` results show the same numbers across branches since that still uses `DictionaryOfStringTValueConverter`.
 
-**master:**
+**main:**
 |                                       Type |                      Method |     Mean |     Error |    StdDev |   Median |      Min |       Max |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------------------- |---------------------------- |---------:|----------:|----------:|---------:|---------:|----------:|-------:|------:|------:|----------:|
 | WriteDictionary<Dictionary<String, Int32>> |        SerializeToUtf8Bytes | 8.737 us | 0.1760 us | 0.1883 us | 8.743 us | 8.487 us |  9.030 us | 0.8867 |     - |     - |    3760 B |
@@ -106,7 +106,7 @@ The custom `KeyConverter` that calls Utf8Parser underneath performs slightly fas
 
 ## Deserialize/Read
 
-**master:**
+**main:**
 |                                      Type |                   Method |     Mean |    Error |   StdDev |   Median |      Min |      Max |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------------------ |------------------------- |---------:|---------:|---------:|---------:|---------:|---------:|-------:|------:|------:|----------:|
 | ReadDictionary<Dictionary<String, Int32>> | DeserializeFromUtf8Bytes | 22.05 us | 0.439 us | 0.470 us | 22.10 us | 21.23 us | 23.16 us | 4.0872 |     - |     - |   17176 B |

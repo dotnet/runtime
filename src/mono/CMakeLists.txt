@@ -72,7 +72,6 @@ endif()
 #
 set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
-set(DISABLE_APPDOMAINS 1)
 set(DISABLE_CLEANUP 1)
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
@@ -223,6 +222,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(DISABLE_SHARED_LIBS 1)
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
+  set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -231,6 +231,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_NO_SYMLINKS 1)
   set(MONO_KEYWORD_THREAD "__declspec (thread)")
   set(MONO_ZERO_LEN_ARRAY 1)
+  set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior
@@ -509,7 +510,8 @@ elseif(HOST_OSX)
   include(FindPkgConfig)
   # FIXME: Handle errors
   # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:/usr/local/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig")
+  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
   pkg_check_modules(ICU icu-uc)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")

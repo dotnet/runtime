@@ -105,6 +105,12 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
+            if (PlatformDetection.IsSLES)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/48751")]
+                return;
+            }
+
             IPHostEntry entry = Dns.GetHostByName("");
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
@@ -115,6 +121,12 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
+            if (PlatformDetection.IsSLES)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/48751")]
+                return;
+            }
+
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.

@@ -58,12 +58,14 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
+static MonoClass* voidtaskresult_class;
 
 static int resolved_datetime_class = 0,
 	resolved_datetimeoffset_class = 0,
 	resolved_uri_class = 0,
 	resolved_task_class = 0,
-	resolved_safehandle_class = 0;
+	resolved_safehandle_class = 0,
+	resolved_voidtaskresult_class = 0;
 
 int mono_wasm_enable_gc = 1;
 
@@ -466,10 +468,16 @@ mono_wasm_register_bundled_satellite_assemblies ()
 	}
 }
 
+void mono_wasm_link_icu_shim (void);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+
+#ifndef INVARIANT_GLOBALIZATION
+	mono_wasm_link_icu_shim ();
+#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -799,6 +807,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
 #define MARSHAL_TYPE_STRING_INTERNED 29
+#define MARSHAL_TYPE_VOID 30
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -818,6 +827,10 @@ void mono_wasm_ensure_classes_resolved ()
 	if (!safehandle_class && !resolved_safehandle_class) {
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 		resolved_safehandle_class = 1;
+	}
+	if (!voidtaskresult_class && !resolved_voidtaskresult_class) {
+		voidtaskresult_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "VoidTaskResult");
+		resolved_voidtaskresult_class = 1;
 	}
 }
 
@@ -884,6 +897,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_DATEOFFSET;
 		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
 			return MARSHAL_TYPE_URI;
+		if (klass == voidtaskresult_class)
+			return MARSHAL_TYPE_VOID;
 		if (mono_class_is_enum (klass))
 			return MARSHAL_TYPE_ENUM;
 		if (!mono_type_is_reference (type)) //vt

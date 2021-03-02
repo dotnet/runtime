@@ -118,7 +118,7 @@ namespace System.Threading.Tasks.Dataflow
                         Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
-                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
 
@@ -354,7 +354,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool consumed = false;
                 try
                 {
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
                     if (consumed)
                     {
                         _source.AddMessage(consumedValue!);

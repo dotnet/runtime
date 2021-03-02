@@ -3316,7 +3316,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2;
                     costEx = 1;
                 }
-                else if (codeGen->validImmForInstr(INS_mov, conVal) && codeGen->validImmForInstr(INS_mvn, conVal))
+                else if (codeGen->validImmForInstr(INS_mov, conVal) || codeGen->validImmForInstr(INS_mvn, conVal))
                 {
                     // Uses mov or mvn
                     costSz = 4;
@@ -3483,7 +3483,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_CNS_DBL:
-                level = 0;
+            {
+                var_types targetType = tree->TypeGet();
+                level                = 0;
+#if defined(TARGET_XARCH)
                 /* We use fldz and fld1 to load 0.0 and 1.0, but all other  */
                 /* floating point constants are loaded using an indirection */
                 if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
@@ -3497,7 +3500,35 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = IND_COST_EX;
                     costSz = 4;
                 }
-                break;
+#elif defined(TARGET_ARM)
+                if (targetType == TYP_FLOAT)
+                {
+                    costEx = 1 + 2;
+                    costSz = 2 + 4;
+                }
+                else
+                {
+                    assert(targetType == TYP_DOUBLE);
+                    costEx = 1 + 4;
+                    costSz = 2 + 8;
+                }
+#elif defined(TARGET_ARM64)
+                if ((*((__int64*)&(tree->AsDblCon()->gtDconVal)) == 0) ||
+                    emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
+                {
+                    costEx = 1;
+                    costSz = 1;
+                }
+                else
+                {
+                    costEx = IND_COST_EX;
+                    costSz = 4;
+                }
+#else
+#error "Unknown TARGET"
+#endif
+            }
+            break;
 
             case GT_LCL_VAR:
                 level = 1;

@@ -224,6 +224,8 @@ public:
     virtual void Destruct();
 #endif
 
+    virtual BOOL IsEditAndContinueCapable() const { return TRUE; }
+
     // Apply an EnC edit
     HRESULT ApplyEditAndContinue(DWORD cbMetadata,
                             BYTE *pMetadata,

@@ -8936,7 +8936,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		g_assert (info->bp_addrs [native_offset] == 0);
 		info->bp_addrs [native_offset] = mini_get_breakpoint_trampoline ();
@@ -8960,7 +8960,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 	if (ji->from_aot) {
 		guint32 native_offset = ip - (guint8*)ji->code_start;
-		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8 *)ji->code_start);
+		SeqPointInfo *info = mono_arch_get_seq_point_info ((guint8 *)ji->code_start);
 
 		info->bp_addrs [native_offset] = NULL;
 	} else {
@@ -9041,20 +9041,26 @@ mono_arch_skip_single_step (MonoContext *ctx)
  * point implementation in AOTed code.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;
+	MonoJitMemoryManager *jit_mm;
+
+	/*
+	 * We don't have access to the method etc. so use the global
+	 * memory manager for now.
+	 */
+	jit_mm = get_default_jit_mm ();
 
 	// FIXME: Add a free function
 
-	mono_domain_lock (domain);
-	info = (SeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points,
-								code);
-	mono_domain_unlock (domain);
+	jit_mm_lock (jit_mm);
+	info = (SeqPointInfo *)g_hash_table_lookup (jit_mm->arch_seq_points, code);
+	jit_mm_unlock (jit_mm);
 
 	if (!info) {
-		ji = mono_jit_info_table_find (domain, code);
+		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
 
 		// FIXME: Optimize the size
@@ -9062,10 +9068,9 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 		info->ss_tramp_addr = &ss_trampoline;
 
-		mono_domain_lock (domain);
-		g_hash_table_insert (domain_jit_info (domain)->arch_seq_points,
-							 code, info);
-		mono_domain_unlock (domain);
+		jit_mm_lock (jit_mm);
+		g_hash_table_insert (jit_mm->arch_seq_points, code, info);
+		jit_mm_unlock (jit_mm);
 	}
 
 	return info;

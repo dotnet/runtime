@@ -3544,7 +3544,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	int dreg;
 	gpointer trampoline;
 	MonoInst *obj, *tramp_ins;
-	MonoDomain *domain;
 	guint8 **code_slot;
 
 	if (virtual_ && !cfg->llvm_only) {
@@ -3597,16 +3596,17 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		if (target_method_context_used) {
 			code_slot_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
 		} else {
-			domain = mono_domain_get ();
-			mono_domain_lock (domain);
-			if (!domain_jit_info (domain)->method_code_hash)
-				domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
-			code_slot = (guint8 **)g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+
+			jit_mm_lock (jit_mm);
+			if (!jit_mm->method_code_hash)
+				jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
+			code_slot = (guint8 **)g_hash_table_lookup (jit_mm->method_code_hash, method);
 			if (!code_slot) {
 				code_slot = (guint8 **)m_method_alloc0 (method, sizeof (gpointer));
-				g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
+				g_hash_table_insert (jit_mm->method_code_hash, method, code_slot);
 			}
-			mono_domain_unlock (domain);
+			jit_mm_unlock (jit_mm);
 
 			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
 		}
@@ -3645,9 +3645,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
 		if (virtual_)
-			trampoline = mono_create_delegate_virtual_trampoline (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_virtual_trampoline (klass, method);
 		else
-			trampoline = mono_create_delegate_trampoline_info (cfg->domain, klass, method);
+			trampoline = mono_create_delegate_trampoline_info (klass, method);
 		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
 	}
 
@@ -6156,7 +6156,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* SkipVerification is not allowed if core-clr is enabled */
-	if (!dont_verify && mini_assembly_can_skip_verification (cfg->domain, method)) {
+	if (!dont_verify && mini_assembly_can_skip_verification (method)) {
 		dont_verify = TRUE;
 		dont_verify_stloc = TRUE;
 	}
@@ -9067,7 +9067,7 @@ calli_end:
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, m_class_get_image (klass), m_class_get_type_token (klass), generic_context);
 						} else {
 							MonoType *klass_type = m_class_get_byval_arg (klass);
-							MonoReflectionType* reflection_type = mono_type_get_object_checked (cfg->domain, klass_type, cfg->error);
+							MonoReflectionType* reflection_type = mono_type_get_object_checked (klass_type, cfg->error);
 							EMIT_NEW_PCONST (cfg, ins, reflection_type);
 						}
 						ins->type = STACK_OBJ;
@@ -9535,10 +9535,10 @@ calli_end:
 				CHECK_CFG_ERROR;
 				CHECK_TYPELOAD (klass);
 			}
-			mono_domain_lock (cfg->domain);
-			if (cfg->domain->special_static_fields)
-				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
-			mono_domain_unlock (cfg->domain);
+
+			addr = mono_special_static_field_get_offset (field, cfg->error);
+			CHECK_CFG_ERROR;
+			CHECK_TYPELOAD (klass);
 
 			is_special_static = mono_class_field_is_special_static (field);
 
@@ -10219,7 +10219,7 @@ field_access_end:
 							EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 						}
 					} else {
-						MonoReflectionType *rt = mono_type_get_object_checked (cfg->domain, (MonoType *)handle, cfg->error);
+						MonoReflectionType *rt = mono_type_get_object_checked ((MonoType *)handle, cfg->error);
 						CHECK_CFG_ERROR;
 						EMIT_NEW_PCONST (cfg, ins, rt);
 					}
@@ -10881,11 +10881,13 @@ mono_ldptr:
 			constrained_class = NULL;
 			break;
 		}
-		case MONO_CEE_MONO_LDDOMAIN:
+		case MONO_CEE_MONO_LDDOMAIN: {
+			MonoDomain *domain = mono_get_root_domain ();
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			EMIT_NEW_PCONST (cfg, ins, cfg->compile_aot ? NULL : cfg->domain);
+			EMIT_NEW_PCONST (cfg, ins, cfg->compile_aot ? NULL : domain);
 			*sp++ = ins;
 			break;
+		}
 		case MONO_CEE_MONO_SAVE_LAST_ERROR:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 

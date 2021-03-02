@@ -1499,8 +1499,7 @@ mono_image_loaded_full (const char *name, gboolean refonly)
 		return NULL;
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_loaded_internal (mono_domain_default_alc (domain), name);
+	result = mono_image_loaded_internal (mono_alc_get_default (), name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1542,8 +1541,7 @@ mono_image_loaded (const char *name)
 {
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_loaded_internal (mono_domain_default_alc (domain), name);
+	result = mono_image_loaded_internal (mono_alc_get_default (), name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1735,8 +1733,7 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 	}
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, name, name);
+	result = mono_image_open_from_data_internal (mono_alc_get_default (), data, data_len, need_copy, status, FALSE, name, name);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1755,8 +1752,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	}
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, NULL, NULL);
+	result = mono_image_open_from_data_internal (mono_alc_get_default (), data, data_len, need_copy, status, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1769,8 +1765,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 {
 	MonoImage *result;
 	MONO_ENTER_GC_UNSAFE;
-	MonoDomain *domain = mono_domain_get ();
-	result = mono_image_open_from_data_internal (mono_domain_default_alc (domain), data, data_len, need_copy, status, FALSE, NULL, NULL);
+	result = mono_image_open_from_data_internal (mono_alc_get_default (), data, data_len, need_copy, status, FALSE, NULL, NULL);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -1839,8 +1834,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 			*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
 	}
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
-	return mono_image_open_a_lot (alc, fname, status, FALSE);
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, FALSE);
 }
 
 /**
@@ -1976,8 +1970,7 @@ mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImag
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
-	return mono_image_open_a_lot (alc, fname, status, FALSE);
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, FALSE);
 }
 
 /**
@@ -1994,9 +1987,8 @@ MonoImage *
 mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
 	
-	return do_mono_image_open (alc, fname, status, FALSE, TRUE, FALSE, FALSE);
+	return do_mono_image_open (mono_alc_get_default (), fname, status, FALSE, TRUE, FALSE, FALSE);
 }
 
 /**

@@ -8453,24 +8453,38 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
 //
 //  TODO-CQ: CLONE: After morph make sure this method extracts values before morph.
 //
-//  STMT      void(IL 0x007...0x00C)
-//  [000023] -A-XG+------              *  ASG       int
-//  [000022] D----+-N----              +--*  LCL_VAR   int    V06 tmp1
-//  [000048] ---XG+------              \--*  COMMA     int
-//  [000041] ---X-+------                 +--*  ARR_BOUNDS_CHECK_Rng void
-//  [000020] -----+------                 |  +--*  LCL_VAR   int    V04 loc0
-//  [000040] ---X-+------                 |  \--*  ARR_LENGTH int
-//  [000019] -----+------                 |     \--*  LCL_VAR   ref    V00 arg0
-//  [000021] a--XG+------                 \--*  IND       int
-//  [000047] -----+------                    \--*  ADD       byref
-//  [000038] -----+------                       +--*  LCL_VAR   ref    V00 arg0
-//  [000046] -----+------                       \--*  ADD       long
-//  [000044] -----+------                          +--*  LSH       long
-//  [000042] -----+------                          |  +--*  CAST      long < -int
-//  [000039] i----+------                          |  |  \--*  LCL_VAR   int    V04 loc0
-//  [000043] -----+-N----                          |  \--*  CNS_INT   long   2
-//  [000045] -----+------                          \--*  CNS_INT   long   16 Fseq[#FirstElem]
-
+//  Example tree to pattern match:
+//
+// *  COMMA     int
+// +--*  ARR_BOUNDS_CHECK_Rng void
+// |  +--*  LCL_VAR   int    V02 loc1
+// |  \--*  ARR_LENGTH int
+// |     \--*  LCL_VAR   ref    V00 arg0
+// \--*  IND       int
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V00 arg0
+//       \--*  ADD       long
+//          +--*  LSH       long
+//          |  +--*  CAST      long <- int
+//          |  |  \--*  LCL_VAR   int    V02 loc1
+//          |  \--*  CNS_INT   long   2
+//          \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
+// Note that byte arrays don't require the LSH to scale the index, so look like this:
+//
+// *  COMMA     ubyte
+// +--*  ARR_BOUNDS_CHECK_Rng void
+// |  +--*  LCL_VAR   int    V03 loc2
+// |  \--*  ARR_LENGTH int
+// |     \--*  LCL_VAR   ref    V00 arg0
+// \--*  IND       ubyte
+//    \--*  ADD       byref
+//       +--*  LCL_VAR   ref    V00 arg0
+//       \--*  ADD       long
+//          +--*  CAST      long <- int
+//          |  \--*  LCL_VAR   int    V03 loc2
+//          \--*  CNS_INT   long   16 Fseq[#FirstElem]
+//
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
 {
     if (tree->gtOper != GT_COMMA)
@@ -8544,15 +8558,20 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
-    if (si->gtOper != GT_LSH)
+    GenTree* index;
+    if (si->gtOper == GT_LSH)
     {
-        return false;
+        GenTree* scale = si->gtGetOp2();
+        index          = si->gtGetOp1();
+        if (scale->gtOper != GT_CNS_INT)
+        {
+            return false;
+        }
     }
-    GenTree* scale = si->gtGetOp2();
-    GenTree* index = si->gtGetOp1();
-    if (scale->gtOper != GT_CNS_INT)
+    else
     {
-        return false;
+        // No scale (e.g., byte array).
+        index = si;
     }
 #ifdef TARGET_64BIT
     if (index->gtOper != GT_CAST)
@@ -9562,35 +9581,38 @@ void Compiler::optRemoveRedundantZeroInits()
                             bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                             bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-                            if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
-                                (lclDsc->lvIsStructField &&
-                                 BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
-                                (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
+                            if (!bbInALoop || bbIsReturn)
                             {
-                                // We are guaranteed to have a zero initialization in the prolog or a
-                                // dominating explicit zero initialization and the local hasn't been redefined
-                                // between the prolog and this explicit zero initialization so the assignment
-                                // can be safely removed.
-                                if (tree == stmt->GetRootNode())
+                                if (BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclNum) ||
+                                    (lclDsc->lvIsStructField &&
+                                     BitVecOps::IsMember(&bitVecTraits, zeroInitLocals, lclDsc->lvParentLcl)) ||
+                                    (!lclDsc->lvTracked && !fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn)))
                                 {
-                                    fgRemoveStmt(block, stmt);
-                                    removedExplicitZeroInit      = true;
-                                    lclDsc->lvSuppressedZeroInit = 1;
-
-                                    if (lclDsc->lvTracked)
+                                    // We are guaranteed to have a zero initialization in the prolog or a
+                                    // dominating explicit zero initialization and the local hasn't been redefined
+                                    // between the prolog and this explicit zero initialization so the assignment
+                                    // can be safely removed.
+                                    if (tree == stmt->GetRootNode())
                                     {
-                                        removedTrackedDefs   = true;
-                                        unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
-                                        *pDefsCount          = (*pDefsCount) - 1;
+                                        fgRemoveStmt(block, stmt);
+                                        removedExplicitZeroInit      = true;
+                                        lclDsc->lvSuppressedZeroInit = 1;
+
+                                        if (lclDsc->lvTracked)
+                                        {
+                                            removedTrackedDefs   = true;
+                                            unsigned* pDefsCount = defsInBlock.LookupPointer(lclNum);
+                                            *pDefsCount          = (*pDefsCount) - 1;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
-                            {
-                                BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                if (treeOp->gtOp1->OperIs(GT_LCL_VAR))
+                                {
+                                    BitVecOps::AddElemD(&bitVecTraits, zeroInitLocals, lclNum);
+                                }
+                                *pRefCount = 0;
                             }
-                            *pRefCount = 0;
                         }
 
                         if (!removedExplicitZeroInit && treeOp->gtOp1->OperIs(GT_LCL_VAR) &&

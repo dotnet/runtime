@@ -1761,14 +1761,19 @@ ids_cleanup (void)
 }
 
 static void
-debugger_agent_free_domain_info (MonoDomain *domain)
+debugger_agent_free_mem_manager (gpointer mem_manager)
 {
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
-	int i, j;
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)mem_manager;
+	AgentDomainInfo *info = (AgentDomainInfo *)jit_mm->agent_info;
+	int i;
 	GHashTableIter iter;
 	GPtrArray *file_names;
 	char *basename;
 	GSList *l;
+
+	// FIXME:
+	if (mem_manager != get_default_jit_mm ())
+		return;
 
 	if (info) {
 		for (i = 0; i < ID_NUM; ++i)
@@ -1797,8 +1802,9 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	domain_jit_info (domain)->agent_info = NULL;
+	jit_mm->agent_info = NULL;
 
+#if 0
 	/* Clear ids referencing structures in the domain */
 	dbg_lock ();
 	for (i = 0; i < ID_NUM; ++i) {
@@ -1811,17 +1817,15 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		}
 	}
 	dbg_unlock ();
-
-	mono_de_domain_remove (domain);
+#endif
 }
 
 static AgentDomainInfo*
-get_agent_domain_info (MonoDomain *domain)
+get_agent_info (void)
 {
 	AgentDomainInfo *info = NULL;
-	MonoJitDomainInfo *jit_info = domain_jit_info (domain);
-
-	info = (AgentDomainInfo *)jit_info->agent_info;
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	info = (AgentDomainInfo *)jit_mm->agent_info;
 
 	if (info) {
 		mono_memory_read_barrier ();
@@ -1836,7 +1840,7 @@ get_agent_domain_info (MonoDomain *domain)
 
 	mono_memory_write_barrier ();
 
-	gpointer other_info = mono_atomic_cas_ptr (&jit_info->agent_info, info, NULL);
+	gpointer other_info = mono_atomic_cas_ptr (&jit_mm->agent_info, info, NULL);
 
 	if (other_info != NULL) {
 		g_hash_table_destroy (info->loaded_classes);
@@ -1846,7 +1850,7 @@ get_agent_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	return (AgentDomainInfo *)jit_info->agent_info;
+	return (AgentDomainInfo *)jit_mm->agent_info;
 }
 
 static int
@@ -1858,7 +1862,7 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	if (val == NULL)
 		return 0;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	dbg_lock ();
 
@@ -2154,7 +2158,6 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
-		data->domain = info->domain;
 		return TRUE;
 	}
 }
@@ -2697,17 +2700,17 @@ no_seq_points_found (MonoMethod *method, int offset)
 }
 
 static int
-calc_il_offset (MonoDomain *domain, MonoMethod *method, int native_offset, gboolean is_top_frame)
+calc_il_offset (MonoMethod *method, int native_offset, gboolean is_top_frame)
 {
 	int ret = -1;
 	if (is_top_frame) {
 		SeqPoint sp;
 		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
-		if (mono_find_prev_seq_point_for_native_offset (domain, method, native_offset, NULL, &sp))
+		if (mono_find_prev_seq_point_for_native_offset (method, native_offset, NULL, &sp))
 			ret = sp.il_offset;
 	}
 	if (ret == -1)
-		ret = mono_debug_il_offset_from_address (method, domain, native_offset);
+		ret = mono_debug_il_offset_from_address (method, NULL, native_offset);
 	return ret;
 }
 
@@ -2756,7 +2759,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	}
 
 	if (info->il_offset == -1) {
-		info->il_offset = calc_il_offset (info->domain, method, info->native_offset, ud->frames == NULL);
+		info->il_offset = calc_il_offset (method, info->native_offset, ud->frames == NULL);
 	}
 
 	PRINT_DEBUG_MSG (1, "\tFrame: %s:[il=0x%x, native=0x%x] %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed);
@@ -2784,7 +2787,6 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
 	frame->de.method = method;
 	frame->de.native_offset = info->native_offset;
 
@@ -2996,7 +2998,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 			StackFrame *top_frame = tls->frames [0];
 			if (interp_resume_frame == top_frame->interp_frame) {
 				int native_offset = (int) ((uintptr_t) interp_resume_ip - (uintptr_t) top_frame->de.ji->code_start);
-				top_frame->il_offset = calc_il_offset (top_frame->de.domain, top_frame->de.method, native_offset, TRUE);
+				top_frame->il_offset = calc_il_offset (top_frame->de.method, native_offset, TRUE);
 			}
 		}
 	}
@@ -3012,7 +3014,7 @@ static void
 emit_appdomain_load (gpointer key, gpointer value, gpointer user_data)
 {
 	process_profiler_event (EVENT_KIND_APPDOMAIN_CREATE, value);
-	g_hash_table_foreach (get_agent_domain_info ((MonoDomain *)value)->loaded_classes, emit_type_load, NULL);
+	g_hash_table_foreach (get_agent_info ()->loaded_classes, emit_type_load, NULL);
 }
 
 /*
@@ -3846,10 +3848,9 @@ static void
 send_type_load (MonoClass *klass)
 {
 	gboolean type_load = FALSE;
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 
@@ -3875,7 +3876,7 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 	g_assert (info);
 
 	old_domain = mono_domain_get ();
@@ -4457,7 +4458,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		 * Find the seq point corresponding to the landing site ip, which is the first seq
 		 * point after ip.
 		 */
-		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &args->sp);
+		found_sp = mono_find_next_seq_point_for_native_offset (frame.method, frame.native_offset, &info, &args->sp);
 		if (!found_sp)
 			no_seq_points_found (frame.method, frame.native_offset);
 		if (!found_sp) {
@@ -4505,7 +4506,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		if (frame) {
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &args->sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.method, frame->de.native_offset, &info, &args->sp);
 				if (!found_sp)
 					no_seq_points_found (frame->de.method, frame->de.native_offset);
 				if (!found_sp) {
@@ -5385,7 +5386,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 					g_free (vtype_buf);
 					return err;
 				}
-				*(MonoObject**)addr = mono_value_box_checked (d, klass, vtype_buf, error);
+				*(MonoObject**)addr = mono_value_box_checked (klass, vtype_buf, error);
 				mono_error_cleanup (error);
 				g_free (vtype_buf);
 			} else {
@@ -5443,7 +5444,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 				g_free (nullable_buf);
 				return err;
 			}
-			MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (targ), nullable_buf, error);
+			MonoObject *boxed = mono_value_box_checked (mono_class_from_mono_type_internal (targ), nullable_buf, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return ERR_INVALID_OBJECT;
@@ -5794,14 +5795,9 @@ type_comes_from_assembly (gpointer klass, gpointer also_klass, gpointer assembly
 static void
 clear_types_for_assembly (MonoAssembly *assembly)
 {
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	if (!domain || !domain_jit_info (domain))
-		/* Can happen during shutdown */
-		return;
-
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 	g_hash_table_foreach_remove (info->loaded_classes, type_comes_from_assembly, assembly);
@@ -6297,7 +6293,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
 	mono_domain_assemblies_lock (domain);
@@ -6336,7 +6332,7 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
+	AgentDomainInfo *info = get_agent_info ();
 
 	/* Update 'source_file_to_class' cache */
 	g_hash_table_iter_init (&iter, info->loaded_classes);
@@ -7232,12 +7228,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
-get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf, MonoError *error)
+get_assembly_object_command (MonoAssembly *ass, Buffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	ErrorCode err = ERR_NONE;
 	error_init (error);
-	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
+	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (ass, error);
 	if (MONO_HANDLE_IS_NULL (o)) {
 		err = ERR_INVALID_OBJECT;
 		goto leave;
@@ -7290,7 +7286,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
 		ERROR_DECL (error);
-		err = get_assembly_object_command (domain, ass, buf, error);
+		err = get_assembly_object_command (ass, buf, error);
 		mono_error_cleanup (error);
 		return err;
 	}
@@ -7308,7 +7304,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoType *t;
 		gboolean type_resolve, res;
 		MonoDomain *d = mono_domain_get ();
-		MonoAssemblyLoadContext *alc = mono_domain_default_alc (d);
+		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 		/* This is needed to be able to find referenced assemblies */
 		res = mono_domain_set_fast (domain, FALSE);
@@ -7874,7 +7870,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoObject *o = (MonoObject*)mono_type_get_object_checked (m_class_get_byval_arg (klass), error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			goto invalid_object;
@@ -8661,7 +8657,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = mono_find_seq_point (domain, method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (method, il_offset, &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -8812,7 +8808,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	sig = mono_method_signature_internal (frame->actual_method);
 
-	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->de.domain, frame->actual_method))
+	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->actual_method))
 		/*
 		 * The method is probably from an aot image compiled without soft-debug, variables might be dead, etc.
 		 */
@@ -9859,7 +9855,7 @@ mono_debugger_agent_init (void)
 	cbs.single_step_event = debugger_agent_single_step_event;
 	cbs.single_step_from_context = debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
-	cbs.free_domain_info = debugger_agent_free_domain_info;
+	cbs.free_mem_manager = debugger_agent_free_mem_manager;
 	cbs.unhandled_exception = debugger_agent_unhandled_exception;
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;

@@ -587,6 +587,12 @@ namespace System.Security.Cryptography
         public byte[] CryptDeriveKey(string algname, string alghashname, int keySize, byte[] rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override byte[] GetBytes(int cb) { throw null; }
+        public static byte[] Pbkdf2(byte[] password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int outputLength) { throw null; }
+        public static byte[] Pbkdf2(System.ReadOnlySpan<byte> password, System.ReadOnlySpan<byte> salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int outputLength) { throw null; }
+        public static void Pbkdf2(System.ReadOnlySpan<byte> password, System.ReadOnlySpan<byte> salt, System.Span<byte> destination, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public static byte[] Pbkdf2(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int outputLength) { throw null; }
+        public static void Pbkdf2(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> salt, System.Span<byte> destination, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public static byte[] Pbkdf2(string password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, int outputLength) { throw null; }
         public override void Reset() { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

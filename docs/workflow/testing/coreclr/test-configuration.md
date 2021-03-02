@@ -51,13 +51,13 @@ Therefore the managed portion of each test **must not contain**:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
-* Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/master/src/tests/Common/test_dependencies/test_dependencies.csproj).
+* Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/main/src/tests/Common/test_dependencies/test_dependencies.csproj).
 * Get access to System.Private.CoreLib types and methods that are not exposed via public surface by adding the following to the csproj:
     * `<ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>`
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
-* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/master/src/tests/issues.targets) if the test fails due to active bug.
+* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets) if the test fails due to active bug.
 
 ### Creating a C# test project
 
