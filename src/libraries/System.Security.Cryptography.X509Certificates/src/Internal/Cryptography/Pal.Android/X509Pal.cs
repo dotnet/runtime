@@ -60,12 +60,14 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException();
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);
+                if (contentType != X509ContentType.Unknown)
+                    return contentType;
 
-                // TODO: [AndroidCrypto] Handle PKCS#12
-                if (contentType == X509ContentType.Unknown)
-                    throw new CryptographicException();
+                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                    return X509ContentType.Pkcs12;
 
-                return contentType;
+                // Throw on unknown type to match Unix and Windows
+                throw new CryptographicException();
             }
 
             public X509ContentType GetCertContentType(string fileName)

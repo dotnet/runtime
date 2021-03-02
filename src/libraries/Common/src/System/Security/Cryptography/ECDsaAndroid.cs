@@ -8,6 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class ECDsa : AsymmetricAlgorithm
     {
         /// <summary>
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography
             return ec;
         }
     }
+#endif
 
     internal static partial class ECDsaImplementation
     {
@@ -81,6 +83,12 @@ namespace System.Security.Cryptography
                 // side effect of dereferencing _key.
                 base.KeySize = keySize;
                 _key = new ECAndroid(this);
+            }
+
+            internal ECDsaAndroid(SafeEcKeyHandle ecKeyHandle)
+            {
+                _key = new ECAndroid(ecKeyHandle.DuplicateHandle());
+                ForceSetKeySize(_key.KeySize);
             }
 
             /// <summary>
@@ -363,6 +371,8 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
+
+            internal SafeEcKeyHandle DuplicateKeyHandle() => _key.UpRefKeyHandle();
 
             private void ThrowIfDisposed()
             {

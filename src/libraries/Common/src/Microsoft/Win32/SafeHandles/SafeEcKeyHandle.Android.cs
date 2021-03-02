@@ -9,10 +9,9 @@ using System.Security.Cryptography;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeEcKeyHandle : SafeHandle
+    internal sealed class SafeEcKeyHandle : SafeKeyHandle
     {
-        public SafeEcKeyHandle() :
-            base(IntPtr.Zero, ownsHandle: true)
+        public SafeEcKeyHandle()
         {
         }
 
@@ -21,11 +20,6 @@ namespace Microsoft.Win32.SafeHandles
             Interop.AndroidCrypto.EcKeyDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
         }
 
         internal static SafeEcKeyHandle DuplicateHandle(IntPtr handle)
@@ -45,6 +39,6 @@ namespace Microsoft.Win32.SafeHandles
             return safeHandle;
         }
 
-        internal SafeEcKeyHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
+        internal override SafeEcKeyHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
     }
 }

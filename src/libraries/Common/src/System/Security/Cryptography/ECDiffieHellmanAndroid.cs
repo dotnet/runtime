@@ -28,6 +28,12 @@ namespace System.Security.Cryptography
                 _key = new ECAndroid(this);
             }
 
+            internal ECDiffieHellmanAndroid(SafeEcKeyHandle ecKeyHandle)
+            {
+                _key = new ECAndroid(ecKeyHandle.DuplicateHandle());
+                KeySizeValue = _key.KeySize;
+            }
+
             public override KeySizes[] LegalKeySizes =>
                 new[] {
                     new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
@@ -111,6 +117,8 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
+
+            internal SafeEcKeyHandle DuplicateKeyHandle() => _key.UpRefKeyHandle();
 
             private void ThrowIfDisposed()
             {
