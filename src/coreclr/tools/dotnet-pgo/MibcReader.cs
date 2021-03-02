@@ -36,7 +36,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
     class MibcReader
     {
-        static IEnumerable<MIbcData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
+        static IEnumerable<MIbcData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create((EcmaMethod)method);
             byte[] ilBytes = ilBody.GetILBytes();
@@ -136,9 +136,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<MIbcData> ReadMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes)
+        public static IEnumerable<MIbcData> ReadMIbcData(TypeSystemContext tsc, System.Reflection.PortableExecutable.PEReader peReader)
         {
-            var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(moduleBytes));
             var module = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
             var loadedMethod = (EcmaMethod)module.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
@@ -154,7 +153,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     case ILOpcode.ldtoken:
                         UInt32 token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                        foreach (var data in ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)))
+                        foreach (var data in ReadMIbcGroup((EcmaMethod)ilBody.GetObject((int)token)))
                             yield return data;
                         break;
                     case ILOpcode.pop:

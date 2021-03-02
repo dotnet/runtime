@@ -296,7 +296,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         static int ValidateMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes, ICollection<ProcessedMethodData<MethodT>> methodsToAttemptToPrepare)
         {
-            var mibcLoadedData = MibcReader.ReadMIbcData(tsc, outputFileName, moduleBytes).ToArray();
+            var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(moduleBytes));
+            var mibcLoadedData = MibcReader.ReadMIbcData(tsc, peReader).ToArray();
             Dictionary<MethodT, MIbcData> mibcDict = new Dictionary<MethodT, MIbcData>();
 
             foreach (var mibcData in mibcLoadedData)
