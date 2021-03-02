@@ -147,13 +147,17 @@ namespace System.IO
             _buffer = shadowBuffer;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureBufferAllocated()
         {
             Debug.Assert(_bufferSize > 0);
 
             // BufferedStream is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
+            {
+                AllocateBuffer();
+            }
+
+            void AllocateBuffer() // logic kept in a separate method to get the method inlined
             {
                 _buffer = new byte[_bufferSize];
 
@@ -294,7 +298,14 @@ namespace System.IO
             finally
             {
                 _stream = null;
-                _buffer = null;
+
+                // Don't set the buffer to null, to avoid a NullReferenceException
+                // when users have a race condition in their code (i.e. they call
+                // Close when calling another method on Stream like Read).
+                if (!_actLikeFileStream)
+                {
+                    _buffer = null;
+                }
 
                 // Call base.Dispose(bool) to cleanup async IO resources
                 base.Dispose(disposing);
@@ -320,7 +331,14 @@ namespace System.IO
             finally
             {
                 _stream = null;
-                _buffer = null;
+
+                // Don't set the buffer to null, to avoid a NullReferenceException
+                // when users have a race condition in their code (i.e. they call
+                // Close when calling another method on Stream like Read).
+                if (!_actLikeFileStream)
+                {
+                    _buffer = null;
+                }
             }
         }
 
