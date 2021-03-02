@@ -813,7 +813,7 @@ namespace System.Security.Cryptography
                     {
                         byte[] repadRent = CryptoPool.Rent(unwrapped.Length);
                         Span<byte> repadded = repadRent.AsSpan(0, requiredBytes);
-                        processor.PadPkcs1Signature(hash, repadRent);
+                        processor.PadPkcs1Signature(hash, repadded);
                         bool valid = CryptographicOperations.FixedTimeEquals(repadded, unwrapped);
                         CryptoPool.Return(repadRent, requiredBytes);
                         return valid;

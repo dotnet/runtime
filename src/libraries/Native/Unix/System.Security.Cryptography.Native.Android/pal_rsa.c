@@ -170,6 +170,12 @@ PALEXPORT int32_t CryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uin
     if (!rsa)
         return RSA_FAIL;
 
+    if (!rsa->privateKey)
+    {
+        LOG_ERROR("RSA private key required to sign.");
+        return RSA_FAIL;
+    }
+
     JNIEnv* env = GetJNIEnv();
 
     jobject algName = JSTRING("RSA/ECB/NoPadding");

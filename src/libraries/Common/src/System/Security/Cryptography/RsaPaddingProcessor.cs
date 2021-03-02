@@ -162,7 +162,6 @@ namespace System.Security.Cryptography
 
             if (source.Length != expectedLength)
             {
-                Debug.Fail($"Provided has is {source.Length} bytes, should be {expectedLength}");
                 throw new CryptographicException();
             }
 
