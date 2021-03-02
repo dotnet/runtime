@@ -151,6 +151,8 @@ public:
     HRESULT STDMETHODCALLTYPE Clone(ICorDebugEnum** ppEnum);
     HRESULT STDMETHODCALLTYPE GetCount(ULONG* pcelt);
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+    
+    HRESULT GetCount();
 };
 
 #endif

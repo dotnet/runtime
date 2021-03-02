@@ -29,10 +29,12 @@ CordbProcess::CordbProcess(Cordb* cordb) : CordbBaseMono(NULL)
     m_pSteppers      = new ArrayList();
     this->m_pCordb   = cordb;
     m_bIsJustMyCode  = false;
+    m_pSemReadWrite = new UTSemReadWrite();
 }
 
 CordbProcess::~CordbProcess()
 {
+    delete m_pSemReadWrite;
     if (m_pAppDomainEnum)
         m_pAppDomainEnum->InternalRelease();
 
@@ -534,118 +536,153 @@ CordbProcess::CommitChanges(ULONG                             cSnapshots,
 
 void CordbProcess::AddThread(CordbThread* thread)
 {
+    dbg_lock();
     m_pThreads->Append(thread);
     thread->InternalAddRef();
+    dbg_unlock();
 }
 
 void CordbProcess::AddFunction(CordbFunction* function)
 {
+    dbg_lock();
     m_pFunctions->Append(function);
     function->InternalAddRef();
+    dbg_unlock();
 }
 
 void CordbProcess::AddModule(CordbModule* module)
 {
+    dbg_lock();
     m_pModules->Append(module);
     module->InternalAddRef();
+    dbg_unlock();
 }
 
 void CordbProcess::AddAppDomain(CordbAppDomain* appDomain)
 {
+    dbg_lock();
     m_pAddDomains->Append(appDomain);
     appDomain->InternalAddRef();
+    dbg_unlock();    
 }
 
 void CordbProcess::AddPendingEval(CordbEval* eval)
 {
+    dbg_lock();
     m_pPendingEval->Append(eval);
     eval->InternalAddRef();
+    dbg_unlock();
 }
 
 void CordbProcess::AddBreakpoint(CordbFunctionBreakpoint* bp)
 {
+    dbg_lock();
     m_pBreakpoints->Append(bp);
     bp->InternalAddRef();
+    dbg_unlock();
 }
 
 void CordbProcess::AddStepper(CordbStepper* step)
 {
+    dbg_lock();
     m_pSteppers->Append(step);
     step->InternalAddRef();
+    dbg_unlock();
 }
 
 CordbFunction* CordbProcess::FindFunction(int id)
 {
+    CordbFunction* ret = NULL;
+    dbg_lock();
     for (DWORD i = 0; i < m_pFunctions->GetCount(); i++)
     {
         CordbFunction* function = (CordbFunction*)m_pFunctions->Get(i);
         if (function->GetDebuggerId() == id)
         {
-            return function;
+            ret = function;
+            break;
         }
     }
-    return NULL;
+    dbg_unlock();
+    return ret;
 }
 
 CordbStepper* CordbProcess::GetStepper(int id)
 {
+    CordbStepper *ret = NULL;
+    dbg_lock();
     for (DWORD i = 0; i < m_pSteppers->GetCount(); i++)
     {
         CordbStepper* stepper = (CordbStepper*)m_pSteppers->Get(i);
         if (stepper->GetDebuggerId() == id)
         {
-            return stepper;
+            ret = stepper;
+            break;
         }
     }
-    return NULL;
+    dbg_unlock();
+    return ret;
 }
 
 CordbModule* CordbProcess::GetModule(int module_id)
 {
+    CordbModule* ret = NULL;
+    dbg_lock();    
     for (DWORD i = 0; i < m_pModules->GetCount(); i++)
     {
         CordbModule* module = (CordbModule*)m_pModules->Get(i);
         if (module->GetDebuggerId() == module_id)
         {
-            return module;
+            ret = module;
+            break;
         }
     }
-    return NULL;
+    dbg_unlock();
+    return ret;
 }
 
 CordbAppDomain* CordbProcess::GetCurrentAppDomain()
 {
+    CordbAppDomain* ret = NULL;
+    dbg_lock();
     if (m_pAddDomains->GetCount() > 0)
-        return (CordbAppDomain*)m_pAddDomains->Get(0);
-    return NULL;
+        ret = (CordbAppDomain*)m_pAddDomains->Get(0);
+    dbg_unlock();
+    return ret;
 }
 
 CordbThread* CordbProcess::FindThread(long thread_id)
 {
-    DWORD i = 0;
-    while (i < m_pThreads->GetCount())
+    CordbThread* ret = NULL;
+    dbg_lock();
+    for (DWORD i = 0; i < m_pThreads->GetCount(); i++)
     {
         CordbThread* thread = (CordbThread*)m_pThreads->Get(i);
         if (thread->GetThreadId() == thread_id)
         {
-            return thread;
+            ret = thread;
+            break;
         }
-        i++;
     }
-    return NULL;
+    dbg_unlock();
+    return ret;
 }
 
 CordbFunctionBreakpoint* CordbProcess::GetBreakpoint(int id)
 {
+    CordbFunctionBreakpoint* ret = NULL;
+    dbg_lock();
     for (DWORD i = 0; i < m_pBreakpoints->GetCount(); i++)
     {
         CordbFunctionBreakpoint* bp = (CordbFunctionBreakpoint*)m_pBreakpoints->Get(i);
         if (bp->GetDebuggerId() == id)
         {
-            return bp;
+            ret = bp;
+            break;
         }
     }
-    return NULL;
+    dbg_unlock();
+    return ret;
 }
 
 void CordbProcess::SetJMCStatus(BOOL bIsJustMyCode)

@@ -28,6 +28,7 @@ CordbFrameEnum::~CordbFrameEnum()
 
 HRESULT STDMETHODCALLTYPE CordbFrameEnum::Next(ULONG celt, ICorDebugFrame* frames[], ULONG* pceltFetched)
 {
+    GetCount();
     for (int i = 0; i < m_nFrames; i++)
     {
         this->m_ppFrames[i]->QueryInterface(IID_ICorDebugFrame, (void**)&frames[i]);
@@ -61,10 +62,10 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::Clone(ICorDebugEnum** ppEnum)
     return E_NOTIMPL;
 }
 
-HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG* pcelt)
-{
-    LOG((LF_CORDB, LL_INFO1000000, "CordbFrameEnum - GetCount - IMPLEMENTED\n"));
+HRESULT CordbFrameEnum::GetCount() {
     HRESULT hr = S_OK;
+    if (m_nFrames != 0)
+        return hr;
     EX_TRY 
     {
         Reset();
@@ -95,10 +96,19 @@ HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG* pcelt)
             frame->InternalAddRef();
             m_ppFrames[i] = frame;
         }
-
-        *pcelt = m_nFrames;
     }
     EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE CordbFrameEnum::GetCount(ULONG* pcelt)
+{
+    LOG((LF_CORDB, LL_INFO1000000, "CordbFrameEnum - GetCount - IMPLEMENTED\n"));
+    HRESULT hr = S_OK;
+    
+    hr = GetCount();
+    *pcelt = m_nFrames;
+
     return hr;
 }
 
