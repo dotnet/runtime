@@ -6,6 +6,7 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -21,12 +22,18 @@ namespace Internal.Cryptography.Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDsaPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDsaImplementation.ECDsaAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDiffieHellmanPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
@@ -73,6 +80,16 @@ namespace Internal.Cryptography.Pal
             public X509ContentType GetCertContentType(string fileName)
             {
                 return GetCertContentType(File.ReadAllBytes(fileName));
+            }
+
+            private SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
+            {
+                AndroidCertificatePal certPal = (AndroidCertificatePal)pal;
+                IntPtr ptr = Interop.AndroidCrypto.X509GetPublicKey(certPal.SafeHandle, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC);
+                if (ptr == IntPtr.Zero)
+                    throw new CryptographicException();
+
+                return new SafeEcKeyHandle(ptr);
             }
         }
     }

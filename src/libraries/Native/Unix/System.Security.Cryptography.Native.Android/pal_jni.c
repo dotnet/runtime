@@ -123,23 +123,7 @@ jmethodID g_CertFactoryGenerateCRL;
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
 jmethodID g_X509CertGetEncoded;
-jmethodID g_X509CertGetIssuerX500Principal;
-jmethodID g_X509CertGetNotAfter;
-jmethodID g_X509CertGetNotBefore;
 jmethodID g_X509CertGetPublicKey;
-jmethodID g_X509CertGetSerialNumber;
-jmethodID g_X509CertGetSigAlgOID;
-jmethodID g_X509CertGetSubjectX500Principal;
-jmethodID g_X509CertGetVersion;
-
-// java/security/cert/X509Certificate implements java/security/cert/X509Extension
-jmethodID g_X509CertGetCriticalExtensionOIDs;
-jmethodID g_X509CertGetExtensionValue;
-jmethodID g_X509CertGetNonCriticalExtensionOIDs;
-
-// java/security/cert/X509CRL
-jclass    g_X509CRLClass;
-jmethodID g_X509CRLGetNextUpdate;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -210,6 +194,7 @@ jmethodID g_ECPrivateKeySpecCtor;
 
 // java/security/interfaces/ECPublicKey
 jclass    g_ECPublicKeyClass;
+jmethodID g_ECPublicKeyGetParams;
 jmethodID g_ECPublicKeyGetW;
 
 // java/security/spec/ECPublicKeySpec
@@ -511,21 +496,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
     g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
-    g_X509CertGetIssuerX500Principal =      GetMethod(env, false, g_X509CertClass, "getIssuerX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
-    g_X509CertGetNotAfter =                 GetMethod(env, false, g_X509CertClass, "getNotAfter", "()Ljava/util/Date;");
-    g_X509CertGetNotBefore =                GetMethod(env, false, g_X509CertClass, "getNotBefore", "()Ljava/util/Date;");
     g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
-    g_X509CertGetSerialNumber =             GetMethod(env, false, g_X509CertClass, "getSerialNumber", "()Ljava/math/BigInteger;");
-    g_X509CertGetSigAlgOID =                GetMethod(env, false, g_X509CertClass, "getSigAlgOID", "()Ljava/lang/String;");
-    g_X509CertGetSubjectX500Principal =     GetMethod(env, false, g_X509CertClass, "getSubjectX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
-    g_X509CertGetVersion =                  GetMethod(env, false, g_X509CertClass, "getVersion", "()I");
-
-    g_X509CertGetCriticalExtensionOIDs =    GetMethod(env, false, g_X509CertClass, "getCriticalExtensionOIDs", "()Ljava/util/Set;");
-    g_X509CertGetExtensionValue =           GetMethod(env, false, g_X509CertClass, "getExtensionValue", "(Ljava/lang/String;)[B");
-    g_X509CertGetNonCriticalExtensionOIDs = GetMethod(env, false, g_X509CertClass, "getNonCriticalExtensionOIDs", "()Ljava/util/Set;");
-
-    g_X509CRLClass          = GetClassGRef(env, "java/security/cert/X509CRL");
-    g_X509CRLGetNextUpdate  = GetMethod(env, false, g_X509CRLClass, "getNextUpdate", "()Ljava/util/Date;");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -608,6 +579,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ECPrivateKeySpecCtor =           GetMethod(env, false, g_ECPrivateKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/security/spec/ECParameterSpec;)V");
 
     g_ECPublicKeyClass =               GetClassGRef(env, "java/security/interfaces/ECPublicKey");
+    g_ECPublicKeyGetParams =           GetMethod(env, false, g_ECPublicKeyClass, "getParams", "()Ljava/security/spec/ECParameterSpec;");
     g_ECPublicKeyGetW =                GetMethod(env, false, g_ECPublicKeyClass, "getW", "()Ljava/security/spec/ECPoint;");
 
     g_ECPublicKeySpecClass =           GetClassGRef(env, "java/security/spec/ECPublicKeySpec");

@@ -15,6 +15,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        internal SafeEcKeyHandle(IntPtr ptr)
+        {
+            SetHandle(ptr);
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.AndroidCrypto.EcKeyDestroy(handle);
