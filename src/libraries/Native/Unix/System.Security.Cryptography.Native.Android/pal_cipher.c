@@ -44,18 +44,18 @@ DEFINE_CIPHER(Aes256Cfb8,   256, "AES/CFB/NoPadding", false)
 DEFINE_CIPHER(Aes256Cfb128, 256, "AES/CFB128/NoPadding", false)
 DEFINE_CIPHER(Aes256Gcm,    256, "AES/GCM/NoPadding", true)
 DEFINE_CIPHER(Aes256Ccm,    256, "AES/CCM/NoPadding", true)
-DEFINE_CIPHER(DesEcb,       56,  "DES/ECB/NoPadding", false)
-DEFINE_CIPHER(DesCbc,       56,  "DES/CBC/NoPadding", false)
-DEFINE_CIPHER(DesCfb8,      56,  "DES/CFB/NoPadding", false)
-DEFINE_CIPHER(Des3Ecb,      168, "DESede/ECB/NoPadding", false)
-DEFINE_CIPHER(Des3Cbc,      168, "DESede/CBC/NoPadding", false)
-DEFINE_CIPHER(Des3Cfb8,     168, "DESede/CFB/NoPadding", false)
-DEFINE_CIPHER(Des3Cfb64,    168, "DESede/CFB/NoPadding", false)
+DEFINE_CIPHER(DesEcb,       64,  "DES/ECB/NoPadding", false)
+DEFINE_CIPHER(DesCbc,       64,  "DES/CBC/NoPadding", false)
+DEFINE_CIPHER(DesCfb8,      64,  "DES/CFB/NoPadding", false)
+DEFINE_CIPHER(Des3Ecb,      128, "DESede/ECB/NoPadding", false)
+DEFINE_CIPHER(Des3Cbc,      128, "DESede/CBC/NoPadding", false)
+DEFINE_CIPHER(Des3Cfb8,     128, "DESede/CFB/NoPadding", false)
+DEFINE_CIPHER(Des3Cfb64,    128, "DESede/CFB/NoPadding", false)
 DEFINE_UNSUPPORTED_CIPHER(RC2Ecb)
 DEFINE_UNSUPPORTED_CIPHER(RC2Cbc)
 
 
-static int32_t GetAlgorithmWidth(CipherInfo* type)
+static int32_t GetAlgorithmDefaultWidth(CipherInfo* type)
 {
     if (!type->isSupported)
     {
@@ -100,6 +100,7 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
     ctx->cipher = cipher;
     ctx->type = type;
     ctx->tagLength = TAG_MAX_LENGTH;
+    ctx->keySizeInBits = GetAlgorithmDefaultWidth(type);
     ctx->ivLength = 0;
     ctx->encMode = 0;
     ctx->key = NULL;
@@ -111,7 +112,7 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
 {
     if (!ctx)
         return FAIL;
-    
+
     if(tagLength > TAG_MAX_LENGTH)
         return FAIL;
 
@@ -122,10 +123,8 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
 static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
-    
-    int32_t keyLength = GetAlgorithmWidth(ctx->type);
 
-    // int ivSize = cipher.getBlockSize();
+
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV); or GCMParameterSpec for GCM/CCM
     // cipher.init(encMode, keySpec, ivSpec);
@@ -134,11 +133,9 @@ static int32_t ReinitializeCipher(CipherCtx* ctx)
     if (!algName)
         return FAIL;
 
-    if (!ctx->ivLength)
-        ctx->ivLength = (*env)->CallIntMethod(env, ctx->cipher, g_getBlockSizeMethod);
-
-    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength / 8); // bits to bytes, e.g. 256 -> 32
-    (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength / 8, (jbyte*)ctx->key);
+    int32_t keyLength = ctx->keySizeInBits / 8;
+    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLength);
+    (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength, (jbyte*)ctx->key);
     jbyteArray ivBytes = (*env)->NewByteArray(env, ctx->ivLength);
     (*env)->SetByteArrayRegion(env, ivBytes, 0, ctx->ivLength, (jbyte*)ctx->iv);
 
@@ -165,8 +162,6 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     if (!ctx)
         return FAIL;
 
-    int32_t keyLength = GetAlgorithmWidth(ctx->type);
-    
     // input:  0 for Decrypt, 1 for Encrypt, -1 leave untouched
     // Cipher: 2 for Decrypt, 1 for Encrypt, N/A
     if (enc != -1)
@@ -178,9 +173,20 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     // CryptoNative_CipherSetKeyAndIV can be called separately for key and iv
     // so we need to wait for both and do Init after.
     if (key)
-        SaveTo(key, &ctx->key, (size_t)keyLength, /* overwrite */ true);
+        SaveTo(key, &ctx->key, (size_t)ctx->keySizeInBits, /* overwrite */ true);
+
     if (iv)
+    {
+        // Make sure length is set
+        if (!ctx->ivLength)
+        {
+            // ivLength = cipher.getBlockSize();
+            JNIEnv *env = GetJNIEnv();
+            ctx->ivLength = (*env)->CallIntMethod(env, ctx->cipher, g_getBlockSizeMethod);
+        }
+
         SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
+    }
 
     if (!ctx->key || !ctx->iv)
         return SUCCESS;
@@ -188,7 +194,7 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     return ReinitializeCipher(ctx);
 }
 
-CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
+CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc)
 {
     if (effectiveKeyLength != 0)
     {
@@ -197,14 +203,14 @@ CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int3
     }
 
     CipherCtx* ctx = AndroidCryptoNative_CipherCreatePartial(type);
+
+    // Update the key size if provided
+    if (keySizeInBits > 0)
+        ctx->keySizeInBits = keySizeInBits;
+
     if (AndroidCryptoNative_CipherSetKeyAndIV(ctx, key, iv, enc) != SUCCESS)
         return FAIL;
-    
-    if (keyLength != GetAlgorithmWidth(type))
-    {
-        LOG_ERROR("Key length must match algorithm width.");
-        return FAIL;
-    }
+
     return ctx;
 }
 
@@ -212,7 +218,7 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
 {
     if (!ctx)
         return FAIL;
-        
+
     JNIEnv* env = GetJNIEnv();
     jbyteArray inDataBytes = (*env)->NewByteArray(env, inl);
     (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
@@ -290,11 +296,11 @@ int32_t AndroidCryptoNative_CipherReset(CipherCtx* ctx)
 {
     if (!ctx)
         return FAIL;
-    
+
     free(ctx->iv);
     ctx->iv = NULL;
     ctx->ivLength = 0;
-    
+
     JNIEnv* env = GetJNIEnv();
     ReleaseGRef(env, ctx->cipher);
     jobject algName = GetAlgorithmName(env, ctx->type);
