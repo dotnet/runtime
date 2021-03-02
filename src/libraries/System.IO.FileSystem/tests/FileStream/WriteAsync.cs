@@ -220,7 +220,7 @@ namespace System.IO.Tests
                 {
                     writes[i] = WriteAsync(fs, expectedData, i * writeSize, writeSize, cancellationToken);
                     Assert.Null(writes[i].Exception);
-                    if (useAsync)
+                    if (useAsync && PlatformDetection.IsLegacyFileStreamEnabled)
                     {
                         Assert.Equal((i + 1) * writeSize, fs.Position);
                     }
