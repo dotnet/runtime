@@ -2114,8 +2114,7 @@ MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_domain_get ();
-	MonoType *result = mono_reflection_get_type_with_rootimage (mono_domain_default_alc (domain), image, image, info, ignorecase, TRUE, type_resolve, error);
+	MonoType *result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
 	mono_error_cleanup (error);
 	return result;
 }
@@ -2216,7 +2215,7 @@ mono_reflection_get_type_with_rootimage (MonoAssemblyLoadContext *alc, MonoImage
 
 	MonoType *type;
 	MonoReflectionAssemblyHandle reflection_assembly;
-	MonoDomain *domain = mono_alc_domain (alc);
+	MonoDomain *domain = mono_get_root_domain ();
 	GString *fullName = NULL;
 	GList *mod;
 
@@ -2315,9 +2314,8 @@ MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
 	ERROR_DECL (error);
-	error_init (error);
 
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 	MonoType * const result = mono_reflection_type_from_name_checked (name, alc, image, error);
 

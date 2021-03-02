@@ -252,9 +252,6 @@ jmethodID g_IteratorNext;
 jclass    g_SetClass;
 jmethodID g_SetIterator;
 
-// com/android/org/conscrypt/NativeCrypto
-jclass    g_NativeCryptoClass;
-
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
 jmethodID g_SSLEngineSetUseClientModeMethod;
@@ -644,8 +641,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_SetClass =    GetClassGRef(env, "java/util/Set");
     g_SetIterator = GetMethod(env, false, g_SetClass, "iterator", "()Ljava/util/Iterator;");
-
-    g_NativeCryptoClass =              GetClassGRef(env, "com/android/org/conscrypt/NativeCrypto");
 
     g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineSetUseClientModeMethod =   GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");

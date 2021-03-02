@@ -353,10 +353,6 @@ struct _MonoDomain {
 	gboolean throw_unobserved_task_exceptions;
 
 	guint32 execution_context_field_offset;
-
-	GSList *alcs;
-	MonoAssemblyLoadContext *default_alc;
-	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
 };
 
 typedef struct  {
@@ -523,36 +519,10 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain);
-
-static inline void
-mono_domain_alcs_lock (MonoDomain *domain)
-{
-	mono_coop_mutex_lock (&domain->alcs_lock);
-}
-
-static inline void
-mono_domain_alcs_unlock (MonoDomain *domain)
-{
-	mono_coop_mutex_unlock (&domain->alcs_lock);
-}
-
-static inline
-MonoAssemblyLoadContext *
-mono_domain_ambient_alc (MonoDomain *domain)
-{
-	/*
-	 * FIXME: All the callers of mono_domain_ambient_alc should get an ALC
-	 * passed to them from their callers.
-	 */
-	return mono_domain_default_alc (domain);
-}
-
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {
-	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline MonoMemoryManager *

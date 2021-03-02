@@ -6,7 +6,7 @@ trigger: none
 #   displayName: Outerloop scheduled build
 #   branches:
 #     include:
-#     - master
+#     - main
 #     - release/*.*
 
 variables:

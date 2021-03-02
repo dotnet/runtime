@@ -3797,28 +3797,28 @@ void Compiler::compSetOptimizationLevel()
 
 #if 0
     // The code in this #if can be used to debug optimization issues according to method hash.
-	// To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
+    // To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
 #ifdef DEBUG
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("minoptshashlo");
     unsigned methHashLo = 0;
-	if (lostr != nullptr)
-	{
-		sscanf_s(lostr, "%x", &methHashLo);
-		char* histr = getenv("minoptshashhi");
-		unsigned methHashHi = UINT32_MAX;
-		if (histr != nullptr)
-		{
-			sscanf_s(histr, "%x", &methHashHi);
-			if (methHash >= methHashLo && methHash <= methHashHi)
-			{
-				printf("MinOpts for method %s, hash = %08x.\n",
-					info.compFullName, methHash);
-				printf("");         // in our logic this causes a flush
-				theMinOptsValue = true;
-			}
-		}
-	}
+    if (lostr != nullptr)
+    {
+        sscanf_s(lostr, "%x", &methHashLo);
+        char* histr = getenv("minoptshashhi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            if (methHash >= methHashLo && methHash <= methHashHi)
+            {
+                printf("MinOpts for method %s, hash = %08x.\n",
+                    info.compFullName, methHash);
+                printf("");         // in our logic this causes a flush
+                theMinOptsValue = true;
+            }
+        }
+    }
 #endif
 #endif
 
@@ -4374,7 +4374,7 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
@@ -5586,9 +5586,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)info.compCompHnd->getAssemblyName(
-            info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        // This call to getClassModule/getModuleAssembly/getAssemblyName fails in crossgen2 due to these
+        // APIs being unimplemented. So disable this extra info for pre-jit mode. See
+        // https://github.com/dotnet/runtime/issues/48888.
+        if (!compileFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)info.compCompHnd->getAssemblyName(
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        }
     }
 #endif // DEBUG
 
