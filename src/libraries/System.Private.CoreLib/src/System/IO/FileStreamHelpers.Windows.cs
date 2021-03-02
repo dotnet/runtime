@@ -19,7 +19,9 @@ namespace System.IO
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        private static readonly bool UseLegacyStrategy = Environment.GetEnvironmentVariable("DOTNET_LEGACY_FILE_IO") == "1";
+        // It's enabled by default. We are going to change that (by removing !) once we fix #16354, #25905 and #24847.
+        internal static bool UseLegacyStrategy { get; }
+            = !AppContextConfigHelper.GetBooleanConfig("System.IO.UseLegacyFileStream", "DOTNET_SYSTEM_IO_USELEGACYFILESTREAM");
 
         internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {

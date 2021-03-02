@@ -10,7 +10,7 @@ namespace System.Globalization
         internal static bool Invariant { get; } = GetInvariantSwitchValue();
 
         internal static bool UseNls { get; } = !Invariant &&
-            (GetSwitchValue("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
+            (AppContextConfigHelper.GetBooleanConfig("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
                 !LoadIcu());
 
         private static bool LoadIcu()
