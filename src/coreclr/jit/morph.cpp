@@ -7678,11 +7678,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                         nextWeight, newNextWeight);
 
                 nextBlock->setBBProfileWeight(newNextWeight);
-
-                if (newNextWeight == BB_ZERO_WEIGHT)
-                {
-                    nextBlock->bbFlags |= BBF_RUN_RARELY;
-                }
             }
             else
             {
@@ -7715,11 +7710,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                                 nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
 
                         nextNextBlock->setBBProfileWeight(newNextNextWeight);
-
-                        if (newNextNextWeight == BB_ZERO_WEIGHT)
-                        {
-                            nextNextBlock->bbFlags |= BBF_RUN_RARELY;
-                        }
                     }
                     else
                     {
@@ -17178,16 +17168,6 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
                     block->bbNum, genReturnBB->bbNum);
 
             genReturnBB->setBBProfileWeight(newWeight);
-
-            if (newWeight > BB_ZERO_WEIGHT)
-            {
-                genReturnBB->bbFlags &= ~BBF_RUN_RARELY;
-            }
-            else
-            {
-                genReturnBB->bbFlags |= BBF_RUN_RARELY;
-            }
-
             DISPBLOCK(genReturnBB);
         }
     }

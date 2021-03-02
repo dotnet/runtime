@@ -2509,16 +2509,6 @@ private:
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
 
                         mergedReturnBlock->setBBProfileWeight(newWeight);
-
-                        if (newWeight > BB_ZERO_WEIGHT)
-                        {
-                            mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
-                        }
-                        else
-                        {
-                            mergedReturnBlock->bbFlags |= BBF_RUN_RARELY;
-                        }
-
                         DISPBLOCK(mergedReturnBlock);
                     }
                 }

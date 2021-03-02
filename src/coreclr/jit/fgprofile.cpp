@@ -1752,15 +1752,6 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, BasicBlock::weight_t profil
 
     block->setBBProfileWeight(profileWeight);
 
-    if (profileWeight == BB_ZERO_WEIGHT)
-    {
-        block->bbSetRunRarely();
-    }
-    else
-    {
-        block->bbFlags &= ~BBF_RUN_RARELY;
-    }
-
 #if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
     // Handle a special case -- some handler entries can't have zero profile count.
     //
@@ -2898,14 +2889,6 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     if (fgFirstBBisScratch())
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
-        if (fgFirstBB->bbWeight == BB_ZERO_WEIGHT)
-        {
-            fgFirstBB->bbFlags |= BBF_RUN_RARELY;
-        }
-        else
-        {
-            fgFirstBB->bbFlags &= ~BBF_RUN_RARELY;
-        }
     }
 
 #if DEBUG

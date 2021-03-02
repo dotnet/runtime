@@ -557,10 +557,20 @@ struct BasicBlock : private LIR::Range
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         this->bbWeight = weight;
+
+        if (weight == BB_ZERO_WEIGHT)
+        {
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
+        }
     }
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
