@@ -224,9 +224,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         # inject MINIDUMP_AUXILIARY_PROVIDER into coreclr
         COMMAND InjectResource /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
 
-        # inject mscordaccore.dll as MINIDUMP_AUXILIARY_EMBEDDED_MODULE resource into singlefilehost
-        COMMAND InjectResource /bin:$<TARGET_FILE:coreclr> /dll:$<TARGET_FILE:singlefilehost> /name:MINIDUMP_AUXILIARY_EMBEDDED_MODULE
-
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
         COMMENT Add dactable, debug resources, and dump helper resources to coreclr and singlefilehost
     )
