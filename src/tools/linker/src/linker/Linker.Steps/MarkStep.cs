@@ -56,6 +56,7 @@ namespace Mono.Linker.Steps
 
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 		UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
+		MarkStepContext _markContext;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -190,6 +191,7 @@ namespace Mono.Linker.Steps
 		{
 			_context = context;
 			_unreachableBlocksOptimizer = new UnreachableBlocksOptimizer (_context);
+			_markContext = new MarkStepContext ();
 
 			Initialize ();
 			Process ();
@@ -199,6 +201,7 @@ namespace Mono.Linker.Steps
 		void Initialize ()
 		{
 			InitializeCorelibAttributeXml ();
+			_context.Pipeline.InitializeMarkHandlers (_context, _markContext);
 
 			ProcessMarkedPending ();
 		}
@@ -1296,6 +1299,9 @@ namespace Mono.Linker.Steps
 
 			EmbeddedXmlInfo.ProcessDescriptors (assembly, _context);
 
+			foreach (Action<AssemblyDefinition> handleMarkAssembly in _markContext.MarkAssemblyActions)
+				handleMarkAssembly (assembly);
+
 			// Security attributes do not respect the attributes XML
 			if (_context.StripSecurity)
 				RemoveSecurity.ProcessAssembly (assembly, _context);
@@ -1616,6 +1622,10 @@ namespace Mono.Linker.Steps
 				return null;
 
 			MarkModule (type.Scope as ModuleDefinition, new DependencyInfo (DependencyKind.ScopeOfType, type));
+
+			foreach (Action<TypeDefinition> handleMarkType in _markContext.MarkTypeActions)
+				handleMarkType (type);
+
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type), type);
 			if (type.DeclaringType != null)
 				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type), type);
@@ -2654,6 +2664,9 @@ namespace Mono.Linker.Steps
 				return;
 
 			_unreachableBlocksOptimizer.ProcessMethod (method);
+
+			foreach (Action<MethodDefinition> handleMarkMethod in _markContext.MarkMethodActions)
+				handleMarkMethod (method);
 
 			if (!markedForCall)
 				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, method), method);

@@ -32,7 +32,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-
+using Mono.Linker.Steps;
 namespace Mono.Linker
 {
 
@@ -190,6 +190,8 @@ namespace Mono.Linker
 
 		public string AssemblyListFile { get; set; }
 
+		public List<IMarkHandler> MarkHandlers { get; }
+
 		public LinkContext (Pipeline pipeline, ILogger logger)
 		{
 			_pipeline = pipeline;
@@ -221,6 +223,7 @@ namespace Mono.Linker
 			GeneralWarnAsError = false;
 			WarnAsError = new Dictionary<int, bool> ();
 			WarnVersion = WarnVersion.Latest;
+			MarkHandlers = new List<IMarkHandler> ();
 
 			const CodeOptimizations defaultOptimizations =
 				CodeOptimizations.BeforeFieldInit |
