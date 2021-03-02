@@ -107,13 +107,11 @@ namespace System.Net.WebSockets
         /// can send the subsequent message with a continuation opcode if the last message was a fragment.
         /// </summary>
         private bool _lastSendWasFragment;
-        private WebSocketMessageType _lastReceiveMessageType = WebSocketMessageType.Text;
 
         // State used in ReceiveAsyncPrivate, but stored locally to reduce the size of compiler
         // generated state machine for the async path.
         private Memory<byte> _receiveBuffer;
         private CancellationTokenRegistration _receiveCancellation;
-        private IWebSocketReceiveResultGetter _receiveResultGetter = WebSocketReceiveResultGetter.Instance;
         private ConfiguredValueTaskAwaitable<ReceiveResult>.ConfiguredValueTaskAwaiter _receiveAwaiter;
         private readonly Action _receiveCallback;
         private bool _receiveCompleted = true;
@@ -124,15 +122,14 @@ namespace System.Net.WebSockets
         /// </summary>
         private TaskCompletionSource? _receiveCompletedNotification;
 
-        private ManualResetValueTaskSourceCore<WebSocketReceiveResult> _receiveResultTaskSource;
-        private ManualResetValueTaskSourceCore<ValueWebSocketReceiveResult> _valueReceiveResultTaskSource;
+        private ManualResetValueTaskSourceCore<ValueWebSocketReceiveResult> _receiveTaskSource;
 
         /// <summary>Lock used to protect update and check-and-update operations on _state.</summary>
         private object StateUpdateLock => _sender;
         /// <summary>
         /// We need to coordinate between receives and close operations happening concurrently, as a ReceiveAsync may
         /// be pending while a Close{Output}Async is issued, which itself needs to loop until a close frame is received.
-        /// As such, we need thread-safety in the management of <see cref="_receiveCompleted"/> and <see cref="_lastReceiveMessageType"/>.
+        /// As such, we need thread-safety in the management of <see cref="_receiveCompleted"/>.
         /// </summary>
         private object ReceiveAsyncLock => _receiver; // some object, as we're simply lock'ing on it
 
@@ -266,7 +263,7 @@ namespace System.Net.WebSockets
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
                     ThrowIfOperationInProgress(_receiveCompleted);
-                    return ReceiveAsyncPrivate(buffer, WebSocketReceiveResultGetter.Instance, cancellationToken).AsTask();
+                    return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
                 }
             }
             catch (Exception exc)
@@ -348,7 +345,7 @@ namespace System.Net.WebSockets
                 {
                     ThrowIfOperationInProgress(_receiveCompleted);
 
-                    return ReceiveAsyncPrivate(buffer, ValueWebSocketReceiveResultGetter.Instance, cancellationToken);
+                    return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
                 }
             }
             catch (Exception exc)
@@ -526,16 +523,14 @@ namespace System.Net.WebSockets
         /// as part of this operation, but data about them will not be returned.
         /// </summary>
         /// <param name="payloadBuffer">The buffer into which payload data should be written.</param>
-        /// <param name="resultGetter">Used to get the result.  Allows the same method to be used with both WebSocketReceiveResult and ValueWebSocketReceiveResult.</param>
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
         /// <returns>Information about the received message.</returns>
-        private ValueTask<TResult> ReceiveAsyncPrivate<TResult>(
-            Memory<byte> payloadBuffer,
-            IWebSocketReceiveResultGetter<TResult> resultGetter,
-            CancellationToken cancellationToken)
+        private ValueTask<TResult> ReceiveAsyncPrivate<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             try
             {
+                _receiveTaskSource.Reset();
+
                 // Fast path, assume we can receive a user message synchronously
                 ValueTask<ReceiveResult> resultTask = _receiver.ReceiveAsync(payloadBuffer, cancellationToken);
 
@@ -544,11 +539,8 @@ namespace System.Net.WebSockets
                     ReceiveResult result = resultTask.GetAwaiter().GetResult();
                     if (result.ResultType <= ReceiveResultType.Binary)
                     {
-                        return new ValueTask<TResult>(resultGetter.GetResult(
-                            count: result.Count,
-                            messageType: ToWebSocketMessageType(result.ResultType),
-                            endOfMessage: result.EndOfMessage,
-                            closeStatus: null, closeDescription: null));
+                        return new ValueTask<TResult>(
+                            GetReceiveResult<TResult>(result.Count, ToWebSocketMessageType(result.ResultType), result.EndOfMessage));
                     }
 
                     _receiveAwaiter = new ValueTask<ReceiveResult>(result).ConfigureAwait(false).GetAwaiter();
@@ -562,12 +554,10 @@ namespace System.Net.WebSockets
                 _receiveCompleted = false;
                 _receiveCancellation = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
                 _receiveBuffer = payloadBuffer;
-                _receiveResultGetter = resultGetter;
 
-                short version = resultGetter.Reset(this);
                 _receiveAwaiter.UnsafeOnCompleted(_receiveCallback);
 
-                return new ValueTask<TResult>((IValueTaskSource<TResult>)(object)this, version);
+                return new ValueTask<TResult>((IValueTaskSource<TResult>)(object)this, _receiveTaskSource.Version);
             }
             catch (Exception exc) when (OnReceiveExceptionHandler(ref exc))
             {
@@ -600,13 +590,12 @@ namespace System.Net.WebSockets
             return true;
         }
 
-        private void ResetReceiveState(WebSocketMessageType receivedMessageType)
+        public void SetReceiveResult(int count, WebSocketMessageType messageType, bool endOfMessage)
         {
             lock (ReceiveAsyncLock)
             {
                 _receiveCancellation.Dispose();
 
-                _lastReceiveMessageType = receivedMessageType;
                 _receiveBuffer = default;
                 _receiveCancellation = default;
                 _receiveCompleted = true;
@@ -618,6 +607,27 @@ namespace System.Net.WebSockets
                     notification.SetResult();
                 }
             }
+            _receiveTaskSource.SetResult(new ValueWebSocketReceiveResult(count, messageType, endOfMessage));
+        }
+
+        /// <summary>
+        /// Returns either <see cref="ValueWebSocketReceiveResult"/> or <see cref="ValueWebSocketReceiveResult"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TResult GetReceiveResult<TResult>(int count, WebSocketMessageType messageType, bool endOfMessage)
+        {
+            if (typeof(TResult) == typeof(ValueWebSocketReceiveResult))
+            {
+                return (TResult)(object)new ValueWebSocketReceiveResult(count, messageType, endOfMessage);
+            }
+
+            return (TResult)(object)new WebSocketReceiveResult(count, messageType, endOfMessage);
+        }
+
+        private void SetReceiveException(Exception exception)
+        {
+            ResetReceiveState(exception);
+            _receiveTaskSource.SetException(exception);
         }
 
         private void ResetReceiveState(Exception exception)
@@ -649,14 +659,14 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc) when (OnReceiveExceptionHandler(ref exc))
             {
-                _receiveResultGetter.SetException(this, exc);
+                SetReceiveException(exc);
                 return;
             }
 
             _receiveAwaiter = default;
             if (result.ResultType is ReceiveResultType.Text or ReceiveResultType.Binary)
             {
-                _receiveResultGetter.SetResult(this, result.Count, ToWebSocketMessageType(result.ResultType), result.EndOfMessage);
+                SetReceiveResult(result.Count, ToWebSocketMessageType(result.ResultType), result.EndOfMessage);
             }
             else
             {
@@ -674,11 +684,7 @@ namespace System.Net.WebSockets
                     {
                         case ReceiveResultType.Text:
                         case ReceiveResultType.Binary:
-                            _receiveResultGetter.SetResult(
-                                webSocket: this,
-                                count: result.Count,
-                                messageType: ToWebSocketMessageType(result.ResultType),
-                                endOfMessage: result.EndOfMessage);
+                            SetReceiveResult(result.Count, ToWebSocketMessageType(result.ResultType), result.EndOfMessage);
                             return;
 
                         case ReceiveResultType.Close:
@@ -687,7 +693,7 @@ namespace System.Net.WebSockets
                             await OnControlMessageAsync().ConfigureAwait(false);
                             if (result.ResultType == ReceiveResultType.Close)
                             {
-                                _receiveResultGetter.SetResult(this, count: 0, WebSocketMessageType.Close, true);
+                                SetReceiveResult(count: 0, WebSocketMessageType.Close, endOfMessage: true);
                                 return;
                             }
                             break;
@@ -707,7 +713,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc) when (OnReceiveExceptionHandler(ref exc))
             {
-                _receiveResultGetter.SetException(this, exc);
+                SetReceiveException(exc);
             }
         }
 
@@ -875,7 +881,7 @@ namespace System.Net.WebSockets
                         }
                         else
                         {
-                            receiveTask = ReceiveAsyncPrivate(Memory<byte>.Empty, ValueWebSocketReceiveResultGetter.Instance, cancellationToken).AsTask();
+                            receiveTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(Memory<byte>.Empty, cancellationToken).AsTask();
                             usingExistingReceive = false;
                         }
                     }
@@ -1159,19 +1165,28 @@ namespace System.Net.WebSockets
             return true;
         }
 
-        WebSocketReceiveResult IValueTaskSource<WebSocketReceiveResult>.GetResult(short token) => _receiveResultTaskSource.GetResult(token);
+        WebSocketReceiveResult IValueTaskSource<WebSocketReceiveResult>.GetResult(short token)
+        {
+            ValueWebSocketReceiveResult result = _receiveTaskSource.GetResult(token);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                return new WebSocketReceiveResult(result.Count, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
+            }
 
-        ValueTaskSourceStatus IValueTaskSource<WebSocketReceiveResult>.GetStatus(short token) => _receiveResultTaskSource.GetStatus(token);
+            return new WebSocketReceiveResult(result.Count, result.MessageType, result.EndOfMessage);
+        }
+
+        ValueTaskSourceStatus IValueTaskSource<WebSocketReceiveResult>.GetStatus(short token) => _receiveTaskSource.GetStatus(token);
 
         void IValueTaskSource<WebSocketReceiveResult>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            => _receiveResultTaskSource.OnCompleted(continuation, state, token, flags);
+            => _receiveTaskSource.OnCompleted(continuation, state, token, flags);
 
-        ValueWebSocketReceiveResult IValueTaskSource<ValueWebSocketReceiveResult>.GetResult(short token) => _valueReceiveResultTaskSource.GetResult(token);
+        ValueWebSocketReceiveResult IValueTaskSource<ValueWebSocketReceiveResult>.GetResult(short token) => _receiveTaskSource.GetResult(token);
 
-        ValueTaskSourceStatus IValueTaskSource<ValueWebSocketReceiveResult>.GetStatus(short token) => _valueReceiveResultTaskSource.GetStatus(token);
+        ValueTaskSourceStatus IValueTaskSource<ValueWebSocketReceiveResult>.GetStatus(short token) => _receiveTaskSource.GetStatus(token);
 
         void IValueTaskSource<ValueWebSocketReceiveResult>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            => _valueReceiveResultTaskSource.OnCompleted(continuation, state, token, flags);
+            => _receiveTaskSource.OnCompleted(continuation, state, token, flags);
 
         private sealed class Utf8MessageState
         {
@@ -1189,80 +1204,6 @@ namespace System.Net.WebSockets
             Close = 0x8,
             Ping = 0x9,
             Pong = 0xA
-        }
-
-        private interface IWebSocketReceiveResultGetter
-        {
-            short Reset(ManagedWebSocket webSocket);
-
-            void SetException(ManagedWebSocket webSocket, Exception exception);
-
-            void SetResult(ManagedWebSocket webSocket, int count, WebSocketMessageType messageType, bool endOfMessage);
-        }
-
-        /// <summary>
-        /// Interface used by ReceiveAsyncPrivate to enable it to return
-        /// different result types in an efficient manner.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result</typeparam>
-        private interface IWebSocketReceiveResultGetter<TResult> : IWebSocketReceiveResultGetter
-        {
-            TResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription);
-        }
-
-        /// <summary><see cref="IWebSocketReceiveResultGetter{TResult}"/> implementation for <see cref="WebSocketReceiveResult"/>.</summary>
-        private sealed class WebSocketReceiveResultGetter : IWebSocketReceiveResultGetter<WebSocketReceiveResult>
-        {
-            public static readonly WebSocketReceiveResultGetter Instance = new();
-
-            public WebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription) =>
-                new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeDescription);
-
-            public short Reset(ManagedWebSocket webSocket)
-            {
-                webSocket._receiveResultTaskSource.Reset();
-                return webSocket._receiveResultTaskSource.Version;
-            }
-
-            public void SetException(ManagedWebSocket webSocket, Exception exception)
-            {
-                webSocket.ResetReceiveState(exception);
-                webSocket._receiveResultTaskSource.SetException(exception);
-            }
-
-            public void SetResult(ManagedWebSocket webSocket, int count, WebSocketMessageType messageType, bool endOfMessage)
-            {
-                webSocket.ResetReceiveState(messageType);
-                webSocket._receiveResultTaskSource.SetResult(
-                    new WebSocketReceiveResult(count, messageType, endOfMessage, webSocket._closeStatus, webSocket._closeStatusDescription));
-            }
-        }
-
-        /// <summary><see cref="IWebSocketReceiveResultGetter{TResult}"/> implementation for <see cref="ValueWebSocketReceiveResult"/>.</summary>
-        private sealed class ValueWebSocketReceiveResultGetter : IWebSocketReceiveResultGetter<ValueWebSocketReceiveResult>
-        {
-            public static readonly ValueWebSocketReceiveResultGetter Instance = new();
-
-            public ValueWebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription) =>
-                new ValueWebSocketReceiveResult(count, messageType, endOfMessage); // closeStatus/closeDescription are ignored
-
-            public short Reset(ManagedWebSocket webSocket)
-            {
-                webSocket._valueReceiveResultTaskSource.Reset();
-                return webSocket._valueReceiveResultTaskSource.Version;
-            }
-
-            public void SetException(ManagedWebSocket webSocket, Exception exception)
-            {
-                webSocket.ResetReceiveState(exception);
-                webSocket._valueReceiveResultTaskSource.SetException(exception);
-            }
-
-            public void SetResult(ManagedWebSocket webSocket, int count, WebSocketMessageType messageType, bool endOfMessage)
-            {
-                webSocket.ResetReceiveState(messageType);
-                webSocket._valueReceiveResultTaskSource.SetResult(new ValueWebSocketReceiveResult(count, messageType, endOfMessage));
-            }
         }
     }
 }
