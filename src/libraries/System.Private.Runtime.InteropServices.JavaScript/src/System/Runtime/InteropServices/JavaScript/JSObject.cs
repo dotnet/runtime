@@ -20,8 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal object? RawObject;
 
-        // Right now this is used for wrapping Delegates
-        private WeakReference? WeakRawObject;
+        private WeakReference<Delegate>? WeakRawObject;
 
         // to detect redundant calls
         public bool IsDisposed { get; private set; }
@@ -47,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         internal JSObject(int jsHandle, Delegate rawDelegate, bool ownsHandle = true) : base(jsHandle, ownsHandle)
         {
-            WeakRawObject = new WeakReference(rawDelegate, false);
+            WeakRawObject = new WeakReference<Delegate>(rawDelegate, trackResurrection: false);
         }
 
         /// <summary>
@@ -149,11 +148,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        internal bool IsWeakWrapper => WeakRawObject?.Target != null;
+        internal bool IsWeakWrapper => WeakRawObject?.TryGetTarget(out _) == true;
 
         internal object? GetWrappedObject()
         {
-            return RawObject ?? WeakRawObject?.Target;
+            return RawObject ?? (WeakRawObject is WeakReference<Delegate> wr && wr.TryGetTarget(out Delegate? d) ? d : null);
         }
         internal void FreeHandle()
         {

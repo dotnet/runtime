@@ -632,7 +632,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-            return sizeof(void*);
+            return (int)SpmiTargetPointerSize();
 
         case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VALUECLASS:

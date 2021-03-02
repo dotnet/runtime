@@ -3510,7 +3510,7 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 			method = mono_jit_info_get_method (frame->ji);
 
 		if (method) {
-			gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
+			gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, NULL);
 			g_string_append_printf (text, "  %s\n", location);
 			g_free (location);
 		} else {

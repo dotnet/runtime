@@ -7,7 +7,7 @@ Here is one example of a daily workflow for a developer working mainly on the li
 ```cmd
 :: From root:
 git clean -xdf
-git pull upstream master & git push origin master
+git pull upstream main & git push origin main
 :: Build Debug libraries on top of Release runtime:
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
@@ -31,7 +31,7 @@ The instructions for Linux and macOS are essentially the same:
 ```bash
 # From root:
 git clean -xdf
-git pull upstream master & git push origin master
+git pull upstream main & git push origin main
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
 # Performing the above is usually only needed once in a day, or when you pull down significant new changes.

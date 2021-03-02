@@ -8,7 +8,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +24,6 @@ namespace System.Net.WebSockets
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>
-    [UnsupportedOSPlatform("browser")]
     internal sealed partial class ManagedWebSocket : WebSocket, IValueTaskSource<WebSocketReceiveResult>, IValueTaskSource<ValueWebSocketReceiveResult>
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>

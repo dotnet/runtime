@@ -5,7 +5,7 @@ schedules:
   displayName: Daily at 10:00 PM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -18,6 +18,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platformGroup: all
+    platforms:
+    # It is too early to include OSX_arm64 in platform group all
+    # Adding it here will enable it also
+    - OSX_arm64
     jobParameters:
       isOfficialBuild: false
 
@@ -42,6 +46,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
     buildConfig: release
     platformGroup: all
+    platforms:
+    # It is too early to include OSX_arm64 in platform group all
+    # Adding it here will enable it also
+    - OSX_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

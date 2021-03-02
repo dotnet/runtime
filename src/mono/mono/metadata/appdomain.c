@@ -324,7 +324,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
-	mono_domain_fire_assembly_load (mono_domain_default_alc (domain), mono_defaults.corlib->assembly, NULL, error);
+	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);
 	goto_if_nok (error, exit);
 
 exit:
@@ -894,16 +894,10 @@ static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_alc_domain (alc);
+	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (assembly);
 	g_assert (domain);
-
-	if (!MONO_BOOL (domain->domain))
-		goto leave; // This can happen during startup
-
-	if (mono_runtime_get_no_exec ())
-		goto leave;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
@@ -916,7 +910,10 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	mono_alc_assemblies_unlock (alc);
 	mono_domain_assemblies_unlock (domain);
 
-	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!MONO_BOOL (domain->domain))
+		goto leave; // This can happen during startup
+
+	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
@@ -1067,11 +1064,9 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      gpointer user_data,
 			      MonoError *error)
 {
-	MonoDomain *domain = mono_alc_domain (alc);
 	MonoAssembly *result = NULL;
 
 	g_assert (alc);
-	g_assert (domain == mono_domain_get ());
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
@@ -1090,7 +1085,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "ApplicationBase is %s", base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 

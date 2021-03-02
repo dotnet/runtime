@@ -252,17 +252,6 @@ struct _MonoAppContext {
 	ContextStaticData *data;
 };
 
-/* Lock-free allocator */
-typedef struct {
-	guint8 *mem;
-	gpointer prev;
-	int size, pos;
-} LockFreeMempoolChunk;
-
-typedef struct {
-	LockFreeMempoolChunk *current, *chunks;
-} LockFreeMempool;
-
 typedef struct _MonoThunkFreeList {
 	guint32 size;
 	int length;		/* only valid for the wait list */
@@ -333,7 +322,6 @@ struct _MonoDomain {
 	/* Used when loading assemblies */
 	gchar **search_path;
 	gchar *private_bin_path;
-	LockFreeMempool *lock_free_mp;
 	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
@@ -351,8 +339,6 @@ struct _MonoDomain {
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
 
-	GHashTable	   *generic_virtual_cases;
-
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
 
@@ -367,10 +353,6 @@ struct _MonoDomain {
 	gboolean throw_unobserved_task_exceptions;
 
 	guint32 execution_context_field_offset;
-
-	GSList *alcs;
-	MonoAssemblyLoadContext *default_alc;
-	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
 };
 
 typedef struct  {
@@ -449,25 +431,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx);
-
-// TODO: remove these on netcore, we should always be explicit about allocating from ALCs
-//#ifndef ENABLE_NETCORE
-gpointer
-mono_domain_alloc  (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc(domain, size) (g_cast (mono_domain_alloc ((domain), (size))))
-
-gpointer
-mono_domain_alloc0 (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0(domain, size) (g_cast (mono_domain_alloc0 ((domain), (size))))
-
-//#endif
-
-gpointer
-mono_domain_alloc0_lock_free (MonoDomain *domain, guint size);
-
-#define mono_domain_alloc0_lock_free(domain, size) (g_cast (mono_domain_alloc0_lock_free ((domain), (size))))
 
 void
 mono_domain_unset (void);
@@ -556,36 +519,10 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
-MonoAssemblyLoadContext *
-mono_domain_default_alc (MonoDomain *domain);
-
-static inline void
-mono_domain_alcs_lock (MonoDomain *domain)
-{
-	mono_coop_mutex_lock (&domain->alcs_lock);
-}
-
-static inline void
-mono_domain_alcs_unlock (MonoDomain *domain)
-{
-	mono_coop_mutex_unlock (&domain->alcs_lock);
-}
-
-static inline
-MonoAssemblyLoadContext *
-mono_domain_ambient_alc (MonoDomain *domain)
-{
-	/*
-	 * FIXME: All the callers of mono_domain_ambient_alc should get an ALC
-	 * passed to them from their callers.
-	 */
-	return mono_domain_default_alc (domain);
-}
-
 static inline MonoMemoryManager *
 mono_domain_memory_manager (MonoDomain *domain)
 {
-	return (MonoMemoryManager *)mono_domain_default_alc (domain)->memory_manager;
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline MonoMemoryManager *
