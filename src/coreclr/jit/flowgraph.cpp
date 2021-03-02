@@ -2502,15 +2502,15 @@ private:
                     if (returnBlock->hasProfileWeight())
                     {
                         BasicBlock::weight_t const oldWeight =
-                            mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : 0.0f;
+                            mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
                         BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
 
-                        JITDUMP("merging profile weight %.6f from " FMT_BB " to const return " FMT_BB "\n",
+                        JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
                                 returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
 
                         mergedReturnBlock->setBBProfileWeight(newWeight);
 
-                        if (newWeight > 0.0f)
+                        if (newWeight > BB_ZERO_WEIGHT)
                         {
                             mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
                         }

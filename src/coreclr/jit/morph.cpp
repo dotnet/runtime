@@ -7666,7 +7666,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
             BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
 
-            // If the math would result in an negative weight then there's
+            // If the math would result in a negative weight then there's
             // no local repair we can do; just leave things inconsistent.
             //
             if (newNextWeight >= 0)
@@ -7679,7 +7679,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                 nextBlock->setBBProfileWeight(newNextWeight);
 
-                if (newNextWeight == 0.0f)
+                if (newNextWeight == BB_ZERO_WEIGHT)
                 {
                     nextBlock->bbFlags |= BBF_RUN_RARELY;
                 }
@@ -7716,7 +7716,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                         nextNextBlock->setBBProfileWeight(newNextNextWeight);
 
-                        if (newNextNextWeight == 0.0f)
+                        if (newNextNextWeight == BB_ZERO_WEIGHT)
                         {
                             nextNextBlock->bbFlags |= BBF_RUN_RARELY;
                         }
@@ -17170,15 +17170,16 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
         if (block->hasProfileWeight())
         {
-            BasicBlock::weight_t const oldWeight = genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : 0.0f;
+            BasicBlock::weight_t const oldWeight =
+                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
             BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
 
-            JITDUMP("merging profile weight %.6f from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+            JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
                     block->bbNum, genReturnBB->bbNum);
 
             genReturnBB->setBBProfileWeight(newWeight);
 
-            if (newWeight > 0.0f)
+            if (newWeight > BB_ZERO_WEIGHT)
             {
                 genReturnBB->bbFlags &= ~BBF_RUN_RARELY;
             }

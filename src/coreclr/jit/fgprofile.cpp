@@ -176,7 +176,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
 
         if (hash % 3 == 0)
         {
-            weight = 0;
+            weight = BB_ZERO_WEIGHT;
         }
         else if (hash % 11 == 0)
         {
@@ -188,7 +188,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, BasicBlock::wei
         }
 
         // The first block is never given a weight of zero
-        if ((offset == 0) && (weight == 0))
+        if ((offset == 0) && (weight == BB_ZERO_WEIGHT))
         {
             weight = (BasicBlock::weight_t)1 + (hash % 5);
         }
@@ -2470,7 +2470,7 @@ void Compiler::fgIncorporateEdgeCounts()
 //
 // Arguments:
 //    newWeight - proposed new weight
-//    bDst - destintion block for edge
+//    bDst - destination block for edge
 //    slop - profile slush fund
 //    wbUsedSlop [out] - true if we tapped into the slush fund
 //
@@ -2532,11 +2532,12 @@ bool flowList::setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
         }
 
         // If we are returning true then we should have adjusted the range so that
-        // the newWeight is in new range [Min..Max] or fgEdjeWeightMax is zero.
+        // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero.
         // Also we should have set wbUsedSlop to true.
         if (result == true)
         {
-            assert((flEdgeWeightMax == 0) || ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
+            assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
+                   ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
 
             if (wbUsedSlop != nullptr)
             {
@@ -2630,11 +2631,12 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
         }
 
         // If we are returning true then we should have adjusted the range so that
-        // the newWeight is in new range [Min..Max] or fgEdjeWeightMax is zero
+        // the newWeight is in new range [Min..Max] or fgEdgeWeightMax is zero
         // Also we should have set wbUsedSlop to true, unless it is NULL
         if (result == true)
         {
-            assert((flEdgeWeightMax == 0) || ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
+            assert((flEdgeWeightMax == BB_ZERO_WEIGHT) ||
+                   ((newWeight <= flEdgeWeightMax) && (newWeight >= flEdgeWeightMin)));
 
             assert((wbUsedSlop == nullptr) || (*wbUsedSlop == true));
         }
@@ -2808,7 +2810,7 @@ BasicBlock::weight_t Compiler::fgComputeMissingBlockWeights()
                     changed        = true;
                     modified       = true;
                     bDst->bbWeight = newWeight;
-                    if (newWeight == 0)
+                    if (newWeight == BB_ZERO_WEIGHT)
                     {
                         bDst->bbFlags |= BBF_RUN_RARELY;
                     }
@@ -2881,7 +2883,7 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     // (i.e. the function never returns because it always throws)
     // then just use the first block weight rather than 0.
     //
-    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == 0))
+    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
     {
         assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
         fgCalledCount = firstILBlock->bbWeight;
@@ -2896,7 +2898,7 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
     if (fgFirstBBisScratch())
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
-        if (fgFirstBB->bbWeight == 0)
+        if (fgFirstBB->bbWeight == BB_ZERO_WEIGHT)
         {
             fgFirstBB->bbFlags |= BBF_RUN_RARELY;
         }
@@ -3311,14 +3313,14 @@ bool Compiler::fgProfileWeightsEqual(BasicBlock::weight_t weight1, BasicBlock::w
 //
 bool Compiler::fgProfileWeightsConsistent(BasicBlock::weight_t weight1, BasicBlock::weight_t weight2)
 {
-    if (weight2 == 0)
+    if (weight2 == BB_ZERO_WEIGHT)
     {
         return fgProfileWeightsEqual(weight1, weight2);
     }
 
     BasicBlock::weight_t const relativeDiff = (weight2 - weight1) / weight2;
 
-    return fgProfileWeightsEqual(relativeDiff, 0.0f);
+    return fgProfileWeightsEqual(relativeDiff, BB_ZERO_WEIGHT);
 }
 
 #ifdef DEBUG
