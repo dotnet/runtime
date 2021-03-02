@@ -197,7 +197,7 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
     // CryptoNative_CipherSetKeyAndIV can be called separately for key and iv
     // so we need to wait for both and do Init after.
     if (key)
-        SaveTo(key, &ctx->key, (size_t)ctx->keySizeInBits, /* overwrite */ true);
+        SaveTo(key, &ctx->key, (size_t)ctx->keySizeInBits / 8, /* overwrite */ true);
 
     if (iv)
     {
