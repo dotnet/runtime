@@ -735,7 +735,7 @@ namespace System.Security.Cryptography
 
                 Debug.Assert(
                     ret == bytesRequired,
-                    $"RSA_private_encrypt returned {ret} when {bytesRequired} was expected");
+                    $"RsaSignPrimitive returned {ret} when {bytesRequired} was expected");
 
                 bytesWritten = ret;
                 return true;
@@ -800,7 +800,7 @@ namespace System.Security.Cryptography
 
                     Debug.Assert(
                         ret == requiredBytes,
-                        $"RSA_private_encrypt returned {ret} when {requiredBytes} was expected");
+                        $"RsaVerificationPrimitive returned {ret} when {requiredBytes} was expected");
 
                     if (padding == RSASignaturePadding.Pkcs1)
                     {
