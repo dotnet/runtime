@@ -439,7 +439,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 this.image = ModuleDefinition.ReadModule(new MemoryStream(assembly), rp);
             }
             if (this.image != null)
-                resolver.Register(this.image.Assembly);
+                resolver.RegisterAssembly(this.image.Assembly);
             Populate();
         }
 
@@ -731,10 +731,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class CustomResolver : DefaultAssemblyResolver
     {
-
-        public void RegisterAssembly(AssemblyDefinition assembly)
+        public new void RegisterAssembly(AssemblyDefinition assembly)
         {
-            this.RegisterAssembly(assembly);
+            base.RegisterAssembly(assembly);
         }
     }
 
