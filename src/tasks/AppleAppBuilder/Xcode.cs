@@ -203,7 +203,7 @@ internal class Xcode
                 default:
                     sdk = "maccatalyst";
                     args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
-                        .Append(" -destination \"platform=macOS,arch=arm64e,variant=Mac Catalyst\"")
+                        .Append(" -destination \"platform=macOS,arch=arm64,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
                     break;
