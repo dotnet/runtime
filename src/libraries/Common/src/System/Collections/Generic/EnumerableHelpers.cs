@@ -22,12 +22,6 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (source is ICollection ic)
-            {
-                count = ic.Count;
-                return true;
-            }
-
             count = 0;
             return false;
         }
