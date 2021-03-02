@@ -337,30 +337,6 @@ namespace System.Numerics.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
-        public static void BitOps_PopCount_Constant()
-        {
-            // PopCount returns constant for constant input
-
-            Assert.Equal(0,  BitOperations.PopCount(0U));
-            Assert.Equal(1,  BitOperations.PopCount(1U));
-            Assert.Equal(1,  BitOperations.PopCount(2U));
-            Assert.Equal(6,  BitOperations.PopCount(1111U));
-            Assert.Equal(29, BitOperations.PopCount(unchecked((uint)-101)));
-            Assert.Equal(31, BitOperations.PopCount(4294967294U));
-            Assert.Equal(32, BitOperations.PopCount(4294967295U));
-
-            Assert.Equal(0,  BitOperations.PopCount(0UL));
-            Assert.Equal(1,  BitOperations.PopCount(1UL));
-            Assert.Equal(1,  BitOperations.PopCount(2UL));
-            Assert.Equal(6,  BitOperations.PopCount(1111UL));
-            Assert.Equal(31, BitOperations.PopCount(4294967294UL));
-            Assert.Equal(32, BitOperations.PopCount(4294967295UL));
-            Assert.Equal(61, BitOperations.PopCount(unchecked((ulong)-101)));
-            Assert.Equal(63, BitOperations.PopCount(18446744073709551614UL));
-            Assert.Equal(64, BitOperations.PopCount(18446744073709551615UL));
-        }
-
         [Theory]
         [InlineData(0b00000000_00000000_00000000_00000001u, int.MaxValue, 0b10000000_00000000_00000000_00000000u)] // % 32 = 31
         [InlineData(0b01000000_00000001_00000000_00000001u, 3, 0b00000000_00001000_00000000_00001010u)]

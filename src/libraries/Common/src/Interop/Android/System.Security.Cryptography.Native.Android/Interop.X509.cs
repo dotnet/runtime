@@ -22,20 +22,25 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
-        private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, int handlesLen);
+        private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
         {
+            const int INSUFFICIENT_BUFFER = -1;
+            const int SUCCESS = 1;
+
             ref byte buf = ref MemoryMarshal.GetReference(data);
-            int negativeSize = X509DecodeCollection(ref buf, data.Length, null, 0);
-            if (negativeSize > 0)
+            int size = 0;
+            int ret = X509DecodeCollection(ref buf, data.Length, null, ref size);
+            if (ret == SUCCESS && size == 0)
+                return Array.Empty<SafeX509Handle>();
+
+            if (ret != INSUFFICIENT_BUFFER)
                 throw new CryptographicException();
 
-            IntPtr[] ptrs = new IntPtr[-negativeSize];
-
-            int ret = X509DecodeCollection(ref buf, data.Length, ptrs, ptrs.Length);
-            if (ret != 1)
+            IntPtr[] ptrs = new IntPtr[size];
+            ret = X509DecodeCollection(ref buf, data.Length, ptrs, ref size);
+            if (ret != SUCCESS)
                 throw new CryptographicException();
-
 
             SafeX509Handle[] handles = new SafeX509Handle[ptrs.Length];
             for (var i = 0; i < handles.Length; i++)

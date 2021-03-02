@@ -151,7 +151,7 @@ extern jmethodID g_SignatureUpdate;
 extern jmethodID g_SignatureSign;
 extern jmethodID g_SignatureVerify;
 
-// com/android/org/conscrypt/RSAPrivateCrtKey
+// java/security/interfaces/RSAPrivateCrtKey
 extern jclass    g_RSAPrivateCrtKeyClass;
 extern jmethodID g_RSAPrivateCrtKeyPubExpField;
 extern jmethodID g_RSAPrivateCrtKeyPrimePField;
@@ -261,9 +261,6 @@ extern jmethodID g_IteratorNext;
 // java/util/Set
 extern jclass    g_SetClass;
 extern jmethodID g_SetIterator;
-
-// com/android/org/conscrypt/NativeCrypto
-extern jclass    g_NativeCryptoClass;
 
 // javax/net/ssl/SSLEngine
 extern jclass    g_SSLEngine;
