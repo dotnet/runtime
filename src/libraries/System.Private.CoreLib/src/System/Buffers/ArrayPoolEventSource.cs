@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.Tracing;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Buffers
 {
@@ -9,6 +10,9 @@ namespace System.Buffers
     [EventSourceAutoGenerate]
     internal sealed partial class ArrayPoolEventSource : EventSource
     {
+#if !ES_BUILD_STANDALONE
+        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
+#endif
         internal static readonly ArrayPoolEventSource Log = new ArrayPoolEventSource();
 
         /// <summary>The reason for a BufferAllocated event.</summary>
@@ -34,6 +38,10 @@ namespace System.Buffers
         /// of BufferAllocated events being less than or equal to those numbers (ideally significantly
         /// less than).
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(1, Level = EventLevel.Verbose)]
         internal unsafe void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId)
         {
@@ -58,6 +66,10 @@ namespace System.Buffers
         /// of BufferAllocated events is significantly smaller than the number of BufferRented and
         /// BufferReturned events.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(2, Level = EventLevel.Informational)]
         internal unsafe void BufferAllocated(int bufferId, int bufferSize, int poolId, int bucketId, BufferAllocatedReason reason)
         {

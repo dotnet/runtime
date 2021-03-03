@@ -37,7 +37,8 @@ namespace System.Diagnostics.Tracing
         private byte[] ProviderMetadata => m_providerMetadata ?? Array.Empty<byte>();
 #else
         private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
-        private const string EventSourceRequiresUnreferenceMessage = "EventSource Write<T> will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type";
+        private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type";
+        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
 #endif
 #endif
 
@@ -104,6 +105,10 @@ namespace System.Diagnostics.Tracing
         /// (Native API: EventWriteTransfer)
         /// </summary>
         /// <param name="eventName">The name of the event.</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         public unsafe void Write(string? eventName)
         {
             if (!this.IsEnabled())
@@ -124,6 +129,10 @@ namespace System.Diagnostics.Tracing
         /// Options for the event, such as the level, keywords, and opcode. Unset
         /// options will be set to default values.
         /// </param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         public unsafe void Write(string? eventName, EventSourceOptions options)
         {
             if (!this.IsEnabled())
@@ -155,8 +164,10 @@ namespace System.Diagnostics.Tracing
         /// </param>
 #if !ES_BUILD_STANDALONE
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
+        public unsafe void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+#else
         public unsafe void Write<T>(
+#endif
             string? eventName,
             T data)
         {
@@ -237,8 +248,10 @@ namespace System.Diagnostics.Tracing
         /// </param>
 #if !ES_BUILD_STANDALONE
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
+        public unsafe void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+#else
         public unsafe void Write<T>(
+#endif
             string? eventName,
             ref EventSourceOptions options,
             ref T data)
@@ -285,8 +298,10 @@ namespace System.Diagnostics.Tracing
         /// </param>
 #if !ES_BUILD_STANDALONE
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
+        public unsafe void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+#else
         public unsafe void Write<T>(
+#endif
             string? eventName,
             ref EventSourceOptions options,
             ref Guid activityId,
