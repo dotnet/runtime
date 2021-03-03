@@ -44,6 +44,9 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_BB "BB%02u"
 
+// And this format for profile weights
+#define FMT_WT "%.7g"
+
 /*****************************************************************************
  *
  *  Each basic block ends with a jump which is described as a value
@@ -448,6 +451,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_PATCHPOINT                     MAKE_BBFLAG(36) // Block is a patchpoint
 #define BBF_HAS_CLASS_PROFILE              MAKE_BBFLAG(37) // BB contains a call needing a class profile
+#define BBF_LOOP_ALIGN                     MAKE_BBFLAG(39) // Block is lexically the first block in a loop we intend to align.
 
 // clang-format on
 
@@ -462,6 +466,10 @@ struct BasicBlock : private LIR::Range
     bool isLoopHead() const
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
+    }
+    bool isLoopAlign() const
+    {
+        return ((bbFlags & BBF_LOOP_ALIGN) != 0);
     }
 
 // Flags to update when two blocks are compacted
@@ -549,10 +557,20 @@ struct BasicBlock : private LIR::Range
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         this->bbWeight = weight;
+
+        if (weight == BB_ZERO_WEIGHT)
+        {
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
+        }
     }
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
@@ -721,8 +739,16 @@ struct BasicBlock : private LIR::Range
     };
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
-    unsigned bbStkTempsIn;   // base# for input stack temps
-    unsigned bbStkTempsOut;  // base# for output stack temps
+
+    union {
+        unsigned bbStkTempsIn;       // base# for input stack temps
+        int      bbCountSchemaIndex; // schema index for count instrumentation
+    };
+
+    union {
+        unsigned bbStkTempsOut;      // base# for output stack temps
+        int      bbClassSchemaIndex; // schema index for class instrumentation
+    };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 
@@ -869,9 +895,14 @@ struct BasicBlock : private LIR::Range
     void ensurePredListOrder(Compiler* compiler);
     void reorderPredList(Compiler* compiler);
 
-    BlockSet    bbReach; // Set of all blocks that can reach this one
-    BasicBlock* bbIDom;  // Represent the closest dominator to this block (called the Immediate
-                         // Dominator) used to compute the dominance tree.
+    BlockSet bbReach; // Set of all blocks that can reach this one
+
+    union {
+        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
+                                 // Dominator) used to compute the dominance tree.
+        void* bbSparseProbeList; // Used early on by fgInstrument
+        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+    };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
 
@@ -1273,9 +1304,15 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
+    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)

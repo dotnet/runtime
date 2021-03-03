@@ -50,7 +50,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, BOOL isInBundle)
     return new ConvertedImageLayout(pFlat, isInBundle);
 }
 
-PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
+PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow)
 {
     STANDARD_VM_CONTRACT;
 
@@ -62,7 +62,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
         return PEImageLayout::LoadConverted(pOwner, true);
     }
 
-    PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
+    PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,returnDontThrow));
     if (pAlloc->GetBase()==NULL)
         return NULL;
     return pAlloc.Extract();
@@ -502,13 +502,12 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
-    INT64 size = pOwner->GetSize();
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
 
 #ifndef TARGET_UNIX
-
+    _ASSERTE(!pOwner->IsInBundle());
 
     // Let OS map file for us
 
@@ -539,19 +538,16 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
         return;
     }
 
-    DWORD offsetLowPart = (DWORD)offset;
-    DWORD offsetHighPart = (DWORD)(offset >> 32);
-
 #ifdef _DEBUG
     // Force relocs by occuping the preferred base while the actual mapping is performed
     CLRMapViewHolder forceRelocs;
     if (PEDecoder::GetForceRelocs())
     {
-        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
+        forceRelocs.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
     }
 #endif // _DEBUG
 
-    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, offsetHighPart, offsetLowPart, (SIZE_T)size));
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, 0, 0, 0, 0));
     if (m_FileView == NULL)
         ThrowLastError();
     IfFailThrow(Init((void *) m_FileView));
@@ -644,7 +640,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
 }
 
 #if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
-LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
+LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow)
 {
     CONTRACTL
     {
@@ -664,12 +660,15 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
     m_Module = CLRLoadLibraryEx(pOwner->GetPath(), NULL, dwFlags);
     if (m_Module == NULL)
     {
-        if (!bThrowOnError)
-            return;
-
         // Fetch the HRESULT upfront before anybody gets a chance to corrupt it
         HRESULT hr = HRESULT_FROM_GetLastError();
-        EEFileLoadException::Throw(pOwner->GetPath(), hr, NULL);
+        if (returnDontThrow != NULL)
+        {
+            *returnDontThrow = hr;
+            return;
+        }
+
+        EEFileLoadException::Throw(pOwner->GetPath(), hr);
     }
     IfFailThrow(Init(m_Module,true));
 

@@ -12,13 +12,14 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+
+using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
-using ILCompiler.PdbWriter;
 
 using Internal.Runtime;
-using System.Runtime.InteropServices;
 
 namespace R2RDump
 {
@@ -39,6 +40,7 @@ namespace R2RDump
 
         public bool Unwind { get; set; }
         public bool GC { get; set; }
+        public bool Pgo { get; set; }
         public bool SectionContents { get; set; }
         public bool EntryPoints { get; set; }
         public bool Normalize { get; set; }
@@ -50,6 +52,10 @@ namespace R2RDump
 
         public bool CreatePDB { get; set; }
         public string PdbPath { get; set; }
+
+        public bool CreatePerfmap { get; set; }
+        public string PerfmapPath { get; set; }
+
 
         public FileInfo[] Reference { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
@@ -206,6 +212,7 @@ namespace R2RDump
         abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(ReadyToRunSection section);
         abstract internal void DumpQueryCount(string q, string title, int count);
+        abstract internal void DumpFixupStats();
 
         public TextWriter Writer => _writer;
 
@@ -234,6 +241,7 @@ namespace R2RDump
                 _options.Disasm = true;
                 _options.Unwind = true;
                 _options.GC = true;
+                _options.Pgo = true;
                 _options.SectionContents = true;
             }
 
@@ -360,7 +368,7 @@ namespace R2RDump
         public void Dump(ReadyToRunReader r2r)
         {
             _dumper.Begin();
-            bool standardDump = !(_options.EntryPoints || _options.CreatePDB);
+            bool standardDump = !(_options.EntryPoints || _options.CreatePDB || _options.CreatePerfmap);
 
             if (_options.Header && standardDump)
             {
@@ -409,28 +417,41 @@ namespace R2RDump
                         pdbPath = Path.GetDirectoryName(r2r.Filename);
                     }
                     var pdbWriter = new PdbWriter(pdbPath, PDBExtraData.None);
-                    pdbWriter.WritePDBData(r2r.Filename, ProducePdbWriterMethods(r2r));
+                    pdbWriter.WritePDBData(r2r.Filename, ProduceDebugInfoMethods(r2r));
+                }
+
+                if (_options.CreatePerfmap)
+                {
+                    string perfmapPath = _options.PerfmapPath;
+                    if (string.IsNullOrEmpty(perfmapPath))
+                    {
+                        perfmapPath = Path.ChangeExtension(r2r.Filename, ".map");
+                        PerfMapWriter.Write(perfmapPath, ProduceDebugInfoMethods(r2r));
+                    }
                 }
 
                 if (standardDump)
                 {
                     _dumper.DumpAllMethods();
+                    _dumper.DumpFixupStats();
                 }
             }
 
             _dumper.End();
         }
 
-        IEnumerable<MethodInfo> ProducePdbWriterMethods(ReadyToRunReader r2r)
+        IEnumerable<MethodInfo> ProduceDebugInfoMethods(ReadyToRunReader r2r)
         {
             foreach (var method in _dumper.NormalizedMethods())
             {
                 MethodInfo mi = new MethodInfo();
                 mi.Name = method.SignatureString;
                 mi.HotRVA = (uint)method.RuntimeFunctions[0].StartAddress;
+                mi.HotLength = (uint)method.RuntimeFunctions[0].Size;
                 mi.MethodToken = (uint)MetadataTokens.GetToken(method.ComponentReader.MetadataReader, method.MethodHandle);
                 mi.AssemblyName = method.ComponentReader.MetadataReader.GetString(method.ComponentReader.MetadataReader.GetAssemblyDefinition().Name);
                 mi.ColdRVA = 0;
+                mi.ColdLength = 0;
                 
                 yield return mi;
             }

@@ -230,7 +230,7 @@ function cross_build_coreclr {
     ROOTFS_DIR="$__ARMEmulRootfs" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib clang3.5 $__buildConfig
 
     #Reset the code to the upstream version
-    (set +x; echo 'Rewinding HEAD to master code')
+    (set +x; echo 'Rewinding HEAD to main code')
     if [[ "$__buildConfig" == "Release" ]]; then
         git reset --hard HEAD^
     fi

@@ -505,6 +505,10 @@ void BasicBlock::dspFlags()
     {
         printf("cfe ");
     }
+    if (bbFlags & BBF_LOOP_ALIGN)
+    {
+        printf("align ");
+    }
 }
 
 /*****************************************************************************
@@ -1550,7 +1554,7 @@ bool BasicBlock::isBBCallAlwaysPair()
 }
 
 //------------------------------------------------------------------------
-// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
 //
 // Return Value:
 //    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair

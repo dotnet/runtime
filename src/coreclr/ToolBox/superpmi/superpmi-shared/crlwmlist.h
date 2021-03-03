@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // crlwmlist.h - List of all LightWeightMap in CompileResult.
@@ -18,30 +16,31 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
-LWM(AddressMap, DWORDLONG, CompileResult::Agnostic_AddressMap)
-LWM(AllocGCInfo, DWORD, CompileResult::Agnostic_AllocGCInfo)
-LWM(AllocMem, DWORD, CompileResult::Agnostic_AllocMemDetails)
-DENSELWM(AllocUnwindInfo, CompileResult::Agnostic_AllocUnwindInfo)
+LWM(AddressMap, DWORDLONG, Agnostic_AddressMap)
+LWM(AllocGCInfo, DWORD, Agnostic_AllocGCInfo)
+LWM(AllocMem, DWORD, Agnostic_AllocMemDetails)
+DENSELWM(AllocUnwindInfo, Agnostic_AllocUnwindInfo)
 DENSELWM(AssertLog, DWORD)
 DENSELWM(CallLog, DWORD)
 DENSELWM(ClassMustBeLoadedBeforeCodeIsRun, DWORDLONG)
-LWM(CompileMethod, DWORD, CompileResult::Agnostic_CompileMethodResults)
+LWM(CompileMethod, DWORD, Agnostic_CompileMethodResults)
 DENSELWM(MessageLog, DWORD)
 DENSELWM(MethodMustBeLoadedBeforeCodeIsRun, DWORDLONG)
 DENSELWM(ProcessName, DWORD)
-LWM(RecordCallSiteWithSignature, DWORD, CompileResult::Agnostic_RecordCallSite)
+LWM(RecordCallSiteWithSignature, DWORD, Agnostic_RecordCallSite)
 LWM(RecordCallSiteWithoutSignature, DWORD, DWORDLONG)
-DENSELWM(RecordRelocation, CompileResult::Agnostic_RecordRelocation)
+DENSELWM(RecordRelocation, Agnostic_RecordRelocation)
 DENSELWM(ReportFatalError, DWORD)
-DENSELWM(ReportInliningDecision, CompileResult::Agnostic_ReportInliningDecision)
-DENSELWM(ReportTailCallDecision, CompileResult::Agnostic_ReportTailCallDecision)
-DENSELWM(ReserveUnwindInfo, CompileResult::Agnostic_ReserveUnwindInfo)
-LWM(SetBoundaries, DWORD, CompileResult::Agnostic_SetBoundaries)
+DENSELWM(ReportInliningDecision, Agnostic_ReportInliningDecision)
+DENSELWM(ReportTailCallDecision, Agnostic_ReportTailCallDecision)
+DENSELWM(ReserveUnwindInfo, Agnostic_ReserveUnwindInfo)
+LWM(SetBoundaries, DWORD, Agnostic_SetBoundaries)
 LWM(SetEHcount, DWORD, DWORD)
-LWM(SetEHinfo, DWORD, CompileResult::Agnostic_CORINFO_EH_CLAUSE2)
+LWM(SetEHinfo, DWORD, Agnostic_CORINFO_EH_CLAUSE)
 LWM(SetMethodAttribs, DWORDLONG, DWORD)
-LWM(SetVars, DWORD, CompileResult::Agnostic_SetVars)
-LWM(SetPatchpointInfo, DWORD, CompileResult::Agnostic_SetPatchpointInfo)
+LWM(SetVars, DWORD, Agnostic_SetVars)
+LWM(SetPatchpointInfo, DWORD, Agnostic_SetPatchpointInfo)
+DENSELWM(CrSigInstHandleMap, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM

@@ -353,7 +353,29 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
     else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
+        // we just use the one that converts to a TYP_DOUBLE
+        // and then add a cast to TYP_FLOAT
+        //
+        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        {
+            // Fix the return type to be TYP_DOUBLE
+            //
+            oper->gtType = TYP_DOUBLE;
+
+            // Add a Cast to TYP_FLOAT
+            //
+            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return tree;
+        }
+        else
+        {
+            return oper;
+        }
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
@@ -466,12 +488,26 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                         // Don't try to optimize.
                         assert(!canPushCast);
                     }
-                    else if ((shiftAmountValue >= 32) && ((tree->gtFlags & GTF_ALL_EFFECT) == 0))
+                    else if (shiftAmountValue >= 32)
                     {
-                        // Result of the shift is zero.
-                        DEBUG_DESTROY_NODE(tree);
-                        GenTree* zero = gtNewZeroConNode(TYP_INT);
-                        return fgMorphTree(zero);
+                        // We know that we have a narrowing cast ([u]long -> [u]int)
+                        // and that we are casting to a 32-bit value, which will result in zero.
+                        //
+                        // Check to see if we have any side-effects that we must keep
+                        //
+                        if ((tree->gtFlags & GTF_ALL_EFFECT) == 0)
+                        {
+                            // Result of the shift is zero.
+                            DEBUG_DESTROY_NODE(tree);
+                            GenTree* zero = gtNewZeroConNode(TYP_INT);
+                            return fgMorphTree(zero);
+                        }
+                        else // We do have a side-effect
+                        {
+                            // We could create a GT_COMMA node here to keep the side-effect and return a zero
+                            // Instead we just don't try to optimize this case.
+                            canPushCast = false;
+                        }
                     }
                     else
                     {
@@ -1326,9 +1362,7 @@ void fgArgInfo::ArgsComplete()
                 fgArgTabEntry* prevArgTabEntry = argTable[prevInx];
                 assert(prevArgTabEntry->argNum < curArgTabEntry->argNum);
 
-                // TODO-CQ: We should also allow LCL_VAR_ADDR and LCL_FLD_ADDR here, they're
-                // side effect free leaf nodes that like constant can be evaluated at any point.
-                if (prevArgTabEntry->GetNode()->gtOper != GT_CNS_INT)
+                if (!prevArgTabEntry->GetNode()->IsInvariant())
                 {
                     prevArgTabEntry->needTmp = true;
                     needsTemps               = true;
@@ -3668,6 +3702,15 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // This is a register argument - possibly update it in the table.
         call->fgArgInfo->UpdateRegArg(thisArgEntry, argx, reMorphing);
         flagsSummary |= argx->gtFlags;
+
+        if (!reMorphing && call->IsExpandedEarly() && call->IsVirtualVtable())
+        {
+            if (!argx->OperIsLocal())
+            {
+                thisArgEntry->needTmp = true;
+                call->fgArgInfo->SetNeedsTemps();
+            }
+        }
         assert(argIndex == 0);
         argIndex++;
         DEBUG_ARG_SLOTS_ONLY(argSlots++;)
@@ -5458,9 +5501,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         const int cnsIndex = static_cast<int>(asIndex->Index()->AsIntConCommon()->IconValue());
         if (cnsIndex >= 0)
         {
-            int     length;
-            LPCWSTR str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
-                                                             asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
+            int             length;
+            const char16_t* str = info.compCompHnd->getStringLiteral(asIndex->Arr()->AsStrCon()->gtScpHnd,
+                                                                     asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
                 GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
@@ -6447,7 +6490,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             assert(pFldAddr == nullptr);
 
 #ifdef TARGET_64BIT
-            if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
+            bool isStaticReadOnlyInited = false;
+            bool plsSpeculative         = true;
+            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+            {
+                isStaticReadOnlyInited = !plsSpeculative;
+            }
+
+            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
+            // for static readonly fields of statically initialized classes - thus we can
+            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
+            if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
@@ -6466,6 +6519,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
+
+                if (isStaticReadOnlyInited)
+                {
+                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+                    tree->gtFlags |= GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
+                    addr->gtFlags = GTF_ICON_CONST_PTR;
+                }
 
                 return fgMorphSmpOp(tree);
             }
@@ -7549,6 +7610,34 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     info.compCompHnd->reportTailCallDecision(nullptr,
                                              (call->gtCallType == CT_USER_FUNC) ? call->gtCallMethHnd : nullptr,
                                              call->IsTailPrefixedCall(), tailCallResult, nullptr);
+
+    // Are we currently planning to expand the gtControlExpr as an early virtual call target?
+    //
+    if (call->IsExpandedEarly() && call->IsVirtualVtable())
+    {
+        // It isn't alway profitable to expand a virtual call early
+        //
+        // We alway expand the TAILCALL_HELPER type late.
+        // And we exapnd late when we have an optimized tail call
+        // and the this pointer needs to be evaluated into a temp.
+        //
+        if (tailCallResult == TAILCALL_HELPER)
+        {
+            // We will alway expand this late in lower instead.
+            // (see LowerTailCallViaJitHelper as it needs some work
+            // for us to be able to expand this earlier in morph)
+            //
+            call->ClearExpandedEarly();
+        }
+        else if ((tailCallResult == TAILCALL_OPTIMIZED) &&
+                 ((call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
+        {
+            // We generate better code when we expand this late in lower instead.
+            //
+            call->ClearExpandedEarly();
+        }
+    }
+
     // Now actually morph the call.
     compTailCallUsed = true;
     // This will prevent inlining this call.
@@ -7588,10 +7677,90 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-    // This block is not longer any block's predecessor. If we end up
-    // converting this tail call to a branch, we'll add appropriate
-    // successor information then.
-    fgRemoveBlockAsPred(compCurBB);
+    // If this block has a flow successor, make suitable updates.
+    //
+    BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
+
+    if (nextBlock == nullptr)
+    {
+        // No unique successor. compCurBB should be a return.
+        //
+        assert(compCurBB->bbJumpKind == BBJ_RETURN);
+    }
+    else
+    {
+        // Flow no longer reaches nextBlock from here.
+        //
+        fgRemoveRefPred(nextBlock, compCurBB);
+
+        // Adjust profile weights.
+        //
+        // Note if this is a tail call to loop, further updates
+        // are needed once we install the loop edge.
+        //
+        if (compCurBB->hasProfileWeight() && nextBlock->hasProfileWeight())
+        {
+            // Since we have linear flow we can update the next block weight.
+            //
+            BasicBlock::weight_t const blockWeight   = compCurBB->bbWeight;
+            BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
+            BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
+
+            // If the math would result in a negative weight then there's
+            // no local repair we can do; just leave things inconsistent.
+            //
+            if (newNextWeight >= 0)
+            {
+                // Note if we'd already morphed the IR in nextblock we might
+                // have done something profile sensitive that we should arguably reconsider.
+                //
+                JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
+                        nextWeight, newNextWeight);
+
+                nextBlock->setBBProfileWeight(newNextWeight);
+            }
+            else
+            {
+                JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                        " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                        nextBlock->bbNum, nextWeight, compCurBB->bbNum, blockWeight);
+            }
+
+            // If nextBlock is not a BBJ_RETURN, it should have a unique successor that
+            // is a BBJ_RETURN, as we allow a little bit of flow after a tail call.
+            //
+            if (nextBlock->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+
+                if (nextNextBlock->hasProfileWeight())
+                {
+                    // Do similar updates here.
+                    //
+                    BasicBlock::weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    BasicBlock::weight_t const newNextNextWeight = nextNextWeight - blockWeight;
+
+                    // If the math would result in an negative weight then there's
+                    // no local repair we can do; just leave things inconsistent.
+                    //
+                    if (newNextNextWeight >= 0)
+                    {
+                        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+
+                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+                    }
+                    else
+                    {
+                        JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                                " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                    }
+                }
+            }
+        }
+    }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
@@ -9131,6 +9300,24 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
 
+    // Should we expand this virtual method call target early here?
+    //
+    if (call->IsExpandedEarly() && call->IsVirtualVtable())
+    {
+        // We only expand the Vtable Call target once in the global morph phase
+        if (fgGlobalMorph)
+        {
+            assert(call->gtControlExpr == nullptr); // We only call this method and assign gtControlExpr once
+            call->gtControlExpr = fgExpandVirtualVtableCallTarget(call);
+        }
+        // We always have to morph or re-morph the control expr
+        //
+        call->gtControlExpr = fgMorphTree(call->gtControlExpr);
+
+        // Propogate any gtFlags into the call
+        call->gtFlags |= call->gtControlExpr->gtFlags;
+    }
+
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
     if (opts.OptimizationEnabled() && (call->gtCallType == CT_HELPER) &&
@@ -9257,6 +9444,130 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     }
 
     return call;
+}
+
+/*****************************************************************************
+ *
+ *  Expand and return the call target address for a VirtualCall
+ *  The code here should match that generated by LowerVirtualVtableCall
+ */
+
+GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
+{
+    GenTree* result;
+
+    JITDUMP("Expanding virtual call target for %d.%s:\n", call->gtTreeID, GenTree::OpName(call->gtOper));
+
+    noway_assert(call->gtCallType == CT_USER_FUNC);
+
+    // get a reference to the thisPtr being passed
+    fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, 0);
+    GenTree*       thisPtr         = thisArgTabEntry->GetNode();
+
+    // fgMorphArgs must enforce this invariant by creating a temp
+    //
+    assert(thisPtr->OperIsLocal());
+
+    // Make a copy of the thisPtr by cloning
+    //
+    thisPtr = gtClone(thisPtr, true);
+
+    noway_assert(thisPtr != nullptr);
+
+    // Get hold of the vtable offset
+    unsigned vtabOffsOfIndirection;
+    unsigned vtabOffsAfterIndirection;
+    bool     isRelative;
+    info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection, &vtabOffsAfterIndirection,
+                                            &isRelative);
+
+    // Dereference the this pointer to obtain the method table, it is called vtab below
+    GenTree* vtab;
+    assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
+    vtab = gtNewOperNode(GT_IND, TYP_I_IMPL, thisPtr);
+    vtab->gtFlags |= GTF_IND_INVARIANT;
+
+    // Get the appropriate vtable chunk
+    if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
+    {
+        // Note this isRelative code path is currently never executed
+        // as the VM doesn't ever return:  isRelative == true
+        //
+        if (isRelative)
+        {
+            // MethodTable offset is a relative pointer.
+            //
+            // Additional temporary variable is used to store virtual table pointer.
+            // Address of method is obtained by the next computations:
+            //
+            // Save relative offset to tmp (vtab is virtual table pointer, vtabOffsOfIndirection is offset of
+            // vtable-1st-level-indirection):
+            // tmp = vtab
+            //
+            // Save address of method to result (vtabOffsAfterIndirection is offset of vtable-2nd-level-indirection):
+            // result = [tmp + vtabOffsOfIndirection + vtabOffsAfterIndirection + [tmp + vtabOffsOfIndirection]]
+            //
+            //
+            // When isRelative is true we need to setup two temporary variables
+            // var1 = vtab
+            // var2 = var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [var1 + vtabOffsOfIndirection]
+            // result = [var2] + var2
+            //
+            unsigned varNum1 = lvaGrabTemp(true DEBUGARG("var1 - vtab"));
+            unsigned varNum2 = lvaGrabTemp(true DEBUGARG("var2 - relative"));
+            GenTree* asgVar1 = gtNewTempAssign(varNum1, vtab); // var1 = vtab
+
+            // [tmp + vtabOffsOfIndirection]
+            GenTree* tmpTree1 = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewLclvNode(varNum1, TYP_I_IMPL),
+                                              gtNewIconNode(vtabOffsOfIndirection, TYP_INT));
+            tmpTree1 = gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree1, false);
+            tmpTree1->gtFlags |= GTF_IND_NONFAULTING;
+            tmpTree1->gtFlags |= GTF_IND_INVARIANT;
+
+            // var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection
+            GenTree* tmpTree2 = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewLclvNode(varNum1, TYP_I_IMPL),
+                                              gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT));
+
+            // var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [var1 + vtabOffsOfIndirection]
+            tmpTree2         = gtNewOperNode(GT_ADD, TYP_I_IMPL, tmpTree2, tmpTree1);
+            GenTree* asgVar2 = gtNewTempAssign(varNum2, tmpTree2); // var2 = <expression>
+
+            // This last indirection is not invariant, but is non-faulting
+            result = gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewLclvNode(varNum2, TYP_I_IMPL), false); // [var2]
+            result->gtFlags |= GTF_IND_NONFAULTING;
+
+            result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewLclvNode(varNum2, TYP_I_IMPL)); // [var2] + var2
+
+            // Now stitch together the two assignment and the calculation of result into a single tree
+            GenTree* commaTree = gtNewOperNode(GT_COMMA, TYP_I_IMPL, asgVar2, result);
+            result             = gtNewOperNode(GT_COMMA, TYP_I_IMPL, asgVar1, commaTree);
+        }
+        else
+        {
+            // result = [vtab + vtabOffsOfIndirection]
+            result = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtab, gtNewIconNode(vtabOffsOfIndirection, TYP_INT));
+            result = gtNewOperNode(GT_IND, TYP_I_IMPL, result, false);
+            result->gtFlags |= GTF_IND_NONFAULTING;
+            result->gtFlags |= GTF_IND_INVARIANT;
+        }
+    }
+    else
+    {
+        result = vtab;
+        assert(!isRelative);
+    }
+
+    if (!isRelative)
+    {
+        // Load the function address
+        // result = [result + vtabOffsAfterIndirection]
+        result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewIconNode(vtabOffsAfterIndirection, TYP_INT));
+        // This last indirection is not invariant, but is non-faulting
+        result = gtNewOperNode(GT_IND, TYP_I_IMPL, result, false);
+        result->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
+    return result;
 }
 
 /*****************************************************************************
@@ -10894,11 +11205,15 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         }
 #endif // TARGET_ARM
 
-        // Can't use field by field assignment if the src is a call.
+        // Don't use field by field assignment if the src is a call
+        //
+        // TODO: Document why do we have this restriction?
+        //       Maybe it isn't needed, or maybe it is only needed
+        //       for calls that return multiple registers
+        //
         if (src->OperGet() == GT_CALL)
         {
             JITDUMP(" src is a call");
-            // C++ style CopyBlock with holes
             requiresCopyBlock = true;
         }
 
@@ -11139,8 +11454,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // address value once...)
                 if (destLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(srcAddr); // addrSpill represents the 'srcAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill srcAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = srcAddr; // addrSpill represents the 'srcAddr'
                 }
             }
         }
@@ -11172,8 +11489,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 // use the address value once...)
                 if (srcLclVar->lvFieldCnt > 1)
                 {
-                    addrSpill = gtCloneExpr(destAddr); // addrSpill represents the 'destAddr'
-                    noway_assert(addrSpill != nullptr);
+                    // We will spill destAddr (i.e. assign to a temp "BlockOp address local")
+                    // no need to clone a new copy as it is only used once
+                    //
+                    addrSpill = destAddr; // addrSpill represents the 'destAddr'
                 }
             }
         }
@@ -11197,8 +11516,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (addrSpill != nullptr)
         {
-            // Simplify the address if possible, and mark as DONT_CSE as needed..
-            addrSpill = fgMorphTree(addrSpill);
+            // 'addrSpill' is already morphed
 
             // Spill the (complex) address to a BYREF temp.
             // Note, at most one address may need to be spilled.
@@ -11279,8 +11597,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        dstFld = gtCloneExpr(destAddr);
-                        noway_assert(dstFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal destAddr tree when i == 0
+                            dstFld = destAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((destAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            dstFld = gtCloneExpr(destAddr);
+                            noway_assert(dstFld != nullptr);
+
+                            JITDUMP("dstFld - Multiple Fields Clone created:\n");
+                            DISPTREE(dstFld);
+
+                            // Morph the newly created tree
+                            dstFld = fgMorphTree(dstFld);
+                        }
 
                         // Is the address of a local?
                         GenTreeLclVarCommon* lclVarTree = nullptr;
@@ -11359,8 +11694,25 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     }
                     else
                     {
-                        srcFld = gtCloneExpr(srcAddr);
-                        noway_assert(srcFld != nullptr);
+                        if (i == 0)
+                        {
+                            // Use the orginal srcAddr tree when i == 0
+                            srcFld = srcAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            srcFld = gtCloneExpr(srcAddr);
+                            noway_assert(srcFld != nullptr);
+
+                            JITDUMP("srcFld - Multiple Fields Clone created:\n");
+                            DISPTREE(srcFld);
+
+                            // Morph the newly created tree
+                            srcFld = fgMorphTree(srcFld);
+                        }
                     }
 
                     CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].GetStructHnd();
@@ -11909,6 +12261,21 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphCast(tree);
 
         case GT_MUL:
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && !tree->gtOverflow())
+            {
+                // MUL(NEG(a), C) => MUL(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    GenTree* newOp1   = op1->gtGetOp1();
+                    GenTree* newConst = gtNewIconNode(-op2->AsIntCon()->IconValue(), op2->TypeGet());
+                    DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op2);
+                    tree->AsOp()->gtOp1 = newOp1;
+                    tree->AsOp()->gtOp2 = newConst;
+                    return fgMorphSmpOp(tree, mac);
+                }
+            }
 
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
@@ -12056,6 +12423,24 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 return fgMorphSmpOp(tree, mac);
             }
 
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
+            {
+                // DIV(NEG(a), C) => DIV(a, NEG(C))
+                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+                    !op2->IsIconHandle())
+                {
+                    ssize_t op2Value = op2->AsIntCon()->IconValue();
+                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
+                    {
+                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
+                        DEBUG_DESTROY_NODE(op1);
+                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
+                        DEBUG_DESTROY_NODE(op2);
+                        return fgMorphSmpOp(tree, mac);
+                    }
+                }
+            }
+
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
@@ -12179,7 +12564,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         tree = gtFoldExpr(tree);
                     }
 
-                    tree->AsOp()->CheckDivideByConstOptimized(this);
+                    // We may fail to fold
+                    if (!tree->OperIsConst())
+                    {
+                        tree->AsOp()->CheckDivideByConstOptimized(this);
+                    }
+
                     return tree;
                 }
             }
@@ -12442,10 +12832,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         default:
             break;
     }
-
-#if !CPU_HAS_FP_SUPPORT
-    tree = fgMorphToEmulatedFP(tree);
-#endif
 
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
@@ -13918,6 +14304,35 @@ DONE_MORPHING_CHILDREN:
             {
                 GenTree* child = op1->AsOp()->gtGetOp1();
                 return child;
+            }
+
+            // Distribute negation over simple multiplication/division expressions
+            if (opts.OptimizationEnabled() && !optValnumCSE_phase && tree->OperIs(GT_NEG) &&
+                op1->OperIs(GT_MUL, GT_DIV))
+            {
+                GenTreeOp* mulOrDiv = op1->AsOp();
+                GenTree*   op1op1   = mulOrDiv->gtGetOp1();
+                GenTree*   op1op2   = mulOrDiv->gtGetOp2();
+
+                if (!op1op1->IsCnsIntOrI() && op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle())
+                {
+                    // NEG(MUL(a, C)) => MUL(a, -C)
+                    // NEG(DIV(a, C)) => DIV(a, -C), except when C = {-1, 1}
+                    ssize_t constVal = op1op2->AsIntCon()->IconValue();
+                    if ((mulOrDiv->OperIs(GT_DIV) && (constVal != -1) && (constVal != 1)) ||
+                        (mulOrDiv->OperIs(GT_MUL) && !mulOrDiv->gtOverflow()))
+                    {
+                        GenTree* newOp1 = op1op1;                                      // a
+                        GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
+                        mulOrDiv->gtOp1 = newOp1;
+                        mulOrDiv->gtOp2 = newOp2;
+
+                        DEBUG_DESTROY_NODE(tree);
+                        DEBUG_DESTROY_NODE(op1op2);
+
+                        return mulOrDiv;
+                    }
+                }
             }
 
             /* Any constant cases should have been folded earlier */
@@ -15413,200 +15828,6 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     return tree;
 }
 
-#if !CPU_HAS_FP_SUPPORT
-GenTree* Compiler::fgMorphToEmulatedFP(GenTree* tree)
-{
-
-    genTreeOps oper = tree->OperGet();
-    var_types  typ  = tree->TypeGet();
-    GenTree*   op1  = tree->AsOp()->gtOp1;
-    GenTree*   op2  = tree->gtGetOp2IfPresent();
-
-    /*
-        We have to use helper calls for all FP operations:
-
-            FP operators that operate on FP values
-            casts to and from FP
-            comparisons of FP values
-     */
-
-    if (varTypeIsFloating(typ) || (op1 && varTypeIsFloating(op1->TypeGet())))
-    {
-        int      helper;
-        GenTree* args;
-
-        /* Not all FP operations need helper calls */
-
-        switch (oper)
-        {
-            case GT_ASG:
-            case GT_IND:
-            case GT_LIST:
-            case GT_ADDR:
-            case GT_COMMA:
-                return tree;
-        }
-
-#ifdef DEBUG
-
-        /* If the result isn't FP, it better be a compare or cast */
-
-        if (!(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST))
-            gtDispTree(tree);
-
-        noway_assert(varTypeIsFloating(typ) || tree->OperIsCompare() || oper == GT_CAST);
-#endif
-
-        /* Keep track of how many arguments we're passing */
-
-        /* Is this a binary operator? */
-
-        if (op2)
-        {
-            /* What kind of an operator do we have? */
-
-            switch (oper)
-            {
-                case GT_ADD:
-                    helper = CPX_R4_ADD;
-                    break;
-                case GT_SUB:
-                    helper = CPX_R4_SUB;
-                    break;
-                case GT_MUL:
-                    helper = CPX_R4_MUL;
-                    break;
-                case GT_DIV:
-                    helper = CPX_R4_DIV;
-                    break;
-                // case GT_MOD: helper = CPX_R4_REM; break;
-
-                case GT_EQ:
-                    helper = CPX_R4_EQ;
-                    break;
-                case GT_NE:
-                    helper = CPX_R4_NE;
-                    break;
-                case GT_LT:
-                    helper = CPX_R4_LT;
-                    break;
-                case GT_LE:
-                    helper = CPX_R4_LE;
-                    break;
-                case GT_GE:
-                    helper = CPX_R4_GE;
-                    break;
-                case GT_GT:
-                    helper = CPX_R4_GT;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP binary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp2, tree->AsOp()->gtOp1);
-        }
-        else
-        {
-            switch (oper)
-            {
-                case GT_RETURN:
-                    return tree;
-
-                case GT_CAST:
-                    noway_assert(!"FP cast");
-
-                case GT_NEG:
-                    helper = CPX_R4_NEG;
-                    break;
-
-                default:
-#ifdef DEBUG
-                    gtDispTree(tree);
-#endif
-                    noway_assert(!"unexpected FP unary op");
-                    break;
-            }
-
-            args = gtNewArgList(tree->AsOp()->gtOp1);
-        }
-
-        /* If we have double result/operands, modify the helper */
-
-        if (typ == TYP_DOUBLE)
-        {
-            static_assert_no_msg(CPX_R4_NEG + 1 == CPX_R8_NEG);
-            static_assert_no_msg(CPX_R4_ADD + 1 == CPX_R8_ADD);
-            static_assert_no_msg(CPX_R4_SUB + 1 == CPX_R8_SUB);
-            static_assert_no_msg(CPX_R4_MUL + 1 == CPX_R8_MUL);
-            static_assert_no_msg(CPX_R4_DIV + 1 == CPX_R8_DIV);
-
-            helper++;
-        }
-        else
-        {
-            noway_assert(tree->OperIsCompare());
-
-            static_assert_no_msg(CPX_R4_EQ + 1 == CPX_R8_EQ);
-            static_assert_no_msg(CPX_R4_NE + 1 == CPX_R8_NE);
-            static_assert_no_msg(CPX_R4_LT + 1 == CPX_R8_LT);
-            static_assert_no_msg(CPX_R4_LE + 1 == CPX_R8_LE);
-            static_assert_no_msg(CPX_R4_GE + 1 == CPX_R8_GE);
-            static_assert_no_msg(CPX_R4_GT + 1 == CPX_R8_GT);
-        }
-
-        tree = fgMorphIntoHelperCall(tree, helper, args);
-
-        return tree;
-
-        case GT_RETURN:
-
-            if (op1)
-            {
-
-                if (compCurBB == genReturnBB)
-                {
-                    /* This is the 'exitCrit' call at the exit label */
-
-                    noway_assert(op1->gtType == TYP_VOID);
-                    noway_assert(op2 == 0);
-
-                    tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
-
-                    return tree;
-                }
-
-                /* This is a (real) return value -- check its type */
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                if (genActualType(op1->TypeGet()) != genActualType(info.compRetType))
-                {
-                    bool allowMismatch = false;
-
-                    // Allow TYP_BYREF to be returned as TYP_I_IMPL and vice versa
-                    if ((info.compRetType == TYP_BYREF && genActualType(op1->TypeGet()) == TYP_I_IMPL) ||
-                        (op1->TypeGet() == TYP_BYREF && genActualType(info.compRetType) == TYP_I_IMPL))
-                        allowMismatch = true;
-
-                    if (varTypeIsFloating(info.compRetType) && varTypeIsFloating(op1->TypeGet()))
-                        allowMismatch = true;
-
-                    if (!allowMismatch)
-                        NO_WAY("Return type mismatch");
-                }
-#endif
-            }
-            break;
-    }
-    return tree;
-}
-#endif
-
 /*****************************************************************************
  *
  *  Transform the given tree for code generation and return an equivalent tree.
@@ -16164,9 +16385,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
             }
-            // block is a BBJ_COND that we are folding the conditional for
-            // bTaken is the path that will always be taken from block
-            // bNotTaken is the path that will never be taken from block
+            // block is a BBJ_COND that we are folding the conditional for.
+            // bTaken is the path that will always be taken from block.
+            // bNotTaken is the path that will never be taken from block.
             //
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;
@@ -16213,7 +16434,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     // The edge weights for (block -> bTaken) are 100% of block's weight
 
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight);
+                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
 
                     if (!bTaken->hasProfileWeight())
                     {
@@ -16230,7 +16451,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     if (bTaken->countOfInEdges() == 1)
                     {
                         // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight);
+                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
 
                         // Update the weight of block
                         block->inheritWeight(bTaken);
@@ -16251,21 +16472,21 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         default:
@@ -16317,6 +16538,12 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                          * Remove the loop from the table */
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
+#if FEATURE_LOOP_ALIGN
+                        optLoopTable[loopNum].lpFirst->bbFlags &= ~BBF_LOOP_ALIGN;
+                        JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
+                                optLoopTable[loopNum].lpFirst->bbNum);
+#endif
+
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -17008,13 +17235,22 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             fgRemoveStmt(block, lastStmt);
         }
-#ifdef DEBUG
-        if (verbose)
+
+        JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
+        DISPBLOCK(block);
+
+        if (block->hasProfileWeight())
         {
-            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-            fgTableDispBasicBlock(block);
+            BasicBlock::weight_t const oldWeight =
+                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+            BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
+
+            JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+                    block->bbNum, genReturnBB->bbNum);
+
+            genReturnBB->setBBProfileWeight(newWeight);
+            DISPBLOCK(genReturnBB);
         }
-#endif
     }
 }
 

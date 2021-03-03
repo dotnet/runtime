@@ -112,8 +112,7 @@ namespace System.Collections
 
             version++;
             DictionaryNode? last = null;
-            DictionaryNode? node;
-            for (node = head; node != null; node = node.next)
+            for (DictionaryNode? node = head; node != null; node = node.next)
             {
                 if (node.key.Equals(key))
                 {
@@ -121,12 +120,7 @@ namespace System.Collections
                 }
                 last = node;
             }
-            if (node != null)
-            {
-                // Found it
-                node.value = value;
-                return;
-            }
+
             // Not found, so add a new one
             DictionaryNode newNode = new DictionaryNode();
             newNode.key = key;

@@ -1811,6 +1811,7 @@ public:
         return true;
     }
 
+    static bool IsDataBreakpoint(Thread *thread, CONTEXT * pContext);
     static bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext);
 };
 

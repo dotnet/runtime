@@ -11,6 +11,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks.Dataflow.Internal;
 
 namespace System.Threading.Tasks.Dataflow
@@ -56,7 +57,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Checks boxed <see cref="DataflowMessageHeader"/> instances for equality by ID.</summary>
         /// <param name="obj">A boxed <see cref="DataflowMessageHeader"/> instance.</param>
         /// <returns>True if the instances are equal. False otherwise.</returns>
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is DataflowMessageHeader && this == (DataflowMessageHeader)obj;
         }

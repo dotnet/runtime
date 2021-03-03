@@ -1229,6 +1229,11 @@ namespace System
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
         internal static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
+            // Console initialization might emit data to stdout.
+            // In order to avoid splitting user data we need to
+            // complete it before any writes are performed.
+            EnsureConsoleInitialized();
+
             fixed (byte* p = buffer)
             {
                 byte* bufPtr = p;
@@ -1468,7 +1473,11 @@ namespace System
                 // on work triggered from the signal handling thread.
                 // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
                 // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent) { IsBackground = true };
+                Thread handlerThread = new Thread(HandleBreakEvent)
+                {
+                    IsBackground = true,
+                    Name = ".NET Console Break"
+                };
                 handlerThread.Start(ctrlCode);
             }
 

@@ -53,6 +53,7 @@ namespace R2RTest
                         NoEtw(),
                         NoCleanup(),
                         Map(),
+                        Pdb(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -90,6 +91,7 @@ namespace R2RTest
                         NoEtw(),
                         NoCleanup(),
                         Map(),
+                        Pdb(),
                         DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
@@ -119,6 +121,8 @@ namespace R2RTest
                         VerifyTypeAndFieldLayout(),
                         NoCrossgen2(),
                         NoCleanup(),
+                        Map(),
+                        Pdb(),
                         Crossgen2Parallelism(),
                         Crossgen2JitPath(),
                         DegreeOfParallelism(),
@@ -146,6 +150,8 @@ namespace R2RTest
                         PackageList(),
                         Crossgen(),
                         NoCleanup(),
+                        Map(),
+                        Pdb(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
@@ -159,9 +165,13 @@ namespace R2RTest
                         InputDirectory(),
                         DegreeOfParallelism(),
                         AspNetPath(),
-                        CompositeScenario()
+                        Composite(),
+                        Map(),
+                        Pdb(),
+                        CompilationTimeoutMinutes(),
+                        Crossgen2Path(),
                     },
-                    options => 
+                    options =>
                     {
                         var compileSerp = new CompileSerpCommand(options);
                         return compileSerp.CompileSerpAssemblies();
@@ -183,7 +193,7 @@ namespace R2RTest
 
             Option ReferencePath() =>
                 new Option<DirectoryInfo[]>(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation")
-                    { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
+                { Argument = new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
 
             Option Crossgen() =>
                 new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");
@@ -217,6 +227,9 @@ namespace R2RTest
 
             Option Map() =>
                 new Option<bool>(new[] { "--map" }, "Generate a map file (Crossgen2)");
+
+            Option Pdb() =>
+                new Option<bool>(new[] { "--pdb" }, "Generate PDB symbol information (Crossgen2 / Windows only)");
 
             Option DegreeOfParallelism() =>
                 new Option<int>(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)");
@@ -284,9 +297,6 @@ namespace R2RTest
             //
             Option AspNetPath() =>
                 new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").ExistingOnly();
-
-            Option CompositeScenario() =>
-                new Option<SerpCompositeScenario>(new [] { "--composite-scenario", "-cs" }, "Specifies which layers of a shared framework application are compiled as composite" );
         }
     }
 }

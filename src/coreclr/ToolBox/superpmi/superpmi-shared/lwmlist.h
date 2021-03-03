@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // lwmlist.h - List of all LightWeightMap in MethodContext.
@@ -18,7 +16,8 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
-LWM(AllocMethodBlockCounts, DWORD, Agnostic_AllocMethodBlockCounts)
+LWM(AllocPgoInstrumentationBySchema, DWORDLONG, Agnostic_AllocPgoInstrumentationBySchema)
+LWM(GetPgoInstrumentationResults, DWORDLONG, Agnostic_GetPgoInstrumentationResults)
 LWM(AppendClassName, Agnostic_AppendClassName, DWORD)
 LWM(AreTypesEquivalent, DLDL, DWORD)
 LWM(AsCorInfoType, DWORDLONG, DWORD)
@@ -49,12 +48,11 @@ LWM(FindNameOfToken, DLD, DLD)
 LWM(FindSig, Agnostic_FindSig, Agnostic_CORINFO_SIG_INFO)
 LWM(GetAddressOfPInvokeTarget, DWORDLONG, DLD)
 LWM(GetAddrOfCaptureThreadGlobal, DWORD, DLDL)
-LWM(GetArgClass, GetArgClassValue, Agnostic_GetArgClass_Value)
+LWM(GetArgClass, Agnostic_GetArgClass_Key, Agnostic_GetArgClass_Value)
 LWM(GetArgNext, DWORDLONG, DWORDLONG)
-LWM(GetArgType, GetArgTypeValue, Agnostic_GetArgType_Value)
+LWM(GetArgType, Agnostic_GetArgType_Key, Agnostic_GetArgType_Value)
 LWM(GetArrayInitializationData, DLD, DWORDLONG)
 LWM(GetArrayRank, DWORDLONG, DWORD)
-LWM(GetMethodBlockCounts, DWORDLONG, Agnostic_GetMethodBlockCounts)
 LWM(GetBoundaries, DWORDLONG, Agnostic_GetBoundaries)
 LWM(GetBoxHelper, DWORDLONG, DWORD)
 LWM(GetBuiltinClass, DWORD, DWORDLONG)
@@ -74,6 +72,7 @@ LWM(GetClassSize, DWORDLONG, DWORD)
 LWM(GetHeapClassSize, DWORDLONG, DWORD)
 LWM(CanAllocateOnStack, DWORDLONG, DWORD)
 LWM(GetCookieForPInvokeCalliSig, GetCookieForPInvokeCalliSigValue, DLDL)
+LWM(GetDefaultComparerClass, DWORDLONG, DWORDLONG)
 LWM(GetDefaultEqualityComparerClass, DWORDLONG, DWORDLONG)
 LWM(GetDelegateCtor, Agnostic_GetDelegateCtorIn, Agnostic_GetDelegateCtorOut)
 LWM(GetEEInfo, DWORD, Agnostic_CORINFO_EE_INFO)
@@ -103,6 +102,9 @@ LWM(GetLazyStringLiteralHelper, DWORDLONG, DWORD)
 LWM(GetLikelyClass, Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult)
 LWM(GetLocationOfThisType, DWORDLONG, Agnostic_CORINFO_LOOKUP_KIND)
 LWM(GetMethodAttribs, DWORDLONG, DWORD)
+LWM(GetClassModule, DWORDLONG, DWORDLONG)
+LWM(GetModuleAssembly, DWORDLONG, DWORDLONG)
+LWM(GetAssemblyName, DWORDLONG, DWORD)
 LWM(GetMethodClass, DWORDLONG, DWORDLONG)
 LWM(GetMethodModule, DWORDLONG, DWORDLONG)
 LWM(GetMethodDefFromMethod, DWORDLONG, DWORD)
@@ -121,6 +123,7 @@ LWM(GetProfilingHandle, DWORD, Agnostic_GetProfilingHandle)
 LWM(GetReadyToRunHelper, GetReadyToRunHelper_TOKENin, GetReadyToRunHelper_TOKENout)
 LWM(GetReadyToRunDelegateCtorHelper, GetReadyToRunDelegateCtorHelper_TOKENIn, Agnostic_CORINFO_LOOKUP)
 LWM(GetRelocTypeHint, DWORDLONG, DWORD)
+LWM(GetExpectedTargetArchitecture, DWORD, DWORD)
 LWM(GetSharedCCtorHelper, DWORDLONG, DWORD)
 LWM(GetStringConfigValue, DWORD, DWORD)
 LWM(GetSystemVAmd64PassStructInRegisterDescriptor, DWORDLONG, Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor)
@@ -155,7 +158,7 @@ LWM(TryResolveToken, Agnostic_CORINFO_RESOLVED_TOKENin, TryResolveTokenValue)
 LWM(SatisfiesClassConstraints, DWORDLONG, DWORD)
 LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
-
+DENSELWM(SigInstHandleMap, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM

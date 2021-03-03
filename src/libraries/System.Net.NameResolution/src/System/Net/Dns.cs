@@ -126,8 +126,26 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled())
             {
                 Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true, family, cancellationToken);
-                t.ContinueWith((t, s) => NetEventSource.Info((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
-                    hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+                t.ContinueWith(static (t, s) =>
+                {
+                    string hostNameOrAddress = (string)s!;
+
+                    if (t.Status == TaskStatus.RanToCompletion)
+                    {
+                        NetEventSource.Info(hostNameOrAddress, $"{t.Result} with {t.Result.AddressList.Length} entries");
+                    }
+
+                    Exception? ex = t.Exception?.InnerException;
+
+                    if (ex is SocketException soex)
+                    {
+                        NetEventSource.Error(hostNameOrAddress, $"{hostNameOrAddress} DNS lookup failed with {soex.ErrorCode}");
+                    }
+                    else if (ex is OperationCanceledException)
+                    {
+                        NetEventSource.Error(hostNameOrAddress, $"{hostNameOrAddress} DNS lookup was canceled");
+                    }
+                }, hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 return t;
             }
             else
@@ -149,11 +167,11 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(s => {
-                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
+            return RunAsync(static s => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
-            }, address);
+            }, address, CancellationToken.None);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
@@ -525,74 +543,96 @@ namespace System.Net
 
                 asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
             }
-            else if (NameResolutionPal.SupportsGetAddrInfoAsync)
-            {
-#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
-
-                // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
-                // instead of calling the synchronous version in the ThreadPool.
-
-                ValidateHostName(hostName);
-
-                if (NameResolutionTelemetry.Log.IsEnabled())
-                {
-                    return justAddresses
-                        ? (Task)GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
-                        : (Task)GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
-                }
-                else
-                {
-                    return NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
-                }
-            }
             else
             {
+                if (NameResolutionPal.SupportsGetAddrInfoAsync)
+                {
+                    // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
+                    // instead of calling the synchronous version in the ThreadPool.
+                    // If it fails, we will fall back to ThreadPool as well.
+
+                    ValidateHostName(hostName);
+
+                    Task? t;
+                    if (NameResolutionTelemetry.Log.IsEnabled())
+                    {
+                        t = justAddresses
+                            ? GetAddrInfoWithTelemetryAsync<IPAddress[]>(hostName, justAddresses, family, cancellationToken)
+                            : GetAddrInfoWithTelemetryAsync<IPHostEntry>(hostName, justAddresses, family, cancellationToken);
+
+                    }
+                    else
+                    {
+                        t = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, family, cancellationToken);
+                    }
+
+                    // If async resolution started, return task to user, otherwise fall back to sync API on threadpool.
+                    if (t != null)
+                    {
+                        return t;
+                    }
+                }
+
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
             }
 
             if (justAddresses)
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
             else
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostEntryCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
         }
 
-        private static async Task<T> GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
-            where T : class
+        private static Task<T>? GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
+             where T : class
         {
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+            Task? task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken);
 
-            T? result = null;
-            try
+            if (task != null)
             {
-                result = await ((Task<T>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken)).ConfigureAwait(false);
-                return result;
+                return CompleteAsync(task, hostName, stopwatch);
             }
-            finally
+
+            // If resolution even did not start don't bother with telemetry.
+            // We will retry on thread-pool.
+            return null;
+
+            static async Task<T> CompleteAsync(Task task, string hostName, ValueStopwatch stopwatch)
             {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: result is not null);
+                _  = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+                T? result = null;
+                try
+                {
+                    result = await ((Task<T>)task).ConfigureAwait(false);
+                    return result;
+                }
+                finally
+                {
+                    NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: result is not null);
+                }
             }
         }
 
-        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
-            Task.Factory.StartNew(func!, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg, CancellationToken cancellationToken) =>
+            Task.Factory.StartNew(func!, arg, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry
@@ -607,7 +647,7 @@ namespace System.Net
             const int MaxHostName = 255;
 
             if (hostName.Length > MaxHostName ||
-                (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')) // If 255 chars, the last one must be a dot.
+               (hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')) // If 255 chars, the last one must be a dot.
             {
                 throw new ArgumentOutOfRangeException(nameof(hostName),
                     SR.Format(SR.net_toolong, nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));

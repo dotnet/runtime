@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ILCompiler.IBC;
 
+using Internal.Pgo;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -35,13 +36,14 @@ namespace ILCompiler
 
     public class MethodProfileData
     {
-        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask)
+        public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
             Method = method;
             Flags = flags;
             ScenarioMask = scenarioMask;
             ExclusiveWeight = exclusiveWeight;
             CallWeights = callWeights;
+            SchemaData = schemaData;
         }
 
         public readonly MethodDesc Method;
@@ -49,6 +51,7 @@ namespace ILCompiler
         public readonly uint ScenarioMask;
         public readonly double ExclusiveWeight;
         public readonly Dictionary<MethodDesc, int> CallWeights;
+        public readonly PgoSchemaElem[] SchemaData;
     }
 
     public abstract class ProfileData
@@ -97,6 +100,7 @@ namespace ILCompiler
         private readonly HashSet<MethodDesc> _placedProfileMethodsAll = new HashSet<MethodDesc>();
         private readonly bool _partialNGen;
         private readonly ReadyToRunCompilationModuleGroupBase _compilationGroup;
+        private readonly CallChainProfile _callChainProfile;
 
         public ProfileDataManager(Logger logger,
                                   IEnumerable<ModuleDesc> possibleReferenceModules,
@@ -104,11 +108,15 @@ namespace ILCompiler
                                   IEnumerable<ModuleDesc> versionBubbleModules,
                                   ModuleDesc nonLocalGenericsHome,
                                   IReadOnlyList<string> mibcFiles,
+                                  CallChainProfile callChainProfile,
                                   CompilerTypeSystemContext context,
-                                  ReadyToRunCompilationModuleGroupBase compilationGroup)
+                                  ReadyToRunCompilationModuleGroupBase compilationGroup,
+                                  bool embedPgoDataInR2RImage)
         {
+            EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
             _compilationGroup = compilationGroup;
+            _callChainProfile = callChainProfile;
             HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
 
             {
@@ -178,6 +186,8 @@ namespace ILCompiler
             if (profileData.PartialNGen)
                 partialNgen = true;
 
+            PgoSchemaElem[][] schemaElemMergerArray = new PgoSchemaElem[2][];
+
             foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
             {
                 MethodProfileData dataToMerge;
@@ -203,7 +213,20 @@ namespace ILCompiler
                             }
                         }
                     }
-                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask);
+
+                    var mergedSchemaData = data.SchemaData;
+                    if (mergedSchemaData == null)
+                    {
+                        mergedSchemaData = dataToMerge.SchemaData;
+                    }
+                    else
+                    {
+                        // Actually merge
+                        schemaElemMergerArray[0] = dataToMerge.SchemaData;
+                        schemaElemMergerArray[1] = data.SchemaData;
+                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown>(schemaElemMergerArray);
+                    }
+                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask, mergedSchemaData);
                 }
                 else
                 {
@@ -247,5 +270,8 @@ namespace ILCompiler
                 return profileData;
             }
         }
+
+        public bool EmbedPgoDataInR2RImage { get; }
+        public CallChainProfile CallChainProfile => _callChainProfile;
     }
 }

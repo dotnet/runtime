@@ -19,6 +19,14 @@ internal static partial class Interop
         }
     }
 
+    internal static partial class OpenSsl
+    {
+        static OpenSsl()
+        {
+            CryptoInitializer.Initialize();
+        }
+    }
+
     internal static class CryptoInitializer
     {
         static CryptoInitializer()

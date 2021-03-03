@@ -38,12 +38,14 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public TypeInfo? CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
         public Type? CreateType()
         {
             return m_typeBuilder.CreateType();
@@ -182,13 +184,13 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetNestedType(name, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetMember(name, type, bindingAttr);
         }
 
-       [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetMembers(bindingAttr);

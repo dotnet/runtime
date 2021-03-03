@@ -15,9 +15,18 @@ internal class Xcode
     public Xcode(string target)
     {
         Target = target;
-        SysRoot = (Target == TargetNames.iOS) ?
-            Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path") :
-            Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
+        switch (Target)
+        {
+            case TargetNames.iOS:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path");
+                break;
+            case TargetNames.tvOS:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
+                break;
+            default:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk macosx --show-sdk-path");
+                break;
+        }
     }
 
     public string GenerateXCode(
@@ -77,7 +86,7 @@ internal class Xcode
             // libmono must always be statically linked, for other librarires we can use dylibs
             bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
 
-            if (!preferDylibs || !dylibExists)
+            if (forceAOT || !(preferDylibs && dylibExists))
             {
                 // these libraries are pinvoked
                 // -force_load will be removed once we enable direct-pinvokes for AOT
@@ -95,7 +104,7 @@ internal class Xcode
         }
 
         string frameworks = "";
-        if (Target == TargetNames.iOS)
+        if ((Target == TargetNames.iOS) || (Target == TargetNames.MacCatalyst))
         {
             frameworks = "\"-framework GSS\"";
         }
@@ -122,13 +131,15 @@ internal class Xcode
         File.WriteAllText(Path.Combine(binDir, "Info.plist"), plist);
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
+        var targetName = (Target == TargetNames.MacCatalyst) ? "Darwin" : Target.ToString();
+        var deployTarget = (Target == TargetNames.MacCatalyst) ? "" : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
         var cmakeArgs = new StringBuilder();
         cmakeArgs
             .Append("-S.")
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
-            .Append(" -DCMAKE_SYSTEM_NAME=" + Target.ToString())
-            .Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1");
+            .Append(" -DCMAKE_SYSTEM_NAME=" + targetName)
+            .Append(deployTarget);
 
         File.WriteAllText(Path.Combine(binDir, "runtime.h"),
             Utils.GetEmbeddedResource("runtime.h"));
@@ -162,29 +173,64 @@ internal class Xcode
         var args = new StringBuilder();
         args.Append("ONLY_ACTIVE_ARCH=YES");
 
+        if (devTeamProvisioning == "-")
+        {
+            args.Append(" CODE_SIGN_IDENTITY=\"\"")
+                .Append(" CODE_SIGNING_REQUIRED=NO")
+                .Append(" CODE_SIGNING_ALLOWED=NO");
+        }
+        else
+        {
+            args.Append(" -allowProvisioningUpdates")
+                .Append(" DEVELOPMENT_TEAM=").Append(devTeamProvisioning);
+        }
+
+
         if (architecture == "arm64")
         {
-            sdk = (Target == TargetNames.iOS) ? "iphoneos" : "appletvos";
-            args.Append(" -arch arm64")
-                .Append(" -sdk " + sdk);
-
-            if (devTeamProvisioning == "-")
+            switch (Target)
             {
-                args.Append(" CODE_SIGN_IDENTITY=\"\"")
-                    .Append(" CODE_SIGNING_REQUIRED=NO")
-                    .Append(" CODE_SIGNING_ALLOWED=NO");
-            }
-            else
-            {
-                args.Append(" -allowProvisioningUpdates")
-                    .Append(" DEVELOPMENT_TEAM=").Append(devTeamProvisioning);
+                case TargetNames.iOS:
+                    sdk = "iphoneos";
+                    args.Append(" -arch arm64")
+                        .Append(" -sdk " + sdk);
+                    break;
+                case TargetNames.tvOS:
+                    sdk = "appletvos";
+                    args.Append(" -arch arm64")
+                        .Append(" -sdk " + sdk);
+                    break;
+                default:
+                    sdk = "maccatalyst";
+                    args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
+                        .Append(" -destination \"platform=macOS,arch=arm64,variant=Mac Catalyst\"")
+                        .Append(" -UseModernBuildSystem=YES")
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
+                    break;
             }
         }
         else
         {
-            sdk = (Target == TargetNames.iOS) ? "iphonesimulator" : "appletvsimulator";
-            args.Append(" -arch x86_64")
-                .Append(" -sdk " + sdk);
+            switch (Target)
+            {
+                case TargetNames.iOS:
+                    sdk = "iphonesimulator";
+                    args.Append(" -arch x86_64")
+                        .Append(" -sdk " + sdk);
+                    break;
+                case TargetNames.tvOS:
+                    sdk = "appletvsimulator";
+                    args.Append(" -arch x86_64")
+                        .Append(" -sdk " + sdk);
+                    break;
+                default:
+                    sdk = "maccatalyst";
+                    args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
+                        .Append(" -destination \"platform=macOS,arch=x86_64,variant=Mac Catalyst\"")
+                        .Append(" -UseModernBuildSystem=YES")
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5");
+                    break;
+            }
         }
 
         string config = optimized ? "Release" : "Debug";

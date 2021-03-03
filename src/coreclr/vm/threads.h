@@ -1112,9 +1112,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        TS_BlockGCForSO           = 0x00000100,    // If a thread does not have enough stack, WaitUntilGCComplete may fail.
-                                                   // Either GC suspension will wait until the thread has cleared this bit,
-                                                   // Or the current thread is going to spin if GC has suspended all threads.
+        // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -1139,7 +1137,7 @@ public:
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
 
-        TS_SuspendUnstarted       = 0x00400000,    // latch a user suspension on an unstarted thread
+        // unused                 = 0x00400000,
 
         // unused                 = 0x00800000,    
         TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
@@ -1188,8 +1186,7 @@ public:
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
-        TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns
-                                                      // SO during wait, we will either spin or make GC wait.
+        // unused                       = 0x00000010,
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
         // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
@@ -4006,7 +4003,20 @@ public:
 #endif // _DEBUG
 
 private:
+    // context used during redirection of this thread
+    // NOTE: there is only one. Since redirection cannot be nested
+    //       if more than one are needed, something is wrong.
     PTR_CONTEXT m_pSavedRedirectContext;
+
+    // in a case when we need the redirection context to include CONTEXT_XSTATE
+    // this is the buffer that contains the context parts.
+    // we need the buffer so we could deallocate the whole deal.
+    BYTE* m_pOSContextBuffer;
+
+#ifdef _DEBUG
+    // validate that we use only one context per thread. 
+    bool m_RedirectContextInUse;
+#endif
 
     BOOL IsContextSafeToRedirect(T_CONTEXT* pContext);
 
@@ -4018,14 +4028,26 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void     SetSavedRedirectContext(PT_CONTEXT pCtx)
+    void MarkRedirectContextInUse(PTR_CONTEXT pCtx)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pSavedRedirectContext = pCtx;
-    }
+#ifdef _DEBUG
+        _ASSERTE(!m_RedirectContextInUse);
+        _ASSERTE(pCtx == m_pSavedRedirectContext);
+        m_RedirectContextInUse = true;
 #endif
+    }
 
-    void EnsurePreallocatedContext();
+    void UnmarkRedirectContextInUse(PTR_CONTEXT pCtx)
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef _DEBUG
+        _ASSERTE(m_RedirectContextInUse);
+        _ASSERTE(pCtx == m_pSavedRedirectContext);
+        m_RedirectContextInUse = false;
+#endif
+    }
+#endif //DACCESS_COMPILE
 
     ThreadLocalBlock m_ThreadLocalBlock;
 
@@ -4282,25 +4304,7 @@ public:
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
-private:
-    BOOL m_fCompletionPortDrained;
 public:
-    void MarkCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockExchange ((LONG*)&m_fCompletionPortDrained, TRUE);
-    }
-    void UnmarkCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockExchange ((LONG*)&m_fCompletionPortDrained, FALSE);
-    }
-    BOOL IsCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_fCompletionPortDrained;
-    }
-
     static BOOL CheckThreadStackSize(SIZE_T *SizeToCommitOrReserve,
                                       BOOL   isSizeToReserve  // When TRUE, the previous argument is the stack size to reserve.
                                                               // Otherwise, it is the size to commit.
@@ -4606,12 +4610,6 @@ public:
 #endif // FEATURE_HIJACK
 
 public:
-    OBJECTHANDLE GetOrCreateDeserializationTracker();
-
-private:
-    OBJECTHANDLE m_DeserializationTracker;
-
-public:
     static uint64_t dead_threads_non_alloc_bytes;
 
 #ifndef DACCESS_COMPILE
@@ -4863,12 +4861,21 @@ public:
 
 #endif
 private:
+    static BYTE* s_pOSContextBuffer;
     static CONTEXT *s_pOSContext;
 public:
-    // We can not do any memory allocation after we suspend a thread in order ot
-    // avoid deadlock situation.
+    // Pre-allocate an OS context for possible use by a redirected thread and keep in a static variable.
+    // 
+    // There are two reasons for this pattern:
+    // - We can not do any memory allocation after we suspend a thread in order to avoid deadlock situation.
+    //   So, when anticipating a need, we must pre-allocate.
+    // 
+    // - Even though we know the thread we are suspending, we do not want to put the context directly on the
+    //   thread because the thread only _may_ need the context. Often it does not end up needing it,
+    //   then we will keep the context for the next time like this.
     static void AllocateOSContext();
-    static CONTEXT *GrabOSContext();
+    // Retrieves and detaches the pre-alocated context + optional containing buffer (when CONTEXT_XSTATE is used)
+    static CONTEXT *GrabOSContext(BYTE** contextBuffer);
 
 private:
     // Thread abort needs to walk stack to decide if thread abort can proceed.

@@ -548,6 +548,9 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)                                                                                        \
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->gtDispTreeRange(range, t);
+#define DISPBLOCK(b)                                                                                                   \
+    if (JitTls::GetCompiler()->verbose)                                                                                \
+        JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
 #else // !DEBUG
 #define JITDUMP(...)
@@ -559,6 +562,7 @@ const bool dspGCtbls = true;
 #define DISPSTMT(t)
 #define DISPRANGE(range)
 #define DISPTREERANGE(range, t)
+#define DISPBLOCK(b)
 #define VERBOSE 0
 #endif // !DEBUG
 
@@ -747,6 +751,10 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
+#ifdef TARGET_XARCH
+#define FEATURE_LOOP_ALIGN 1
+#endif
+
 #define CLFLG_MAXOPT                                                                                                   \
     (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADASGN | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS |  \
      CLFLG_INLINING | CLFLG_STRUCTPROMOTE | CLFLG_CONSTANTFOLD)
@@ -768,7 +776,7 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          COMP_HANDLE           compHnd,
                          CORINFO_METHOD_INFO*  methodInfo,
                          void**                methodCodePtr,
-                         ULONG*                methodCodeSize,
+                         uint32_t*             methodCodeSize,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 

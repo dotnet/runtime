@@ -674,8 +674,8 @@ namespace System.Collections.Generic
             entry.hashCode = hashCode;
             entry.next = bucket - 1; // Value in _buckets is 1-based
             entry.key = key;
-            entry.value = value; // Value in _buckets is 1-based
-            bucket = index + 1;
+            entry.value = value;
+            bucket = index + 1; // Value in _buckets is 1-based
             _version++;
 
             // Value types never rehash

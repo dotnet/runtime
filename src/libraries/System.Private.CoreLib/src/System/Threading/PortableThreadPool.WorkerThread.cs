@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
+
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -20,12 +22,14 @@ namespace System.Threading
                     AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
                     onWait: () =>
                     {
-                        if (PortableThreadPoolEventSource.Log.IsEnabled())
+                        if (NativeRuntimeEventSource.Log.IsEnabled())
                         {
-                            PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadWait(
+                            NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadWait(
                                 (uint)ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                         }
                     });
+
+            private static readonly ThreadStart s_workerThreadStart = WorkerThreadStart;
 
             private static void WorkerThreadStart()
             {
@@ -33,9 +37,9 @@ namespace System.Threading
 
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStart(
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStart(
                         (uint)threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                 }
 
@@ -123,9 +127,9 @@ namespace System.Threading
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
 
-                                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                                if (NativeRuntimeEventSource.Log.IsEnabled())
                                 {
-                                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
+                                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
                                 }
                                 return;
                             }
@@ -290,9 +294,10 @@ namespace System.Threading
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
                     // using UnsafeStart() instead of Start()
-                    Thread workerThread = new Thread(WorkerThreadStart);
+                    Thread workerThread = new Thread(s_workerThreadStart);
                     workerThread.IsThreadPoolThread = true;
                     workerThread.IsBackground = true;
+                    // thread name will be set in thread proc
                     workerThread.UnsafeStart();
                 }
                 catch (ThreadStartException)

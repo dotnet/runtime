@@ -425,7 +425,7 @@ LEAF_END JIT_WriteBarrier_Callable, _TEXT
 //
 // See also https://github.com/dotnet/runtime/issues/9899#issue-303331518 for more information.
 
-#define PAGE_SIZE 0x1000
+#define PROBE_PAGE_SIZE 0x1000
 
 LEAF_ENTRY JIT_StackProbe, _TEXT
         // On entry:
@@ -442,11 +442,11 @@ LEAF_ENTRY JIT_StackProbe, _TEXT
 
     END_PROLOGUE
 
-        and     rsp, -PAGE_SIZE        // rsp points to the **lowest address** on the last probed page
+        and     rsp, -PROBE_PAGE_SIZE  // rsp points to the **lowest address** on the last probed page
                                        // This is done to make the following loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-        sub     rsp, PAGE_SIZE         // rsp points to the lowest address of the **next page** to probe
+        sub     rsp, PROBE_PAGE_SIZE   // rsp points to the lowest address of the **next page** to probe
         test    dword ptr [rsp], eax   // rsp points to the lowest address on the **last probed** page
         cmp     rsp, r11
         jg      LOCAL_LABEL(ProbeLoop) // if (rsp > r11), then we need to probe at least one more page.
