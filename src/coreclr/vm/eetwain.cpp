@@ -157,9 +157,9 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
  *  computation of PrologOffs/EpilogOffs.
  *  Returns the size of the header (number of bytes decoded).
  */
-static size_t   DecodeGCHdrInfo(GCInfoToken gcInfoToken,
-                                unsigned    curOffset,
-                                hdrInfo   * infoPtr)
+size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
+                       unsigned    curOffset,
+                       hdrInfo   * infoPtr)
 {
     CONTRACTL {
         NOTHROW;
