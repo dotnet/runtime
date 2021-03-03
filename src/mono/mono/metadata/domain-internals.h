@@ -293,16 +293,6 @@ struct _MonoDomain {
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	mono_mutex_t    jit_code_hash_lock;
-	int		    num_jit_info_table_duplicates;
-	MonoJitInfoTable * 
-	  volatile          jit_info_table;
-	/*
-	 * Contains information about AOT loaded code.
-	 * Only used in the root domain.
-	 */
-	MonoJitInfoTable *
-	  volatile          aot_modules;
-	GSList		   *jit_info_free_queue;
 	
 	/* Used to store offsets of thread static fields */
 	GHashTable         *special_static_fields;
@@ -360,6 +350,9 @@ mono_cleanup (void);
 void
 mono_close_exe_image (void);
 
+void
+mono_jit_info_tables_init (void);
+
 int
 mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes);
 
@@ -368,16 +361,16 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 					MonoJitInfoFlags flags, int num_clauses, int num_holes);
 
 MonoJitInfoTable *
-mono_jit_info_table_new (MonoDomain *domain);
+mono_jit_info_table_new (void);
 
 void
 mono_jit_info_table_free (MonoJitInfoTable *table);
 
 void
-mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_add    (MonoJitInfo *ji);
 
 void
-mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_remove (MonoJitInfo *ji);
 
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);

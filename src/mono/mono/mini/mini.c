@@ -3802,7 +3802,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
 		MonoDomain *domain = mono_get_root_domain ();
 		mono_domain_lock (domain);
-		mono_jit_info_table_add (domain, cfg->jit_info);
+		mono_jit_info_table_add (cfg->jit_info);
 		mono_domain_unlock (domain);
 
 		if (cfg->method->dynamic) {

@@ -317,9 +317,6 @@ mono_domain_create (void)
 
 	domain->domain_assemblies = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
-	domain->num_jit_info_table_duplicates = 0;
-	domain->jit_info_table = mono_jit_info_table_new (domain);
-	domain->jit_info_free_queue = NULL;
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
@@ -408,6 +405,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_root_domain = domain;
 
 	mono_alcs_init ();
+	mono_jit_info_tables_init ();
 
 	SET_APPDOMAIN (domain);
 

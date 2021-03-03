@@ -483,7 +483,7 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 
 	ji->unwind_info = mono_cache_unwind_info (info->uw_info, info->uw_info_len);
 
-	mono_jit_info_table_add (domain, ji);
+	mono_jit_info_table_add (ji);
 }
 
 /*
@@ -2491,7 +2491,7 @@ compile_special (MonoMethod *method, MonoError *error)
 			else
 				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
 			jinfo = create_jit_info_for_trampoline (method, tinfo);
-			mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+			mono_jit_info_table_add (jinfo);
 			if (is_in)
 				in_tinfo = tinfo;
 			else
@@ -2803,7 +2803,7 @@ mono_jit_free_method (MonoMethod *method)
 	 * key in the table, so if we free the code_mp first, another thread can grab the
 	 * same code address and replace our entry in the table.
 	 */
-	mono_jit_info_table_remove (domain, ji->ji);
+	mono_jit_info_table_remove (ji->ji);
 
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
