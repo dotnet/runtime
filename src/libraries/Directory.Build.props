@@ -34,7 +34,7 @@
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
-  <PropertyGroup Condition="'$(IsSourceProject)' != 'true'">
+  <PropertyGroup>
     <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
 

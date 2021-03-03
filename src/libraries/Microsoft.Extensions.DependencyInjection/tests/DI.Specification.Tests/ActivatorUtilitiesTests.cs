@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public abstract partial class DependencyInjectionSpecificationTests
     {
         // for most DI providers, the structs default constructor shouldn't run when creating an instance of ClassWithOptionalArgsCtorWithStructs
@@ -43,6 +44,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TypeActivatorEnablesYouToCreateAnyTypeWithServicesEvenWhenNotInIocContainer(CreateInstanceFunc createFunc)
         {
             // Arrange
@@ -57,6 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TypeActivatorAcceptsAnyNumberOfAdditionalConstructorParametersToProvide(CreateInstanceFunc createFunc)
         {
             // Arrange
@@ -122,6 +125,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         [Theory]
         [MemberData(nameof(CreateInstanceFuncs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void TypeActivatorCanDisambiguateConstructorsWithUniqueArguments(CreateInstanceFunc createFunc)
         {
             // Arrange
@@ -154,7 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Act and Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                createFunc(provider: null, type: type, args: Array.Empty<object>()));
+                createFunc(provider: null, type: type, args: new object[0]));
 
             Assert.Equal(expectedMessage, ex.Message);
         }
@@ -270,6 +274,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void GetServiceOrCreateInstanceRegisteredServiceTransient()
         {
             // Reset the count because test order is not guaranteed
@@ -296,6 +301,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void GetServiceOrCreateInstanceRegisteredServiceSingleton()
         {
             lock (CreationCountFakeService.InstanceLock)
@@ -323,6 +329,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         public void GetServiceOrCreateInstanceUnregisteredService()
         {
             lock (CreationCountFakeService.InstanceLock)
@@ -383,7 +390,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Equal(msg, ex.Message);
         }
 
-        private abstract class AbstractFoo
+        abstract class AbstractFoo
         {
             // The constructor should be public, since that is checked as well.
             public AbstractFoo()
@@ -391,7 +398,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private class Bar
+        class Bar
         {
             public Bar()
             {
@@ -399,7 +406,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private class StaticConstructorClass
+        class StaticConstructorClass
         {
             static StaticConstructorClass() { }
 
