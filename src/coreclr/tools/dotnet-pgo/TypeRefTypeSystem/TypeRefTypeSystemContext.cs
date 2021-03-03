@@ -27,8 +27,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             {
                 this.pe = pe;
                 reader = pe.GetMetadataReader();
+                Name = reader.GetAssemblyDefinition().GetAssemblyName().Name;
             }
 
+            public readonly string Name;
             public readonly PEReader pe;
             public readonly MetadataReader reader;
             public readonly Dictionary<TypeReferenceHandle, TypeRefTypeSystemType> handleLookup = new Dictionary<TypeReferenceHandle, TypeRefTypeSystemType>();
@@ -192,15 +194,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                 {
                     var assemblyReference = peInfo.reader.GetAssemblyReference(asmRefHandle);
                     string assemblyName = peInfo.reader.GetString(assemblyReference.Name);
-                    module = new TypeRefTypeSystemModule(this, new System.Reflection.AssemblyName(assemblyName));
-                    _typeRefModules.Add(module.Assembly.GetName().Name, module);
+                    if (!_typeRefModules.TryGetValue(assemblyName, out module))
+                    {
+                        module = new TypeRefTypeSystemModule(this, new System.Reflection.AssemblyName(assemblyName));
+                        _typeRefModules.Add(module.Assembly.GetName().Name, module);
+                    }
+                    peInfo.assemblyLookup.Add(asmRefHandle, module);
                 }
-
+                
                 type = module.GetOrAddType(!typeReference.Namespace.IsNil ? peInfo.reader.GetString(typeReference.Namespace) : null, peInfo.reader.GetString(typeReference.Name));
             }
             else
             {
                 type = null;
+            }
+
+            if (type != null)
+            {
+                peInfo.handleLookup.Add(handle, type);
             }
 
             return type;

@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             _signature = signature;
             if (signature.GenericParameterCount == 0)
             {
-                _instantiation = new Instantiation();
+                _instantiation = Instantiation.Empty;
             }
             else
             {
@@ -36,6 +36,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                 _instantiation = new Instantiation(instantiationArgs);
             }
         }
+
+        public override string Name => _name;
 
         public override Instantiation Instantiation => _instantiation;
 

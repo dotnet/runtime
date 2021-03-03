@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             {
                 if (parameterCount == 0)
                 {
-                    _instantiation = new Instantiation();
+                    _instantiation = Instantiation.Empty;
                 }
                 else
                 {
@@ -79,7 +79,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             }
         }
 
-        public override Instantiation Instantiation => _instantiation.HasValue ? _instantiation.Value : new Instantiation();
+        public override Instantiation Instantiation
+        {
+            get
+            {
+                if (!_instantiation.HasValue)
+                    SetGenericParameterCount(0);
+                return _instantiation.Value;
+            }
+        }
 
         public TypeRefTypeSystemType GetOrAddNestedType(string name)
         {
@@ -143,13 +151,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override ModuleDesc Module => _module;
 
-        public override MetadataType MetadataBaseType => IsValueType ? (MetadataType)Context.GetWellKnownType(WellKnownType.ValueType) : (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
+        public override MetadataType MetadataBaseType
+        {
+            get
+            {
+                if (!_isValueType.HasValue)
+                {
+                    _isValueType = false;
+                }
+                return _isValueType.Value ? (MetadataType)Context.GetWellKnownType(WellKnownType.ValueType) : (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
+            }
+        }
 
         public override bool IsSealed => throw new NotImplementedException();
 
         public override bool IsAbstract => throw new NotImplementedException();
 
-        public override DefType ContainingType => throw new NotImplementedException();
+        public override DefType ContainingType => _containingType;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

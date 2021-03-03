@@ -80,11 +80,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             void CommonOptions()
             {
                 string traceFile = null;
-                FailIfUnspecified(syntax.DefineOption(
+                syntax.DefineOption(
                     name: "t|trace",
                     value: ref traceFile,
                     help: "Specify the trace file to be parsed.",
-                    requireValue: true));
+                    requireValue: true);
                 if (traceFile != null)
                     TraceFile = new FileInfo(traceFile);
 
@@ -138,18 +138,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             void OutputOption()
             {
                 string outputFile = null;
-                FailIfUnspecified(syntax.DefineOption(
+                syntax.DefineOption(
                     name: "o|output",
                     value: ref outputFile,
                     help: "Specify the output filename to be created.",
-                    requireValue: true));
+                    requireValue: true);
                 if (outputFile != null)
                     OutputFileName = new FileInfo(outputFile);
             }
 
             void VerbosityOption()
             {
-                Verbosity verbosity = default(Verbosity);
+                Verbosity verbosity = Verbosity.normal;
                 syntax.DefineOption(name: "v|verbosity", value: ref verbosity, help: "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.", valueConverter: VerbosityConverter, requireValue: true);
                 BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                 Warnings = (int)verbosity >= (int)Verbosity.normal;
@@ -225,7 +225,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             var mergeCommand = syntax.DefineCommand(name: "merge", value: ref command, help: "Merge multiple Mibc profile data files into one file.");
             if (mergeCommand.IsActive)
             {
-                HelpArgs = new string[] { "merge", "--help" };
+                HelpArgs = new string[] { "merge", "--help", "--output", "output", "--input", "input"};
 
                 InputFilesToMerge = DefineFileOptionList(name: "i|input", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
                 OutputOption();
@@ -339,7 +339,7 @@ Example tracing commands used to generate the input to this tool:
         private void ParseCommmandLineHelper(string[] args)
         {
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, DefineArgumentSyntax);
-            if (Help || !FileType.HasValue)
+            if (Help || (!FileType.HasValue && (InputFilesToMerge == null)))
             {
                 Help = true;
             }

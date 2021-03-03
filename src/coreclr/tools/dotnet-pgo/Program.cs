@@ -225,6 +225,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (commandLineOptions.InputFilesToMerge.Count == 0)
             {
                 PrintUsage(commandLineOptions, "--input must be specified");
+                return -8;
             }
 
             if (commandLineOptions.OutputFileName == null)
@@ -286,7 +287,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             if (commandLineOptions.TraceFile == null)
             {
-                PrintUsage(commandLineOptions, "--trace-file must be specified");
+                PrintUsage(commandLineOptions, "--trace must be specified");
+                return -8;
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
                 return -8;
             }
 
@@ -579,7 +586,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if (!commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
