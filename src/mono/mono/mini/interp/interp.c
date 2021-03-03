@@ -4729,27 +4729,18 @@ call:
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 
-			int param_size = ip [4];
-			if (param_size)
-				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
-
 			// `this` is implicit null. The created string will be returned
 			// by the call, even though the call has void return (?!).
 			LOCAL_VAR (call_args_offset, gpointer) = NULL;
-			ip += 5;
+			ip += 4;
 			goto call;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
 			INIT_VTABLE (vtable);
 			guint16 imethod_index = ip [3];
-			guint16 param_size = ip [5];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
-
-			// Make room for `this` parameter
-			if (param_size)
-				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
 
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
@@ -4761,7 +4752,7 @@ call:
 			LOCAL_VAR (return_offset, MonoObject*) = o;
 			// Set `this` arg for ctor call
 			LOCAL_VAR (call_args_offset, MonoObject*) = o;
-			ip += 6;
+			ip += 5;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			goto call;
@@ -4775,19 +4766,15 @@ call:
 		MINT_IN_CASE(MINT_NEWOBJ_VT) {
 			guint16 imethod_index = ip [3];
 			guint16 ret_size = ip [4];
-			guint16 param_size = ip [5];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			gpointer this_vt = locals + return_offset;
-
-			if (param_size)
-				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
 
 			// clear the valuetype
 			memset (this_vt, 0, ret_size);
 			// pass the address of the valuetype
 			LOCAL_VAR (call_args_offset, gpointer) = this_vt;
-			ip += 6;
+			ip += 5;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			goto call;
@@ -4799,14 +4786,10 @@ call:
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {
 			guint32 const token = ip [3];
-			guint16 param_size = ip [4];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [token];
-
-			if (param_size)
-				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
 
 			MonoClass * const newobj_class = cmethod->method->klass;
 
@@ -4830,7 +4813,7 @@ call:
 
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
-			ip += 5;
+			ip += 4;
 			goto call;
 		}
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {

@@ -77,9 +77,6 @@ struct _InterpInst {
 		// in the order they are pushed to the stack. This makes it easy to find
 		// all source vars for these types of opcodes. This is terminated with -1.
 		int *call_args;
-		// We handle newobj poorly due to not having our own local offset allocator.
-		// We temporarily use this array to let cprop know the values of the newobj args.
-		int *newobj_reg_map;
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.

@@ -440,14 +440,20 @@ create_interp_stack_local (TransformData *td, int type, MonoClass *k, int type_s
 }
 
 static void
+ensure_stack (TransformData *td, int additional)
+{
+	int current_height = td->sp - td->stack;
+	int new_height = current_height + additional;
+	if (new_height > td->stack_capacity)
+		realloc_stack (td);
+	if (new_height > td->max_stack_height)
+		td->max_stack_height = new_height;
+}
+
+static void
 push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 {
-	int sp_height;
-	sp_height = td->sp - td->stack + 1;
-	if (sp_height > td->max_stack_height)
-		td->max_stack_height = sp_height;
-	if (sp_height > td->stack_capacity)
-		realloc_stack (td);
+	ensure_stack (td, 1);
 	td->sp->type = type;
 	td->sp->klass = k;
 	td->sp->flags = 0;
@@ -5376,19 +5382,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
-				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
+				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 2) * sizeof (int));
 				td->sp -= csignature->param_count;
-				guint32 params_stack_size = get_stack_size (td->sp, csignature->param_count);
 
+				// First arg is dummy var, it is null when passed to the ctor
+				call_args [0] = create_interp_stack_local (td, stack_type [ret_mt], NULL, MINT_STACK_SLOT_SIZE);
 				for (int i = 0; i < csignature->param_count; i++) {
-					call_args [i] = td->sp [i].local;
+					call_args [i + 1] = td->sp [i].local;
 				}
-				call_args [csignature->param_count] = -1;
+				call_args [csignature->param_count + 1] = -1;
 
 				interp_add_ins (td, MINT_NEWOBJ_STRING);
 				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
-				td->last_ins->data [1] = params_stack_size;
 				push_type (td, stack_type [ret_mt], klass);
+
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
@@ -5418,18 +5425,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			} else {
 				td->sp -= csignature->param_count;
-				guint32 params_stack_size = get_stack_size (td->sp, csignature->param_count);
 
 				// Move params types in temporary buffer
 				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 				memcpy (sp_params, td->sp, sizeof (StackInfo) * csignature->param_count);
-
-				// We must not optimize out these locals, storing to them is part of the interp call convention
-				// FIXME this affects inlining efficiency. We need to first remove the param moving by NEWOBJ
-				int *call_args = (int*) mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
-				for (int i = 0; i < csignature->param_count; i++)
-					call_args [i] = sp_params [i].local;
-				call_args [csignature->param_count] = -1;
 
 				// Push the return value and `this` argument to the ctor
 				gboolean is_vt = m_class_is_valuetype (klass);
@@ -5447,8 +5446,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				}
 				int dreg = td->sp [-2].local;
 
-				// Push back the params to top of stack
-				push_types (td, sp_params, csignature->param_count);
+				// Push back the params to top of stack. The original vars are maintained.
+				ensure_stack (td, csignature->param_count);
+				memcpy (td->sp, sp_params, sizeof (StackInfo) * csignature->param_count);
+				td->sp += csignature->param_count;
 
 				if (!mono_class_has_finalizer (klass) &&
 					!m_class_has_weak_fields (klass)) {
@@ -5465,26 +5466,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = get_data_item_index (td, vtable);
 					}
-					// FIXME remove these once we have our own local offset allocator, even for execution stack locals
-					newobj_fast->data [2] = params_stack_size;
-					newobj_fast->data [3] = csignature->param_count;
 
 					if (0 && (mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m, csignature)) {
 						MonoMethodHeader *mheader = interp_method_get_header (m, error);
 						goto_if_nok (error, exit);
 
-						// Add local mapping information for cprop to use, in case we inline
-						int param_count = csignature->param_count;
-						int *newobj_reg_map = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * (param_count * 2 + 1));
-						newobj_reg_map [param_count] = -1;
-						for (int i = 0; i < param_count; i++) {
-							newobj_reg_map [i] = sp_params [i].local;
-							newobj_reg_map [i + 1 + param_count] = td->sp [-param_count + i].local;
-						}
-
 						if (interp_inline_method (td, m, mheader, error)) {
 							newobj_fast->data [0] = INLINED_METHOD_FLAG;
-							newobj_fast->info.newobj_reg_map = newobj_reg_map;
 							break;
 						}
 					}
@@ -5498,14 +5486,19 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					g_assert (!m_class_is_valuetype (klass));
 					interp_ins_set_dreg (td->last_ins, dreg);
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
-					td->last_ins->data [1] = params_stack_size;
 				}
+				goto_if_nok (error, exit);
+
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-				td->last_ins->info.call_args = call_args;
-				goto_if_nok (error, exit);
 				// Parameters and this pointer are popped of the stack. The return value remains
 				td->sp -= csignature->param_count + 1;
+				 // Save the arguments for the call
+				int *call_args = (int*) mono_mempool_alloc (td->mempool, (csignature->param_count + 2) * sizeof (int));
+				for (int i = 0; i < csignature->param_count + 1; i++)
+					call_args [i] = td->sp [i].local;
+				call_args [csignature->param_count + 1] = -1;
+				td->last_ins->info.call_args = call_args;
 			}
 			break;
 		}
