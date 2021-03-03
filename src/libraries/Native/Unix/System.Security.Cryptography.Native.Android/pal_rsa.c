@@ -359,7 +359,7 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
         (*env)->DeleteGlobalRef(env, dmp1Obj);
         (*env)->DeleteGlobalRef(env, dmq1Obj);
         (*env)->DeleteGlobalRef(env, iqmpObj);
-        (*env)->DeleteGlobalRef(env, rsaPrivateKeySpec);
+        (*env)->DeleteLocalRef(env, rsaPrivateKeySpec);
     }
 
     jobject rsaPubKeySpec = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, nObj, eObj);
