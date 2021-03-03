@@ -25,6 +25,13 @@
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
+  </PropertyGroup>
+
   <!-- Generate a self-contained app bundle for Android with tests. -->
   <UsingTask Condition="'$(TargetOS)' == 'Android'"
              TaskName="AndroidAppBuilderTask"
@@ -42,6 +49,12 @@
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     </PropertyGroup>
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <AotInputAssemblies Include="$(PublishDir)\*.dll">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </AotInputAssemblies>
+    </ItemGroup>
 
     <Copy Condition="'$(ANDROID_OPENSSL_AAR)' != ''"
           SourceFiles="$(ANDROID_OPENSSL_AAR)\prefab\modules\crypto\libs\android.$(AndroidAbi)\libcrypto.so"
@@ -51,17 +64,34 @@
           DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true"/>
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" />
-
+    
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" 
+             Condition="'$(RunAOTCompilation)' == 'true'"/>
     <RemoveDir Directories="$(BundleDir)" />
+
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)\mono-aot-cross"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        Mode="Full"
+        OutputType="AsmOnly"
+        Assemblies="@(AotInputAssemblies)"
+        AotModulesTablePath="$(BundleDir)\modules.c"
+        UseLLVM="$(MonoEnableLLVM)"
+        LLVMPath="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\$(PackageRID)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
+    </MonoAOTCompiler>
+
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
+        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(MainLibraryFileName)"
+        ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
         StripDebugSymbols="False"
         OutputDir="$(BundleDir)"
-        SourceDir="$(PublishDir)">
+        AppDir="$(PublishDir)">
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
     </AndroidAppBuilderTask>
@@ -80,10 +110,6 @@
   <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
              TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoAOTCompiler"
-             AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-
-  <Import Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
   <PropertyGroup>
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>

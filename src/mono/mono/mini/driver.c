@@ -716,7 +716,7 @@ mini_regression_list (int verbose, int count, char *images [])
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 		ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -860,7 +860,7 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 	total_run = total = 0;
 	for (i = 0; i < count; ++i) {
 		MonoAssemblyOpenRequest req;
-		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+		mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 		MonoAssembly *ass = mono_assembly_request_open (images [i], &req, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
@@ -1420,7 +1420,7 @@ static void main_thread_handler (gpointer user_data)
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
-			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_domain_default_alc (main_args->domain), main_args->argv [i]);
+			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->argv [i]);
 			if (!assembly) {
 				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
 				exit (1);
@@ -1450,7 +1450,7 @@ static void main_thread_handler (gpointer user_data)
 			}
 		}
 	} else {
-		assembly = mono_domain_assembly_open_internal (main_args->domain, mono_domain_default_alc (main_args->domain), main_args->file);
+		assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->file);
 		if (!assembly){
 			fprintf (stderr, "Can not open image %s\n", main_args->file);
 			exit (1);
@@ -1491,7 +1491,7 @@ load_agent (MonoDomain *domain, char *desc)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
@@ -2648,7 +2648,7 @@ mono_main (int argc, char* argv[])
 	}
 
 	MonoAssemblyOpenRequest open_req;
-	mono_assembly_request_prepare_open (&open_req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_open (&open_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (aname, &open_req, &open_status);
 	if (!assembly && !mono_compile_aot) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));

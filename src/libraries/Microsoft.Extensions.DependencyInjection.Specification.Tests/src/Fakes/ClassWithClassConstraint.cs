@@ -3,9 +3,9 @@
 
 namespace Microsoft.Extensions.DependencyInjection.Specification.Fakes
 {
-    public class ClassWithStructConstraint<T> : IFakeOpenGenericService<T>
-        where T : struct
+    public class ClassWithClassConstraint<T> : IFakeOpenGenericService<T>
+        where T : class
     {
-        public T Value { get; } = default;
+        public T Value { get; }
     }
 }

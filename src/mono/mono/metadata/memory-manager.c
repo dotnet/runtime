@@ -91,8 +91,10 @@ lock_free_mempool_alloc0 (LockFreeMempool *mp, guint size)
 }
 
 static void
-memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboolean collectible)
+memory_manager_init (MonoMemoryManager *memory_manager, gboolean collectible)
 {
+	MonoDomain *domain = mono_get_root_domain ();
+
 	memory_manager->domain = domain;
 	memory_manager->freeing = FALSE;
 
@@ -114,10 +116,10 @@ memory_manager_init (MonoMemoryManager *memory_manager, MonoDomain *domain, gboo
 }
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible)
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoSingletonMemoryManager *mem_manager = g_new0 (MonoSingletonMemoryManager, 1);
-	memory_manager_init ((MonoMemoryManager *)mem_manager, domain, collectible);
+	memory_manager_init ((MonoMemoryManager *)mem_manager, collectible);
 
 	mem_manager->memory_manager.is_generic = FALSE;
 	mem_manager->alc = alc;

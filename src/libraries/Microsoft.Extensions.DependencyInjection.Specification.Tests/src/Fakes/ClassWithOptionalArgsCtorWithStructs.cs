@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
         public StructWithPublicDefaultConstructor StructWithConstructor { get; }
 
+#pragma warning disable SA1129
         public ClassWithOptionalArgsCtorWithStructs(
             DateTime dateTime = new DateTime(),
             DateTime dateTimeDefault = default(DateTime),
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             int? integerNull = null,
             StructWithPublicDefaultConstructor structWithConstructor = default
         )
+#pragma warning restore SA1129
         {
             Color = color;
             ColorNull = colorNull;
