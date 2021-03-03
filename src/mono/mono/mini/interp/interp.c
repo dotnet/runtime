@@ -93,8 +93,6 @@ struct FrameClauseArgs {
 	const guint16 *end_at_ip;
 	/* When exiting this clause we also exit the frame */
 	int exit_clause;
-	/* Exception that we are filtering */
-	MonoException *filter_exception;
 	/* Frame that is executing this clause */
 	InterpFrame *exec_frame;
 };
@@ -3167,11 +3165,6 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	}
 
 	INIT_INTERP_STATE (frame, clause_args);
-
-	if (clause_args && clause_args->filter_exception) {
-		// Write the exception on to the first slot on the excecution stack
-		LOCAL_VAR (frame->imethod->total_locals_size, MonoException*) = clause_args->filter_exception;
-	}
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
@@ -6713,8 +6706,6 @@ resume:
 			/* spec says stack should be empty at endfinally so it should be at the start too */
 			locals = (guchar*)frame->stack;
 			g_assert (context->exc_gchandle);
-			// Write the exception on to the first slot on the excecution stack
-			LOCAL_VAR (frame->imethod->total_locals_size, MonoObject*) = mono_gchandle_get_target_internal (context->exc_gchandle);
 
 			clear_resume_state (context);
 			// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
@@ -6898,12 +6889,13 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 
 	/* Copy the stack frame of the original method */
 	memcpy (child_frame.stack, iframe->stack, iframe->imethod->total_locals_size);
+	// Write the exception object in its reserved stack slot
+	*((MonoException**)((char*)child_frame.stack + iframe->imethod->clause_data_offsets [clause_index])) = ex;
 	context->stack_pointer += iframe->imethod->alloca_size;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
 	clause_args.end_at_ip = (const guint16*)handler_ip_end;
-	clause_args.filter_exception = ex;
 	clause_args.exec_frame = &child_frame;
 
 	interp_exec_method (&child_frame, context, &clause_args);

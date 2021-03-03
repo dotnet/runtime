@@ -9,10 +9,15 @@
 #define INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT 4
 #define INTERP_INST_FLAG_SEQ_POINT_NESTED_CALL 8
 #define INTERP_INST_FLAG_RECORD_CALL_PATCH 16
+#define INTERP_INST_FLAG_CALL 32
+// Flag used internally by the var offset allocator
+#define INTERP_INST_FLAG_ACTIVE_CALL 64
 
 #define INTERP_LOCAL_FLAG_DEAD 1
 #define INTERP_LOCAL_FLAG_EXECUTION_STACK 2
 #define INTERP_LOCAL_FLAG_CALL_ARGS 4
+#define INTERP_LOCAL_FLAG_GLOBAL 8
+#define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
@@ -70,7 +75,7 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
-		// For CallArgs instruction, this represents an array of all call arg vars
+		// For call instructions, this represents an array of all call arg vars
 		// in the order they are pushed to the stack. This makes it easy to find
 		// all source vars for these types of opcodes. This is terminated with -1.
 		int *call_args;
@@ -139,9 +144,12 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
+	int live_start, live_end;
+	// index of first basic block where this var is used
+	int bb_index;
 	union {
-		// the offset from the start of the execution stack locals space
-		int stack_offset;
+		// If var is INTERP_LOCAL_FLAG_CALL_ARGS, this is the call instruction using it
+		InterpInst *call;
 	};
 } InterpLocal;
 
@@ -166,7 +174,7 @@ typedef struct
 	unsigned int max_stack_height;
 	unsigned int stack_capacity;
 	unsigned int max_stack_size;
-	unsigned int total_locals_size;
+	gint32 total_locals_size;
 	InterpLocal *locals;
 	unsigned int il_locals_offset;
 	unsigned int il_locals_size;
@@ -180,6 +188,7 @@ typedef struct
 	GHashTable *patchsite_hash;
 #endif
 	int *clause_indexes;
+	int *clause_vars;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;

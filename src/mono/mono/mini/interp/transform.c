@@ -423,6 +423,8 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 	td->locals [td->locals_size].indirects = 0;
 	td->locals [td->locals_size].offset = -1;
 	td->locals [td->locals_size].size = size;
+	td->locals [td->locals_size].live_start = -1;
+	td->locals [td->locals_size].bb_index = -1;
 	td->locals_size++;
 	return td->locals_size - 1;
 
@@ -434,7 +436,6 @@ create_interp_stack_local (TransformData *td, int type, MonoClass *k, int type_s
 	int local = create_interp_local_explicit (td, get_type_from_stack (type, k), type_size);
 
 	td->locals [local].flags |= INTERP_LOCAL_FLAG_EXECUTION_STACK;
-	td->locals [local].stack_offset = offset;
 	return local;
 }
 
@@ -1184,6 +1185,7 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = call_args;
+	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 }
 
 static void
@@ -1195,6 +1197,7 @@ interp_generate_bie_throw (TransformData *td)
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = NULL;
+	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 }
 
 static void
@@ -1206,6 +1209,7 @@ interp_generate_not_supported_throw (TransformData *td)
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = NULL;
+	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 }
 
 static void
@@ -1242,6 +1246,7 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	td->last_ins->info.call_args = call_args;
+	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 }
 
 static int
@@ -1255,32 +1260,26 @@ create_interp_local (TransformData *td, MonoType *type)
 	return create_interp_local_explicit (td, type, size);
 }
 
+// Allocates var at the offset that tos points to, also updating it.
 static int
-get_interp_local_offset (TransformData *td, int local)
+alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 {
-	// FIXME MINT_PROF_EXIT when void
-	if (local == -1)
-		return -1;
+	int size, offset;
 
-	if (td->locals [local].offset != -1)
-		return td->locals [local].offset;
+	offset = *ptos;
+	size = td->locals [local].size;
 
-	if (td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) {
-		td->locals [local].offset = td->total_locals_size + td->locals [local].stack_offset;
-	} else {
-		int size, offset;
+	td->locals [local].offset = offset;
 
-		offset = td->total_locals_size;
-		size = td->locals [local].size;
-
-		td->locals [local].offset = offset;
-
-		td->total_locals_size = ALIGN_TO (offset + size, MINT_STACK_SLOT_SIZE);
-	}
-
-	//g_assert (td->total_locals_size < G_MAXUINT16);
+	*ptos = ALIGN_TO (offset + size, MINT_STACK_SLOT_SIZE);
 
 	return td->locals [local].offset;
+}
+
+static int
+alloc_global_var_offset (TransformData *td, int var)
+{
+	return alloc_var_offset (td, var, &td->total_locals_size);
 }
 
 /*
@@ -1713,7 +1712,6 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	MonoClass *element_class = m_class_get_element_class (array_class);
 	int rank = m_class_get_rank (array_class);
 	int size = mono_class_array_element_size (element_class);
-	gboolean is_call_args = FALSE;
 
 	gboolean bounded = m_class_get_byval_arg (array_class) ? m_class_get_byval_arg (array_class)->type == MONO_TYPE_ARRAY : FALSE;
 
@@ -1727,6 +1725,7 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 			td->last_ins->data [0] = size;
 		} else {
 			interp_add_ins (td, MINT_LDELEMA);
+			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			int *call_args = (int*)mono_mempool_alloc (td->mempool, (rank + 2) * sizeof (int));
 			for (int i = 0; i < rank + 1; i++) {
 				call_args [i] = td->sp [i].local;
@@ -1736,10 +1735,11 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 			g_assert (size < G_MAXUINT16);
 			td->last_ins->data [1] = size;
 			td->last_ins->info.call_args = call_args;
-			is_call_args = TRUE;
+			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 		}
 	} else {
 		interp_add_ins (td, MINT_LDELEMA_TC);
+		interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 		int *call_args = (int*)mono_mempool_alloc (td->mempool, (rank + 2) * sizeof (int));
 		for (int i = 0; i < rank + 1; i++) {
 			call_args [i] = td->sp [i].local;
@@ -1747,13 +1747,11 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 		call_args [rank + 1] = -1;
 		td->last_ins->data [0] = get_data_item_index (td, check_class);
 		td->last_ins->info.call_args = call_args;
-		is_call_args = TRUE;
+		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	}
 
 	push_simple_type (td, STACK_TYPE_MP);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	if (is_call_args)
-		interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 }
 
 static gboolean
@@ -3024,18 +3022,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	guint32 params_stack_size = tos_offset - get_tos_offset (td);
 
-	int *call_args = NULL;
-
-	if (op == -1 || mono_interp_op_dregs [op] == MINT_CALL_ARGS) {
-		// We must not optimize out these locals, storing to them is part of the interp call convention
-		// unless we already intrinsified this call
-		int num_args = csignature->param_count + !!csignature->hasthis;
-		call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
-		for (int i = 0; i < num_args; i++) {
-			call_args [i] = td->sp [i].local;
-		}
-		call_args [num_args] = -1;
-	}
+	int num_args = csignature->param_count + !!csignature->hasthis;
+	int *call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+	for (int i = 0; i < num_args; i++)
+		call_args [i] = td->sp [i].local;
+	call_args [num_args] = -1;
 
 	// We overwrite it with the return local, save it for future use
 	if (csignature->param_count || csignature->hasthis)
@@ -3100,6 +3091,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
 		interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (target_method, error));
 		mono_error_assert_ok (error);
 	} else {
@@ -3196,6 +3188,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 #endif
 		}
+		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	}
 	td->ip += 5;
 	td->last_ins->info.call_args = call_args;
@@ -3618,7 +3611,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		int mt = mint_type (type);
 		td->locals [i].type = type;
 		td->locals [i].offset = offset;
-		td->locals [i].flags = 0;
+		td->locals [i].flags = INTERP_LOCAL_FLAG_GLOBAL;
 		td->locals [i].indirects = 0;
 		td->locals [i].mt = mt;
 		if (mt == MINT_TYPE_VT && (!sig->hasthis || i != 0)) {
@@ -3646,7 +3639,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		imethod->local_offsets [i] = offset;
 		td->locals [index].type = header->locals [i];
 		td->locals [index].offset = offset;
-		td->locals [index].flags = 0;
+		td->locals [index].flags = INTERP_LOCAL_FLAG_GLOBAL;
 		td->locals [index].indirects = 0;
 		td->locals [index].mt = mint_type (header->locals [i]);
 		if (td->locals [index].mt == MINT_TYPE_VT)
@@ -3658,16 +3651,17 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	}
 	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 	td->il_locals_size = offset - td->il_locals_offset;
+	td->total_locals_size = offset;
 
 	imethod->clause_data_offsets = (guint32*)g_malloc (header->num_clauses * sizeof (guint32));
+	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
 	for (i = 0; i < header->num_clauses; i++) {
-		imethod->clause_data_offsets [i] = offset;
-		offset += sizeof (MonoObject*);
+		int var = create_interp_local (td, mono_get_object_type ());
+		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+		alloc_global_var_offset (td, var);
+		imethod->clause_data_offsets [i] = td->locals [var].offset;
+		td->clause_vars [i] = var;
 	}
-	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
-
-	//g_assert (offset < G_MAXUINT16);
-	td->total_locals_size = offset;
 }
 
 void
@@ -3965,7 +3959,7 @@ initialize_clause_bblocks (TransformData *td)
 			bb->stack_state [0].klass = NULL; /*FIX*/
 			bb->stack_state [0].size = MINT_STACK_SLOT_SIZE;
 			bb->stack_state [0].offset = 0;
-			bb->stack_state [0].local = create_interp_stack_local (td, STACK_TYPE_O, NULL, MINT_STACK_SLOT_SIZE, 0);
+			bb->stack_state [0].local = td->clause_vars [i];
 		}
 
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
@@ -3978,7 +3972,7 @@ initialize_clause_bblocks (TransformData *td)
 			bb->stack_state [0].klass = NULL; /*FIX*/
 			bb->stack_state [0].size = MINT_STACK_SLOT_SIZE;
 			bb->stack_state [0].offset = 0;
-			bb->stack_state [0].local = create_interp_stack_local (td, STACK_TYPE_O, NULL, MINT_STACK_SLOT_SIZE, 0);
+			bb->stack_state [0].local = td->clause_vars [i];
 		} else if (c->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 			/*
 			 * JIT doesn't emit sdb seq intr point at the start of catch clause, probably
@@ -5377,6 +5371,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
 				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
@@ -5395,6 +5390,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
@@ -5473,7 +5469,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					newobj_fast->data [2] = params_stack_size;
 					newobj_fast->data [3] = csignature->param_count;
 
-					if ((mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m, csignature)) {
+					if (0 && (mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m, csignature)) {
 						MonoMethodHeader *mheader = interp_method_get_header (m, error);
 						goto_if_nok (error, exit);
 
@@ -5505,6 +5501,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->data [1] = params_stack_size;
 				}
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 				td->last_ins->info.call_args = call_args;
 				goto_if_nok (error, exit);
 				// Parameters and this pointer are popped of the stack. The return value remains
@@ -6041,6 +6038,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->data [0] = get_data_item_index (td, klass);
 				td->last_ins->info.call_args = call_args;
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 			} else {
 				interp_add_ins (td, MINT_LDELEMA1);
 				td->sp -= 2;
@@ -6627,7 +6625,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					// Push back to top of stack and fixup the local offset
 					push_types (td, &tos, 1);
 					td->sp [-1].local = saved_local;
-					td->locals [saved_local].stack_offset = td->sp [-1].offset;
 
 					if (!interp_transform_call (td, method, NULL, generic_context, NULL, FALSE, error, FALSE, FALSE, FALSE))
 						goto exit;
@@ -6675,6 +6672,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						if (dreg != -1)
 							interp_ins_set_dreg (td->last_ins, dreg);
 						interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+						td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 						td->last_ins->info.call_args = call_args;
 					}
@@ -7329,7 +7327,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	*ip++ = opcode;
 	if (opcode == MINT_SWITCH) {
 		int labels = READ32 (&ins->data [0]);
-		*ip++ = get_interp_local_offset (td, ins->sregs [0]);
+		*ip++ = td->locals [ins->sregs [0]].offset;
 		// Write number of switch labels
 		*ip++ = ins->data [0];
 		*ip++ = ins->data [1];
@@ -7348,7 +7346,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK || opcode == MINT_CALL_HANDLER_S) {
 		const int br_offset = start_ip - td->new_code;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = get_interp_local_offset (td, ins->sregs [i]);
+			*ip++ = td->locals [ins->sregs [i]].offset;
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it.
 			*ip++ = ins->info.target_bb->native_offset - br_offset;
@@ -7369,7 +7367,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			opcode == MINT_BR || opcode == MINT_LEAVE || opcode == MINT_LEAVE_CHECK || opcode == MINT_CALL_HANDLER) {
 		const int br_offset = start_ip - td->new_code;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = get_interp_local_offset (td, ins->sregs [i]);
+			*ip++ = td->locals [ins->sregs [i]].offset;
 		if (ins->info.target_bb->native_offset >= 0) {
 			// Backwards branch. We can already patch it
 			int target_offset = ins->info.target_bb->native_offset - br_offset;
@@ -7435,14 +7433,18 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 #endif
 	} else {
 		if (mono_interp_op_dregs [opcode])
-			*ip++ = get_interp_local_offset (td, ins->dreg);
+			*ip++ = td->locals [ins->dreg].offset;
 
 		if (mono_interp_op_sregs [opcode]) {
-			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-				*ip++ = get_interp_local_offset (td, ins->sregs [i]);
+			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+				if (ins->sregs [i] == MINT_CALL_ARGS_SREG)
+					*ip++ = td->locals [ins->info.call_args [0]].offset;
+				else
+					*ip++ = td->locals [ins->sregs [i]].offset;
+			}
 		} else if (opcode == MINT_LDLOCA_S) {
 			// This opcode receives a local but it is not viewed as a sreg since we don't load the value
-			*ip++ = get_interp_local_offset (td, ins->sregs [0]);
+			*ip++ = td->locals [ins->sregs [0]].offset;
 		}
 
 		int left = get_inst_length (ins) - (ip - start_ip);
@@ -7452,28 +7454,6 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 	}
 	mono_interp_stats.emitted_instructions++;
 	return ip;
-}
-
-static void
-alloc_ins_locals (TransformData *td, InterpInst *ins)
-{
-	int opcode = ins->opcode;
-	if (mono_interp_op_sregs [opcode]) {
-		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
-			int local = ins->sregs [i];
-			if (!(td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK))
-				get_interp_local_offset (td, local);
-		}
-	} else if (opcode == MINT_LDLOCA_S) {
-		// This opcode receives a local but it is not viewed as a sreg since we don't load the value
-		get_interp_local_offset (td, ins->sregs [0]);
-	}
-
-	if (mono_interp_op_dregs [opcode]) {
-		int local = ins->dreg;
-		if (!(td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK))
-			get_interp_local_offset (td, local);
-	}
 }
 
 // Generates the final code, after we are done with all the passes
@@ -7490,7 +7470,6 @@ generate_compacted_code (TransformData *td)
 		InterpInst *ins = bb->first_ins;
 		while (ins) {
 			size += get_inst_length (ins);
-			alloc_ins_locals (td, ins);
 			ins = ins->next;
 		}
 	}
@@ -8217,11 +8196,398 @@ interp_optimize_code (TransformData *td)
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		interp_optimize_bblocks (td);
 
-	if (mono_interp_opt & INTERP_OPT_CPROP)
-		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
+//	if (mono_interp_opt & INTERP_OPT_CPROP)
+//		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
 
 	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
+}
+
+static void
+foreach_local_var (TransformData *td, InterpInst *ins, int data, void (*callback)(TransformData*, int, int))
+{
+	int opcode = ins->opcode;
+	if (mono_interp_op_sregs [opcode]) {
+		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+			int sreg = ins->sregs [i];
+
+			if (sreg == MINT_CALL_ARGS_SREG) {
+				int *call_args = ins->info.call_args;
+				if (call_args) {
+					int var = *call_args;
+					while (var != -1) {
+						callback (td, var, data);
+						call_args++;
+						var = *call_args;
+					}
+				}
+			} else {
+				callback (td, sreg, data);
+			}
+		}
+	}
+
+	if (mono_interp_op_dregs [opcode])
+		callback (td, ins->dreg, data);
+}
+
+static void
+set_var_live_range (TransformData *td, int var, int ins_index)
+{
+	// We don't track liveness yet for global vars
+	if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+		return;
+	if (td->locals [var].live_start == -1)
+		td->locals [var].live_start = ins_index;
+	td->locals [var].live_end = ins_index;
+}
+
+static void
+initialize_global_var (TransformData *td, int var, int bb_index)
+{
+	// Check if already handled
+	if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)
+		return;
+
+	if (td->locals [var].bb_index == -1) {
+		td->locals [var].bb_index = bb_index;
+	} else if (td->locals [var].bb_index != bb_index) {
+		// var used in multiple basic blocks
+		if (td->verbose_level)
+			g_print ("alloc global var %d to offset %d\n", var, td->total_locals_size);
+		alloc_global_var_offset (td, var);
+		td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+	}
+} 
+
+static void
+initialize_global_vars (TransformData *td)
+{
+	InterpBasicBlock *bb;
+
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int opcode = ins->opcode;
+			if (opcode == MINT_NOP) {
+				continue;
+			} else if (opcode == MINT_LDLOCA_S) {
+				int var = ins->sregs [0];
+				// If global flag is set, it means its offset was already allocated
+				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL)) {
+					if (td->verbose_level)
+						g_print ("alloc ldloca global var %d to offset %d\n", var, td->total_locals_size);
+					alloc_global_var_offset (td, var);
+					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
+				}
+			}
+			foreach_local_var (td, ins, bb->index, initialize_global_var);
+		}
+	}
+}
+
+// Data structure used for offset allocation of call args
+typedef struct {
+	InterpInst *call;
+	int param_size;
+} ActiveCall;
+
+typedef struct {
+	ActiveCall *active_calls;
+	int active_calls_count;
+	int active_calls_capacity;
+	int param_size;
+} ActiveCalls;
+
+static void
+init_active_calls (TransformData *td, ActiveCalls *ac)
+{
+	ac->active_calls_count = 0;
+	ac->active_calls_capacity = 5;
+	ac->active_calls = (ActiveCall*)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (ActiveCall));
+	ac->param_size = 0;
+}
+
+static void
+reinit_active_calls (TransformData *td, ActiveCalls *ac)
+{
+	ac->active_calls_count = 0;
+	ac->param_size = 0;
+}
+
+static int
+get_call_param_size (TransformData *td, InterpInst *call)
+{
+	int *call_args = call->info.call_args;
+	if (!call_args)
+		return 0;
+
+	int param_size = 0;
+
+	int var = *call_args;
+	while (var != -1) {
+		param_size = ALIGN_TO (param_size + td->locals [var].size, MINT_STACK_SLOT_SIZE);
+		call_args++;
+		var = *call_args;
+	}
+	return param_size;
+}
+
+static void
+add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
+{
+	// Check if already added
+	if (call->flags & INTERP_INST_FLAG_ACTIVE_CALL)
+		return;
+
+	if (ac->active_calls_count == ac->active_calls_capacity) {
+		ActiveCall *old = ac->active_calls;
+		ac->active_calls_capacity *= 2;
+		ac->active_calls = (ActiveCall*)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (ActiveCall));
+		memcpy (ac->active_calls, old, ac->active_calls_count * sizeof (ActiveCall));
+	}
+
+	ac->active_calls [ac->active_calls_count].call = call;
+	ac->active_calls [ac->active_calls_count].param_size = get_call_param_size (td, call);
+	ac->param_size += ac->active_calls [ac->active_calls_count].param_size;
+	ac->active_calls_count++;
+
+	// Mark a flag on it so we don't have to lookup the array with every argument store.
+	call->flags |= INTERP_INST_FLAG_ACTIVE_CALL;
+}
+
+static void
+end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
+{
+	// Remove call from array
+	for (int i = 0; i < ac->active_calls_count; i++) {
+		if (ac->active_calls [i].call == call) {
+			ac->active_calls_count--;
+			ac->param_size -= ac->active_calls [i].param_size;
+			// Since this entry is removed, move the last entry into it
+			if (ac->active_calls_count > 0 && i < ac->active_calls_count)
+				ac->active_calls [i] = ac->active_calls [ac->active_calls_count];
+		}
+	}
+	// This is the relative offset (to the start of the call args stack) where the args
+	// for this call reside.
+	int start_offset = ac->param_size;
+
+	// Compute to offset of each call argument
+	int *call_args = call->info.call_args;
+	if (call_args && (*call_args != -1)) {
+		int var = *call_args;
+		while (var != -1) {
+			alloc_var_offset (td, var, &start_offset);
+			call_args++;
+			var = *call_args;
+		}
+	} else {
+		// This call has no argument. Allocate a dummy one so when we resolve the
+		// offset for MINT_CALL_ARGS_SREG during compacted instruction emit, we can
+		// always use the offset of the first var in the call_args array
+		int new_var = create_interp_local (td, mono_get_int_type ());
+		td->locals [new_var].call = call;
+		td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+		alloc_var_offset (td, new_var, &start_offset);
+
+		call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
+		call_args [0] = new_var;
+		call_args [1] = -1;
+
+		call->info.call_args = call_args;
+	}
+}
+
+// Data structure used for offset allocation of local vars
+
+typedef struct {
+	int var;
+	gboolean is_alive;
+} ActiveVar;
+
+static int
+compact_active_vars (TransformData *td, ActiveVar *active_vars, int active_vars_count, gint32 *current_offset)
+{
+	if (!active_vars_count)
+		return 0;
+	int i = active_vars_count - 1;
+	while (i >= 0 && !active_vars [i].is_alive) {
+		active_vars_count--;
+		*current_offset = td->locals [active_vars [i].var].offset;
+		i--;
+	}
+	return active_vars_count;
+}
+
+static void
+interp_alloc_offsets (TransformData *td)
+{
+	InterpBasicBlock *bb;
+	ActiveCalls ac;
+
+	if (td->verbose_level)
+		g_print ("\nvar offset allocator iteration\n");
+
+	initialize_global_vars (td);
+
+	int active_vars_capacity = MAX (td->locals_size / td->bb_count, 10);
+	ActiveVar *active_vars = (ActiveVar*)mono_mempool_alloc (td->mempool, active_vars_capacity * sizeof (ActiveVar));
+
+	init_active_calls (td, &ac);
+
+	int final_total_locals_size = td->total_locals_size;
+	// We now have the top of stack offset. All local regs are allocated after this offset, with each basic block
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+		int ins_index = 0;
+		if (td->verbose_level)
+			g_print ("BB%d\n", bb->index);
+
+		reinit_active_calls (td, &ac);
+
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			if (ins->opcode == MINT_NOP)
+				continue;
+			if (ins->opcode == MINT_NEWOBJ_VT_FAST || ins->opcode == MINT_NEWOBJ_FAST ||
+					ins->opcode == MINT_NEWOBJ || ins->opcode == MINT_NEWOBJ_STRING) {
+				// The offset allocator assumes that the liveness of destination var starts
+				// after the source vars, which means the destination var can be allocated
+				// at the same offset as some of the arguments. However, for newobj opcodes,
+				// the created object is set before the call is made. We solve this by making
+				// sure that the dreg is not allocated in the param area, so there is no
+				// risk of conflicts.
+				td->locals [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
+			}
+			if (ins->flags & INTERP_INST_FLAG_CALL) {
+				int *call_args = ins->info.call_args;
+				if (call_args) {
+					int var = *call_args;
+					while (var != -1) {
+						if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
+								td->locals [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
+							// A global var is an argument to a call, which is not allowed. We need
+							// to copy the global var into a local var
+							int new_var = create_interp_local (td, td->locals [var].type);
+							td->locals [new_var].call = ins;
+							td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+							int opcode = get_mov_for_type (mint_type (td->locals [var].type), FALSE);
+							InterpInst *new_inst = interp_insert_ins_bb (td, bb, ins->prev, opcode);
+							interp_ins_set_dreg (new_inst, new_var);
+							interp_ins_set_sreg (new_inst, var);
+							if (opcode == MINT_MOV_VT)
+								new_inst->data [0] = td->locals [var].size;
+							// The arg of the call is no longer global
+							*call_args = new_var;
+							// Also update liveness for this instruction
+							foreach_local_var (td, new_inst, ins_index, set_var_live_range);
+							ins_index++;
+						} else {
+							// Flag this var as it has special storage on the call args stack
+							td->locals [var].call = ins;
+							td->locals [var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+						}
+						call_args++;
+						var = *call_args;
+					}
+				}
+			}
+			// Set live_start and live_end for every referenced local that is not global
+			foreach_local_var (td, ins, ins_index, set_var_live_range);
+			ins_index++;
+		}
+		gint32 current_offset = td->total_locals_size;
+		int active_vars_count = 0;
+
+		ins_index = 0;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int opcode = ins->opcode;
+			gboolean is_call = ins->flags & INTERP_INST_FLAG_CALL;
+
+			if (opcode == MINT_NOP)
+				continue;
+
+			if (td->verbose_level) {
+				g_print ("\tins_index %d\t", ins_index);
+                                dump_interp_inst (ins);
+			}
+
+			// Expire source vars. We first mark them as not alive and then compact the array
+			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+				int var = ins->sregs [i];
+				if (var == MINT_CALL_ARGS_SREG)
+					continue;
+				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index) {
+					g_assert (!(td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
+					// Iterate over active vars, set the entry associated with var as !is_alive
+					for (int j = 0; j < active_vars_count; j++) {
+						if (active_vars [j].var == var) {
+							active_vars [j].is_alive = FALSE;
+							break;
+						}
+					}
+				}
+			}
+
+			if (is_call)
+				end_active_call (td, &ac, ins);
+
+			active_vars_count = compact_active_vars (td, active_vars, active_vars_count, &current_offset);
+
+			// Alloc dreg local starting at the stack_offset
+			if (mono_interp_op_dregs [opcode]) {
+				int var = ins->dreg;
+
+				if (td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+					add_active_call (td, &ac, td->locals [var].call);
+				} else if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].offset == -1) {
+					alloc_var_offset (td, var, &current_offset);
+					if (current_offset > final_total_locals_size)
+						final_total_locals_size = current_offset;
+
+					if (td->verbose_level)
+						g_print ("alloc var %d to offset %d\n", var, td->locals [var].offset);
+
+					if (td->locals [var].live_end > ins_index) {
+						// if dreg is still used in the basic block, add it to the active list
+						if (active_vars_count == active_vars_capacity) {
+							active_vars_capacity *= 2;
+							ActiveVar *new_array = (ActiveVar*)mono_mempool_alloc (td->mempool, active_vars_capacity * sizeof (ActiveVar)); 
+							memcpy (new_array, active_vars, active_vars_count * sizeof (ActiveVar));
+							active_vars = new_array;
+						}
+						active_vars [active_vars_count].var = var;
+						active_vars [active_vars_count].is_alive = TRUE;
+						active_vars_count++;
+					} else {
+						current_offset = td->locals [var].offset;
+					}
+				}
+			}
+			if (td->verbose_level) {
+				g_print ("active :");
+				for (int i = 0; i < active_vars_count; i++) {
+					if (active_vars [i].is_alive)
+						g_print (" %d (end %d),", active_vars [i].var, td->locals [active_vars [i].var].live_end);
+				}
+				g_print ("\n");
+			}
+			ins_index++;
+		}
+	}
+
+	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
+	// then also update td->total_locals_size to account for this space.
+	td->total_locals_size = final_total_locals_size;
+	for (int i = 0; i < td->locals_size; i++) {
+		// These are allocated separately at the end of the stack
+		if (td->locals [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
+			td->locals [i].offset += td->total_locals_size;
+			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
+		}
+	}
+	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_SLOT_SIZE);
 }
 
 /*
@@ -8335,6 +8701,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		interp_fix_localloc_ret (td);
 
 	interp_optimize_code (td);
+
+	interp_alloc_offsets (td);
 
 	generate_compacted_code (td);
 
