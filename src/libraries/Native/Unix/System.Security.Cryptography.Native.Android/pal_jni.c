@@ -110,8 +110,11 @@ jmethodID g_keyPairGenGenKeyPairMethod;
 jclass    g_KeyStore;
 jmethodID g_KeyStoreGetInstance;
 jmethodID g_KeyStoreAliases;
+jmethodID g_KeyStoreDeleteEntry;
 jmethodID g_KeyStoreGetCertificate;
+jmethodID g_KeyStoreIsCertificateEntry;
 jmethodID g_KeyStoreLoad;
+jmethodID g_KeyStoreSetCertificateEntry;
 
 // java/security/Signature
 jclass    g_SignatureClass;
@@ -559,6 +562,15 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_keyPairGenInitializeWithParamsMethod = GetMethod(env, false, g_keyPairGenClass, "initialize", "(Ljava/security/spec/AlgorithmParameterSpec;)V");
     g_keyPairGenGenKeyPairMethod =           GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
 
+    g_KeyStoreClass =               GetClassGRef(env, "java/security/KeyStore");
+    g_KeyStoreGetInstance =         GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
+    g_KeyStoreAliases =             GetMethod(env, false, g_KeyStoreClass, "aliases", "()Ljava/util/Enumeration;");
+    g_KeyStoreDeleteEntry =         GetMethod(env, false, g_KeyStoreClass, "deleteEntry", "(Ljava/lang/String;)V");
+    g_KeyStoreGetCertificate =      GetMethod(env, false, g_KeyStoreClass, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
+    g_KeyStoreIsCertificateEntry =  GetMethod(env, false, g_KeyStoreClass, "isCertificateEntry", "(Ljava/lang/String;)Z");
+    g_KeyStoreLoad =                GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
+    g_KeyStoreSetCertificateEntry = GetMethod(env, false, g_KeyStoreClass, "setCertificateEntry", "(Ljava/lang/String;Ljava/security/cert/Certificate;)V");
+
     g_SignatureClass =                 GetClassGRef(env, "java/security/Signature");
     g_SignatureGetInstance =           GetMethod(env, true, g_SignatureClass, "getInstance", "(Ljava/lang/String;)Ljava/security/Signature;");
     g_SignatureInitSign =              GetMethod(env, false, g_SignatureClass, "initSign", "(Ljava/security/PrivateKey;)V");
@@ -566,12 +578,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SignatureUpdate =                GetMethod(env, false, g_SignatureClass, "update", "([B)V");
     g_SignatureSign =                  GetMethod(env, false, g_SignatureClass, "sign", "()[B");
     g_SignatureVerify =                GetMethod(env, false, g_SignatureClass, "verify", "([B)Z");
-
-    g_KeyStore =                GetClassGRef(env, "java/security/KeyStore");
-    g_KeyStoreGetInstance =     GetMethod(env, true, g_KeyStore, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
-    g_KeyStoreAliases =         GetMethod(env, false, g_KeyStore, "aliases", "()Ljava/util/Enumeration;");
-    g_KeyStoreGetCertificate =  GetMethod(env, false, g_KeyStore, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
-    g_KeyStoreLoad =            GetMethod(env, false, g_KeyStore, "load", "(Ljava/io/InputStream;[C)V");
 
     g_RSAPrivateCrtKeyClass =          GetClassGRef(env, "java/security/interfaces/RSAPrivateCrtKey");
     g_RSAPrivateCrtKeyPubExpField =    GetMethod(env, false, g_RSAPrivateCrtKeyClass, "getPublicExponent", "()Ljava/math/BigInteger;");
@@ -598,7 +604,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DSAPublicKeySpecClass =              GetClassGRef(env, "java/security/spec/DSAPublicKeySpec");
     g_DSAPublicKeySpecCtor =               GetMethod(env, false, g_DSAPublicKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
     g_DSAPublicKeySpecGetY =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getY", "()Ljava/math/BigInteger;");
-    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;"); 
+    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;");
     g_DSAPublicKeySpecGetQ =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getQ", "()Ljava/math/BigInteger;");
     g_DSAPublicKeySpecGetG =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getG", "()Ljava/math/BigInteger;");
 

@@ -69,13 +69,22 @@ namespace Internal.Cryptography.Pal
                 {
                     // Matches Unix behaviour of getting a disallowed store that is always empty.
                     if (ordinalIgnoreCase.Equals(X509Store.DisallowedStoreName, storeName))
+                    {
                         return new UnsupportedDisallowedStore(openFlags);
+                    }
+
+                    if (ordinalIgnoreCase.Equals(X509Store.MyStoreName, storeName))
+                    {
+                        return AndroidKeyStore.OpenDefault(openFlags);
+                    }
 
                     if (ordinalIgnoreCase.Equals(X509Store.RootStoreName, storeName))
                     {
                         // Android only allows updating the trusted store through the built-in settings application
                         if (isReadWrite)
+                        {
                             throw new CryptographicException(SR.Security_AccessDenied);
+                        }
 
                         return new TrustedStore(storeLocation);
                     }
@@ -84,7 +93,9 @@ namespace Internal.Cryptography.Pal
                 case StoreLocation.LocalMachine:
                 {
                     if (ordinalIgnoreCase.Equals(X509Store.RootStoreName, storeName))
+                    {
                         return new TrustedStore(storeLocation);
+                    }
 
                     break;
                 }

@@ -134,11 +134,14 @@ extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/KeyStore
-extern jclass    g_KeyStore;
+extern jclass    g_KeyStoreClass;
 extern jmethodID g_KeyStoreGetInstance;
 extern jmethodID g_KeyStoreAliases;
+extern jmethodID g_KeyStoreDeleteEntry;
 extern jmethodID g_KeyStoreGetCertificate;
+extern jmethodID g_KeyStoreIsCertificateEntry;
 extern jmethodID g_KeyStoreLoad;
+extern jmethodID g_KeyStoreSetCertificateEntry;
 
 // java/security/Signature
 extern jclass    g_SignatureClass;

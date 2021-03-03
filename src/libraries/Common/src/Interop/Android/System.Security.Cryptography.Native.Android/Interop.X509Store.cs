@@ -11,10 +11,50 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreAddCertificate(
+            SafeX509StoreHandle store,
+            SafeX509Handle cert,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreContainsCertificate(
+            SafeX509StoreHandle store,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreEnumerateCertificates(
+            SafeX509StoreHandle storeHandle,
+            delegate* unmanaged<void*, void*, void> callback,
+            void *callbackContext);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
-        internal static extern unsafe int X509StoreEnumerateTrustedCertificates(
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreEnumerateTrustedCertificates(
             byte systemOnly,
             delegate* unmanaged<void*, void*, void> callback,
             void *callbackContext);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
+        internal static extern unsafe SafeX509StoreHandle X509StoreOpenDefault();
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreRemoveCertificate(
+            SafeX509StoreHandle store,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+    }
+}
+
+namespace System.Security.Cryptography.X509Certificates
+{
+    internal sealed class SafeX509StoreHandle : Interop.JObjectLifetime.SafeJObjectHandle
+    {
+        public SafeX509StoreHandle()
+        {
+        }
     }
 }

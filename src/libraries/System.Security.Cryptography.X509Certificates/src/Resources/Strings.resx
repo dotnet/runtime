@@ -292,6 +292,9 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
+    <value>The X509 certificate could not be removed from the store.</value>
+  </data>
   <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
     <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
   </data>

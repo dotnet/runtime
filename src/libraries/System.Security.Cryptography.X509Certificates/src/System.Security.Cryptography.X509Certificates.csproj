@@ -401,6 +401,7 @@
     <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\StorePal.AndroidKeyStore.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.ExportPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.TrustedStore.cs" />
