@@ -2104,6 +2104,11 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // TODO-1stClassStructs: a temporary solution to keep diffs small, it will be fixed later.
         shouldPromote = false;
     }
+    else if (compiler->compStressCompile(STRESS_PROMOTE_LESS_STRUCTS, 50))
+    {
+        // Do not promote some structs, that can be promoted, to stress promoted/unpromoted moves.
+        shouldPromote = false;
+    }
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
