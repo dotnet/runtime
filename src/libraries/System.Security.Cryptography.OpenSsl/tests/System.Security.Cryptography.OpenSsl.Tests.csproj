@@ -62,6 +62,7 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="RC2Provider.cs" />
     <Compile Include="EcDiffieHellmanOpenSslProvider.cs" />
     <Compile Include="EcDiffieHellmanOpenSslTests.cs" />
     <Compile Include="EcDsaOpenSslProvider.cs" />
