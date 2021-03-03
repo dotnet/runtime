@@ -9,7 +9,7 @@ If you want to use a faster method, you may want to use one of these walkthrough
 
 - [Using Your Build - Update from raw build output](./testing/using-your-build.md)
 - [Using CoreRun To Run .NET Application](./testing/using-corerun.md)
-- [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
+- [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
 
 ## Prerequisites
 

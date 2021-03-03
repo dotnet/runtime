@@ -48,7 +48,7 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
  */
 
 FORCEINLINE
-BOOL Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
+bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 {
     return info.compCompHnd->isValueClass(clsHnd);
 }

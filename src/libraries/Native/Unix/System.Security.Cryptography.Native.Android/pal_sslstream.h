@@ -38,7 +38,7 @@ typedef struct SSLStream
 #define STATUS__OK 2
 #define STATUS__CLOSED 3
 
-PALEXPORT SSLStream* AndroidCrypto_CreateSSLStreamAndStartHandshake(STREAM_READER streamReader, STREAM_WRITER streamWriter, int tlsVersion, int appOutBufferSize, int appInBufferSize);
-PALEXPORT int  AndroidCrypto_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
-PALEXPORT void AndroidCrypto_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
-PALEXPORT void AndroidCrypto_Dispose(SSLStream* sslStream);
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateAndStartHandshake(STREAM_READER streamReader, STREAM_WRITER streamWriter, int tlsVersion, int appOutBufferSize, int appInBufferSize);
+PALEXPORT int  AndroidCryptoNative_SSLStreamRead(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
+PALEXPORT void AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uint8_t* buffer, int offset, int length);
+PALEXPORT void AndroidCryptoNative_SSLStreamRelease(SSLStream* sslStream);

@@ -157,7 +157,7 @@ namespace System.IO
                 AllocateBuffer();
             }
 
-            void AllocateBuffer() // logic kept in a separate method to get the method inlined
+            void AllocateBuffer() // logic kept in a separate method to get EnsureBufferAllocated() inlined
             {
                 _buffer = new byte[_bufferSize];
 
@@ -585,8 +585,11 @@ namespace System.IO
             // BUT - this is a breaking change.
             // So: If we could not read all bytes the user asked for from the buffer, we will try once from the underlying
             // stream thus ensuring the same blocking behaviour as if the underlying stream was not wrapped in this BufferedStream.
-            if (bytesFromBuffer == count && (count > 0 || !_actLikeFileStream))
+            if (bytesFromBuffer == count
+                && !(count == 0 && _actLikeFileStream && _readLen == _readPos)) // 0 bytes reads are OK only for FileStream when the read buffer is empty
+            {
                 return bytesFromBuffer;
+            }
 
             int alreadySatisfied = bytesFromBuffer;
             if (bytesFromBuffer > 0)
@@ -595,8 +598,7 @@ namespace System.IO
                 offset += bytesFromBuffer;
             }
 
-            // So the read buffer is empty.
-            Debug.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
             _readPos = _readLen = 0;
 
             // If there was anything in the write buffer, clear it.
@@ -633,7 +635,8 @@ namespace System.IO
 
             // Try to read from the buffer.
             int bytesFromBuffer = ReadFromBuffer(destination);
-            if (bytesFromBuffer == destination.Length && (destination.Length > 0 || !_actLikeFileStream))
+            if (bytesFromBuffer == destination.Length
+                && !(destination.Length == 0 && _actLikeFileStream && _readLen == _readPos)) // 0 bytes reads are OK only for FileStream when the read buffer is empty
             {
                 // We got as many bytes as were asked for; we're done.
                 return bytesFromBuffer;
@@ -646,8 +649,7 @@ namespace System.IO
                 destination = destination.Slice(bytesFromBuffer);
             }
 
-            // The read buffer must now be empty.
-            Debug.Assert(_readLen == _readPos);
+            Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
             _readPos = _readLen = 0;
 
             // If there was anything in the write buffer, clear it.
@@ -731,6 +733,7 @@ namespace System.IO
                 // serializes ALL async operations
                 else if (_actLikeFileStream &&  _writePos == 0 && count >= _bufferSize)
                 {
+                    Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
                     _readPos = _readLen = 0;
 
                     // start the async operation
@@ -786,6 +789,7 @@ namespace System.IO
                 // serializes ALL async operations
                 else if (_actLikeFileStream && _writePos == 0 && buffer.Length >= _bufferSize)
                 {
+                    Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
                     _readPos = _readLen = 0;
 
                     // start the async operation
@@ -844,7 +848,7 @@ namespace System.IO
                     }
                 }
 
-                Debug.Assert(_readLen == _readPos);
+                Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
                 _readPos = _readLen = 0;
 
                 // If there was anything in the write buffer, clear it.

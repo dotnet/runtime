@@ -109,7 +109,7 @@ usage()
   echo ""
   echo "However, for this example, you need to already have ROOTFS_DIR set up."
   echo "Further information on this can be found here:"
-  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/linux-instructions.md"
   echo ""
   echo "* Build Mono runtime for Linux x64 on Release configuration."
   echo "./build.sh mono -c release"
@@ -121,7 +121,7 @@ usage()
   echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
   echo ""
   echo ""
-  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 initDistroRid()
