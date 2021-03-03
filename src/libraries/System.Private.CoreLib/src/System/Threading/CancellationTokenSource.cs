@@ -30,11 +30,9 @@ namespace System.Threading
         internal static readonly CancellationTokenSource s_neverCanceledSource = new CancellationTokenSource();
 
         /// <summary>Delegate used with <see cref="Timer"/> to trigger cancellation of a <see cref="CancellationTokenSource"/>.</summary>
-        private static readonly TimerCallback s_timerCallback = obj =>
-        {
-            Debug.Assert(obj is CancellationTokenSource, $"Expected {typeof(CancellationTokenSource)}, got {obj}");
-            ((CancellationTokenSource)obj).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
-        };
+        private static readonly TimerCallback s_timerCallback = TimerCallback;
+        private static void TimerCallback(object? state) => // separated out into a named method to improve Timer diagnostics in a debugger
+            ((CancellationTokenSource)state!).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
 
         /// <summary>The current state of the CancellationTokenSource.</summary>
         private volatile int _state;

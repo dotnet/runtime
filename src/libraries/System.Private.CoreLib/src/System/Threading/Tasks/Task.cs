@@ -5433,6 +5433,7 @@ namespace System.Threading.Tasks
         /// <summary>Task that also stores the completion closure and logic for Task.Delay implementation.</summary>
         private class DelayPromise : Task
         {
+            private static readonly TimerCallback s_timerCallback = TimerCallback;
             private readonly TimerQueueTimer? _timer;
 
             internal DelayPromise(uint millisecondsDelay)
@@ -5447,7 +5448,7 @@ namespace System.Threading.Tasks
 
                 if (millisecondsDelay != Timeout.UnsignedInfinite) // no need to create the timer if it's an infinite timeout
                 {
-                    _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
                     if (IsCompleted)
                     {
                         // Handle rare race condition where the timer fires prior to our having stored it into the field, in which case
@@ -5457,6 +5458,9 @@ namespace System.Threading.Tasks
                     }
                 }
             }
+
+            // Separated out into a named method to improve Timer diagnostics in a debugger
+            private static void TimerCallback(object? state) => ((DelayPromise)state!).CompleteTimedOut();
 
             private void CompleteTimedOut()
             {
