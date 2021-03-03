@@ -151,6 +151,10 @@
     <BDN_Partition Include="Partition29" Index="29" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ASPNET_Partition Include="Partition0" Index="0" />
+  </ItemGroup>
+
   <Choose>
 
      <When Condition="'$(CollectionName)' == 'benchmarks'">
@@ -167,7 +171,7 @@
 
      <When Condition="'$(CollectionName)' == 'aspnet'">
       <ItemGroup>
-        <HelixWorkItem>
+        <HelixWorkItem Include="@(ASPNET_Partition)">
           <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
           <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
           <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
