@@ -468,7 +468,6 @@ namespace System.IO
         /// <summary>
         /// Called by Write methods to clear the Read Buffer
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ClearReadBufferBeforeWrite()
         {
             Debug.Assert(_stream != null);
@@ -525,7 +524,6 @@ namespace System.IO
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ReadFromBuffer(byte[] buffer, int offset, int count)
         {
             int readbytes = _readLen - _readPos;
@@ -701,8 +699,7 @@ namespace System.IO
             // an Async operation.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
-            if (locked)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 // hot path #1: there is data in the buffer
                 if (_readLen - _readPos > 0 || (count == 0 && !_actLikeFileStream))
@@ -733,20 +730,21 @@ namespace System.IO
                 {
                     _readPos = _readLen = 0;
 
-                    // start the async operation
-                    ValueTask<int> result = _stream!.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
-
-                    // release the lock (we are not using shared state anymore)
-                    sem.Release();
-
-                    return result.AsTask();
+                    try
+                    {
+                        return _stream!.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+                    }
+                    finally
+                    {
+                        sem.Release();
+                    }
                 }
             }
 
             // Delegate to the async implementation.
             return ReadFromUnderlyingStreamAsync(
                 new Memory<byte>(buffer, offset + bytesFromBuffer, count - bytesFromBuffer),
-                cancellationToken, bytesFromBuffer, semaphoreLockTask, locked).AsTask();
+                cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -762,8 +760,7 @@ namespace System.IO
             int bytesFromBuffer = 0;
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
-            if (locked)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 // hot path #1: there is data in the buffer
                 if (_readLen - _readPos > 0 || (buffer.Length == 0 && !_actLikeFileStream))
@@ -788,18 +785,19 @@ namespace System.IO
                 {
                     _readPos = _readLen = 0;
 
-                    // start the async operation
-                    ValueTask<int> result = _stream!.ReadAsync(buffer, cancellationToken);
-
-                    // release the lock (we are not using shared state anymore)
-                    sem.Release();
-
-                    return result;
+                    try
+                    {
+                        return _stream!.ReadAsync(buffer, cancellationToken);
+                    }
+                    finally
+                    {
+                        sem.Release();
+                    }
                 }
             }
 
             // Delegate to the async implementation.
-            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask, locked);
+            return ReadFromUnderlyingStreamAsync(buffer, cancellationToken, bytesFromBuffer, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want ReadAsync to delegate to
@@ -807,7 +805,7 @@ namespace System.IO
         /// This allows BufferedStream to affect the semantics of the stream it wraps as little as possible. </summary>
         /// <returns>-2 if _bufferSize was set to 0 while waiting on the semaphore; otherwise num of bytes read.</returns>
         private async ValueTask<int> ReadFromUnderlyingStreamAsync(
-            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask, bool locked)
+            Memory<byte> buffer, CancellationToken cancellationToken, int bytesAlreadySatisfied, Task semaphoreLockTask)
         {
             // Same conditions validated with exceptions in ReadAsync:
             Debug.Assert(_stream != null);
@@ -816,18 +814,14 @@ namespace System.IO
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(semaphoreLockTask != null);
 
-            if (!locked)
-            {
-                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
+            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+            await semaphoreLockTask.ConfigureAwait(false);
 
             try
             {
                 int bytesFromBuffer = 0;
 
-                // we have already tried to read it from the buffer
-                if (!locked && (buffer.Length > 0 || !_actLikeFileStream))
+                if (!(buffer.Length == 0 && _actLikeFileStream && _readLen == _readPos))
                 {
                     // The buffer might have been changed by another async task while we were waiting on the semaphore.
                     // Check it now again.
@@ -1161,8 +1155,7 @@ namespace System.IO
             // Try to satisfy the request from the buffer synchronously.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = sem.WaitAsync(cancellationToken);
-            bool locked = semaphoreLockTask.IsCompletedSuccessfully;
-            if (locked)
+            if (semaphoreLockTask.IsCompletedSuccessfully)
             {
                 bool completeSynchronously = true;
                 try
@@ -1194,16 +1187,19 @@ namespace System.IO
                 // serializes ALL async operations
                 if (_actLikeFileStream && _writePos == 0 && buffer.Length >= _bufferSize)
                 {
-                    ValueTask result = _stream!.WriteAsync(buffer, cancellationToken);
-
-                    sem.Release();
-
-                    return result;
+                    try
+                    {
+                        return _stream!.WriteAsync(buffer, cancellationToken);
+                    }
+                    finally
+                    {
+                        sem.Release();
+                    }
                 }
             }
 
             // Delegate to the async implementation.
-            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask, locked);
+            return WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1212,7 +1208,7 @@ namespace System.IO
         /// little as possible.
         /// </summary>
         private async ValueTask WriteToUnderlyingStreamAsync(
-            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask, bool locked)
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
@@ -1222,22 +1218,15 @@ namespace System.IO
 
             // See the LARGE COMMENT in Write(..) for the explanation of the write buffer algorithm.
 
-            if (!locked)
-            {
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            await semaphoreLockTask.ConfigureAwait(false);
             try
             {
-                if (!locked)
-                {
-                    // The buffer might have been changed by another async task while we were waiting on the semaphore.
-                    // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
+                // The buffer might have been changed by another async task while we were waiting on the semaphore.
+                // However, note that if we recalculate the sync completion condition to TRUE, then useBuffer will also be TRUE.
 
-                    if (_writePos == 0)
-                    {
-                        ClearReadBufferBeforeWrite();
-                    }
+                if (_writePos == 0)
+                {
+                    ClearReadBufferBeforeWrite();
                 }
 
                 int totalUserBytes;
