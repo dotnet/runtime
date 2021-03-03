@@ -174,12 +174,34 @@ namespace System.Net.Http
                 buffer[0] = ProtocolVersion5;
                 buffer[1] = CMD_CONNECT;
                 buffer[2] = 0;
-                buffer[3] = ATYP_DOMAIN_NAME;
+                int addressLength;
 
-                int addressLength = Encoding.UTF8.GetByteCount(host);
-                buffer[4] = checked((byte)addressLength);
-                int bytesEncoded = Encoding.UTF8.GetBytes(host, buffer.AsSpan(5));
-                Debug.Assert(bytesEncoded == addressLength);
+                if (IPAddress.TryParse(host, out var hostIP))
+                {
+                    if (hostIP.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                    {
+                        buffer[3] = ATYP_IPV4;
+                        hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
+                        Debug.Assert(bytesWritten == 4);
+                        addressLength = 3;
+                    }
+                    else
+                    {
+                        Debug.Assert(hostIP.AddressFamily == Sockets.AddressFamily.InterNetworkV6);
+                        buffer[3] = ATYP_IPV6;
+                        hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
+                        Debug.Assert(bytesWritten == 16);
+                        addressLength = 15;
+                    }
+                }
+                else
+                {
+                    buffer[3] = ATYP_DOMAIN_NAME;
+                    addressLength = Encoding.UTF8.GetByteCount(host);
+                    buffer[4] = checked((byte)addressLength);
+                    int bytesEncoded = Encoding.UTF8.GetBytes(host, buffer.AsSpan(5));
+                    Debug.Assert(bytesEncoded == addressLength);
+                }
 
                 Debug.Assert(port > 0);
                 Debug.Assert(port < ushort.MaxValue);
