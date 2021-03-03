@@ -8410,8 +8410,9 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 sameToReg = REG_NA;
             }
             // If this register is busy because it is used by a switch table at the end of the block
-            // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't insert it after the switch
-            // (or for Arm64, can't insert and overwrite the operand/source of operand of JCMP).
+            // (or for Arm64, it is consumed by JCMP), we can't do the copy in this block since we can't
+            // insert it after the switch (or for Arm64, can't insert and overwrite the operand/source
+            // of operand of JCMP).
             if ((sameToRegMask & consumedRegs) != RBM_NONE)
             {
                 sameToReg = REG_NA;
