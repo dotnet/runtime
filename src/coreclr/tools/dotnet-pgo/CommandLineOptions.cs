@@ -35,6 +35,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public bool Warnings;
         public bool Uncompressed;
         public bool BasicProgressMessages;
+        public bool DetailedProgressMessages;
         public List<FileInfo> InputFilesToMerge;
         public List<AssemblyName> IncludedAssemblies = new List<AssemblyName>();
 
@@ -154,6 +155,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                 Warnings = (int)verbosity >= (int)Verbosity.normal;
                 VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
+                DetailedProgressMessages = (int)verbosity >= (int)Verbosity.detailed;
                 DisplayProcessedEvents = (int)verbosity >= (int)Verbosity.diagnostic;
             }
 

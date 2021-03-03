@@ -143,6 +143,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             s_logger.PrintMessage(message);
         }
 
+        public static void PrintDetailedMessage(string message)
+        {
+            s_logger.PrintDetailedMessage(message);
+        }
+
         public static void PrintOutput(string output)
         {
             s_logger.PrintOutput(output);
@@ -220,6 +225,25 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
+        static int InnerMain(CommandLineOptions commandLineOptions)
+        {
+            if (!commandLineOptions.BasicProgressMessages)
+                s_logger.HideMessages();
+
+            if (!commandLineOptions.DetailedProgressMessages)
+                s_logger.HideDetailedMessages();
+
+            if (commandLineOptions.InputFilesToMerge != null)
+            {
+                return InnerMergeMain(commandLineOptions);
+            }
+            else
+            {
+                return InnerProcessTraceFileMain(commandLineOptions);
+            }
+        }
+
+
         static int InnerMergeMain(CommandLineOptions commandLineOptions)
         {
             if (commandLineOptions.InputFilesToMerge.Count == 0)
@@ -260,7 +284,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 for (int i = 0; i < mibcReaders.Length; i++)
                 {
                     var peReader = mibcReaders[i];
-                    PrintMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
+                    PrintDetailedMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
@@ -275,16 +299,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        static int InnerMain(CommandLineOptions commandLineOptions)
-        {
-            if (!commandLineOptions.BasicProgressMessages)
-                s_logger.HideMessages();
-
-            if (commandLineOptions.InputFilesToMerge != null)
-            {
-                return InnerMergeMain(commandLineOptions);
-            }
-
+        static int InnerProcessTraceFileMain(CommandLineOptions commandLineOptions)
+        { 
             if (commandLineOptions.TraceFile == null)
             {
                 PrintUsage(commandLineOptions, "--trace must be specified");
