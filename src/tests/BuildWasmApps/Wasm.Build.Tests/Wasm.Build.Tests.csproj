@@ -12,6 +12,19 @@
     <WasmBuildAppAfterThisTarget />
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <_PreCommand>WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}</_PreCommand>
+    <_PreCommand>$(_PreCommand) DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1</_PreCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_PreCommand>$(_PreCommand) TEST_LOG_PATH=%24{XHARNESS_OUT}/logs</_PreCommand>
+    <_PreCommand>$(_PreCommand) HARNESS_RUNNER=%24{HARNESS_RUNNER}</_PreCommand>
+
+    <RunScriptCommand>$(_PreCommand) dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="WasmBuildAppTest.cs" />
 
@@ -19,11 +32,8 @@
   </ItemGroup>
 
   <Target Name="SetRunScript" BeforeTargets="GenerateRunScript">
+
     <PropertyGroup>
-      <BundleDir>$(OutDir)</BundleDir>
-      <RunScriptOutputPath>$(OutDir)\RunTests.sh</RunScriptOutputPath>
-      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">find . ; find %24HELIX_CORRELATION_PAYLOAD -type d; set; WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build HARNESS_RUNNER=%24HARNESS_RUNNER TEST_LOG_PATH=%24XHARNESS_OUT/logs DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml -nocolor</RunScriptCommand>
-      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">HARNESS_RUNNER=%24HARNESS_RUNNER TEST_LOG_PATH=%24XHARNESS_OUT/logs dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>
