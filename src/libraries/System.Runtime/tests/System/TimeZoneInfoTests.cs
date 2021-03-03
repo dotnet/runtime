@@ -85,29 +85,40 @@ namespace System.Tests
         //  name abbreviations, if available, are used instead
         public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
         {
-            yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), new[] {"(UTC-08:00) Pacific Standard Time", "(UTC-08:00) PST"}, new[] {"Pacific Standard Time", "PST"}, new[] {"Pacific Daylight Time", "PDT"}};
-            yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), new[] {"(UTC+10:00) Australian Eastern Standard Time", "(UTC+10:00) AEST"}, new[] {"Australian Eastern Standard Time", "AEST"}, new[] {"Australian Eastern Daylight Time", "AEDT"}};
-            yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), new[] {"(UTC+08:00) Australian Western Standard Time", "(UTC+08:00) AWST"}, new[] {"Australian Western Standard Time", "AWST"}, new[] {"Australian Western Daylight Time", "AWDT"}};
-            yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), new[] {"(UTC+03:30) Iran Standard Time", "(UTC+03:30) +0330"}, new[] {"Iran Standard Time", "+0330"}, new[] {"Iran Daylight Time", "+0430"}};
-            yield return new object[] { s_NewfoundlandTz, new[] {"(UTC-03:30) Newfoundland Standard Time", "(UTC-03:30) NST"}, new[] {"Newfoundland Standard Time", "NST"}, new[] {"Newfoundland Daylight Time", "NDT"}};
-            yield return new object[] { s_catamarcaTz, new[] {"(UTC-03:00) Argentina Standard Time", "(UTC-03:00) -03"}, new[] {"Argentina Standard Time", "-03"}, new[] {"Argentina Summer Time", "-02"}};           
+            if (PlatformDetection.IsBrowser)
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) PST", "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) AEST", "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) AWST", "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };
+            else
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Standard Time", "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australian Eastern Standard Time", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time", "Australian Western Standard Time", "Australian Western Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };        
         }
 
         [Theory]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string[] displayNames, string[] standardNames, string[] daylightNames)
+        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
         {
             if (PlatformDetection.IsBrowser)
             {
                 // Console.WriteLine($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}");
                 Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
-                            $"DisplayName: {displayNames[1]}, StandardName: {standardNames[1]}, DaylightName: {daylightNames[1]}");
-            }
-            else
-            {
-                Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
-                            $"DisplayName: {displayNames[0]}, StandardName: {standardNames[0]}, DaylightName: {daylightNames[0]}");
+                            $"DisplayName: {displayName}, StandardName: {standardName}, DaylightName: {daylightName}");
             }
         }
 
