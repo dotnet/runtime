@@ -1049,21 +1049,6 @@ namespace System.Net.Security
             }
         }
 
-        private static byte[] EnsureBufferSize(byte[] buffer, int copyCount, int size)
-        {
-            if (buffer == null || buffer.Length < size)
-            {
-                byte[]? saved = buffer;
-                buffer = new byte[size];
-                if (saved != null && copyCount != 0)
-                {
-                    Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
-                }
-            }
-
-            return buffer;
-        }
-
         // We need at least 5 bytes to determine what we have.
         private Framing DetectFraming(ReadOnlySpan<byte> bytes)
         {
