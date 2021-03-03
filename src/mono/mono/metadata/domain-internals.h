@@ -288,7 +288,6 @@ struct _MonoDomain {
 	 * list.
 	 */
 	GSList             *domain_assemblies;
-	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
 
 	/* Used when accessing 'domain_assemblies' */

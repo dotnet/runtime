@@ -5116,12 +5116,12 @@ ves_icall_System_Reflection_Assembly_GetExecutingAssembly (MonoStackCrawlMark *s
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_GetEntryAssembly (MonoError *error)
 {
-	MonoDomain* domain = mono_get_root_domain ();
+	MonoAssembly *assembly = mono_runtime_get_entry_assembly ();
 
-	if (!domain->entry_assembly)
+	if (!assembly)
 		return MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 
-	return mono_assembly_get_object_handle (domain->entry_assembly, error);
+	return mono_assembly_get_object_handle (assembly, error);
 }
 
 MonoReflectionAssemblyHandle

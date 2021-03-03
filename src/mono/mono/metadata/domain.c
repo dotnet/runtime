@@ -817,10 +817,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
-	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-
-		domain->entry_assembly = assembly;
-	}
+	mono_runtime_ensure_entry_assembly (assembly);
 }
 
 /**
@@ -862,7 +859,7 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm
 	// AppContext.BaseDirectory can sometimes fall back to checking the location of the entry_assembly, which should be non-null
-	mono_domain_ensure_entry_assembly (domain, ass);
+	mono_runtime_ensure_entry_assembly (ass);
 
 	return ass;
 }

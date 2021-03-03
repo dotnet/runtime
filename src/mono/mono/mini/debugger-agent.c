@@ -7149,7 +7149,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (err != ERR_NONE)
 			return err;
 
-		buffer_add_assemblyid (buf, domain, domain->entry_assembly);
+		buffer_add_assemblyid (buf, domain, mono_runtime_get_entry_assembly ());
 		break;
 	}
 	case CMD_APPDOMAIN_GET_CORLIB: {

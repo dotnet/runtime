@@ -44,6 +44,7 @@
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/runtime.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -4377,15 +4378,15 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 }
 
 static void
-prepare_thread_to_exec_main (MonoDomain *domain, MonoMethod *method)
+prepare_thread_to_exec_main (MonoMethod *method)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoInternalThread* thread = mono_thread_internal_current ();
 	MonoCustomAttrInfo* cinfo;
 	gboolean has_stathread_attribute;
 
-	if (!domain->entry_assembly)
-		mono_domain_ensure_entry_assembly (domain, m_class_get_image (method->klass)->assembly);
+	if (!mono_runtime_get_entry_assembly ())
+		mono_runtime_ensure_entry_assembly (m_class_get_image (method->klass)->assembly);
 
 	ERROR_DECL (cattr_error);
 	cinfo = mono_custom_attrs_from_method_checked (method, cattr_error);
@@ -4503,7 +4504,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	int rval;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	if (exc) {
 		rval = do_try_exec_main (method, args, exc);
 	} else {
@@ -4525,7 +4526,7 @@ int
 mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error)
 {
 	error_init (error);
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	return do_exec_main_checked (method, args, error);
 }
 
@@ -4538,7 +4539,7 @@ mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *
 int
 mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	return do_try_exec_main (method, args, exc);
 }
 
