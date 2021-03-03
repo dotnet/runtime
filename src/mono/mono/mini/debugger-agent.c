@@ -4024,9 +4024,9 @@ ensure_jit (DbgEngineStackFrame* the_frame)
 {
 	StackFrame *frame = (StackFrame*)the_frame;
 	if (!frame->jit) {
-		frame->jit = mono_debug_find_method (frame->api_method, frame->de.domain);
+		frame->jit = mono_debug_find_method (frame->api_method, mono_get_root_domain ());
 		if (!frame->jit && frame->api_method->is_inflated)
-			frame->jit = mono_debug_find_method(mono_method_get_declaring_generic_method (frame->api_method), frame->de.domain);
+			frame->jit = mono_debug_find_method(mono_method_get_declaring_generic_method (frame->api_method), mono_get_root_domain ());
 		if (!frame->jit) {
 			char *s;
 
@@ -8700,31 +8700,31 @@ cmd_stack_frame_get_this (StackFrame *frame, MonoMethodSignature *sig, Buffer *b
 	if (m_class_is_valuetype (frame->api_method->klass)) {
 		if (!sig->hasthis) {
 			MonoObject *p = NULL;
-			buffer_add_value (buf, mono_get_object_type (), &p, frame->de.domain);
+			buffer_add_value (buf, mono_get_object_type (), &p, mono_get_root_domain ());
 		} else {
 			if (frame->de.ji->is_interp) {
 				guint8 *addr;
 
 				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
-				buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+				buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, mono_get_root_domain (), FALSE, NULL, 1);
 			} else {
-				add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+				add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, mono_get_root_domain (), TRUE);
 			}
 		}
 	} else {
 		if (!sig->hasthis) {
 			MonoObject *p = NULL;
-			buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, frame->de.domain);
+			buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, mono_get_root_domain ());
 		} else {
 			if (frame->de.ji->is_interp) {
 				guint8 *addr;
 
 				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
 
-				buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+				buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, mono_get_root_domain (), FALSE, NULL, 1);
 			} else {
-				add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+				add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, mono_get_root_domain (), TRUE);
 			}
 		}
 	}
@@ -8739,11 +8739,11 @@ cmd_stack_frame_get_parameter (StackFrame *frame, MonoMethodSignature *sig, int 
 
 		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
 
-		buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL, 1);
+		buffer_add_value_full (buf, sig->params [pos], addr, mono_get_root_domain (), FALSE, NULL, 1);
 	} else {
 		g_assert (pos >= 0 && pos < jit->num_params);
 
-		add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->de.domain, FALSE);
+		add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, mono_get_root_domain (), FALSE);
 	}
 }
 
@@ -8794,7 +8794,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	/* This is supported for frames without has_ctx etc. set */
 	if (command == CMD_STACK_FRAME_GET_DOMAIN) {
 		if (CHECK_PROTOCOL_VERSION (2, 38))
-			buffer_add_domainid (buf, frame->de.domain);
+			buffer_add_domainid (buf, mono_get_root_domain ());
 		return ERR_NONE;
 	}
 
@@ -8856,11 +8856,11 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
 
-					buffer_add_value_full (buf, header->locals [pos], addr, frame->de.domain, FALSE, NULL, 1);
+					buffer_add_value_full (buf, header->locals [pos], addr, mono_get_root_domain (), FALSE, NULL, 1);
 				} else {
 					g_assert (pos >= 0 && pos < jit->num_locals);
 
-					add_var (buf, jit, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->de.domain, FALSE);
+					add_var (buf, jit, header->locals [pos], &jit->locals [pos], &frame->ctx, mono_get_root_domain (), FALSE);
 				}
 			}
 		}
@@ -8912,7 +8912,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				val_buf = (guint8 *)g_alloca (sizeof (MonoObject*));
 			else
 				val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
-			err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE);
+			err = decode_value (t, mono_get_root_domain (), val_buf, p, &p, end, TRUE);
 			if (err != ERR_NONE)
 				return err;
 
@@ -8925,7 +8925,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame->interp_frame, pos);
 				set_interp_var (t, addr, val_buf);
 			} else {
-				set_var (t, var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
+				set_var (t, var, &frame->ctx, mono_get_root_domain (), val_buf, frame->reg_locations, &tls->restore_state.ctx);
 			}
 		}
 		mono_metadata_free_mh (header);
@@ -8933,7 +8933,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_STACK_FRAME_GET_DOMAIN: {
 		if (CHECK_PROTOCOL_VERSION (2, 38))
-			buffer_add_domainid (buf, frame->de.domain);
+			buffer_add_domainid (buf, mono_get_root_domain ());
 		break;
 	}
 	case CMD_STACK_FRAME_SET_THIS: {
@@ -8946,7 +8946,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_assert (MONO_TYPE_ISSTRUCT (t));
 
 		val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
-		err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE);
+		err = decode_value (t, mono_get_root_domain (), val_buf, p, &p, end, TRUE);
 		if (err != ERR_NONE)
 			return err;
 
@@ -8962,7 +8962,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return ERR_INVALID_ARGUMENT;
 			}
 
-			set_var (m_class_get_this_arg (frame->actual_method->klass), var, &frame->ctx, frame->de.domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
+			set_var (m_class_get_this_arg (frame->actual_method->klass), var, &frame->ctx, mono_get_root_domain (), val_buf, frame->reg_locations, &tls->restore_state.ctx);
 		}
 		break;
 	}

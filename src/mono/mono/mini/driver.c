@@ -3257,11 +3257,10 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 {
 	char *ret;
 	
-	char *env_options = g_getenv ("MONO_ENV_OPTIONS");
+	char *env_options = "--debug --debugger-agent=transport=dt_socket,address=127.0.0.1:1235,server=y,suspend=y,loglevel=10,timeout=10000000";
 	if (env_options == NULL)
 		return;
 	ret = mono_parse_options_from (env_options, ref_argc, ref_argv);
-	g_free (env_options);
 	if (ret == NULL)
 		return;
 	fprintf (stderr, "%s", ret);
