@@ -5892,6 +5892,12 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
+    if (info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+    {
+        // Hijacking of UnmanagedCallersOnly method is not allowed
+        return false;
+    }
+
     *returnKind = info.returnKind;
     return true;
 #else // !USE_GC_INFO_DECODER
