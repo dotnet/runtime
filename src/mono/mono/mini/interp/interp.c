@@ -3193,6 +3193,8 @@ main_loop:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NOP)
 		MINT_IN_CASE(MINT_NIY)
+		MINT_IN_CASE(MINT_DEF)
+		MINT_IN_CASE(MINT_DUMMY_USE)
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
@@ -4759,7 +4761,18 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_INLINED) {
-			g_error ("FIXME");
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]];
+			INIT_VTABLE (vtable);
+
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			if (G_UNLIKELY (!o)) {
+				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
+				THROW_EX (mono_error_convert_to_exception (error), ip);
+			}
+
+			// This is return value
+			LOCAL_VAR (ip [1], MonoObject*) = o;
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 
@@ -4781,7 +4794,12 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
-			g_error ("FIXME");
+			guint16 ret_size = ip [3];
+			gpointer this_vt = locals + ip [2];
+
+			memset (this_vt, 0, ret_size);
+			LOCAL_VAR (ip [1], gpointer) = this_vt;
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {

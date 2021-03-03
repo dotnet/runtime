@@ -462,6 +462,19 @@ push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 	td->sp++;
 }
 
+static void
+push_var (TransformData *td, int var_index)
+{
+	InterpLocal *var = &td->locals [var_index];
+	ensure_stack (td, 1);
+	td->sp->type = stack_type [var->mt];
+	td->sp->klass = mono_class_from_mono_type_internal (var->type);
+	td->sp->flags = 0;
+	td->sp->local = var_index;
+	td->sp->size = ALIGN_TO (var->size, MINT_STACK_SLOT_SIZE);
+	td->sp++;
+}
+
 // This does not handle the size/offset of the entry. For those cases
 // we need to manually pop the top of the stack and push a new entry.
 #define SET_SIMPLE_TYPE(s, ty) \
@@ -2784,6 +2797,98 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 	g_free (prev_param_area);
 	return ret;
+}
+
+static gboolean
+interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, int ret_mt, StackInfo *sp_params)
+{
+	ERROR_DECL(error);
+	InterpInst *newobj_fast, *prev_last_ins;
+	int dreg, this_reg = -1;
+	int prev_sp_offset;
+	MonoClass *klass = target_method->klass;
+
+	if (!(mono_interp_opt & INTERP_OPT_INLINE) ||
+			!interp_method_check_inlining (td, target_method, csignature))
+		return FALSE;
+
+	if (mono_class_has_finalizer (klass) ||
+			m_class_has_weak_fields (klass))
+		return FALSE;
+
+	prev_last_ins = td->cbb->last_ins;
+	prev_sp_offset = td->sp - td->stack;
+
+	// Allocate var holding the newobj result. We do it here, because the var has to be alive
+	// before the call, since newobj writes to it before executing the call.
+	gboolean is_vt = m_class_is_valuetype (klass);
+	int vtsize = 0;
+	if (is_vt) {
+		if (ret_mt == MINT_TYPE_VT)
+			vtsize = mono_class_value_size (klass, NULL);
+		else
+			vtsize = MINT_STACK_SLOT_SIZE;
+
+		dreg = create_interp_stack_local (td, stack_type [ret_mt], klass, vtsize);
+
+		// For valuetypes, we need to control the lifetime of the valuetype.
+		// MINT_NEWOBJ_VT_INLINED takes the address of this reg and we should keep
+		// the vt alive until the inlining is completed.
+		interp_add_ins (td, MINT_DEF);
+		interp_ins_set_dreg (td->last_ins, dreg);
+	} else {
+		dreg = create_interp_stack_local (td, stack_type [ret_mt], klass, MINT_STACK_SLOT_SIZE);
+	}
+
+	// Allocate `this` pointer
+	if (is_vt) {
+		push_simple_type (td, STACK_TYPE_I);
+		this_reg = td->sp [-1].local;
+	} else {
+		push_var (td, dreg);
+	}
+
+	// Push back the params to top of stack. The original vars are maintained.
+	ensure_stack (td, csignature->param_count);
+	memcpy (td->sp, sp_params, sizeof (StackInfo) * csignature->param_count);
+	td->sp += csignature->param_count;
+
+	if (is_vt) {
+		// Receives the valuetype allocated with MINT_DEF, and returns its address
+		newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT_INLINED);
+		interp_ins_set_dreg (newobj_fast, this_reg);
+		interp_ins_set_sreg (newobj_fast, dreg);
+		newobj_fast->data [0] = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
+	} else {
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+		goto_if_nok (error, fail);
+		newobj_fast = interp_add_ins (td, MINT_NEWOBJ_INLINED);
+		interp_ins_set_dreg (newobj_fast, dreg);
+		newobj_fast->data [0] = get_data_item_index (td, vtable);
+	}
+
+	MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
+	goto_if_nok (error, fail);
+
+	if (!interp_inline_method (td, target_method, mheader, error))
+		goto fail;
+
+	if (is_vt) {
+		interp_add_ins (td, MINT_DUMMY_USE);
+		interp_ins_set_sreg (td->last_ins, dreg);
+	}
+
+	push_var (td, dreg);
+	return TRUE;
+fail:
+	// Restore the state
+	td->sp = td->stack + prev_sp_offset;
+	td->last_ins = prev_last_ins;
+	td->cbb->last_ins = prev_last_ins;
+	if (td->last_ins)
+		td->last_ins->next = NULL;
+
+	return FALSE;
 }
 
 static void
@@ -5430,6 +5535,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 				memcpy (sp_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
+				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params))
+					break;
+
 				// Push the return value and `this` argument to the ctor
 				gboolean is_vt = m_class_is_valuetype (klass);
 				int vtsize = 0;
@@ -5467,15 +5575,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						newobj_fast->data [1] = get_data_item_index (td, vtable);
 					}
 
-					if (0 && (mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m, csignature)) {
-						MonoMethodHeader *mheader = interp_method_get_header (m, error);
-						goto_if_nok (error, exit);
-
-						if (interp_inline_method (td, m, mheader, error)) {
-							newobj_fast->data [0] = INLINED_METHOD_FLAG;
-							break;
-						}
-					}
 					// Inlining failed. Set the method to be executed as part of newobj instruction
 					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 					/* The constructor was not inlined, abort inlining of current method */
@@ -7314,7 +7413,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_array_append_val (td->line_numbers, lne);
 	}
 
-	if (opcode == MINT_NOP)
+	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DUMMY_USE)
 		return ip;
 
 	*ip++ = opcode;
