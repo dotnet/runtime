@@ -3035,7 +3035,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (calli) {
 		--td->sp;
 		fp_sreg = td->sp [0].local;
-		td->locals [fp_sreg].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 	}
 
 	guint32 tos_offset = get_tos_offset (td);
@@ -3141,6 +3140,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (op != -1) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
+				interp_ins_set_sreg (td->last_ins, fp_sreg);
 				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 				td->last_ins->data [1] = op;
 				td->last_ins->data [2] = save_last_error;

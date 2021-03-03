@@ -612,7 +612,7 @@ OPDEF(MINT_CALL_DELEGATE, "call.delegate", 4, CallArgs, 0, MintOpTwoShorts)
 OPDEF(MINT_CALLI, "calli", 4, CallArgs, 1, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 7, CallArgs, 1, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_DYNAMIC, "calli.nat.dynamic", 4, CallArgs, 1, MintOpMethodToken)
-OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 5, CallArgs, 0, MintOpMethodToken)
+OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 6, CallArgs, 1, MintOpMethodToken)
 OPDEF(MINT_CALL_VARARG, "call.vararg", 5, CallArgs, 0, MintOpMethodToken)
 OPDEF(MINT_CALLRUN, "callrun", 4, CallArgs, 0, MintOpNoArgs)
 

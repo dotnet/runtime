@@ -3398,19 +3398,19 @@ main_loop:
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [2]];
-			int opcode = ip [3];
-			gboolean save_last_error = ip [4];
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [3]];
+			int opcode = ip [4];
+			gboolean save_last_error = ip [5];
 
 			stackval *args = (stackval*)(locals + ip [1]);
-			gpointer target_ip = args [csignature->param_count].data.p;
+			gpointer target_ip = LOCAL_VAR (ip [2], gpointer);
 			/* for calls, have ip pointing at the start of next instruction */
-			frame->state.ip = ip + 5;
+			frame->state.ip = ip + 6;
 
 			do_icall_wrapper (frame, csignature, opcode, args, target_ip, save_last_error);
 			EXCEPTION_CHECKPOINT_GC_UNSAFE;
 			CHECK_RESUME_STATE (context);
-			ip += 5;
+			ip += 6;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_DYNAMIC) {
