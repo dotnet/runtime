@@ -43,12 +43,13 @@ extern jmethodID g_mdReset;
 extern jmethodID g_mdUpdate;
 
 // javax/crypto/Mac
-extern jclass    g_macClass;
-extern jmethodID g_macGetInstanceMethod;
-extern jmethodID g_macDoFinalMethod;
-extern jmethodID g_macUpdateMethod;
-extern jmethodID g_macInitMethod;
-extern jmethodID g_macResetMethod;
+extern jclass    g_MacClass;
+extern jmethodID g_MacGetInstance;
+extern jmethodID g_MacClone;
+extern jmethodID g_MacDoFinal;
+extern jmethodID g_MacInit;
+extern jmethodID g_MacReset;
+extern jmethodID g_MacUpdate;
 
 // javax/crypto/spec/SecretKeySpec
 extern jclass    g_sksClass;
