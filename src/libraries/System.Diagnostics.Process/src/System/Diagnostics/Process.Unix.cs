@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Security;
@@ -759,7 +760,7 @@ namespace System.Diagnostics
         private static Stream OpenStream(int fd, PipeDirection direction)
         {
             Debug.Assert(fd >= 0);
-            return new BufferedStream(new AnonymousPipeClientStream(direction, fd.ToString()), StreamBufferSize);
+            return new AnonymousPipeClientStream(direction, fd.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
