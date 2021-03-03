@@ -131,7 +131,7 @@ namespace Wasm.Build.Tests
             { "Release", true },
         };
 
-        public static TheoryData<string, bool, bool?> InvariantGlobalizationTestData(string config, bool aot)
+        public static TheoryData<string, bool, bool?> InvariantGlobalizationTestData()
         {
             var data = new TheoryData<string, bool, bool?>();
             foreach (var configData in ConfigWithAOTData)
