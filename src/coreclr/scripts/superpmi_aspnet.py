@@ -117,7 +117,7 @@ def determine_native_name(coreclr_args, base_lib_name):
 # Where there is an option, we generally target the less performant machines
 # See https://github.com/aspnet/Benchmarks/tree/master/scenarios
 #
-def determine_benchmark_machine(coreclr_args)
+def determine_benchmark_machine(coreclr_args):
     """ Determine the name of the benchmark machine to use
 
     Args:
