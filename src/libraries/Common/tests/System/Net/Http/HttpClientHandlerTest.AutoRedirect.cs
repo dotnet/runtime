@@ -45,6 +45,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { statusCode, "GET", "GET" };
                 yield return new object[] { statusCode, "POST", statusCode <= 303 ? "GET" : "POST" };
+                yield return new object[] { statusCode, "PUT", statusCode <= 303 ? "GET" : "PUT" };
                 yield return new object[] { statusCode, "HEAD", "HEAD" };
             }
         }
