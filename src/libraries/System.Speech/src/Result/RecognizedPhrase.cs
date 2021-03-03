@@ -675,7 +675,11 @@ namespace System.Speech.Recognition
             {
                 IntPtr valueStringBuffer = new((long)phraseBuffer + (int)property.pszValueOffset);
                 propertyValue = Marshal.PtrToStringUni(valueStringBuffer);
-                if (!isSapi53Header && isIdName && ((string)propertyValue).Contains("$"))
+#if NETCOREAPP2_1_OR_GREATER
+                if (!isSapi53Header && isIdName && ((string)propertyValue).Contains('$'))
+#else
+                if (!isSapi53Header && isIdName && ((string)propertyValue).IndexOf('$') != -1 )
+#endif
                 {
                     // SAPI 5.1 result that contains script fragments rather than output of executing script.
                     // Strip this information as script-based grammars aren't supported on 5.1.
