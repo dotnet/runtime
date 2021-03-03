@@ -160,7 +160,7 @@ namespace System.Buffers
                 log.BufferReturned(bufferId, array.Length, Id);
                 if (!haveBucket)
                 {
-                    log.BufferDropped(bufferId, bucket, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.Full);
+                    log.BufferDropped(bufferId, array.Length, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.Full);
                 }
             }
         }
@@ -269,10 +269,13 @@ namespace System.Buffers
                     if (lockTaken) _lock.Exit(false);
                 }
 
-                ArrayPoolEventSource log = ArrayPoolEventSource.Log;
-                if (log.IsEnabled() && !returned)
+                if (!returned)
                 {
-                    log.BufferDropped(array.GetHashCode(), _bufferLength, _poolId, Id, ArrayPoolEventSource.BufferDroppedReason.Full);
+                    ArrayPoolEventSource log = ArrayPoolEventSource.Log;
+                    if (log.IsEnabled())
+                    {
+                        log.BufferDropped(array.GetHashCode(), _bufferLength, _poolId, Id, ArrayPoolEventSource.BufferDroppedReason.Full);
+                    }
                 }
             }
         }
