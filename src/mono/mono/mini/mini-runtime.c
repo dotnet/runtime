@@ -1370,7 +1370,6 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 {
 	unsigned char *ip = patch_info->ip.i + code;
 	gconstpointer target = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -1512,12 +1511,8 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
-			gpointer addr = NULL;
-
-			mono_domain_lock (domain);
-			if (domain->special_static_fields)
-				addr = g_hash_table_lookup (domain->special_static_fields, patch_info->data.field);
-			mono_domain_unlock (domain);
+			gpointer addr = mono_special_static_field_get_offset (patch_info->data.field, error);
+			mono_error_assert_ok (error);
 			g_assert (addr);
 			return addr;
 		}
@@ -2734,7 +2729,6 @@ mono_jit_free_method (MonoMethod *method)
 	GHashTableIter iter;
 	MonoJumpList *jlist;
 	MonoJitMemoryManager *jit_mm;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (method->dynamic);
 

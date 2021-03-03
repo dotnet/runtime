@@ -606,7 +606,6 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	MonoMethod *method;
 	char *n;
 	GTimer *timer = g_timer_new ();
-	MonoDomain *domain = mono_domain_get ();
 	guint32 exclude = 0;
 	int total;
 
@@ -817,7 +816,6 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 {
 	MonoMethod *method;
 	GTimer *timer = g_timer_new ();
-	MonoDomain *domain = mono_domain_get ();
 	guint32 i;
 	int total;
 

@@ -2076,6 +2076,8 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
 
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
+
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -2107,9 +2109,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 				}
 				size = mono_type_size (field->type, &align);
 				offset = mono_alloc_special_static_data (special_static, size, align, (uintptr_t*)bitmap, numbits);
-				if (!domain->special_static_fields)
-					domain->special_static_fields = g_hash_table_new (NULL, NULL);
-				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
+
+				mono_mem_manager_lock (mem_manager);
+				if (!mem_manager->special_static_fields)
+					mem_manager->special_static_fields = g_hash_table_new (NULL, NULL);
+				g_hash_table_insert (mem_manager->special_static_fields, field, GUINT_TO_POINTER (offset));
+				mono_mem_manager_unlock (mem_manager);
 				if (bitmap != default_bitmap)
 					g_free (bitmap);
 				/* 
@@ -2799,12 +2804,10 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 		return;
 
 	if (field->offset == -1) {
+		ERROR_DECL (error);
 		/* Special static */
-		gpointer addr;
-
-		mono_domain_lock (vt->domain);
-		addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
-		mono_domain_unlock (vt->domain);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
 		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
@@ -2815,14 +2818,13 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 gpointer
 mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
 {
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (field->parent);
 	gpointer addr = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
 
-	mono_domain_lock (domain);
-	if (domain->special_static_fields)
-		addr = g_hash_table_lookup (domain->special_static_fields, field);
-	mono_domain_unlock (domain);
-
+	mono_mem_manager_lock (mem_manager);
+	if (mem_manager->special_static_fields)
+		addr = g_hash_table_lookup (mem_manager->special_static_fields, field);
+	mono_mem_manager_unlock (mem_manager);
 	return addr;
 }
 
@@ -2867,11 +2869,9 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		if (field->offset == -1) {
 			/* Special static */
-			gpointer addr;
-
-			mono_domain_lock (vt->domain);
-			addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
-			mono_domain_unlock (vt->domain);
+			ERROR_DECL (error);
+			gpointer addr = mono_special_static_field_get_offset (field, error);
+			mono_error_assert_ok (error);
 			src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 		} else {
 			src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
@@ -3228,7 +3228,8 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 
 	if (field->offset == -1) {
 		/* Special static */
-		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
 	} else {
 		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;

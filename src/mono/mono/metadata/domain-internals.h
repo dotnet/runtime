@@ -290,9 +290,6 @@ struct _MonoDomain {
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
-	
-	/* Used to store offsets of thread static fields */
-	GHashTable         *special_static_fields;
 
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
