@@ -5,7 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -57,6 +56,16 @@ internal static partial class Interop
         {
             return X509GetContentType(ref MemoryMarshal.GetReference(data), data.Length);
         }
+
+        internal enum PAL_KeyAlgorithm
+        {
+            DSA,
+            EC,
+            RSA,
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509PublicKey")]
+        internal static extern IntPtr X509GetPublicKey(SafeX509Handle x, PAL_KeyAlgorithm algorithm);
     }
 }
 

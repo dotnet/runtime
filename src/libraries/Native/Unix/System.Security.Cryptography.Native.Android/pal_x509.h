@@ -28,3 +28,19 @@ enum
 };
 typedef uint32_t PAL_X509ContentType;
 PALEXPORT PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t *buf, int32_t len);
+
+// Matches managed PAL_KeyAlgorithm enum
+enum
+{
+    PAL_DSA = 0,
+    PAL_EC = 1,
+    PAL_RSA = 2,
+};
+typedef uint32_t PAL_KeyAlgorithm;
+
+/*
+Gets an opaque handle for a certificate's public key
+
+Returns null if the requested algorithm does not match that of the public key.
+*/
+PALEXPORT void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_KeyAlgorithm algorithm);

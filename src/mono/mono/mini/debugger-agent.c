@@ -2788,6 +2788,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
 	frame->de.method = method;
+	frame->de.domain = mono_get_root_domain ();
 	frame->de.native_offset = info->native_offset;
 
 	frame->actual_method = actual_method;
