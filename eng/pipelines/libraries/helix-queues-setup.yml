@@ -98,10 +98,6 @@ jobs:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - OSX.1014.Amd64.Open
         - OSX.1015.Amd64.Open
-    
-    # OSX arm64
-    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
-      - OSX.1100.ARM64.Open
 
     # Android
     - ${{ if in(parameters.platform, 'Android_x86', 'Android_x64') }}:
