@@ -5,18 +5,16 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
-    public interface IRC2Provider
+    internal class RC2Provider : IRC2Provider
     {
-        RC2 Create();
+        public RC2 Create()
+        {
+            return RC2.Create();
+        }
     }
 
-    public static partial class RC2Factory
+    public partial class RC2Factory
     {
-        public static RC2 Create()
-        {
-            return s_provider.Create();
-        }
-
-        public static bool IsSupported { get; } = !PlatformDetection.IsAndroid;
+        private static readonly IRC2Provider s_provider = new RC2Provider();
     }
 }
