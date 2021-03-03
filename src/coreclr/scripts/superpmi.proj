@@ -151,7 +151,7 @@
     <BDN_Partition Include="Partition29" Index="29" />
   </ItemGroup>
 
-  <Choose
+  <Choose>
 
      <When Condition="'$(CollectionName)' == 'benchmarks'">
       <ItemGroup 
