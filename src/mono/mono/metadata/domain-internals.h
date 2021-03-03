@@ -274,7 +274,6 @@ struct _MonoDomain {
 	 */
 #define MONO_DOMAIN_FIRST_OBJECT domain
 	MonoAppDomain      *domain;
-	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
 	MonoException      *null_reference_ex;
 	MonoException      *stack_overflow_ex;
@@ -287,7 +286,6 @@ struct _MonoDomain {
 	MonoString         *empty_string;
 #define MONO_DOMAIN_LAST_OBJECT empty_string
 	MonoGHashTable     *ldstr_table;
-	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
 	/*
@@ -313,13 +311,9 @@ struct _MonoDomain {
 	MonoJitInfoTable *
 	  volatile          aot_modules;
 	GSList		   *jit_info_free_queue;
-	/* Used when loading assemblies */
-	gchar **search_path;
-	gchar *private_bin_path;
 	
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
-	MonoMethod         *private_invoke_method;
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
 	/* 
@@ -342,11 +336,6 @@ struct _MonoDomain {
 
 	/* Maps MonoMethod* to weak links to DynamicMethod objects */
 	GHashTable *method_to_dyn_method;
-
-	/* <ThrowUnobservedTaskExceptions /> support */
-	gboolean throw_unobserved_task_exceptions;
-
-	guint32 execution_context_field_offset;
 };
 
 typedef struct  {
@@ -494,9 +483,6 @@ void mono_enable_debug_domain_unload (gboolean enable);
 
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
-
-void
-mono_context_init_checked (MonoDomain *domain, MonoError *error);
 
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);

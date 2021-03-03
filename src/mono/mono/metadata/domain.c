@@ -63,9 +63,6 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
-#define GET_APPCONTEXT() NULL
-#define SET_APPCONTEXT(x)
-
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
@@ -315,7 +312,6 @@ mono_domain_create (void)
 
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
-	domain->search_path = NULL;
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
@@ -777,7 +773,6 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 		return;
 
 	SET_APPDOMAIN (domain);
-	SET_APPCONTEXT (domain->default_context);
 
 	if (migrate_exception) {
 		thread = mono_thread_internal_current ();
@@ -953,13 +948,6 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 void 
 mono_context_set (MonoAppContext * new_context)
 {
-	SET_APPCONTEXT (new_context);
-}
-
-void
-mono_context_set_handle (MonoAppContextHandle new_context)
-{
-	SET_APPCONTEXT (MONO_HANDLE_RAW (new_context));
 }
 
 /**
@@ -970,18 +958,7 @@ mono_context_set_handle (MonoAppContextHandle new_context)
 MonoAppContext * 
 mono_context_get (void)
 {
-	return GET_APPCONTEXT ();
-}
-
-/**
- * mono_context_get_handle:
- *
- * Returns: the current Mono Application Context.
- */
-MonoAppContextHandle
-mono_context_get_handle (void)
-{
-	return MONO_HANDLE_NEW (MonoAppContext, GET_APPCONTEXT ());
+	return NULL;
 }
 
 /**
