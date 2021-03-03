@@ -90,6 +90,9 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'aspnet') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
     - ${{ if eq(parameters.collectionName, 'tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
