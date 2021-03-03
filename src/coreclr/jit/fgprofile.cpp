@@ -334,10 +334,8 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     block->bbCountSchemaIndex = (int)schema.size();
 
     // Assign the current block's IL offset into the profile data
-    // (make sure IL offset is sane)
     //
     IL_OFFSET offset = block->bbCodeOffs;
-    assert((int)offset >= 0);
 
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = 1;
@@ -363,6 +361,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, BYTE*
 {
     const int schemaIndex = (int)block->bbCountSchemaIndex;
 
+    assert(schemaIndex >= 0);
     assert(block->bbCodeOffs == (IL_OFFSET)schema[schemaIndex].ILOffset);
     assert(schema[schemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
     size_t addrOfCurrentExecutionCount = (size_t)(schema[schemaIndex].Offset + profileMemory);
@@ -405,10 +404,14 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
         return;
     }
 
+    m_comp->fgEnsureFirstBBisScratch();
+    BuildSchemaElements(m_comp->fgFirstBB, schema);
+
     // Find the address of the entry block's counter.
     //
     BasicBlock* const block            = m_comp->fgFirstBB;
     const int         firstSchemaIndex = block->bbCountSchemaIndex;
+    assert(firstSchemaIndex >= 0);
     assert(block->bbCodeOffs == (IL_OFFSET)schema[firstSchemaIndex].ILOffset);
     assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
     size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
@@ -448,7 +451,6 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
     GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
     Statement* stmt  = m_comp->gtNewStmt(cond);
 
-    m_comp->fgEnsureFirstBBisScratch();
     m_comp->fgInsertStmtAtEnd(block, stmt);
 }
 
