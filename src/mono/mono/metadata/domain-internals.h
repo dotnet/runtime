@@ -239,17 +239,10 @@ struct _MonoJitInfo {
 
 #define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
 
-typedef struct {
-	gpointer *static_data; /* Used to free the static data without going through the MonoAppContext object itself. */
-	MonoGCHandle gc_handle;
-} ContextStaticData;
-
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
 	gint32 context_id;
-	gpointer *static_data;
-	ContextStaticData *data;
 };
 
 typedef struct _MonoThunkFreeList {

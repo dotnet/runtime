@@ -1196,8 +1196,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
  * @fklass: The MonoClass to look up.
  * @field: The MonoClassField describing the field.
  *
- * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
- * SPECIAL_STATIC_NONE otherwise.
+ * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_NONE otherwise.
  */
 static gint32
 field_is_special_static (MonoClass *fklass, MonoClassField *field)

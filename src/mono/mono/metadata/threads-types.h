@@ -58,7 +58,6 @@ typedef enum {
 
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
-#define SPECIAL_STATIC_CONTEXT 2
 
 /* It's safe to access System.Threading.InternalThread from native code via a
  * raw pointer because all instances should be pinned.  But for uniformity of
@@ -192,11 +191,6 @@ void ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void);
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
-
-void
-mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
-void
-mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 
