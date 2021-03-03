@@ -273,8 +273,43 @@ namespace System.Net.Http
                 buffer[2] = (byte)(port >> 8);
                 buffer[3] = (byte)port;
 
-                if (isVersion4a)
+                IPAddress? ipv4Address = null;
+                if (IPAddress.TryParse(host, out var hostIP))
                 {
+                    if (hostIP.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                    {
+                        ipv4Address = hostIP;
+                    }
+                    else if (hostIP.IsIPv4MappedToIPv6)
+                    {
+                        ipv4Address = hostIP.MapToIPv4();
+                    }
+                    else
+                    {
+                        throw new Exception("SOCKS4 does not support IPv6.");
+                    }
+                }
+                else if (!isVersion4a)
+                {
+                    // SOCKS4 requires DNS resolution locally
+                    foreach (var address in await Dns.GetHostAddressesAsync(host).ConfigureAwait(false))
+                    {
+                        if (address.AddressFamily == Sockets.AddressFamily.InterNetwork)
+                        {
+                            ipv4Address = address;
+                            break;
+                        }
+                    }
+                }
+
+                if (ipv4Address == null)
+                {
+                    if (!isVersion4a)
+                    {
+                        // Fails to get IPv4 address in SOCKS4 path
+                        throw new Exception("No suitable IPv4 address.");
+                    }
+
                     buffer[4] = 0;
                     buffer[5] = 0;
                     buffer[6] = 0;
@@ -282,29 +317,15 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    bool addressWritten = false;
-                    foreach (var address in await Dns.GetHostAddressesAsync(host).ConfigureAwait(false))
-                    {
-                        // SOCKS4 supports only IPv4
-                        if (address.AddressFamily == Sockets.AddressFamily.InterNetwork)
-                        {
-                            address.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
-                            Debug.Assert(bytesWritten == 4);
-                            addressWritten = true;
-                            break;
-                        }
-                    }
-                    if (!addressWritten)
-                    {
-                        throw new Exception("No suitable IPv4 address.");
-                    }
+                    ipv4Address.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
+                    Debug.Assert(bytesWritten == 4);
                 }
 
                 int uLen = Encoding.UTF8.GetBytes(username, buffer.AsSpan(8));
                 buffer[8 + uLen] = 0;
                 int totalLength = 9 + uLen;
 
-                if (isVersion4a)
+                if (isVersion4a && ipv4Address == null)
                 {
                     // https://www.openssh.com/txt/socks4a.protocol
                     int aLen = Encoding.UTF8.GetBytes(host, buffer.AsSpan(9 + uLen));
