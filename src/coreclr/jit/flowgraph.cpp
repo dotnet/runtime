@@ -175,7 +175,6 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     GenTree* isInitAdrNode =
                         gtNewIndOfIconHandleNode(TYP_UBYTE, (size_t)isInitAdr, GTF_ICON_CONST_PTR, true);
 
-
                     // Let's start from emitting that BB2 "callInitBb"
                     BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
                     // it's executed only once so can be marked as cold
