@@ -25,6 +25,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="MIbcProfileParser.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
   </ItemGroup>
 

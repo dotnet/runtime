@@ -25,29 +25,31 @@ using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
 using Internal.Pgo;
+using ILCompiler.IBC;
+using ILCompiler;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
-    interface IMibcEmitterTypeClass<MethodT, TypeT, TypeTOrUnknown>
+    interface IMibcEmitterTypeClass<MethodDesc, TypeDesc, TypeSystemEntityOrUnknown>
     {
-        EntityHandle GetMethodRef(TypeSystemMetadataEmitter emitter, MethodT method);
-        bool IsExactType(TypeTOrUnknown type);
-        TypeT GetExactType(TypeTOrUnknown type);
-        EntityHandle GetTypeRef(TypeSystemMetadataEmitter emitter, TypeT type);
-        int GetUnknownTypeIndex(TypeTOrUnknown type);
-        TypeT GetOwningType(MethodT method);
-        bool IsPrimitive(TypeT type);
-        bool IsCanonicalDefinitionType(TypeT type);
-        bool IsParameterizedType(TypeT type);
-        TypeT GetParameterType(TypeT type);
-        string GetAssemblyString(TypeT type);
-        ReadOnlySpan<TypeT> GetInstantiation(TypeT type);
-        ReadOnlySpan<TypeT> GetInstantiation(MethodT method);
+        EntityHandle GetMethodRef(TypeSystemMetadataEmitter emitter, MethodDesc method);
+        bool IsExactType(TypeSystemEntityOrUnknown type);
+        TypeDesc GetExactType(TypeSystemEntityOrUnknown type);
+        EntityHandle GetTypeRef(TypeSystemMetadataEmitter emitter, TypeDesc type);
+        int GetUnknownTypeIndex(TypeSystemEntityOrUnknown type);
+        TypeDesc GetOwningType(MethodDesc method);
+        bool IsPrimitive(TypeDesc type);
+        bool IsCanonicalDefinitionType(TypeDesc type);
+        bool IsParameterizedType(TypeDesc type);
+        TypeDesc GetParameterType(TypeDesc type);
+        string GetAssemblyString(TypeDesc type);
+        ReadOnlySpan<TypeDesc> GetInstantiation(TypeDesc type);
+        ReadOnlySpan<TypeDesc> GetInstantiation(MethodDesc method);
     }
 
-    static class MibcEmitter<MethodT, TypeT, TypeOrUnknownT, MibcEmitterTypeClass> where MibcEmitterTypeClass : IMibcEmitterTypeClass<MethodT, TypeT, TypeOrUnknownT>
+    static class MibcEmitter
     {
-        class MIbcGroup : IPgoEncodedValueEmitter<TypeOrUnknownT>
+        class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
         {
             private static int s_emitCount = 0;
 
@@ -64,10 +66,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             private string _name;
             private TypeSystemMetadataEmitter _emitter;
 
-            public void AddProcessedMethodData(ProcessedMethodData<MethodT> processedMethodData)
+            public void AddProcessedMethodData(MethodProfileData processedMethodData)
             {
-                MethodT method = processedMethodData.Method;
-                string reason = processedMethodData.Reason;
+                MethodDesc method = processedMethodData.Method;
 
                 // Format is 
                 // ldtoken method
@@ -90,30 +91,33 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 // ldstr "InstrumentationDataEnd" as a terminator
                 try
                 {
-                    EntityHandle methodHandle = default(MibcEmitterTypeClass).GetMethodRef(_emitter, method);
+                    EntityHandle methodHandle = _emitter.GetMethodRef(method);
                     _il.OpCode(ILOpCode.Ldtoken);
                     _il.Token(methodHandle);
                     if (processedMethodData.ExclusiveWeight != 0)
                     {
                         _il.LoadString(_emitter.GetUserStringHandle("ExclusiveWeight"));
-                        _il.LoadConstantI4(processedMethodData.ExclusiveWeight);
+                        if (((double)(int)processedMethodData.ExclusiveWeight) == processedMethodData.ExclusiveWeight)
+                            _il.LoadConstantI4((int)processedMethodData.ExclusiveWeight);
+                        else
+                            _il.LoadConstantR8(processedMethodData.ExclusiveWeight);
                     }
-                    if (processedMethodData.WeightedCallData != null)
+                    if ((processedMethodData.CallWeights != null) && processedMethodData.CallWeights.Count > 0)
                     {
                         _il.LoadString(_emitter.GetUserStringHandle("WeightedCallData"));
-                        _il.LoadConstantI4(processedMethodData.WeightedCallData.Count);
-                        foreach (var entry in processedMethodData.WeightedCallData)
+                        _il.LoadConstantI4(processedMethodData.CallWeights.Count);
+                        foreach (var entry in processedMethodData.CallWeights)
                         {
-                            EntityHandle calledMethod = default(MibcEmitterTypeClass).GetMethodRef(_emitter, entry.Key);
+                            EntityHandle calledMethod = _emitter.GetMethodRef(entry.Key);
                             _il.OpCode(ILOpCode.Ldtoken);
                             _il.Token(calledMethod);
                             _il.LoadConstantI4(entry.Value);
                         }
                     }
-                    if (processedMethodData.InstrumentationData != null)
+                    if (processedMethodData.SchemaData != null)
                     {
                         _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataStart"));
-                        PgoProcessor.EncodePgoData<TypeOrUnknownT>(processedMethodData.InstrumentationData, this, true);
+                        PgoProcessor.EncodePgoData<TypeSystemEntityOrUnknown>(processedMethodData.SchemaData, this, true);
                     }
                     _il.OpCode(ILOpCode.Pop);
                 }
@@ -134,13 +138,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return _emitter.AddGlobalMethod(methodName, _il, 8);
             }
 
-            bool IPgoEncodedValueEmitter<TypeOrUnknownT>.EmitDone()
+            bool IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitDone()
             {
                 _il.LoadString(_emitter.GetUserStringHandle("InstrumentationDataEnd"));
                 return true;
             }
 
-            void IPgoEncodedValueEmitter<TypeOrUnknownT>.EmitLong(long value, long previousValue)
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitLong(long value, long previousValue)
             {
                 if ((value <= int.MaxValue) && (value >= int.MinValue))
                 {
@@ -152,58 +156,63 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
-            void IPgoEncodedValueEmitter<TypeOrUnknownT>.EmitType(TypeOrUnknownT type, TypeOrUnknownT previousValue)
+            void IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>.EmitType(TypeSystemEntityOrUnknown type, TypeSystemEntityOrUnknown previousValue)
             {
-                if (default(MibcEmitterTypeClass).IsExactType(type))
+                if (type.AsType != null)
                 {
                     _il.OpCode(ILOpCode.Ldtoken);
-                    _il.Token(default(MibcEmitterTypeClass).GetTypeRef(_emitter, default(MibcEmitterTypeClass).GetExactType(type)));
+                    _il.Token(_emitter.GetTypeRef(type.AsType));
                 }
                 else
-                    _il.LoadConstantI4(default(MibcEmitterTypeClass).GetUnknownTypeIndex(type));
+                    _il.LoadConstantI4(type.AsUnknown);
             }
 
         }
 
-        private static void AddAssembliesAssociatedWithType(TypeT type, HashSet<string> assemblies, out string definingAssembly)
+        private static string GetTypeDefiningAssembly(TypeDesc type)
         {
-            definingAssembly = default(MibcEmitterTypeClass).GetAssemblyString(type);
+            return ((MetadataType)type).Module.Assembly.GetName().Name;
+        }
+
+        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies, out string definingAssembly)
+        {
+            definingAssembly = GetTypeDefiningAssembly(type);
             assemblies.Add(definingAssembly);
             AddAssembliesAssociatedWithType(type, assemblies);
         }
 
-        private static void AddAssembliesAssociatedWithType(TypeT type, HashSet<string> assemblies)
+        private static void AddAssembliesAssociatedWithType(TypeDesc type, HashSet<string> assemblies)
         {
-            if (default(MibcEmitterTypeClass).IsPrimitive(type))
+            if (type.IsPrimitive)
                 return;
 
-            if (default(MibcEmitterTypeClass).IsCanonicalDefinitionType(type))
+            if (type.Context.IsCanonicalDefinitionType(type, CanonicalFormKind.Any))
                 return;
 
-            if (default(MibcEmitterTypeClass).IsParameterizedType(type))
+            if (type.IsParameterizedType)
             {
-                AddAssembliesAssociatedWithType(default(MibcEmitterTypeClass).GetParameterType(type), assemblies);
+                AddAssembliesAssociatedWithType(type.GetParameterType(), assemblies);
             }
             else
             {
-                assemblies.Add(default(MibcEmitterTypeClass).GetAssemblyString(type));
-                foreach (var instantiationType in default(MibcEmitterTypeClass).GetInstantiation(type))
+                assemblies.Add(GetTypeDefiningAssembly(type));
+                foreach (var instantiationType in type.Instantiation)
                 {
                     AddAssembliesAssociatedWithType(instantiationType, assemblies);
                 }
             }
         }
 
-        private static void AddAssembliesAssociatedWithMethod(MethodT method, HashSet<string> assemblies, out string definingAssembly)
+        private static void AddAssembliesAssociatedWithMethod(MethodDesc method, HashSet<string> assemblies, out string definingAssembly)
         {
-            AddAssembliesAssociatedWithType(default(MibcEmitterTypeClass).GetOwningType(method), assemblies, out definingAssembly);
-            foreach (var instantiationType in default(MibcEmitterTypeClass).GetInstantiation(method))
+            AddAssembliesAssociatedWithType(method.OwningType, assemblies, out definingAssembly);
+            foreach (var instantiationType in method.Instantiation)
             {
                 AddAssembliesAssociatedWithType(instantiationType, assemblies);
             }
         }
 
-        public static int GenerateMibcFile(TraceTypeSystemContext tsc, FileInfo outputFileName, ICollection<ProcessedMethodData<MethodT>> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
+        public static int GenerateMibcFile(TypeSystemContext tsc, FileInfo outputFileName, IEnumerable<MethodProfileData> methodsToAttemptToPlaceIntoProfileData, bool validate, bool uncompressed)
         {
             TypeSystemMetadataEmitter emitter = new TypeSystemMetadataEmitter(new AssemblyName(outputFileName.Name), tsc);
 
@@ -213,7 +222,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             foreach (var entry in methodsToAttemptToPlaceIntoProfileData)
             {
-                MethodT method = entry.Method;
+                MethodDesc method = entry.Method;
                 assembliesAssociatedWithMethod.Clear();
                 AddAssembliesAssociatedWithMethod(method, assembliesAssociatedWithMethod, out string definingAssembly);
 
@@ -294,27 +303,27 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return 0;
         }
 
-        static int ValidateMIbcData(TraceTypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes, ICollection<ProcessedMethodData<MethodT>> methodsToAttemptToPrepare)
+        static int ValidateMIbcData(TypeSystemContext tsc, FileInfo outputFileName, byte[] moduleBytes, IEnumerable<MethodProfileData> methodsToAttemptToPrepare)
         {
             var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(moduleBytes));
-            var mibcLoadedData = MibcReader.ReadMIbcData(tsc, peReader).ToArray();
-            Dictionary<MethodT, MIbcData> mibcDict = new Dictionary<MethodT, MIbcData>();
+            var profileData = MIbcProfileParser.ParseMIbcFile(tsc, peReader, null, null);
+            Dictionary<MethodDesc, MethodProfileData> mibcDict = new Dictionary<MethodDesc, MethodProfileData>();
 
-            foreach (var mibcData in mibcLoadedData)
+            foreach (var mibcData in profileData.GetAllMethodProfileData())
             {
-                mibcDict.Add((MethodT)mibcData.MetadataObject, mibcData);
+                mibcDict.Add((MethodDesc)(object)mibcData.Method, mibcData);
             }
 
             bool failure = false;
-            if (methodsToAttemptToPrepare.Count != mibcLoadedData.Length)
+            if (methodsToAttemptToPrepare.Count() != mibcDict.Count)
             {
-                Program.PrintError($"Not same count of methods {methodsToAttemptToPrepare.Count} != {mibcLoadedData.Length}");
+                Program.PrintError($"Not same count of methods {methodsToAttemptToPrepare.Count()} != {mibcDict.Count}");
                 failure = true;
             }
 
             foreach (var entry in methodsToAttemptToPrepare)
             {
-                MethodT method = entry.Method;
+                MethodDesc method = entry.Method;
                 if (!mibcDict.ContainsKey(method))
                 {
                     Program.PrintError($"{method} not found in mibcEntryData");

@@ -35,7 +35,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             public readonly Dictionary<AssemblyReferenceHandle, TypeRefTypeSystemModule> assemblyLookup = new Dictionary<AssemblyReferenceHandle, TypeRefTypeSystemModule>();
         }
 
-        TypeRefTypeSystemContext(IEnumerable<PEReader> refReaders)
+        public TypeRefTypeSystemContext(IEnumerable<PEReader> refReaders)
         {
             _refReaders = refReaders.ToArray();
 

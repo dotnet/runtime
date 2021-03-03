@@ -25,6 +25,9 @@ using System.Diagnostics.CodeAnalysis;
 using ILCompiler.Reflection.ReadyToRun;
 using Microsoft.Diagnostics.Tools.Pgo;
 using Internal.Pgo;
+using System.Reflection.PortableExecutable;
+using ILCompiler.IBC;
+using ILCompiler;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -217,10 +220,59 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
+        static int InnerMergeMain(CommandLineOptions commandLineOptions)
+        {
+            if (commandLineOptions.InputFilesToMerge.Count == 0)
+            {
+                PrintUsage(commandLineOptions, "--input must be specified");
+            }
+
+            if (commandLineOptions.OutputFileName == null)
+            {
+                PrintUsage(commandLineOptions, "--output must be specified");
+                return -8;
+            }
+
+            PEReader[] mibcReaders = new PEReader[commandLineOptions.InputFilesToMerge.Count];
+            for (int i = 0; i < mibcReaders.Length; i++)
+            {
+                PrintMessage($"Opening {commandLineOptions.InputFilesToMerge[i].FullName}");
+                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(commandLineOptions.InputFilesToMerge[i].FullName);
+            }
+
+            HashSet<string> assemblyNamesInBubble = null;
+            if (commandLineOptions.IncludedAssemblies.Count > 0)
+            {
+                assemblyNamesInBubble = new HashSet<string>();
+                foreach (var asmName in commandLineOptions.IncludedAssemblies)
+                {
+                    assemblyNamesInBubble.Add(asmName.Name);
+                }
+            }
+
+            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
+
+            bool partialNgen = false;
+            Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
+            for (int i = 0; i < mibcReaders.Length; i++)
+            {
+                var peReader = mibcReaders[i];
+                PrintMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
+                ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+            }
+
+            return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+        }
+
         static int InnerMain(CommandLineOptions commandLineOptions)
         {
             if (!commandLineOptions.BasicProgressMessages)
                 s_logger.HideMessages();
+
+            if (commandLineOptions.InputFilesToMerge != null)
+            {
+                return InnerMergeMain(commandLineOptions);
+            }
 
             if (commandLineOptions.TraceFile == null)
             {
@@ -834,10 +886,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
-                 if (commandLineOptions.FileType.Value == PgoFileType.jittrace)
+                if (commandLineOptions.FileType.Value == PgoFileType.jittrace)
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
-                    return MibcEmitter<MethodDesc, TypeDesc, TypeSystemEntityOrUnknown, TypeSystemTypeClass>.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                {
+                    ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
+                    for (int i = 0; i < methodProfileData.Length; i++)
+                    {
+                        ProcessedMethodData<MethodDesc> processedData = methodsUsedInProcess[i];
+                        methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
+                    }
+                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                }
             }
             return 0;
         }
