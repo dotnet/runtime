@@ -448,14 +448,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     return -5;
                 }
 
-                if (commandLineOptions.ProcessR2REvents)
-                {
-                    if (!p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any())
-                    {
-                        PrintError($"No r2r entrypoint data. This is not an error as in this case we can examine the jitted methods only\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x6000080018:5\"?");
-                    }
-                }
-
                 PgoTraceProcess pgoProcess = new PgoTraceProcess(p);
                 int? clrInstanceId = commandLineOptions.ClrInstanceId;
                 if (!clrInstanceId.HasValue)
