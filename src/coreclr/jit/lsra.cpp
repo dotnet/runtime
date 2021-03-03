@@ -1783,17 +1783,6 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvLiveInOutOfHndlr)
             {
                 newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
-#ifdef DEBUG
-                if (newInt->isWriteThru)
-                {
-                    JITDUMP("Marking Interal %d as writeThru because V%02u is a single def.\n", newInt->intervalIndex, lclNum);
-                }
-                else
-                {
-                    JITDUMP("Skipping Interal %d as writeThru because V%02u is not a single def.\n",
-                            newInt->intervalIndex, lclNum);
-                }
-#endif
                 setIntervalAsSpilled(newInt);
             }
 

@@ -2615,7 +2615,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
             noway_assert(lvaTable[i].lvIsStructField);
             lvaTable[i].lvLiveInOutOfHndlr = 1;
             // For now, only enregister an EH Var if it is a single def.
-            if (!lvaEnregEHVars || !lvaTable[i].lvEhWriteThruCandidate)
+            if (!lvaEnregEHVars || !lvaTable[i].lvEhWriteThruCandidate || lvaTable[i].lvRefCnt() <= 1)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
             }
@@ -2623,7 +2623,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
     }
 
     // For now, only enregister an EH Var if it is a single def.
-    if (!lvaEnregEHVars || !varDsc->lvEhWriteThruCandidate)
+    if (!lvaEnregEHVars || !varDsc->lvEhWriteThruCandidate || varDsc->lvRefCnt() <= 1)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
