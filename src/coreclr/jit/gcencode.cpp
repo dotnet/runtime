@@ -1626,7 +1626,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     if (compiler->opts.IsReversePInvoke())
     {
         assert(compiler->lvaReversePInvokeFrameVar != BAD_VAR_NUM);
-        int stkOffs            = compiler->lvaTable[compiler->lvaReversePInvokeFrameVar].GetStackOffset();
+        int stkOffs              = compiler->lvaTable[compiler->lvaReversePInvokeFrameVar].GetStackOffset();
         header->revPInvokeOffset = compiler->isFramePointerUsed() ? -stkOffs : stkOffs;
         assert(header->revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
     }
