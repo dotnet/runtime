@@ -99,6 +99,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading",
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
 static MonoCoopMutex ldstr_section;
+/* Used by remoting proxies */
+static MonoMethod *create_proxy_for_type_method;
+static MonoGHashTable *ldstr_table;
 
 static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
@@ -5140,7 +5143,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	/* check for is_com_object for COM Interop */
 	if (mono_class_is_com_object (vtable->klass)) {
 		gpointer pa [1];
-		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+		MonoMethod *im = create_proxy_for_type_method;
 
 		if (im == NULL) {
 			MonoClass *klass = mono_class_get_activation_services_class ();
@@ -5154,7 +5157,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 				mono_error_set_not_supported (error, "Linked away.");
 				return NULL;
 			}
-			vtable->domain->create_proxy_for_type_method = im;
+			create_proxy_for_type_method = im;
 		}
 	
 		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
@@ -5186,7 +5189,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 
 	/* check for is_com_object for COM Interop */
 	if (mono_class_is_com_object (vtable->klass)) {
-		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+		MonoMethod *im = create_proxy_for_type_method;
 
 		if (im == NULL) {
 			MonoClass *klass = mono_class_get_activation_services_class ();
@@ -5200,7 +5203,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 				mono_error_set_not_supported (error, "Linked away.");
 				return MONO_HANDLE_NEW (MonoObject, NULL);
 			}
-			vtable->domain->create_proxy_for_type_method = im;
+			create_proxy_for_type_method = im;
 		}
 
 		// FIXMEcoop
@@ -6712,8 +6715,13 @@ MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	
-	MonoGHashTable *ldstr_table = MONO_HANDLE_DOMAIN (str)->ldstr_table;
+
+	if (!ldstr_table) {
+		MonoGHashTable *table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Table");
+		mono_memory_barrier ();
+		ldstr_table = table;
+	}
+
 	ldstr_lock ();
 	MonoString *res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	ldstr_unlock ();

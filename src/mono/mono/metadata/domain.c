@@ -317,18 +317,14 @@ mono_domain_create (void)
 
 	domain->domain_assemblies = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
-	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
 	domain->num_jit_info_table_duplicates = 0;
 	domain->jit_info_table = mono_jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
-	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
-	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);

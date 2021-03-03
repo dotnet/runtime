@@ -3973,10 +3973,21 @@ mini_create_ftnptr (gpointer addr)
 {
 #if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	gpointer* desc = NULL;
+	static GHashTable *ftnptrs_hash;
+
+	if (!ftnptrs_hash) {
+		GHashTable *hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_memory_barrier ();
+		ftnptrs_hash = hash;
+	}
+
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
-	if ((desc = (gpointer*)g_hash_table_lookup (domain->ftnptrs_hash, addr)))
+	mono_jit_lock ();
+	desc = (gpointer*)g_hash_table_lookup (ftnptrs_hash, addr);
+	mono_jit_unlock ();
+	if (desc)
 		return desc;
 #if defined(__mono_ppc64__)
 	desc = mono_mem_manager_alloc0 (jit_mm->mem_manager, 3 * sizeof (gpointer));
@@ -3985,7 +3996,9 @@ mini_create_ftnptr (gpointer addr)
 	desc [1] = NULL;
 	desc [2] = NULL;
 #	endif
-	g_hash_table_insert (domain->ftnptrs_hash, addr, desc);
+	mono_jit_lock ();
+	g_hash_table_insert (ftnptrs_hash, addr, desc);
+	mono_jit_unlock ();
 	return desc;
 #else
 	return addr;

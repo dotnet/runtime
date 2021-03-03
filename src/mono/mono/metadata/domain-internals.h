@@ -278,7 +278,6 @@ struct _MonoDomain {
 	MonoArray          *empty_types;
 	MonoString         *empty_string;
 #define MONO_DOMAIN_LAST_OBJECT empty_string
-	MonoGHashTable     *ldstr_table;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
 	/*
@@ -305,27 +304,11 @@ struct _MonoDomain {
 	  volatile          aot_modules;
 	GSList		   *jit_info_free_queue;
 	
-	/* Used by remoting proxies */
-	MonoMethod         *create_proxy_for_type_method;
-	/* Used to store offsets of thread and context static fields */
+	/* Used to store offsets of thread static fields */
 	GHashTable         *special_static_fields;
-	/* 
-	 * This must be a GHashTable, since these objects can't be finalized
-	 * if the hashtable contains a GC visible reference to them.
-	 */
-	GHashTable         *finalizable_objects_hash; // TODO: this needs to be moved for unloadability with non-sgen gc
 
-	/* Protects the three hashes above */
-	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
-
-	/* Contains the compiled runtime invoke wrapper used by finalizers */
-	gpointer            finalize_runtime_invoke;
-
-	/* Cache function pointers for architectures  */
-	/* that require wrappers */
-	GHashTable *ftnptrs_hash; // TODO: need to move?
 
 	/* Maps MonoMethod* to weak links to DynamicMethod objects */
 	GHashTable *method_to_dyn_method;
