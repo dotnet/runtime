@@ -94,14 +94,7 @@ namespace System.Net.Http
                     buffer[2] = METHOD_NO_AUTH;
                     buffer[3] = METHOD_USERNAME_PASSWORD;
                 }
-                if (async)
-                {
-                    await stream.WriteAsync(buffer.AsMemory(0, buffer[1] + 2)).ConfigureAwait(false);
-                }
-                else
-                {
-                    stream.Write(buffer.AsSpan(0, buffer[1] + 2));
-                }
+                await WriteAsync(stream, buffer.AsMemory(0, buffer[1] + 2), async).ConfigureAwait(false);
 
                 // +----+--------+
                 // |VER | METHOD |
@@ -138,14 +131,7 @@ namespace System.Net.Http
                             buffer[2 + uLen] = checked((byte)pLen);
                             int pLenEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + uLen));
                             Debug.Assert(pLen == pLenEncoded);
-                            if (async)
-                            {
-                                await stream.WriteAsync(buffer.AsMemory(0, 4 + uLen + pLen)).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                stream.Write(buffer.AsSpan(0, 4 + uLen + pLen));
-                            }
+                            await WriteAsync(stream, buffer.AsMemory(0, 4 + uLen + pLen), async).ConfigureAwait(false);
 
                             // +----+--------+
                             // |VER | STATUS |
@@ -208,14 +194,7 @@ namespace System.Net.Http
                 buffer[addressLength + 5] = (byte)(port >> 8);
                 buffer[addressLength + 6] = (byte)port;
 
-                if (async)
-                {
-                    await stream.WriteAsync(buffer.AsMemory(0, addressLength + 7)).ConfigureAwait(false);
-                }
-                else
-                {
-                    stream.Write(buffer.AsSpan(0, addressLength + 7));
-                }
+                await WriteAsync(stream, buffer.AsMemory(0, addressLength + 7), async).ConfigureAwait(false);
 
                 // +----+-----+-------+------+----------+----------+
                 // |VER | REP |  RSV  | ATYP | DST.ADDR | DST.PORT |
@@ -333,14 +312,7 @@ namespace System.Net.Http
                     totalLength += aLen + 1;
                 }
 
-                if (async)
-                {
-                    await stream.WriteAsync(buffer.AsMemory(0, totalLength)).ConfigureAwait(false);
-                }
-                else
-                {
-                    stream.Write(buffer.AsSpan(0, totalLength));
-                }
+                await WriteAsync(stream, buffer.AsMemory(0, totalLength), async).ConfigureAwait(false);
 
                 // +----+----+----+----+----+----+----+----+
                 // | VN | CD | DSTPORT |      DSTIP        |
@@ -360,6 +332,18 @@ namespace System.Net.Http
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private static async ValueTask WriteAsync(Stream stream, Memory<byte> buffer, bool async)
+        {
+            if (async)
+            {
+                await stream.WriteAsync(buffer).ConfigureAwait(false);
+            }
+            else
+            {
+                stream.Write(buffer.Span);
             }
         }
 
