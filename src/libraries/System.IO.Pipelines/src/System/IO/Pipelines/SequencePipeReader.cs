@@ -68,7 +68,7 @@ namespace System.IO.Pipelines
                 return new ValueTask<ReadResult>(result);
             }
 
-            result = new ReadResult(_sequence, isCanceled: false, isCompleted: true);
+            result = new ReadResult(ReadOnlySequence<byte>.Empty, isCanceled: false, isCompleted: true);
             return new ValueTask<ReadResult>(result);
         }
 
