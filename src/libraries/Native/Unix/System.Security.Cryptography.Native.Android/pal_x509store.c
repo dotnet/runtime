@@ -21,10 +21,10 @@
     } \
 } \
 
-int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnly, EnumCertificatesCallback cb, void *context)
+int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnly, EnumCertificatesCallback cb, void* context)
 {
     assert(cb != NULL);
-    JNIEnv *env = GetJNIEnv();
+    JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
     INIT_LOCALS(loc, storeType, store, aliases)
@@ -52,13 +52,15 @@ int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool systemOnl
 
         // Filter to only system certificates if necessary
         // System certificates are included for 'current user' (matches Windows)
-        const char *aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
-        if (!systemOnly || strncmp(aliasPtr, systemPrefix, sizeof(systemPrefix)/sizeof(char)) == 0)
+        const char* aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
+        if (!systemOnly || strncmp(aliasPtr, systemPrefix, sizeof(systemPrefix) / sizeof(char)) == 0)
         {
             jobject cert = (*env)->CallObjectMethod(env, loc[store], g_KeyStoreGetCertificate, alias);
-            assert(cert != NULL && !CheckJNIExceptions(env));
-            cert = ToGRef(env, cert);
-            cb(cert, context);
+            if (cert != NULL && !CheckJNIExceptions(env))
+            {
+                cert = ToGRef(env, cert);
+                cb(cert, context);
+            }
         }
 
         (*env)->ReleaseStringUTFChars(env, alias, aliasPtr);

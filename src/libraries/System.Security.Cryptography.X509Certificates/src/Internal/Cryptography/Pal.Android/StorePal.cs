@@ -56,7 +56,7 @@ namespace Internal.Cryptography.Pal
             bool isReadWrite = (openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite;
             if (isReadWrite && storeLocation == StoreLocation.LocalMachine)
             {
-                // All LocalMachine stores are read-only
+                // All LocalMachine stores are read-only from an Android application's perspective
                 throw new CryptographicException(
                     SR.Cryptography_Unix_X509_MachineStoresReadOnly,
                     new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly));
@@ -73,6 +73,7 @@ namespace Internal.Cryptography.Pal
 
                     if (ordinalIgnoreCase.Equals(X509Store.RootStoreName, storeName))
                     {
+                        // Android only allows updating the trusted store through the built-in settings application
                         if (isReadWrite)
                             throw new CryptographicException(SR.Security_AccessDenied);
 

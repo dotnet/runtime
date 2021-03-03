@@ -9,5 +9,7 @@ The certificate passed to the callback will already be a global jobject referenc
 
 Returns 1 on success, 0 otherwise.
 */
-typedef void (*EnumCertificatesCallback)(jobject cert, void *context);
-PALEXPORT int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool isSystem, EnumCertificatesCallback cb, void *context);
+typedef void (*EnumCertificatesCallback)(jobject cert, void* context);
+PALEXPORT int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool isSystem,
+                                                                            EnumCertificatesCallback cb,
+                                                                            void* context);
