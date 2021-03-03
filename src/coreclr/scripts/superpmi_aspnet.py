@@ -114,6 +114,34 @@ def determine_native_name(coreclr_args, base_lib_name):
     else:
         raise RuntimeError("Unknown OS.")
 
+# Where there is an option, we generally target the less performant machines
+# See https://github.com/aspnet/Benchmarks/tree/master/scenarios
+#
+def determine_benchmark_machine(coreclr_args)
+    """ Determine the name of the benchmark machine to use
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+
+    Return:
+        (str) : name of the benchmnark machine
+    """
+
+    if coreclr_args.arch == "x64":
+        if coreclr_args.host_os == "windows":
+            return "aspnet-perf-win"
+        elif coreclr_args.host_os == "Linux":
+            return "aspnet-perf-lin"
+        else:
+            raise RuntimeError("Invalid OS for x64.")
+    elif coreclr_args.arch == "arm64":
+        if coreclr_args.host_os == "Linux":
+            return "aspnet-citrine-arm"
+        else:
+           raise RuntimeError("Invalid OS for arm64.")
+    else:
+        raise RuntimeError("Invalid arch.")
+
 def build_and_run(coreclr_args, output_mch_name):
     """Run perf scenarios under crank and collect data with SPMI"
 
@@ -186,8 +214,10 @@ def build_and_run(coreclr_args, output_mch_name):
        corelib = path.join(core_root, corelibname)
        spmi    = path.join(core_root, spminame)
 
+       benchmark_machine = determine_benchmark_machine(coreclr_args)
+
        crank_command = f"crank --config {config}" \
-                       f"--profile aspnet-perf-lin" \
+                       f"--profile {benchmark_machine}" \
                        f"--scenario json" \
                        f"--description SPMI-COLLECTION" \
                        f"--application.framework net6.0" \

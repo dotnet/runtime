@@ -180,6 +180,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
+      liveLibrariesBuildConfig: Release
       collectionType: run
       collectionName: aspnet
 
