@@ -10755,8 +10755,6 @@ void LinearScan::verifyFinalAllocation()
 
     BasicBlock*  currentBlock                = nullptr;
     GenTree*     firstBlockEndResolutionNode = nullptr;
-    regMaskTP    regsToFree                  = RBM_NONE;
-    regMaskTP    delayRegsToFree             = RBM_NONE;
     LsraLocation currentLocation             = MinLocation;
     for (RefPosition& refPosition : refPositions)
     {
@@ -10766,12 +10764,7 @@ void LinearScan::verifyFinalAllocation()
         regNumber    regNum             = REG_NA;
         activeRefPosition               = currentRefPosition;
 
-        if (currentRefPosition->refType == RefTypeBB)
-        {
-            regsToFree |= delayRegsToFree;
-            delayRegsToFree = RBM_NONE;
-        }
-        else
+        if (currentRefPosition->refType != RefTypeBB)
         {
             if (currentRefPosition->IsPhysRegRef())
             {
@@ -10800,24 +10793,7 @@ void LinearScan::verifyFinalAllocation()
         }
 
         LsraLocation newLocation = currentRefPosition->nodeLocation;
-
-        if (newLocation > currentLocation)
-        {
-            // Free Registers.
-            // We could use the freeRegisters() method, but we'd have to carefully manage the active intervals.
-            for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
-            {
-                regMaskTP regMask = genRegMask(reg);
-                if ((regsToFree & regMask) != RBM_NONE)
-                {
-                    RegRecord* physRegRecord        = getRegisterRecord(reg);
-                    physRegRecord->assignedInterval = nullptr;
-                }
-            }
-            regsToFree = delayRegsToFree;
-            regsToFree = RBM_NONE;
-        }
-        currentLocation = newLocation;
+        currentLocation          = newLocation;
 
         switch (currentRefPosition->refType)
         {
@@ -10984,6 +10960,7 @@ void LinearScan::verifyFinalAllocation()
                 else if (RefTypeIsDef(currentRefPosition->refType))
                 {
                     interval->isActive = true;
+
                     if (VERBOSE)
                     {
                         if (interval->isConstant && (currentRefPosition->treeNode != nullptr) &&
@@ -11055,11 +11032,17 @@ void LinearScan::verifyFinalAllocation()
                     }
                     else
                     {
-                        if (!currentRefPosition->copyReg)
+                        if (RefTypeIsDef(currentRefPosition->refType))
                         {
-                            interval->physReg     = regNum;
-                            interval->assignedReg = regRecord;
+                            // Interval was assigned to a different register.
+                            // Clear the assigned interval of current register.
+                            if (interval->physReg != REG_NA && interval->physReg != regNum)
+                            {
+                                interval->assignedReg->assignedInterval = nullptr;
+                            }
                         }
+                        interval->physReg           = regNum;
+                        interval->assignedReg       = regRecord;
                         regRecord->assignedInterval = interval;
                     }
                 }
