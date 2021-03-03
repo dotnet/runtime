@@ -3613,7 +3613,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	for (i = 0; i < num_args; i++) {
 		MonoType *type;
 		if (sig->hasthis && i == 0)
-			type = m_class_get_byval_arg (td->method->klass);
+			type = m_class_is_valuetype (td->method->klass) ? m_class_get_this_arg (td->method->klass) : m_class_get_byval_arg (td->method->klass);
 		else
 			type = mono_method_signature_internal (td->method)->params [i - sig->hasthis];
 		int mt = mint_type (type);
@@ -3622,7 +3622,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->locals [i].flags = INTERP_LOCAL_FLAG_GLOBAL;
 		td->locals [i].indirects = 0;
 		td->locals [i].mt = mt;
-		if (mt == MINT_TYPE_VT && (!sig->hasthis || i != 0)) {
+		if (mt == MINT_TYPE_VT) {
 			size = mono_type_size (type, &align);
 			td->locals [i].size = size;
 			offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
