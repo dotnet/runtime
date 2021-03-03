@@ -2800,7 +2800,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 }
 
 static gboolean
-interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, int ret_mt, StackInfo *sp_params)
+interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, int ret_mt, StackInfo *sp_params, gboolean is_protected)
 {
 	ERROR_DECL(error);
 	InterpInst *newobj_fast, *prev_last_ins;
@@ -2866,6 +2866,9 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 		interp_ins_set_dreg (newobj_fast, dreg);
 		newobj_fast->data [0] = get_data_item_index (td, vtable);
 	}
+
+	if (is_protected)
+		newobj_fast->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 
 	MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
 	goto_if_nok (error, fail);
@@ -4155,6 +4158,17 @@ handle_stelem (TransformData *td, int op)
 }
 
 static gboolean
+is_ip_protected (MonoMethodHeader *header, int offset)
+{
+	for (int i = 0; i < header->num_clauses; i++) {
+		MonoExceptionClause *clause = &header->clauses [i];
+		if (clause->try_offset <= offset && offset < (clause->try_offset + clause->try_len))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int target;
@@ -5430,6 +5444,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_NEWOBJ: {
 			MonoMethod *m;
 			MonoMethodSignature *csignature;
+			gboolean is_protected = is_ip_protected (header, td->ip - header->code);
 
 			td->ip++;
 			token = read32 (td->ip);
@@ -5535,7 +5550,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 				memcpy (sp_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
-				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params))
+				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params, is_protected))
 					break;
 
 				// Push the return value and `this` argument to the ctor
@@ -5590,6 +5605,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+				if (is_protected)
+					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 				// Parameters and this pointer are popped of the stack. The return value remains
 				td->sp -= csignature->param_count + 1;
 				 // Save the arguments for the call
@@ -8166,7 +8183,8 @@ retry:
 				} else if (local_defs [sreg].ins != NULL &&
 						(td->locals [sreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
 						!(td->locals [dreg].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK) &&
-						interp_prev_ins (ins) == local_defs [sreg].ins) {
+						interp_prev_ins (ins) == local_defs [sreg].ins &&
+						!(interp_prev_ins (ins)->flags & INTERP_INST_FLAG_PROTECTED_NEWOBJ)) {
 					// hackish temporary optimization that won't be necessary in the future
 					// We replace `local1 <- ?, local2 <- local1` with `local2 <- ?, local1 <- local2`
 					// if local1 is execution stack local and local2 is normal global local. This makes

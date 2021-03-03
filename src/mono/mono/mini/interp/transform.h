@@ -12,6 +12,8 @@
 #define INTERP_INST_FLAG_CALL 32
 // Flag used internally by the var offset allocator
 #define INTERP_INST_FLAG_ACTIVE_CALL 64
+// This instruction is protected by a clause
+#define INTERP_INST_FLAG_PROTECTED_NEWOBJ 128
 
 #define INTERP_LOCAL_FLAG_DEAD 1
 #define INTERP_LOCAL_FLAG_EXECUTION_STACK 2
