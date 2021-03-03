@@ -79,6 +79,10 @@
     <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CollectionName)' == 'aspnet'">
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_aspnet.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+  </PropertyGroup>
+
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
@@ -106,7 +110,7 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks' AND '$(CollectionName)' != 'aspnet'">
     <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(InputArtifacts)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
@@ -147,23 +151,43 @@
     <BDN_Partition Include="Partition29" Index="29" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
-    <HelixWorkItem Include="@(Partition)">
-      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
-      <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
-      <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-  </ItemGroup>
+  <Choose
 
-  <ItemGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <HelixWorkItem Include="@(BDN_Partition)">
-      <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
-      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(WorkItemCommand) -partition_count $(PartitionCount) -partition_index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
-      <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
-    </HelixWorkItem>
-  </ItemGroup>
+     <When Condition="'$(CollectionName)' == 'benchmarks'">
+      <ItemGroup 
+        <HelixWorkItem Include="@(BDN_Partition)">
+          <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+          <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+          <Command>$(WorkItemCommand) -partition_count $(PartitionCount) -partition_index %(HelixWorkItem.Index) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+          <Timeout>$(WorkItemTimeout)</Timeout>
+          <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+        </HelixWorkItem>
+      </ItemGroup>
+    </When>
+
+     <When Condition="'$(CollectionName)' == 'aspnet'">
+      <ItemGroup 
+        <HelixWorkItem =>
+          <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
+          <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+          <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+          <Timeout>$(WorkItemTimeout)</Timeout>
+          <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+        </HelixWorkItem>
+      </ItemGroup>
+    </When>
+
+    <Otherwise>
+      <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+        <HelixWorkItem Include="@(Partition)">
+          <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
+          <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>
+          <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
+          <Timeout>$(WorkItemTimeout)</Timeout>
+          <DownloadFilesFromResults>%(OutputFileName).mch;%(OutputFileName).mch.mct;%(OutputFileName).log</DownloadFilesFromResults>
+        </HelixWorkItem>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
 </Project>

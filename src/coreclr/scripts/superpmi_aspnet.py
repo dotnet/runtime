@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+#
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+#
+#
+# Title: superpmi_aspnet.py
+#
+# Notes:
+#
+# Script to perform the superpmi collection for Techempower Benchmarks
+# via "crank" (https://github.com/dotnet/crank)
+
+import argparse
+import re
+import sys
+
+import stat
+from os import path
+from os.path import isfile
+from shutil import copyfile
+from coreclr_arguments import *
+from superpmi import ChangeDir, TempDir
+from superpmi_setup import run_command
+
+# Start of parser object creation.
+is_windows = platform.system() == "Windows"
+parser = argparse.ArgumentParser(description="description")
+
+parser.add_argument("-superpmi_directory", help="Path to superpmi directory")
+parser.add_argument("-core_root", help="Path to Core_Root directory")
+parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
+parser.add_argument("-log_file", help="Name of the log file")
+parser.add_argument("-arch", help="Architecture")
+
+def setup_args(args):
+    """ Setup the args for SuperPMI to use.
+
+    Args:
+        args (ArgParse): args parsed by arg parser
+
+    Returns:
+        args (CoreclrArguments)
+
+    """
+    coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False,
+                                    require_built_test_dir=False, default_build_type="Checked")
+
+    coreclr_args.verify(args,
+                        "superpmi_directory",
+                        lambda superpmi_directory: os.path.isdir(superpmi_directory),
+                        "superpmi_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "output_mch_path",
+                        lambda output_mch_path: not os.path.isfile(output_mch_path),
+                        "output_mch_path already exist")
+
+    coreclr_args.verify(args,
+                        "log_file",
+                        lambda log_file: True,  # not os.path.isfile(log_file),
+                        "log_file already exist")
+
+    coreclr_args.verify(args,
+                        "core_root",
+                        lambda core_root: os.path.isdir(core_root),
+                        "core_root doesn't exist")
+
+    coreclr_args.verify(args,
+                        "arch",
+                        lambda arch: arch.lower() in ["x64", "arm64"],
+                        "Unable to set arch")
+
+    return coreclr_args
+
+
+def make_executable(file_name):
+    """Make file executable by changing the permission
+
+    Args:
+        file_name (string): file to execute
+    """
+    if is_windows:
+        return
+
+    print("Inside make_executable")
+    run_command(["ls", "-l", file_name])
+    os.chmod(file_name,
+             # read+execute for owner
+             (stat.S_IRUSR | stat.S_IXUSR) |
+             # read+execute for group
+             (stat.S_IRGRP | stat.S_IXGRP) |
+             # read+execute for other
+             (stat.S_IROTH | stat.S_IXOTH))
+    run_command(["ls", "-l", file_name])
+
+def determine_native_name(coreclr_args, base_lib_name):
+    """ Determine the name of the native lib based on the OS.
+
+    Args:
+        coreclr_args (CoreclrArguments): parsed args
+        base_lib_name (str) : root name of the lib
+
+    Return:
+        (str) : name of the native lib for this OS
+    """
+
+    if coreclr_args.host_os == "OSX":
+        return "lib" + base_lib_name + ".dylib"
+    elif coreclr_args.host_os == "Linux":
+        return "lib" + base_lib_name + ".so"
+    elif coreclr_args.host_os == "windows":
+        return base_lib_name + ".dll"
+    else:
+        raise RuntimeError("Unknown OS.")
+
+def build_and_run(coreclr_args, output_mch_name):
+    """Run perf scenarios under crank and collect data with SPMI"
+
+    Args:
+        coreclr_args (CoreClrArguments): Arguments use to drive
+        output_mch_name (string): Name of output mch file name
+    """
+    arch = coreclr_args.arch
+    python_path = sys.executable
+    core_root = coreclr_args.core_root
+    log_file = coreclr_args.log_file
+    dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
+    dotnet_exe = os.path.join(dotnet_directory, "dotnet")
+
+    if is_windows:
+        shim_name = "%JitName%"
+    else:
+        shim_name = "$JitName"
+
+    make_executable(dotnet_exe)
+
+    ## install crank
+
+    run_command(
+       [dotnet_exe, "tool install -g Microsoft.Crank.Controller --version \"0.2.0-*"build\"", _exit_on_fail=True)
+
+    ## sparse clone of aspnet/benchmarks to obtain the benchmark config files     
+
+    with TempDir() as temp_location:
+
+        ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
+        ## cd benchmarks
+        ## git sparse-checkout init --cone
+        ## git sparse-checkout set scenarios
+
+        run_command(
+            ["git.exe", "--filter=blob:none --no-checkout https://github.com/aspnet/benchmarks", temp_location, _exit_on_fail=True)
+        run_command(
+            ["git.exe", "sparse-checkout init --cone", path.join(temp_location, "benchmarks"), _exit_on_fail=True)
+        run_command(
+            ["git.exe", "sparse-checkout set scenarios", path.join(temp_location, "benchmarks"), _exit_on_fail=True)
+
+        config = path.join(temp_location, "benchmarks", "scenarios", "json.benchmarks.yml")
+
+       # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
+       # and ask crank to send back the runtime directory
+       #
+       # crank --config /home/andy/repos/benchmarks/scenarios/json.benchmarks.yml
+       #      --profile aspnet-perf-lin 
+       #      --scenario json 
+       #      --application.framework net6.0 
+       #      --application.channel edge 
+       #      --description SPMI
+       #      --application.environmentVariables COMPlus_JitName=libsuperpmi-shim-collector.so 
+       #      --application.environmentVariables SuperPMIShimLogPath=. 
+       #      --application.environmentVariables SuperPMIShimPath=./libclrjit.so 
+       #      --application.options.fetch true 
+       #      --application.options.outputFiles {build}/{superpmi-shim-collector}
+       #      --application.options.outputFiles {build}/{jit}
+       #      --application.options.outputFiles {build}/{coreclr}
+       #      --application.options.outputFiles {build}/{SPC}
+
+       jitname = determine_native_name("clrjit")
+       coreclrname = determine_native_name("coreclr")
+       spminame = determine_native_name("superpmi-shim-collector")
+
+       jitpath = path.join(".", jitname)
+       jitlib  = path.join(core_root, jitname)
+       coreclr = path.join(core_root, coreclrname)
+       corelib = path.join(core_root, corelibname)
+       spmi    = path.join(core_root, spminame)
+
+       crank_command = f"crank --config {config}" \
+                       f"--profile aspnet-perf-lin" \
+                       f"--scenario json" \
+                       f"--description SPMI-COLLECTION" \
+                       f"--application.framework net6.0" \
+                       f"--application.channel edge" \
+                       f"--application.environmentVariables COMPlus_JitName={spminame}" \
+                       f"--application.environmentVariables SuperPMIShimLogPath=.} \
+                       f"--application.environmentVariables SuperPMIShimPath={jitpath}" \
+                       f"--application.options.fetch true \
+                       f"--application.outputFiles {jitlib} \
+                       f"--application.outputFiles {coreclr} \
+                       f"--application.outputFiles {corelib}
+
+        run_command(
+            ["crank", crank_command, temp_location, _exit_on_fail=True)
+
+       crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
+
+       if len(crankZipFiles) > 0:
+           for zipFile in crankZipFiles:
+               with zipfile.ZipFile(zipFile, "r") as zipObject:
+                   listOfFileNames = zipObject.namelist()
+                   for zippedFileName in listOfFileNames:
+                       if zippedFileName.endswith('.mc'):
+                             zipObject.extract(zippedFileName, temp_location)
+
+       mcFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".mc")]
+
+def main(main_args):
+    """ Main entry point
+
+    Args:
+        main_args ([type]): Arguments to the script
+    """
+    coreclr_args = setup_args(main_args)
+
+    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
+    build_and_run(coreclr_args, all_output_mch_name)
+    if os.path.isfile(all_output_mch_name):
+        pass
+    else:
+        print("No mch file generated.")
+
+    strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
+
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+    sys.exit(main(args))
