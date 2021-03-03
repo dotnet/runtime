@@ -3,6 +3,8 @@
 
 #include "pal_x509.h"
 
+#include "pal_eckey.h"
+
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
@@ -198,6 +200,30 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t *buf, i
 cleanup:
     RELEASE_LOCALS(loc, env)
     return ret;
+}
+
+void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_KeyAlgorithm algorithm)
+{
+    assert(cert != NULL);
+
+    JNIEnv *env = GetJNIEnv();
+
+    void *keyHandle;
+    jobject key = (*env)->CallObjectMethod(env, cert, g_X509CertGetPublicKey);
+    switch (algorithm)
+    {
+        case PAL_EC:
+            keyHandle = AndroidCryptoNative_NewEcKeyFromPublicKey(env, key);
+            break;
+        case PAL_DSA:
+        case PAL_RSA:
+        default:
+            keyHandle = NULL;
+            break;
+    }
+
+    (*env)->DeleteLocalRef(env, key);
+    return keyHandle;
 }
 
 static int32_t PopulateByteArray(JNIEnv *env, jbyteArray source, uint8_t *dest, int32_t len)

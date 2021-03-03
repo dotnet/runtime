@@ -103,23 +103,7 @@ extern jmethodID g_CertFactoryGenerateCRL;
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
 extern jmethodID g_X509CertGetEncoded;
-extern jmethodID g_X509CertGetIssuerX500Principal;
-extern jmethodID g_X509CertGetNotAfter;
-extern jmethodID g_X509CertGetNotBefore;
 extern jmethodID g_X509CertGetPublicKey;
-extern jmethodID g_X509CertGetSerialNumber;
-extern jmethodID g_X509CertGetSigAlgOID;
-extern jmethodID g_X509CertGetSubjectX500Principal;
-extern jmethodID g_X509CertGetVersion;
-
-// java/security/cert/X509Certificate implements java/security/cert/X509Extension
-extern jmethodID g_X509CertGetCriticalExtensionOIDs;
-extern jmethodID g_X509CertGetExtensionValue;
-extern jmethodID g_X509CertGetNonCriticalExtensionOIDs;
-
-// java/security/cert/X509CRL
-extern jclass    g_X509CRLClass;
-extern jmethodID g_X509CRLGetNextUpdate;
 
 // java/security/interfaces/RSAKey
 extern jclass    g_RSAKeyClass;
@@ -220,6 +204,7 @@ extern jmethodID g_ECPrivateKeySpecCtor;
 
 // java/security/interfaces/ECPublicKey
 extern jclass    g_ECPublicKeyClass;
+extern jmethodID g_ECPublicKeyGetParams;
 extern jmethodID g_ECPublicKeyGetW;
 
 // java/security/spec/ECPublicKeySpec

@@ -18,6 +18,18 @@ EC_KEY* AndroidCryptoNative_NewEcKey(jobject curveParameters, jobject keyPair)
     return keyInfo;
 }
 
+EC_KEY* AndroidCryptoNative_NewEcKeyFromPublicKey(JNIEnv *env, jobject /*ECPublicKey*/ publicKey)
+{
+    assert(publicKey != NULL);
+
+    if (!(*env)->IsInstanceOf(env, publicKey, g_ECPublicKeyClass))
+        return NULL;
+
+    jobject curveParameters = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
+    jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, NULL);
+    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
+}
+
 #pragma clang diagnostic push
 // There's no way to specify explicit memory ordering for increment/decrement with C atomics.
 #pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
@@ -80,7 +92,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByOid(const char* oid)
     {
         oidStr = JSTRING("secp256r1");
     }
-    else 
+    else
     {
         oidStr = JSTRING(oid);
     }
