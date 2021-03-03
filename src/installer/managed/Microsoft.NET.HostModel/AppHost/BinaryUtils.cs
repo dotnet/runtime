@@ -174,10 +174,8 @@ namespace Microsoft.NET.HostModel.AppHost
             File.Copy(sourcePath, destinationPath, overwrite: true);
         }
 
-        internal static void SaveFile(MemoryMappedViewAccessor sourceViewAccessor, string destinationFilePath)
+        internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream)
         {
-            using FileStream fileStream = new FileStream(destinationFilePath, FileMode.Create);
-
             int pos = 0;
             int bufSize = 16384; //16K
 

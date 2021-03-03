@@ -82,20 +82,6 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
-            void RemoveSignatureIfMachO()
-            {
-                if (!appHostIsPEImage)
-                {
-                    MachOUtils.RemoveSignature(appHostDestinationFilePath);
-                }
-            }
-
-            void SetLastWriteTime()
-            {
-                // Memory-mapped write does not updating last write time
-                File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
-            }
-
             try
             {
                 RetryUtil.RetryOnIOError(() =>
@@ -112,26 +98,25 @@ namespace Microsoft.NET.HostModel.AppHost
                         RewriteAppHost(memoryMappedViewAccessor);
 
                         // Save the transformed host.
-                        BinaryUtils.SaveFile(memoryMappedViewAccessor, appHostDestinationFilePath);
+                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
+                        {
+                            BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream);
+
+                            // Remove the signature from MachO hosts.
+                            if (!appHostIsPEImage)
+                            {
+                                MachOUtils.RemoveSignature(fileStream);
+                            }
+                        }
                     }
                     finally
                     {
-                        if (memoryMappedViewAccessor != null)
-                        {
-                            memoryMappedViewAccessor.Dispose();
-                        }
-                        if (memoryMappedFile != null)
-                        {
-                            memoryMappedFile.Dispose();
-                        }
+                        memoryMappedViewAccessor?.Dispose();
+                        memoryMappedFile?.Dispose();
                     }
                 });
 
                 RetryUtil.RetryOnWin32Error(UpdateResources);
-
-                RetryUtil.RetryOnIOError(RemoveSignatureIfMachO);
-
-                RetryUtil.RetryOnIOError(SetLastWriteTime);
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
