@@ -69,7 +69,6 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
 
     bool        modified = false;
     BasicBlock* block;
-
     BasicBlock* prevBb = nullptr;
     for (block = fgFirstBB; block; block = block->bbNext)
     {
@@ -92,8 +91,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     }
 
                     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-                    if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) ||
-                        (call->fgArgInfo->ArgCount() != 2))
+                    if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) || (call->fgArgInfo->ArgCount() != 2))
                     {
                         continue;
                     }
@@ -130,7 +128,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
 
                     if (prevBb == nullptr)
                     {
-                        // We're going to emit a BB in front of fgFirstBB 
+                        // We're going to emit a BB in front of fgFirstBB
                         fgEnsureFirstBBisScratch();
                         prevBb = fgFirstBB;
                         if (prevBb == block)
@@ -171,8 +169,12 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     const int dataBlobOffset = 48; // DomainLocalModule::GetOffsetOfDataBlob()
                     const int isInitMask     = 1;  // ClassInitFlags::INITIALIZED_FLAG;
 
-                    UINT8*   isInitAdr     = (UINT8*)moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset + clsIdArg->AsIntCon()->IconValue();
-                    GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, (size_t)isInitAdr, GTF_ICON_CONST_PTR, true);
+                    UINT8* isInitAdr = (UINT8*)moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset +
+                                       clsIdArg->AsIntCon()->IconValue();
+
+                    GenTree* isInitAdrNode =
+                        gtNewIndOfIconHandleNode(TYP_UBYTE, (size_t)isInitAdr, GTF_ICON_CONST_PTR, true);
+
 
                     // Let's start from emitting that BB2 "callInitBb"
                     BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
@@ -196,8 +198,11 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     isInitedBb->inheritWeight(block);
                     isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
 
-                    GenTree* isInitedMask = gtNewOperNode(GT_AND, TYP_INT, gtNewCastNode(TYP_INT, isInitAdrNode, true, TYP_INT), gtNewIconNode(isInitMask));
-                    GenTree* isInitedCmp  = gtNewOperNode(GT_NE, TYP_INT, isInitedMask, gtNewIconNode(0));
+                    GenTree* isInitedMask =
+                        gtNewOperNode(GT_AND, TYP_INT, gtNewCastNode(TYP_INT, isInitAdrNode, true, TYP_INT),
+                                      gtNewIconNode(isInitMask));
+
+                    GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMask, gtNewIconNode(0));
                     isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(isInitedCmp);
 
