@@ -285,14 +285,8 @@ struct _MonoDomain {
 	/* new MonoType [0] */
 	MonoArray          *empty_types;
 	MonoString         *empty_string;
-	/* 
-	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
-	 * not object references.
-	 */
-#define MONO_DOMAIN_FIRST_GC_TRACKED env
-	MonoGHashTable     *env;
+#define MONO_DOMAIN_LAST_OBJECT empty_string
 	MonoGHashTable     *ldstr_table;
-#define MONO_DOMAIN_LAST_GC_TRACKED ldstr_table
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
