@@ -144,7 +144,7 @@ namespace System.Net.Http
                 case HttpStatusCode.Found:
                 case HttpStatusCode.SeeOther:
                 case HttpStatusCode.MultipleChoices:
-                    return requestMethod == HttpMethod.Post;
+                    return requestMethod == HttpMethod.Post || requestMethod == HttpMethod.Put;
                 default:
                     return false;
             }
