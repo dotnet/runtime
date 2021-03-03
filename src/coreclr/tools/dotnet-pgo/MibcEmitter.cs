@@ -30,23 +30,6 @@ using ILCompiler;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
-    interface IMibcEmitterTypeClass<MethodDesc, TypeDesc, TypeSystemEntityOrUnknown>
-    {
-        EntityHandle GetMethodRef(TypeSystemMetadataEmitter emitter, MethodDesc method);
-        bool IsExactType(TypeSystemEntityOrUnknown type);
-        TypeDesc GetExactType(TypeSystemEntityOrUnknown type);
-        EntityHandle GetTypeRef(TypeSystemMetadataEmitter emitter, TypeDesc type);
-        int GetUnknownTypeIndex(TypeSystemEntityOrUnknown type);
-        TypeDesc GetOwningType(MethodDesc method);
-        bool IsPrimitive(TypeDesc type);
-        bool IsCanonicalDefinitionType(TypeDesc type);
-        bool IsParameterizedType(TypeDesc type);
-        TypeDesc GetParameterType(TypeDesc type);
-        string GetAssemblyString(TypeDesc type);
-        ReadOnlySpan<TypeDesc> GetInstantiation(TypeDesc type);
-        ReadOnlySpan<TypeDesc> GetInstantiation(MethodDesc method);
-    }
-
     static class MibcEmitter
     {
         class MIbcGroup : IPgoEncodedValueEmitter<TypeSystemEntityOrUnknown>
