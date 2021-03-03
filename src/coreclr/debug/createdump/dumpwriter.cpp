@@ -219,7 +219,7 @@ DumpWriter::WriteDump()
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) return 0 bytes read\n", address, bytesToRead);
+                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) returned 0 bytes read\n", address, bytesToRead);
                     return false;
                 }
 
