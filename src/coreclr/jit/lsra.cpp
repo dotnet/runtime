@@ -238,6 +238,8 @@ BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
 // in time (more of a 'bank' of registers).
 regMaskTP LinearScan::allRegs(RegisterType rt)
 {
+    assert(rt != TYP_BYTE);
+
     if (rt == TYP_FLOAT)
     {
         return availableFloatRegs;
