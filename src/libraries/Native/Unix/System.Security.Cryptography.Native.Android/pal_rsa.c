@@ -249,7 +249,6 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
     rsa->privateKey = ToGRef(env, (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPrivateMethod));
     rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyPair, g_keyPairGetPublicMethod));
     rsa->keyWidth = bits;
-    rsa->keyWidth = bits;
 
     (*env)->DeleteLocalRef(env, rsaStr);
     (*env)->DeleteLocalRef(env, kpgObj);

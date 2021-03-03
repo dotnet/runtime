@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
 
                 int keySizeBytes = Interop.AndroidCrypto.RsaSize(key);
 
-                // OpenSSL does not take a length value for the destination, so it can write out of bounds.
+                // Android does not take a length value for the destination, so it can write out of bounds.
                 // To prevent the OOB write, decrypt into a temporary buffer.
                 if (destination.Length < keySizeBytes)
                 {
