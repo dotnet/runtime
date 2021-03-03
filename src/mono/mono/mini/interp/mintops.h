@@ -68,6 +68,7 @@ typedef enum {
 #define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
 
 #define MINT_CALL_ARGS 2
+#define MINT_CALL_ARGS_SREG -2
 
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];
