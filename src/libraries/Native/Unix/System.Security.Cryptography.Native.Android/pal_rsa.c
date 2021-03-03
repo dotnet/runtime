@@ -105,7 +105,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
-    
+
     if (CheckJNIExceptions(env))
     {
         (*env)->DeleteLocalRef(env, cipher);
@@ -129,7 +129,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
 {
     if (!rsa)
         return FAIL;
-    return rsa->keyWidth / 8; 
+    return rsa->keyWidth / 8;
 }
 
 PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
@@ -257,7 +257,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa, 
+PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp)
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
@@ -319,9 +319,9 @@ PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, 
-    uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength, 
-    uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength, 
+PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
+    uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength,
+    uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength,
     uint8_t* dmq1, int32_t dmq1Length, uint8_t* iqmp, int32_t iqmpLength)
 {
     if (!rsa)
@@ -359,7 +359,7 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
         (*env)->DeleteGlobalRef(env, dmp1Obj);
         (*env)->DeleteGlobalRef(env, dmq1Obj);
         (*env)->DeleteGlobalRef(env, iqmpObj);
-        (*env)->DeleteGlobalRef(env, rsaPrivateKeySpec);
+        (*env)->DeleteLocalRef(env, rsaPrivateKeySpec);
     }
 
     jobject rsaPubKeySpec = (*env)->NewObject(env, g_RSAPublicCrtKeySpecClass, g_RSAPublicCrtKeySpecCtor, nObj, eObj);
