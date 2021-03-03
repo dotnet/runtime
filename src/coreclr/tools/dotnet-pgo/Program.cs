@@ -75,9 +75,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         }
     }
 
-    struct ProcessedMethodData<MethodT>
+    struct ProcessedMethodData
     {
-        public ProcessedMethodData(double millisecond, MethodT method, string reason)
+        public ProcessedMethodData(double millisecond, MethodDesc method, string reason)
         {
             Millisecond = millisecond;
             Method = method;
@@ -88,9 +88,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         }
 
         public readonly double Millisecond;
-        public readonly MethodT Method;
+        public readonly MethodDesc Method;
         public readonly string Reason;
-        public Dictionary<MethodT, int> WeightedCallData;
+        public Dictionary<MethodDesc, int> WeightedCallData;
         public int ExclusiveWeight;
         public PgoSchemaElem[] InstrumentationData;
 
@@ -518,7 +518,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 TraceRuntimeDescToTypeSystemDesc idParser = new TraceRuntimeDescToTypeSystemDesc(p, tsc, clrInstanceId.Value);
 
-                SortedDictionary<int, ProcessedMethodData<MethodDesc>> methodsToAttemptToPrepare = new SortedDictionary<int, ProcessedMethodData<MethodDesc>>();
+                SortedDictionary<int, ProcessedMethodData> methodsToAttemptToPrepare = new SortedDictionary<int, ProcessedMethodData>();
 
                 if (commandLineOptions.ProcessR2REvents)
                 {
@@ -559,7 +559,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
 
                         if ((e.TimeStampRelativeMSec >= commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec <= commandLineOptions.ExcludeEventsAfter))
-                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData<MethodDesc>(e.TimeStampRelativeMSec, method, "R2RLoad"));
+                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "R2RLoad"));
                     }
                 }
 
@@ -604,7 +604,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
 
                         if ((e.TimeStampRelativeMSec >= commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec <= commandLineOptions.ExcludeEventsAfter))
-                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData<MethodDesc>(e.TimeStampRelativeMSec, method, "JitStart"));
+                            methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, method, "JitStart"));
                     }
                 }
 
@@ -727,7 +727,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             if (!methodsListedToPrepare.Contains(topOfStackMethod))
                             {
                                 methodsListedToPrepare.Add(topOfStackMethod);
-                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData<MethodDesc>(e.TimeStampRelativeMSec, topOfStackMethod, "SampleMethod"));
+                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, topOfStackMethod, "SampleMethod"));
                             }
 
                             if (exclusiveSamples.TryGetValue(topOfStackMethod, out int count))
@@ -745,7 +745,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             if (!methodsListedToPrepare.Contains(nextMethod))
                             {
                                 methodsListedToPrepare.Add(nextMethod);
-                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData<MethodDesc>(e.TimeStampRelativeMSec, nextMethod, "SampleMethodCaller"));
+                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, nextMethod, "SampleMethodCaller"));
                             }
 
                             if (!callGraph.TryGetValue(nextMethod, out var innerDictionary))
@@ -873,7 +873,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 // Deduplicate entries
                 HashSet<MethodDesc> methodsInListAlready = new HashSet<MethodDesc>();
-                List<ProcessedMethodData<MethodDesc>> methodsUsedInProcess = new List<ProcessedMethodData<MethodDesc>>();
+                List<ProcessedMethodData> methodsUsedInProcess = new List<ProcessedMethodData>();
 
                 PgoDataLoader pgoDataLoader = new PgoDataLoader(idParser);
 
@@ -918,7 +918,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
                     for (int i = 0; i < methodProfileData.Length; i++)
                     {
-                        ProcessedMethodData<MethodDesc> processedData = methodsUsedInProcess[i];
+                        ProcessedMethodData processedData = methodsUsedInProcess[i];
                         methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
                     }
                     return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
@@ -927,7 +927,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
-        static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData<MethodDesc>> methodsToAttemptToPrepare, jittraceoptions jittraceOptions)
+        static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, jittraceoptions jittraceOptions)
         {
             PrintMessage($"JitTrace options {jittraceOptions}");
 
