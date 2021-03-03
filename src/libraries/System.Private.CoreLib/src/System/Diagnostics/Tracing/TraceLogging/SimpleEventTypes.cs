@@ -25,7 +25,11 @@ namespace System.Diagnostics.Tracing
     {
         private static TraceLoggingEventTypes? instance;
 
-        public static TraceLoggingEventTypes Instance => instance ?? InitInstance();
+        public static TraceLoggingEventTypes Instance
+        {
+            [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+            get { return instance ??= InitInstance(); }
+        }
 
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private static TraceLoggingEventTypes InitInstance()
