@@ -9350,7 +9350,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // only for BBJ_RETURN blocks.
         //
 
-        if (!call->IsTailCall() && call->TypeGet() == TYP_VOID/* ci test */)
+        if (!call->IsTailCall())
         {
             fgRemoveRestOfBlock = true;
         }
