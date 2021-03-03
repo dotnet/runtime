@@ -5463,13 +5463,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					InterpInst *newobj_fast;
 
 					if (is_vt) {
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT_FAST);
+						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT);
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
 					} else {
 						MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 						goto_if_nok (error, exit);
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_FAST);
+						newobj_fast = interp_add_ins (td, MINT_NEWOBJ);
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = get_data_item_index (td, vtable);
 					}
@@ -5502,7 +5502,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (!td->aggressive_inlining)
 						INLINE_FAILURE;
 				} else {
-					interp_add_ins (td, MINT_NEWOBJ);
+					interp_add_ins (td, MINT_NEWOBJ_SLOW);
 					g_assert (!m_class_is_valuetype (klass));
 					interp_ins_set_dreg (td->last_ins, dreg);
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
@@ -8141,16 +8141,6 @@ retry:
 				ins = interp_fold_binop (td, local_defs, local_ref_count, ins);
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_binop_cond_br (td, bb, local_defs, local_ref_count, ins);
-			} else if ((ins->opcode == MINT_NEWOBJ_FAST || ins->opcode == MINT_NEWOBJ_VT_FAST) && ins->data [0] == INLINED_METHOD_FLAG) {
-				// FIXME Drop the CALL_ARGS flag on the params so this will no longer be necessary
-				int param_count = ins->data [3];
-				int *newobj_reg_map = ins->info.newobj_reg_map;
-				for (int i = 0; i < param_count; i++) {
-					int src = newobj_reg_map [i];
-					int dst = newobj_reg_map [i + 1 + param_count];
-					local_defs [dst] = local_defs [src];
-					local_defs [dst].ins = NULL;
-				}
 			} else if (MINT_IS_LDFLD (opcode) && ins->data [0] == 0) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S &&
@@ -8476,8 +8466,8 @@ interp_alloc_offsets (TransformData *td)
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (ins->opcode == MINT_NOP)
 				continue;
-			if (ins->opcode == MINT_NEWOBJ_VT_FAST || ins->opcode == MINT_NEWOBJ_FAST ||
-					ins->opcode == MINT_NEWOBJ || ins->opcode == MINT_NEWOBJ_STRING) {
+			if (ins->opcode == MINT_NEWOBJ || ins->opcode == MINT_NEWOBJ_VT ||
+					ins->opcode == MINT_NEWOBJ_SLOW || ins->opcode == MINT_NEWOBJ_STRING) {
 				// The offset allocator assumes that the liveness of destination var starts
 				// after the source vars, which means the destination var can be allocated
 				// at the same offset as some of the arguments. However, for newobj opcodes,

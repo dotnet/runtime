@@ -4739,14 +4739,13 @@ call:
 			ip += 5;
 			goto call;
 		}
-		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
+		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
 			INIT_VTABLE (vtable);
 			guint16 imethod_index = ip [3];
 			guint16 param_size = ip [5];
 			return_offset = ip [1];
 			call_args_offset = ip [2];
-			const gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
 
 			// Make room for `this` parameter
 			if (param_size)
@@ -4763,18 +4762,20 @@ call:
 			// Set `this` arg for ctor call
 			LOCAL_VAR (call_args_offset, MonoObject*) = o;
 			ip += 6;
-			if (!is_inlined) {
-				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
-				goto call;
-			}
+
+			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
+			goto call;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_NEWOBJ_INLINED) {
+			g_error ("FIXME");
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST) {
+		MINT_IN_CASE(MINT_NEWOBJ_VT) {
 			guint16 imethod_index = ip [3];
 			guint16 ret_size = ip [4];
 			guint16 param_size = ip [5];
-			gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			gpointer this_vt = locals + return_offset;
@@ -4786,15 +4787,17 @@ call:
 			memset (this_vt, 0, ret_size);
 			// pass the address of the valuetype
 			LOCAL_VAR (call_args_offset, gpointer) = this_vt;
-
 			ip += 6;
-			if (!is_inlined) {
-				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
-				goto call;
-			}
+
+			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
+			goto call;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_NEWOBJ) {
+		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
+			g_error ("FIXME");
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {
 			guint32 const token = ip [3];
 			guint16 param_size = ip [4];
 			return_offset = ip [1];
