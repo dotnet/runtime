@@ -7956,6 +7956,30 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 }
 
 static void
+cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, int *local_ref_count, LocalValue *local_defs)
+{
+	int sreg = *psreg;
+
+	local_ref_count [sreg]++;
+	if (local_defs [sreg].type == LOCAL_VALUE_LOCAL) {
+		int cprop_local = local_defs [sreg].local;
+
+		// We are trying to replace sregs [i] with its def local (cprop_local), but cprop_local has since been
+		// modified, so we can't use it.
+		if (local_defs [cprop_local].ins != NULL && local_defs [cprop_local].def_index > local_defs [sreg].def_index)
+			return;
+
+		if (td->verbose_level)
+			g_print ("cprop %d -> %d:\n\t", sreg, cprop_local);
+		local_ref_count [sreg]--;
+		*psreg = cprop_local;
+		local_ref_count [cprop_local]++;
+		if (td->verbose_level)
+			dump_interp_inst (ins);
+	}
+}
+
+static void
 interp_cprop (TransformData *td)
 {
 	LocalValue *local_defs = (LocalValue*) g_malloc (td->locals_size * sizeof (LocalValue));
@@ -8001,27 +8025,21 @@ retry:
 				// FIXME MINT_PROF_EXIT when void
 				if (sregs [i] == -1)
 					continue;
-				local_ref_count [sregs [i]]++;
-				if (local_defs [sregs [i]].type == LOCAL_VALUE_LOCAL) {
-					int cprop_local = local_defs [sregs [i]].local;
-					// We are not allowed to extend the liveness of execution stack locals because
-					// it can end up conflicting with another such local. Once we will have our
-					// own offset allocator for these locals, this restriction can be lifted.
-					if (td->locals [cprop_local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK)
-						continue;
-
-					// We are trying to replace sregs [i] with its def local (cprop_local), but cprop_local has since been
-					// modified, so we can't use it.
-					if (local_defs [cprop_local].ins != NULL && local_defs [cprop_local].def_index > local_defs [sregs [i]].def_index)
-						continue;
-
-					if (td->verbose_level)
-						g_print ("cprop %d -> %d:\n\t", sregs [i], cprop_local);
-					local_ref_count [sregs [i]]--;
-					sregs [i] = cprop_local;
-					local_ref_count [cprop_local]++;
-					if (td->verbose_level)
-						dump_interp_inst (ins);
+				if (sregs [i] == MINT_CALL_ARGS_SREG) {
+					int *call_args = ins->info.call_args;
+					if (call_args) {
+						while (*call_args != -1) {
+							cprop_sreg (td, ins, call_args, local_ref_count, local_defs);
+							call_args++;
+						}
+					}
+				} else {
+					cprop_sreg (td, ins, &sregs [i], local_ref_count, local_defs);
+					// This var is used as a source to a normal instruction. In case this var will
+					// also be used as source to a call, make sure the offset allocator will create
+					// a new temporary call arg var and not use this one. Call arg vars have special
+					// semantics. They can be assigned only once and they die once the call is made.
+					td->locals [sregs [i]].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
 				}
 			}
 
@@ -8204,8 +8222,8 @@ interp_optimize_code (TransformData *td)
 	if (mono_interp_opt & INTERP_OPT_BBLOCKS)
 		interp_optimize_bblocks (td);
 
-//	if (mono_interp_opt & INTERP_OPT_CPROP)
-//		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
+	if (mono_interp_opt & INTERP_OPT_CPROP)
+		MONO_TIME_TRACK (mono_interp_stats.cprop_time, interp_cprop (td));
 
 	if (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)
 		MONO_TIME_TRACK (mono_interp_stats.super_instructions_time, interp_super_instructions (td));
