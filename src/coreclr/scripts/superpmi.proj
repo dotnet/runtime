@@ -154,7 +154,7 @@
   <Choose>
 
      <When Condition="'$(CollectionName)' == 'benchmarks'">
-      <ItemGroup 
+      <ItemGroup>
         <HelixWorkItem Include="@(BDN_Partition)">
           <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
           <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
@@ -166,8 +166,8 @@
     </When>
 
      <When Condition="'$(CollectionName)' == 'aspnet'">
-      <ItemGroup 
-        <HelixWorkItem =>
+      <ItemGroup>
+        <HelixWorkItem>
           <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.Index).$(MchFileTag)</OutputFileName>
           <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
           <Command>$(WorkItemCommand) -output_mch_path $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).mch -log_file $(OutputMchPath)$(FileSeparatorChar)%(OutputFileName).log</Command>
@@ -178,7 +178,7 @@
     </When>
 
     <Otherwise>
-      <ItemGroup Condition="'$(CollectionName)' != 'benchmarks'">
+      <ItemGroup>
         <HelixWorkItem Include="@(Partition)">
           <OutputFileName>$(CollectionName).$(CollectionType).%(HelixWorkItem.PartitionId).$(MchFileTag)</OutputFileName>
           <PayloadDirectory>$(PmiAssembliesPayload)$(FileSeparatorChar)$(CollectionName)$(FileSeparatorChar)%(HelixWorkItem.PmiAssemblies)</PayloadDirectory>

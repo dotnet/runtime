@@ -10,23 +10,8 @@ pr:
     - main
     - release/*.*
   paths:
-    include:
-    - '*'
-    - docs/manpages/*
-    - eng/pipelines/global-build.yml
     exclude:
-    - .github/*
-    - docs/*
-    - eng/pipelines/coreclr/*.*
-    - eng/pipelines/libraries/*.*
-    - eng/pipelines/installer/*.*
-    - eng/pipelines/*.*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
-    - PATENTS.TXT
-    - README.md
-    - SECURITY.md
-    - THIRD-PARTY-NOTICES.TXT
+    - '*'
 
 jobs:
 #
