@@ -8,43 +8,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class ECDsa : AsymmetricAlgorithm
-    {
-        /// <summary>
-        /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
-        /// </summary>
-        public static new ECDsa Create()
-        {
-            return new ECDsaImplementation.ECDsaAndroid();
-        }
-
-        /// <summary>
-        /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
-        /// </summary>
-        /// <param name="curve">
-        /// The <see cref="ECCurve"/> representing the elliptic curve.
-        /// </param>
-        public static ECDsa Create(ECCurve curve)
-        {
-            return new ECDsaImplementation.ECDsaAndroid(curve);
-        }
-
-        /// <summary>
-        /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
-        /// </summary>
-        /// <param name="parameters">
-        /// The <see cref="ECParameters"/> representing the elliptic curve parameters.
-        /// </param>
-        public static ECDsa Create(ECParameters parameters)
-        {
-            ECDsa ec = new ECDsaImplementation.ECDsaAndroid();
-            ec.ImportParameters(parameters);
-            return ec;
-        }
-    }
-#endif
-
     internal static partial class ECDsaImplementation
     {
         public sealed partial class ECDsaAndroid : ECDsa

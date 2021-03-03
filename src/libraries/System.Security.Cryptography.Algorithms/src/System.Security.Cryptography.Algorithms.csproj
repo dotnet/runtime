@@ -635,10 +635,11 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
-    <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
-    <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
+    <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"
