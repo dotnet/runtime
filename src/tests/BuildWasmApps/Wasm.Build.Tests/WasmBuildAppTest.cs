@@ -106,6 +106,8 @@ namespace Wasm.Build.Tests
 
             _logPath = Path.Combine(s_logRoot, _id);
             Directory.CreateDirectory(_logPath);
+
+            _testOutput.WriteLine($"Test Id: {_id}");
         }
 
 
@@ -163,7 +165,7 @@ namespace Wasm.Build.Tests
             if (invariantGlobalization != null)
                 extraProperties = $"<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
-            string projectName = $"invariant_{(invariantGlobalization?.ToString() ?? "unset")}";
+            string projectName = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             BuildProject(projectName, config, aot: aot, extraProperties: extraProperties,
                         hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
 
@@ -314,7 +316,7 @@ namespace Wasm.Build.Tests
         }
 
         private string RunWithXHarness(string testCommand, string relativeLogPath, string projectName, string bundleDir, IDictionary<string, string>? envVars=null,
-                                        int exepectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null)
+                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null)
         {
             _testOutput.WriteLine($"============== {testCommand} =============");
             Console.WriteLine($"============== {testCommand} =============");
@@ -325,7 +327,7 @@ namespace Wasm.Build.Tests
             args.Append($" {testCommand}");
             args.Append($" --app=.");
             args.Append($" --output-directory={testLogPath}");
-            args.Append($" --expected-exit-code={exepectedAppExitCode}");
+            args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
             args.Append(" -- ");
@@ -351,7 +353,7 @@ namespace Wasm.Build.Tests
             if (exitCode != xharnessExitCode)
             {
                 _testOutput.WriteLine($"Exit code: {exitCode}");
-                Assert.True(exitCode == exepectedAppExitCode, $"[{testCommand}] Exit code, expected {exepectedAppExitCode} but got {exitCode}");
+                Assert.True(exitCode == expectedAppExitCode, $"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode}");
             }
 
             return output;
@@ -359,7 +361,7 @@ namespace Wasm.Build.Tests
         private string RunWasmTest(string projectName, string bundleDir, IDictionary<string, string>? envVars=null, int expectedAppExitCode=0, int xharnessExitCode=0, string? appArgs=null)
             => RunWithXHarness("wasm test", "wasm-test", projectName, bundleDir,
                                     envVars: envVars,
-                                    exepectedAppExitCode: expectedAppExitCode,
+                                    expectedAppExitCode: expectedAppExitCode,
                                     xharnessExitCode: xharnessExitCode,
                                     extraXHarnessArgs: "--js-file=runtime.js --engine=V8 -v trace",
                                     appArgs: appArgs);
@@ -367,7 +369,7 @@ namespace Wasm.Build.Tests
         private string RunWasmTestBrowser(string projectName, string bundleDir, IDictionary<string, string>? envVars=null, int expectedAppExitCode=0, int xharnessExitCode=0, string? appArgs=null)
             => RunWithXHarness("wasm test-browser", "wasm-test-browser", projectName, bundleDir,
                                     envVars: envVars,
-                                    exepectedAppExitCode: expectedAppExitCode,
+                                    expectedAppExitCode: expectedAppExitCode,
                                     xharnessExitCode: expectedAppExitCode, // FIXME: using a different exitcode here because xharness wasm test-browser doesn't have support for --expected-exitcode
                                     extraXHarnessArgs: "-v trace", // needed to get messages like those for AOT loading
                                     appArgs: appArgs);
@@ -471,7 +473,7 @@ namespace Wasm.Build.Tests
 
         private static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
         {
-            Assert.True(Directory.Exists(dir), $"{dir} not found");
+            Assert.True(Directory.Exists(dir), $"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
                 string path = Path.Combine(dir, filename);
@@ -498,8 +500,8 @@ namespace Wasm.Build.Tests
 
         private static void AssertFile(string file0, string file1, string? label=null, bool same=true)
         {
-            Assert.True(File.Exists(file0), $"Expected to find {file0}");
-            Assert.True(File.Exists(file1), $"Expected to find {file1}");
+            Assert.True(File.Exists(file0), $"{label}: Expected to find {file0}");
+            Assert.True(File.Exists(file1), $"{label}: Expected to find {file1}");
 
             FileInfo finfo0 = new(file0);
             FileInfo finfo1 = new(file1);
