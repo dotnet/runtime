@@ -26,11 +26,12 @@ jmethodID g_randNextBytesMethod;
 
 // java/security/MessageDigest
 jclass    g_mdClass;
-jmethodID g_mdGetInstanceMethod;
-jmethodID g_mdDigestMethod;
-jmethodID g_mdDigestCurrentMethodId;
-jmethodID g_mdResetMethod;
-jmethodID g_mdUpdateMethod;
+jmethodID g_mdGetInstance;
+jmethodID g_mdClone;
+jmethodID g_mdDigest;
+jmethodID g_mdDigestWithInputBytes;
+jmethodID g_mdReset;
+jmethodID g_mdUpdate;
 
 // javax/crypto/Mac
 jclass    g_macClass;
@@ -438,11 +439,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_randNextBytesMethod =     GetMethod(env, false, g_randClass, "nextBytes", "([B)V");
 
     g_mdClass =                 GetClassGRef(env, "java/security/MessageDigest");
-    g_mdGetInstanceMethod =     GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
-    g_mdResetMethod =           GetMethod(env, false, g_mdClass, "reset", "()V");
-    g_mdDigestMethod =          GetMethod(env, false, g_mdClass, "digest", "([B)[B");
-    g_mdDigestCurrentMethodId = GetMethod(env, false, g_mdClass, "digest", "()[B");
-    g_mdUpdateMethod =          GetMethod(env, false, g_mdClass, "update", "([B)V");
+    g_mdGetInstance =           GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
+    g_mdClone =                 GetMethod(env, false, g_mdClass, "clone", "()Ljava/lang/Object;");
+    g_mdDigest =                GetMethod(env, false, g_mdClass, "digest", "()[B");
+    g_mdDigestWithInputBytes =  GetMethod(env, false, g_mdClass, "digest", "([B)[B");
+    g_mdReset =                 GetMethod(env, false, g_mdClass, "reset", "()V");
+    g_mdUpdate =                GetMethod(env, false, g_mdClass, "update", "([B)V");
 
     g_macClass =                GetClassGRef(env, "javax/crypto/Mac");
     g_macGetInstanceMethod =    GetMethod(env, true,  g_macClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Mac;");

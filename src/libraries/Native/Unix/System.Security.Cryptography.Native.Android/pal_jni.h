@@ -35,11 +35,12 @@ extern jmethodID g_randNextBytesMethod;
 
 // java/security/MessageDigest
 extern jclass    g_mdClass;
-extern jmethodID g_mdGetInstanceMethod;
-extern jmethodID g_mdDigestMethod;
-extern jmethodID g_mdDigestCurrentMethodId;
-extern jmethodID g_mdResetMethod;
-extern jmethodID g_mdUpdateMethod;
+extern jmethodID g_mdGetInstance;
+extern jmethodID g_mdClone;
+extern jmethodID g_mdDigest;
+extern jmethodID g_mdDigestWithInputBytes;
+extern jmethodID g_mdReset;
+extern jmethodID g_mdUpdate;
 
 // javax/crypto/Mac
 extern jclass    g_macClass;
