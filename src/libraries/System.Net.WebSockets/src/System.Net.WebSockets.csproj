@@ -17,7 +17,6 @@
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.Receiver.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.Sender.cs" />
-    <Compile Include="System\Net\WebSockets\ManagedWebSocket.SendLock.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
   </ItemGroup>
