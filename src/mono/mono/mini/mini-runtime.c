@@ -1839,16 +1839,16 @@ MonoJitInfo*
 mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 {
 	MonoJitInfo *ji;
-	MonoDomain *domain = mono_get_root_domain ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 	static gboolean inited = FALSE;
 	static int lookups = 0;
 	static int failed_lookups = 0;
 
-	mono_domain_jit_code_hash_lock (domain);
-	ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&domain->jit_code_hash, method);
+	jit_code_hash_lock (jit_mm);
+	ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&jit_mm->jit_code_hash, method);
 	if (!ji && shared) {
 		/* Try generic sharing */
-		ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&domain->jit_code_hash, shared);
+		ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&jit_mm->jit_code_hash, shared);
 		if (ji && !ji->has_generic_jit_info)
 			ji = NULL;
 		if (!inited) {
@@ -1861,7 +1861,7 @@ mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 		if (!ji)
 			++failed_lookups;
 	}
-	mono_domain_jit_code_hash_unlock (domain);
+	jit_code_hash_unlock (jit_mm);
 
 	return ji;
 }
@@ -2748,18 +2748,16 @@ mono_jit_free_method (MonoMethod *method)
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
 
-	mono_domain_lock (domain);
-	mono_domain_jit_code_hash_lock (domain);
-	removed = mono_internal_hash_table_remove (&domain->jit_code_hash, method);
-	g_assert (removed);
-	mono_domain_jit_code_hash_unlock (domain);
-	ji->ji->seq_points = NULL;
-	mono_domain_unlock (domain);
-
 	jit_mm = jit_mm_for_method (method);
 
-	jit_mm_lock (jit_mm);
+	jit_code_hash_lock (jit_mm);
+	removed = mono_internal_hash_table_remove (&jit_mm->jit_code_hash, method);
+	g_assert (removed);
+	jit_code_hash_unlock (jit_mm);
 
+	ji->ji->seq_points = NULL;
+
+	jit_mm_lock (jit_mm);
 	mono_conc_hashtable_remove (jit_mm->runtime_invoke_hash, method);
 	g_hash_table_remove (jit_mm->dynamic_code_hash, method);
 	g_hash_table_remove (jit_mm->jump_trampoline_hash, method);
@@ -4058,7 +4056,9 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_jit_code_hash_init (&info->jit_code_hash);
 	mono_jit_code_hash_init (&info->interp_code_hash);
+	mono_os_mutex_init_recursive (&info->jit_code_hash_lock);
 
 	mem_manager->runtime_info = info;
 }

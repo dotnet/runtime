@@ -478,8 +478,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 
 static void
 mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
-		guint32 opt_flags,
-		GTimer *timer, MonoDomain *domain)
+					  guint32 opt_flags, GTimer *timer)
 {
 	int result, expected, failed, cfailed, run, code_size;
 	double elapsed, comp_time, start_time;
@@ -497,8 +496,8 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	g_hash_table_destroy (jit_mm->jit_trampoline_hash);
 	jit_mm->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-	mono_jit_code_hash_init (&(domain->jit_code_hash));
+	mono_internal_hash_table_destroy (&(jit_mm->jit_code_hash));
+	mono_jit_code_hash_init (&(jit_mm->jit_code_hash));
 
 	g_timer_start (timer);
 	if (mini_stats_fd)
@@ -659,8 +658,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		GSList *iter;
 
 		mini_regression_step (image, verbose, total_run, &total,
-				0,
-				timer, domain);
+				0, timer);
 		if (total)
 			return total;
 		g_print ("Single method regression: %d methods\n", g_slist_length (mono_single_method_list));
@@ -675,8 +673,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 			g_free (method_name);
 
 			mini_regression_step (image, verbose, total_run, &total,
-					0,
-					timer, domain);
+								  0, timer);
 			if (total)
 				return total;
 		}
@@ -693,8 +690,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 			}
 
 			mini_regression_step (image, verbose, total_run, &total,
-					opt_sets [opt] & ~exclude,
-					timer, domain);
+								  opt_sets [opt] & ~exclude, timer);
 		}
 	}
 
@@ -737,7 +733,7 @@ mini_regression_list (int verbose, int count, char *images [])
 }
 
 static void
-interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, const guint32 *opt_flags, GTimer *timer, MonoDomain *domain)
+interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, const guint32 *opt_flags, GTimer *timer)
 {
 	int result, expected, failed, cfailed, run;
 	double elapsed, transform_time;
@@ -841,10 +837,10 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 
 	if (mono_interp_opts_string) {
 		/* explicit option requested*/
-		interp_regression_step (image, verbose, total_run, &total, NULL, timer, domain);
+		interp_regression_step (image, verbose, total_run, &total, NULL, timer);
 	} else {
 		for (int opt = 0; opt < G_N_ELEMENTS (interp_opt_sets); ++opt)
-			interp_regression_step (image, verbose, total_run, &total, &interp_opt_sets [opt], timer, domain);
+			interp_regression_step (image, verbose, total_run, &total, &interp_opt_sets [opt], timer);
 	}
 
 	g_timer_destroy (timer);

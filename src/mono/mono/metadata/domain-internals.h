@@ -290,9 +290,6 @@ struct _MonoDomain {
 	GSList             *domain_assemblies;
 	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
-	/* Protected by 'jit_code_hash_lock' */
-	MonoInternalHashTable jit_code_hash;
-	mono_mutex_t    jit_code_hash_lock;
 	
 	/* Used to store offsets of thread static fields */
 	GHashTable         *special_static_fields;
@@ -326,9 +323,6 @@ mono_domain_assemblies_unlock (MonoDomain *domain)
 {
 	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
 }
-
-#define mono_domain_jit_code_hash_lock(domain) mono_locks_os_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
-#define mono_domain_jit_code_hash_unlock(domain) mono_locks_os_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 

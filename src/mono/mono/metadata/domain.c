@@ -316,12 +316,10 @@ mono_domain_create (void)
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
 	domain->domain_assemblies = NULL;
-	mono_jit_code_hash_init (&domain->jit_code_hash);
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
-	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);

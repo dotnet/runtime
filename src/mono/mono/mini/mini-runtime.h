@@ -57,6 +57,9 @@ typedef struct {
 	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
+	/* Protected by 'jit_code_hash_lock' */
+	MonoInternalHashTable jit_code_hash;
+	mono_mutex_t    jit_code_hash_lock;
 } MonoJitMemoryManager;
 
 static inline MonoJitMemoryManager*
@@ -93,6 +96,18 @@ static inline void
 jit_mm_unlock (MonoJitMemoryManager *jit_mm)
 {
 	mono_mem_manager_unlock (jit_mm->mem_manager);
+}
+
+static inline void
+jit_code_hash_lock (MonoJitMemoryManager *jit_mm)
+{
+	mono_locks_os_acquire(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
+}
+
+static inline void
+jit_code_hash_unlock (MonoJitMemoryManager *jit_mm)
+{
+	mono_locks_os_release(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
 }
 
 /*
