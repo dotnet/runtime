@@ -39,31 +39,32 @@ namespace System.Net.Http
 
         public static async ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
-            cancellationToken.Register(() => stream.Dispose());
-
-            try
+            using (cancellationToken.Register(() => stream.Dispose()))
             {
-                if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                    if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                    }
+                    else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                    }
+                    else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Debug.Fail("Bad socks version.");
+                    }
                 }
-                else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
+                catch
                 {
-                    await EstablishSocks4TunnelAsync(stream, true, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
+                    stream.Dispose();
+                    throw;
                 }
-                else if (string.Equals(proxyUri.Scheme, "socks4", StringComparison.OrdinalIgnoreCase))
-                {
-                    await EstablishSocks4TunnelAsync(stream, false, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
-                }
-                else
-                {
-                    Debug.Fail("Bad socks version.");
-                }
-            }
-            catch
-            {
-                stream.Dispose();
-                throw;
             }
         }
 
