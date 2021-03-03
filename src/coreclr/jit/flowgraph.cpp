@@ -53,6 +53,133 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------------
+// fgInsertClsInitChecks : Wraps static init helper calls with "is class statically initialized"
+//                         inlined checks.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+
+PhaseStatus Compiler::fgInsertClsInitChecks()
+{
+
+    if (!strcmp(info.compMethodName, "Test"))
+    {
+        fgDispBasicBlocks(true);
+    }
+
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    bool        modified = false;
+    BasicBlock* block;
+    for (block = fgFirstBB; block; block = block->bbNext)
+    {
+        if (!block->isRunRarely() && block->bbFlags)
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                {
+                    if (!tree->IsCall())
+                    {
+                        continue;
+                    }
+
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->gtCallType != CT_HELPER)
+                    {
+                        continue;
+                    }
+
+                    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                    if (helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE)
+                    {
+                        continue;
+                    }
+
+                    GenTree* moduleIdArg = call->LateArgs().begin()->GetNode();
+                    GenTree* clsIdArg    = call->LateArgs().begin()->GetNext()->GetNode();
+
+                    if (!moduleIdArg->IsCnsIntOrI() || !clsIdArg->IsCnsIntOrI())
+                    {
+                        // Looks like moduleId or/and clsId were passed as indirect loads
+                        continue;
+                    }
+
+                    //
+                    //  *  JTRUE     void
+                    //  \--*  NE        int
+                    //     +--*  AND       int
+                    //     |  +--*  IND       ubyte
+                    //     |  |  \--*  CNS_INT   long   moduleIdArg + clsIdArg + dataBlobOffset
+                    //     |  \--*  CNS_INT   int    isInitMask
+                    //     \--*  CNS_INT   int    0
+                    //
+                    //  *  CALL help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+                    //  +--*  CNS_INT   long   moduleIdArg
+                    //  \--*  CNS_INT   int    clsIdArg
+                    //
+                                       
+                    BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
+                    fgAddRefPred(block, callInitBb);
+                    callInitBb->bbSetRunRarely();
+                    callInitBb->bbFlags |= block->bbFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_HAS_CALL);
+
+                    GenTree* clonedHelperCall = gtCloneExprCallHelper(call);
+                    clonedHelperCall->gtFlags |= call->gtFlags;
+                    fgInsertStmtAtEnd(callInitBb, fgNewStmtFromTree(clonedHelperCall));
+
+                    BasicBlock* isInitedBb = fgNewBBbefore(BBJ_COND, callInitBb, true);
+                    fgAddRefPred(callInitBb, isInitedBb);
+                    fgAddRefPred(block, isInitedBb);
+                    isInitedBb->inheritWeight(block);
+                    isInitedBb->bbFlags |= block->bbFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_HAS_CALL);
+
+                    // TODO: ask VM for these constants:
+                    const int dataBlobOffset = 48;
+                    const int isInitMask     = 1;
+
+                    size_t   address = moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset + clsIdArg->AsIntCon()->IconValue();
+                    GenTree* indir   = gtNewIndir(TYP_UBYTE, gtNewIconNode(address, TYP_I_IMPL));
+                    indir->gtFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                    GenTree* isInitedMask = gtNewOperNode(GT_AND, TYP_INT, indir, gtNewIconNode(isInitMask));
+                    GenTree* isInitedCmp  = gtNewOperNode(GT_NE, TYP_INT, isInitedMask, gtNewIconNode(0));
+
+                    fgInsertStmtAtEnd(isInitedBb, fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp)));
+                    isInitedBb->bbJumpDest = block;
+                    gtReplaceTree(stmt, call, gtNewNothingNode());
+
+
+                    modified = true;
+                }
+                if (modified)
+                {
+                    // clear GTF_CALL and GTF_EXC flags
+                    gtUpdateStmtSideEffects(stmt);
+                }
+            }
+        }
+    }
+
+    if (!strcmp(info.compMethodName, "Test"))
+    {
+        fgDispBasicBlocks(true);
+    }
+
+    if (modified)
+    {
+        fgReorderBlocks();
+        fgUpdateChangedFlowGraph(false);
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------------
 // fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
 //                   with SuppressGCTransitionAttribute.
 //
