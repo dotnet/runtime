@@ -92,6 +92,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectedCount, disposedCount);
         }
 
+        [SkipOnMono("Assembly.LoadFile used the way this test is implemented fails on Mono")]
         [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LongModuleFileNamesAreSupported()
@@ -119,7 +120,8 @@ namespace System.Diagnostics.Tests
             Assembly loaded = Assembly.LoadFile(longNamePath);
             Assert.Equal(longNamePath, loaded.Location);
 
-            Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == longNamePath);
+            ProcessModule[] longPathModules = Process.GetCurrentProcess().Modules.Cast<ProcessModule>().Where(module => module.FileName.Contains(libraryName)).ToArray();
+            Assert.Contains(longPathModules, module => module.FileName == longNamePath);
         }
     }
 }
