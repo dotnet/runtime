@@ -62,12 +62,6 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 
 PhaseStatus Compiler::fgInsertClsInitChecks()
 {
-
-    if (!strcmp(info.compMethodName, "Test"))
-    {
-        fgDispBasicBlocks(true);
-    }
-
     if (!opts.OptimizationEnabled())
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -75,16 +69,20 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
 
     bool        modified = false;
     BasicBlock* block;
+
+    BasicBlock* prevBb = nullptr;
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        if (!block->isRunRarely() && block->bbFlags)
+        if (!block->isRunRarely())
         {
             for (Statement* stmt : block->Statements())
             {
                 for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
                 {
-                    if (!tree->IsCall())
+                    // we only need GT_CALL nodes with helper funcs
+                    if (!tree->IsCall() || (tree->gtFlags & GTF_CALL_HOISTABLE))
                     {
+                        // TODO: remove that GTF_CALL_HOISTABLE check
                         continue;
                     }
 
@@ -95,13 +93,14 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     }
 
                     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-                    if (helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE)
+                    if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) ||
+                        (call->fgArgInfo->ArgCount() != 2))
                     {
                         continue;
                     }
 
-                    GenTree* moduleIdArg = call->LateArgs().begin()->GetNode();
-                    GenTree* clsIdArg    = call->LateArgs().begin()->GetNext()->GetNode();
+                    GenTree* moduleIdArg = call->fgArgInfo->GetArgNode(0);
+                    GenTree* clsIdArg    = call->fgArgInfo->GetArgNode(1);
 
                     if (!moduleIdArg->IsCnsIntOrI() || !clsIdArg->IsCnsIntOrI())
                     {
@@ -109,6 +108,31 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         continue;
                     }
 
+                    if (clsIdArg->AsIntCon()->IconValue() < 0)
+                    {
+                        // Unknown clsId
+                        continue;
+                    }
+
+                    if (prevBb == nullptr)
+                    {
+                        // We're going to emit a BB in front of fgFirstBB 
+                        fgEnsureFirstBBisScratch();
+                        prevBb = fgFirstBB;
+                        if (prevBb == block)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // So, we found a helper call inside the "block" - let's extract it to a
+                    // separate block "callInitBb" and guard it with a fast "isInitedBb" bb.
+                    // The final layout should look like this:
+
+                    // BB0 "prevBb":
+                    //     ...
+                    //
+                    // BB1 "isInitedBb":    (preds: BB0 + %current preds of BB3%)
                     //
                     //  *  JTRUE     void
                     //  \--*  NE        int
@@ -118,62 +142,119 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     //     |  \--*  CNS_INT   int    isInitMask
                     //     \--*  CNS_INT   int    0
                     //
+                    //
+                    // BB2 "callInitBb":    (preds: BB1)
+                    //
                     //  *  CALL help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
                     //  +--*  CNS_INT   long   moduleIdArg
                     //  \--*  CNS_INT   int    clsIdArg
                     //
-                                       
-                    BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
-                    fgAddRefPred(block, callInitBb);
-                    callInitBb->bbSetRunRarely();
-                    callInitBb->bbFlags |= block->bbFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_HAS_CALL);
+                    // BB3 "block"          (preds: BB1, BB2)
+                    //     ...
+                    //
 
+
+                    // Let's start from emitting that BB2 "callInitBb"
+                    BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
+                    // it's executed only once so can be marked as cold
+                    callInitBb->bbSetRunRarely();
+                    callInitBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_CALL | BBF_HAS_LABEL);
                     GenTree* clonedHelperCall = gtCloneExprCallHelper(call);
                     clonedHelperCall->gtFlags |= call->gtFlags;
-                    fgInsertStmtAtEnd(callInitBb, fgNewStmtFromTree(clonedHelperCall));
 
+                    Statement* callStmt = fgNewStmtFromTree(clonedHelperCall);
+                    if (fgStmtListThreaded)
+                    {
+                        gtSetStmtInfo(callStmt);
+                        fgSetStmtSeq(callStmt);
+                    }
+                    fgInsertStmtAtEnd(callInitBb, callStmt);
+                    gtUpdateStmtSideEffects(callStmt);
+
+                    // BB1 "isInitedBb"
                     BasicBlock* isInitedBb = fgNewBBbefore(BBJ_COND, callInitBb, true);
-                    fgAddRefPred(callInitBb, isInitedBb);
-                    fgAddRefPred(block, isInitedBb);
                     isInitedBb->inheritWeight(block);
-                    isInitedBb->bbFlags |= block->bbFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_HAS_CALL);
+                    isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
 
                     // TODO: ask VM for these constants:
-                    const int dataBlobOffset = 48;
-                    const int isInitMask     = 1;
+                    const int dataBlobOffset = 48; // DomainLocalModule::GetOffsetOfDataBlob()
+                    const int isInitMask     = 1;  // ClassInitFlags::INITIALIZED_FLAG;
 
                     size_t   address = moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset + clsIdArg->AsIntCon()->IconValue();
                     GenTree* indir   = gtNewIndir(TYP_UBYTE, gtNewIconNode(address, TYP_I_IMPL));
                     indir->gtFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
                     GenTree* isInitedMask = gtNewOperNode(GT_AND, TYP_INT, indir, gtNewIconNode(isInitMask));
-                    GenTree* isInitedCmp  = gtNewOperNode(GT_NE, TYP_INT, isInitedMask, gtNewIconNode(0));
+                    GenTree* isInitedCmp  = gtNewOperNode(GT_GT, TYP_INT, isInitedMask, gtNewIconNode(0));
+                    isInitedCmp->gtFlags |= (GTF_UNSIGNED | GTF_RELOP_JMP_USED);
 
-                    fgInsertStmtAtEnd(isInitedBb, fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp)));
+                    Statement* isInitedStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp));
+                    if (fgStmtListThreaded)
+                    {
+                        gtSetStmtInfo(isInitedStmt);
+                        fgSetStmtSeq(isInitedStmt);
+                    }
+
+                    fgInsertStmtAtEnd(isInitedBb, isInitedStmt);
                     isInitedBb->bbJumpDest = block;
-                    gtReplaceTree(stmt, call, gtNewNothingNode());
+                    block->bbFlags |= BBF_JMP_TARGET;
 
+                    // Now we can remove the call from the current block
+                    // We're going to replace the call with just "moduleId" node (it's what it was supposed to return)
+                    gtReplaceTree(stmt, call, gtNewIconNode(moduleIdArg->AsIntCon()->IconValue(), call->TypeGet()));
+
+                    // Now we need to fix all the preds:
+
+                    // isInitedBb is a pred of callInitBb
+                    fgAddRefPred(callInitBb, isInitedBb);
+                    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+                    {
+                        // Redirect all the preds from the current block to isInitedBb
+
+                        // TODO: should I check EH region here?
+                        // TODO: should I update some loop info if I'm inside a loop?
+
+                        BasicBlock* predBlock = pred->getBlock();
+                        if (predBlock->bbJumpDest == block)
+                        {
+                            predBlock->bbJumpDest = isInitedBb;
+                            isInitedBb->bbFlags |= BBF_JMP_TARGET;
+                        }
+                        fgRemoveRefPred(block, predBlock);
+                        fgAddRefPred(isInitedBb, predBlock);
+                    }
+                    // Both callInitBb and isInitedBb are preds of block now
+                    fgAddRefPred(block, callInitBb);
+                    fgAddRefPred(block, isInitedBb);
+
+                    // Make sure all three basic blocks are in the same EH region:
+                    BasicBlock::sameEHRegion(callInitBb, block);
+                    BasicBlock::sameEHRegion(isInitedBb, block);
 
                     modified = true;
                 }
                 if (modified)
                 {
-                    // clear GTF_CALL and GTF_EXC flags
+                    // clear GTF_CALL and GTF_EXC flags (we've just removed a call)
                     gtUpdateStmtSideEffects(stmt);
                 }
             }
         }
-    }
-
-    if (!strcmp(info.compMethodName, "Test"))
-    {
-        fgDispBasicBlocks(true);
+        prevBb = block;
     }
 
     if (modified)
     {
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nAfter fgInsertClsInitChecks:");
+            fgDispBasicBlocks(true);
+        }
+#endif // DEBUG
         fgReorderBlocks();
-        fgUpdateChangedFlowGraph(false);
+        constexpr bool computeDoms = false;
+        fgUpdateChangedFlowGraph(computeDoms);
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
     return PhaseStatus::MODIFIED_NOTHING;
