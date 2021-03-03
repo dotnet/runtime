@@ -6891,7 +6891,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	child_frame.retval = &retval;
 
 	/* Copy the stack frame of the original method */
-	memcpy (child_frame.stack, iframe->stack, iframe->imethod->total_locals_size);
+	memcpy (child_frame.stack, iframe->stack, iframe->imethod->locals_size);
 	// Write the exception object in its reserved stack slot
 	*((MonoException**)((char*)child_frame.stack + iframe->imethod->clause_data_offsets [clause_index])) = ex;
 	context->stack_pointer += iframe->imethod->alloca_size;
@@ -6904,7 +6904,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	interp_exec_method (&child_frame, context, &clause_args);
 
 	/* Copy back the updated frame */
-	memcpy (iframe->stack, child_frame.stack, iframe->imethod->total_locals_size);
+	memcpy (iframe->stack, child_frame.stack, iframe->imethod->locals_size);
 
 	context->stack_pointer = (guchar*)child_frame.stack;
 

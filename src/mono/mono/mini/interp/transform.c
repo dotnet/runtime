@@ -377,12 +377,12 @@ realloc_stack (TransformData *td)
 }
 
 static int
-get_tos_offset (TransformData *td)
+get_stack_size (StackInfo *sp, int count)
 {
-	if (td->sp == td->stack)
-		return 0;
-	else
-		return td->sp [-1].offset + td->sp [-1].size;
+	int result = 0;
+	for (int i = 0; i < count; i++)
+		result += sp [i].size;
+	return result;
 }
 
 static MonoType*
@@ -431,7 +431,7 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 }
 
 static int
-create_interp_stack_local (TransformData *td, int type, MonoClass *k, int type_size, int offset)
+create_interp_stack_local (TransformData *td, int type, MonoClass *k, int type_size)
 {
 	int local = create_interp_local_explicit (td, get_type_from_stack (type, k), type_size);
 
@@ -451,11 +451,8 @@ push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 	td->sp->type = type;
 	td->sp->klass = k;
 	td->sp->flags = 0;
-	td->sp->offset = get_tos_offset (td);
-	td->sp->local = create_interp_stack_local (td, type, k, type_size, td->sp->offset);
+	td->sp->local = create_interp_stack_local (td, type, k, type_size);
 	td->sp->size = ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
-	if ((td->sp->size + td->sp->offset) > td->max_stack_size)
-		td->max_stack_size = td->sp->size + td->sp->offset;
 	td->sp++;
 }
 
@@ -483,7 +480,7 @@ static void
 set_type_and_local (TransformData *td, StackInfo *sp, MonoClass *klass, int type)
 {
 	SET_TYPE (sp, type, klass);
-	sp->local = create_interp_stack_local (td, type, NULL, MINT_STACK_SLOT_SIZE, sp->offset);
+	sp->local = create_interp_stack_local (td, type, NULL, MINT_STACK_SLOT_SIZE);
 }
 
 static void
@@ -3026,11 +3023,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		fp_sreg = td->sp [0].local;
 	}
 
-	guint32 tos_offset = get_tos_offset (td);
-	td->sp -= csignature->param_count + !!csignature->hasthis;
-	guint32 params_stack_size = tos_offset - get_tos_offset (td);
-
 	int num_args = csignature->param_count + !!csignature->hasthis;
+	td->sp -= num_args;
+	guint32 params_stack_size = get_stack_size (td->sp, num_args);
+
 	int *call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
 	for (int i = 0; i < num_args; i++)
 		call_args [i] = td->sp [i].local;
@@ -3966,7 +3962,6 @@ initialize_clause_bblocks (TransformData *td)
 			bb->stack_state [0].type = STACK_TYPE_O;
 			bb->stack_state [0].klass = NULL; /*FIX*/
 			bb->stack_state [0].size = MINT_STACK_SLOT_SIZE;
-			bb->stack_state [0].offset = 0;
 			bb->stack_state [0].local = td->clause_vars [i];
 		}
 
@@ -3979,7 +3974,6 @@ initialize_clause_bblocks (TransformData *td)
 			bb->stack_state [0].type = STACK_TYPE_O;
 			bb->stack_state [0].klass = NULL; /*FIX*/
 			bb->stack_state [0].size = MINT_STACK_SLOT_SIZE;
-			bb->stack_state [0].offset = 0;
 			bb->stack_state [0].local = td->clause_vars [i];
 		} else if (c->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 			/*
@@ -5383,9 +5377,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->info.call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
 				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
-				guint32 tos_offset = get_tos_offset (td);
 				td->sp -= csignature->param_count;
-				guint32 params_stack_size = tos_offset - get_tos_offset (td);
+				guint32 params_stack_size = get_stack_size (td->sp, csignature->param_count);
 
 				for (int i = 0; i < csignature->param_count; i++) {
 					call_args [i] = td->sp [i].local;
@@ -5424,9 +5417,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type_vt (td, klass, mono_class_value_size (klass, NULL));
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			} else {
-				guint32 tos_offset = get_tos_offset (td);
 				td->sp -= csignature->param_count;
-				guint32 params_stack_size = tos_offset - get_tos_offset (td);
+				guint32 params_stack_size = get_stack_size (td->sp, csignature->param_count);
 
 				// Move params types in temporary buffer
 				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
@@ -8595,11 +8587,11 @@ interp_alloc_offsets (TransformData *td)
 
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
-	td->total_locals_size = final_total_locals_size;
+	td->param_area_offset = final_total_locals_size;
 	for (int i = 0; i < td->locals_size; i++) {
 		// These are allocated separately at the end of the stack
 		if (td->locals [i].flags & INTERP_LOCAL_FLAG_CALL_ARGS) {
-			td->locals [i].offset += td->total_locals_size;
+			td->locals [i].offset += td->param_area_offset;
 			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
 		}
 	}
@@ -8733,7 +8725,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 
 	if (td->verbose_level) {
 		g_print ("Runtime method: %s %p\n", mono_method_full_name (method, TRUE), rtm);
-		g_print ("Locals size %d, stack size: %d\n", td->total_locals_size, td->max_stack_size);
+		g_print ("Locals size %d\n", td->total_locals_size);
 		g_print ("Calculated stack height: %d, stated height: %d\n", td->max_stack_height, header->max_stack);
 		dump_interp_code (td->new_code, td->new_code_end);
 	}
@@ -8764,11 +8756,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		if (c->flags & MONO_EXCEPTION_CLAUSE_FILTER)
 			c->data.filter_offset = get_native_offset (td, c->data.filter_offset);
 	}
-	rtm->stack_size = td->max_stack_size;
-	// FIXME revisit whether we actually need this
-	rtm->stack_size += 2 * MINT_STACK_SLOT_SIZE; /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
-	rtm->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_VT_ALIGNMENT);
-	rtm->alloca_size = ALIGN_TO (rtm->total_locals_size + rtm->stack_size, 8);
+	rtm->alloca_size = td->total_locals_size;
+	rtm->locals_size = td->param_area_offset;
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
@@ -8946,8 +8935,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		}
 		if (nm == NULL) {
 			mono_os_mutex_lock (&calc_section);
-			imethod->stack_size = sizeof (stackval); /* for tracing */
-			imethod->alloca_size = imethod->stack_size;
+			imethod->alloca_size = sizeof (stackval); /* for tracing */
 			mono_memory_barrier ();
 			imethod->transformed = TRUE;
 			mono_interp_stats.methods_transformed++;

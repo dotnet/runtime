@@ -32,8 +32,6 @@ typedef struct
 	 * the stack a new local is created.
 	 */
 	int local;
-	/* The offset from the execution stack start where this is stored */
-	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
 	int size;
 } StackInfo;
@@ -173,7 +171,7 @@ typedef struct
 	StackInfo *sp;
 	unsigned int max_stack_height;
 	unsigned int stack_capacity;
-	unsigned int max_stack_size;
+	gint32 param_area_offset;
 	gint32 total_locals_size;
 	InterpLocal *locals;
 	unsigned int il_locals_offset;
