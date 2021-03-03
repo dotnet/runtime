@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-    <_PreCommand>WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}</_PreCommand>
+    <_PreCommand>WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build</_PreCommand>
     <_PreCommand>$(_PreCommand) DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1</_PreCommand>
   </PropertyGroup>
 
