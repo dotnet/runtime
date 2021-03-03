@@ -4366,9 +4366,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 tryToSwap = (level < lvl2);
             }
 
-            // Try to force extra swapping when in the stress mode:
+            // Try to force extra swapping when in the stress mode, unless stmt list is already threaded,
+            // in that case the user can unexpect invalid gtPrev/gtNext after calling this function.
             if (compStressCompile(STRESS_REVERSE_FLAG, 60) && ((tree->gtFlags & GTF_REVERSE_OPS) == 0) &&
-                ((op2->OperKind() & GTK_CONST) == 0))
+                ((op2->OperKind() & GTK_CONST) == 0) && !fgStmtListThreaded)
             {
                 tryToSwap = true;
             }
