@@ -3,7 +3,6 @@ if(ENABLE_PERFTRACING)
     # TODO: REMOVE.
     # set (FEATURE_PERFTRACING_PAL_TCP 1)
 
-    # TODO: Only add to tcp source file.
     if (FEATURE_PERFTRACING_PAL_TCP)
         add_definitions(-DFEATURE_PERFTRACING_PAL_TCP)
     endif (FEATURE_PERFTRACING_PAL_TCP)

@@ -311,6 +311,16 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 	ds_ipc_socket_t new_socket = DS_IPC_INVALID_SOCKET;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, SOCK_STREAM, IPPROTO_TCP);
+	if (new_socket != DS_IPC_INVALID_SOCKET && ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN) {
+		int option_value = 1;
+		setsockopt (new_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&option_value, sizeof (option_value));
+#ifdef DS_IPC_PAL_AF_INET6
+		if (ipc->is_dual_mode) {
+			option_value = 0;
+			setsockopt (new_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&option_value, sizeof (option_value));
+		}
+#endif
+	}
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return new_socket;
 #endif
@@ -748,9 +758,22 @@ ipc_alloc_tcp_address (
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = (mode == DS_IPC_CONNECTION_MODE_LISTEN) ? AI_PASSIVE : 0;
 
-	int result_getaddrinfo;
+	int result_getaddrinfo = -1;
 	DS_ENTER_BLOCKING_PAL_SECTION;
-	result_getaddrinfo = getaddrinfo (host_address, NULL, &hints, &info);
+	if (mode == DS_IPC_CONNECTION_MODE_LISTEN && *host_address == '*') {
+#ifdef DS_IPC_PAL_AF_INET6
+		hints.ai_family = AF_INET6;
+		result_getaddrinfo = getaddrinfo ("[::]", NULL, &hints, &info);
+		if (!result_getaddrinfo)
+			ipc->is_dual_mode = true;
+#endif
+		if (result_getaddrinfo != 0) {
+			hints.ai_family = AF_INET;
+			result_getaddrinfo = getaddrinfo ("0.0.0.0", NULL, &hints, &info);
+		}
+	} else {
+		result_getaddrinfo = getaddrinfo (host_address, NULL, &hints, &info);
+	}
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
 	if (!result_getaddrinfo && info) {
@@ -985,8 +1008,6 @@ ds_ipc_poll (
 
 	for (uint32_t i = 0; i < poll_handles_data_len; ++i) {
 		if (poll_fds [i].revents != 0) {
-			if (callback)
-				callback ("IpcStream::DiagnosticsIpc::Poll - poll revents", (uint32_t)poll_fds [i].revents);
 			// error check FIRST
 			if (poll_fds [i].revents & POLLHUP) {
 				// check for hangup first because a closed socket

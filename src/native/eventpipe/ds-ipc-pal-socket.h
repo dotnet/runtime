@@ -41,6 +41,7 @@ struct _DiagnosticsIpc_Internal {
 	ds_ipc_socket_t server_socket;
 	bool is_listening;
 	bool is_closed;
+	bool is_dual_mode;
 	DiagnosticsIpcConnectionMode mode;
 };
 
