@@ -70,6 +70,10 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
+		// For CallArgs instruction, this represents an array of all call arg vars
+		// in the order they are pushed to the stack. This makes it easy to find
+		// all source vars for these types of opcodes. This is terminated with -1.
+		int *call_args;
 		// We handle newobj poorly due to not having our own local offset allocator.
 		// We temporarily use this array to let cprop know the values of the newobj args.
 		int *newobj_reg_map;

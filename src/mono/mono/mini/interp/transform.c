@@ -1168,19 +1168,27 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, method);
-	td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 
 	interp_add_ins (td, MINT_MONO_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, target_method);
-	td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 
 	td->sp -= 2;
+	int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
+	call_args [0] = td->sp [0].local;
+	td->locals [td->sp [0].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+	call_args [1] = td->sp [1].local;
+	td->locals [td->sp [1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+	call_args [2] = -1;
+
 	interp_add_ins (td, MINT_ICALL_PP_V);
+	// Allocate a dummy local to serve as dreg for this instruction
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
 	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-
+	td->last_ins->info.call_args = call_args;
 }
 
 static void
@@ -1194,6 +1202,7 @@ interp_generate_bie_throw (TransformData *td)
 	td->sp--;
 	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->info.call_args = NULL;
 }
 
 static void
@@ -1207,6 +1216,7 @@ interp_generate_not_supported_throw (TransformData *td)
 	td->sp--;
 	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->info.call_args = NULL;
 }
 
 static void
@@ -1232,13 +1242,21 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 	interp_add_ins (td, MINT_MONO_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 	td->last_ins->data [0] = get_data_item_index (td, msg);
 
 	td->sp -= 1;
+	int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
+	call_args [0] = td->sp [0].local;
+	td->locals [td->sp [0].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+	call_args [1] = -1;
+
 	interp_add_ins (td, MINT_ICALL_P_V);
+	// Allocate a dummy local to serve as dreg for this instruction
+	push_simple_type (td, STACK_TYPE_I4);
+	td->sp--;
 	interp_ins_set_dreg (td->last_ins, td->sp [0].local);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->info.call_args = call_args;
 }
 
 static int
@@ -1710,7 +1728,7 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	MonoClass *element_class = m_class_get_element_class (array_class);
 	int rank = m_class_get_rank (array_class);
 	int size = mono_class_array_element_size (element_class);
-	gboolean call_args = FALSE;
+	gboolean is_call_args = FALSE;
 
 	gboolean bounded = m_class_get_byval_arg (array_class) ? m_class_get_byval_arg (array_class)->type == MONO_TYPE_ARRAY : FALSE;
 
@@ -1724,24 +1742,34 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 			td->last_ins->data [0] = size;
 		} else {
 			interp_add_ins (td, MINT_LDELEMA);
-			for (int i = 0; i < rank + 1; i++)
+			int *call_args = (int*)mono_mempool_alloc (td->mempool, (rank + 2) * sizeof (int));
+			for (int i = 0; i < rank + 1; i++) {
 				td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				call_args [i] = td->sp [i].local;
+			}
+			call_args [rank + 1] = -1;
 			td->last_ins->data [0] = rank;
 			g_assert (size < G_MAXUINT16);
 			td->last_ins->data [1] = size;
-			call_args = TRUE;
+			td->last_ins->info.call_args = call_args;
+			is_call_args = TRUE;
 		}
 	} else {
 		interp_add_ins (td, MINT_LDELEMA_TC);
-		for (int i = 0; i < rank + 1; i++)
+		int *call_args = (int*)mono_mempool_alloc (td->mempool, (rank + 2) * sizeof (int));
+		for (int i = 0; i < rank + 1; i++) {
 			td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+			call_args [i] = td->sp [i].local;
+		}
+		call_args [rank + 1] = -1;
 		td->last_ins->data [0] = get_data_item_index (td, check_class);
-		call_args = TRUE;
+		td->last_ins->info.call_args = call_args;
+		is_call_args = TRUE;
 	}
 
 	push_simple_type (td, STACK_TYPE_MP);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-	if (call_args)
+	if (is_call_args)
 		td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 }
 
@@ -3014,11 +3042,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	guint32 params_stack_size = tos_offset - get_tos_offset (td);
 
+	int *call_args = NULL;
+
 	if (op == -1 || mono_interp_op_dregs [op] == MINT_CALL_ARGS) {
 		// We must not optimize out these locals, storing to them is part of the interp call convention
 		// unless we already intrinsified this call
-		for (int i = 0; i < (csignature->param_count + !!csignature->hasthis); i++)
+		int num_args = csignature->param_count + !!csignature->hasthis;
+		call_args = (int*) mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
+		for (int i = 0; i < num_args; i++) {
 			td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+			call_args [i] = td->sp [i].local;
+		}
+		call_args [num_args] = -1;
 	}
 
 	// We overwrite it with the return local, save it for future use
@@ -3181,6 +3216,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 	td->ip += 5;
+	td->last_ins->info.call_args = call_args;
 
 	return TRUE;
 }
@@ -5346,9 +5382,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_conv (td, td->sp - 1, NULL, stack_type [ret_mt], MINT_CONV_OVF_I4_I8);
 #endif
 			} else if (m_class_get_parent (klass) == mono_defaults.array_class) {
+				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
 				td->sp -= csignature->param_count;
-				for (int i = 0; i < csignature->param_count; i++)
+				for (int i = 0; i < csignature->param_count; i++) {
 					td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+					call_args [i] = td->sp [i].local;
+				}
+				call_args [csignature->param_count] = -1;
 
 				interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 				td->last_ins->data [0] = get_data_item_index (td, m->klass);
@@ -5356,13 +5396,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				td->last_ins->info.call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
+				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
 				guint32 tos_offset = get_tos_offset (td);
 				td->sp -= csignature->param_count;
 				guint32 params_stack_size = tos_offset - get_tos_offset (td);
 
-				for (int i = 0; i < csignature->param_count; i++)
+				for (int i = 0; i < csignature->param_count; i++) {
 					td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+					call_args [i] = td->sp [i].local;
+				}
+				call_args [csignature->param_count] = -1;
 
 				interp_add_ins (td, MINT_NEWOBJ_STRING);
 				td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
@@ -5370,6 +5415,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				td->last_ins->info.call_args = call_args;
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					!strcmp (m_class_get_name (m->klass), "ByReference`1") &&
 					!strcmp (m->name, ".ctor")) {
@@ -5399,14 +5445,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				guint32 params_stack_size = tos_offset - get_tos_offset (td);
 
 				// Move params types in temporary buffer
-				// FIXME stop leaking sp_params
-				StackInfo *sp_params = (StackInfo*) g_malloc (sizeof (StackInfo) * csignature->param_count);
+				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 				memcpy (sp_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
 				// We must not optimize out these locals, storing to them is part of the interp call convention
 				// FIXME this affects inlining efficiency. We need to first remove the param moving by NEWOBJ
-				for (int i = 0; i < csignature->param_count; i++)
+				int *call_args = (int*) mono_mempool_alloc (td->mempool, csignature->param_count * sizeof (int));
+				for (int i = 0; i < csignature->param_count; i++) {
 					td->locals [sp_params [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+					call_args [i] = sp_params [i].local;
+				}
+				call_args [csignature->param_count] = -1;
 
 				// Push the return value and `this` argument to the ctor
 				gboolean is_vt = m_class_is_valuetype (klass);
@@ -5453,10 +5502,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 						// Add local mapping information for cprop to use, in case we inline
 						int param_count = csignature->param_count;
-						int *newobj_reg_map = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * param_count * 2);
+						int *newobj_reg_map = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * (param_count * 2 + 1));
+						newobj_reg_map [param_count] = -1;
 						for (int i = 0; i < param_count; i++) {
-							newobj_reg_map [2 * i] = sp_params [i].local;
-							newobj_reg_map [2 * i + 1] = td->sp [-param_count + i].local;
+							newobj_reg_map [i] = sp_params [i].local;
+							newobj_reg_map [i + 1 + param_count] = td->sp [-param_count + i].local;
 						}
 
 						if (interp_inline_method (td, m, mheader, error)) {
@@ -5477,6 +5527,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (m, error));
 					td->last_ins->data [1] = params_stack_size;
 				}
+				td->last_ins->info.call_args = call_args;
 				goto_if_nok (error, exit);
 				// Parameters and this pointer are popped of the stack. The return value remains
 				td->sp -= csignature->param_count + 1;
@@ -6003,12 +6054,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				CHECK_TYPELOAD (klass);
 				interp_add_ins (td, MINT_LDELEMA_TC);
 				td->sp -= 2;
+				int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
+				call_args [0] = td->sp [0].local;
 				td->locals [td->sp [0].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				call_args [1] = td->sp [1].local;
 				td->locals [td->sp [1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				call_args [2] = -1;
 				push_simple_type (td, STACK_TYPE_MP);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->locals [td->sp [-1].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
 				td->last_ins->data [0] = get_data_item_index (td, klass);
+				td->last_ins->info.call_args = call_args;
 			} else {
 				interp_add_ins (td, MINT_LDELEMA1);
 				td->sp -= 2;
@@ -6620,8 +6676,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					CHECK_STACK (td, info->sig->param_count);
 					td->sp -= info->sig->param_count;
-					for (int i = 0; i < info->sig->param_count; i++)
+					int *call_args = (int*)mono_mempool_alloc (td->mempool, (info->sig->param_count + 1) * sizeof (int));
+					for (int i = 0; i < info->sig->param_count; i++) {
 						td->locals [td->sp [i].local].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+						call_args [i] = td->sp [i].local;
+					}
+					call_args [info->sig->param_count] = -1;
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 						int mt = mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
@@ -6646,6 +6706,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						// hash here is overkill
 						interp_ins_set_dreg (td->last_ins, dreg);
 						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+						td->last_ins->info.call_args = call_args;
 					}
 					break;
 				}
@@ -8112,8 +8173,8 @@ retry:
 				int param_count = ins->data [3];
 				int *newobj_reg_map = ins->info.newobj_reg_map;
 				for (int i = 0; i < param_count; i++) {
-					int src = newobj_reg_map [2 * i];
-					int dst = newobj_reg_map [2 * i + 1];
+					int src = newobj_reg_map [i];
+					int dst = newobj_reg_map [i + 1 + param_count];
 					local_defs [dst] = local_defs [src];
 					local_defs [dst].ins = NULL;
 				}
