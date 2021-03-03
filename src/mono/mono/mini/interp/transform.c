@@ -1383,9 +1383,7 @@ dump_interp_compacted_ins (const guint16 *ip, const guint16 *start)
 	g_print ("IR_%04x: %-14s", ins_offset, mono_interp_opname (opcode));
 	ip++;
 
-        if (mono_interp_op_dregs [opcode] == MINT_CALL_ARGS)
-                g_print (" [call_args %d <-", *ip++);
-        else if (mono_interp_op_dregs [opcode] > 0)
+        if (mono_interp_op_dregs [opcode] > 0)
                 g_print (" [%d <-", *ip++);
         else
                 g_print (" [nil <-");
@@ -1418,20 +1416,30 @@ dump_interp_inst_no_newline (InterpInst *ins)
 	int opcode = ins->opcode;
 	g_print ("IL_%04x: %-14s", ins->il_offset, mono_interp_opname (opcode));
 
-        if (mono_interp_op_dregs [opcode] == MINT_CALL_ARGS)
-                g_print (" [call_args %d <-", ins->dreg);
-        else if (mono_interp_op_dregs [opcode] > 0)
-                g_print (" [%d <-", ins->dreg);
-        else
-                g_print (" [nil <-");
+	if (mono_interp_op_dregs [opcode] > 0)
+		g_print (" [%d <-", ins->dreg);
+	else
+		g_print (" [nil <-");
 
-        if (mono_interp_op_sregs [opcode] > 0) {
-                for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-                        g_print (" %d", ins->sregs [i]);
-                g_print ("],");
-        } else {
-                g_print (" nil],");
-        }
+	if (mono_interp_op_sregs [opcode] > 0) {
+		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
+			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
+				g_print (" c:");
+				int *call_args = ins->info.call_args;
+				if (call_args) {
+					while (*call_args != -1) {
+						g_print (" %d", *call_args);
+						call_args++;
+					}
+				}
+			} else {
+				g_print (" %d", ins->sregs [i]);
+			}
+		}
+		g_print ("],");
+	} else {
+		g_print (" nil],");
+	}
 
 	if (opcode == MINT_LDLOCA_S) {
 		// LDLOCA has special semantics, it has data in sregs [0], but it doesn't have any sregs
