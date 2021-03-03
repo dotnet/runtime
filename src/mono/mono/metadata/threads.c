@@ -1370,7 +1370,7 @@ mono_threads_get_default_stacksize (void)
  *   ARG should not be a GC reference.
  */
 MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
 {
 	MonoThread *thread;
 	MonoInternalThread *internal;
@@ -1384,7 +1384,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 
 	LOCK_THREAD (internal);
 
-	res = create_thread (thread, internal, (MonoThreadStart) func, arg, flags, error);
+	res = create_thread (thread, internal, func, arg, flags, error);
 	(void)res;
 
 	UNLOCK_THREAD (internal);
@@ -1394,10 +1394,10 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 }
 
 MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+mono_thread_create_internal_handle (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
 {
 	// FIXME invert
-	return MONO_HANDLE_NEW (MonoInternalThread, mono_thread_create_internal (domain, func, arg, flags, error));
+	return MONO_HANDLE_NEW (MonoInternalThread, mono_thread_create_internal (func, arg, flags, error));
 }
 
 /**
@@ -1408,15 +1408,15 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	if (!mono_thread_create_checked (domain, func, arg, error))
+	if (!mono_thread_create_checked ((MonoThreadStart)func, arg, error))
 		mono_error_cleanup (error);
 	MONO_EXIT_GC_UNSAFE;
 }
 
 gboolean
-mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error)
+mono_thread_create_checked (MonoThreadStart func, gpointer arg, MonoError *error)
 {
-	return (NULL != mono_thread_create_internal (domain, func, arg, MONO_THREAD_CREATE_FLAGS_NONE, error));
+	return (NULL != mono_thread_create_internal (func, arg, MONO_THREAD_CREATE_FLAGS_NONE, error));
 }
 
 /**

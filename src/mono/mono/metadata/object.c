@@ -4365,7 +4365,7 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 	MONO_ENTER_GC_UNSAFE;
 
 	ERROR_DECL (error);
-	mono_thread_create_checked (domain, mfunc, margs, error);
+	mono_thread_create_checked ((MonoThreadStart)mfunc, margs, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage_internal ();

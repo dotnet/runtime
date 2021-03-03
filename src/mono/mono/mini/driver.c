@@ -1189,13 +1189,13 @@ jit_info_table_test (MonoDomain *domain)
 
 	/*
 	for (i = 0; i < 72; ++i)
-		mono_thread_create (domain, small_id_thread_func, NULL);
+		mono_thread_create (small_id_thread_func, NULL);
 
 	sleep (2);
 	*/
 
 	for (i = 0; i < num_threads; ++i) {
-		mono_thread_create_checked (domain, (gpointer)test_thread_func, &thread_datas [i], error);
+		mono_thread_create_checked ((MonoThreadStart)test_thread_func, &thread_datas [i], error);
 		mono_error_assert_ok (error);
 	}
 }
@@ -1313,7 +1313,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	 * Need to create a mono thread since compilation might trigger
 	 * running of managed code.
 	 */
-	mono_thread_create_checked (mono_domain_get (), (gpointer)compile_all_methods_thread_main, &args, error);
+	mono_thread_create_checked ((MonoThreadStart)compile_all_methods_thread_main, &args, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage_internal ();
