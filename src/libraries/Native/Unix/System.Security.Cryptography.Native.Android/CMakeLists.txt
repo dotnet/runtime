@@ -18,6 +18,7 @@ set(NATIVECRYPTO_SOURCES
     pal_lifetime.c
     pal_misc.c
     pal_rsa.c
+    pal_signature.c
     pal_ssl.c
     pal_sslstream.c
     pal_x509.c
