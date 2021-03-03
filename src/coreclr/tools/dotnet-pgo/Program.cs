@@ -250,18 +250,28 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
-            var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
-
-            bool partialNgen = false;
-            Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
-            for (int i = 0; i < mibcReaders.Length; i++)
+            try
             {
-                var peReader = mibcReaders[i];
-                PrintMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
-                ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
-            }
+                var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
 
-            return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                bool partialNgen = false;
+                Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
+                for (int i = 0; i < mibcReaders.Length; i++)
+                {
+                    var peReader = mibcReaders[i];
+                    PrintMessage($"Merging {commandLineOptions.InputFilesToMerge[i].FullName}");
+                    ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+                }
+
+                return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+            }
+            finally
+            {
+                foreach (var peReader in mibcReaders)
+                {
+                    peReader.Dispose();
+                }
+            }
         }
 
         static int InnerMain(CommandLineOptions commandLineOptions)

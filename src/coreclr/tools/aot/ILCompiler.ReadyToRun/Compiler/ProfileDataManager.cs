@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.PortableExecutable;
+
 using ILCompiler.IBC;
 
 using Internal.Pgo;
@@ -52,7 +54,7 @@ namespace ILCompiler
 
                 foreach (string file in mibcFiles)
                 {
-                    using (PEReader peReader = MibcProfileParser.OpenMibcAsPEReader(file))
+                    using (PEReader peReader = MIbcProfileParser.OpenMibcAsPEReader(file))
                     {
                         _inputData.Add(MIbcProfileParser.ParseMIbcFile(context, peReader, versionBubbleModuleStrings, onlyParseItemsDefinedInAssembly));
                     }
