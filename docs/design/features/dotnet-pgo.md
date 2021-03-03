@@ -35,14 +35,14 @@ dotnet build -p:Configuration=Release
 set COMPLUS_TieredPGO=1
 set COMPLUS_TC_QuickJitForLoops=1
 set COMPLUS_TC_CallCountThreshold=10000
-set COMPLUS_ZapDisable=1
+set COMPLUS_ReadyToRun=0
 
 dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
 
 set COMPLUS_TieredPGO=
 set COMPLUS_TC_QuickJitForLoops=
 set COMPLUS_TC_CallCountThreshold=
-set COMPLUS_ZapDisable=
+set COMPLUS_ReadyToRun=
 
 dotnet-pgo --trace trace.nettrace --output trace.mibc
 
