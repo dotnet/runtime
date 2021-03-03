@@ -8525,18 +8525,76 @@ typedef struct {
 	gboolean is_alive;
 } ActiveVar;
 
-static int
-compact_active_vars (TransformData *td, ActiveVar *active_vars, int active_vars_count, gint32 *current_offset)
+typedef struct {
+	ActiveVar *active_vars;
+	int active_vars_count;
+	int active_vars_capacity;
+} ActiveVars;
+
+static void
+init_active_vars (TransformData *td, ActiveVars *av)
 {
-	if (!active_vars_count)
-		return 0;
-	int i = active_vars_count - 1;
-	while (i >= 0 && !active_vars [i].is_alive) {
-		active_vars_count--;
-		*current_offset = td->locals [active_vars [i].var].offset;
+	av->active_vars_count = 0;
+	av->active_vars_capacity = MAX (td->locals_size / td->bb_count, 10);
+	av->active_vars = (ActiveVar*)mono_mempool_alloc (td->mempool, av->active_vars_capacity * sizeof (ActiveVars));
+}
+
+static void
+reinit_active_vars (TransformData *td, ActiveVars *av)
+{
+	av->active_vars_count = 0;
+}
+
+static void
+add_active_var (TransformData *td, ActiveVars *av, int var)
+{
+	if (av->active_vars_count == av->active_vars_capacity) {
+		av->active_vars_capacity *= 2;
+		ActiveVar *new_array = (ActiveVar*)mono_mempool_alloc (td->mempool, av->active_vars_capacity * sizeof (ActiveVar));
+		memcpy (new_array, av->active_vars, av->active_vars_count * sizeof (ActiveVar));
+		av->active_vars = new_array;
+	}
+	av->active_vars [av->active_vars_count].var = var;
+	av->active_vars [av->active_vars_count].is_alive = TRUE;
+	av->active_vars_count++;
+}
+
+static void
+end_active_var (TransformData *td, ActiveVars *av, int var)
+{
+	// Iterate over active vars, set the entry associated with var as !is_alive
+	for (int i = 0; i < av->active_vars_count; i++) {
+		if (av->active_vars [i].var == var) {
+			av->active_vars [i].is_alive = FALSE;
+			return;
+		}
+	}
+}
+
+static void
+compact_active_vars (TransformData *td, ActiveVars *av, gint32 *current_offset)
+{
+	if (!av->active_vars_count)
+		return;
+	int i = av->active_vars_count - 1;
+	while (i >= 0 && !av->active_vars [i].is_alive) {
+		av->active_vars_count--;
+		*current_offset = td->locals [av->active_vars [i].var].offset;
 		i--;
 	}
-	return active_vars_count;
+}
+
+static void
+dump_active_vars (TransformData *td, ActiveVars *av)
+{
+	if (td->verbose_level) {
+		g_print ("active :");
+		for (int i = 0; i < av->active_vars_count; i++) {
+			if (av->active_vars [i].is_alive)
+				g_print (" %d (end %d),", av->active_vars [i].var, td->locals [av->active_vars [i].var].live_end);
+		}
+		g_print ("\n");
+	}
 }
 
 static void
@@ -8544,15 +8602,14 @@ interp_alloc_offsets (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	ActiveCalls ac;
+	ActiveVars av;
 
 	if (td->verbose_level)
 		g_print ("\nvar offset allocator iteration\n");
 
 	initialize_global_vars (td);
 
-	int active_vars_capacity = MAX (td->locals_size / td->bb_count, 10);
-	ActiveVar *active_vars = (ActiveVar*)mono_mempool_alloc (td->mempool, active_vars_capacity * sizeof (ActiveVar));
-
+	init_active_vars (td, &av);
 	init_active_calls (td, &ac);
 
 	int final_total_locals_size = td->total_locals_size;
@@ -8564,6 +8621,7 @@ interp_alloc_offsets (TransformData *td)
 			g_print ("BB%d\n", bb->index);
 
 		reinit_active_calls (td, &ac);
+		reinit_active_vars (td, &av);
 
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (ins->opcode == MINT_NOP)
@@ -8616,7 +8674,6 @@ interp_alloc_offsets (TransformData *td)
 			ins_index++;
 		}
 		gint32 current_offset = td->total_locals_size;
-		int active_vars_count = 0;
 
 		ins_index = 0;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
@@ -8638,20 +8695,14 @@ interp_alloc_offsets (TransformData *td)
 					continue;
 				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index) {
 					g_assert (!(td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
-					// Iterate over active vars, set the entry associated with var as !is_alive
-					for (int j = 0; j < active_vars_count; j++) {
-						if (active_vars [j].var == var) {
-							active_vars [j].is_alive = FALSE;
-							break;
-						}
-					}
+					end_active_var (td, &av, var);
 				}
 			}
 
 			if (is_call)
 				end_active_call (td, &ac, ins);
 
-			active_vars_count = compact_active_vars (td, active_vars, active_vars_count, &current_offset);
+			compact_active_vars (td, &av, &current_offset);
 
 			// Alloc dreg local starting at the stack_offset
 			if (mono_interp_op_dregs [opcode]) {
@@ -8669,28 +8720,14 @@ interp_alloc_offsets (TransformData *td)
 
 					if (td->locals [var].live_end > ins_index) {
 						// if dreg is still used in the basic block, add it to the active list
-						if (active_vars_count == active_vars_capacity) {
-							active_vars_capacity *= 2;
-							ActiveVar *new_array = (ActiveVar*)mono_mempool_alloc (td->mempool, active_vars_capacity * sizeof (ActiveVar)); 
-							memcpy (new_array, active_vars, active_vars_count * sizeof (ActiveVar));
-							active_vars = new_array;
-						}
-						active_vars [active_vars_count].var = var;
-						active_vars [active_vars_count].is_alive = TRUE;
-						active_vars_count++;
+						add_active_var (td, &av, var);
 					} else {
 						current_offset = td->locals [var].offset;
 					}
 				}
 			}
-			if (td->verbose_level) {
-				g_print ("active :");
-				for (int i = 0; i < active_vars_count; i++) {
-					if (active_vars [i].is_alive)
-						g_print (" %d (end %d),", active_vars [i].var, td->locals [active_vars [i].var].live_end);
-				}
-				g_print ("\n");
-			}
+			if (td->verbose_level)
+				dump_active_vars (td, &av);
 			ins_index++;
 		}
 	}
