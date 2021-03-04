@@ -293,12 +293,9 @@ namespace System.Collections.Generic
             }
             else
             {
-                if (EnumerableHelpers.TryGetCount(items, out int count) && count > 0)
+                if (EnumerableHelpers.TryGetCount(items, out int count) && _nodes.Length - _size < count)
                 {
-                    if (_nodes.Length < _size + count)
-                    {
-                        Grow(_size + count);
-                    }
+                    Grow(_size + count);
                 }
 
                 foreach ((TElement element, TPriority priority) in items)
@@ -318,12 +315,9 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(elements));
             }
 
-            if (EnumerableHelpers.TryGetCount(elements, out int count) && count > 0)
+            if (EnumerableHelpers.TryGetCount(elements, out int count) && _nodes.Length - _size < count)
             {
-                if (_nodes.Length < _size + count)
-                {
-                    Grow(_size + count);
-                }
+                Grow(_size + count);
             }
 
             if (_size == 0)
