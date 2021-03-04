@@ -139,8 +139,6 @@
       <Optimized>true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
       <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
-      <!-- <ForceInvariant>$(InvariantGlobalization)</ForceInvariant> -->
-      <ForceInvariant>true</ForceInvariant>
     </PropertyGroup>
     <ItemGroup>
       <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Runtime.WindowsRuntime.dll">
@@ -178,7 +176,7 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        ForceInvariant="$(ForceInvariant)"
+        ForceInvariant="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
