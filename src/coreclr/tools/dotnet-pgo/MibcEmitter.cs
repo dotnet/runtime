@@ -147,7 +147,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     _il.Token(_emitter.GetTypeRef(type.AsType));
                 }
                 else
-                    _il.LoadConstantI4(type.AsUnknown);
+                {
+
+                    _il.LoadConstantI4(type.AsUnknown & 0x00FFFFFF);
+                }
             }
 
         }

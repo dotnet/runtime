@@ -66,12 +66,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (input == 0)
                 return new TypeSystemEntityOrUnknown(0);
 
-            TypeDesc type = _idParser.ResolveTypeHandle(input, false);
+            TypeDesc type = null;
+            
+            try
+            {
+                type = _idParser.ResolveTypeHandle(input, false);
+            }
+            catch
+            {}
             if (type != null)
             {
                 return new TypeSystemEntityOrUnknown(type);
             }
-            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) | 0x7F000000);
+            // Unknown type, apply unique value, but keep the upper byte zeroed so that it can be distinguished from a token
+            return new TypeSystemEntityOrUnknown(System.HashCode.Combine(input) & 0x7FFFFF | 0x800000);
         }
     }
 

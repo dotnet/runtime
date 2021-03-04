@@ -36,6 +36,11 @@ namespace ILCompiler.IBC
                 {
                     if (token == 0)
                         return new TypeSystemEntityOrUnknown(0);
+                    if ((token & 0xFF000000) == 0)
+                    {
+                        // token type is 0, therefore it can't be a type
+                        return new TypeSystemEntityOrUnknown((int)token);
+                    }
                     return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
                 }
                 catch
@@ -138,6 +143,7 @@ namespace ILCompiler.IBC
                 switch (opcode)
                 {
                     case ILOpcode.ldstr:
+                        Debug.Assert(mibcGroupName == "");
                         if (mibcGroupName == "")
                         {
                             UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));

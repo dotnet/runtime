@@ -131,7 +131,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             else
             {
                 if (fld.FieldType != fieldType)
-                    throw new Exception($"Field {fld} has two different field types `{fld.FieldType}` and {fieldType}");
+                    throw new Exception($"Field {fld} has two different field types `{fld.FieldType}` and `{fieldType}`");
             }
 
             return fld;

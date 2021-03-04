@@ -40,7 +40,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         {
             get
             {
-                return $"_{_index}";
+                return Kind == GenericParameterKind.Method ? $"!!{_index}" : $"!{_index}";
             }
         }
 

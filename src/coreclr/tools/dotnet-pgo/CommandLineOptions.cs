@@ -117,7 +117,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 Reference = DefineFileOptionList(name: "r|reference", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
 
-                ExcludeEventsAfter = Double.MinValue;
+                ExcludeEventsBefore = Double.MinValue;
                 syntax.DefineOption(
                     name: "exclude-events-before",
                     value: ref ExcludeEventsBefore,
@@ -180,7 +180,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 GenerateCallGraph = true;
                 ProcessJitEvents = true;
                 ProcessR2REvents = true;
-#if Debug
+#if DEBUG
                 ValidateOutputFile = true;
 #else
                 ValidateOutputFile = false;
@@ -252,7 +252,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 VerbosityOption();
                 CompressedOption();
                 HelpOption();
-#if Debug
+#if DEBUG
                 ValidateOutputFile = true;
 #else
                 ValidateOutputFile = false;

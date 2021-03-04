@@ -31,7 +31,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                 type = new TypeRefTypeSystemType(nameSpace, name, this);
 
                 Dictionary<string, TypeRefTypeSystemType> nameToTypeDictionary = _nonNamespacedTypes;
-                if (nameSpace != null)
+                if (!String.IsNullOrEmpty(nameSpace))
                 {
                     if (!_namespacedTypes.TryGetValue(nameSpace, out nameToTypeDictionary))
                     {
