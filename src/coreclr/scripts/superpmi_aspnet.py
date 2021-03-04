@@ -166,7 +166,7 @@ def build_and_run(coreclr_args, output_mch_name):
     ## install crank
 
     run_command(
-       [dotnet_exe, "tool install -g Microsoft.Crank.Controller --version \"0.2.0-*"build\"", _exit_on_fail=True)
+       [dotnet_exe, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global", _exit_on_fail=True)
 
     ## sparse clone of aspnet/benchmarks to obtain the benchmark config files     
 
