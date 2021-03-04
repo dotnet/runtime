@@ -164,6 +164,15 @@ public:
     // Check if pending exceptions are possible for the following native export.
     static bool ShouldCheckForPendingException(_In_ NDirectMethodDesc* md);
 
+    // A no return callback that is designed to help propagate a managed
+    // exception going from Managed to Native.
+    using ManagedToNativeExceptionCallback = /* no return */ void(*)(_In_ void* context);
+
+    static ManagedToNativeExceptionCallback GetPropagatingExceptionCallback(
+        _In_ EECodeInfo* codeInfo,
+        _In_ OBJECTHANDLE throwable,
+        _Outptr_ void** context);
+
     // Notify when GC started
     static void OnGCStarted(_In_ int nCondemnedGeneration);
 

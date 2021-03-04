@@ -5,6 +5,23 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
+//////////////////////////////////////////////////////////////////////////
+//
+// CallExceptionPropagationCallback
+//
+// Set up a frame to the exception propagation callback.
+//
+// EXTERN_C VOID __stdcall CallExceptionPropagationCallback(void* callbackContext, void* callback, void* prevStackPointer)
+LEAF_ENTRY CallExceptionPropagationCallback, _TEXT
+        // The first argument is contained in rdi and passed
+        // through to the function in rsi. The third argument
+        // is the previous stack pointer that needs to be
+        // placed on the stack.
+        push    rdx
+
+        // The second argument is the callback.
+        jmp     rsi
+LEAF_END CallExceptionPropagationCallback, _TEXT
 
 //////////////////////////////////////////////////////////////////////////
 //

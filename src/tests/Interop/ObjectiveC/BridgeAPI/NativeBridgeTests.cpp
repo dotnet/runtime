@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
+#include <exception>
 #include <platformdefines.h>
 
 using BeginEndCallback = void(STDMETHODCALLTYPE *)(int);
@@ -105,4 +106,53 @@ extern "C" DLL_EXPORT void GetBridgeExports(
     *beginEnd = BeginEndCb;
     *isRef = IsRefCb;
     *enteredFinalizer = EnteredFinalizerCb;
+}
+
+using propagation_func_t = void(*)(void*);
+
+namespace
+{
+    [[noreturn]]
+    void ThrowInt(void* cxt)
+    {
+        int val = (int)cxt;
+        throw val;
+    }
+
+    [[noreturn]]
+    void ThrowException(void*)
+    {
+        throw std::exception{};
+    }
+}
+
+extern "C" DLL_EXPORT propagation_func_t GetThrowInt()
+{
+    return ThrowInt;
+}
+
+extern "C" DLL_EXPORT propagation_func_t GetThrowException()
+{
+    return ThrowException;
+}
+
+using fptr_t = void(*)(int);
+
+extern "C" DLL_EXPORT int CallAndCatch(fptr_t fptr, int a)
+{
+    try
+    {
+        fptr(a);
+
+        std::printf("Function should not have returned.");
+        std::abort();
+    }
+    catch (int e)
+    {
+        return e;
+    }
+    catch (const std::exception &e)
+    {
+        return a;
+    }
 }

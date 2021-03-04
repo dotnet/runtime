@@ -448,6 +448,11 @@ DEFINE_METHOD(COMWRAPPERS,                RELEASE_OBJECTS,  CallReleaseObjects, 
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_Obj_RefGuid_RefIntPtr_RetInt)
 #endif //FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCBRIDGE
+DEFINE_CLASS(OBJCBRIDGE,    ObjectiveC, Bridge)
+DEFINE_METHOD(OBJCBRIDGE,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,  InvokeUnhandledExceptionPropagation,  SM_Exception_RefIntPtr_RetVoidPtr)
+#endif // FEATURE_OBJCBRIDGE
+
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)

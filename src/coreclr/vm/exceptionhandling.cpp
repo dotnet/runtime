@@ -15,6 +15,7 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 #include "utilcode.h"
+#include "interoplibinterface.h"
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -4298,6 +4299,37 @@ static void DoEHLog(
 
 #ifdef TARGET_UNIX
 
+// Forward declared callback for starting exception propagation.
+extern "C" void CallExceptionPropagationCallback();
+
+//---------------------------------------------------------------------------------------
+//
+// Function to update the current context for exception propagation.
+//
+// Arguments:
+//      exception       - the PAL_SEHException representing the propagating exception.
+//      currentContext  - the current context to update.
+//
+static VOID UpdateContextPropagation(
+    PAL_SEHException& ex,
+    CONTEXT* startContext)
+{
+    PCODE currIP = GetIP(startContext);
+    SetIP(startContext, (PCODE)CallExceptionPropagationCallback);
+
+#ifdef TARGET_AMD64
+
+    startContext->Rdi = (DWORD64)ex.ManagedToNativeExceptionCallbackContext;
+    startContext->Rsi = (DWORD64)ex.ManagedToNativeExceptionCallback;
+    startContext->Rdx = (DWORD64)currIP;
+
+#else // !TARGET_AMD64
+
+#error "Update context for platform"
+
+#endif // !TARGET_AMD64
+}
+
 //---------------------------------------------------------------------------------------
 //
 // This functions performs an unwind procedure for a managed exception. The stack is unwound
@@ -4426,13 +4458,25 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // We also need to reset the scanned stack range since the scanned frames will be
                 // obsolete after the unwind of the native frames completes.
                 ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-                pTracker->CleanupBeforeNativeFramesUnwind();
+                if (pTracker != NULL)
+                    pTracker->CleanupBeforeNativeFramesUnwind();
             }
 
-            // Now we need to unwind the native frames until we reach managed frames again or the exception is
-            // handled in the native code.
-            STRESS_LOG2(LF_EH, LL_INFO100, "Unwinding native frames starting at IP = %p, SP = %p \n", controlPc, sp);
-            PAL_ThrowExceptionFromContext(currentFrameContext, &ex);
+            if (ex.HasPropagateExceptionCallback())
+            {
+                // A propagation callback was supplied.
+                STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", ex.ManagedToNativeExceptionCallback, controlPc, sp);
+
+                UpdateContextPropagation(ex, currentFrameContext);
+                ExceptionTracker::ResumeExecution(currentFrameContext, NULL);
+            }
+            else
+            {
+                // Now we need to unwind the native frames until we reach managed frames again or the exception is
+                // handled in the native code.
+                STRESS_LOG2(LF_EH, LL_INFO100, "Unwinding native frames starting at IP = %p, SP = %p \n", controlPc, sp);
+                PAL_ThrowExceptionFromContext(currentFrameContext, &ex);
+            }
             UNREACHABLE();
         }
 
@@ -4557,21 +4601,45 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
+        Interop::ManagedToNativeExceptionCallback callback = NULL;
+        void* callbackCxt = NULL;
+
 #ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
         {
-            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
-            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+            callback = Interop::GetPropagatingExceptionCallback(
+                &codeInfo,
+                pTracker->GetThrowableAsHandle(),
+                &callbackCxt);
+
+            // If a callback exists, use that instead of immediately crashing.
+            if (callback == NULL)
             {
-                LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
-                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
+                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+                {
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                }
+                CrashDumpAndTerminateProcess(1);
+                UNREACHABLE();
             }
-            CrashDumpAndTerminateProcess(1);
-            UNREACHABLE();
         }
 #endif // USE_GC_INFO_DECODER
+
+        if (callback != NULL)
+        {
+            ex.SetPropagateExceptionCallback(callback, callbackCxt);
+            _ASSERTE(ex.HasPropagateExceptionCallback());
+
+            UINT_PTR sp = GetSP(frameContext);
+            ex.TargetFrameSp = sp;
+            UnwindManagedExceptionPass2(ex, &unwindStartContext);
+            UNREACHABLE();
+        }
 
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))

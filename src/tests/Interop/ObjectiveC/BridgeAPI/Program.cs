@@ -17,6 +17,15 @@ namespace BridgeTests
             out delegate* unmanaged<int, void> beginEndCallback,
             out delegate* unmanaged<IntPtr, int> isReferencedCallback,
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
+
+        [DllImport(nameof(NativeBridgeTests))]
+        public static extern int CallAndCatch(IntPtr fptr, int a);
+
+        [DllImport(nameof(NativeBridgeTests))]
+        public static extern IntPtr GetThrowInt();
+
+        [DllImport(nameof(NativeBridgeTests))]
+        public static extern IntPtr GetThrowException();
     }
 
     unsafe class Program
@@ -214,6 +223,74 @@ namespace BridgeTests
                 });
         }
 
+        private class IntException : Exception
+        {
+            public int Value { get; }
+            public IntException(int value) { this.Value = value; }
+        }
+
+        private class ExceptionException : Exception
+        {
+            public ExceptionException() {}
+        }
+
+        [UnmanagedCallersOnly]
+        static void UCO_ThrowIntException(int a) => throw new IntException(a);
+        [UnmanagedCallersOnly]
+        static void UCO_ThrowExceptionException(int _) => throw new ExceptionException();
+
+        delegate void ThrowExceptionDelegate(int a);
+        static void DEL_ThrowIntException(int a) => throw new IntException(a);
+        static void DEL_ThrowExceptionException(int _) => throw new ExceptionException();
+
+        static unsafe delegate* unmanaged<IntPtr, void> OnUnhandledExceptionPropagationHandler(Exception e, out IntPtr context)
+        {
+            context = IntPtr.Zero;
+            if (e is IntException ie)
+            {
+                context = new IntPtr(ie.Value);
+                return (delegate* unmanaged<IntPtr, void>)NativeBridgeTests.GetThrowInt();
+            }
+            else if (e is ExceptionException)
+            {
+                return (delegate* unmanaged<IntPtr, void>)NativeBridgeTests.GetThrowException();
+            }
+
+            Assert.Fail("Unknown exception type");
+            throw new Exception("Unreachable");
+        }
+
+        class Scenario
+        {
+            public Scenario(delegate* unmanaged<int, void> fptr, int expected) { Fptr = fptr; Expected = expected; }
+            public delegate* unmanaged<int, void> Fptr;
+            public int Expected;
+        }
+
+        static void Validate_ExceptionPropagation()
+        {
+            Console.WriteLine($"Running {nameof(Validate_ExceptionPropagation)}...");
+
+            Bridge.UnhandledExceptionPropagation += OnUnhandledExceptionPropagationHandler;
+
+            var scenarios = new[]
+            {
+                new Scenario((delegate* unmanaged<int, void>)&UCO_ThrowIntException, 3423),
+                new Scenario((delegate* unmanaged<int, void>)&UCO_ThrowExceptionException, 5432),
+                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate<ThrowExceptionDelegate>(DEL_ThrowIntException), 6453),
+                new Scenario((delegate* unmanaged<int, void>)Marshal.GetFunctionPointerForDelegate<ThrowExceptionDelegate>(DEL_ThrowExceptionException), 5343)
+            };
+
+            foreach (var scen in scenarios)
+            {
+                delegate* unmanaged<int, void> testNativeMethod = scen.Fptr;
+                int ret = NativeBridgeTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
+                Assert.AreEqual(scen.Expected, ret);
+            }
+
+            Bridge.UnhandledExceptionPropagation -= OnUnhandledExceptionPropagationHandler;
+        }
+
         static int Main(string[] doNotUse)
         {
             try
@@ -221,6 +298,7 @@ namespace BridgeTests
                 Validate_ReferenceTrackingAPIs_InvalidArgs();
                 Validate_ReferenceTracking_Scenario();
                 Validate_InitializeReferenceTracking_FailsOnSecondAttempt();
+                Validate_ExceptionPropagation();
             }
             catch (Exception e)
             {

@@ -103,5 +103,36 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// </remarks>
         public static void SetMessageSendPendingExceptionForThread(Exception? exception)
             => throw new PlatformNotSupportedException();
+
+        /// <summary>
+        /// Handler for unhandled Exceptions crossing the managed -> native boundary (that is, Reverse P/Invoke).
+        /// </summary>
+        /// <param name="e">Unhandled exception.</param>
+        /// <param name="context">Context provided to the returned function pointer.</param>
+        /// <returns>Exception propagation callback.</returns>
+        /// <remarks>
+        /// If the handler is able to propagate the managed Exception properly to the native environment an
+        /// unmanaged callback can be returned, otherwise <c>null</c>. Along with the returned callback the
+        /// handler can return a context that will be passed to the callback during dispatch.
+        ///
+        /// The returned handler will be passed the context when called and is the responsibility of the callback
+        /// to managed. The handler must not return and is expected to propagate the exception into the native
+        /// environment or fail fast.
+        /// </remarks>
+        public unsafe delegate delegate* unmanaged<IntPtr, void> UnhandledExceptionPropagationHandler(Exception e, out IntPtr context);
+ler(Exception e, out IntPtr context);
+
+        /// <summary>
+        /// Event for handling the propagation of unhandled Exceptions across a managed -> native boundary (that is, Reverse P/Invoke).
+        /// </summary>
+        /// <remarks>
+        /// The first handler to return a non-null callback will be used to handle the Exception and no other
+        /// handlers will be asked if they can propagate the exception.
+        /// </remarks>
+        public static event UnhandledExceptionPropagationHandler? UnhandledExceptionPropagation
+        {
+            add => throw new PlatformNotSupportedException();
+            remove => throw new PlatformNotSupportedException();
+        }
     }
 }

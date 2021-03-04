@@ -192,6 +192,9 @@ DEFINE_METASIG_T(SM(Scenario_ComWrappers_IntPtr_CreateFlags_RetObj, g(COMWRAPPER
 DEFINE_METASIG_T(SM(ComWrappers_IEnumerable_RetVoid, C(COMWRAPPERS) C(IENUMERABLE), v))
 DEFINE_METASIG_T(SM(Obj_RefGuid_RefIntPtr_RetInt, j r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCBRIDGE
+DEFINE_METASIG_T(SM(Exception_RefIntPtr_RetVoidPtr, C(EXCEPTION) r(I), P(v)))
+#endif // FEATURE_OBJCBRIDGE
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_Int_RetVoid, i i, v))
 DEFINE_METASIG(SM(Str_RetIntPtr, s, I))
