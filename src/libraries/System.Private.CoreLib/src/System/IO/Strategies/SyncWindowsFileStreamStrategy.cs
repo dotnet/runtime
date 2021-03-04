@@ -104,9 +104,6 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            // Make sure we are reading from the right spot
-            VerifyOSHandlePosition();
-
             int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, null, out int errorCode);
 
             if (r == -1)
@@ -138,9 +135,6 @@ namespace System.IO.Strategies
             }
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
-
-            // Make sure we are writing to the position that we think we are
-            VerifyOSHandlePosition();
 
             int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, null, out int errorCode);
 

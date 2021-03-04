@@ -98,7 +98,6 @@ namespace System.IO.Strategies
                 if (_fileHandle.ThreadPoolBinding == null)
                 {
                     // We should close the handle so that the handle is not open until SafeFileHandle GC
-                    Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
                     _fileHandle.Dispose();
                 }
             }
@@ -146,10 +145,7 @@ namespace System.IO.Strategies
             {
                 long len = Length;
 
-                // Make sure we are reading from the position that we think we are
-                VerifyOSHandlePosition();
-
-                if (destination.Length > len - _filePosition)
+                if (_filePosition + destination.Length > len)
                 {
                     if (_filePosition <= len)
                     {
@@ -274,9 +270,6 @@ namespace System.IO.Strategies
                 // Make sure we set the length of the file appropriately.
                 long len = Length;
 
-                // Make sure we are writing to the position that we think we are
-                VerifyOSHandlePosition();
-
                 if (_filePosition + source.Length > len)
                 {
                     SetLengthCore(_filePosition + source.Length);
@@ -382,16 +375,10 @@ namespace System.IO.Strategies
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(CanRead, "_parent.CanRead");
 
-            bool canSeek = CanSeek;
-            if (canSeek)
-            {
-                VerifyOSHandlePosition();
-            }
-
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, _path, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally

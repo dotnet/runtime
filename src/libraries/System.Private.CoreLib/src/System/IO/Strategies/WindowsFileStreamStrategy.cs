@@ -25,13 +25,10 @@ namespace System.IO.Strategies
         private readonly bool _isPipe; // Whether to disable async buffering code.
 
         protected long _filePosition;
-        protected bool _exposedHandle; // Whether the file stream's handle has been exposed.
         private long _appendStart; // When appending, prevent overwriting file.
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
-            _exposedHandle = true;
-
             InitFromHandle(handle, access, out _canSeek, out _isPipe);
 
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
@@ -79,16 +76,8 @@ namespace System.IO.Strategies
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
         {
-            get
-            {
-                VerifyOSHandlePosition();
-
-                return _filePosition;
-            }
-            set
-            {
-                Seek(value, SeekOrigin.Begin);
-            }
+            get => _filePosition;
+            set => Seek(value, SeekOrigin.Begin);
         }
 
         internal sealed override string Name => _path ?? SR.IO_UnknownFileName;
@@ -96,16 +85,8 @@ namespace System.IO.Strategies
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
         internal sealed override bool IsPipe => _isPipe;
-
-        internal sealed override SafeFileHandle SafeFileHandle
-        {
-            get
-            {
-                // Flushing is the responsibility of BufferedFileStreamStrategy
-                _exposedHandle = true;
-                return _fileHandle;
-            }
-        }
+        // Flushing is the responsibility of BufferedFileStreamStrategy
+        internal sealed override SafeFileHandle SafeFileHandle => _fileHandle;
 
         // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
         // their performance is going to be horrible
@@ -164,9 +145,6 @@ namespace System.IO.Strategies
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
             if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
-
-            // Verify that internal position is in sync with the handle
-            VerifyOSHandlePosition();
 
             long oldPos = _filePosition;
             long pos = SeekCore(_fileHandle, offset, origin);
@@ -261,40 +239,12 @@ namespace System.IO.Strategies
         protected unsafe void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
-            VerifyOSHandlePosition();
 
             FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
 
             if (_filePosition > value)
             {
                 SeekCore(_fileHandle, 0, SeekOrigin.End);
-            }
-        }
-
-        /// <summary>
-        /// Verify that the actual position of the OS's handle equals what we expect it to.
-        /// This will fail if someone else moved the UnixFileStream's handle or if
-        /// our position updating code is incorrect.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void VerifyOSHandlePosition()
-        {
-            bool verifyPosition = _exposedHandle; // in release, only verify if we've given out the handle such that someone else could be manipulating it
-#if DEBUG
-            verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
-#endif
-            if (verifyPosition && CanSeek)
-            {
-                long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
-                long curPos = SeekCore(_fileHandle, 0, SeekOrigin.Current);
-                if (oldPos != curPos)
-                {
-                    // For reads, this is non-fatal but we still could have returned corrupted
-                    // data in some cases, so discard the internal buffer. For writes,
-                    // this is a problem; discard the buffer and error out.
-
-                    throw new IOException(SR.IO_FileStreamHandlePosition);
-                }
             }
         }
     }
