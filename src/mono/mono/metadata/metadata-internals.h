@@ -903,7 +903,7 @@ int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 #endif /* ENABLE_METADATA_UPDATE */
 
 gpointer

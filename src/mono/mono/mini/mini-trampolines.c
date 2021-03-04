@@ -1272,7 +1272,6 @@ mono_create_jump_trampoline (MonoMethod *method, gboolean add_sync_wrapper, Mono
 	MonoJitInfo *ji;
 	gpointer code;
 	guint32 code_size = 0;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -1321,7 +1320,7 @@ mono_create_jump_trampoline (MonoMethod *method, gboolean add_sync_wrapper, Mono
 	 * trampoline address, so we save it here.
 	 */
 
-	mono_jit_info_table_add (domain, ji);
+	mono_jit_info_table_add (ji);
 
 	jit_mm_lock (jit_mm);
 	g_hash_table_insert (jit_mm->jump_trampoline_hash, method, code);

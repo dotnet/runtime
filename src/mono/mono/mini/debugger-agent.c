@@ -1418,7 +1418,7 @@ start_debugger_thread (MonoError *error)
 {
 	MonoInternalThread *thread;
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
+	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
 	/* Is it possible for the thread to be dead alreay ? */
@@ -7171,7 +7171,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (err != ERR_NONE)
 			return err;
 
-		buffer_add_assemblyid (buf, domain, domain->entry_assembly);
+		buffer_add_assemblyid (buf, domain, mono_runtime_get_entry_assembly ());
 		break;
 	}
 	case CMD_APPDOMAIN_GET_CORLIB: {

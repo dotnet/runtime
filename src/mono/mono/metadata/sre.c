@@ -3928,7 +3928,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
 	if (mono_class_is_gtd (klass)) {
-		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+		MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
