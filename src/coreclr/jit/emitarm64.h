@@ -943,13 +943,12 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
 //     varNum - the variable on the stack to use as a base;
 //     offset - the offset from the varNum;
 //     opReg  - the src reg with SIMD12 value;
-//     tmpReg - a general tmp reg to use for the write.
+//     tmpReg - a tmp reg to use for the write, can be general or float.
 //
 void emitStoreSIMD12ToLclOffset(unsigned varNum, unsigned offset, regNumber opReg, regNumber tmpReg)
 {
     assert(varNum != BAD_VAR_NUM);
     assert(isVectorRegister(opReg));
-    assert(isGeneralRegister(tmpReg));
 
     // store lower 8 bytes
     emitIns_S_R(INS_str, EA_8BYTE, opReg, varNum, offset);
