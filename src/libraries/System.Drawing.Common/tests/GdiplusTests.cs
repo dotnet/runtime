@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class GdiplusTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsDrawingSupported))]
         public void IsAtLeastLibgdiplus6()
         {
             Assert.True(Helpers.GetIsWindowsOrAtLeastLibgdiplus6());
