@@ -317,7 +317,7 @@ namespace System.IO.Pipelines
                         await InnerStream.WriteAsync(data, localToken).ConfigureAwait(false);
                     }
 
-                    if (_bytesBuffered > 0 && writeToStream)
+                    if ((_bytesBuffered > 0 || data.Length > 0) && writeToStream)
                     {
                         await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
                     }
