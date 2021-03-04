@@ -39,7 +39,6 @@ namespace System.Net.Http
 
         public static async ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
-            // in sync path, dispose the stream to cancel
             using (cancellationToken.Register(s => ((Stream)s!).Dispose(), stream))
             {
                 try
@@ -302,7 +301,7 @@ namespace System.Net.Http
                 {
                     // https://www.openssh.com/txt/socks4a.protocol
                     int aLen = Encoding.UTF8.GetBytes(host, buffer.AsSpan(9 + uLen));
-                    buffer[9 + uLen + aLen] = 0;
+                    buffer[totalLength + aLen] = 0;
                     totalLength += aLen + 1;
                 }
 
@@ -329,15 +328,16 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask WriteAsync(Stream stream, Memory<byte> buffer, bool async)
+        private static ValueTask WriteAsync(Stream stream, Memory<byte> buffer, bool async)
         {
             if (async)
             {
-                await stream.WriteAsync(buffer).ConfigureAwait(false);
+                return stream.WriteAsync(buffer);
             }
             else
             {
                 stream.Write(buffer.Span);
+                return default;
             }
         }
 
@@ -351,7 +351,7 @@ namespace System.Net.Http
 
                 if (bytesRead == 0)
                 {
-                    throw new Exception("Early EOF");
+                    throw new IOException(SR.net_http_invalid_response_premature_eof);
                 }
 
                 buffer = buffer[bytesRead..];
