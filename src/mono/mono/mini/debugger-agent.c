@@ -4980,7 +4980,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		case MONO_TYPE_R8:
 		case MONO_TYPE_PTR:
 			buffer_add_byte (buf, t->type);
-			buffer_add_long (buf, (uint64_t) addr);
+			buffer_add_long (buf, (gssize) addr);
 			return;
 		}
 	}
