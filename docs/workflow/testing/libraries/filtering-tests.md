@@ -62,6 +62,10 @@ This attribute returns the 'failing' category, which is disabled by default.
 ```cs
 [ActiveIssue(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks)]
 ```
+**Disable using PlatformDetection filter:**
+```cs
+[ActiveIssue(string issue, typeof(PlatformDetection), nameof(PlatformDetection.{member name}))]
+```
 Use this attribute over test methods to skip failing tests only on the specific platforms and the specific target frameworks.
 
 #### SkipOnTargetFrameworkAttribute
