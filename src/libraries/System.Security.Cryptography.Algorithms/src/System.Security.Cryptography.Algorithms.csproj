@@ -629,6 +629,7 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
              Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
+    <Compile Include="System\Security\Cryptography\DSA.Create.Android.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
              Link="Common\System\Security\Cryptography\ECAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.ImportExport.cs"

@@ -8,18 +8,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class DSA : AsymmetricAlgorithm
-    {
-        public static new DSA Create()
-        {
-            return new DSAImplementation.DSAAndroid();
-        }
-    }
-
     internal static partial class DSAImplementation
     {
-#endif
         public sealed partial class DSAAndroid : DSA
         {
             // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
@@ -224,7 +214,6 @@ namespace System.Security.Cryptography
                 return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, signatureFieldSize);
             }
 
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             public override bool TryCreateSignature(
                 ReadOnlySpan<byte> hash,
                 Span<byte> destination,
@@ -242,17 +231,12 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 DSASignatureFormat signatureFormat,
                 out int bytesWritten)
-#else
-            public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
-#endif
             {
                 SafeDsaHandle key = GetKey();
                 int maxSignatureSize = Interop.AndroidCrypto.DsaEncodedSignatureSize(key);
                 Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
-#endif
                 {
                     int fieldSizeBytes = Interop.AndroidCrypto.DsaSignatureFieldSize(key);
                     int p1363SignatureSize = 2 * fieldSizeBytes;
@@ -269,7 +253,6 @@ namespace System.Security.Cryptography
                     Debug.Assert(bytesWritten == p1363SignatureSize);
                     return true;
                 }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
                     if (destination.Length >= maxSignatureSize)
@@ -300,7 +283,6 @@ namespace System.Security.Cryptography
                         SR.Cryptography_UnknownSignatureFormat,
                         signatureFormat.ToString());
                 }
-#endif
             }
 
             private static ReadOnlySpan<byte> SignHash(
@@ -340,7 +322,6 @@ namespace System.Security.Cryptography
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }
 
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
 
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
                 VerifySignatureCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
@@ -349,16 +330,11 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> hash,
                 ReadOnlySpan<byte> signature,
                 DSASignatureFormat signatureFormat)
-#else
-            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
-#endif
             {
                 SafeDsaHandle key = GetKey();
 
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-#endif
                     int expectedSignatureBytes = Interop.AndroidCrypto.DsaSignatureFieldSize(key) * 2;
                     if (signature.Length != expectedSignatureBytes)
                     {
@@ -367,7 +343,6 @@ namespace System.Security.Cryptography
                     }
 
                     signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
                 else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
@@ -376,7 +351,6 @@ namespace System.Security.Cryptography
                         SR.Cryptography_UnknownSignatureFormat,
                         signatureFormat.ToString());
                 }
-#endif
                 return Interop.AndroidCrypto.DsaVerify(key, hash, signature);
             }
 
@@ -384,13 +358,7 @@ namespace System.Security.Cryptography
             {
                 if (_key == null)
                 {
-                    throw new ObjectDisposedException(
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-                        nameof(DSA)
-#else
-                        nameof(DSAAndroid)
-#endif
-                    );
+                    throw new ObjectDisposedException(nameof(DSA));
                 }
             }
 
@@ -417,7 +385,5 @@ namespace System.Security.Cryptography
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
         }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }
-#endif
 }
