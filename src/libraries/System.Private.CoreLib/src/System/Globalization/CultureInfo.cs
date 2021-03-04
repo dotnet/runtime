@@ -1172,10 +1172,7 @@ namespace System.Globalization
                 {
                     throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
                 }
-                else
-                {
-                    return GlobalizationMode.UseNls ? NlsGetPredefinedCultureInfo(name) : IcuGetPredefinedCultureInfo(name);
-                }
+                return GlobalizationMode.UseNls ? NlsGetPredefinedCultureInfo(name) : IcuGetPredefinedCultureInfo(name);
             }
 
             return GetCultureInfo(name);
