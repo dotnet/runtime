@@ -52,7 +52,7 @@ HRESULT STDMETHODCALLTYPE CordbEval::CallParameterizedFunction(ICorDebugFunction
         CorElementType ty;
         ppArgs[i]->GetType(&ty);
         CordbContent* cc;
-        ppArgs[i]->GetAddress((CORDB_ADDRESS*)&cc);
+        cc = ((CordbValue*)ppArgs[i])->GetValue();
         m_dbgprot_buffer_add_byte(&localbuf, ty);
         switch (ty)
         {

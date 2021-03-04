@@ -51,6 +51,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetSize64(ULONG64* pSize);
     HRESULT STDMETHODCALLTYPE GetValue(void* pTo);
     HRESULT STDMETHODCALLTYPE SetValue(void* pFrom);
+    CordbContent* GetValue() {return &m_value;}
 };
 
 class CordbReferenceValue : public CordbBaseMono,
