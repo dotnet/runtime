@@ -613,7 +613,6 @@ namespace Wasm.Build.Tests
                 if (logToXUnit && message != null)
                 {
                     _testOutput.WriteLine($"{label} {message}");
-                    Console.WriteLine($"{label} {message}");
                 }
                 outputBuilder.AppendLine($"{label} {message}");
             }

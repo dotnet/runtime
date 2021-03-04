@@ -23,6 +23,7 @@
 
     <RunScriptCommand>$(_PreCommand) dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
     <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
   </PropertyGroup>
 
   <ItemGroup>
