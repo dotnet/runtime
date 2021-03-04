@@ -1157,7 +1157,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 {
 #if !defined(TARGET_64BIT) || defined(OSX_ARM64_ABI)
                     assert(info->GetByteSize() == 12);
-#else // TARGET_64BIT && !OSX_ARM64_ABI
+#else  // TARGET_64BIT && !OSX_ARM64_ABI
                     assert(info->GetByteSize() == 16);
 #endif // FEATURE_SIMD && FEATURE_PUT_STRUCT_ARG_STK
                 }
