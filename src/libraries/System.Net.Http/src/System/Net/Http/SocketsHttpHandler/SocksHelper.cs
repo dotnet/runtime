@@ -123,15 +123,15 @@ namespace System.Net.Http
                             // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
                             // +----+------+----------+------+----------+
                             buffer[0] = ProtocolVersion5;
-                            int uLen = Encoding.UTF8.GetByteCount(credentials.UserName);
-                            buffer[1] = checked((byte)uLen);
-                            int uLenEncoded = Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2));
-                            Debug.Assert(uLen == uLenEncoded);
-                            int pLen = Encoding.UTF8.GetByteCount(credentials.Password);
-                            buffer[2 + uLen] = checked((byte)pLen);
-                            int pLenEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + uLen));
-                            Debug.Assert(pLen == pLenEncoded);
-                            await WriteAsync(stream, buffer.AsMemory(0, 4 + uLen + pLen), async).ConfigureAwait(false);
+                            int usernameLength = Encoding.UTF8.GetByteCount(credentials.UserName);
+                            buffer[1] = checked((byte)usernameLength);
+                            int usernameLengthEncoded = Encoding.UTF8.GetBytes(credentials.UserName, buffer.AsSpan(2));
+                            Debug.Assert(usernameLength == usernameLengthEncoded);
+                            int passwordLength = Encoding.UTF8.GetByteCount(credentials.Password);
+                            buffer[2 + usernameLength] = checked((byte)passwordLength);
+                            int passwordLengthEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + usernameLength));
+                            Debug.Assert(passwordLength == passwordLengthEncoded);
+                            await WriteAsync(stream, buffer.AsMemory(0, 4 + usernameLength + passwordLength), async).ConfigureAwait(false);
 
                             // +----+--------+
                             // |VER | STATUS |
@@ -169,7 +169,7 @@ namespace System.Net.Http
                         buffer[3] = ATYP_IPV4;
                         hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
                         Debug.Assert(bytesWritten == 4);
-                        addressLength = 3;
+                        addressLength = 4;
                     }
                     else
                     {
@@ -177,24 +177,23 @@ namespace System.Net.Http
                         buffer[3] = ATYP_IPV6;
                         hostIP.TryWriteBytes(buffer.AsSpan(4), out int bytesWritten);
                         Debug.Assert(bytesWritten == 16);
-                        addressLength = 15;
+                        addressLength = 16;
                     }
                 }
                 else
                 {
                     buffer[3] = ATYP_DOMAIN_NAME;
-                    addressLength = Encoding.UTF8.GetByteCount(host);
-                    buffer[4] = checked((byte)addressLength);
+                    int hostLength = Encoding.UTF8.GetByteCount(host);
+                    buffer[4] = checked((byte)hostLength);
                     int bytesEncoded = Encoding.UTF8.GetBytes(host, buffer.AsSpan(5));
-                    Debug.Assert(bytesEncoded == addressLength);
+                    Debug.Assert(bytesEncoded == hostLength);
+                    addressLength = hostLength + 1;
                 }
 
-                Debug.Assert(port > 0);
-                Debug.Assert(port < ushort.MaxValue);
-                buffer[addressLength + 5] = (byte)(port >> 8);
-                buffer[addressLength + 6] = (byte)port;
+                buffer[addressLength + 4] = (byte)(port >> 8);
+                buffer[addressLength + 5] = (byte)port;
 
-                await WriteAsync(stream, buffer.AsMemory(0, addressLength + 7), async).ConfigureAwait(false);
+                await WriteAsync(stream, buffer.AsMemory(0, addressLength + 6), async).ConfigureAwait(false);
 
                 // +----+-----+-------+------+----------+----------+
                 // |VER | REP |  RSV  | ATYP | DST.ADDR | DST.PORT |
@@ -238,8 +237,6 @@ namespace System.Net.Http
                 buffer[0] = ProtocolVersion4;
                 buffer[1] = CMD_CONNECT;
 
-                Debug.Assert(port > 0);
-                Debug.Assert(port < ushort.MaxValue);
                 buffer[2] = (byte)(port >> 8);
                 buffer[3] = (byte)port;
 
@@ -293,16 +290,16 @@ namespace System.Net.Http
                     }
                 }
 
-                int uLen = Encoding.UTF8.GetBytes(username, buffer.AsSpan(8));
-                buffer[8 + uLen] = 0;
-                int totalLength = 9 + uLen;
+                int usernameLength = Encoding.UTF8.GetBytes(username, buffer.AsSpan(8));
+                buffer[8 + usernameLength] = 0;
+                int totalLength = 9 + usernameLength;
 
                 if (isVersion4a && ipv4Address == null)
                 {
                     // https://www.openssh.com/txt/socks4a.protocol
-                    int aLen = Encoding.UTF8.GetBytes(host, buffer.AsSpan(9 + uLen));
-                    buffer[totalLength + aLen] = 0;
-                    totalLength += aLen + 1;
+                    int hostLength = Encoding.UTF8.GetBytes(host, buffer.AsSpan(9 + usernameLength));
+                    buffer[totalLength + hostLength] = 0;
+                    totalLength += hostLength + 1;
                 }
 
                 await WriteAsync(stream, buffer.AsMemory(0, totalLength), async).ConfigureAwait(false);
