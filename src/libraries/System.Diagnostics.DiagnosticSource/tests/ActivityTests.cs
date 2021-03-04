@@ -1695,6 +1695,21 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestParentTraceFlags()
+        {
+            Activity a = new Activity("ParentFlagsA");
+            a.SetIdFormat(ActivityIdFormat.W3C);
+            a.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.Recorded);
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01", a.ParentId);
+
+            Activity b = new Activity("ParentFlagsB");
+            b.SetIdFormat(ActivityIdFormat.W3C);
+            b.SetParentId(ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()), ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()), ActivityTraceFlags.None);
+            b.ActivityTraceFlags = ActivityTraceFlags.Recorded; // Setting ActivityTraceFlags shouldn't affect the parent
+            Assert.Equal("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00", b.ParentId);
+        }
+
+        [Fact]
         public void TestStatus()
         {
             Activity a = new Activity("Status");
