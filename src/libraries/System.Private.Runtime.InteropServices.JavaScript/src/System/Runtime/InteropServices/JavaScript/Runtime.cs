@@ -359,6 +359,81 @@ namespace System.Runtime.InteropServices.JavaScript
             return 0;
         }
 
+        // HACK: We need to ensure the strings used as pre/post filters remain rooted,
+        //  so that the GC can't collect them before the JS bindings can get to them
+        // Since these filters should be literals in most cases we don't really need to
+        //  do this, but better safe than sorry
+        private static List<GCHandle> CustomMarshalerFilterRoots = new List<GCHandle>();
+
+        [StructLayout(LayoutKind.Sequential, Pack=1)]
+        public struct CustomMarshalerInfo {
+            public IntPtr InputPreFilter, OutputPostFilter;
+            public int InputPreFilterLength, OutputPostFilterLength;
+            public IntPtr Input, Output;
+        }
+
+        private static unsafe bool GetAndRootStringField (Type type, string name, out IntPtr result, out int resultSize) {
+            var info = type.GetField(
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (!info) {
+                result = IntPtr.Zero;
+                resultSize = 0;
+                return false;
+            }
+
+            var value = info.GetValue(null) as string;
+            if (value == null) {
+                result = IntPtr.Zero;
+                resultSize = 0;
+                return false;
+            }
+
+            var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
+            CustomMarshalerFilterRoots.Add(handle);
+            var pFirstChar = &(value.GetPinnableReference());
+            result = new IntPtr(pFirstChar);
+            resultSize = value.Length;
+            return true;
+        }
+
+        private static unsafe void GetMethodPointer (Type type, string name, out IntPtr result) {
+            var info = type.GetMethod(
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (!info) {
+                result = IntPtr.Zero;
+                return false;
+            }
+
+            result = info.MethodHandle;
+            return true;
+        }
+
+        public static unsafe int GetCustomMarshalerInfoForType (IntPtr typePtr, IntPtr resultPtr, int resultSize) {
+            if (!typePtr)
+                return 1;
+            if (!resultPtr || (resultSize <= Marshal.SizeOf(CustomMarshalerInfo)))
+                return 2;
+
+            IntPtrAndHandle tmp = default(IntPtrAndHandle);
+            tmp.ptr = typePtr;
+            var typeHandle = tmp.typeHandle;
+            var type = Type.GetTypeFromHandle(typeHandle);
+
+            var pResult = (CustomMarshalerInfo*)resultPtr.ToPointer();
+            GetAndRootStringField(
+                type, "JSToManaged_PreFilter", 
+                out pResult->InputPreFilter, out pResult->InputPreFilterLength
+            );
+            GetAndRootStringField(
+                type, "ManagedToJS_PostFilter", 
+                out pResult->OutputPostFilter, out pResult->OutputPostFilterLength
+            );
+
+            return 0;
+        }
+
         public static void MakeMarshalTypeRecord (Type type, out MarshalTypeRecord result) {
             result.MarshalType = GetMarshalTypeFromType(type);
             result.TypeHandle = type.TypeHandle.Value;
