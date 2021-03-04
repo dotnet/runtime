@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -151,6 +152,33 @@ namespace System.Net.WebSockets
         /// </summary>
         private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
+        /// <summary>
+        /// Indicates whether compression is enabled for the receiving part of the websocket.
+        /// </summary>
+        private readonly bool _inflateEnabled;
+        private byte[]? _inflateBuffer;
+
+        /// <summary>
+        /// The position for the next unconsumed byte in the inflate buffer.
+        /// </summary>
+        private int _inflateBufferPosition;
+
+        /// <summary>
+        /// How many unconsumed bytes are left in the inflate buffer.
+        /// </summary>
+        private int _inflateBufferAvailable;
+
+        /// <summary>
+        /// Because of how the underlying zlib inflater works, we may have consumed the entire payload, but still
+        /// might have data left in the native component, we need to track if inflating has really finished.
+        /// </summary>
+        private bool _inflateFinished = true;
+
+        /// <summary>
+        /// Indicates whether compression is enabled for the sending part of the websocket.
+        /// </summary>
+        private readonly bool _deflateEnabled;
+
         /// <summary>Initializes the websocket.</summary>
         /// <param name="stream">The connected Stream.</param>
         /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
@@ -170,6 +198,8 @@ namespace System.Net.WebSockets
             _stream = stream;
             _isServer = isServer;
             _subprotocol = subprotocol;
+            _inflateEnabled = false;
+            _deflateEnabled = false;
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -530,42 +560,100 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payloadBuffer)
         {
-            // Ensure we have a _sendBuffer.
-            AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
-            Debug.Assert(_sendBuffer != null);
-
-            // Write the message header data to the buffer.
-            int headerLength;
-            int? maskOffset = null;
-            if (_isServer)
+            try
             {
-                // The server doesn't send a mask, so the mask offset returned by WriteHeader
-                // is actually the end of the header.
-                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false);
-            }
-            else
-            {
-                // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
-                // and we need to know the total length for sending it on the wire.
-                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
-                headerLength = maskOffset.GetValueOrDefault() + MaskLength;
-            }
-
-            // Write the payload
-            if (payloadBuffer.Length > 0)
-            {
-                payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length));
-
-                // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
-                // changing the data in the caller-supplied payload buffer.
-                if (maskOffset.HasValue)
+                if (_deflateEnabled)
                 {
-                    ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length), _sendBuffer, maskOffset.Value, 0);
+                    payloadBuffer = Deflate(payloadBuffer);
+                }
+
+                // Ensure we have a _sendBuffer.
+                AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
+                Debug.Assert(_sendBuffer != null);
+
+                // Write the message header data to the buffer.
+                int headerLength;
+                int? maskOffset = null;
+                if (_isServer)
+                {
+                    // The server doesn't send a mask, so the mask offset returned by WriteHeader
+                    // is actually the end of the header.
+                    headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false);
+                }
+                else
+                {
+                    // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
+                    // and we need to know the total length for sending it on the wire.
+                    maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true);
+                    headerLength = maskOffset.GetValueOrDefault() + MaskLength;
+                }
+
+                // Write the payload
+                if (payloadBuffer.Length > 0)
+                {
+                    payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length));
+
+                    // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
+                    // changing the data in the caller-supplied payload buffer.
+                    if (maskOffset.HasValue)
+                    {
+                        ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length), _sendBuffer, maskOffset.Value, 0);
+                    }
+                }
+
+                // Return the number of bytes in the send buffer
+                return headerLength + payloadBuffer.Length;
+            }
+            finally
+            {
+                if (_deflateEnabled)
+                {
+                    ReleaseDeflateBuffer();
                 }
             }
+        }
 
-            // Return the number of bytes in the send buffer
-            return headerLength + payloadBuffer.Length;
+        private ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload)
+        {
+            // This function assumes that we're going to use a single buffer.
+            throw new NotImplementedException();
+        }
+
+        private void ReleaseDeflateBuffer()
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool Inflate(Span<byte> output, out int bytesWritten)
+        {
+            int consumed = 42;
+
+            _inflateBufferPosition += consumed;
+            _inflateBufferAvailable -= consumed;
+
+            if (_inflateBufferAvailable == 0)
+            {
+                ReleaseInflateBuffer();
+            }
+
+            throw new NotImplementedException();
+        }
+
+        [MemberNotNull(nameof(_inflateBuffer))]
+        private void RentInflateBuffer(long payloadLength)
+        {
+            _inflateBufferPosition = 0;
+            _inflateBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(payloadLength, 1_000_000));
+
+            throw new NotImplementedException();
+        }
+
+        private void ReleaseInflateBuffer()
+        {
+            if (_inflateBuffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_inflateBuffer);
+            }
         }
 
         private void SendKeepAliveFrameAsync()
@@ -707,7 +795,7 @@ namespace System.Net.WebSockets
                     // with it.  If instead its payload length is zero, then we've completed the processing of
                     // thta message, and we should read the next header.
                     MessageHeader header = _lastReceiveHeader;
-                    if (header.PayloadLength == 0)
+                    if (header.PayloadLength == 0 && _inflateFinished)
                     {
                         if (_receiveBufferCount < (_isServer ? MaxMessageHeaderLength : (MaxMessageHeaderLength - MaskLength)))
                         {
@@ -756,19 +844,20 @@ namespace System.Net.WebSockets
                     if (header.Opcode == MessageOpcode.Continuation)
                     {
                         header.Opcode = _lastReceiveHeader.Opcode;
+                        header.Compressed = _lastReceiveHeader.Compressed;
                     }
 
                     // The message should now be a binary or text message.  Handle it by reading the payload and returning the contents.
                     Debug.Assert(header.Opcode == MessageOpcode.Binary || header.Opcode == MessageOpcode.Text, $"Unexpected opcode {header.Opcode}");
 
                     // If there's no data to read, return an appropriate result.
-                    if (header.PayloadLength == 0 || payloadBuffer.Length == 0)
+                    if ((header.PayloadLength == 0 && _inflateFinished) || payloadBuffer.Length == 0)
                     {
                         _lastReceiveHeader = header;
                         return resultGetter.GetResult(
                             0,
                             header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                            header.Fin && header.PayloadLength == 0,
+                            header.Fin && header.PayloadLength == 0 && _inflateFinished,
                             null, null);
                     }
 
@@ -779,39 +868,71 @@ namespace System.Net.WebSockets
 
                     // First copy any data lingering in the receive buffer.
                     int totalBytesReceived = 0;
-                    if (_receiveBufferCount > 0)
-                    {
-                        int receiveBufferBytesToCopy = Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBufferCount));
-                        Debug.Assert(receiveBufferBytesToCopy > 0);
-                        _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(payloadBuffer.Span);
-                        ConsumeFromBuffer(receiveBufferBytesToCopy);
-                        totalBytesReceived += receiveBufferBytesToCopy;
-                        Debug.Assert(
-                            _receiveBufferCount == 0 ||
-                            totalBytesReceived == payloadBuffer.Length ||
-                            totalBytesReceived == header.PayloadLength);
-                    }
 
-                    // Then read directly into the payload buffer until we've hit a limit.
-                    while (totalBytesReceived < payloadBuffer.Length &&
-                           totalBytesReceived < header.PayloadLength)
+                    // Only start a new receive when we've consumed everything from the inflate buffer. When
+                    // there is no compression, this will always be 0.
+                    if (_inflateBufferAvailable == 0)
                     {
-                        int numBytesRead = await _stream.ReadAsync(payloadBuffer.Slice(
-                            totalBytesReceived,
-                            (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived), cancellationToken).ConfigureAwait(false);
-                        if (numBytesRead <= 0)
+                        if (_receiveBufferCount > 0)
                         {
-                            ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
-                            break;
+                            int receiveBufferBytesToCopy = Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBufferCount));
+                            Debug.Assert(receiveBufferBytesToCopy > 0);
+
+                            if (header.Compressed)
+                            {
+                                Debug.Assert(_inflateBufferAvailable == 0);
+                                RentInflateBuffer(header.PayloadLength);
+
+                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(_inflateBuffer);
+                                _inflateBufferAvailable += receiveBufferBytesToCopy;
+                                ConsumeFromBuffer(receiveBufferBytesToCopy);
+                                totalBytesReceived += receiveBufferBytesToCopy;
+                                Debug.Assert(_receiveBufferCount == 0 || totalBytesReceived == header.PayloadLength);
+                            }
+                            else
+                            {
+                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(payloadBuffer.Span);
+                                ConsumeFromBuffer(receiveBufferBytesToCopy);
+                                totalBytesReceived += receiveBufferBytesToCopy;
+                                Debug.Assert(
+                                    _receiveBufferCount == 0 ||
+                                    totalBytesReceived == payloadBuffer.Length ||
+                                    totalBytesReceived == header.PayloadLength);
+                            }
                         }
-                        totalBytesReceived += numBytesRead;
+
+                        // Then read directly into the payload buffer until we've hit a limit.
+                        while (totalBytesReceived < payloadBuffer.Length &&
+                               totalBytesReceived < header.PayloadLength)
+                        {
+                            int numBytesRead = await _stream.ReadAsync(
+                                header.Compressed ?
+                                    _inflateBuffer.AsMemory(totalBytesReceived, (int)Math.Min(_inflateBuffer!.Length, header.PayloadLength) - totalBytesReceived) :
+                                    payloadBuffer.Slice(totalBytesReceived, (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived),
+                                cancellationToken).ConfigureAwait(false);
+                            if (numBytesRead <= 0)
+                            {
+                                ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
+                                break;
+                            }
+                            totalBytesReceived += numBytesRead;
+                        }
+
+                        if (_isServer)
+                        {
+                            _receivedMaskOffsetOffset = ApplyMask(header.Compressed ?
+                                _inflateBuffer.AsSpan(0, totalBytesReceived) :
+                                payloadBuffer.Span.Slice(0, totalBytesReceived), header.Mask, _receivedMaskOffsetOffset);
+                        }
+                        header.PayloadLength -= totalBytesReceived;
                     }
 
-                    if (_isServer)
+                    if (header.Compressed)
                     {
-                        _receivedMaskOffsetOffset = ApplyMask(payloadBuffer.Span.Slice(0, totalBytesReceived), header.Mask, _receivedMaskOffsetOffset);
+                        // In case of compression totalBytesReceived should actually represent how much we've
+                        // inflated, rather than how much we've read from the stream.
+                        _inflateFinished = Inflate(payloadBuffer.Span, out totalBytesReceived);
                     }
-                    header.PayloadLength -= totalBytesReceived;
 
                     // If this a text message, validate that it contains valid UTF8.
                     if (header.Opcode == MessageOpcode.Text &&
@@ -828,8 +949,15 @@ namespace System.Net.WebSockets
                         null, null);
                 }
             }
-            catch (Exception exc) when (!(exc is OperationCanceledException))
+            catch (Exception exc)
             {
+                ReleaseInflateBuffer();
+
+                if (exc is OperationCanceledException)
+                {
+                    throw;
+                }
+
                 if (_state == WebSocketState.Aborted)
                 {
                     throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
@@ -1051,8 +1179,9 @@ namespace System.Net.WebSockets
             Span<byte> receiveBufferSpan = _receiveBuffer.Span;
 
             header.Fin = (receiveBufferSpan[_receiveBufferOffset] & 0x80) != 0;
-            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0x70) != 0;
+            bool reservedSet = (receiveBufferSpan[_receiveBufferOffset] & 0b_0011_0000) != 0;
             header.Opcode = (MessageOpcode)(receiveBufferSpan[_receiveBufferOffset] & 0xF);
+            header.Compressed = (receiveBufferSpan[_receiveBufferOffset] & 0b_0100_0000) != 0;
 
             bool masked = (receiveBufferSpan[_receiveBufferOffset + 1] & 0x80) != 0;
             header.PayloadLength = receiveBufferSpan[_receiveBufferOffset + 1] & 0x7F;
@@ -1081,6 +1210,12 @@ namespace System.Net.WebSockets
             {
                 resultHeader = default;
                 return SR.net_Websockets_ReservedBitsSet;
+            }
+
+            if (header.Compressed && !_inflateEnabled)
+            {
+                resultHeader = default;
+                return "TODO";
             }
 
             if (masked)
@@ -1580,6 +1715,7 @@ namespace System.Net.WebSockets
             internal MessageOpcode Opcode;
             internal bool Fin;
             internal long PayloadLength;
+            internal bool Compressed;
             internal int Mask;
         }
 
