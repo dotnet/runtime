@@ -80,7 +80,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'aspnet'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_aspnet.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)/superpmi_aspnet.py -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
   </PropertyGroup>
 
   <PropertyGroup>
