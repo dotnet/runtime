@@ -77,7 +77,7 @@ namespace System.IO.Strategies
         public override long Position
         {
             get => _filePosition;
-            set => Seek(value, SeekOrigin.Begin);
+            set => _filePosition = value;
         }
 
         internal sealed override string Name => _path ?? SR.IO_UnknownFileName;
@@ -86,6 +86,8 @@ namespace System.IO.Strategies
 
         internal sealed override bool IsPipe => _isPipe;
         // Flushing is the responsibility of BufferedFileStreamStrategy
+        // TODO: we might consider calling FileStreamHelpers.Seek(handle, _path, _filePosition, SeekOrigin.Begin);
+        // here to set the actual file offset
         internal sealed override SafeFileHandle SafeFileHandle => _fileHandle;
 
         // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
@@ -147,27 +149,31 @@ namespace System.IO.Strategies
             if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
             long oldPos = _filePosition;
-            long pos = SeekCore(_fileHandle, offset, origin);
+            long pos = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.End => FileStreamHelpers.GetFileLength(_fileHandle, _path) + offset,
+                _ => _filePosition + offset // SeekOrigin.Current
+            };
 
-            // Prevent users from overwriting data in a file that was opened in
-            // append mode.
+            if (pos >= 0)
+            {
+                _filePosition = pos;
+            }
+            else
+            {
+                // keep throwing the same exception we did when seek was causing actual offset change
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER);
+            }
+
+            // Prevent users from overwriting data in a file that was opened in append mode.
             if (_appendStart != -1 && pos < _appendStart)
             {
-                SeekCore(_fileHandle, oldPos, SeekOrigin.Begin);
+                _filePosition = oldPos;
                 throw new IOException(SR.IO_SeekAppendOverwrite);
             }
 
             return pos;
-        }
-
-        // This doesn't do argument checking.  Necessary for SetLength, which must
-        // set the file pointer beyond the end of the file. This will update the
-        // internal position
-        protected long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
-
-            return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
         }
 
         internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
@@ -187,7 +193,7 @@ namespace System.IO.Strategies
             // For Append mode...
             if (mode == FileMode.Append)
             {
-                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
+                _appendStart = _filePosition = Length;
             }
             else
             {
@@ -221,9 +227,15 @@ namespace System.IO.Strategies
             OnInitFromHandle(handle);
 
             if (_canSeek)
-                SeekCore(handle, 0, SeekOrigin.Current);
+            {
+                // given strategy was created out of existing handle, so we have to perform
+                // a syscall to get the current handle offset
+                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
+            }
             else
+            {
                 _filePosition = 0;
+            }
         }
 
         public sealed override void SetLength(long value)
@@ -234,8 +246,6 @@ namespace System.IO.Strategies
             SetLengthCore(value);
         }
 
-        // We absolutely need this method broken out so that WriteInternalCoreAsync can call
-        // a method without having to go through buffering code that might call FlushWrite.
         protected unsafe void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
@@ -244,7 +254,7 @@ namespace System.IO.Strategies
 
             if (_filePosition > value)
             {
-                SeekCore(_fileHandle, 0, SeekOrigin.End);
+                _filePosition = value;
             }
         }
     }

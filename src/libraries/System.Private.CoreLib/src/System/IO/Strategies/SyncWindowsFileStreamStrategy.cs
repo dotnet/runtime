@@ -104,7 +104,8 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, null, out int errorCode);
+            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
+            int r = FileStreamHelpers.ReadFileNative(_fileHandle, destination, true, &nativeOverlapped, out int errorCode);
 
             if (r == -1)
             {
@@ -136,7 +137,8 @@ namespace System.IO.Strategies
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
 
-            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, null, out int errorCode);
+            NativeOverlapped nativeOverlapped = GetNativeOverlappedForCurrentPosition();
+            int r = FileStreamHelpers.WriteFileNative(_fileHandle, source, true, &nativeOverlapped, out int errorCode);
 
             if (r == -1)
             {
@@ -158,6 +160,16 @@ namespace System.IO.Strategies
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
             _filePosition += r;
             return;
+        }
+
+        private NativeOverlapped GetNativeOverlappedForCurrentPosition()
+        {
+            NativeOverlapped nativeOverlapped = default;
+            // For pipes the offsets are ignored by the OS
+            nativeOverlapped.OffsetLow = unchecked((int)_filePosition);
+            nativeOverlapped.OffsetHigh = (int)(_filePosition >> 32);
+
+            return nativeOverlapped;
         }
     }
 }
