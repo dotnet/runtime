@@ -8,25 +8,7 @@
 #include "pal_jni.h"
 
 /*
-Shims the DSA_up_ref method.
-
-Returns 1 upon success, otherwise 0.
-*/
-PALEXPORT int32_t AndroidCryptoNative_DsaUpRef(jobject dsa);
-
-/*
-Cleans up and deletes a DSA instance.
-
-Implemented by calling DSA_free
-
-No-op if dsa is null.
-The given DSA pointer is invalid after this call.
-Always succeeds.
-*/
-PALEXPORT void AndroidCryptoNative_DsaDestroy(jobject dsa);
-
-/*
-Shims the DSA_generate_key_ex method.
+Generates a key pair of `bits` bits wide.
 
 Returns 1 upon success, otherwise 0.
 */
@@ -43,13 +25,11 @@ Returns the size of the p parameter in bytes.
 PALEXPORT int32_t AndroidCryptoNative_DsaSizeP(jobject dsa);
 
 /*
-Returns the size of one of the biginteger fields in a signature in bytes.
+Returns the size of one of the biginteger fields in a P1363 signature in bytes.
 */
 PALEXPORT int32_t AndroidCryptoNative_DsaSignatureFieldSize(jobject dsa);
 
 /*
-Shims the DSA_sign method.
-
 Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t
@@ -61,9 +41,7 @@ AndroidCryptoNative_DsaSign(
     int32_t* outSignatureLength);
 
 /*
-Shims the DSA_verify method.
-
-Returns 1 upon success, otherwise 0.
+Returns 1 upon success, 0 upon verification mismatch, -1 on internal failure.
 */
 PALEXPORT int32_t
 AndroidCryptoNative_DsaVerify(
