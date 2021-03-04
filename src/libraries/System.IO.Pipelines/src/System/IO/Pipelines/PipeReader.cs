@@ -20,7 +20,7 @@ namespace System.IO.Pipelines
 
         /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
-        /// <returns>A <see cref="System.Threading.Tasks.ValueTask`1" /> representing the asynchronous read operation.</returns>
+        /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
         public abstract ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default);
 
         /// <summary>Moves forward the pipeline's read cursor to after the consumed data, marking the data as processed.</summary>

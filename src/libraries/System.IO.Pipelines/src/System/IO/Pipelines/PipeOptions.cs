@@ -87,7 +87,7 @@ namespace System.IO.Pipelines
         /// <value>A <see cref="System.IO.Pipelines.PipeScheduler" /> that is used to execute <see cref="System.IO.Pipelines.PipeReader" /> callbacks and async continuations.</value>
         public PipeScheduler ReaderScheduler { get; }
 
-        /// <summary>Gets the <see cref="System.Buffers.MemoryPool`1" /> object used for buffer management.</summary>
+        /// <summary>Gets the <see cref="System.Buffers.MemoryPool{T}" /> object used for buffer management.</summary>
         /// <value>A pool of memory blocks used for buffer management.</value>
         public MemoryPool<byte> Pool { get; }
     }

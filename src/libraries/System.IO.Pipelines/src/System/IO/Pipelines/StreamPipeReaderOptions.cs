@@ -43,7 +43,7 @@ namespace System.IO.Pipelines
         /// <value>The minimum read size.</value>
         public int MinimumReadSize { get; }
 
-        /// <summary>Gets the <see cref="System.Buffers.MemoryPool`1" /> to use when allocating memory.</summary>
+        /// <summary>Gets the <see cref="System.Buffers.MemoryPool{T}" /> to use when allocating memory.</summary>
         /// <value>A memory pool instance.</value>
         public MemoryPool<byte> Pool { get; }
 

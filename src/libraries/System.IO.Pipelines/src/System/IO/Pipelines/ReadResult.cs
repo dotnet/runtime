@@ -30,7 +30,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        /// <summary>Gets the <see cref="System.Buffers.ReadOnlySequence`1" /> that was read.</summary>
+        /// <summary>Gets the <see cref="System.Buffers.ReadOnlySequence{T}" /> that was read.</summary>
         /// <value>A read-only sequence containing the bytes of data that were read in the <see cref="System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)" /> call.</value>
         public ReadOnlySequence<byte> Buffer => _resultBuffer;
 
