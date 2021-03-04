@@ -221,6 +221,8 @@ ICALL_EXTERN_C void mono_throw_bad_image (void);
 
 ICALL_EXTERN_C void mono_throw_not_supported (void);
 
+ICALL_EXTERN_C void mono_throw_platform_not_supported (void);
+
 ICALL_EXTERN_C void mono_throw_invalid_program (const char *msg);
 
 ICALL_EXTERN_C void mono_dummy_jit_icall (void);

@@ -9,7 +9,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         internal AttributeMetadataCollection() { }
 
-        public AttributeMetadata this[int index] => (AttributeMetadata)InnerList[index];
+        public AttributeMetadata this[int index] => (AttributeMetadata)InnerList[index]!;
 
         public bool Contains(AttributeMetadata metadata)
         {
@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                AttributeMetadata tmp = (AttributeMetadata)InnerList[i];
+                AttributeMetadata tmp = (AttributeMetadata)InnerList[i]!;
                 string name = tmp.Name;
 
                 if (Utils.Compare(name, metadata.Name) == 0)
@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                AttributeMetadata tmp = (AttributeMetadata)InnerList[i];
+                AttributeMetadata tmp = (AttributeMetadata)InnerList[i]!;
 
                 if (Utils.Compare(tmp.Name, metadata.Name) == 0)
                 {

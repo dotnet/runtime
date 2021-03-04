@@ -9,6 +9,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
   </ItemGroup>
 </Project>

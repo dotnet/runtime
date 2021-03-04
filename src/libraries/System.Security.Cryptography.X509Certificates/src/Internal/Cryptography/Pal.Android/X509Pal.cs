@@ -21,12 +21,18 @@ namespace Internal.Cryptography.Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDsaPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDsaImplementation.ECDsaAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDiffieHellmanPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
@@ -60,17 +66,33 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException();
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);
+                if (contentType != X509ContentType.Unknown)
+                {
+                    return contentType;
+                }
 
-                // TODO: [AndroidCrypto] Handle PKCS#12
-                if (contentType == X509ContentType.Unknown)
-                    throw new CryptographicException();
+                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                {
+                    return X509ContentType.Pkcs12;
+                }
 
-                return contentType;
+                // Throw on unknown type to match Unix and Windows
+                throw new CryptographicException();
             }
 
             public X509ContentType GetCertContentType(string fileName)
             {
                 return GetCertContentType(File.ReadAllBytes(fileName));
+            }
+
+            private SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
+            {
+                AndroidCertificatePal certPal = (AndroidCertificatePal)pal;
+                IntPtr ptr = Interop.AndroidCrypto.X509GetPublicKey(certPal.SafeHandle, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC);
+                if (ptr == IntPtr.Zero)
+                    throw new CryptographicException();
+
+                return new SafeEcKeyHandle(ptr);
             }
         }
     }

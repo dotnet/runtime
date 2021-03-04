@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public ActiveDirectoryRole this[int index] => (ActiveDirectoryRole)InnerList[index];
+        public ActiveDirectoryRole this[int index] => (ActiveDirectoryRole)InnerList[index]!;
 
         public bool Contains(ActiveDirectoryRole role)
         {
@@ -29,7 +29,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                int tmp = (int)InnerList[i];
+                int tmp = (int)InnerList[i]!;
                 if (tmp == (int)role)
                 {
                     return true;
@@ -47,7 +47,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                int tmp = (int)InnerList[i];
+                int tmp = (int)InnerList[i]!;
 
                 if (tmp == (int)role)
                 {
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public AdamRole this[int index] => (AdamRole)InnerList[index];
+        public AdamRole this[int index] => (AdamRole)InnerList[index]!;
 
         public bool Contains(AdamRole role)
         {
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                int tmp = (int)InnerList[i];
+                int tmp = (int)InnerList[i]!;
                 if (tmp == (int)role)
                 {
                     return true;
@@ -105,7 +105,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                int tmp = (int)InnerList[i];
+                int tmp = (int)InnerList[i]!;
 
                 if (tmp == (int)role)
                 {

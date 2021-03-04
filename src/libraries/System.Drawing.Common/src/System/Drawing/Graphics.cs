@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -329,6 +329,54 @@ namespace System.Drawing
             {
                 Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
                     new HandleRef(this, NativeGraphics), new HandleRef(value, value.NativeMatrix)));
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the world transform elements for this <see cref="Graphics"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is a more performant alternative to <see cref="Transform"/> that does not need disposal.
+        /// </remarks>
+        public unsafe Matrix3x2 TransformElements
+        {
+            get
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix(out IntPtr nativeMatrix));
+
+                try
+                {
+                    Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
+                        new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
+
+                    Matrix3x2 matrix = default;
+                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(null, nativeMatrix), (float*)&matrix));
+                    return matrix;
+                }
+                finally
+                {
+                    if (nativeMatrix != IntPtr.Zero)
+                    {
+                        Gdip.GdipDeleteMatrix(new HandleRef(null, nativeMatrix));
+                    }
+                }
+            }
+            set
+            {
+                IntPtr nativeMatrix = Matrix.CreateNativeHandle(value);
+
+                try
+                {
+                    Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
+                        new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
+                }
+                finally
+                {
+                    if (nativeMatrix != IntPtr.Zero)
+                    {
+                        Gdip.GdipDeleteMatrix(new HandleRef(null, nativeMatrix));
+                    }
+                }
             }
         }
 

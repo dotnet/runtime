@@ -395,6 +395,7 @@
   <!-- Used in Android (native crypto) -->
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="Internal\Cryptography\Pal.Android\AndroidCertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Android\AndroidPkcs12Reader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\FindPal.cs" />
@@ -402,14 +403,36 @@
     <Compile Include="Internal\Cryptography\Pal.Android\StorePal.LoaderPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Android\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateData.ManagedDecode.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
+             Link="Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Crypto.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Crypto.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.ImportExport.cs"
+             Link="Common\System\Security\Cryptography\ECAndroid.ImportExport.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
+             Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"

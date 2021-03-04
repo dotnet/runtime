@@ -308,7 +308,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/main/docs/workflow for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -574,7 +574,7 @@ exit /b 1
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md ^
 Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

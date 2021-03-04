@@ -1196,8 +1196,8 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 {
 	MonoDynamicAssembly *assembly;
 	MonoDynamicImage *image;
-	MonoDomain *domain = mono_object_domain (assemblyb);
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoDomain *domain = mono_get_root_domain ();
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	
 	if (assemblyb->dynamic_assembly)
 		return;
@@ -2795,7 +2795,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoClass *klass,
 {
 	error_init (error);
 	
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_get_root_domain ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, mono_object_new_handle (mono_class_get_marshal_as_attribute_class (), error));
 	goto_if_nok (error, fail);
 	guint32 utype;
@@ -3928,7 +3928,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * Together with this we must ensure the contents of all instances to match the created type.
 	 */
 	if (mono_class_is_gtd (klass)) {
-		MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+		MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 		struct remove_instantiations_user_data data;
 		data.klass = klass;
 		data.error = error;
@@ -4474,13 +4474,6 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 
 
 #endif /* DISABLE_REFLECTION_EMIT */
-
-void
-mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
-{
-	MONO_GC_UNREGISTER_ROOT_IF_MOVING (entry->gparam);
-	g_free (entry);
-}
 
 gint32
 ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, MonoBoolean create_open_instance, MonoError *error)

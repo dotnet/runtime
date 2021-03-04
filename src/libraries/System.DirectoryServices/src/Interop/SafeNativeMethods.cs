@@ -29,7 +29,7 @@ namespace System.DirectoryServices.Interop
         public static extern unsafe int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
 
         [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
-        public static extern int ADsSetLastError(int error, string errorString, string provider);
+        public static extern int ADsSetLastError(int error, string? errorString, string? provider);
 
         public class EnumVariant
         {
@@ -93,7 +93,7 @@ namespace System.DirectoryServices.Interop
                         if (numRead[0] > 0)
                         {
 #pragma warning disable 612, 618
-                            _currentValue = Marshal.GetObjectForNativeVariant(addr);
+                            _currentValue = Marshal.GetObjectForNativeVariant(addr)!;
 #pragma warning restore 612, 618
                         }
                     }

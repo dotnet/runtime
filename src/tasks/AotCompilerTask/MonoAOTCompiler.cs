@@ -390,11 +390,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
+                writer.WriteLine("#include <mono/jit/jit.h>");
+
                 foreach (var symbol in symbols)
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("static void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules ()");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {

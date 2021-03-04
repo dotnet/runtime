@@ -57,12 +57,22 @@ typedef struct {
 	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
+	/* Protected by 'jit_code_hash_lock' */
+	MonoInternalHashTable jit_code_hash;
+	mono_mutex_t    jit_code_hash_lock;
 } MonoJitMemoryManager;
 
 static inline MonoJitMemoryManager*
 get_default_jit_mm (void)
 {
-	return (MonoJitMemoryManager*)(mono_domain_ambient_memory_manager (mono_get_root_domain ()))->runtime_info;
+	return (MonoJitMemoryManager*)(mono_mem_manager_get_ambient ())->runtime_info;
+}
+
+// FIXME: Review uses and change them to a more specific mem manager
+static inline MonoMemoryManager*
+get_default_mem_manager (void)
+{
+	return get_default_jit_mm ()->mem_manager;
 }
 
 static inline MonoJitMemoryManager*
@@ -86,6 +96,18 @@ static inline void
 jit_mm_unlock (MonoJitMemoryManager *jit_mm)
 {
 	mono_mem_manager_unlock (jit_mm->mem_manager);
+}
+
+static inline void
+jit_code_hash_lock (MonoJitMemoryManager *jit_mm)
+{
+	mono_locks_os_acquire(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
+}
+
+static inline void
+jit_code_hash_unlock (MonoJitMemoryManager *jit_mm)
+{
+	mono_locks_os_release(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
 }
 
 /*
@@ -515,7 +537,7 @@ void      mono_pop_lmf                      (MonoLMF *lmf);
 MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
 
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
-gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr);
+gpointer  mono_create_ftnptr                (gpointer addr);
 MonoMethod* mono_icall_get_wrapper_method    (MonoJitICallInfo* callinfo);
 gconstpointer mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 gconstpointer mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile);
@@ -527,12 +549,12 @@ MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJum
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
-void mini_register_jump_site                (MonoDomain *domain, MonoMethod *method, gpointer ip);
-void mini_patch_jump_sites                  (MonoDomain *domain, MonoMethod *method, gpointer addr);
-void mini_patch_llvm_jit_callees            (MonoDomain *domain, MonoMethod *method, gpointer addr);
-gpointer  mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
-gpointer  mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji);
-gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method);
+void mini_register_jump_site                (MonoMethod *method, gpointer ip);
+void mini_patch_jump_sites                  (MonoMethod *method, gpointer addr);
+void mini_patch_llvm_jit_callees            (MonoMethod *method, gpointer addr);
+gpointer  mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **ji);
+gpointer  mono_jit_find_compiled_method_with_jit_info (MonoMethod *method, MonoJitInfo **ji);
+gpointer  mono_jit_find_compiled_method     (MonoMethod *method);
 gpointer mono_jit_compile_method (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 

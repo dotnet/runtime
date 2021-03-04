@@ -63,7 +63,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s USE_ZLIB=1  -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
+EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
 ifneq ($(ENABLE_ES6),false)
     EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
 endif

@@ -1835,7 +1835,7 @@ $__RealName
 ;; The following helper will access ("probe") a word on each page of the stack
 ;; starting with the page right beneath sp down to the one pointed to by r4.
 ;; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
-;; The call to the helper will be emitted by JIT in the function/funclet prolog when large (larger than 0x3000 bytes) stack frame is required.
+;; The call to the helper will be emitted by JIT in the function/funclet prolog when stack frame is larger than an OS page.
 ;;-----------------------------------------------------------------------------
 ; On entry:
 ;   r4 - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
@@ -1845,21 +1845,23 @@ $__RealName
 ;   r5 - is not preserved
 ;
 ; NOTE: this helper will probe at least one page below the one pointed to by sp.
-#define PAGE_SIZE_LOG2 12
+#define PROBE_PAGE_SIZE      4096
+#define PROBE_PAGE_SIZE_LOG2 12
+
     LEAF_ENTRY JIT_StackProbe
     PROLOG_PUSH {r7}
     PROLOG_STACK_SAVE r7
 
-    mov r5, sp                       ; r5 points to some byte on the last probed page
-    bfc r5, #0, #PAGE_SIZE_LOG2      ; r5 points to the **lowest address** on the last probed page
+    mov r5, sp                         ; r5 points to some byte on the last probed page
+    bfc r5, #0, #PROBE_PAGE_SIZE_LOG2  ; r5 points to the **lowest address** on the last probed page
     mov sp, r5
 
 ProbeLoop
-                                     ; Immediate operand for the following instruction can not be greater than 4095.
-    sub sp, #(PAGE_SIZE - 4)         ; sp points to the **fourth** byte on the **next page** to probe
-    ldr r5, [sp, #-4]!               ; sp points to the lowest address on the **last probed** page
+                                       ; Immediate operand for the following instruction can not be greater than 4095.
+    sub sp, #(PROBE_PAGE_SIZE - 4)     ; sp points to the **fourth** byte on the **next page** to probe
+    ldr r5, [sp, #-4]!                 ; sp points to the lowest address on the **last probed** page
     cmp sp, r4
-    bhi ProbeLoop                    ; if (sp > r4), then we need to probe at least one more page.
+    bhi ProbeLoop                      ; if (sp > r4), then we need to probe at least one more page.
 
     EPILOG_STACK_RESTORE r7
     EPILOG_POP {r7}

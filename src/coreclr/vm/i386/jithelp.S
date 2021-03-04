@@ -618,7 +618,7 @@ LEAF_END JIT_Dbl2IntSSE2, _TEXT
 // NOTE: this helper will modify a value of esp and must establish the frame pointer.
 // NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below esp.
 //
-#define PAGE_SIZE 0x1000
+#define PROBE_PAGE_SIZE 0x1000
 NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
     // On entry:
     //   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
@@ -627,11 +627,11 @@ NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
     PROLOG_BEG
     PROLOG_END
 
-    and     esp, -PAGE_SIZE        // esp points to the **lowest address** on the last probed page
+    and     esp, -PROBE_PAGE_SIZE  // esp points to the **lowest address** on the last probed page
                                    // This is done to make the loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-    sub     esp, PAGE_SIZE         // esp points to the lowest address of the **next page** to probe
+    sub     esp, PROBE_PAGE_SIZE   // esp points to the lowest address of the **next page** to probe
     test    [esp], eax             // esp points to the lowest address on the **last probed** page
     cmp     esp, eax
     jg      LOCAL_LABEL(ProbeLoop) // if esp > eax, then we need to probe at least one more page.

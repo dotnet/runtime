@@ -175,7 +175,7 @@ namespace Microsoft.NET.HostModel.Tests
                 string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-                chmod(sourceAppHostMock, Convert.ToInt32("444", 8)) // make it readonly: -r--r--r--
+                chmod(sourceAppHostMock, Convert.ToInt32("755", 8)) // match installed permissions: -rwxr-xr-x
                     .Should()
                     .NotBe(-1);
 
@@ -185,7 +185,7 @@ namespace Microsoft.NET.HostModel.Tests
 
                 GetFilePermissionValue(sourceAppHostMock)
                     .Should()
-                    .Be(Convert.ToInt32("444", 8));
+                    .Be(Convert.ToInt32("755", 8));
 
                 HostWriter.CreateAppHost(
                     sourceAppHostMock,
