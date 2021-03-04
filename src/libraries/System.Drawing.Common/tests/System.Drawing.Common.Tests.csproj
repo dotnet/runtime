@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -94,7 +94,7 @@
              Link="Common\System\IO\TempFile.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />    
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" GeneratePathProperty="true" />
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
     <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataVersion)" />
     <EmbeddedResource Include="$(PkgSystem_Drawing_Common_TestData)\contentFiles\any\any\bitmaps\48x48_multiple_entries_4bit.ico">
@@ -117,6 +117,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\src\Microsoft.Win32.SystemEvents.csproj" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <Compile Include="GraphicsTests.Core.cs" />
+    <Compile Include="Drawing2D\MatrixTests.Core.cs" />
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
   </ItemGroup>
 </Project>
