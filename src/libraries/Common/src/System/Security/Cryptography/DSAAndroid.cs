@@ -302,32 +302,6 @@ namespace System.Security.Cryptography
                 }
 #endif
             }
-    internal static string ByteArrayToHex(byte[] bytes)
-    {
-        return ByteArrayToHex((ReadOnlySpan<byte>)bytes);
-    }
-
-    internal static string ByteArrayToHex(Span<byte> bytes)
-    {
-        return ByteArrayToHex((ReadOnlySpan<byte>)bytes);
-    }
-
-    internal static string ByteArrayToHex(ReadOnlyMemory<byte> bytes)
-    {
-        return ByteArrayToHex(bytes.Span);
-    }
-
-    internal static string ByteArrayToHex(ReadOnlySpan<byte> bytes)
-    {
-        var builder = new System.Text.StringBuilder(bytes.Length * 2);
-
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            builder.Append(bytes[i].ToString("X2"));
-        }
-
-        return builder.ToString();
-    }
 
             private static ReadOnlySpan<byte> SignHash(
                 ReadOnlySpan<byte> hash,
