@@ -7373,6 +7373,24 @@ public:
 
     void raMarkStkVars();
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#if defined(TARGET_AMD64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        return (type == TYP_SIMD32);
+    }
+#elif defined(TARGET_ARM64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
+        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+    }
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#error("Unknown target architecture for FEATURE_SIMD")
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
 protected:
     // Some things are used by both LSRA and regpredict allocators.
 

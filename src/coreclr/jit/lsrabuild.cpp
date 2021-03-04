@@ -1160,7 +1160,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             {
                 LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
+                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
@@ -1424,7 +1424,7 @@ void LinearScan::buildInternalRegisterUses()
 void LinearScan::makeUpperVectorInterval(unsigned varIndex)
 {
     Interval* lclVarInterval = getIntervalForLocalVar(varIndex);
-    assert(varTypeNeedsPartialCalleeSave(lclVarInterval->registerType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(lclVarInterval->registerType));
     Interval* newInt        = newInterval(LargeVectorSaveType);
     newInt->relatedInterval = lclVarInterval;
     newInt->isUpperVector   = true;
@@ -1506,7 +1506,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
-        if (varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
+        if (Compiler::varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
         {
             // In the rare case where such an interval is live across nested calls, we don't need to insert another.
             if (listNode->ref->getInterval()->recentRefPosition->refType != RefTypeUpperVectorSave)
@@ -1637,10 +1637,9 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 // Arguments:
 //    tree       - The node for which we are building RefPositions
-//    block      - The BasicBlock in which the node resides
 //    currentLoc - The LsraLocation of the given node
 //
-void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation currentLoc)
+void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
     // The LIR traversal doesn't visit GT_LIST or GT_ARGPLACE nodes.
     // GT_CLS_VAR nodes should have been eliminated by rationalizer.
@@ -2351,7 +2350,7 @@ void LinearScan::buildIntervals()
             node->SetRegNum(node->GetRegNum());
 #endif
 
-            buildRefPositionsForNode(node, block, currentLoc);
+            buildRefPositionsForNode(node, currentLoc);
 
 #ifdef DEBUG
             if (currentLoc > maxNodeLocation)
@@ -3232,7 +3231,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         def->regOptional = true;
     }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    if (varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
+    if (Compiler::varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
     {
         varDefInterval->isPartiallySpilled = false;
     }

@@ -4089,12 +4089,19 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 if ((varDsc->lvEhWriteThruCandidate == true) || (needsExplicitZeroInit == true) ||
                     (tree->gtFlags & GTF_COLON_COND) || (tree->gtFlags & GTF_VAR_USEASG))
                 {
-                    varDsc->lvEhWriteThruCandidate = false;
+                    varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
                 }
                 else
                 {
-                    varDsc->lvEhWriteThruCandidate = true;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+                    // such variable. In future, need to enable enregisteration for such variables.
+                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+#endif
+                    {
+                        varDsc->lvEhWriteThruCandidate = true;
+                    }
                 }
             }
         }
@@ -4467,7 +4474,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef = varDsc->lvIsParam;
+            varDsc->lvSingleDef            = varDsc->lvIsParam;
             varDsc->lvEhWriteThruCandidate = varDsc->lvIsParam;
         }
     }

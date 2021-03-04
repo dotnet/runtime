@@ -874,7 +874,6 @@ void LinearScan::setBlockSequence()
                 }
             }
 
-
             if (!block->isBBCallAlwaysPairTail() &&
                 (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail()))
             {
@@ -1797,7 +1796,7 @@ void LinearScan::identifyCandidates()
             // Additionally, when we are generating code for a target with partial SIMD callee-save
             // (AVX on non-UNIX amd64 and 16-byte vectors on arm64), we keep a separate set of the
             // LargeVectorType vars.
-            if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
+            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
@@ -5051,7 +5050,7 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         // Ensure that we have no partially-spilled large vector locals.
-        assert(!varTypeNeedsPartialCalleeSave(interval->registerType) || !interval->isPartiallySpilled);
+        assert(!Compiler::varTypeNeedsPartialCalleeSave(interval->registerType) || !interval->isPartiallySpilled);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_END_BB));
@@ -6923,7 +6922,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     }
 
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
 
     // On Arm64, we must always have a register to save the upper half,
     // while on x86 we can spill directly to memory.
@@ -7004,7 +7003,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     // lclVar as spilled).
     assert(lclVarReg != REG_NA);
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
 
     GenTree* restoreLcl = nullptr;
     restoreLcl          = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
@@ -7069,7 +7068,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS || block->bbJumpKind == BBJ_THROW);
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdNode));
         }
     }
@@ -7950,18 +7949,6 @@ void LinearScan::insertMove(
             // These block kinds don't have a branch at the end.
             assert((lastNode == nullptr) || (!lastNode->OperIsConditionalJump() &&
                                              !lastNode->OperIs(GT_SWITCH_TABLE, GT_SWITCH, GT_RETURN, GT_RETFILT)));
-
-            /*if (lastNode != nullptr && lastNode->OperIs(GT_STORE_LCL_VAR))
-            {
-                regNumber prevToReg   = lastNode->GetReg();
-                GenTree*  op1         = lastNode->gtGetOp1();
-                regNumber prevFromReg = op1->GetReg();
-                if (op1->TypeGet() == varDsc->TypeGet() && (fromReg == prevToReg) && (toReg == prevFromReg))
-                {
-                    JITDUMP("Skipping redundant resoltion");
-                    return;
-                }
-            }*/
             blockRange.InsertAtEnd(std::move(treeRange));
         }
     }
