@@ -4299,9 +4299,6 @@ static void DoEHLog(
 
 #ifdef TARGET_UNIX
 
-// Forward declared callback for starting exception propagation.
-extern "C" void CallExceptionPropagationCallback();
-
 //---------------------------------------------------------------------------------------
 //
 // Function to update the current context for exception propagation.
@@ -4310,18 +4307,22 @@ extern "C" void CallExceptionPropagationCallback();
 //      exception       - the PAL_SEHException representing the propagating exception.
 //      currentContext  - the current context to update.
 //
-static VOID UpdateContextPropagation(
+static VOID UpdateContextForPropagationCallback(
     PAL_SEHException& ex,
     CONTEXT* startContext)
 {
-    PCODE currIP = GetIP(startContext);
-    SetIP(startContext, (PCODE)CallExceptionPropagationCallback);
+    // Set the supplied callback.
+    SetIP(startContext, (PCODE)ex.ManagedToNativeExceptionCallback);
 
 #ifdef TARGET_AMD64
 
+    // Don't restore the stack pointer to exact same context. Leave the
+    // return IP on the stack to let the unwinder work if the callback throws
+    // an exception as opposed to failing fast.
+    startContext->Rsp -= sizeof(void*);
+
+    // Pass the context for the callback as the first argument.
     startContext->Rdi = (DWORD64)ex.ManagedToNativeExceptionCallbackContext;
-    startContext->Rsi = (DWORD64)ex.ManagedToNativeExceptionCallback;
-    startContext->Rdx = (DWORD64)currIP;
 
 #else // !TARGET_AMD64
 
@@ -4467,7 +4468,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // A propagation callback was supplied.
                 STRESS_LOG3(LF_EH, LL_INFO100, "Deferring exception propagation to Callback = %p, IP = %p, SP = %p \n", ex.ManagedToNativeExceptionCallback, controlPc, sp);
 
-                UpdateContextPropagation(ex, currentFrameContext);
+                UpdateContextForPropagationCallback(ex, currentFrameContext);
                 ExceptionTracker::ResumeExecution(currentFrameContext, NULL);
             }
             else
