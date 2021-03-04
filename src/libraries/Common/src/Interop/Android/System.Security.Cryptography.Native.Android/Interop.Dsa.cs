@@ -101,24 +101,25 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            IntPtr p_bn, q_bn, g_bn, y_bn, x_bn; // these are not owned
+            SafeBignumHandle p_bn, q_bn, g_bn, y_bn, x_bn;
             int    p_cb, q_cb, g_cb, y_cb, x_cb;
 
-            bool refAdded = false;
-            try
+            if (!GetDsaParameters(key,
+                out p_bn, out p_cb,
+                out q_bn, out q_cb,
+                out g_bn, out g_cb,
+                out y_bn, out y_cb,
+                out x_bn, out x_cb))
             {
-                key.DangerousAddRef(ref refAdded); // Protect access to the *_bn variables
+                throw new CryptographicException();
+            }
 
-                if (!GetDsaParameters(key,
-                    out p_bn, out p_cb,
-                    out q_bn, out q_cb,
-                    out g_bn, out g_cb,
-                    out y_bn, out y_cb,
-                    out x_bn, out x_cb))
-                {
-                    throw new CryptographicException();
-                }
-
+            using (p_bn)
+            using (q_bn)
+            using (g_bn)
+            using (y_bn)
+            using (x_bn)
+            {
                 // Match Windows semantics where p, g and y have same length
                 int pgy_cb = GetMax(p_cb, g_cb, y_cb);
 
@@ -140,22 +141,17 @@ internal static partial class Interop
 
                 return dsaParameters;
             }
-            finally
-            {
-                if (refAdded)
-                    key.DangerousRelease();
-            }
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetDsaParameters(
             SafeDsaHandle key,
-            out IntPtr p, out int p_cb,
-            out IntPtr q, out int q_cb,
-            out IntPtr g, out int g_cb,
-            out IntPtr y, out int y_cb,
-            out IntPtr x, out int x_cb);
+            out SafeBignumHandle p, out int p_cb,
+            out SafeBignumHandle q, out int q_cb,
+            out SafeBignumHandle g, out int g_cb,
+            out SafeBignumHandle y, out int y_cb,
+            out SafeBignumHandle x, out int x_cb);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
