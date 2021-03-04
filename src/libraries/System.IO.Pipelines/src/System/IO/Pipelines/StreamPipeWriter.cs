@@ -311,15 +311,18 @@ namespace System.IO.Pipelines
                         _head = segment;
                     }
 
-                    // Write data after the buffered data
-                    if (data.Length > 0 && writeToStream)
+                    if (writeToStream)
                     {
-                        await InnerStream.WriteAsync(data, localToken).ConfigureAwait(false);
-                    }
+                        // Write data after the buffered data
+                        if (data.Length > 0)
+                        {
+                            await InnerStream.WriteAsync(data, localToken).ConfigureAwait(false);
+                        }
 
-                    if ((_bytesBuffered > 0 || data.Length > 0) && writeToStream)
-                    {
-                        await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                        if (_bytesBuffered > 0 || data.Length > 0)
+                        {
+                            await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                        }
                     }
 
                     // Mark bytes as written *after* flushing
