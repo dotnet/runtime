@@ -309,7 +309,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         // If there are more types than before, add these new types to the
         // assembly
-        if (!IsResource() && profilerCallbackHappened)
+        if (profilerCallbackHappened && !IsResource())
         {
             UpdateNewlyAddedTypes();
         }
@@ -13843,4 +13843,3 @@ void EEConfig::DebugCheckAndForceIBCFailure(BitForMask bitForMask)
     }
 }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-
