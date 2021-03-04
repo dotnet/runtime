@@ -376,7 +376,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var info = type.GetField(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (!info) {
+            if (info == null) {
                 result = IntPtr.Zero;
                 resultSize = 0;
                 return false;
@@ -391,8 +391,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
             CustomMarshalerFilterRoots.Add(handle);
-            var pFirstChar = &(value.GetPinnableReference());
-            result = new IntPtr(pFirstChar);
+#pragma warning disable 0618
+            result = handle.AddrOfPinnedObject() + RuntimeHelpers.OffsetToStringData;
+#pragma warning restore 0618
             resultSize = value.Length;
             return true;
         }
@@ -401,19 +402,22 @@ namespace System.Runtime.InteropServices.JavaScript
             var info = type.GetMethod(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (!info) {
+            if (info == null)
                 result = IntPtr.Zero;
-                return false;
+            else {
+                var tmp = default(IntPtrAndHandle);
+                tmp.handle = info.MethodHandle;
+                result = tmp.ptr;
             }
-
-            result = info.MethodHandle;
-            return true;
         }
 
         public static unsafe int GetCustomMarshalerInfoForType (IntPtr typePtr, IntPtr resultPtr, int resultSize) {
-            if (!typePtr)
+            if (typePtr == IntPtr.Zero)
                 return 1;
-            if (!resultPtr || (resultSize <= Marshal.SizeOf(CustomMarshalerInfo)))
+            if (
+                (resultPtr == IntPtr.Zero) ||
+                (resultSize < Marshal.SizeOf(typeof(CustomMarshalerInfo)))
+            )
                 return 2;
 
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
@@ -423,11 +427,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var pResult = (CustomMarshalerInfo*)resultPtr.ToPointer();
             GetAndRootStringField(
-                type, "JSToManaged_PreFilter", 
+                type, "JSToManaged_PreFilter",
                 out pResult->InputPreFilter, out pResult->InputPreFilterLength
             );
             GetAndRootStringField(
-                type, "ManagedToJS_PostFilter", 
+                type, "ManagedToJS_PostFilter",
                 out pResult->OutputPostFilter, out pResult->OutputPostFilterLength
             );
 
