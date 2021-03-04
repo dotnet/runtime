@@ -223,14 +223,10 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IcuIsEnsurePredefinedLocaleName(string name)
+        internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-
-            if (!Interop.Globalization.IsPredefinedLocale(name))
-            {
-                throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
-            }
+            return Interop.Globalization.IsPredefinedLocale(name);
         }
 
         private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)

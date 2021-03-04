@@ -694,6 +694,12 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
+            if (GlobalizationMode.PredefinedCulturesOnly)
+            {
+                if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
+                    return null;
+            }
+
             // Try the hash table first
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
             Dictionary<string, CultureData>? tempHashTable = s_cachedCultures;
@@ -818,18 +824,6 @@ namespace System.Globalization
                 // locale collation doesn't support case insensitive comparisons.
                 // We do the same mapping on Windows for the sake of consistency.
                 return CultureData.Invariant;
-            }
-
-            if (GlobalizationMode.PredefinedCulturesOnly)
-            {
-                if (GlobalizationMode.UseNls)
-                {
-                    NlsIsEnsurePredefinedLocaleName(cultureName);
-                }
-                else
-                {
-                    IcuIsEnsurePredefinedLocaleName(cultureName);
-                }
             }
 
             CultureData culture = new CultureData();

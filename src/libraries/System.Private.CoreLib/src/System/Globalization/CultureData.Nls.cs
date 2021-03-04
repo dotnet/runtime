@@ -87,14 +87,10 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void NlsIsEnsurePredefinedLocaleName(string name)
+        internal static bool NlsIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(GlobalizationMode.UseNls);
-
-            if (CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) == 1)
-            {
-                throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
-            }
+            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) == 1;
         }
 
         private string? NlsGetTimeFormatString()

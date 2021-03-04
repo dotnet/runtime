@@ -731,7 +731,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                AssertExtensions.Throws<CultureNotFoundException>("name", () => new CultureInfo(lcid));
+                AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(lcid));
             }
             
     }
@@ -794,7 +794,7 @@ namespace System.Globalization.Tests
             }
             else
             {
-                AssertExtensions.Throws<CultureNotFoundException>("name", () => new CultureInfo(lcid));
+                AssertExtensions.Throws<CultureNotFoundException>(() => new CultureInfo(lcid));
             }
         }
 
