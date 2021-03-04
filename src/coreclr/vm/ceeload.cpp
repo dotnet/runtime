@@ -288,6 +288,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
             m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
         }
 
+        BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
         {
             BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
@@ -300,13 +301,15 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
                     g_profControlBlock.pProfInterface->ModuleAttachedToAssembly((ModuleID) this,
                                                                                 (AssemblyID)m_pAssembly);
                 }
+
+                profilerCallbackHappened = TRUE;
             }
             END_PIN_PROFILER();
         }
 
         // If there are more types than before, add these new types to the
         // assembly
-        if (!IsResource())
+        if (!IsResource() && profilerCallbackHappened)
         {
             UpdateNewlyAddedTypes();
         }
