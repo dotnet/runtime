@@ -793,7 +793,7 @@ mono_runtime_create_delegate_trampoline (MonoClass *klass)
  * methods that were used only temporarily (for example, used in marshalling)
  */
 void
-mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
+mono_runtime_free_method (MonoMethod *method)
 {
 	MONO_REQ_GC_NEUTRAL_MODE
 

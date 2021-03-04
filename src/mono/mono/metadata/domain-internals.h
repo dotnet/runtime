@@ -292,9 +292,6 @@ struct _MonoDomain {
 
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
-
-	/* Maps MonoMethod* to weak links to DynamicMethod objects */
-	GHashTable *method_to_dyn_method;
 };
 
 typedef struct  {
