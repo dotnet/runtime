@@ -13,16 +13,18 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <string.h>
 #include <jni.h>
 #include <android/log.h>
 #include <sys/system_properties.h>
+#include <sys/mman.h>
 #include <assert.h>
 #include <unistd.h>
 
 static char *bundle_path;
 static char *executable;
-static bool force_interpreter;
 
 #define LOG_INFO(fmt, ...) __android_log_print(ANDROID_LOG_DEBUG, "DOTNET", fmt, ##__VA_ARGS__)
 #define LOG_ERROR(fmt, ...) __android_log_print(ANDROID_LOG_ERROR, "DOTNET", fmt, ##__VA_ARGS__)
@@ -78,6 +80,46 @@ mono_droid_assembly_preload_hook (MonoAssemblyName *aname, char **assemblies_pat
     const char *name = mono_assembly_name_get_name (aname);
     const char *culture = mono_assembly_name_get_culture (aname);
     return mono_droid_load_assembly (name, culture);
+}
+
+static unsigned char *
+load_aot_data (MonoAssembly *assembly, int size, void *user_data, void **out_handle)
+{
+    *out_handle = NULL;
+
+    char path [1024];
+    int res;
+
+    MonoAssemblyName *assembly_name = mono_assembly_get_name (assembly);
+    const char *aname = mono_assembly_name_get_name (assembly_name);
+
+    LOG_INFO ("Looking for aot data for assembly '%s'.", aname);
+    res = snprintf (path, sizeof (path) - 1, "%s/%s.aotdata", bundle_path, aname);
+    assert (res > 0);
+
+    int fd = open (path, O_RDONLY);
+    if (fd < 0) {
+        LOG_INFO ("Could not load the aot data for %s from %s: %s\n", aname, path, strerror (errno));
+        return NULL;
+    }
+
+    void *ptr = mmap (NULL, size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
+    if (ptr == MAP_FAILED) {
+        LOG_INFO ("Could not map the aot file for %s: %s\n", aname, strerror (errno));
+        close (fd);
+        return NULL;
+    }
+
+    close (fd);
+    LOG_INFO ("Loaded aot data for %s.\n", aname);
+    *out_handle = ptr;
+    return (unsigned char *) ptr;
+}
+
+static void
+free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
+{
+    munmap (handle, size);
 }
 
 char *
@@ -147,6 +189,10 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
+#if FORCE_AOT
+void register_aot_modules (void);
+#endif
+
 int
 mono_droid_runtime_init (void)
 {
@@ -174,6 +220,7 @@ mono_droid_runtime_init (void)
 
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (mono_droid_assembly_preload_hook, NULL);
+    mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
     mono_install_unhandled_exception_hook (unhandled_exception_handler, NULL);
     mono_trace_set_log_handler (log_callback, NULL);
     mono_set_signal_chaining (true);
@@ -184,10 +231,13 @@ mono_droid_runtime_init (void)
         mono_jit_parse_options (1, options);
     }
 
-    if (force_interpreter) {
-        LOG_INFO("Interp Enabled");
-        mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
-    }
+#if FORCE_INTERPRETER
+    LOG_INFO("Interp Enabled");
+    mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
+#elif FORCE_AOT    
+    register_aot_modules();
+    mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
+#endif
 
     mono_jit_init_version ("dotnet.android", "mobile");
 
@@ -224,7 +274,7 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jboolean j_forceInterpreter)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -237,11 +287,18 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     bundle_path = file_dir;
     executable = entryPointLibName;
-    force_interpreter = (bool)j_forceInterpreter;
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("DOCSDIR", docs_dir, true);
 
     return mono_droid_runtime_init ();
+}
+
+// called from C#
+void
+invoke_external_native_api (void (*callback)(void))
+{
+    if (callback)
+        callback();
 }

@@ -70,6 +70,7 @@ var BindingSupportLib = {
 			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
+			this.mono_wasm_string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
 			this._unbox_buffer = Module._malloc(16);
@@ -331,13 +332,17 @@ var BindingSupportLib = {
 			return res;
 		},
 
-		js_array_to_mono_array: function (js_array) {
-			var mono_array = this.mono_obj_array_new (js_array.length);
+		js_array_to_mono_array: function (js_array, asString = false) {
+			var mono_array = asString ? this.mono_wasm_string_array_new (js_array.length) : this.mono_obj_array_new (js_array.length);
 			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
 
 			try {
 				for (var i = 0; i < js_array.length; ++i) {
-					elemRoot.value = this.js_to_mono_obj (js_array [i]);
+					var obj = js_array[i];
+					if (asString)
+						obj = obj.toString ();
+
+					elemRoot.value = this.js_to_mono_obj (obj);
 					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
 				}
 
@@ -1538,7 +1543,7 @@ var BindingSupportLib = {
 			return BINDING.bind_method (method, null, signature, fqn);
 		},
 
-		bind_assembly_entry_point: function (assembly) {
+		bind_assembly_entry_point: function (assembly, signature) {
 			this.bindings_lazy_init ();
 
 			var asm = this.assembly_load (assembly);
@@ -1553,24 +1558,20 @@ var BindingSupportLib = {
 				signature = Module.mono_method_get_call_signature (method);
 
 			return function() {
-				return BINDING.call_method (method, null, signature, arguments);
+				try {
+					var args = [...arguments];
+					if (args.length > 0 && Array.isArray (args[0]))
+						args[0] = BINDING.js_array_to_mono_array (args[0], true);
+
+					let result = BINDING.call_method (method, null, signature, args);
+					return Promise.resolve (result);
+				} catch (error) {
+					return Promise.reject (error);
+				}
 			};
 		},
 		call_assembly_entry_point: function (assembly, args, signature) {
-			this.bindings_lazy_init ();
-
-			var asm = this.assembly_load (assembly);
-			if (!asm)
-				throw new Error ("Could not find assembly: " + assembly);
-
-			var method = this.assembly_get_entry_point(asm);
-			if (!method)
-				throw new Error ("Could not find entry point for assembly: " + assembly);
-
-			if (typeof signature === "undefined")
-				signature = Module.mono_method_get_call_signature (method);
-
-			return this.call_method (method, null, signature, args);
+			return this.bind_assembly_entry_point (assembly, signature) (...args)
 		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.

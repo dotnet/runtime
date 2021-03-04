@@ -109,7 +109,6 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />

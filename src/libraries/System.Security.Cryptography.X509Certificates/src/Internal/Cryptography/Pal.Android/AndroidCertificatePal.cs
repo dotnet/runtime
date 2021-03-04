@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
     internal sealed class AndroidCertificatePal : ICertificatePal
     {
         private SafeX509Handle _cert;
-        private SafeEvpPKeyHandle? _privateKey;
+        private SafeKeyHandle? _privateKey;
 
         private CertificateData _certData;
 
@@ -36,25 +36,44 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(cert.Pal != null);
 
-            // Ensure private key is copied
             AndroidCertificatePal certPal = (AndroidCertificatePal)cert.Pal;
-            return certPal.DuplicateHandles();
+
+            // Ensure private key is copied
+            if (certPal.PrivateKeyHandle != null)
+            {
+                return certPal.CopyWithPrivateKeyHandle(certPal.PrivateKeyHandle.DuplicateHandle());
+            }
+
+            SafeX509Handle handle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(certPal.Handle));
+            return new AndroidCertificatePal(handle);
         }
 
         public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
-            // TODO: [AndroidCrypto] Handle PKCS#12
             Debug.Assert(password != null);
-            ICertificatePal? cert;
-            if (TryReadX509(rawData, out cert))
-            {
-                if (cert == null)
-                {
-                    // Empty collection, most likely.
-                    throw new CryptographicException();
-                }
 
-                return cert;
+            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
+
+            switch (contentType)
+            {
+                case X509ContentType.Pkcs7:
+                    // In single mode for a PKCS#7 signed or signed-and-enveloped file we're supposed to return
+                    // the certificate which signed the PKCS#7 file.
+                    // We don't support determining this on Android right now, so we throw.
+                    throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
+                case X509ContentType.Pkcs12:
+                    return ReadPkcs12(rawData, password);
+                case X509ContentType.Cert:
+                default:
+                {
+                    ICertificatePal? cert;
+                    if (TryReadX509(rawData, out cert))
+                    {
+                        return cert;
+                    }
+
+                    break;
+                }
             }
 
             // Unsupported
@@ -68,7 +87,7 @@ namespace Internal.Cryptography.Pal
         }
 
         // Handles both DER and PEM
-        private static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
+        internal static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
         {
             handle = null;
             SafeX509Handle certHandle = Interop.AndroidCrypto.X509Decode(
@@ -85,9 +104,32 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
+        private static ICertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
+        {
+            using (var reader = new AndroidPkcs12Reader(rawData))
+            {
+                reader.Decrypt(password);
+
+                UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
+                AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
+                if (certAndKey.Key != null)
+                {
+                    pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                }
+
+                return pal;
+            }
+        }
+
         private AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
+        }
+
+        private AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
+        {
+            _cert = handle;
+            _privateKey = privateKey;
         }
 
         public bool HasPrivateKey => _privateKey != null;
@@ -290,12 +332,13 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal void SetPrivateKey(SafeEvpPKeyHandle privateKey)
+        internal void SetPrivateKey(SafeKeyHandle privateKey)
         {
+            Debug.Assert(_privateKey == null);
             _privateKey = privateKey;
         }
 
-        internal SafeEvpPKeyHandle? PrivateKeyHandle
+        internal SafeKeyHandle? PrivateKeyHandle
         {
             get { return _privateKey; }
         }
@@ -310,24 +353,26 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException(nameof(GetDSAPrivateKey));
         }
 
-        public ECDsa GetECDsaPublicKey()
-        {
-            throw new NotImplementedException(nameof(GetECDsaPublicKey));
-        }
-
-        public ECDiffieHellman GetECDiffieHellmanPublicKey()
-        {
-            throw new NotImplementedException(nameof(GetECDiffieHellmanPublicKey));
-        }
-
         public ECDsa? GetECDsaPrivateKey()
         {
-            throw new NotImplementedException(nameof(GetECDsaPrivateKey));
+            if (_privateKey == null || _privateKey.IsInvalid)
+                return null;
+
+            if (_privateKey is SafeEcKeyHandle ecKey)
+                return new ECDsaImplementation.ECDsaAndroid(ecKey);
+
+            throw new CryptographicException();
         }
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
-            throw new NotImplementedException(nameof(GetECDiffieHellmanPrivateKey));
+            if (_privateKey == null || _privateKey.IsInvalid)
+                return null;
+
+            if (_privateKey is SafeEcKeyHandle ecKey)
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(ecKey);
+
+            throw new CryptographicException();
         }
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
@@ -337,12 +382,36 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(ECDsa)");
+            ECDsaImplementation.ECDsaAndroid? typedKey = privateKey as ECDsaImplementation.ECDsaAndroid;
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDsaImplementation.ECDsaAndroid())
+            {
+                typedKey.ImportParameters(ecParameters);
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(ECDiffieHellman)");
+            ECDiffieHellmanImplementation.ECDiffieHellmanAndroid? typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanAndroid;
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
+
+            ECParameters ecParameters = privateKey.ExportParameters(true);
+            using (PinAndClear.Track(ecParameters.D!))
+            using (typedKey = new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid())
+            {
+                typedKey.ImportParameters(ecParameters);
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
@@ -384,21 +453,6 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal AndroidCertificatePal DuplicateHandles()
-        {
-            // Add a global reference to the underlying cert object.
-            SafeX509Handle duplicateHandle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(Handle));
-            AndroidCertificatePal duplicate = new AndroidCertificatePal(duplicateHandle);
-
-            if (_privateKey != null)
-            {
-                SafeEvpPKeyHandle keyHandle = _privateKey.DuplicateHandle();
-                duplicate.SetPrivateKey(keyHandle);
-            }
-
-            return duplicate;
-        }
-
         public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
         {
             using (IExportPal storePal = StorePal.FromCertificate(this))
@@ -416,6 +470,13 @@ namespace Internal.Cryptography.Pal
 
             Debug.Assert(!_cert.IsInvalid);
             _certData = new CertificateData(RawData);
+        }
+
+        private ICertificatePal CopyWithPrivateKeyHandle(SafeKeyHandle privateKey)
+        {
+            // Add a global reference to the underlying cert object.
+            SafeX509Handle handle = new SafeX509Handle(Interop.JObjectLifetime.NewGlobalReference(Handle));
+            return new AndroidCertificatePal(handle, privateKey);
         }
     }
 }

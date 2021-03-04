@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -200,7 +201,7 @@ qtlbnispri1a/EghiaPQ0po=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"

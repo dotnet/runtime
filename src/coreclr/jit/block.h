@@ -44,6 +44,9 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 // This define is used with string concatenation to put this in printf format strings  (Note that %u means unsigned int)
 #define FMT_BB "BB%02u"
 
+// And this format for profile weights
+#define FMT_WT "%.7g"
+
 /*****************************************************************************
  *
  *  Each basic block ends with a jump which is described as a value
@@ -554,10 +557,20 @@ struct BasicBlock : private LIR::Range
     }
 
     // setBBProfileWeight -- Set the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
     void setBBProfileWeight(weight_t weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
         this->bbWeight = weight;
+
+        if (weight == BB_ZERO_WEIGHT)
+        {
+            this->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            this->bbFlags &= ~BBF_RUN_RARELY;
+        }
     }
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
@@ -1291,9 +1304,15 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight, BasicBlock::weight_t slop, bool* wbUsedSlop);
-    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight);
+    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
+                                 BasicBlock*          bDst,
+                                 BasicBlock::weight_t slop,
+                                 bool*                wbUsedSlop);
+    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)
