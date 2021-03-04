@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Net.WebSockets.Compression;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -28,14 +29,11 @@ namespace System.Net.WebSockets
     {
         /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
         /// <param name="stream">The connected Stream.</param>
-        /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
-        /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
         /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
-        public static ManagedWebSocket CreateFromConnectedStream(
-            Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
+        public static ManagedWebSocket CreateFromConnectedStream(Stream stream, WebSocketCreationOptions options)
         {
-            return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, options);
         }
 
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
@@ -152,10 +150,7 @@ namespace System.Net.WebSockets
         /// </summary>
         private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
-        /// <summary>
-        /// Indicates whether compression is enabled for the receiving part of the websocket.
-        /// </summary>
-        private readonly bool _inflateEnabled;
+        private readonly WebSocketInflater? _inflater;
         private byte[]? _inflateBuffer;
 
         /// <summary>
@@ -174,17 +169,11 @@ namespace System.Net.WebSockets
         /// </summary>
         private bool _inflateFinished = true;
 
-        /// <summary>
-        /// Indicates whether compression is enabled for the sending part of the websocket.
-        /// </summary>
-        private readonly bool _deflateEnabled;
+        private readonly WebSocketDeflater? _deflater;
+        private byte[]? _deflateBuffer;
+        private int _deflateBufferPosition;
 
-        /// <summary>Initializes the websocket.</summary>
-        /// <param name="stream">The connected Stream.</param>
-        /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
-        /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
-        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
-        private ManagedWebSocket(Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
+        private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -193,13 +182,23 @@ namespace System.Net.WebSockets
             Debug.Assert(stream != null, $"Expected non-null stream");
             Debug.Assert(stream.CanRead, $"Expected readable stream");
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
-            Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid keepalive interval: {keepAliveInterval}");
 
             _stream = stream;
-            _isServer = isServer;
-            _subprotocol = subprotocol;
-            _inflateEnabled = false;
-            _deflateEnabled = false;
+            _isServer = options.IsServer;
+            _subprotocol = options.SubProtocol;
+
+            var deflateOptions = options.DeflateOptions;
+
+            if (deflateOptions is not null)
+            {
+                _deflater = options.IsServer ?
+                    new WebSocketDeflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover) :
+                    new WebSocketDeflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
+
+                _inflater = options.IsServer ?
+                        new WebSocketInflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover) :
+                        new WebSocketInflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
+            }
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -229,7 +228,7 @@ namespace System.Net.WebSockets
             // Now that we're opened, initiate the keep alive timer to send periodic pings.
             // We use a weak reference from the timer to the web socket to avoid a cycle
             // that could keep the web socket rooted in erroneous cases.
-            if (keepAliveInterval > TimeSpan.Zero)
+            if (options.KeepAliveInterval > TimeSpan.Zero)
             {
                 _keepAliveTimer = new Timer(static s =>
                 {
@@ -238,7 +237,7 @@ namespace System.Net.WebSockets
                     {
                         thisRef.SendKeepAliveFrameAsync();
                     }
-                }, new WeakReference<ManagedWebSocket>(this), keepAliveInterval, keepAliveInterval);
+                }, new WeakReference<ManagedWebSocket>(this), options.KeepAliveInterval, options.KeepAliveInterval);
             }
         }
 
@@ -555,9 +554,9 @@ namespace System.Net.WebSockets
         {
             try
             {
-                if (_deflateEnabled)
+                if (_deflater is not null && !payloadBuffer.IsEmpty)
                 {
-                    payloadBuffer = Deflate(payloadBuffer);
+                    payloadBuffer = Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
                 }
 
                 // Ensure we have a _sendBuffer.
@@ -599,37 +598,74 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (_deflateEnabled)
+                if (_deflater is not null)
                 {
                     ReleaseDeflateBuffer();
                 }
             }
         }
 
-        private ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload)
+        private ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload, bool continuation, bool endOfMessage)
         {
-            // This function assumes that we're going to use a single buffer.
-            throw new NotImplementedException();
+            Debug.Assert(_deflater is not null);
+            Debug.Assert(_deflateBuffer is null);
+
+            _deflateBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(payload.Length, 1_000_000));
+            _deflateBufferPosition = 0;
+
+            while (true)
+            {
+                _deflater.Deflate(payload, _deflateBuffer.AsSpan(_deflateBufferPosition), continuation, endOfMessage,
+                    out int consumed, out int written, out bool needsMoreOutput);
+                _deflateBufferPosition += written;
+
+                if (!needsMoreOutput)
+                {
+                    break;
+                }
+
+                payload = payload.Slice(consumed);
+
+                // Rent a 30% bigger buffer
+                byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)(_deflateBuffer.Length * 1.3));
+                _deflateBuffer.AsSpan(0, _deflateBufferPosition).CopyTo(newBuffer);
+                ArrayPool<byte>.Shared.Return(_deflateBuffer);
+                _deflateBuffer = newBuffer;
+            }
+
+            return new ReadOnlySpan<byte>(_deflateBuffer, 0, _deflateBufferPosition);
         }
 
         private void ReleaseDeflateBuffer()
         {
-            throw new NotImplementedException();
+            if (_deflateBuffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_deflateBuffer);
+                _deflateBuffer = null;
+            }
         }
 
-        private bool Inflate(Span<byte> output, out int bytesWritten)
+        private void Inflate(Span<byte> output, bool finish, out int bytesWritten)
         {
-            int consumed = 42;
+            Debug.Assert(_inflater is not null);
+
+            _inflater.Inflate(new ReadOnlySpan<byte>(_inflateBuffer, _inflateBufferPosition, _inflateBufferAvailable), output,
+                out int consumed, out bytesWritten);
 
             _inflateBufferPosition += consumed;
             _inflateBufferAvailable -= consumed;
+            _inflateFinished = false;
 
             if (_inflateBufferAvailable == 0)
             {
                 ReleaseInflateBuffer();
-            }
 
-            throw new NotImplementedException();
+                if (finish)
+                {
+                    _inflateFinished = _inflater.Finish(output.Slice(bytesWritten), out int byteCount);
+                    bytesWritten += byteCount;
+                }
+            }
         }
 
         [MemberNotNull(nameof(_inflateBuffer))]
@@ -637,8 +673,6 @@ namespace System.Net.WebSockets
         {
             _inflateBufferPosition = 0;
             _inflateBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(payloadLength, 1_000_000));
-
-            throw new NotImplementedException();
         }
 
         private void ReleaseInflateBuffer()
@@ -646,6 +680,7 @@ namespace System.Net.WebSockets
             if (_inflateBuffer is not null)
             {
                 ArrayPool<byte>.Shared.Return(_inflateBuffer);
+                _inflateBuffer = null;
             }
         }
 
@@ -918,7 +953,8 @@ namespace System.Net.WebSockets
                     {
                         // In case of compression totalBytesReceived should actually represent how much we've
                         // inflated, rather than how much we've read from the stream.
-                        _inflateFinished = Inflate(payloadBuffer.Span, out totalBytesReceived);
+                        Inflate(payloadBuffer.Span,
+                            finish: header.PayloadLength == 0, out totalBytesReceived);
                     }
 
                     // If this a text message, validate that it contains valid UTF8.
@@ -1212,10 +1248,10 @@ namespace System.Net.WebSockets
                 return SR.net_Websockets_ReservedBitsSet;
             }
 
-            if (header.Compressed && !_inflateEnabled)
+            if (header.Compressed && _inflater is null)
             {
                 resultHeader = default;
-                return "TODO";
+                return SR.net_Websockets_PerMessageCompressedFlagWhenNotEnabled;
             }
 
             if (masked)
@@ -1240,6 +1276,12 @@ namespace System.Net.WebSockets
                         // Can't continue from a final message
                         resultHeader = default;
                         return SR.net_Websockets_ContinuationFromFinalFrame;
+                    }
+                    if (header.Compressed)
+                    {
+                        // Must not mark continuations as compressed
+                        resultHeader = default;
+                        return SR.net_Websockets_PerMessageCompressedFlagInContinuation;
                     }
                     break;
 
