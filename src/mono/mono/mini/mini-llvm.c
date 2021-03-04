@@ -5227,7 +5227,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
 					int width = mono_type_size (sig->ret, NULL);
 					int elems = width / TARGET_SIZEOF_VOID_P;
-					LLVMValueRef val = LLVMBuildBitCast (builder, values [ins->sreg1], LLVMVectorType (IntPtrType (), elems), "");
+					/* The return value might not be set if there is a throw */
+					LLVMValueRef val = lhs ? LLVMBuildBitCast (builder, lhs, LLVMVectorType (IntPtrType (), elems), "") : LLVMConstNull (LLVMVectorType (IntPtrType (), elems));
 					for (int i = 0; i < elems; ++i) {
 						LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
 						retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
