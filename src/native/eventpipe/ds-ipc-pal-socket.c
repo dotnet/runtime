@@ -12,10 +12,10 @@
 #define DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER
 #include "ds-ipc-pal-socket.h"
 
-#ifdef FEATURE_PERFTRACING_PAL_TCP
+#ifdef DS_IPC_PAL_TCP
 #define DS_IPC_PAL_AF_INET
 #define DS_IPC_PAL_AF_INET6
-#elif !defined(HOST_WIN32)
+#elif DS_IPC_PAL_UDS
 #define DS_IPC_PAL_AF_UNIX
 #else
 #error "Unsupported PAL socket configuration"
@@ -36,6 +36,12 @@
 #else
 #include <sys/poll.h>
 #endif
+
+#ifdef DS_IPC_PAL_TCP
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#endif
 #endif
 
 #ifdef HOST_WIN32
@@ -54,7 +60,7 @@ typedef struct pollfd ds_ipc_pollfd_t;
 typedef mode_t ds_ipc_mode_t;
 #endif
 
-#ifndef FEATURE_PERFTRACING_STANDALONE_PAL
+#ifndef EP_NO_RT_DEPENDENCY
 #include "ds-rt.h"
 #else
 #ifdef FEATURE_CORECLR
@@ -592,7 +598,7 @@ ipc_transport_get_default_name (
 	int32_t name_len)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
-#ifndef FEATURE_PERFTRACING_STANDALONE_PAL
+#ifndef EP_NO_RT_DEPENDENCY
 	return ds_rt_transport_get_default_name (
 		name,
 		name_len,
@@ -600,7 +606,7 @@ ipc_transport_get_default_name (
 		ep_rt_current_process_get_id (),
 		NULL,
 		"socket");
-#elif defined (FEATURE_PERFTRACING_STANDALONE_PAL) && defined (FEATURE_CORECLR)
+#elif defined (EP_NO_RT_DEPENDENCY) && defined (FEATURE_CORECLR)
 	// generate the default socket name in TMP Path
 	const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
 	PAL_GetTransportName(

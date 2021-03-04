@@ -22,6 +22,8 @@ static DiagnosticsPort *_ds_current_port = NULL;
 
 static const uint32_t _ds_default_poll_handle_array_size = 16;
 
+#define NUM_NANOSECONDS_IN_1_MS 1000000
+
 static
 inline
 bool
@@ -162,7 +164,7 @@ ipc_stream_factory_build_and_add_port (
 	bool result = false;
 	DiagnosticsIpc *ipc = NULL;
 
-#ifndef FEATURE_PERFTRACING_PAL_TCP
+#ifndef DS_IPC_PAL_TCP
 	if (!default_port && builder->type == DS_PORT_TYPE_LISTEN) {
 		// Ignore listen type (see conversation in https://github.com/dotnet/runtime/pull/40499 for details)
 		DS_LOG_INFO_0 ("ipc_stream_factory_build_and_add_port - Ignoring LISTEN port configuration");
@@ -176,7 +178,7 @@ ipc_stream_factory_build_and_add_port (
 #endif
 
 	if (builder->type == DS_PORT_TYPE_LISTEN) {
-#ifndef FEATURE_PERFTRACING_DISABLE_LISTEN_PORTS
+#ifndef DS_IPC_DISABLE_LISTEN_PORTS
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_LISTEN, callback);
 		ep_raise_error_if_nok (ipc != NULL);
 		ep_raise_error_if_nok (ds_ipc_listen (ipc, callback));
@@ -186,7 +188,7 @@ ipc_stream_factory_build_and_add_port (
 		ep_raise_error ();
 #endif
 	} else if (builder->type == DS_PORT_TYPE_CONNECT) {
-#ifndef FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS
+#ifndef DS_IPC_DISABLE_CONNECT_PORTS
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_CONNECT, callback);
 		ep_raise_error_if_nok (ipc != NULL);
 		ep_raise_error_if_nok (ds_rt_port_array_append (&_ds_port_array, (DiagnosticsPort *)ds_connect_port_alloc (ipc, builder)));
@@ -386,7 +388,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 
 		ipc_log_poll_handles (&ipc_poll_handles);
 
-		int32_t ret_val = ds_ipc_poll (ds_rt_ipc_poll_handle_array_data (&ipc_poll_handles), ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles), poll_timeout_ms, callback);
+		int32_t ret_val = -1;
+		if ( ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles) > 0)
+			ret_val = ds_ipc_poll (ds_rt_ipc_poll_handle_array_data (&ipc_poll_handles), ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles), poll_timeout_ms, callback);
+		else
+			ep_rt_thread_sleep ((uint64_t)poll_timeout_ms * NUM_NANOSECONDS_IN_1_MS);
+
 		bool saw_error = false;
 
 		if (ret_val != 0) {
