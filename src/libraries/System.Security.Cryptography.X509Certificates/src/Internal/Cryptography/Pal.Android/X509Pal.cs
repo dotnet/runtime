@@ -45,13 +45,11 @@ namespace Internal.Cryptography.Pal
                     case Oids.Rsa:
                         if (certificatePal != null)
                         {
-                            Console.WriteLine($"{nameof(DecodePublicKey)} [with cert pal]");
                             var handle = new SafeRsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.RSA));
                             return new RSAImplementation.RSAAndroid(handle);
                         }
                         else
                         {
-                            Console.WriteLine($"{nameof(DecodePublicKey)} [no cert pal]");
                             return DecodeRsaPublicKey(encodedKeyValue);
                         }
                     default:
