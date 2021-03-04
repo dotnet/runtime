@@ -300,7 +300,12 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         // assembly
         if (!IsResource())
         {
-            UpdateNewlyAddedTypes();
+            if (m_dwTypeCount != GetMDImport()->GetCountWithTokenKind(mdtTypeDef)
+                || m_dwExportedTypeCount != GetMDImport()->GetCountWithTokenKind(mdtExportedType)
+                || m_dwCustomAttributeCount != GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute))
+            {
+                UpdateNewlyAddedTypes();
+            }
         }
 
         {
