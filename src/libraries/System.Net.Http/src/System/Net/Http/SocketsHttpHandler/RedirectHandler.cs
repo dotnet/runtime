@@ -142,9 +142,12 @@ namespace System.Net.Http
             {
                 case HttpStatusCode.Moved:
                 case HttpStatusCode.Found:
-                case HttpStatusCode.SeeOther:
                 case HttpStatusCode.MultipleChoices:
-                    return requestMethod == HttpMethod.Post || requestMethod == HttpMethod.Put;
+                    return requestMethod == HttpMethod.Post;
+                case HttpStatusCode.SeeOther:
+                    return requestMethod == HttpMethod.Post || requestMethod == HttpMethod.Put
+                        || requestMethod == HttpMethod.Delete || requestMethod == HttpMethod.Patch
+                        || requestMethod == HttpMethod.Options;
                 default:
                     return false;
             }
