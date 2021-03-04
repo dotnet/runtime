@@ -204,9 +204,9 @@ register_dllmap (void)
 //%DllMap%
 }
 
-int32_t GlobalizationNative_LoadICUData(void * pData);
+int32_t GlobalizationNative_LoadICUData(void *pData);
 
-static int32_t load_icu_data()
+static int32_t load_icu_data ()
 {
     char path [1024];
     int res;
@@ -218,34 +218,36 @@ static int32_t load_icu_data()
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
     assert (res > 0);
 
-    // TO DO: Handle the case when the file isn't there.
-    FILE *fp = fopen(path, "rb");
+    FILE *fp = fopen (path, "rb");
     if (fp != NULL) {
-        if (fseek(fp, 0L, SEEK_END) == 0) {
-            long bufsize = ftell(fp);
-
-            if (bufsize == -1) {
-                 os_log_info (OS_LOG_DEFAULT, "Invalid ICU dat file");
-                 exit(1);
-            }
-
-            icu_data = malloc(sizeof(char) * (bufsize + 1));
-
-            if (fseek(fp, 0L, SEEK_SET) != 0) {
-                os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
-                exit(1);
-            }
-
-            size_t len = fread(icu_data, sizeof(char), bufsize, fp);
-            if ( ferror( fp ) != 0 ) {
-                os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
-                exit(1);
-            }
+        if (fseek (fp, 0L, SEEK_END) != 0) {
+            os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the dat file");
+            exit(1);
         }
-        fclose(fp);
+
+        long bufsize = ftell (fp);
+
+        icu_data = malloc (sizeof (char) * (bufsize + 1));
+
+        if (fseek (fp, 0L, SEEK_SET) != 0) {
+            os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
+            exit(1);
+        }
+
+        size_t len = fread (icu_data, sizeof (char), bufsize, fp);
+        if ( ferror ( fp ) != 0 ) {
+            os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
+            exit (1);
+        }
+
+        fclose (fp);
+    }
+    else {
+        os_log_info (OS_LOG_DEFAULT, "Unable to load ICU dat file '%s'.", dname);
+        exit (1);
     }
 
-    return GlobalizationNative_LoadICUData(icu_data);
+    return GlobalizationNative_LoadICUData (icu_data);
 }
 
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
@@ -264,6 +266,8 @@ mono_ios_runtime_init (void)
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);
 #endif
+
+#if !FORCE_INVARIANT
     int32_t ret = load_icu_data ();
 
     if (ret == 0)
@@ -272,6 +276,7 @@ mono_ios_runtime_init (void)
         exit (ret);
         return;
     }
+#endif
 
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
@@ -330,8 +335,10 @@ mono_ios_runtime_init (void)
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 
-    if (icu_data)
-        free(icu_data);
+    if (icu_data) {
+        free (icu_data);
+        icu_data = NULL;
+    }
 
     exit (res);
 }

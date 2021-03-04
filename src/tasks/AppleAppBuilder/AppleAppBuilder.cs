@@ -116,7 +116,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Forces the runtime to use the invariant mode
     /// </summary>
-    public bool ForceInvariant { get; set; } = true;
+    public bool ForceInvariant { get; set; }
 
     /// <summary>
     /// Forces the runtime to use the interpreter

@@ -73,10 +73,12 @@ int32_t GlobalizationNative_LoadICUData(void * pData)
         log_icu_error("udata_setCommonData", status);
         return 0;
     } else {
-        //// Uncomment to enable ICU tracing,
-        //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-        // utrace_setFunctions(0, 0, 0, icu_trace_data);
-        // utrace_setLevel(UTRACE_VERBOSE);
+
+#if defined(ICU_TRACING)
+        // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
+        utrace_setFunctions(0, 0, 0, icu_trace_data);
+        utrace_setLevel(UTRACE_VERBOSE);
+#endif
         isDataSet = 1;
         return 1;
     }

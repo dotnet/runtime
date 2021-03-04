@@ -216,7 +216,7 @@ namespace System.Globalization.Tests
             RegionInfo ri = new RegionInfo(lcid); // create it with lcid
             Assert.Equal(geoId, ri.GeoId);
 
-            if (PlatformDetection.IsNotUsingLimitedCultures)
+            if (PlatformDetection.IsUsingLimitedCultures)
             {
                 Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
                 Assert.Equal(currencyShortName, ri.CurrencyNativeName);
