@@ -34,8 +34,8 @@ internal static partial class Interop
             return size;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaSizeQ")]
-        private static extern int DsaSizeQ(SafeDsaHandle dsa);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaSignatureFieldSize")]
+        private static extern int AndroidCryptoNative_DsaSignatureFieldSize(SafeDsaHandle dsa);
 
         /// <summary>
         /// Return the size of the 'r' or 's' signature fields in bytes.
@@ -43,7 +43,7 @@ internal static partial class Interop
         internal static int DsaSignatureFieldSize(SafeDsaHandle dsa)
         {
             // Add another byte for the leading zero byte.
-            int size = DsaSizeQ(dsa) + 1;
+            int size = AndroidCryptoNative_DsaSignatureFieldSize(dsa);
             Debug.Assert(size * 2 < DsaEncodedSignatureSize(dsa));
             return size;
         }
@@ -72,21 +72,23 @@ internal static partial class Interop
 
         internal static bool DsaVerify(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
         {
-            bool ret = DsaVerify(
+            int ret = DsaVerify(
                 dsa,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
                 ref MemoryMarshal.GetReference(signature),
                 signature.Length);
 
-            // Error queue already cleaned on the native function.
+            if (ret == -1)
+            {
+                throw new CryptographicException();
+            }
 
-            return ret;
+            return ret == 1;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaVerify")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
+        private static extern int DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
 
         internal static DSAParameters ExportDsaParameters(SafeDsaHandle key, bool includePrivateParameters)
         {

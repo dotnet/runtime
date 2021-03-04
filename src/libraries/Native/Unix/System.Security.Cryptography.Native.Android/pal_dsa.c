@@ -52,6 +52,29 @@ int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
     return SUCCESS;
 }
 
+static jobject GetQParameter(JNIEnv* env, jobject dsa)
+{
+    if (!dsa)
+    {
+        return FAIL;
+    }
+    INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec);
+    loc[algName] = JSTRING("DSA");
+    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
+    loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
+    loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
+    jobject q = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
+    return q;
+
+error:
+    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
+    return FAIL;
+}
+
 int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
 {
     // The maximum size of a signature for the provided key is 2* bitlength of Q + extra bytes for the DER
@@ -62,8 +85,16 @@ int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
     // As the DSA algorithm is defined, the maximum length of R and S each is the bitlength of Q, so as a
     // result we get the maximum size as 2 * bitlength of Q + 6.
     const int derEncodingBytes = 6;
+    JNIEnv* env = GetJNIEnv();
+    jobject q = GetQParameter(env, dsa);
+    if (!q)
+    {
+        return -1;
+    }
     // Add one for a possible leading zero byte to force the sign to positive.
-    int byteLength = AndroidCryptoNative_DsaSizeQ(dsa) + 1;
+    int byteLength = AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(q);
+    ReleaseLRef(env, q);
+
     return 2 * byteLength + derEncodingBytes;
 }
 
@@ -93,33 +124,17 @@ error:
     return -1;
 }
 
-int32_t AndroidCryptoNative_DsaSizeQ(jobject dsa)
+int32_t AndroidCryptoNative_DsaSignatureFieldSize(jobject dsa)
 {
-    if (!dsa)
+    JNIEnv* env = GetJNIEnv();
+    jobject q = GetQParameter(env, dsa);
+    if (!q)
     {
         return -1;
     }
-    JNIEnv* env = GetJNIEnv();
-    INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, q);
-    loc[algName] = JSTRING("DSA");
-    loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
-    loc[publicKey] = (*env)->CallObjectMethod(env, dsa, g_keyPairGetPublicMethod);
-    loc[publicKeySpec] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGetKeySpecMethod, loc[publicKey], g_DSAPublicKeySpecClass);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    loc[q] = (*env)->CallObjectMethod(env, loc[publicKeySpec], g_DSAPublicKeySpecGetQ);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    if (loc[q])
-    {
-        int32_t bytes = AndroidCryptoNative_GetBigNumBytes(loc[q]);
-        RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-        return bytes;
-    }
-
-error:
-    RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return -1;
+    int byteLength = AndroidCryptoNative_GetBigNumBytes(q);
+    ReleaseLRef(env, q);
+    return byteLength;
 }
 
 static jobject GetDsaSignatureObject(JNIEnv* env)

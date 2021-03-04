@@ -302,6 +302,32 @@ namespace System.Security.Cryptography
                 }
 #endif
             }
+    internal static string ByteArrayToHex(byte[] bytes)
+    {
+        return ByteArrayToHex((ReadOnlySpan<byte>)bytes);
+    }
+
+    internal static string ByteArrayToHex(Span<byte> bytes)
+    {
+        return ByteArrayToHex((ReadOnlySpan<byte>)bytes);
+    }
+
+    internal static string ByteArrayToHex(ReadOnlyMemory<byte> bytes)
+    {
+        return ByteArrayToHex(bytes.Span);
+    }
+
+    internal static string ByteArrayToHex(ReadOnlySpan<byte> bytes)
+    {
+        var builder = new System.Text.StringBuilder(bytes.Length * 2);
+
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            builder.Append(bytes[i].ToString("X2"));
+        }
+
+        return builder.ToString();
+    }
 
             private static ReadOnlySpan<byte> SignHash(
                 ReadOnlySpan<byte> hash,
@@ -315,6 +341,7 @@ namespace System.Security.Cryptography
                     destination = new byte[signatureLength];
                 }
 
+                Debug.WriteLine($"Signing hash: {ByteArrayToHex(hash)}");
                 if (!Interop.AndroidCrypto.DsaSign(key, hash, destination, out int actualLength))
                 {
                     throw new CryptographicException();
@@ -353,6 +380,7 @@ namespace System.Security.Cryptography
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 #endif
             {
+                Debug.WriteLine($"Verifying hash: {ByteArrayToHex(hash)}");
                 SafeDsaHandle key = GetKey();
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
@@ -362,6 +390,7 @@ namespace System.Security.Cryptography
                     int expectedSignatureBytes = Interop.AndroidCrypto.DsaSignatureFieldSize(key) * 2;
                     if (signature.Length != expectedSignatureBytes)
                     {
+                        Debug.WriteLine($"Signature length mismatch. Signature is {signature.Length}. Expected {expectedSignatureBytes}.");
                         // The input isn't of the right length (assuming no DER), so we can't sensibly re-encode it with DER.
                         return false;
                     }

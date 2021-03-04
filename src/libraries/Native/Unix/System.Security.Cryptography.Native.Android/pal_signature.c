@@ -67,10 +67,13 @@ int32_t AndroidCryptoNative_VerifyWithSignatureObject(JNIEnv* env,
     (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
     jboolean verified = (*env)->CallBooleanMethod(env, signatureObject, g_SignatureVerify, sigArray);
     ReleaseLRef(env, sigArray);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    ON_EXCEPTION_PRINT_AND_GOTO(verifyFail);
 
     return verified ? SUCCESS : FAIL;
 
 error:
     return SIGNATURE_VERIFICATION_ERROR;
+
+verifyFail:
+    return FAIL;
 }

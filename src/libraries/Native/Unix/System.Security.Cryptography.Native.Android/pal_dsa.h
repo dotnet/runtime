@@ -43,9 +43,9 @@ Returns the size of the p parameter in bytes.
 PALEXPORT int32_t AndroidCryptoNative_DsaSizeP(jobject dsa);
 
 /*
-Returns the size of the q parameter in bytes.
+Returns the size of one of the biginteger fields in a signature in bytes.
 */
-PALEXPORT int32_t AndroidCryptoNative_DsaSizeQ(jobject dsa);
+PALEXPORT int32_t AndroidCryptoNative_DsaSignatureFieldSize(jobject dsa);
 
 /*
 Shims the DSA_sign method.
