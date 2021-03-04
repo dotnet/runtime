@@ -13,13 +13,13 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public abstract class Avx2 : Avx
     {
-        internal Avx2() { }
+        protected internal Avx2() { }
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
         public new abstract class X64 : Avx.X64
         {
-            internal X64() { }
+            protected internal X64() { }
 
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }

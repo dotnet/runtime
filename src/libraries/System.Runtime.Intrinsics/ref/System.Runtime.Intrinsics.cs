@@ -2967,7 +2967,7 @@ namespace System.Runtime.Intrinsics.X86
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Avx2 : System.Runtime.Intrinsics.X86.Avx
     {
-        internal Avx2() { }
+        protected internal Avx2() { }
         public static new bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<ushort> Abs(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<uint> Abs(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
@@ -3364,10 +3364,11 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<ulong> Xor(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx.X64
         {
-            internal X64() { }
+            protected internal X64() { }
             public static new bool IsSupported { get { throw null; } }
         }
     }
+
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {
