@@ -177,7 +177,7 @@ namespace System.Net.Sockets
 
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
-                sent = Interop.Sys.Write(socket, &b[offset], buffer.Length);
+                sent = Interop.Sys.Write(socket, b + offset, count);
                 if (sent == -1)
                 {
                     errno = Interop.Sys.GetLastError();
@@ -202,7 +202,7 @@ namespace System.Net.Sockets
             {
                 errno = Interop.Sys.Send(
                     socket,
-                    &b[offset],
+                    b + offset,
                     count,
                     flags,
                     &sent);
@@ -228,7 +228,7 @@ namespace System.Net.Sockets
             {
                 var iov = new Interop.Sys.IOVector
                 {
-                    Base = &b[offset],
+                    Base = b + offset,
                     Count = (UIntPtr)count
                 };
 

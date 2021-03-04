@@ -40,8 +40,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             base.Dispose(disposing); // must be called before trying to Dispose the socket
             _disposed = 1;
-            Socket? socket;
-            if (disposing && (socket = Volatile.Read(ref _pipeSocket)) != null)
+            if (disposing && Volatile.Read(ref _pipeSocket) is Socket socket)
             {
                 socket.Dispose();
                 _pipeSocket = null;
@@ -84,6 +83,8 @@ namespace Microsoft.Win32.SafeHandles
 
                     socket = SetPipeSocketInterlocked(new Socket(new SafeSocketHandle(handle, ownsHandle)), ownsHandle);
 
+                    // Double check if we haven't Disposed in the meanwhile, and ensure
+                    // the Socket is disposed, in case Dispose() missed the _pipeSocket assignment.
                     if (_disposed == 1)
                     {
                         Volatile.Write(ref _pipeSocket, null);

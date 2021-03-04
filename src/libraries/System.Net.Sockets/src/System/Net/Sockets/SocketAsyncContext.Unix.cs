@@ -787,15 +787,12 @@ namespace System.Net.Sockets
             {
                 Trace(context, $"Enter");
 
-                if (!context.IsRegistered)
+                if (!context.IsRegistered && !context.TryRegister(out Interop.Error error))
                 {
-                    if (!context.TryRegister(out Interop.Error error))
-                    {
-                        HandleFailedRegistration(context, operation, error);
+                    HandleFailedRegistration(context, operation, error);
 
-                        Trace(context, $"Leave, not registered");
-                        return false;
-                    }
+                    Trace(context, "Leave, not registered");
+                    return false;
                 }
 
                 while (true)
@@ -881,7 +878,8 @@ namespace System.Net.Sockets
                     // macOS: kevent returns EPIPE when adding pipe fd for which the other end is closed.
                     if (error == Interop.Error.EPIPE)
                     {
-                        // Retry the operation.
+                        // Because the other end close, we expect the operation to complete when we retry it.
+                        // If it doesn't, we fall through and throw an Exception.
                         if (operation.TryComplete(context))
                         {
                             return;
