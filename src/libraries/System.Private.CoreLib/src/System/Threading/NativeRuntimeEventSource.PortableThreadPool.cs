@@ -70,6 +70,10 @@ namespace System.Diagnostics.Tracing
             ThreadTimedOut
         }
 
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [NonEvent]
         private unsafe void WriteThreadEvent(int eventId, uint numExistingThreads)
         {
@@ -126,6 +130,10 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(54, Level = EventLevel.Informational, Message = Messages.WorkerThreadAdjustmentSample, Task = Tasks.ThreadPoolWorkerThreadAdjustment, Opcode = Opcodes.Sample, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadAdjustmentSample(
             double Throughput,
@@ -265,10 +273,6 @@ namespace System.Diagnostics.Tracing
 
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
-#if !ES_BUILD_STANDALONE
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolIOEnqueue(RegisteredWaitHandle registeredWaitHandle)
