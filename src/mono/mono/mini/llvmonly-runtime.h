@@ -16,7 +16,7 @@ MonoFtnDesc* mini_llvmonly_load_method_ftndesc (MonoMethod *method, gboolean cal
 gpointer  mini_llvmonly_load_method_delegate (MonoMethod *method, gboolean caller_gsharedvt, gboolean need_unbox, gpointer *out_arg, MonoError *error);
 gpointer  mini_llvmonly_get_delegate_arg     (MonoMethod *method, gpointer method_ptr);
 gpointer  mini_llvmonly_add_method_wrappers (MonoMethod *m, gpointer compiled_method, gboolean caller_gsharedvt, gboolean add_unbox_tramp, gpointer *out_arg);
-MonoFtnDesc *mini_llvmonly_create_ftndesc (MonoDomain *domain, gpointer addr, gpointer arg);
+MonoFtnDesc *mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg);
 gpointer mini_llvmonly_get_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 gpointer mini_llvmonly_get_vtable_trampoline (MonoVTable *vt, int slot_index, int index);
 

@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
 
             if (plaintextBytesWritten != plaintext.Length)
             {
-                 // Debug.Fail($"GCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
+                Debug.Fail($"GCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
                 throw new CryptographicException();
             }
         }

@@ -8,6 +8,7 @@
 #include "standardpch.h"
 #include "typeutils.h"
 #include "errorhandling.h"
+#include "spmiutil.h"
 
 // Returns a string representation of the given CorInfoType. The naming scheme is based on JITtype2varType
 // in src/jit/ee_il_dll.hpp.
@@ -68,12 +69,8 @@ const char* TypeUtils::GetCorInfoTypeName(CorInfoType type)
 
         case CORINFO_TYPE_NATIVEINT:
         case CORINFO_TYPE_NATIVEUINT:
-// Emulates the JIT's concept of TYP_I_IMPL
-#if defined(TARGET_AMD64) // TODO: should be TARGET_64BIT
-            return "long";
-#else
-            return "int";
-#endif
+            // Emulates the JIT's concept of TYP_I_IMPL
+            return IsSpmiTarget64Bit() ? "long" : "int";
 
         case CORINFO_TYPE_PTR:
             // The JIT just treats this as a TYP_I_IMPL because this isn't a GC root,
@@ -106,13 +103,16 @@ bool TypeUtils::IsValueClass(CorInfoType type)
 // by reference (i.e. it cannot be stuffed as-is into a register or stack slot).
 bool TypeUtils::ValueClassRequiresByref(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 {
-#if defined(TARGET_AMD64)
-    size_t size = mc->repGetClassSize(clsHnd);
-    return ((size > sizeof(void*)) || ((size & (size - 1)) != 0));
-#else
-    LogException(EXCEPTIONCODE_TYPEUTILS, "unsupported architecture", "");
-    return false;
-#endif
+    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64)
+    {
+        size_t size = mc->repGetClassSize(clsHnd);
+        return ((size > SpmiTargetPointerSize()) || ((size & (size - 1)) != 0));
+    }
+    else
+    {
+        LogException(EXCEPTIONCODE_TYPEUTILS, "unsupported architecture", "");
+        return false;
+    }
 }
 
 // Returns the size of the given CorInfoType. If there is no applicable size (e.g. CORINFO_TYPE_VOID,
@@ -148,7 +148,7 @@ size_t TypeUtils::SizeOfCorInfoType(CorInfoType type)
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-            return sizeof(void*);
+            return SpmiTargetPointerSize();
 
         // This should be obtained via repGetClassSize
         case CORINFO_TYPE_VALUECLASS:

@@ -939,7 +939,7 @@ mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs,
 }
 
 gboolean
-mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
+mini_assembly_can_skip_verification (MonoMethod *method)
 {
 	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
 	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
@@ -2031,7 +2031,7 @@ mono_postprocess_patches_after_ji_publish (MonoCompile *cfg)
 		case MONO_PATCH_INFO_METHOD_JUMP: {
 			unsigned char *ip = cfg->native_code + patch_info->ip.i;
 
-			mini_register_jump_site (cfg->domain, patch_info->data.method, ip);
+			mini_register_jump_site (patch_info->data.method, ip);
 			break;
 		}
 		default:
@@ -2113,7 +2113,6 @@ mono_codegen (MonoCompile *cfg)
 
 	max_epilog_size = 0;
 
-	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
 
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
@@ -2171,9 +2170,9 @@ mono_codegen (MonoCompile *cfg)
  
 	if (cfg->verbose_level > 0) {
 		char* nm = mono_method_get_full_name (cfg->method);
-		g_print ("Method %s emitted at %p to %p (code length %d) [%s]\n",
+		g_print ("Method %s emitted at %p to %p (code length %d)\n",
 				 nm, 
-				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len);
 		g_free (nm);
 	}
 
@@ -2397,7 +2396,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		else
 			gi->generic_sharing_context = (MonoGenericSharingContext *)mono_mem_manager_alloc0 (cfg->mem_manager, sizeof (MonoGenericSharingContext));
-		mini_init_gsctx (cfg->method->dynamic ? NULL : cfg->domain, NULL, cfg->gsctx_context, gi->generic_sharing_context);
+		mini_init_gsctx (NULL, cfg->gsctx_context, gi->generic_sharing_context);
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
@@ -2971,7 +2970,6 @@ is_simd_supported (MonoCompile *cfg)
  * mini_method_compile:
  * @method: the method to compile
  * @opts: the optimization flags to use
- * @domain: the domain where the method will be compiled in
  * @flags: compilation flags
  * @parts: debug flag
  *
@@ -2979,7 +2977,7 @@ is_simd_supported (MonoCompile *cfg)
  * field in the returned struct to see if compilation succeded.
  */
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts, int aot_method_index)
+mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index)
 {
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
@@ -3072,7 +3070,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
 	cfg->run_cctors = run_cctors;
-	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->full_aot = full_aot;
@@ -3156,7 +3153,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			context = &inflated->context;
 		}
 
-		mini_init_gsctx (NULL, cfg->mempool, context, &cfg->gsctx);
+		mini_init_gsctx (cfg->mempool, context, &cfg->gsctx);
 		cfg->gsctx_context = context;
 
 		cfg->gsharedvt = TRUE;
@@ -3760,9 +3757,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 		if (cfg->verbose_level > 0 && !cfg->compile_aot) {
 			nm = mono_method_get_full_name (cfg->method);
-			g_print ("LLVM Method %s emitted at %p to %p (code length %d) [%s]\n", 
+			g_print ("LLVM Method %s emitted at %p to %p (code length %d)\n",
 					 nm, 
-					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len);
 			g_free (nm);
 		}
 #endif
@@ -3803,9 +3800,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
-		mono_domain_lock (cfg->domain);
-		mono_jit_info_table_add (cfg->domain, cfg->jit_info);
-		mono_domain_unlock (cfg->domain);
+		MonoDomain *domain = mono_get_root_domain ();
+		mono_domain_lock (domain);
+		mono_jit_info_table_add (cfg->jit_info);
+		mono_domain_unlock (domain);
 
 		if (cfg->method->dynamic) {
 			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
@@ -3956,7 +3954,7 @@ mono_update_jit_stats (MonoCompile *cfg)
  *   Main entry point for the JIT.
  */
 gpointer
-mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error)
+mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 {
 	MonoCompile *cfg;
 	gpointer code = NULL;
@@ -3965,11 +3963,12 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoException *ex = NULL;
 	gint64 start;
 	MonoMethod *prof_method, *shared;
+	MonoDomain *target_domain = mono_get_root_domain ();
 
 	error_init (error);
 
 	start = mono_time_track_start ();
-	cfg = mini_method_compile (method, opt, target_domain, JIT_FLAG_RUN_CCTORS, 0, -1);
+	cfg = mini_method_compile (method, opt, JIT_FLAG_RUN_CCTORS, 0, -1);
 	gint64 jit_time = 0.0;
 	mono_time_track_end (&jit_time, start);
 	UnlockedAdd64 (&mono_jit_stats.jit_time, jit_time);
@@ -4045,20 +4044,19 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	/* Check if some other thread already did the job. In this case, we can
        discard the code this thread generated. */
 
-	info = mini_lookup_method (target_domain, method, shared);
+	info = mini_lookup_method (method, shared);
 	if (info) {
-		/* We can't use a domain specific method in another domain */
-		if (target_domain == mono_domain_get ()) {
-			code = info->code_start;
-			discarded_code ++;
-			discarded_jit_time += jit_time;
-		}
+		code = info->code_start;
+		discarded_code ++;
+		discarded_jit_time += jit_time;
 	}
 	if (code == NULL) {
+		MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+
 		/* The lookup + insert is atomic since this is done inside the domain lock */
-		mono_domain_jit_code_hash_lock (target_domain);
-		mono_internal_hash_table_insert (&target_domain->jit_code_hash, cfg->jit_info->d.method, cfg->jit_info);
-		mono_domain_jit_code_hash_unlock (target_domain);
+		jit_code_hash_lock (jit_mm);
+		mono_internal_hash_table_insert (&jit_mm->jit_code_hash, cfg->jit_info->d.method, cfg->jit_info);
+		jit_code_hash_unlock (jit_mm);
 
 		code = cfg->native_code;
 
@@ -4078,7 +4076,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	mono_destroy_compile (cfg);
 
-	mini_patch_llvm_jit_callees (target_domain, method, code);
+	mini_patch_llvm_jit_callees (method, code);
 #ifndef DISABLE_JIT
 	mono_emit_jit_map (jinfo);
 	mono_emit_jit_dump (jinfo, code);
@@ -4241,7 +4239,7 @@ mono_llvm_cpp_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean
 #ifdef DISABLE_JIT
 
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFlags flags, int parts, int aot_method_index)
+mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index)
 {
 	g_assert_not_reached ();
 	return NULL;

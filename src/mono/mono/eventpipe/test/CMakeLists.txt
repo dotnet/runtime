@@ -61,7 +61,7 @@ if(ENABLE_PERFTRACING)
         endif()
         install(TARGETS ep-test RUNTIME)
     else(ENABLE_EVENTPIPE_TEST AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
-        message(STATUS "Skip building native EventPipe library test runner.")
+        message(VERBOSE "Skip building native EventPipe library test runner.")
     endif(ENABLE_EVENTPIPE_TEST AND (NOT DISABLE_LIBS) AND (NOT DISABLE_EXECUTABLES))
 
 endif(ENABLE_PERFTRACING)

@@ -117,17 +117,11 @@ mono_domain_assembly_search (MonoAssemblyLoadContext *alc, MonoAssembly *request
 static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out);
 
-static gboolean
-mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
-
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht);
 
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
-
-static void
-mono_context_set_default_context (MonoDomain *domain);
 
 static MonoLoadFunc load_function = NULL;
 
@@ -140,9 +134,6 @@ mono_class_get_appdomain_class (void)
 {
 	return mono_defaults.object_class;
 }
-
-static MonoDomain *
-mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain);
 
 void
 mono_install_runtime_load (MonoLoadFunc func)
@@ -324,21 +315,10 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
-	mono_domain_fire_assembly_load (mono_domain_default_alc (domain), mono_defaults.corlib->assembly, NULL, error);
+	mono_domain_fire_assembly_load (mono_alc_get_default (), mono_defaults.corlib->assembly, NULL, error);
 	goto_if_nok (error, exit);
 
 exit:
-	HANDLE_FUNCTION_RETURN ();
-}
-
-static void
-mono_context_set_default_context (MonoDomain *domain)
-{
-	if (mono_runtime_get_no_exec ())
-		return;
-
-	HANDLE_FUNCTION_ENTER ();
-	mono_context_set_handle (MONO_HANDLE_NEW (MonoAppContext, domain->default_context));
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -431,34 +411,6 @@ exit:
 void
 mono_context_init (MonoDomain *domain)
 {
-	ERROR_DECL (error);
-	mono_context_init_checked (domain, error);
-	mono_error_cleanup (error);
-}
-
-void
-mono_context_init_checked (MonoDomain *domain, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoClass *klass;
-	MonoAppContextHandle context;
-
-	error_init (error);
-	if (mono_runtime_get_no_exec ())
-		goto exit;
-
-	klass = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (klass, error));
-	goto_if_nok (error, exit);
-
-	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);
-	MONO_HANDLE_SETVAL (context, context_id, gint32, 0);
-	mono_threads_register_app_context (context, error);
-	mono_error_assert_ok (error);
-	domain->default_context = MONO_HANDLE_RAW (context);
-exit:
-	HANDLE_FUNCTION_RETURN ();
 }
 
 /**
@@ -654,7 +606,7 @@ gboolean
 mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 {
 	gboolean res;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	mono_mem_manager_lock (memory_manager);
 	res = mono_mempool_contains_addr (memory_manager->mp, vtable_slot);
@@ -894,16 +846,10 @@ static void
 mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error_out)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_alc_domain (alc);
+	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (assembly);
 	g_assert (domain);
-
-	if (!MONO_BOOL (domain->domain))
-		goto leave; // This can happen during startup
-
-	if (mono_runtime_get_no_exec ())
-		goto leave;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Loading assembly %s (%p) into domain %s (%p) and ALC %p", assembly->aname.name, assembly, domain->friendly_name, domain, alc);
 
@@ -916,26 +862,14 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	mono_alc_assemblies_unlock (alc);
 	mono_domain_assemblies_unlock (domain);
 
-	if (assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!MONO_BOOL (domain->domain))
+		goto leave; // This can happen during startup
+
+	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
 	mono_error_cleanup (error);
-}
-
-static gboolean
-mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx)
-{
-	MonoDomain *domain = mono_domain_get ();
-	char **search_path = NULL;
-
-        for (search_path = domain->search_path; search_path && *search_path; search_path++) {
-		if (mono_path_filename_in_basedir (fname, *search_path)) {
-			*out_asmctx = MONO_ASMCTX_DEFAULT;
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 /**
@@ -944,15 +878,8 @@ mono_domain_asmctx_from_path (const char *fname, MonoAssembly *requesting_assemb
 MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain_raw)
 {
-	return mono_domain_get ();
-}
-
-MonoDomain *
-mono_domain_from_appdomain_handle (MonoAppDomainHandle appdomain)
-{
 	return mono_get_root_domain ();
 }
-
 
 static gboolean
 try_load_from (MonoAssembly **assembly,
@@ -1067,11 +994,9 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 			      gpointer user_data,
 			      MonoError *error)
 {
-	MonoDomain *domain = mono_alc_domain (alc);
 	MonoAssembly *result = NULL;
 
 	g_assert (alc);
-	g_assert (domain == mono_domain_get ());
 
 	MonoAssemblyCandidatePredicate predicate = NULL;
 	void* predicate_ud = NULL;
@@ -1090,7 +1015,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 
 		char *base_dir = get_app_context_base_directory (error);
 		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain (%p) ApplicationBase is %s", domain, base_dir);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "ApplicationBase is %s", base_dir);
 
 		result = real_load (search_path, aname->culture, aname->name, &req);
 

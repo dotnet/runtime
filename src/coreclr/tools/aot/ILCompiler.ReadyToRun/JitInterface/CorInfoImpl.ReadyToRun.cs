@@ -1012,6 +1012,9 @@ namespace Internal.JitInterface
             {
                 _debugVarInfos[i] = vars[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(vars);
         }
 
         /// <summary>
@@ -1026,6 +1029,9 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(pMap);
         }
 
         private void PublishEmptyCode()

@@ -3999,8 +3999,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				LLVMValueRef tramp_var = (LLVMValueRef)g_hash_table_lookup (ctx->jit_callees, call->method);
 				if (!tramp_var) {
 					target =
-						mono_create_jit_trampoline (mono_domain_get (),
-													call->method, error);
+						mono_create_jit_trampoline (call->method, error);
 					if (!is_ok (error)) {
 						set_failure (ctx, mono_error_get_message (error));
 						mono_error_cleanup (error);

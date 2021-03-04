@@ -277,7 +277,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion20.Value;
 
         public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output) {
-            AllowAllCertificates = false;
+            AllowAllHttp2Certificates = false;
         }
     }
 

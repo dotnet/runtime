@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
+    <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <SharedFrameworkName Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>

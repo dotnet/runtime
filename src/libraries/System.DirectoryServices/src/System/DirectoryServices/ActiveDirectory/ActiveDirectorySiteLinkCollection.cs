@@ -8,15 +8,15 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ActiveDirectorySiteLinkCollection : CollectionBase
     {
-        internal DirectoryEntry de;
+        internal DirectoryEntry? de;
         internal bool initialized;
-        internal DirectoryContext context;
+        internal DirectoryContext? context;
 
         internal ActiveDirectorySiteLinkCollection() { }
 
         public ActiveDirectorySiteLink this[int index]
         {
-            get => (ActiveDirectorySiteLink)InnerList[index];
+            get => (ActiveDirectorySiteLink)InnerList[index]!;
             set
             {
                 ActiveDirectorySiteLink link = (ActiveDirectorySiteLink)value;
@@ -75,12 +75,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (!link.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName)!;
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i]!;
+                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName)!;
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -103,12 +103,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (!link.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName)!;
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i]!;
+                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName)!;
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -140,12 +140,12 @@ namespace System.DirectoryServices.ActiveDirectory
             if (!link.existing)
                 throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted, link.Name));
 
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName)!;
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i];
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                ActiveDirectorySiteLink tmp = (ActiveDirectorySiteLink)InnerList[i]!;
+                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName)!;
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -165,7 +165,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    if (de.Properties.Contains("siteLinkList"))
+                    if (de!.Properties.Contains("siteLinkList"))
                         de.Properties["siteLinkList"].Clear();
                 }
                 catch (COMException e)
@@ -175,15 +175,17 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnInsertComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (initialized)
             {
                 ActiveDirectorySiteLink link = (ActiveDirectorySiteLink)value;
-                string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+                string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName)!;
                 try
                 {
-                    de.Properties["siteLinkList"].Add(dn);
+                    de!.Properties["siteLinkList"].Add(dn);
                 }
                 catch (COMException e)
                 {
@@ -192,13 +194,15 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnRemoveComplete(int index, object value)
+#pragma warning restore CS8765
         {
             ActiveDirectorySiteLink link = (ActiveDirectorySiteLink)value;
-            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
+            string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName)!;
             try
             {
-                de.Properties["siteLinkList"].Remove(dn);
+                de!.Properties["siteLinkList"].Remove(dn);
             }
             catch (COMException e)
             {
@@ -206,13 +210,15 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
         protected override void OnSetComplete(int index, object oldValue, object newValue)
+#pragma warning restore CS8765
         {
-            ActiveDirectorySiteLink newLink = (ActiveDirectorySiteLink)newValue;
-            string newdn = (string)PropertyManager.GetPropertyValue(newLink.context, newLink.cachedEntry, PropertyManager.DistinguishedName);
+            ActiveDirectorySiteLink newLink = (ActiveDirectorySiteLink)newValue!;
+            string newdn = (string)PropertyManager.GetPropertyValue(newLink.context, newLink.cachedEntry, PropertyManager.DistinguishedName)!;
             try
             {
-                de.Properties["siteLinkList"][index] = newdn;
+                de!.Properties["siteLinkList"][index] = newdn;
             }
             catch (COMException e)
             {

@@ -386,8 +386,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal sealed class TrustObject
     {
-        public string NetbiosDomainName;
-        public string DnsDomainName;
+        public string? NetbiosDomainName;
+        public string? DnsDomainName;
         public int Flags;
         public int ParentIndex;
         public TrustType TrustType;
@@ -410,13 +410,13 @@ namespace System.DirectoryServices.ActiveDirectory
         [FieldOffset(4)]
         public LSA_FOREST_TRUST_RECORD_TYPE ForestTrustType;
         [FieldOffset(8)]
-        public LARGE_INTEGER Time;
+        public LARGE_INTEGER Time = null!;
         [FieldOffset(16)]
-        public LSA_UNICODE_STRING TopLevelName;
+        public LSA_UNICODE_STRING TopLevelName = null!;
         [FieldOffset(16)]
-        public LSA_FOREST_TRUST_BINARY_DATA Data;
+        public LSA_FOREST_TRUST_BINARY_DATA Data = null!;
         [FieldOffset(16)]
-        public LSA_FOREST_TRUST_DOMAIN_INFO DomainInfo;
+        public LSA_FOREST_TRUST_DOMAIN_INFO? DomainInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -483,8 +483,8 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class TRUSTED_DOMAIN_INFORMATION_EX
     {
-        public LSA_UNICODE_STRING Name;
-        public LSA_UNICODE_STRING FlatName;
+        public LSA_UNICODE_STRING? Name;
+        public LSA_UNICODE_STRING? FlatName;
         public IntPtr Sid;
         public int TrustDirection;
         public int TrustType;
@@ -504,7 +504,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int Index;
         public ForestTrustCollisionType Type;
         public int Flags;
-        public LSA_UNICODE_STRING Name;
+        public LSA_UNICODE_STRING Name = null!;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -539,7 +539,7 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class LSA_AUTH_INFORMATION
     {
-        public LARGE_INTEGER LastUpdateTime;
+        public LARGE_INTEGER? LastUpdateTime;
         public int AuthType;
         public int AuthInfoLength;
         public IntPtr AuthInfo;
@@ -548,9 +548,9 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class POLICY_DNS_DOMAIN_INFO
     {
-        public LSA_UNICODE_STRING Name;
-        public LSA_UNICODE_STRING DnsDomainName;
-        public LSA_UNICODE_STRING DnsForestName;
+        public LSA_UNICODE_STRING? Name;
+        public LSA_UNICODE_STRING? DnsDomainName;
+        public LSA_UNICODE_STRING? DnsForestName;
         public Guid DomainGuid;
         public IntPtr Sid;
     }
@@ -564,9 +564,9 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class TRUSTED_DOMAIN_FULL_INFORMATION
     {
-        public TRUSTED_DOMAIN_INFORMATION_EX Information;
-        internal TRUSTED_POSIX_OFFSET_INFO PosixOffset;
-        public TRUSTED_DOMAIN_AUTH_INFORMATION AuthInformation;
+        public TRUSTED_DOMAIN_INFORMATION_EX? Information;
+        internal TRUSTED_POSIX_OFFSET_INFO? PosixOffset;
+        public TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInformation;
     }
 
     /*
@@ -586,11 +586,11 @@ namespace System.DirectoryServices.ActiveDirectory
         public DSROLE_MACHINE_ROLE MachineRole;
         public uint Flags;
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string DomainNameFlat;
+        public string? DomainNameFlat;
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string DomainNameDns;
+        public string? DomainNameDns;
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string DomainForestName;
+        public string? DomainForestName;
         public Guid DomainGuid;
     }
 
@@ -629,9 +629,9 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public delegate int DsReplicaConsistencyCheck([In]IntPtr handle, int taskID, int flags);
 
-        public delegate int DsReplicaGetInfo2W(IntPtr handle, int type, [MarshalAs(UnmanagedType.LPWStr)] string objectPath, IntPtr sourceGUID, string attributeName, string value, int flag, int context, ref IntPtr info);
+        public delegate int DsReplicaGetInfo2W(IntPtr handle, int type, [MarshalAs(UnmanagedType.LPWStr)] string? objectPath, IntPtr sourceGUID, string? attributeName, string? value, int flag, int context, ref IntPtr info);
 
-        public delegate int DsReplicaGetInfoW(IntPtr handle, int type, [MarshalAs(UnmanagedType.LPWStr)] string objectPath, IntPtr sourceGUID, ref IntPtr info);
+        public delegate int DsReplicaGetInfoW(IntPtr handle, int type, [MarshalAs(UnmanagedType.LPWStr)] string? objectPath, IntPtr sourceGUID, ref IntPtr info);
 
         public delegate int DsReplicaFreeInfo(int type, IntPtr value);
 
@@ -649,7 +649,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern bool FreeADsMem(IntPtr pVoid);
 
         [DllImport("netapi32.dll", EntryPoint = "DsGetSiteNameW", CharSet = CharSet.Unicode)]
-        public static extern int DsGetSiteName(string dcName, ref IntPtr ptr);
+        public static extern int DsGetSiteName(string? dcName, ref IntPtr ptr);
 
         public delegate int DsListDomainsInSiteW(IntPtr handle, [MarshalAs(UnmanagedType.LPWStr)] string site, ref IntPtr info);
 
@@ -662,7 +662,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static extern int NetApiBufferFree(IntPtr buffer);
 
         [DllImport("Advapi32.dll", EntryPoint = "LogonUserW", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern int LogonUserW(string lpszUsername, string lpszDomain, string lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
+        public static extern int LogonUserW(string? lpszUsername, string? lpszDomain, string? lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
 
         [DllImport("Advapi32.dll", EntryPoint = "ImpersonateLoggedOnUser", SetLastError = true)]
         public static extern int ImpersonateLoggedOnUser(IntPtr hToken);

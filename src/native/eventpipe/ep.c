@@ -729,20 +729,17 @@ get_next_config_value_as_utf8_string (const ep_char8_t **data)
 {
 	EP_ASSERT (data != NULL);
 
-	uint8_t *buffer = NULL;
+	ep_char8_t *buffer = NULL;
 
 	const ep_char8_t *start = NULL;
 	const ep_char8_t *end = NULL;
 	*data = get_next_config_value (*data, &start, &end);
 
 	ptrdiff_t byte_len = end - start;
-	if (byte_len != 0) {
-		buffer = ep_rt_byte_array_alloc (byte_len + 1);
-		memcpy (buffer, start, byte_len);
-		buffer [byte_len] = '\0';
-	}
+	if (byte_len != 0)
+		buffer = ep_rt_utf8_string_dup_range(start, end);
 
-	return (ep_char8_t *)buffer;
+	return buffer;
 }
 
 static
@@ -792,6 +789,22 @@ enable_default_session_via_env_variables (void)
 	if (ep_rt_config_value_get_enable ()) {
 		ep_config = ep_rt_config_value_get_config ();
 		ep_config_output_path = ep_rt_config_value_get_output_path ();
+
+		ep_char8_t pidStr[24];
+		ep_rt_utf8_string_snprintf(pidStr, EP_ARRAY_SIZE (pidStr), "%u", (unsigned)ep_rt_current_process_get_id());
+
+		while (true)
+		{
+			if (ep_rt_utf8_string_replace(&ep_config_output_path, "{pid}", pidStr))
+			{
+				// In case there is a second use of {pid} in the output path
+				continue;
+			}
+
+			// No more instances of {pid} in the OutputPath
+			break;
+		}
+
 		ep_circular_mb = ep_rt_config_value_get_circular_mb ();
 		output_path = NULL;
 
