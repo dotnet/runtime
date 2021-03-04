@@ -1809,7 +1809,8 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsNotBrowserDomSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsNotBrowserDomSupported)))]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://nosuchhost.invalid";

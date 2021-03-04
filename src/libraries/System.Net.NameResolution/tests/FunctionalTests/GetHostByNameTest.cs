@@ -102,7 +102,8 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27622", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process)))]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
             if (PlatformDetection.IsSLES)
@@ -118,7 +119,8 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27622", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported)))]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
             if (PlatformDetection.IsSLES)

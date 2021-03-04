@@ -22,7 +22,8 @@ namespace System.Net.NameResolution.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27622", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process)))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -78,7 +79,8 @@ namespace System.Net.NameResolution.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48751", TestPlatforms.Linux)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/27622", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process)))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
