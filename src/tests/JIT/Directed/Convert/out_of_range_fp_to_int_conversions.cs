@@ -34,19 +34,19 @@ namespace FPBehaviorApp
     {
         [DllImport("out_of_range_fp_to_int_conversionsnative")]
         [SuppressGCTransition]
-        public static extern int ConvertDoubleToLong(double x, FPtoIntegerConversionType t);
+        public static extern int ConvertDoubleToInt32(double x, FPtoIntegerConversionType t);
 
         [DllImport("out_of_range_fp_to_int_conversionsnative")]
         [SuppressGCTransition]
-        public static extern uint ConvertDoubleToUnsignedLong(double x, FPtoIntegerConversionType t);
+        public static extern uint ConvertDoubleToUInt32(double x, FPtoIntegerConversionType t);
 
         [DllImport("out_of_range_fp_to_int_conversionsnative")]
         [SuppressGCTransition]
-        public static extern long ConvertDoubleToLongLong(double x, FPtoIntegerConversionType t);
+        public static extern long ConvertDoubleToInt64(double x, FPtoIntegerConversionType t);
 
         [DllImport("out_of_range_fp_to_int_conversionsnative")]
         [SuppressGCTransition]
-        public static extern ulong ConvertDoubleToUnsignedLongLong(double x, FPtoIntegerConversionType t);
+        public static extern ulong ConvertDoubleToUInt64(double x, FPtoIntegerConversionType t);
     }
 
     public static class Managed
@@ -77,7 +77,7 @@ namespace FPBehaviorApp
             return BitConverter.Int64BitsToDouble((long)uintVal);
         }
 
-        public static int ConvertDoubleToLong(double x, FPtoIntegerConversionType t)
+        public static int ConvertDoubleToInt32(double x, FPtoIntegerConversionType t)
         {
             if (t == FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)
                 return (int)x;
@@ -98,7 +98,7 @@ namespace FPBehaviorApp
             return 0;
         }
 
-        public static uint ConvertDoubleToUnsignedLong(double x, FPtoIntegerConversionType t)
+        public static uint ConvertDoubleToUInt32(double x, FPtoIntegerConversionType t)
         {
             if (t == FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)
                 return (uint)x;
@@ -123,7 +123,7 @@ namespace FPBehaviorApp
             return 0;
         }
 
-        public static long ConvertDoubleToLongLong(double x, FPtoIntegerConversionType t)
+        public static long ConvertDoubleToInt64(double x, FPtoIntegerConversionType t)
         {
             if (t == FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)
                 return (long)x;
@@ -143,11 +143,11 @@ namespace FPBehaviorApp
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32:
                     if (x > 0)
                     {
-                        return (long)CppNativeArm32ConvertDoubleToUnsignedLongLong(x);
+                        return (long)CppNativeArm32ConvertDoubleToUInt64(x);
                     }
                     else
                     {
-                        return -(long)CppNativeArm32ConvertDoubleToUnsignedLongLong(-x);
+                        return -(long)CppNativeArm32ConvertDoubleToUInt64(-x);
                     }
 
                 case FPtoIntegerConversionType.CONVERT_SATURATING:
@@ -156,16 +156,16 @@ namespace FPBehaviorApp
 
             return 0;
 
-            static ulong CppNativeArm32ConvertDoubleToUnsignedLongLong(double y)
+            static ulong CppNativeArm32ConvertDoubleToUInt64(double y)
             {
                 const double uintmax_plus_1 = -2.0 * (double)int.MinValue;
-                uint hi32Bits = ConvertDoubleToUnsignedLong(y / uintmax_plus_1, FPtoIntegerConversionType.CONVERT_SATURATING);
-                uint lo32Bits = ConvertDoubleToUnsignedLong(y - (((double)hi32Bits) * uintmax_plus_1), FPtoIntegerConversionType.CONVERT_SATURATING);
+                uint hi32Bits = ConvertDoubleToUInt32(y / uintmax_plus_1, FPtoIntegerConversionType.CONVERT_SATURATING);
+                uint lo32Bits = ConvertDoubleToUInt32(y - (((double)hi32Bits) * uintmax_plus_1), FPtoIntegerConversionType.CONVERT_SATURATING);
                 return (((ulong)hi32Bits) << (int)32) + lo32Bits;
             }
         }
 
-        public static ulong ConvertDoubleToUnsignedLongLong(double x, FPtoIntegerConversionType t)
+        public static ulong ConvertDoubleToUInt64(double x, FPtoIntegerConversionType t)
         {
             if (t == FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)
                 return (ulong)x;
@@ -191,11 +191,11 @@ namespace FPBehaviorApp
                     {
                         if (x < two63)
                         {
-                            return (ulong)ConvertDoubleToLongLong(x, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
+                            return (ulong)ConvertDoubleToInt64(x, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32);
                         }
                         else
                         {
-                            return (ulong)ConvertDoubleToLongLong(x - two63, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
+                            return (ulong)ConvertDoubleToInt64(x - two63, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
                         }
                     }
 
@@ -218,42 +218,42 @@ namespace FPBehaviorApp
             return 0;
         }
 
-        public static Vector<int> ConvertToVectorInt(Vector<float> vFloat, FPtoIntegerConversionType t)
+        public static Vector<int> ConvertToVectorInt32(Vector<float> vFloat, FPtoIntegerConversionType t)
         {
             int[] values = new int[Vector<float>.Count];
             for (int i = 0; i < values.Length; i++)
             {
-                values[i] = ConvertDoubleToLong(vFloat[i], t);
+                values[i] = ConvertDoubleToInt32(vFloat[i], t);
             }
             return new Vector<int>(values);
         }
 
-        public static Vector<uint> ConvertToVectorUInt(Vector<float> vFloat, FPtoIntegerConversionType t)
+        public static Vector<uint> ConvertToVectorUInt32(Vector<float> vFloat, FPtoIntegerConversionType t)
         {
             uint[] values = new uint[Vector<float>.Count];
             for (int i = 0; i < values.Length; i++)
             {
-                values[i] = ConvertDoubleToUnsignedLong(vFloat[i], t);
+                values[i] = ConvertDoubleToUInt32(vFloat[i], t);
             }
             return new Vector<uint>(values);
         }
 
-        public static Vector<long> ConvertToVectorLong(Vector<double> vFloat, FPtoIntegerConversionType t)
+        public static Vector<long> ConvertToVectorInt64(Vector<double> vFloat, FPtoIntegerConversionType t)
         {
             long[] values = new long[Vector<double>.Count];
             for (int i = 0; i < values.Length; i++)
             {
-                values[i] = ConvertDoubleToLongLong(vFloat[i], t);
+                values[i] = ConvertDoubleToInt64(vFloat[i], t);
             }
             return new Vector<long>(values);
         }
 
-        public static Vector<ulong> ConvertToVectorULong(Vector<double> vFloat, FPtoIntegerConversionType t)
+        public static Vector<ulong> ConvertToVectorUInt64(Vector<double> vFloat, FPtoIntegerConversionType t)
         {
             ulong[] values = new ulong[Vector<double>.Count];
             for (int i = 0; i < values.Length; i++)
             {
-                values[i] = ConvertDoubleToUnsignedLongLong(vFloat[i], t);
+                values[i] = ConvertDoubleToUInt64(vFloat[i], t);
             }
             return new Vector<ulong>(values);
         }
@@ -289,78 +289,78 @@ namespace FPBehaviorApp
 
             FPtoIntegerConversionType t = tValue.Value;
 
-            if (Managed.ConvertDoubleToLong(dblVal, t) != Native.ConvertDoubleToLong(dblVal, t))
+            if (Managed.ConvertDoubleToInt32(dblVal, t) != Native.ConvertDoubleToInt32(dblVal, t))
             {
                 failures++;
-                Console.WriteLine($"Managed.ConvertDoubleToLong(dblVal, t) != Native.ConvertDoubleToLong(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToLong(dblVal, t)} != {Native.ConvertDoubleToLong(dblVal, t)}");
+                Console.WriteLine($"Managed.ConvertDoubleToInt32(dblVal, t) != Native.ConvertDoubleToInt32(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToInt32(dblVal, t)} != {Native.ConvertDoubleToInt32(dblVal, t)}");
             }
 
-            if (Managed.ConvertDoubleToUnsignedLong(dblVal, t) != Native.ConvertDoubleToUnsignedLong(dblVal, t))
+            if (Managed.ConvertDoubleToUInt32(dblVal, t) != Native.ConvertDoubleToUInt32(dblVal, t))
             {
                 failures++;
-                Console.WriteLine($"Managed.ConvertDoubleToUnsignedLong(dblVal, t) != Native.ConvertDoubleToUnsignedLong(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToUnsignedLong(dblVal, t)} != {Native.ConvertDoubleToUnsignedLong(dblVal, t)}");
+                Console.WriteLine($"Managed.ConvertDoubleToUInt32(dblVal, t) != Native.ConvertDoubleToUInt32(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToUInt32(dblVal, t)} != {Native.ConvertDoubleToUInt32(dblVal, t)}");
             }
 
-            if (Managed.ConvertDoubleToLongLong(dblVal, t) != Native.ConvertDoubleToLongLong(dblVal, t))
+            if (Managed.ConvertDoubleToInt64(dblVal, t) != Native.ConvertDoubleToInt64(dblVal, t))
             {
                 failures++;
-                Console.WriteLine($"Managed.ConvertDoubleToLongLong(dblVal, t) != Native.ConvertDoubleToLongLong(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToLongLong(dblVal, t)} != {Native.ConvertDoubleToLongLong(dblVal, t)}");
+                Console.WriteLine($"Managed.ConvertDoubleToInt64(dblVal, t) != Native.ConvertDoubleToInt64(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToInt64(dblVal, t)} != {Native.ConvertDoubleToInt64(dblVal, t)}");
             }
 
-            if (Managed.ConvertDoubleToUnsignedLongLong(dblVal, t) != Native.ConvertDoubleToUnsignedLongLong(dblVal, t))
+            if (Managed.ConvertDoubleToUInt64(dblVal, t) != Native.ConvertDoubleToUInt64(dblVal, t))
             {
                 failures++;
-                Console.WriteLine($"Managed.ConvertDoubleToUnsignedLongLong(dblVal, t) != Native.ConvertDoubleToUnsignedLongLong(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToUnsignedLongLong(dblVal, t)} != {Native.ConvertDoubleToUnsignedLongLong(dblVal, t)}");
+                Console.WriteLine($"Managed.ConvertDoubleToUInt64(dblVal, t) != Native.ConvertDoubleToUInt64(dblVal, t) {t} {value} {dblVal} {Managed.ConvertDoubleToUInt64(dblVal, t)} != {Native.ConvertDoubleToUInt64(dblVal, t)}");
             }
             
             if (t == ManagedConversionRule)
             {
-                if (Managed.ConvertDoubleToLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToLong(dblVal, t))
+                if (Managed.ConvertDoubleToInt32(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToInt32(dblVal, t))
                 {
                     failures++;
-                    Console.WriteLine($"ConvertDoubleToLong NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToLong(dblVal, t)}");
+                    Console.WriteLine($"ConvertDoubleToInt32 NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToInt32(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToInt32(dblVal, t)}");
                 }
 
-                if (Managed.ConvertDoubleToUnsignedLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToUnsignedLong(dblVal, t))
+                if (Managed.ConvertDoubleToUInt32(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToUInt32(dblVal, t))
                 {
                     failures++;
-                    Console.WriteLine($"ConvertDoubleToUnsignedLong NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToUnsignedLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToUnsignedLong(dblVal, t)}");
+                    Console.WriteLine($"ConvertDoubleToUInt32 NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToUInt32(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToUInt32(dblVal, t)}");
                 }
 
-                if (Managed.ConvertDoubleToLongLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToLongLong(dblVal, t))
+                if (Managed.ConvertDoubleToInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToInt64(dblVal, t))
                 {
                     failures++;
-                    Console.WriteLine($"ConvertDoubleToLongLong NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToLongLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToLongLong(dblVal, t)}");
+                    Console.WriteLine($"ConvertDoubleToInt64 NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToInt64(dblVal, t)}");
                 }
                 
-                if (Managed.ConvertDoubleToUnsignedLongLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToUnsignedLongLong(dblVal, t))
+                if (Managed.ConvertDoubleToUInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR) != Managed.ConvertDoubleToUInt64(dblVal, t))
                 {
                     failures++;
-                    Console.WriteLine($"ConvertDoubleToUnsignedLongLong NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToUnsignedLongLong(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToUnsignedLongLong(dblVal, t)}");
+                    Console.WriteLine($"ConvertDoubleToUInt64 NativeCompilerBehavior(managed) {t} {value} {dblVal} {Managed.ConvertDoubleToUInt64(dblVal, FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)} != {Managed.ConvertDoubleToUInt64(dblVal, t)}");
                 }
 
                 Vector<float> vFloat = new Vector<float>((float)dblVal);
                 Vector<double> vDouble = new Vector<double>(dblVal);
 
-                if (Managed.ConvertToVectorInt(vFloat, t) != Vector.ConvertToInt32(vFloat))
+                if (Managed.ConvertToVectorInt32(vFloat, t) != Vector.ConvertToInt32(vFloat))
                 {
                     failures++;
-                    Console.WriteLine($"Managed.ConvertToVectorInt(vFloat, t) != Vector.ConvertToInt32(vFloat) {t} {value} {dblVal} {Managed.ConvertToVectorInt(vFloat, t)} != {Vector.ConvertToInt32(vFloat)}");
+                    Console.WriteLine($"Managed.ConvertToVectorInt32(vFloat, t) != Vector.ConvertToInt32(vFloat) {t} {value} {dblVal} {Managed.ConvertToVectorInt32(vFloat, t)} != {Vector.ConvertToInt32(vFloat)}");
                 }
-                if (Managed.ConvertToVectorUInt(vFloat, t) != Vector.ConvertToUInt32(vFloat))
+                if (Managed.ConvertToVectorUInt32(vFloat, t) != Vector.ConvertToUInt32(vFloat))
                 {
                     failures++;
-                    Console.WriteLine($"Managed.ConvertToVectorUInt(vFloat, t) != Vector.ConvertToUInt32(vFloat) {t} {value} {dblVal} {Managed.ConvertToVectorUInt(vFloat, t)} != {Vector.ConvertToUInt32(vFloat)}");
+                    Console.WriteLine($"Managed.ConvertToVectorUInt32(vFloat, t) != Vector.ConvertToUInt32(vFloat) {t} {value} {dblVal} {Managed.ConvertToVectorUInt32(vFloat, t)} != {Vector.ConvertToUInt32(vFloat)}");
                 }
-                if (Managed.ConvertToVectorLong(vDouble, t) != Vector.ConvertToInt64(vDouble))
+                if (Managed.ConvertToVectorInt64(vDouble, t) != Vector.ConvertToInt64(vDouble))
                 {
                     failures++;
-                    Console.WriteLine($"Managed.ConvertToVectorLong(vDouble, t) != Vector.ConvertToInt64(vDouble) {t} {value} {dblVal} {Managed.ConvertToVectorLong(vDouble, t)} != {Vector.ConvertToInt64(vDouble)}");
+                    Console.WriteLine($"Managed.ConvertToVectorInt64(vDouble, t) != Vector.ConvertToInt64(vDouble) {t} {value} {dblVal} {Managed.ConvertToVectorInt64(vDouble, t)} != {Vector.ConvertToInt64(vDouble)}");
                 }
-                if (Managed.ConvertToVectorULong(vDouble, t) != Vector.ConvertToUInt64(vDouble))
+                if (Managed.ConvertToVectorUInt64(vDouble, t) != Vector.ConvertToUInt64(vDouble))
                 {
                     failures++;
-                    Console.WriteLine($"Managed.ConvertToVectorULong(vDouble, t) != Vector.ConvertToUInt64(vDouble) {t} {value} {dblVal} {Managed.ConvertToVectorULong(vDouble, t)} != {Vector.ConvertToUInt64(vDouble)}");
+                    Console.WriteLine($"Managed.ConvertToVectorUInt64(vDouble, t) != Vector.ConvertToUInt64(vDouble) {t} {value} {dblVal} {Managed.ConvertToVectorUInt64(vDouble, t)} != {Vector.ConvertToUInt64(vDouble)}");
                 }
             }
 
