@@ -6182,6 +6182,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->uc_mcontext.gregs[reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->uc_mcontext.gregs[reg];
+}
+
 /*========================= End of Function ========================*/
 
 /**

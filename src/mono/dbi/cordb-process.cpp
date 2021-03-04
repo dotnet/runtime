@@ -290,11 +290,29 @@ HRESULT CordbProcess::SetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
 HRESULT CordbProcess::ReadMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* read)
 {
-    memcpy(buffer, (void*)address, size);
-    if (read != NULL)
-        *read = size;
     LOG((LF_CORDB, LL_INFO1000000, "CordbProcess - ReadMemory - IMPLEMENTED\n"));
-    return S_OK;
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        MdbgProtBuffer localbuf;
+        m_dbgprot_buffer_init(&localbuf, 128);
+        m_dbgprot_buffer_add_long(&localbuf, address);
+        m_dbgprot_buffer_add_int(&localbuf, size);
+        int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_READ_MEMORY, &localbuf);
+        m_dbgprot_buffer_free(&localbuf);
+
+        ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
+        CHECK_ERROR_RETURN_FALSE(received_reply_packet);
+        MdbgProtBuffer* pReply = received_reply_packet->Buffer();
+        int memoryReadSize = 0;
+        uint8_t* memoryRead = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, (int32_t*)&memoryReadSize);
+        memcpy(buffer, (void*)memoryRead, memoryReadSize);
+        if (read != NULL)
+            *read = memoryReadSize;
+        free(memoryRead);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
 HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size, BYTE buffer[], SIZE_T* written)

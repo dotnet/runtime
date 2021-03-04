@@ -41,7 +41,7 @@ HRESULT STDMETHODCALLTYPE CordbValue::GetSize(ULONG32* pSize)
 
 HRESULT STDMETHODCALLTYPE CordbValue::GetAddress(CORDB_ADDRESS* pAddress)
 {
-    *pAddress = (CORDB_ADDRESS)&m_value;
+    *pAddress = (CORDB_ADDRESS)m_value.pointerValue;
     LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetAddress - IMPLEMENTED\n"));
     return S_OK;
 }
@@ -130,7 +130,7 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetSize(ULONG32* pSize)
 
 HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetAddress(CORDB_ADDRESS* pAddress)
 {
-    *pAddress = (CORDB_ADDRESS)&m_debuggerId;
+    *pAddress = (CORDB_ADDRESS)m_pAddress;
     LOG((LF_CORDB, LL_INFO1000000, "CordbReferenceValue - GetAddress - IMPLEMENTED\n"));
     return S_OK;
 }
@@ -358,8 +358,7 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::DereferenceStrong(ICorDebugValue*
     return E_NOTIMPL;
 }
 
-CordbReferenceValue::CordbReferenceValue(
-    Connection* conn, CorElementType type, int object_id, CordbClass* klass, CordbType* cordbType)
+CordbReferenceValue::CordbReferenceValue(Connection* conn, CorElementType type, int object_id, CordbClass* klass, CordbType* cordbType, CORDB_ADDRESS cordbAddress)
     : CordbBaseMono(conn)
 {
     this->m_type       = type;
@@ -367,6 +366,7 @@ CordbReferenceValue::CordbReferenceValue(
     this->conn         = conn;
     this->m_pClass     = klass;
     this->m_pCordbType = cordbType;
+    this->m_pAddress   = cordbAddress;
     if (cordbType)
         cordbType->InternalAddRef();
     if (klass)
@@ -741,29 +741,24 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection* conn, MdbgProtBuffer* pRe
             case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_I1:
             case ELEMENT_TYPE_U1:
-                value.booleanValue = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-                break;
             case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_I2:
             case ELEMENT_TYPE_U2:
-                value.charValue = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-                break;
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
             case ELEMENT_TYPE_R4:
-                value.intValue = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-                break;
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_R8:
-                value.longValue = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+                value.pointerValue = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
                 break;
             case ELEMENT_TYPE_CLASS:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_STRING:
             {
                 int object_id = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
-                CordbReferenceValue* refValue  = new CordbReferenceValue(conn, type, object_id);
+                CORDB_ADDRESS address = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+                CordbReferenceValue* refValue  = new CordbReferenceValue(conn, type, object_id, NULL, NULL, address);
                 refValue->QueryInterface(IID_ICorDebugValue, (void**)ppValue);
                 goto __Exit;
             }

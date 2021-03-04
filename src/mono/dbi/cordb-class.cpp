@@ -48,11 +48,7 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetStaticFieldValue(mdFieldDef       field
                                                           ICorDebugValue** ppValue)
 {
     LOG((LF_CORDB, LL_INFO100000, "CordbClass - GetStaticFieldValue - NOT IMPLEMENTED\n"));
-    CordbContent content_value;
-    content_value.booleanValue = 0;
-    CordbValue* value          = new CordbValue(conn, ELEMENT_TYPE_BOOLEAN, content_value, 1);
-    value->QueryInterface(IID_ICorDebugValue, (void**)ppValue);
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::QueryInterface(REFIID id, void** pInterface)

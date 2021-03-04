@@ -487,6 +487,13 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return 0;
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	g_error ("mono_arch_context_get_int_reg_address");
+	return 0;
+}
+
 #ifdef HOST_WASM
 
 void

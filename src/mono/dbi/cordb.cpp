@@ -465,6 +465,11 @@ void Connection::LoopSendReceive()
     LOG((LF_CORDB, LL_INFO100000, "Protocol version %d.%d, server protocol version %d.%d.\n", MAJOR_VERSION,
          MINOR_VERSION, major_version, minor_version));
     free(vm_version);
+
+    m_dbgprot_buffer_init(&localbuf, 128);
+    SendEvent(MDBGPROT_CMD_SET_VM, MDBGPROT_CMD_VM_SET_USING_ICORDBG, &localbuf);
+    m_dbgprot_buffer_free(&localbuf);
+
     int iResult = 0;
     // Receive until the peer closes the connection
     do

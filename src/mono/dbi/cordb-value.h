@@ -16,7 +16,7 @@ union CordbContent
     int8_t  booleanValue;
     int32_t intValue;
     int64_t longValue;
-    void*   pointerValue;
+    CORDB_ADDRESS   pointerValue;
 };
 
 class CordbValue : public CordbBaseMono, public ICorDebugValue2, public ICorDebugValue3, public ICorDebugGenericValue
@@ -63,10 +63,9 @@ class CordbReferenceValue : public CordbBaseMono,
     int            m_debuggerId;
     CordbClass*    m_pClass;
     CordbType*     m_pCordbType;
-
+    CORDB_ADDRESS  m_pAddress;
 public:
-    CordbReferenceValue(
-        Connection* conn, CorElementType type, int object_id, CordbClass* klass = NULL, CordbType* cordbType = NULL);
+    CordbReferenceValue(Connection* conn, CorElementType type, int object_id, CordbClass* klass = NULL, CordbType* cordbType = NULL, CORDB_ADDRESS cordbAddress = NULL);
     ULONG STDMETHODCALLTYPE AddRef(void)
     {
         return (BaseAddRef());

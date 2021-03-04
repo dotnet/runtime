@@ -115,8 +115,8 @@ CordbModule::~CordbModule()
 {
     if (m_pAssembly)
         m_pAssembly->InternalRelease();
-    if (m_pPeImage)
-        free(m_pPeImage);
+    /*if (m_pPeImage)
+        free(m_pPeImage);*/
     if (m_pAssemblyName)
         free(m_pAssemblyName);
 }
@@ -221,14 +221,15 @@ HRESULT CordbModule::GetBaseAddress(CORDB_ADDRESS* pAddress)
             MdbgProtBuffer localbuf;
             m_dbgprot_buffer_init(&localbuf, 128);
             m_dbgprot_buffer_add_id(&localbuf, GetDebuggerId());
-            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_METADATA_BLOB, &localbuf);
+            int cmdId = conn->SendEvent(MDBGPROT_CMD_SET_ASSEMBLY, MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS, &localbuf);
             m_dbgprot_buffer_free(&localbuf);
 
             ReceivedReplyPacket* received_reply_packet = conn->GetReplyWithError(cmdId);
             CHECK_ERROR_RETURN_FALSE(received_reply_packet);
             MdbgProtBuffer* pReply = received_reply_packet->Buffer();
 
-            m_pPeImage = m_dbgprot_decode_byte_array(pReply->p, &pReply->p, pReply->end, &m_nPeImageSize);
+            m_pPeImage = m_dbgprot_decode_long(pReply->p, &pReply->p, pReply->end);
+            m_nPeImageSize = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
         }
         LOG((LF_CORDB, LL_INFO1000000, "CordbModule - GetBaseAddress - IMPLEMENTED\n"));
         *pAddress = (CORDB_ADDRESS)m_pPeImage;

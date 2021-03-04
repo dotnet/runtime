@@ -6075,6 +6075,24 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	}
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	switch (reg) {
+	case X86_EAX: return &ctx->eax;
+	case X86_EBX: return &ctx->ebx;
+	case X86_ECX: return &ctx->ecx;
+	case X86_EDX: return &ctx->edx;
+	case X86_ESP: return &ctx->esp;
+	case X86_EBP: return &ctx->ebp;
+	case X86_ESI: return &ctx->esi;
+	case X86_EDI: return &ctx->edi;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 {
