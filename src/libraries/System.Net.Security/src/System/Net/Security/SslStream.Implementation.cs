@@ -759,6 +759,8 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
+            Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
+
             try
             {
                 while (true)
@@ -902,6 +904,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReturnReadBufferIfEmpty();
                 _nestedRead = 0;
             }
         }
@@ -1022,8 +1025,6 @@ namespace System.Net.Security
 
             _internalOffset += byteCount;
             _internalBufferCount -= byteCount;
-
-            ReturnReadBufferIfEmpty();
         }
 
         private int CopyDecryptedData(Memory<byte> buffer)
@@ -1039,7 +1040,6 @@ namespace System.Net.Security
                 _decryptedBytesCount -= copyBytes;
             }
 
-            ReturnReadBufferIfEmpty();
             return copyBytes;
         }
 
@@ -1050,6 +1050,8 @@ namespace System.Net.Security
             if (_internalBuffer == null)
             {
                 _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+                Debug.Assert(_internalOffset == 0);
+                Debug.Assert(_internalBufferCount == 0);
             }
             else if (_internalOffset > 0)
             {
