@@ -9,8 +9,10 @@ namespace System.Net
 {
     internal sealed partial class NetEventSource
     {
+#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "parameter intent is an enum and is trimmer safe")]
+#endif
         [Event(AcquireDefaultCredentialId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void AcquireDefaultCredential(string packageName, Interop.SspiCli.CredentialUse intent)
         {
@@ -62,8 +64,10 @@ namespace System.Net
         private void AcceptSecurityContext(string credential, string context, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(AcceptSecuritContextId, credential, context, (int)inFlags);
 
+#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "parameter errorCode is an enum and is trimmer safe")]
+#endif
         [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode)
         {

@@ -48,7 +48,9 @@ namespace System.Diagnostics.Tracing
         /// <param name="types">
         /// The types of the fields in the event. This value must not be null.
         /// </param>
+#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         internal TraceLoggingEventTypes(
             string name,
             EventTags tags,
@@ -83,7 +85,9 @@ namespace System.Diagnostics.Tracing
         {
         }
 
+#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         internal TraceLoggingEventTypes(
             string name,
             EventTags tags,
@@ -182,7 +186,9 @@ namespace System.Diagnostics.Tracing
             this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags)) ??
                 this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
 
+#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
             if (paramInfos == null)
@@ -200,7 +206,9 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
+#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         private static TraceLoggingTypeInfo[] MakeArray(Type[] types)
         {
             if (types == null)

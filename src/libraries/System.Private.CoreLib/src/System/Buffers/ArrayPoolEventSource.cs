@@ -129,6 +129,10 @@ namespace System.Buffers
         /// <summary>
         /// Event raised when a buffer returned to the pool is dropped.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [Event(6, Level = EventLevel.Informational)]
         internal unsafe void BufferDropped(int bufferId, int bufferSize, int poolId, int bucketId, BufferDroppedReason reason)
         {
