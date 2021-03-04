@@ -1138,7 +1138,7 @@ PhaseStatus Compiler::fgCloneFinally()
         BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
         bool                 retargetedAllCalls = true;
         BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
-        BasicBlock::weight_t retargetedWeight   = 0;
+        BasicBlock::weight_t retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
