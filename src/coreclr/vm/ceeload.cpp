@@ -220,6 +220,14 @@ void Module::UpdateNewlyAddedTypes()
     DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
     DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
 
+    if (m_dwTypeCount == countTypesAfterProfilerUpdate
+        && m_dwExportedTypeCount == countExportedTypesAfterProfilerUpdate
+        && m_dwCustomAttributeCount == countCustomAttributeCount)
+    {
+        // The profiler added no new types, do not create the in memory hashes
+        return;
+    }
+
     // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
     // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
     // in memory hashtable as usual.
@@ -300,12 +308,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         // assembly
         if (!IsResource())
         {
-            if (m_dwTypeCount != GetMDImport()->GetCountWithTokenKind(mdtTypeDef)
-                || m_dwExportedTypeCount != GetMDImport()->GetCountWithTokenKind(mdtExportedType)
-                || m_dwCustomAttributeCount != GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute))
-            {
-                UpdateNewlyAddedTypes();
-            }
+            UpdateNewlyAddedTypes();
         }
 
         {
