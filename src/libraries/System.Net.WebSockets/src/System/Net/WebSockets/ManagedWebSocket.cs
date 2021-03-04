@@ -329,7 +329,7 @@ namespace System.Net.WebSockets
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
                     ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
-                    Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate<WebSocketReceiveResultGetter, WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
+                    Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
                     _lastReceiveAsync = t;
                     return t;
                 }
@@ -401,7 +401,7 @@ namespace System.Net.WebSockets
                 {
                     ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
 
-                    ValueTask<ValueWebSocketReceiveResult> receiveValueTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                    ValueTask<ValueWebSocketReceiveResult> receiveValueTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
                     if (receiveValueTask.IsCompletedSuccessfully)
                     {
                         _lastReceiveAsync = receiveValueTask.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask;
@@ -430,20 +430,13 @@ namespace System.Net.WebSockets
                          !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
                          !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close)))
             {
-                ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                ValueTask<ValueWebSocketReceiveResult> vt = ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
                 receiveTask =
                     vt.IsCompletedSuccessfully ? (vt.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
                     vt.AsTask();
             }
 
             return receiveTask;
-        }
-
-        /// <summary><see cref="IWebSocketReceiveResultGetter{TResult}"/> implementation for <see cref="ValueWebSocketReceiveResult"/>.</summary>
-        private readonly struct ValueWebSocketReceiveResultGetter : IWebSocketReceiveResultGetter<ValueWebSocketReceiveResult>
-        {
-            public ValueWebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription) =>
-                new ValueWebSocketReceiveResult(count, messageType, endOfMessage); // closeStatus/closeDescription are ignored
         }
 
         /// <summary>Sends a websocket frame to the network.</summary>
@@ -768,13 +761,8 @@ namespace System.Net.WebSockets
         /// </summary>
         /// <param name="payloadBuffer">The buffer into which payload data should be written.</param>
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
-        /// <param name="resultGetter">Used to get the result.  Allows the same method to be used with both WebSocketReceiveResult and ValueWebSocketReceiveResult.</param>
         /// <returns>Information about the received message.</returns>
-        private async ValueTask<TWebSocketReceiveResult> ReceiveAsyncPrivate<TWebSocketReceiveResultGetter, TWebSocketReceiveResult>(
-            Memory<byte> payloadBuffer,
-            CancellationToken cancellationToken,
-            TWebSocketReceiveResultGetter resultGetter = default)
-            where TWebSocketReceiveResultGetter : struct, IWebSocketReceiveResultGetter<TWebSocketReceiveResult> // constrained to avoid boxing and enable inlining
+        private async ValueTask<TResult> ReceiveAsyncPrivate<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             // This is a long method.  While splitting it up into pieces would arguably help with readability, doing so would
             // also result in more allocations, as each async method that yields ends up with multiple allocations.  The impact
@@ -837,7 +825,7 @@ namespace System.Net.WebSockets
                     else if (header.Opcode == MessageOpcode.Close)
                     {
                         await HandleReceivedCloseAsync(header, cancellationToken).ConfigureAwait(false);
-                        return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
+                        return GetReceiveResult<TResult>(0, WebSocketMessageType.Close, true);
                     }
 
                     // If this is a continuation, replace the opcode with the one of the message it's continuing
@@ -854,11 +842,10 @@ namespace System.Net.WebSockets
                     if ((header.PayloadLength == 0 && _inflateFinished) || payloadBuffer.Length == 0)
                     {
                         _lastReceiveHeader = header;
-                        return resultGetter.GetResult(
-                            0,
-                            header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                            header.Fin && header.PayloadLength == 0 && _inflateFinished,
-                            null, null);
+                        return GetReceiveResult<TResult>(
+                            count: 0,
+                            messageType: header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
+                            endOfMessage: header.Fin && header.PayloadLength == 0 && _inflateFinished);
                     }
 
                     // Otherwise, read as much of the payload as we can efficiently, and update the header to reflect how much data
@@ -942,11 +929,10 @@ namespace System.Net.WebSockets
                     }
 
                     _lastReceiveHeader = header;
-                    return resultGetter.GetResult(
+                    return GetReceiveResult<TResult>(
                         totalBytesReceived,
                         header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
-                        header.Fin && header.PayloadLength == 0,
-                        null, null);
+                        header.Fin && header.PayloadLength == 0 && _inflateFinished);
                 }
             }
             catch (Exception exc)
@@ -975,6 +961,20 @@ namespace System.Net.WebSockets
             {
                 registration.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Returns either <see cref="ValueWebSocketReceiveResult"/> or <see cref="ValueWebSocketReceiveResult"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private TResult GetReceiveResult<TResult>(int count, WebSocketMessageType messageType, bool endOfMessage)
+        {
+            if (typeof(TResult) == typeof(ValueWebSocketReceiveResult))
+            {
+                return (TResult)(object)new ValueWebSocketReceiveResult(count, messageType, endOfMessage);
+            }
+
+            return (TResult)(object)new WebSocketReceiveResult(count, messageType, endOfMessage, _closeStatus, _closeStatusDescription);
         }
 
         /// <summary>Processes a received close message.</summary>
@@ -1717,23 +1717,6 @@ namespace System.Net.WebSockets
             internal long PayloadLength;
             internal bool Compressed;
             internal int Mask;
-        }
-
-        /// <summary>
-        /// Interface used by <see cref="ReceiveAsyncPrivate"/> to enable it to return
-        /// different result types in an efficient manner.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result</typeparam>
-        private interface IWebSocketReceiveResultGetter<TResult>
-        {
-            TResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription);
-        }
-
-        /// <summary><see cref="IWebSocketReceiveResultGetter{TResult}"/> implementation for <see cref="WebSocketReceiveResult"/>.</summary>
-        private readonly struct WebSocketReceiveResultGetter : IWebSocketReceiveResultGetter<WebSocketReceiveResult>
-        {
-            public WebSocketReceiveResult GetResult(int count, WebSocketMessageType messageType, bool endOfMessage, WebSocketCloseStatus? closeStatus, string? closeDescription) =>
-                new WebSocketReceiveResult(count, messageType, endOfMessage, closeStatus, closeDescription);
         }
     }
 }
