@@ -181,11 +181,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnInsertComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnInsertComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (initialized)
             {
-                ActiveDirectorySite site = (ActiveDirectorySite)value!;
+                ActiveDirectorySite site = (ActiveDirectorySite)value;
                 string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName)!;
                 try
                 {
@@ -198,9 +200,11 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnRemoveComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnRemoveComplete(int index, object value)
+#pragma warning restore CS8765
         {
-            ActiveDirectorySite site = (ActiveDirectorySite)value!;
+            ActiveDirectorySite site = (ActiveDirectorySite)value;
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName)!;
             try
             {
@@ -212,9 +216,11 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnSetComplete(int index, object? oldValue, object? newValue)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnSetComplete(int index, object oldValue, object newValue)
+#pragma warning restore CS8765
         {
-            ActiveDirectorySite newsite = (ActiveDirectorySite)newValue!;
+            ActiveDirectorySite newsite = (ActiveDirectorySite)newValue;
             string newdn = (string)PropertyManager.GetPropertyValue(newsite.context, newsite.cachedEntry, PropertyManager.DistinguishedName)!;
             try
             {

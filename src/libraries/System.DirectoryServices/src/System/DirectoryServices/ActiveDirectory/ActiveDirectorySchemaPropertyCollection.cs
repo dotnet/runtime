@@ -299,7 +299,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnInsertComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnInsertComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isBound)
             {
@@ -310,7 +312,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    _classEntry.Properties[_propertyName].Add(((ActiveDirectorySchemaProperty)value!).Name);
+                    _classEntry.Properties[_propertyName].Add(((ActiveDirectorySchemaProperty)value).Name);
                 }
                 catch (COMException e)
                 {
@@ -319,7 +321,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnRemoveComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnRemoveComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isBound)
             {
@@ -332,7 +336,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // these values would not exist in the classEntry
                 // and therefore cannot be removed
                 // we need to throw an exception here
-                string valueName = ((ActiveDirectorySchemaProperty)value!).Name;
+                string valueName = ((ActiveDirectorySchemaProperty)value).Name;
 
                 try
                 {
@@ -351,7 +355,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
         }
-        protected override void OnSetComplete(int index, object? oldValue, object? newValue)
+
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnSetComplete(int index, object oldValue, object newValue)
+#pragma warning restore CS8765
         {
             if (_isBound)
             {

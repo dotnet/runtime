@@ -268,7 +268,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnInsertComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnInsertComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isForNC)
             {
@@ -276,7 +278,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     try
                     {
-                        DirectoryServer server = (DirectoryServer)value!;
+                        DirectoryServer server = (DirectoryServer)value;
                         string ntdsaName = (server is DomainController) ? ((DomainController)server).NtdsaObjectName : ((AdamInstance)server).NtdsaObjectName;
                         _crossRefEntry.Properties[PropertyManager.MsDSNCReplicaLocations].Add(ntdsaName);
                     }
@@ -288,7 +290,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else if (initialized)
             {
-                DirectoryServer server = (DirectoryServer)value!;
+                DirectoryServer server = (DirectoryServer)value;
                 string name = server.Name;
                 string serverName = (server is DomainController) ? ((DomainController)server).ServerObjectName : ((AdamInstance)server).ServerObjectName;
 
@@ -313,7 +315,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnRemoveComplete(int index, object? value)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnRemoveComplete(int index, object value)
+#pragma warning restore CS8765
         {
             if (_isForNC)
             {
@@ -321,7 +325,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_crossRefEntry != null)
                     {
-                        string ntdsaName = (value is DomainController) ? ((DomainController)value).NtdsaObjectName : ((AdamInstance)value!).NtdsaObjectName;
+                        string ntdsaName = (value is DomainController) ? ((DomainController)value).NtdsaObjectName : ((AdamInstance)value).NtdsaObjectName;
                         _crossRefEntry.Properties[PropertyManager.MsDSNCReplicaLocations].Remove(ntdsaName);
                     }
                 }
@@ -332,7 +336,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                DirectoryServer server = (DirectoryServer)value!;
+                DirectoryServer server = (DirectoryServer)value;
                 string name = server.Name;
                 string serverName = (server is DomainController) ? ((DomainController)server).ServerObjectName : ((AdamInstance)server).ServerObjectName;
 
@@ -357,7 +361,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        protected override void OnSetComplete(int index, object? oldValue, object? newValue)
+#pragma warning disable CS8765 // Nullability doesn't match overriden member
+        protected override void OnSetComplete(int index, object oldValue, object newValue)
+#pragma warning restore CS8765
         {
             OnRemoveComplete(index, oldValue);
             OnInsertComplete(index, newValue);
