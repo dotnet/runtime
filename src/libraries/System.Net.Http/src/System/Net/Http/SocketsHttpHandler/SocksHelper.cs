@@ -40,13 +40,13 @@ namespace System.Net.Http
         public static async ValueTask EstablishSocksTunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
         {
             // in sync path, dispose the stream to cancel
-            using (cancellationToken.Register(() => stream.Dispose()))
+            using (cancellationToken.Register(s => ((Stream)s!).Dispose(), stream))
             {
                 try
                 {
                     if (string.Equals(proxyUri.Scheme, "socks5", StringComparison.OrdinalIgnoreCase))
                     {
-                        await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async, cancellationToken).ConfigureAwait(false);
+                        await EstablishSocks5TunnelAsync(stream, host, port, proxyUri, proxyCredentials, async).ConfigureAwait(false);
                     }
                     else if (string.Equals(proxyUri.Scheme, "socks4a", StringComparison.OrdinalIgnoreCase))
                     {
@@ -69,7 +69,7 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async, CancellationToken cancellationToken)
+        private static async ValueTask EstablishSocks5TunnelAsync(Stream stream, string host, int port, Uri proxyUri, ICredentials? proxyCredentials, bool async)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -95,14 +95,14 @@ namespace System.Net.Http
                     buffer[2] = METHOD_NO_AUTH;
                     buffer[3] = METHOD_USERNAME_PASSWORD;
                 }
-                await WriteAsync(stream, buffer.AsMemory(0, buffer[1] + 2), async, cancellationToken).ConfigureAwait(false);
+                await WriteAsync(stream, buffer.AsMemory(0, buffer[1] + 2), async).ConfigureAwait(false);
 
                 // +----+--------+
                 // |VER | METHOD |
                 // +----+--------+
                 // | 1  |   1    |
                 // +----+--------+
-                await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async, cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
 
@@ -132,14 +132,14 @@ namespace System.Net.Http
                             buffer[2 + uLen] = checked((byte)pLen);
                             int pLenEncoded = Encoding.UTF8.GetBytes(credentials.Password, buffer.AsSpan(3 + uLen));
                             Debug.Assert(pLen == pLenEncoded);
-                            await WriteAsync(stream, buffer.AsMemory(0, 4 + uLen + pLen), async, cancellationToken).ConfigureAwait(false);
+                            await WriteAsync(stream, buffer.AsMemory(0, 4 + uLen + pLen), async).ConfigureAwait(false);
 
                             // +----+--------+
                             // |VER | STATUS |
                             // +----+--------+
                             // | 1  |   1    |
                             // +----+--------+
-                            await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async, cancellationToken).ConfigureAwait(false);
+                            await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
                             if (buffer[0] != ProtocolVersion5)
                                 throw new Exception("Bad protocol version");
                             if (buffer[1] != REP_SUCCESS)
@@ -195,14 +195,14 @@ namespace System.Net.Http
                 buffer[addressLength + 5] = (byte)(port >> 8);
                 buffer[addressLength + 6] = (byte)port;
 
-                await WriteAsync(stream, buffer.AsMemory(0, addressLength + 7), async, cancellationToken).ConfigureAwait(false);
+                await WriteAsync(stream, buffer.AsMemory(0, addressLength + 7), async).ConfigureAwait(false);
 
                 // +----+-----+-------+------+----------+----------+
                 // |VER | REP |  RSV  | ATYP | DST.ADDR | DST.PORT |
                 // +----+-----+-------+------+----------+----------+
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
-                await ReadToFillAsync(stream, buffer.AsMemory(0, 5), async, cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 5), async).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion5)
                     throw new Exception("Bad protocol version");
                 if (buffer[1] != REP_SUCCESS)
@@ -214,7 +214,7 @@ namespace System.Net.Http
                     ATYP_DOMAIN_NAME => buffer[4] + 2,
                     _ => throw new Exception("Unknown address type")
                 };
-                await ReadToFillAsync(stream, buffer.AsMemory(0, bytesToSkip), async, cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, bytesToSkip), async).ConfigureAwait(false);
                 // response address not used
             }
             finally
@@ -306,13 +306,13 @@ namespace System.Net.Http
                     totalLength += aLen + 1;
                 }
 
-                await WriteAsync(stream, buffer.AsMemory(0, totalLength), async, cancellationToken).ConfigureAwait(false);
+                await WriteAsync(stream, buffer.AsMemory(0, totalLength), async).ConfigureAwait(false);
 
                 // +----+----+----+----+----+----+----+----+
                 // | VN | CD | DSTPORT |      DSTIP        |
                 // +----+----+----+----+----+----+----+----+
                 //    1    1      2              4
-                await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async, cancellationToken).ConfigureAwait(false);
+                await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async).ConfigureAwait(false);
                 if (buffer[0] != ProtocolVersion4)
                 {
                     throw new Exception("Bad protocol version");
@@ -329,11 +329,11 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask WriteAsync(Stream stream, Memory<byte> buffer, bool async, CancellationToken cancellationToken)
+        private static async ValueTask WriteAsync(Stream stream, Memory<byte> buffer, bool async)
         {
             if (async)
             {
-                await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                await stream.WriteAsync(buffer).ConfigureAwait(false);
             }
             else
             {
@@ -341,12 +341,12 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer, bool async, CancellationToken cancellationToken)
+        private static async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer, bool async)
         {
             while (!buffer.IsEmpty)
             {
                 int bytesRead = async
-                    ? await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)
+                    ? await stream.ReadAsync(buffer).ConfigureAwait(false)
                     : stream.Read(buffer.Span);
 
                 if (bytesRead == 0)
