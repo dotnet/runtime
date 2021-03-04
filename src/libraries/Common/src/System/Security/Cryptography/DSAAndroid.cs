@@ -383,7 +383,7 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
 
-            private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
+            private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 1024, maxSize: 3072, skipSize: 1024) };
         }
     }
 }
