@@ -181,7 +181,7 @@ namespace System.Tests
             Assert.Equal(expected, actual);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsAppleSilicon)] // [ActiveIssue("https://github.com/dotnet/runtime/issues/49106")]
         [PlatformSpecific(TestPlatforms.OSX)]
         public void OSVersion_ValidVersion_OSX()
         {
