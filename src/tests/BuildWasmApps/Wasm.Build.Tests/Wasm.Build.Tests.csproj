@@ -30,10 +30,4 @@
 
     <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <Target Name="SetRunScript" BeforeTargets="GenerateRunScript">
-
-    <PropertyGroup>
-    </PropertyGroup>
-  </Target>
 </Project>
