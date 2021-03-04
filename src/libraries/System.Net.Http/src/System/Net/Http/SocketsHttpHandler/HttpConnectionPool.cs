@@ -182,7 +182,6 @@ namespace System.Net.Http
                 case HttpConnectionKind.SslSocksTunnel:
                     Debug.Assert(host != null);
                     Debug.Assert(port != 0);
-                    Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
                     _http3Enabled = false; // TODO: SOCKS supports UDP and may be used for HTTP3
