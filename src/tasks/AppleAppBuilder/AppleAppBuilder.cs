@@ -113,6 +113,11 @@ public class AppleAppBuilderTask : Task
     public bool ForceInterpreter { get; set; }
 
     /// <summary>
+    /// Forces the runtime to use the invariant mode
+    /// </summary>
+    public bool ForceInvariant { get; set; } = true;
+
+    /// <summary>
     /// Path to xcode project
     /// </summary>
     [Output]
@@ -174,7 +179,7 @@ public class AppleAppBuilderTask : Task
         {
             Xcode generator = new Xcode(TargetOS);
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource, ForceInvariant);
 
             if (BuildAppBundle)
             {

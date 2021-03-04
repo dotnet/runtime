@@ -209,8 +209,13 @@ void register_aot_modules (void);
 void
 mono_ios_runtime_init (void)
 {
+#if FORCE_INVARIANT
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+#elif
+    setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "0", TRUE);
+#endif
+
     // uncomment for debug output:
     //
     // setenv ("MONO_LOG_LEVEL", "debug", TRUE);

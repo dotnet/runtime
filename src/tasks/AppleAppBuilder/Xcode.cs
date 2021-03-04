@@ -41,7 +41,8 @@ internal class Xcode
         bool forceAOT,
         bool forceInterpreter,
         bool stripDebugSymbols,
-        string? nativeMainSource = null)
+        string? nativeMainSource = null,
+        bool forceInvariant = true)
     {
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
@@ -123,6 +124,13 @@ internal class Xcode
         {
             defines = "add_definitions(-DFORCE_AOT=1)";
         }
+
+        if (forceInvariant)
+        {
+            defines = "add_definitions(-DFORCE_INVARIANT=1)";
+        }
+
+
         cmakeLists = cmakeLists.Replace("%Defines%", defines);
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
