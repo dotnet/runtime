@@ -3725,19 +3725,14 @@ interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr
 static void
 interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	// Initialize the offset for the field
 	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
 
 	push_simple_type (td, STACK_TYPE_MP);
 	if (mono_class_field_is_special_static (field)) {
-		guint32 offset;
-
-		mono_domain_lock (domain);
-		g_assert (domain->special_static_fields);
-		offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, field));
-		mono_domain_unlock (domain);
+		guint32 offset = GPOINTER_TO_UINT (mono_special_static_field_get_offset (field, error));
+		mono_error_assert_ok (error);
 		g_assert (offset);
 
 		interp_add_ins (td, MINT_LDSSFLDA);
@@ -3834,18 +3829,13 @@ emit_convert (TransformData *td, int stype, MonoType *ftype)
 static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	// Initialize the offset for the field
 	MonoVTable *vtable = mono_class_vtable_checked (field->parent, error);
 	return_if_nok (error);
 
 	if (mono_class_field_is_special_static (field)) {
-		guint32 offset;
-
-		mono_domain_lock (domain);
-		g_assert (domain->special_static_fields);
-		offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, field));
-		mono_domain_unlock (domain);
+		guint32 offset = GPOINTER_TO_UINT (mono_special_static_field_get_offset (field, error));
+		mono_error_assert_ok (error);
 		g_assert (offset);
 
 		// Offset is SpecialStaticOffset

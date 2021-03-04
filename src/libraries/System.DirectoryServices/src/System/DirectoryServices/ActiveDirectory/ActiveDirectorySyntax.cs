@@ -62,9 +62,9 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public readonly string attributeSyntax;
         public readonly int oMSyntax;
-        public readonly OMObjectClass oMObjectClass;
+        public readonly OMObjectClass? oMObjectClass;
 
-        public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass oMObjectClass)
+        public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass? oMObjectClass)
         {
             this.attributeSyntax = attributeSyntax;
             this.oMSyntax = oMSyntax;

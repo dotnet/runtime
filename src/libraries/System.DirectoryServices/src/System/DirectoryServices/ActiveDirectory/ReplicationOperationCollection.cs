@@ -18,7 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public ReplicationOperation this[int index] => (ReplicationOperation)InnerList[index];
+        public ReplicationOperation this[int index] => (ReplicationOperation)InnerList[index]!;
 
         public bool Contains(ReplicationOperation operation)
         {
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReplicationOperation GetFirstOperation()
         {
-            ReplicationOperation op = (ReplicationOperation)InnerList[0];
+            ReplicationOperation op = (ReplicationOperation)InnerList[0]!;
             InnerList.RemoveAt(0);
 
             return op;

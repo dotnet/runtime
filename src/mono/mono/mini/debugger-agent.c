@@ -1418,7 +1418,7 @@ start_debugger_thread (MonoError *error)
 {
 	MonoInternalThread *thread;
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
+	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
 	/* Is it possible for the thread to be dead alreay ? */
@@ -6391,6 +6391,26 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static gboolean
+module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoArray *dpdb, MonoError *error)
+{
+#ifdef ENABLE_METADATA_UPDATE
+	/* TODO: use dpdb */
+	gpointer dmeta_bytes = (gpointer)mono_array_addr_internal (dmeta, char, 0);
+	int32_t dmeta_len = mono_array_length_internal (dmeta);
+	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
+	int32_t dil_len = mono_array_length_internal (dil);
+	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	return is_ok (error);
+#else
+	mono_error_set_not_supported (error, "");
+	return FALSE;
+#endif
+}
+	
+
 static void
 buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
 {
@@ -7150,7 +7170,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (err != ERR_NONE)
 			return err;
 
-		buffer_add_assemblyid (buf, domain, domain->entry_assembly);
+		buffer_add_assemblyid (buf, domain, mono_runtime_get_entry_assembly ());
 		break;
 	}
 	case CMD_APPDOMAIN_GET_CORLIB: {
@@ -7480,6 +7500,27 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (basename);
 		g_free (sourcelink);
 		break;			
+	}
+	case MDBGPROT_CMD_MODULE_APPLY_CHANGES: {
+		MonoImage *image = decode_moduleid (p, &p, end, &domain, &err);
+		if (err != ERR_NONE)
+			return err;
+		int dmeta_id = decode_objid (p, &p, end);
+		int dil_id = decode_objid (p, &p, end);
+		int dpdb_id = decode_objid (p, &p, end);
+		MonoObject *dmeta, *dil, *dpdb;
+		if ((err = get_object (dmeta_id, &dmeta)) != ERR_NONE)
+			return err;
+		if ((err = get_object (dil_id, &dil)) != ERR_NONE)
+			return err;
+		if ((err = get_object_allow_null (dpdb_id, &dpdb)) != ERR_NONE)
+			return err;
+		ERROR_DECL (error);
+		if (!module_apply_changes (image, (MonoArray *)dmeta, (MonoArray *)dil, (MonoArray *)dpdb, error)) {
+			mono_error_cleanup (error);
+			return ERR_LOADER_ERROR;
+		}
+		return ERR_NONE;
 	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
@@ -9459,6 +9500,7 @@ static const char* assembly_cmds_str[] = {
 
 static const char* module_cmds_str[] = {
 	"GET_INFO",
+	"APPLY_CHANGES",
 };
 
 static const char* field_cmds_str[] = {

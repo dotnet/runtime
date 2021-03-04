@@ -262,7 +262,7 @@ CrashInfo::GetDSOInfo()
 void
 CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
 {
-    if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR] || baseAddress == m_auxvValues[AT_BASE]) {
+    if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR]) {
         return;
     }
     if (m_coreclrPath.empty())
