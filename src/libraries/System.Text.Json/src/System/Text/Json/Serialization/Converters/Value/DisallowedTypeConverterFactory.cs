@@ -21,7 +21,9 @@ namespace System.Text.Json.Serialization.Converters
                 // Explicitly disallowing this type provides a clear exception when ctors with
                 // .ctor(SerializationInfo, StreamingContext) signatures are attempted to be used for deserialization.
                 // Invoking such ctors is not safe when used with untrusted user input.
-                type == typeof(SerializationInfo);
+                type == typeof(SerializationInfo) ||
+                type == typeof(IntPtr) ||
+                type == typeof(UIntPtr);
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)

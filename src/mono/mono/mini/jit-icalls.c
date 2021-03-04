@@ -59,12 +59,12 @@ mono_ldftn (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 		addr = mono_compile_method_checked (method, error);
 	else
-		addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE, error);
+		addr = mono_create_jump_trampoline (method, FALSE, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	return mono_create_ftnptr (mono_domain_get (), addr);
+	return mono_create_ftnptr (addr);
 }
 
 static void*
@@ -806,7 +806,6 @@ gpointer
 mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoVTable *vtable;
 	gpointer addr;
 	
@@ -830,10 +829,8 @@ mono_class_static_field_address (MonoClassField *field)
 
 	if (field->offset == -1) {
 		/* Special static */
-		g_assert (domain->special_static_fields);
-		mono_domain_lock (domain);
-		addr = g_hash_table_lookup (domain->special_static_fields, field);
-		mono_domain_unlock (domain);
+		addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
 		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
@@ -1602,6 +1599,14 @@ mono_throw_not_supported ()
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_platform_not_supported ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "PlatformNotSupportedException", "");
 	mono_error_set_pending_exception (error);
 }
 

@@ -353,7 +353,29 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     }
     else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
+        // we just use the one that converts to a TYP_DOUBLE
+        // and then add a cast to TYP_FLOAT
+        //
+        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        {
+            // Fix the return type to be TYP_DOUBLE
+            //
+            oper->gtType = TYP_DOUBLE;
+
+            // Add a Cast to TYP_FLOAT
+            //
+            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return tree;
+        }
+        else
+        {
+            return oper;
+        }
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
@@ -6468,7 +6490,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             assert(pFldAddr == nullptr);
 
 #ifdef TARGET_64BIT
-            if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
+            bool isStaticReadOnlyInited = false;
+            bool plsSpeculative         = true;
+            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+            {
+                isStaticReadOnlyInited = !plsSpeculative;
+            }
+
+            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
+            // for static readonly fields of statically initialized classes - thus we can
+            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
+            if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
@@ -6487,6 +6519,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
+
+                if (isStaticReadOnlyInited)
+                {
+                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+                    tree->gtFlags |= GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
+                    addr->gtFlags = GTF_ICON_CONST_PTR;
+                }
 
                 return fgMorphSmpOp(tree);
             }
@@ -7637,10 +7677,90 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-    // This block is not longer any block's predecessor. If we end up
-    // converting this tail call to a branch, we'll add appropriate
-    // successor information then.
-    fgRemoveBlockAsPred(compCurBB);
+    // If this block has a flow successor, make suitable updates.
+    //
+    BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
+
+    if (nextBlock == nullptr)
+    {
+        // No unique successor. compCurBB should be a return.
+        //
+        assert(compCurBB->bbJumpKind == BBJ_RETURN);
+    }
+    else
+    {
+        // Flow no longer reaches nextBlock from here.
+        //
+        fgRemoveRefPred(nextBlock, compCurBB);
+
+        // Adjust profile weights.
+        //
+        // Note if this is a tail call to loop, further updates
+        // are needed once we install the loop edge.
+        //
+        if (compCurBB->hasProfileWeight() && nextBlock->hasProfileWeight())
+        {
+            // Since we have linear flow we can update the next block weight.
+            //
+            BasicBlock::weight_t const blockWeight   = compCurBB->bbWeight;
+            BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
+            BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
+
+            // If the math would result in a negative weight then there's
+            // no local repair we can do; just leave things inconsistent.
+            //
+            if (newNextWeight >= 0)
+            {
+                // Note if we'd already morphed the IR in nextblock we might
+                // have done something profile sensitive that we should arguably reconsider.
+                //
+                JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
+                        nextWeight, newNextWeight);
+
+                nextBlock->setBBProfileWeight(newNextWeight);
+            }
+            else
+            {
+                JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                        " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                        nextBlock->bbNum, nextWeight, compCurBB->bbNum, blockWeight);
+            }
+
+            // If nextBlock is not a BBJ_RETURN, it should have a unique successor that
+            // is a BBJ_RETURN, as we allow a little bit of flow after a tail call.
+            //
+            if (nextBlock->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+
+                if (nextNextBlock->hasProfileWeight())
+                {
+                    // Do similar updates here.
+                    //
+                    BasicBlock::weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    BasicBlock::weight_t const newNextNextWeight = nextNextWeight - blockWeight;
+
+                    // If the math would result in an negative weight then there's
+                    // no local repair we can do; just leave things inconsistent.
+                    //
+                    if (newNextNextWeight >= 0)
+                    {
+                        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+
+                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+                    }
+                    else
+                    {
+                        JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                                " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                    }
+                }
+            }
+        }
+    }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
@@ -16314,7 +16434,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     // The edge weights for (block -> bTaken) are 100% of block's weight
 
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight);
+                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
 
                     if (!bTaken->hasProfileWeight())
                     {
@@ -16331,7 +16451,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     if (bTaken->countOfInEdges() == 1)
                     {
                         // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight);
+                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
 
                         // Update the weight of block
                         block->inheritWeight(bTaken);
@@ -16352,21 +16472,21 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         default:
@@ -17115,13 +17235,22 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             fgRemoveStmt(block, lastStmt);
         }
-#ifdef DEBUG
-        if (verbose)
+
+        JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
+        DISPBLOCK(block);
+
+        if (block->hasProfileWeight())
         {
-            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-            fgTableDispBasicBlock(block);
+            BasicBlock::weight_t const oldWeight =
+                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+            BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
+
+            JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+                    block->bbNum, genReturnBB->bbNum);
+
+            genReturnBB->setBBProfileWeight(newWeight);
+            DISPBLOCK(genReturnBB);
         }
-#endif
     }
 }
 

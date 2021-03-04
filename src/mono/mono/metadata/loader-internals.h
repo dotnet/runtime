@@ -51,8 +51,18 @@ struct _MonoDllMap {
 };
 #endif
 
+/* Lock-free allocator */
+typedef struct {
+	guint8 *mem;
+	gpointer prev;
+	int size, pos;
+} LockFreeMempoolChunk;
+
+typedef struct {
+	LockFreeMempoolChunk *current, *chunks;
+} LockFreeMempool;
+
 struct _MonoAssemblyLoadContext {
-	MonoDomain *domain;
 	MonoLoadedImages *loaded_images;
 	GSList *loaded_assemblies;
 	// If taking this with the domain assemblies_lock, always take this second
@@ -90,8 +100,13 @@ struct _MonoMemoryManager {
 
 	MonoMemPool *mp;
 	MonoCodeManager *code_mp;
+	LockFreeMempool *lock_free_mp;
 
 	GPtrArray *class_vtable_array;
+	GHashTable *generic_virtual_cases;
+
+	/* Used to store offsets of thread static fields */
+	GHashTable         *special_static_fields;
 
 	/* Information maintained by mono-debug.c */
 	gpointer debug_info;
@@ -152,10 +167,13 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 
 void
+mono_alcs_init (void);
+
+void
 mono_alc_create_default (MonoDomain *domain);
 
 MonoAssemblyLoadContext *
-mono_alc_create_individual (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
+mono_alc_create_individual (MonoGCHandle this_gchandle, gboolean collectible, MonoError *error);
 
 void
 mono_alc_assemblies_lock (MonoAssemblyLoadContext *alc);
@@ -182,13 +200,21 @@ MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MonoAssemblyLoadContext *
-mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
+mono_alc_get_default (void);
 
-static inline MonoDomain *
-mono_alc_domain (MonoAssemblyLoadContext *alc)
+static inline
+MonoAssemblyLoadContext *
+mono_alc_get_ambient (void)
 {
-	return alc->domain;
+	/*
+	 * FIXME: All the callers of mono_alc_get_ambient () should get an ALC
+	 * passed to them from their callers.
+	 */
+	return mono_alc_get_default ();
 }
+
+MonoAssemblyLoadContext *
+mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 
 MonoLoadedImages *
 mono_alc_get_loaded_images (MonoAssemblyLoadContext *alc);
@@ -197,7 +223,7 @@ MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoSingletonMemoryManager *
-mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible);
+mono_mem_manager_create_singleton (MonoAssemblyLoadContext *alc, gboolean collectible);
 
 void
 mono_mem_manager_free_singleton (MonoSingletonMemoryManager *memory_manager, gboolean debug_unload);
@@ -222,6 +248,11 @@ mono_mem_manager_alloc0 (MonoMemoryManager *memory_manager, guint size);
 
 void *
 mono_mem_manager_alloc0_nolock (MonoMemoryManager *memory_manager, guint size);
+
+gpointer
+mono_mem_manager_alloc0_lock_free (MonoMemoryManager *memory_manager, guint size);
+
+#define mono_mem_manager_alloc0_lock_free(memory_manager, size) (g_cast (mono_mem_manager_alloc0_lock_free ((memory_manager), (size))))
 
 void *
 mono_mem_manager_code_reserve (MonoMemoryManager *memory_manager, int size);

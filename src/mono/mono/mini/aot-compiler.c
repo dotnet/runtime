@@ -4224,12 +4224,18 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 	ERROR_DECL (error);
 
 	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
+		MonoMethod *orig = method;
+
 		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
 		if (!is_ok (error)) {
 			/* vtype constraint */
 			mono_error_cleanup (error);
 			return;
 		}
+
+		/* Add it to profile_methods so its not skipped later */
+		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
+			g_hash_table_insert (acfg->profile_methods, method, method);
 	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
@@ -5019,7 +5025,7 @@ add_wrappers (MonoAotCompile *acfg)
 				slen = mono_metadata_decode_value (p, &p);
 				n = (char *)g_memdup (p, slen + 1);
 				n [slen] = 0;
-				t = mono_reflection_type_from_name_checked (n, mono_domain_ambient_alc (mono_domain_get ()), acfg->image, error);
+				t = mono_reflection_type_from_name_checked (n, mono_alc_get_ambient (), acfg->image, error);
 				g_assert (t);
 				mono_error_assert_ok (error);
 				g_free (n);
@@ -8180,11 +8186,12 @@ parse_cpu_features (const gchar *attr)
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
 	
 #elif defined(TARGET_ARM64)
-	if (!strcmp (attr + prefix, "base"))
-		feature = MONO_CPU_ARM64_BASE;
-	else if (!strcmp (attr + prefix, "crc"))
+	// MONO_CPU_ARM64_BASE is unconditionally set in mini_get_cpu_features.
+	if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
-	else if (!strcmp (attr + prefix, "simd"))
+	else if (!strcmp (attr + prefix, "crypto"))
+		feature = MONO_CPU_ARM64_CRYPTO;
+	else if (!strcmp (attr + prefix, "neon"))
 		feature = MONO_CPU_ARM64_NEON;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
@@ -8804,7 +8811,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_CODE_EXEC_ONLY);
 
 	jit_time_start = mono_time_track_start ();
-	cfg = mini_method_compile (method, acfg->jit_opts, mono_get_root_domain (), flags, 0, index);
+	cfg = mini_method_compile (method, acfg->jit_opts, flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_time_start);
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
@@ -12247,7 +12254,7 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [0] = acfg;
 			user_data [1] = frag;
 			
-			thread = mono_thread_create_internal (mono_domain_get (), (gpointer)compile_thread_main, user_data, MONO_THREAD_CREATE_FLAGS_NONE, error);
+			thread = mono_thread_create_internal ((MonoThreadStart)compile_thread_main, user_data, MONO_THREAD_CREATE_FLAGS_NONE, error);
 			mono_error_assert_ok (error);
 
 			thread_handle = mono_threads_open_thread_handle (thread->handle);
@@ -12788,7 +12795,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data, MonoAssembly* cur
 
 		if (!strcmp (current->aname.name, idata->name)) {
 			idata->image = current->image;
-			break;
+			continue;
 		}
 
 		for (i = 0; i < assemblies->len; ++i) {
@@ -12913,6 +12920,13 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 }
 
 static void
+add_profile_method (MonoAotCompile *acfg, MonoMethod *m)
+{
+	g_hash_table_insert (acfg->profile_methods, m, m);
+	add_extra_method (acfg, m);
+}
+
+static void
 add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 {
 	GHashTableIter iter;
@@ -12933,8 +12947,9 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 				continue;
 			if (m->is_inflated)
 				continue;
-			add_extra_method (acfg, m);
-			g_hash_table_insert (acfg->profile_methods, m, m);
+			if (m_class_get_image (m->klass) != acfg->image)
+				continue;
+			add_profile_method (acfg, m);
 			count ++;
 		}
 	}
@@ -12959,7 +12974,7 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) &&
 			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
 			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_extra_method (acfg, m);
+			add_profile_method (acfg, m);
 			count ++;
 		} else if (m_class_get_image (m->klass) == acfg->image &&
 			((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
@@ -12967,7 +12982,7 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))  {
 			/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
 			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_extra_method (acfg, m);
+			add_profile_method (acfg, m);
 			count ++;
 		}
 		/*

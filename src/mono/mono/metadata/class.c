@@ -5856,6 +5856,23 @@ is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoCl
 }
 
 static gboolean
+ignores_access_checks_to (MonoAssembly *accessing, MonoAssembly *accessed)
+{
+	if (!accessing || !accessed)
+		return FALSE;
+
+	mono_assembly_load_friends (accessing);
+	for (GSList *tmp = accessing->ignores_checks_assembly_names; tmp; tmp = tmp->next) {
+		MonoAssemblyName *victim = (MonoAssemblyName *)tmp->data;
+		if (!victim->name)
+			continue;
+		if (!g_ascii_strcasecmp (accessed->aname.name, victim->name))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 {
 	GSList *tmp;
@@ -5880,7 +5897,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		}
 		return TRUE;
 	}
-	return FALSE;
+	return ignores_access_checks_to (accessing, accessed);
 }
 
 /*
@@ -5979,7 +5996,9 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 		return member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_PRIVATE:
-		return is_nesting_type (member_klass, access_klass) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
+		if (is_nesting_type (member_klass, access_klass) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in))
+			return TRUE;
+		return ignores_access_checks_to (access_klass_assembly, member_klass_assembly);
 
 	case TYPE_ATTRIBUTE_NESTED_FAMILY:
 		return mono_class_has_parent_and_ignore_generics (access_klass, m_class_get_nested_in (member_klass)); 
@@ -6028,7 +6047,7 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 		/* same compilation unit */
 		return m_class_get_image (access_klass) == member_klass_image;
 	case FIELD_ATTRIBUTE_PRIVATE:
-		return access_klass == member_klass;
+		return (access_klass == member_klass) || ignores_access_checks_to (access_klass_assembly, member_klass_image->assembly);
 	case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
 		if (is_valid_family_access (access_klass, member_klass, context_klass) &&
 		    can_access_internals (access_klass_assembly, member_klass_image->assembly))

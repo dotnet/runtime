@@ -2059,6 +2059,67 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, Y); // We don't set parameter default value here.
         }
     }
+    
+    public class Point_MembersHave_JsonInclude : ITestClass
+    {
+        [JsonInclude]
+        public int X { get; }
+
+        [JsonInclude]
+        public int Y { get; private set; }
+
+        public int Z { get; private set; }
+
+        public Point_MembersHave_JsonInclude(int x, int y, int z) => (X, Y, Z) = (x, y, z);
+
+        public void Initialize() { }
+
+        public static readonly string s_json = @"{""X"":1,""Y"":2,""Z"":3}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        public void Verify()
+        {
+            Assert.Equal(1, X);
+            Assert.Equal(2, Y);
+            Assert.Equal(3, Z);
+        }
+    }
+
+    public class ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes : ITestClass
+    {
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public int A { get; }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+        public float B { get; }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public int C { get; }
+
+        [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
+        public int D { get; }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public int E { get; }
+
+        public ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes(int a, float b, int c, int d, int e) => (A, B, C, D, E) = (a, b, c, d, e);
+
+        public void Initialize() { }
+
+        public static readonly string s_json = @"{""A"":1,""B"":""NaN"",""C"":""2"",""D"": 3,""E"":""4""}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        public void Verify()
+        {
+            Assert.Equal(1, A);
+            Assert.Equal(float.NaN, B);
+            Assert.Equal(2, C);
+            Assert.Equal(3, D);
+            Assert.Equal(4, E);
+        }
+    }
 
     public class Point_MultipleMembers_BindTo_OneConstructorParameter
     {

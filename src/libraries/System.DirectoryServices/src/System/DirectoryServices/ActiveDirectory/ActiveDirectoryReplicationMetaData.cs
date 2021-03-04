@@ -19,14 +19,14 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public AttributeMetadata this[string name]
+        public AttributeMetadata? this[string name]
         {
             get
             {
                 string tempName = name.ToLowerInvariant();
                 if (Contains(tempName))
                 {
-                    return (AttributeMetadata)InnerHashtable[tempName];
+                    return (AttributeMetadata)InnerHashtable[tempName]!;
                 }
                 else
                     return null;

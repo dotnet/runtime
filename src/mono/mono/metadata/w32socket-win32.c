@@ -296,12 +296,6 @@ mono_w32socket_convert_error (gint error)
 	return (error > 0 && error < WSABASEERR) ? error + WSABASEERR : error;
 }
 
-MonoBoolean
-ves_icall_System_Net_Sockets_Socket_SupportPortReuse_icall (MonoProtocolType proto)
-{
-	return TRUE;
-}
-
 gboolean
 mono_w32socket_duplicate (gpointer handle, gint32 targetProcessId, gpointer *duplicate_handle)
 {
