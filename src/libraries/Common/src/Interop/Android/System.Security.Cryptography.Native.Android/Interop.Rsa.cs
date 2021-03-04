@@ -187,3 +187,44 @@ internal static partial class Interop
         }
     }
 }
+
+namespace System.Security.Cryptography
+{
+    internal sealed class SafeRsaHandle : SafeKeyHandle
+    {
+        public SafeRsaHandle()
+        {
+        }
+
+        public SafeRsaHandle(IntPtr ptr)
+        {
+            SetHandle(ptr);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.AndroidCrypto.RsaDestroy(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        internal override SafeRsaHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
+
+        internal static SafeRsaHandle DuplicateHandle(IntPtr handle)
+        {
+            Debug.Assert(handle != IntPtr.Zero);
+
+            // Reliability: Allocate the SafeHandle before calling RSA_up_ref so
+            // that we don't lose a tracked reference in low-memory situations.
+            SafeRsaHandle safeHandle = new SafeRsaHandle();
+
+            if (!Interop.AndroidCrypto.RsaUpRef(handle))
+            {
+                throw new CryptographicException();
+            }
+
+            safeHandle.SetHandle(handle);
+            return safeHandle;
+        }
+    }
+}
