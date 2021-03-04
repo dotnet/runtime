@@ -183,14 +183,14 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ConfigWithAOTData))]
+        [MemberData(nameof(ConfigWithAOTData), parameters: /*aot*/ true)]
         public void TopLevelMain(string config, bool aot)
             => TestMain("top_level",
                     @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
                     config, aot);
 
         [Theory]
-        [MemberData(nameof(ConfigWithAOTData))]
+        [MemberData(nameof(ConfigWithAOTData), parameters: /*aot*/ true)]
         public void AsyncMain(string config, bool aot)
             => TestMain("async_main", @"
             using System;
@@ -205,7 +205,7 @@ namespace Wasm.Build.Tests
             }", config, aot);
 
         [Theory]
-        [MemberData(nameof(ConfigWithAOTData))]
+        [MemberData(nameof(ConfigWithAOTData), parameters: /*aot*/ true)]
         public void NonAsyncMain(string config, bool aot)
             => TestMain("non_async_main", @"
                 using System;
