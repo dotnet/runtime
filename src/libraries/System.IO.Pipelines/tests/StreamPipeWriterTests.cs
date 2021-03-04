@@ -590,7 +590,6 @@ namespace System.IO.Pipelines.Tests
             PipeWriter writer = PipeWriter.Create(new ThrowsOperationCanceledExceptionStream());
 
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await writer.WriteAsync(new byte[1]));
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await writer.FlushAsync());
         }
 
         private class ThrowsOperationCanceledExceptionStream : WriteOnlyStream
