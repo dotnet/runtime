@@ -225,9 +225,9 @@ namespace System.Globalization.Tests
             yield return "tr";
             yield return "tr-TR";
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
-                // Browser's ICU doesn't contain these locales
+                // Mobile / Browser ICU doesn't contain these locales
                 yield return "az";
                 yield return "az-Latn-AZ";
             }

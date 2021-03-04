@@ -42,6 +42,7 @@ internal class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
+        bool forceInvariant,
         bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
@@ -124,6 +125,11 @@ internal class Xcode
         else if (forceAOT)
         {
             defines.Append("add_definitions(-DFORCE_AOT=1)");
+        }
+
+        if (forceInvariant)
+        {
+            defines.Append("add_definitions(-DFORCE_INVARIANT=1)");
         }
 
         if (EnableRuntimeLogging)

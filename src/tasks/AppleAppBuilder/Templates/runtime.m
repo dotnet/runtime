@@ -256,6 +256,10 @@ void register_aot_modules (void);
 void
 mono_ios_runtime_init (void)
 {
+#if FORCE_INVARIANT
+    setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+#endif
+
 #if ENABLE_RUNTIME_LOGGING
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);

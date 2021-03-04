@@ -114,6 +114,11 @@ public class AppleAppBuilderTask : Task
     public bool ForceAOT { get; set; }
 
     /// <summary>
+    /// Forces the runtime to use the invariant mode
+    /// </summary>
+    public bool ForceInvariant { get; set; } = true;
+
+    /// <summary>
     /// Forces the runtime to use the interpreter
     /// </summary>
     public bool ForceInterpreter { get; set; }
@@ -181,7 +186,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, ForceInvariant, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {
