@@ -501,7 +501,7 @@ namespace System.Diagnostics.Tests
         /// </summary>
         [OuterLoop]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28772", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28772", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 100)] // run multiple times to stress it further
         [InlineData(100, 101)]
         [InlineData(100, 102)]

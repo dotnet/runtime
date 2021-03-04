@@ -298,7 +298,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -327,7 +327,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -354,7 +354,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix, nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -458,7 +458,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -499,7 +499,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.

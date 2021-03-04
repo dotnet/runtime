@@ -87,7 +87,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsThreadingSupported)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux), nameof(PlatformDetection.IsThreadingSupported))]
         public static void InitializationWithUriOnNonAsyncReaderThrows()
         {
             Assert.Throws<System.Net.Http.HttpRequestException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));

@@ -123,7 +123,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void Bitmap32bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");

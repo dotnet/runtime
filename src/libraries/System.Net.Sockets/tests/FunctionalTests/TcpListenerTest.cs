@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]

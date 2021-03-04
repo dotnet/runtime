@@ -26,7 +26,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -51,7 +51,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         [MemberData(nameof(Loopbacks))]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
@@ -77,7 +77,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
@@ -109,7 +109,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
@@ -120,7 +120,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public async Task GetUnicastAddresses_NotEmpty()
         {
             IPGlobalProperties props = IPGlobalProperties.GetIPGlobalProperties();

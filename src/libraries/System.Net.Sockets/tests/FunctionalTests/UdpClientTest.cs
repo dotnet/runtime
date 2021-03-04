@@ -283,7 +283,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void EnableBroadcast_Roundtrips()
         {
             using (var udpClient = new UdpClient())

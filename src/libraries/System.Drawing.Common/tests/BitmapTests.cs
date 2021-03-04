@@ -1182,7 +1182,7 @@ namespace System.Drawing.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30565", TestPlatforms.Windows)]
         [MemberData(nameof(LockBits_TestData))]
         public void LockBits_Invoke_Success(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
@@ -1635,7 +1635,7 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBits_Marshalling_Success()
         {
             Color red = Color.FromArgb(Color.Red.ToArgb());

@@ -209,7 +209,7 @@ namespace System.Text.Tests
 
         // Call Convert to convert partial of a Unicode character array with UTF8 encoder
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void EncoderUTF8ConvertUnicodeCharArrayPartial()
         {
             char[] chars = "\uD83D\uDE01Test".ToCharArray();
@@ -230,7 +230,7 @@ namespace System.Text.Tests
 
         // Call Convert to convert partial of a ASCII+Unicode character array with ASCII encoder
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial()
         {
             char[] chars = "T\uD83D\uDE01est".ToCharArray();
@@ -253,7 +253,7 @@ namespace System.Text.Tests
 
         // Call Convert to convert partial of a ASCII+Unicode character array with UTF8 encoder
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public void EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial()
         {
             char[] chars = "T\uD83D\uDE01est".ToCharArray();

@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29055", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29055", typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Signature)]
         [InlineData(PROV_RSA_FULL, KeyNumber.Exchange)]

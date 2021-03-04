@@ -92,7 +92,7 @@ namespace MonoTests.System.Drawing
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBits_ImageLockMode_Invalid()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format24bppRgb))
@@ -510,7 +510,7 @@ namespace MonoTests.System.Drawing
         // Rotate 1- and 4-bit bitmaps in different ways and check the
         // resulting pixels using MD5
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         [InlineData("1bit.png", RotateFlipType.Rotate180FlipNone, "64AE60858A02228F7B1B18C7812FB683")]
         [InlineData("1bit.png", RotateFlipType.Rotate180FlipX, "353E937CFF31B1BF6C3DD0A031ACB54D")]
         [InlineData("1bit.png", RotateFlipType.Rotate180FlipXY, "A4DAF507C92BDE10626BC7B34FEFE5D1")]
@@ -632,7 +632,7 @@ namespace MonoTests.System.Drawing
         private static byte[] FinalWholeBitmapHash = new byte[] { 0x5F, 0x52, 0x98, 0x37, 0xE3, 0x94, 0xE1, 0xA6, 0x06, 0x6C, 0x5B, 0xF1, 0xA9, 0xC2, 0xA9, 0x43 };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format32bppArgb_ReadWrite_Whole()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -646,7 +646,7 @@ namespace MonoTests.System.Drawing
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format32bppPArgb_ReadWrite_Whole()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -674,7 +674,7 @@ namespace MonoTests.System.Drawing
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format24bppRgb_ReadWrite_Whole()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -690,7 +690,7 @@ namespace MonoTests.System.Drawing
         private static byte[] FinalPartialBitmapHash = new byte[] { 0xED, 0xD8, 0xDC, 0x9B, 0x44, 0x00, 0x22, 0x9B, 0x07, 0x06, 0x4A, 0x21, 0x70, 0xA7, 0x31, 0x1D };
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format32bppArgb_ReadWrite_Partial()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -704,7 +704,7 @@ namespace MonoTests.System.Drawing
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format32bppPArgb_ReadWrite_Partial()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -732,7 +732,7 @@ namespace MonoTests.System.Drawing
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockBitmap_Format32bppArgb_Format24bppRgb_ReadWrite_Partial()
         {
             using (Bitmap bmp = CreateBitmap(100, 100, PixelFormat.Format32bppArgb))
@@ -748,7 +748,7 @@ namespace MonoTests.System.Drawing
         // Tests the LockBitmap and UnlockBitmap functions, specifically the copying
         // of bitmap data in the directions indicated by the ImageLockMode.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28859", typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))]
         public void LockUnlockBitmap()
         {
             BitmapData data;

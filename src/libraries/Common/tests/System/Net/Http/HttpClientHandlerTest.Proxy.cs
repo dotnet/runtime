@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux)))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18258", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
