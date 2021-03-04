@@ -102,8 +102,7 @@ namespace System.Net.Http
                 // | 1  |   1    |
                 // +----+--------+
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
-                if (buffer[0] != ProtocolVersion5)
-                    throw new Exception("Bad protocol version");
+                VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
 
                 switch (buffer[1])
                 {
@@ -115,7 +114,9 @@ namespace System.Net.Http
                         {
                             // https://tools.ietf.org/html/rfc1929
                             if (credentials == null)
-                                throw new Exception("Server choses bad auth method.");
+                            {
+                                throw new SocksException(SR.net_socks_no_auth_method);
+                            }
 
                             // +----+------+----------+------+----------+
                             // |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
@@ -139,16 +140,17 @@ namespace System.Net.Http
                             // | 1  |   1    |
                             // +----+--------+
                             await ReadToFillAsync(stream, buffer.AsMemory(0, 2), async).ConfigureAwait(false);
-                            if (buffer[0] != ProtocolVersion5)
-                                throw new Exception("Bad protocol version");
+                            VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
                             if (buffer[1] != REP_SUCCESS)
-                                throw new Exception("Authentication failed.");
+                            {
+                                throw new SocksException(SR.net_socks_auth_failed);
+                            }
                             break;
                         }
 
                     case METHOD_NO_ACCEPTABLE:
                     default:
-                        throw new Exception("No acceptable auth method.");
+                        throw new SocksException(SR.net_socks_no_auth_method);
                 }
 
 
@@ -201,16 +203,17 @@ namespace System.Net.Http
                 // | 1  |  1  | X'00' |  1   | Variable |    2     |
                 // +----+-----+-------+------+----------+----------+
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 5), async).ConfigureAwait(false);
-                if (buffer[0] != ProtocolVersion5)
-                    throw new Exception("Bad protocol version");
+                VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
                 if (buffer[1] != REP_SUCCESS)
-                    throw new Exception("Connection failed");
+                {
+                    throw new SocksException(SR.net_socks_connection_failed);
+                }
                 int bytesToSkip = buffer[3] switch
                 {
                     ATYP_IPV4 => 5,
                     ATYP_IPV6 => 17,
                     ATYP_DOMAIN_NAME => buffer[4] + 2,
-                    _ => throw new Exception("Unknown address type")
+                    _ => throw new SocksException(SR.net_socks_bad_address_type)
                 };
                 await ReadToFillAsync(stream, buffer.AsMemory(0, bytesToSkip), async).ConfigureAwait(false);
                 // response address not used
@@ -253,7 +256,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        throw new Exception("SOCKS4 does not support IPv6.");
+                        throw new SocksException(SR.net_socks_ipv6_notsupported);
                     }
                 }
                 else if (!isVersion4a)
@@ -265,7 +268,7 @@ namespace System.Net.Http
 
                     if (addresses.Length == 0)
                     {
-                        throw new Exception("No suitable IPv4 address.");
+                        throw new SocksException(SR.net_socks_no_ipv4_address);
                     }
 
                     ipv4Address = addresses[0];
@@ -286,7 +289,7 @@ namespace System.Net.Http
                     {
                         // Invalid IP address used by SOCKS4a to represent remote DNS.
                         // In case we don't have a domain name, throwing.
-                        throw new Exception("Invalid ip address.");
+                        throw new SocksException(SR.net_socks_ipv4_invalid);
                     }
                 }
 
@@ -309,19 +312,24 @@ namespace System.Net.Http
                 // +----+----+----+----+----+----+----+----+
                 //    1    1      2              4
                 await ReadToFillAsync(stream, buffer.AsMemory(0, 8), async).ConfigureAwait(false);
-                if (buffer[0] != ProtocolVersion4)
-                {
-                    throw new Exception("Bad protocol version");
-                }
+                VerifyProtocolVersion(ProtocolVersion4, buffer[0]);
                 if (buffer[1] != CD_SUCCESS)
                 {
-                    throw new Exception("Connection failed");
+                    throw new SocksException(SR.net_socks_connection_failed);
                 }
                 // response address not used
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        private static void VerifyProtocolVersion(byte expected, byte version)
+        {
+            if (expected != version)
+            {
+                throw new SocksException(SR.Format(SR.net_socks_unexpected_version, expected, version));
             }
         }
 
