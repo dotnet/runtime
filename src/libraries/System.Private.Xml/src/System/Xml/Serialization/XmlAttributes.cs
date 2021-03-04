@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -74,6 +75,7 @@ namespace System.Xml.Serialization
 
         private static Type IgnoreAttribute
         {
+            [RequiresUnreferencedCode("calls GetType")]
             get
             {
                 if (s_ignoreAttributeType == null)
@@ -91,6 +93,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public XmlAttributes(ICustomAttributeProvider provider)
         {
             object[] attrs = provider.GetCustomAttributes(false);

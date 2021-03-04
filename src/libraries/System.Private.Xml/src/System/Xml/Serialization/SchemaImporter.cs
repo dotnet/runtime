@@ -13,6 +13,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 #endif
 
     public abstract class SchemaImporter
@@ -26,6 +27,7 @@ namespace System.Xml.Serialization
         private NameTable? _typesInUse;
         private NameTable? _groupsInUse;
 
+        [RequiresUnreferencedCode("calls SetCache")]
         internal SchemaImporter(XmlSchemas schemas, CodeGenerationOptions options, ImportContext context)
         {
             if (!schemas.Contains(XmlSchema.Namespace))
@@ -114,6 +116,7 @@ namespace System.Xml.Serialization
             get { return _options; }
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         internal void MakeDerived(StructMapping structMapping, Type? baseType, bool baseTypeCanBeIndirect)
         {
             structMapping.ReferencedByTopLevelElement = true;
@@ -144,6 +147,7 @@ namespace System.Xml.Serialization
             return TypeIdentifiers.AddUnique(typeName, typeName);
         }
 
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private StructMapping CreateRootMapping()
         {
             TypeDesc typeDesc = Scope.GetTypeDesc(typeof(object));
@@ -157,6 +161,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
+        [RequiresUnreferencedCode("calls CreateRootMapping")]
         internal StructMapping GetRootMapping()
         {
             if (_root == null)
@@ -164,6 +169,7 @@ namespace System.Xml.Serialization
             return _root;
         }
 
+        [RequiresUnreferencedCode("calls GetRootMapping")]
         internal StructMapping ImportRootMapping()
         {
             if (!_rootImported)
@@ -174,6 +180,7 @@ namespace System.Xml.Serialization
             return GetRootMapping();
         }
 
+        [RequiresUnreferencedCode("calls ImportType")]
         internal abstract void ImportDerivedTypes(XmlQualifiedName baseName);
 
         internal void AddReference(XmlQualifiedName name, NameTable references, string error)

@@ -10,6 +10,7 @@ namespace System.Xml.Schema
     using System.Threading;
     using System.Diagnostics;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
@@ -88,11 +89,13 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -100,11 +103,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -112,11 +117,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));

@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml
 {
     public enum ConformanceLevel
@@ -1479,12 +1481,19 @@ namespace System.Xml.Schema
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.IO.Stream stream) { }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.IO.Stream stream, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.IO.TextWriter writer) { }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.IO.TextWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.Xml.XmlWriter writer) { }
+        [RequiresUnreferencedCode(LinkerSerializationMessage)]
         public void Write(System.Xml.XmlWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        internal const string LinkerSerializationMessage = "Members from serialized types may be trimmed if not referenced directly";
     }
     public partial class XmlSchemaAll : System.Xml.Schema.XmlSchemaGroupBase
     {

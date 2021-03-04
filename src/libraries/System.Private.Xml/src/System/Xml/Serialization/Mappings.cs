@@ -1057,6 +1057,7 @@ namespace System.Xml.Serialization
     internal sealed class SerializableMapping : SpecialMapping
     {
         private XmlSchema? _schema;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private Type? _type;
         private bool _needSchema = true;
 
@@ -1174,7 +1175,9 @@ namespace System.Xml.Serialization
 
         internal Type? Type
         {
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             get { return _type; }
+            [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             set { _type = value; }
         }
 
