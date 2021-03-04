@@ -12,10 +12,10 @@
 #define DS_IMPL_IPC_PAL_SOCKET_GETTER_SETTER
 #include "ds-ipc-pal-socket.h"
 
-#ifdef DS_IPC_PAL_TCP
+#if defined (DS_IPC_PAL_TCP)
 #define DS_IPC_PAL_AF_INET
 #define DS_IPC_PAL_AF_INET6
-#elif DS_IPC_PAL_UDS
+#elif defined (DS_IPC_PAL_UDS)
 #define DS_IPC_PAL_AF_UNIX
 #else
 #error "Unsupported PAL socket configuration"
@@ -474,8 +474,8 @@ ipc_socket_connect (
 	int result_connect;
 
 	// We don't expect this to block on Unix Domain Socket.  `connect` may block until the
-	// TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
-	// the server hasn't called `accept`.
+	// TCP handshake is complete for TCP/IP sockets. On UDS `connect` will return even if
+	// the server hasn't called `accept`, so no need to check for timeout or connect error.
 
 #if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
 	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
@@ -488,6 +488,7 @@ ipc_socket_connect (
 	result_connect = connect (s, address, address_len);
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
+#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
 	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
 		if (result_connect == DS_IPC_SOCKET_ERROR) {
 			if (ipc_get_last_error () == DS_IPC_SOCKET_ERROR_WOULDBLOCK) {
@@ -510,7 +511,6 @@ ipc_socket_connect (
 		}
 	}
 
-#if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
 	if (timeout_ms != DS_IPC_TIMEOUT_INFINITE) {
 		// Reset socket to blocking.
 		int last_error = ipc_get_last_error ();
