@@ -10309,27 +10309,41 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
 // Profile data management
 //
 
-ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWORD _count, DWORD _ILSize)
+HRESULT Module::AllocateMethodBlockCounts(mdToken _token,
+                                          ICorJitInfo::PgoInstrumentationSchema* _pSchema,
+                                          DWORD _countSchemaItems,
+                                          DWORD _ILSize,
+                                          BYTE** _pInstrumentationData)
 {
-    CONTRACT (ICorJitInfo::BlockCounts*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(CONTRACT_RETURN NULL;);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     assert(_ILSize != 0);
+    // Validate that each schema item is only used for a basic block count
+    for (UINT32 iSchema = 0; iSchema < _countSchemaItems; iSchema++)
+    {
+        if (_pSchema[iSchema].InstrumentationKind != ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+            return E_NOTIMPL;
+        if (_pSchema[iSchema].Count != 1)
+            return E_NOTIMPL;
+    }
 
     DWORD   listSize   = sizeof(CORCOMPILE_METHOD_PROFILE_LIST);
     DWORD   headerSize = sizeof(CORBBTPROF_METHOD_HEADER);
-    DWORD   blockSize  = _count * sizeof(CORBBTPROF_BLOCK_DATA);
+    DWORD   blockSize  = _countSchemaItems * sizeof(CORBBTPROF_BLOCK_DATA);
     DWORD   totalSize  = listSize + headerSize + blockSize;
 
     BYTE *  memory     = (BYTE *) (void *) this->m_pAssembly->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(totalSize));
+    if (memory == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
 
     CORCOMPILE_METHOD_PROFILE_LIST * methodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *) (memory + 0);
     CORBBTPROF_METHOD_HEADER *       methodProfileData = (CORBBTPROF_METHOD_HEADER *)       (memory + listSize);
@@ -10339,7 +10353,7 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     methodProfileData->size          = headerSize + blockSize;
     methodProfileData->method.token  = _token;
     methodProfileData->method.ILSize = _ILSize;
-    methodProfileData->method.cBlock = _count;
+    methodProfileData->method.cBlock = _countSchemaItems;
 
     assert(methodProfileData->size == methodProfileData->Size());
 
@@ -10348,7 +10362,17 @@ ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWO
     methodProfileList->next = m_methodProfileList;
     m_methodProfileList     = methodProfileList;
 
-    RETURN ((ICorJitInfo::BlockCounts *) &methodProfileData->method.block[0]);
+    ICorJitInfo::BlockCounts* blockCounts = (ICorJitInfo::BlockCounts *)(&methodProfileData->method.block[0]);
+    *_pInstrumentationData = (BYTE*)blockCounts;
+    for (UINT32 iSchema = 0; iSchema < _countSchemaItems; iSchema++)
+    {
+        // Update schema have correct offsets
+        _pSchema[iSchema].Offset = (BYTE*)&blockCounts[iSchema].ExecutionCount - (BYTE*)blockCounts;
+        // Insert IL Offsets into block data to match schema
+        blockCounts[iSchema].ILOffset = _pSchema[iSchema].ILOffset;
+    }
+
+    return S_OK;
 }
 
 HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)

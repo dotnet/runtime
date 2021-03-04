@@ -12041,8 +12041,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     }
 
 #ifdef FEATURE_PREJIT
-    *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
-    hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
+    hr = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), pSchema, countSchemaItems, codeSize, pInstrumentationData);
 #else // FEATURE_PREJIT
 #ifdef FEATURE_PGO
     hr = PgoManager::allocPgoInstrumentationBySchema(m_pMethodBeingCompiled, pSchema, countSchemaItems, pInstrumentationData);

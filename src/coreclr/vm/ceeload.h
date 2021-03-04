@@ -16,6 +16,7 @@
 #include "hash.h"
 #include "clsload.hpp"
 #include "cgensys.h"
+#include "corjit.h"
 #include "corsym.h"
 #include "typehandle.h"
 #include "arraylist.h"
@@ -2824,7 +2825,7 @@ public:
     }
 #endif // FEATURE_PREJIT
 
-    ICorJitInfo::BlockCounts * AllocateMethodBlockCounts(mdToken _token, DWORD _size, DWORD _ILSize);
+    HRESULT AllocateMethodBlockCounts(mdToken _token, ICorJitInfo::PgoInstrumentationSchema* _pSchema, DWORD _countSchemaItems, DWORD _ILSize, BYTE** _pInstrumentationData);
     HANDLE OpenMethodProfileDataLogFile(GUID mvid);
     static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
     HRESULT WriteMethodProfileDataLogFile(bool cleanup);
