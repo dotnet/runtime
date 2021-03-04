@@ -33,6 +33,7 @@ namespace System.Net.Http.Functional.Tests
         // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
         protected bool AllowAllHttp2Certificates { get; set; } = true;
         protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllHttp2Certificates: AllowAllHttp2Certificates);
+        protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         [Fact]
         public void Ctor_ExpectedDefaultValues()

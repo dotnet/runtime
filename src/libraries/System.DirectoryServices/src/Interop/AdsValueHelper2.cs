@@ -183,7 +183,7 @@ namespace System.DirectoryServices.Interop
                 case AdsType.ADSTYPE_NUMERIC_STRING:
                 case AdsType.ADSTYPE_OBJECT_CLASS:
                     // The value is a String.
-                    return Marshal.PtrToStringUni(adsvalue.pointer.value);
+                    return Marshal.PtrToStringUni(adsvalue.pointer.value)!;
 
                 case AdsType.ADSTYPE_BOOLEAN:
                     // The value is a bool.
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.Interop
             var vlv = new AdsVLV();
             Marshal.PtrToStructure(adsvalue.octetString.value, vlv);
 
-            byte[] bytes = null;
+            byte[]? bytes = null;
             if (vlv.contextID != (IntPtr)0 && vlv.contextIDlength != 0)
             {
                 bytes = new byte[vlv.contextIDlength];
