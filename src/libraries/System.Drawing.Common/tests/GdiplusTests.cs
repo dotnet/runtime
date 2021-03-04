@@ -7,7 +7,8 @@ namespace System.Drawing.Tests
 {
     public class GdiplusTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsDrawingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49111", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsAppleSilicon))]
         public void IsAtLeastLibgdiplus6()
         {
             Assert.True(Helpers.GetIsWindowsOrAtLeastLibgdiplus6());
