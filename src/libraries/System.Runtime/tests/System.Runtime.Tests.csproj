@@ -281,7 +281,11 @@
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="NumericsTestData\ibm-fpgen.txt" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true"/>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
