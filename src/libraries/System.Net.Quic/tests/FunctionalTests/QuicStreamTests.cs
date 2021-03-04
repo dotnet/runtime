@@ -63,6 +63,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
@@ -228,6 +229,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, clientStream.StreamId);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
