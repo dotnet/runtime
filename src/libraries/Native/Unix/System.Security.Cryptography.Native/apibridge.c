@@ -853,7 +853,6 @@ int32_t local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
         }
     }
 
-    (void)ctx;
     return -2;
 }
 
