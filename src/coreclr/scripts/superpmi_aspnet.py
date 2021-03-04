@@ -233,27 +233,27 @@ def build_and_run(coreclr_args, output_mch_name):
         run_command(
             ["crank", crank_command], temp_location, _exit_on_fail=True)
 
-       crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
+        crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
 
-       if len(crankZipFiles) > 0:
-           for zipFile in crankZipFiles:
-               with zipfile.ZipFile(zipFile, "r") as zipObject:
-                   listOfFileNames = zipObject.namelist()
-                   for zippedFileName in listOfFileNames:
-                       if zippedFileName.endswith('.mc'):
-                             zipObject.extract(zippedFileName, temp_location)
+        if len(crankZipFiles) > 0:
+            for zipFile in crankZipFiles:
+                with zipfile.ZipFile(zipFile, "r") as zipObject:
+                    listOfFileNames = zipObject.namelist()
+                    for zippedFileName in listOfFileNames:
+                        if zippedFileName.endswith('.mc'):
+                              zipObject.extract(zippedFileName, temp_location)
 
-       mcs_path = determine_mcs_tool_path(coreclr_args)
-       command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
-       return_code = run_and_log(command)
-       if return_code != 0:
-           logging.error("mcs -merge Failed with code %s", return_code)
+        mcs_path = determine_mcs_tool_path(coreclr_args)
+        command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+        return_code = run_and_log(command)
+        if return_code != 0:
+            logging.error("mcs -merge Failed with code %s", return_code)
 
-       logging.info("Creating MCT file for %s", coreclr_args.output_mch_path)
-       command = [mcs_path, "-toc", coreclr_args.output_mch_path]
-       return_code = run_and_log(command)
-       if return_code != 0:
-           logging.error("mcs -toc Failed with code %s", return_code)
+        logging.info("Creating MCT file for %s", coreclr_args.output_mch_path)
+        command = [mcs_path, "-toc", coreclr_args.output_mch_path]
+        return_code = run_and_log(command)
+        if return_code != 0:
+            logging.error("mcs -toc Failed with code %s", return_code)
 
 def main(main_args):
     """ Main entry point
