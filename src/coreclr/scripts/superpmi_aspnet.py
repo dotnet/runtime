@@ -27,7 +27,6 @@ from superpmi_setup import run_command
 is_windows = platform.system() == "Windows"
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-superpmi_directory", help="Path to superpmi directory")
 parser.add_argument("-core_root", help="Path to Core_Root directory")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-log_file", help="Name of the log file")
@@ -45,11 +44,6 @@ def setup_args(args):
     """
     coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False,
                                     require_built_test_dir=False, default_build_type="Checked")
-
-    coreclr_args.verify(args,
-                        "superpmi_directory",
-                        lambda superpmi_directory: os.path.isdir(superpmi_directory),
-                        "superpmi_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "output_mch_path",

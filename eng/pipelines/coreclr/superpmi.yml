@@ -163,7 +163,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-aspnet-job.yml
     buildConfig: checked
     platforms:
     # Linux tests are built on the OSX machines.
@@ -176,11 +176,8 @@ jobs:
     # - windows_x86
     # - windows_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
-      liveLibrariesBuildConfig: Release
       collectionType: run
       collectionName: aspnet
 
