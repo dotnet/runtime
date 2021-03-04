@@ -123,18 +123,27 @@ namespace Wasm.Build.Tests
         */
 
 
-        public static TheoryData<string, bool> ConfigWithAOTData = new()
+        public static TheoryData<string, bool> ConfigWithAOTData(bool include_aot=true)
         {
-            { "Debug", false },
-            { "Release", false },
-            { "Debug", true },
-            { "Release", true },
-        };
+            TheoryData<string, bool> data = new()
+            {
+                { "Debug", false },
+                { "Release", false }
+            };
+
+            if (include_aot)
+            {
+                data.Add("Debug", true);
+                data.Add("Release", true);
+            }
+
+            return data;
+        }
 
         public static TheoryData<string, bool, bool?> InvariantGlobalizationTestData()
         {
             var data = new TheoryData<string, bool, bool?>();
-            foreach (var configData in ConfigWithAOTData)
+            foreach (var configData in ConfigWithAOTData())
             {
                 data.Add((string)configData[0], (bool)configData[1], null);
                 data.Add((string)configData[0], (bool)configData[1], true);
@@ -213,7 +222,7 @@ namespace Wasm.Build.Tests
         public static TheoryData<string, bool, string[]> MainWithArgsTestData()
         {
             var data = new TheoryData<string, bool, string[]>();
-            foreach (var configData in ConfigWithAOTData)
+            foreach (var configData in ConfigWithAOTData())
             {
                 data.Add((string)configData[0], (bool)configData[1], new string[] { "abc", "foobar" });
                 data.Add((string)configData[0], (bool)configData[1], new string[0]);
