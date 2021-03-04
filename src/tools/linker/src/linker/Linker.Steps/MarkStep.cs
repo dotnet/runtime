@@ -48,6 +48,7 @@ namespace Mono.Linker.Steps
 		protected Queue<(MethodDefinition, DependencyInfo)> _methods;
 		protected List<MethodDefinition> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
+		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, IMemberDefinition)> _lateMarkedAttributes;
 		protected List<TypeDefinition> _typesWithInterfaces;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
@@ -176,6 +177,7 @@ namespace Mono.Linker.Steps
 			_methods = new Queue<(MethodDefinition, DependencyInfo)> ();
 			_virtual_methods = new List<MethodDefinition> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
+			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, IMemberDefinition)> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
@@ -232,6 +234,27 @@ namespace Mono.Linker.Steps
 		{
 			foreach (var body in _unreachableBodies) {
 				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
+			}
+
+			foreach (var attr in _ivt_attributes) {
+				if (IsInternalsVisibleAttributeAssemblyMarked (attr.Attribute))
+					MarkCustomAttribute (attr.Attribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, attr.Provider), null);
+			}
+
+			bool IsInternalsVisibleAttributeAssemblyMarked (CustomAttribute ca)
+			{
+				System.Reflection.AssemblyName an;
+				try {
+					an = new System.Reflection.AssemblyName ((string) ca.ConstructorArguments[0].Value);
+				} catch {
+					return false;
+				}
+
+				var assembly = _context.GetLoadedAssembly (an.Name);
+				if (assembly == null)
+					return false;
+
+				return Annotations.IsMarked (assembly.MainModule);
 			}
 		}
 
@@ -1061,7 +1084,6 @@ namespace Mono.Linker.Steps
 					return true;
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
-				case "System.Runtime.CompilerServices.InternalsVisibleToAttribute":
 					return true;
 				}
 
@@ -1372,11 +1394,13 @@ namespace Mono.Linker.Steps
 				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolved.DeclaringType) && Annotations.GetAction (CustomAttributeSource.GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
 					continue;
 
-				if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
+				if (customAttribute.AttributeType.IsTypeOf ("System.Runtime.CompilerServices", "InternalsVisibleToAttribute") && !Annotations.IsMarked (customAttribute)) {
+					_ivt_attributes.Add (assemblyLevelAttribute);
+					continue;
+				} else if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
 					skippedItems.Add (assemblyLevelAttribute);
 					continue;
 				}
-
 
 				markOccurred = true;
 				MarkCustomAttribute (customAttribute, new DependencyInfo (DependencyKind.AssemblyOrModuleAttribute, assemblyLevelAttribute.Provider), null);
