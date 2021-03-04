@@ -341,7 +341,6 @@ namespace System.Security.Cryptography
                     destination = new byte[signatureLength];
                 }
 
-                Debug.WriteLine($"Signing hash: {ByteArrayToHex(hash)}");
                 if (!Interop.AndroidCrypto.DsaSign(key, hash, destination, out int actualLength))
                 {
                     throw new CryptographicException();
@@ -380,7 +379,6 @@ namespace System.Security.Cryptography
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 #endif
             {
-                Debug.WriteLine($"Verifying hash: {ByteArrayToHex(hash)}");
                 SafeDsaHandle key = GetKey();
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
@@ -390,7 +388,6 @@ namespace System.Security.Cryptography
                     int expectedSignatureBytes = Interop.AndroidCrypto.DsaSignatureFieldSize(key) * 2;
                     if (signature.Length != expectedSignatureBytes)
                     {
-                        Debug.WriteLine($"Signature length mismatch. Signature is {signature.Length}. Expected {expectedSignatureBytes}.");
                         // The input isn't of the right length (assuming no DER), so we can't sensibly re-encode it with DER.
                         return false;
                     }
