@@ -78,7 +78,8 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
             {
                 for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
                 {
-                    // we only need GT_CALL nodes with helper funcs
+                    // We only need GT_CALL nodes with helper funcs
+                    // Looks like BBF_HAS_CALL/GTF_CALL aren't reliable as a fast check.
                     if (!tree->IsCall())
                     {
                         continue;
@@ -101,7 +102,9 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
 
                     if (!moduleIdArg->IsCnsIntOrI() || !clsIdArg->IsCnsIntOrI())
                     {
-                        // Looks like moduleId or/and clsId were passed as indirect loads
+                        // ModuleId or/and clsId were passed as indirect loads
+                        // We can consider optimizing this case too (for R2R)
+                        // but it most likely will come with a noticeable size regression.
                         continue;
                     }
 
@@ -109,6 +112,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
                     {
                         BasicBlock* predBlock = pred->getBlock();
+                        // Bail out if one of the preds is e.g. BBJ_SWITCH or some EH type of BB
                         if ((predBlock->bbJumpKind != BBJ_NONE) && (predBlock->bbJumpKind != BBJ_ALWAYS) &&
                             (predBlock->bbJumpKind != BBJ_COND))
                         {
@@ -140,7 +144,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     // So, we found a helper call inside the "block" - let's extract it to a
                     // separate block "callInitBb" and guard it with a fast "isInitedBb" bb.
                     // The final layout should look like this:
-
+                    //
                     // BB0 "prevBb":
                     //     ...
                     //
@@ -166,14 +170,23 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     //
 
                     // TODO: ask VM for these constants:
+#ifdef TARGET_64BIT
                     const int dataBlobOffset = 48; // DomainLocalModule::GetOffsetOfDataBlob()
+#else
+                    const int dataBlobOffset = 24; // DomainLocalModule::GetOffsetOfDataBlob()
+#endif
                     const int isInitMask     = 1;  // ClassInitFlags::INITIALIZED_FLAG;
 
-                    UINT8* isInitAdr = (UINT8*)moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset +
+                    // See VM's IsClassInitialized
+                    size_t isInitAdr = moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset +
                                        clsIdArg->AsIntCon()->IconValue();
 
+                    // TODO-CQ: Actually, we can check the class initialization status right here using that ^
+                    // address, what if it's already initialized while we're compiling code
+                    // in that case we can just drop the call.
+
                     GenTree* isInitAdrNode =
-                        gtNewIndOfIconHandleNode(TYP_UBYTE, (size_t)isInitAdr, GTF_ICON_CONST_PTR, true);
+                        gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAdr, GTF_ICON_CONST_PTR, true);
 
                     // Let's start from emitting that BB2 "callInitBb"
                     BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
@@ -184,11 +197,8 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     clonedHelperCall->gtFlags |= call->gtFlags;
 
                     Statement* callStmt = fgNewStmtFromTree(clonedHelperCall);
-                    if (fgStmtListThreaded)
-                    {
-                        gtSetStmtInfo(callStmt);
-                        fgSetStmtSeq(callStmt);
-                    }
+                    gtSetStmtInfo(callStmt);
+                    fgSetStmtSeq(callStmt);
                     fgInsertStmtAtEnd(callInitBb, callStmt);
                     gtUpdateStmtSideEffects(callStmt);
 
@@ -206,31 +216,24 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     gtSetEvalOrder(isInitedCmp);
 
                     Statement* isInitedStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp));
-                    if (fgStmtListThreaded)
-                    {
-                        gtSetStmtInfo(isInitedStmt);
-                        fgSetStmtSeq(isInitedStmt);
-                    }
+                    gtSetStmtInfo(isInitedStmt);
+                    fgSetStmtSeq(isInitedStmt);
 
                     fgInsertStmtAtEnd(isInitedBb, isInitedStmt);
                     isInitedBb->bbJumpDest = block;
                     block->bbFlags |= BBF_JMP_TARGET;
 
                     // Now we can remove the call from the current block
-                    // We're going to replace the call with just "moduleId" node (it's what it was supposed to return)
-
-                    GenTree* clonedHelperCall2 = gtCloneExprCallHelper(call);
-                    clonedHelperCall2->gtFlags |= call->gtFlags;
-
+                    // We're going to replace the call with the "moduleId" node.
                     gtReplaceTree(stmt, call, gtClone(moduleIdArg));
 
-                    // Now we need to fix all the preds:
+                    // Now we need to fix all the connections to predecessors and successors:
 
-                    // isInitedBb is a pred of callInitBb
+                    // isInitedBb is a predecessor of callInitBb
                     fgAddRefPred(callInitBb, isInitedBb);
                     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
                     {
-                        // Redirect all the preds from the current block to isInitedBb
+                        // Redirect all the predecessors from the current block to isInitedBb
                         BasicBlock* predBlock = pred->getBlock();
                         assert((predBlock->bbJumpKind == BBJ_NONE) || (predBlock->bbJumpKind == BBJ_ALWAYS) ||
                                (predBlock->bbJumpKind == BBJ_COND));
@@ -247,7 +250,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         fgRemoveRefPred(block, predBlock);
                         fgAddRefPred(isInitedBb, predBlock);
                     }
-                    // Both callInitBb and isInitedBb are preds of block now
+                    // Both callInitBb and isInitedBb are predecessors of block now
                     fgAddRefPred(block, callInitBb);
                     fgAddRefPred(block, isInitedBb);
 
@@ -255,15 +258,15 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     assert(BasicBlock::sameEHRegion(callInitBb, block));
                     assert(BasicBlock::sameEHRegion(isInitedBb, block));
 
+                    assert(isInitedBb->bbJumpDest == block);
                     assert(isInitedBb->bbNext == callInitBb);
                     assert(callInitBb->bbNext == block);
-                    assert(isInitedBb->bbJumpDest == block);
 
                     modified = true;
                 }
                 if (modified)
                 {
-                    // clear GTF_CALL and GTF_EXC flags (we've just removed a call)
+                    // Clear potential leftover GTF_CALL and GTF_EXC flags in the current stmt
                     gtUpdateStmtSideEffects(stmt);
                 }
             }
@@ -280,10 +283,8 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
             fgDispBasicBlocks(true);
         }
 #endif // DEBUG
-        fgReorderBlocks();
 
-        // TODO: do I need to call it since I fixed all the preds by hands?
-        fgUpdateChangedFlowGraph(false);
+        fgReorderBlocks();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
     return PhaseStatus::MODIFIED_NOTHING;
