@@ -132,7 +132,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
     return rsa->keyWidth / 8;
 }
 
-PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
+PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {

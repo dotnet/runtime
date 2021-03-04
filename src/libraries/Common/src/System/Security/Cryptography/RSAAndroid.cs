@@ -448,7 +448,7 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
                         }
 
-                        // Decoding the key on Android expects the encoded SubjectPublicKeyInfo,
+                        // Decoding the key on Android requires the encoded SubjectPublicKeyInfo,
                         // not just the SubjectPublicKey, so we construct one.
                         SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                         {
@@ -463,7 +463,7 @@ namespace System.Security.Cryptography
                         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                         spki.Encode(writer);
 
-                        SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaPublicKey(writer.Encode());
+                        SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaSubjectPublicKeyInfo(writer.Encode());
                         if (key is null || key.IsInvalid)
                         {
                             throw new CryptographicException();

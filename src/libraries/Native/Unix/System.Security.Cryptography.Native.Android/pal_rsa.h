@@ -27,7 +27,7 @@ typedef struct RSA
 PALEXPORT RSA* AndroidCryptoNative_RsaCreate(void);
 PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa);
 PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa);
-PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len);
+PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
