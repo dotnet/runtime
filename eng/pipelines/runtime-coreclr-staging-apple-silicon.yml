@@ -1,0 +1,74 @@
+# This pipeline is for staging Apple Silicon testing
+#
+# The Apple Silicon queues have limited capacity so we do not watn them
+# enabled for all PRs.
+#
+# This pipeline is configured to get rolling builds so we get some
+# regular Apple Silicon test coverage
+#
+# This queue is intended to run tests until they are stabilized and can
+# be moved into normal
+#
+# This pipeline is also used for Apple Silicon developrs to trigger
+# testing their own PRs
+#
+# pipeline is confgured to rolling build
+# Can also be triggered using /azp trigger
+
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - eng/Version.Details.xml
+    - .github/*
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+
+variables:
+  - template: variables.yml
+
+jobs:
+
+  #
+  # CoreCLR Build
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      buildConfig: release
+      platforms:
+      - OSX_arm64
+      jobParameters:
+        testGroup: innerloop
+  #
+  # Libraries Build
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      platforms:
+      - OSX_arm64
+      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      jobParameters:
+        isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+        isFullMatrix: ${{ variables['isFullMatrix'] }}
+        runTests: true
+        testScope: all
+        liveRuntimeBuildConfig: release
