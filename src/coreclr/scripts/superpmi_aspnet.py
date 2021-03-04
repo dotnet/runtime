@@ -166,9 +166,9 @@ def build_and_run(coreclr_args, output_mch_name):
     ## install crank
 
     run_command(
-       [dotnet_exe, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global", _exit_on_fail=True)
+       [dotnet_exe, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global"], _exit_on_fail=True)
 
-    ## sparse clone of aspnet/benchmarks to obtain the benchmark config files     
+    ## sparse clone of aspnet/benchmarks to obtain the benchmark config files
 
     with TempDir() as temp_location:
 
@@ -178,60 +178,60 @@ def build_and_run(coreclr_args, output_mch_name):
         ## git sparse-checkout set scenarios
 
         run_command(
-            ["git.exe", "--filter=blob:none --no-checkout https://github.com/aspnet/benchmarks", temp_location, _exit_on_fail=True)
+            ["git.exe", "--filter=blob:none --no-checkout https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
         run_command(
-            ["git.exe", "sparse-checkout init --cone", path.join(temp_location, "benchmarks"), _exit_on_fail=True)
+            ["git.exe", "sparse-checkout init --cone"], path.join(temp_location, "benchmarks"), _exit_on_fail=True)
         run_command(
-            ["git.exe", "sparse-checkout set scenarios", path.join(temp_location, "benchmarks"), _exit_on_fail=True)
+            ["git.exe", "sparse-checkout set scenarios"], path.join(temp_location, "benchmarks"), _exit_on_fail=True)
 
         config = path.join(temp_location, "benchmarks", "scenarios", "json.benchmarks.yml")
 
-       # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
-       # and ask crank to send back the runtime directory
-       #
-       # crank --config /home/andy/repos/benchmarks/scenarios/json.benchmarks.yml
-       #      --profile aspnet-perf-lin 
-       #      --scenario json 
-       #      --application.framework net6.0 
-       #      --application.channel edge 
-       #      --description SPMI
-       #      --application.environmentVariables COMPlus_JitName=libsuperpmi-shim-collector.so 
-       #      --application.environmentVariables SuperPMIShimLogPath=. 
-       #      --application.environmentVariables SuperPMIShimPath=./libclrjit.so 
-       #      --application.options.fetch true 
-       #      --application.options.outputFiles {build}/{superpmi-shim-collector}
-       #      --application.options.outputFiles {build}/{jit}
-       #      --application.options.outputFiles {build}/{coreclr}
-       #      --application.options.outputFiles {build}/{SPC}
+        # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
+        # and ask crank to send back the runtime directory
+        #
+        # crank --config {config}
+        #       --profile aspnet-perf-lin
+        #       --scenario json
+        #       --application.framework net6.0
+        #       --application.channel edge
+        #       --description SPMI
+        #       --application.environmentVariables COMPlus_JitName=libsuperpmi-shim-collector.so
+        #       --application.environmentVariables SuperPMIShimLogPath=.
+        #       --application.environmentVariables SuperPMIShimPath=./libclrjit.so
+        #       --application.options.fetch true
+        #       --application.options.outputFiles {build}/{superpmi-shim-collector}
+        #       --application.options.outputFiles {build}/{jit}
+        #       --application.options.outputFiles {build}/{coreclr}
+        #       --application.options.outputFiles {build}/{SPC}
 
-       jitname = determine_native_name("clrjit")
-       coreclrname = determine_native_name("coreclr")
-       spminame = determine_native_name("superpmi-shim-collector")
+        jitname = determine_native_name("clrjit")
+        coreclrname = determine_native_name("coreclr")
+        spminame = determine_native_name("superpmi-shim-collector")
 
-       jitpath = path.join(".", jitname)
-       jitlib  = path.join(core_root, jitname)
-       coreclr = path.join(core_root, coreclrname)
-       corelib = path.join(core_root, corelibname)
-       spmi    = path.join(core_root, spminame)
+        jitpath = path.join(".", jitname)
+        jitlib  = path.join(core_root, jitname)
+        coreclr = path.join(core_root, coreclrname)
+        corelib = path.join(core_root, corelibname)
+        spmi    = path.join(core_root, spminame)
 
-       benchmark_machine = determine_benchmark_machine(coreclr_args)
+        benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-       crank_command = f"crank --config {config}" \
-                       f"--profile {benchmark_machine}" \
-                       f"--scenario json" \
-                       f"--description SPMI-COLLECTION" \
-                       f"--application.framework net6.0" \
-                       f"--application.channel edge" \
-                       f"--application.environmentVariables COMPlus_JitName={spminame}" \
-                       f"--application.environmentVariables SuperPMIShimLogPath=.} \
-                       f"--application.environmentVariables SuperPMIShimPath={jitpath}" \
-                       f"--application.options.fetch true \
-                       f"--application.outputFiles {jitlib} \
-                       f"--application.outputFiles {coreclr} \
-                       f"--application.outputFiles {corelib}
+        crank_command = f"crank --config {config}" \
+                        f" --profile {benchmark_machine}" \
+                        f" --scenario json" \
+                        f" --description SPMI-COLLECTION" \
+                        f" --application.framework net6.0" \
+                        f" --application.channel edge" \
+                        f" --application.environmentVariables COMPlus_JitName={spminame}" \
+                        f" --application.environmentVariables SuperPMIShimLogPath=.} \
+                        f" --application.environmentVariables SuperPMIShimPath={jitpath}" \
+                        f" --application.options.fetch true \
+                        f" --application.outputFiles {jitlib} \
+                        f" --application.outputFiles {coreclr} \
+                        f" --application.outputFiles {corelib}
 
         run_command(
-            ["crank", crank_command, temp_location, _exit_on_fail=True)
+            ["crank", crank_command], temp_location, _exit_on_fail=True)
 
        crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
 
