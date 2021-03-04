@@ -6395,7 +6395,6 @@ static gboolean
 module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoArray *dpdb, MonoError *error)
 {
 #ifdef ENABLE_METADATA_UPDATE
-	MonoDomain *domain = mono_domain_get ();
 	/* TODO: use dpdb */
 	gpointer dmeta_bytes = (gpointer)mono_array_addr_internal (dmeta, char, 0);
 	int32_t dmeta_len = mono_array_length_internal (dmeta);
@@ -6403,7 +6402,7 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dil_len = mono_array_length_internal (dil);
 	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
 	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
-	mono_image_load_enc_delta (domain, image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
 	return is_ok (error);
 #else
 	mono_error_set_not_supported (error, "");
