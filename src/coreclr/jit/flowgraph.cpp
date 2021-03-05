@@ -62,7 +62,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 
 PhaseStatus Compiler::fgInsertClsInitChecks()
 {
-    if (!opts.OptimizationEnabled() || opts.IsReadyToRun())
+    if (!opts.OptimizationEnabled())
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -80,6 +80,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
     {
         if (!block->isRunRarely())
         {
+            Statement* prevStmt = nullptr;
             for (Statement* stmt : block->Statements())
             {
                 for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
@@ -187,13 +188,45 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     //     ...
                     //
 
+                    // Insert a no-op statement that we can use as a splitter in fgSplitBlockAfterStatement
+                    // in case if we're on the first statement.
+                    if (prevStmt == nullptr)
+                    {
+                        prevStmt = fgNewStmtFromTree(gtNewNothingNode());
+                        fgInsertStmtAtBeg(block, prevStmt);
+                    }
+
+                    BasicBlock* newBlock = fgSplitBlockAfterStatement(block, prevStmt);
+                    newBlock->bbFlags |= (BBF_HAS_LABEL | BBF_INTERNAL);
+
+                    prevBb = block;
+                    block  = newBlock;
+
+                    // BB1 "isInitedBb"
+                    BasicBlock* isInitedBb = fgNewBBafter(BBJ_COND, prevBb, true);
+                    isInitedBb->inheritWeight(prevBb);
+                    isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
+
                     GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAddr, GTF_ICON_CONST_PTR, true);
+                    GenTree* isInitedMaskNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                    GenTree* isInitedCmp      = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
+                    isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+                    gtSetEvalOrder(isInitedCmp);
+
+                    Statement* isInitedStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp));
+                    gtSetStmtInfo(isInitedStmt);
+                    fgSetStmtSeq(isInitedStmt);
+
+                    fgInsertStmtAtEnd(isInitedBb, isInitedStmt);
+                    isInitedBb->bbJumpDest = block;
+                    block->bbFlags |= BBF_JMP_TARGET;
 
                     // Let's start from emitting that BB2 "callInitBb"
-                    BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
+                    BasicBlock* callInitBb = fgNewBBafter(BBJ_ALWAYS, isInitedBb, true);
                     // it's executed only once so can be marked as cold
                     callInitBb->bbSetRunRarely();
-                    callInitBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_CALL | BBF_HAS_LABEL);
+                    callInitBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_CALL | BBF_HAS_LABEL | BBF_HAS_JMP);
+                    callInitBb->bbJumpDest = block;
 
                     // Replace the helper call with a slower CORINFO_HELP_INITCLASS
                     // it accepts a single argument instead of two so we can save some space.
@@ -210,75 +243,45 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     gtSetStmtInfo(callStmt);
                     fgSetStmtSeq(callStmt);
                     fgInsertStmtAtEnd(callInitBb, callStmt);
-                    gtUpdateStmtSideEffects(callStmt);
 
-                    // BB1 "isInitedBb"
-                    BasicBlock* isInitedBb = fgNewBBbefore(BBJ_COND, callInitBb, true);
-                    isInitedBb->inheritWeight(block);
-                    isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
-
-                    GenTree* isInitedMaskNode =
-                        gtNewOperNode(GT_AND, TYP_INT, gtNewCastNode(TYP_INT, isInitAdrNode, true, TYP_INT),
-                                      gtNewIconNode(isInitMask));
-
-                    GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
-                    isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
-                    gtSetEvalOrder(isInitedCmp);
-
-                    Statement* isInitedStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp));
-                    gtSetStmtInfo(isInitedStmt);
-                    fgSetStmtSeq(isInitedStmt);
-
-                    fgInsertStmtAtEnd(isInitedBb, isInitedStmt);
-                    isInitedBb->bbJumpDest = block;
-                    block->bbFlags |= BBF_JMP_TARGET;
-
-                    // Now we can remove the call from the current block
-                    // We're going to replace the call with the "moduleId" node.
+                    // Replace the call with the "moduleId" node.
                     gtReplaceTree(stmt, call, gtClone(moduleIdArg));
 
-                    // Now we need to fix all the connections to predecessors and successors:
-
-                    // isInitedBb is a predecessor of callInitBb
-                    fgAddRefPred(callInitBb, isInitedBb);
-                    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
-                    {
-                        // Redirect all the predecessors from the current block to isInitedBb
-                        BasicBlock* predBlock = pred->getBlock();
-                        assert((predBlock->bbJumpKind == BBJ_NONE) || (predBlock->bbJumpKind == BBJ_ALWAYS) ||
-                               (predBlock->bbJumpKind == BBJ_COND));
-
-                        if (predBlock->bbJumpDest == block)
-                        {
-                            predBlock->bbJumpDest = isInitedBb;
-                            isInitedBb->bbFlags |= BBF_JMP_TARGET;
-                        }
-                        if (predBlock->bbNext == block)
-                        {
-                            predBlock->bbNext = isInitedBb;
-                        }
-                        fgRemoveRefPred(block, predBlock);
-                        fgAddRefPred(isInitedBb, predBlock);
-                    }
-                    // Both callInitBb and isInitedBb are predecessors of block now
+                    // Fix all the connections to predecessors and successors:
                     fgAddRefPred(block, callInitBb);
                     fgAddRefPred(block, isInitedBb);
+                    fgAddRefPred(isInitedBb, prevBb);
+                    fgAddRefPred(callInitBb, isInitedBb);
+                    fgRemoveRefPred(block, prevBb);
 
-                    // Make sure all three basic blocks are in the same EH region:
+                    // Convert the prevBB (it used to be the current block before fgSplitBlockAfterStatement)
+                    // to BBJ_ALWAYS
+                    if (prevBb->bbJumpKind == BBJ_NONE)
+                    {
+                        prevBb->bbJumpDest = isInitedBb;
+                        prevBb->bbJumpKind = BBJ_ALWAYS;
+                        isInitedBb->bbFlags |= BBF_JMP_TARGET;
+                        prevBb->bbFlags |= BBF_HAS_JMP;
+                    }
+
+                    // Make sure all four basic blocks are in the same EH region:
+                    assert(BasicBlock::sameEHRegion(prevBb, block));
                     assert(BasicBlock::sameEHRegion(callInitBb, block));
                     assert(BasicBlock::sameEHRegion(isInitedBb, block));
 
-                    assert(isInitedBb->bbJumpDest == block);
-                    assert(isInitedBb->bbNext == callInitBb);
-                    assert(callInitBb->bbNext == block);
+                    assert((isInitedBb->bbJumpDest == block) && (isInitedBb->bbNext == callInitBb));
+                    assert((callInitBb->bbJumpDest == block) && (callInitBb->bbNext == block));
+                    assert((prevBb->bbNext == isInitedBb) && (prevBb->bbJumpDest == isInitedBb));
 
                     modified = true;
+                    break;
                 }
                 if (modified)
                 {
                     // Clear potential leftover GTF_CALL and GTF_EXC flags in the current stmt
                     gtUpdateStmtSideEffects(stmt);
                 }
+                prevStmt = stmt;
             }
         }
         prevBb = block;
