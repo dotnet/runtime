@@ -20,8 +20,7 @@ do { \
 
 int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 {
-    if (!dsa)
-        return FAIL;
+    assert(dsa);
 
     // KeyPairGenerator kpg = KeyPairGenerator.getInstance("DSA");
     // kpg.initialize(bits);
@@ -54,10 +53,8 @@ int32_t AndroidCryptoNative_DsaGenerateKey(jobject* dsa, int32_t bits)
 
 static jobject GetQParameter(JNIEnv* env, jobject dsa)
 {
-    if (!dsa)
-    {
-        return FAIL;
-    }
+    assert(dsa);
+
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec);
     loc[algName] = JSTRING("DSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
@@ -77,6 +74,8 @@ error:
 
 int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
 {
+    assert(dsa);
+
     // The maximum size of a signature for the provided key is 2* bitlength of Q + extra bytes for the DER
     // encoding. The DER encoding is as follows (with R and S being the components of the signature and all lengths
     // being one byte width):
@@ -100,10 +99,8 @@ int32_t AndroidCryptoNative_DsaSizeSignature(jobject dsa)
 
 int32_t AndroidCryptoNative_DsaSizeP(jobject dsa)
 {
-    if (!dsa)
-    {
-        return -1;
-    }
+    assert(dsa);
+
     JNIEnv* env = GetJNIEnv();
     INIT_LOCALS(loc, algName, keyFactory, publicKey, publicKeySpec, p);
     loc[algName] = JSTRING("DSA");
@@ -217,17 +214,17 @@ int32_t AndroidCryptoNative_GetDsaParameters(
     jobject* y, int32_t* yLength,
     jobject* x, int32_t* xLength)
 {
-    assert(dsa != NULL);
-    assert(p != NULL);
-    assert(q != NULL);
-    assert(g != NULL);
-    assert(y != NULL);
-    assert(x != NULL);
-    assert(pLength != NULL);
-    assert(qLength != NULL);
-    assert(gLength != NULL);
-    assert(yLength != NULL);
-    assert(xLength != NULL);
+    assert(dsa);
+    assert(p);
+    assert(q);
+    assert(g);
+    assert(y);
+    assert(x);
+    assert(pLength);
+    assert(qLength);
+    assert(gLength);
+    assert(yLength);
+    assert(xLength);
     
     JNIEnv* env = GetJNIEnv();
 

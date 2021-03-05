@@ -103,8 +103,24 @@ internal static partial class Interop
             }
 
             SafeBignumHandle n, e, d, p, dmp1, q, dmq1, iqmp;
-            if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
+            if (!GetRsaParameters(key,
+                out n,
+                out e,
+                out d,
+                out p,
+                out dmp1,
+                out q,
+                out dmq1,
+                out iqmp))
             {
+                n.Dispose();
+                e.Dispose();
+                d.Dispose();
+                p.Dispose();
+                dmp1.Dispose();
+                q.Dispose();
+                dmq1.Dispose();
+                iqmp.Dispose();
                 throw new CryptographicException();
             }
 

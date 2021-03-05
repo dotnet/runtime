@@ -114,19 +114,19 @@ internal static partial class Interop
                 out qy_bn, out qy_cb,
                 out d_bn, out d_cb);
 
-            if (rc == -1)
-            {
-                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-            }
-            else if (rc != 1)
-            {
-                throw new CryptographicException();
-            }
-
             using (qx_bn)
             using (qy_bn)
             using (d_bn)
             {
+                if (rc == -1)
+                {
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                }
+                else if (rc != 1)
+                {
+                    throw new CryptographicException();
+                }
+
                 // Match Windows semantics where qx, qy, and d have same length
                 int keySizeBits = EcKeyGetSize(key);
                 int expectedSize = (keySizeBits + 7) / 8;
@@ -190,15 +190,6 @@ internal static partial class Interop
                 out cofactor_bn, out cofactor_cb,
                 out seed_bn, out seed_cb);
 
-            if (rc == -1)
-            {
-                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-            }
-            else if (rc != 1)
-            {
-                throw new CryptographicException();
-            }
-
             using (qx_bn)
             using (qy_bn)
             using (p_bn)
@@ -211,6 +202,15 @@ internal static partial class Interop
             using (seed_bn)
             using (d_bn)
             {
+                if (rc == -1)
+                {
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                }
+                else if (rc != 1)
+                {
+                    throw new CryptographicException();
+                }
+
                 int cbFieldLength;
                 int pFieldLength;
                 if (curveType == ECCurve.ECCurveType.Characteristic2)

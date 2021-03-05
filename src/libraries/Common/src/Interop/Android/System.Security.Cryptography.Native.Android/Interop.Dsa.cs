@@ -11,13 +11,6 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaUpRef")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool DsaUpRef(IntPtr dsa);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaDestroy")]
-        internal static extern void DsaDestroy(IntPtr dsa);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
@@ -111,6 +104,11 @@ internal static partial class Interop
                 out y_bn, out y_cb,
                 out x_bn, out x_cb))
             {
+                p_bn.Dispose();
+                q_bn.Dispose();
+                g_bn.Dispose();
+                y_bn.Dispose();
+                x_bn.Dispose();
                 throw new CryptographicException();
             }
 

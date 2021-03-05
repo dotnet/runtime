@@ -37,16 +37,6 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[]? ExtractBignum(IntPtr bignum, int targetSize)
-        {
-            // Given that the only reference held to bignum is an IntPtr, create an unowned SafeHandle
-            // to ensure that we don't destroy the key after extraction.
-            using (SafeBignumHandle handle = new SafeBignumHandle(bignum, ownsHandle: false))
-            {
-                return ExtractBignum(handle, targetSize);
-            }
-        }
-
         internal static unsafe byte[]? ExtractBignum(SafeBignumHandle? bignum, int targetSize)
         {
             if (bignum == null || bignum.IsInvalid)
@@ -82,11 +72,6 @@ namespace System.Security.Cryptography
     internal sealed class SafeBignumHandle : Interop.JObjectLifetime.SafeJObjectHandle
     {
         public SafeBignumHandle()
-        {
-        }
-
-        internal SafeBignumHandle(IntPtr handle, bool ownsHandle)
-            :  base(handle, ownsHandle)
         {
         }
     }
