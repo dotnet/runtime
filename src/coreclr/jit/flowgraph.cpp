@@ -153,7 +153,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         prevBb = fgFirstBB;
                         if (prevBb == block)
                         {
-                            JITDUMP("fgInsertClsInitChecks: fgFirstBB is fgFirstBBScratch with a static initialization");
+                            JITDUMP("fgInsertClsInitChecks: fgFirstBB is fgFirstBBScratch with initclass helper");
                             // It means the first bb is already a scratch one so it's probably not a good idea
                             // to insert blocks before them.
                             continue;
@@ -1110,7 +1110,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
