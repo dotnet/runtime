@@ -159,7 +159,7 @@ namespace pal
     {
         FILE* fd;
         errno_t err = ::_wfopen_s(&fd, path.c_str(), mode);
-        if (err == 0)
+        if (err != 0)
             return NULL;
         return fd;
     }
