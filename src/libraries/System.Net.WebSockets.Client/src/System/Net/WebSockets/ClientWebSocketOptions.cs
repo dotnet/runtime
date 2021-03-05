@@ -148,6 +148,9 @@ namespace System.Net.WebSockets
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
+        public WebSocketDeflateOptions? DeflateOptions { get; set; }
+
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;
 
