@@ -15,7 +15,7 @@ steps:
       pipeline: 'runtime-coreclr superpmi'
       buildVersionToDownload: specific
       branchName: 'refs/pull/49063/head'
-      buildId: '20210305.1'
+      buildId: '20210304.2'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
