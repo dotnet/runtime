@@ -2924,6 +2924,55 @@ interp_get_method (MonoMethod *method, guint32 token, MonoImage *image, MonoGene
 		return (MonoMethod *)mono_method_get_wrapper_data (method, token);
 }
 
+/*
+ * emit_convert:
+ *
+ *   Emit some implicit conversions which are not part of the .net spec, but are allowed by MS.NET.
+ */
+static void
+emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
+{
+	int stype = sp->type;
+	target_type = mini_get_underlying_type (target_type);
+
+	// FIXME: Add more
+	switch (target_type->type) {
+	case MONO_TYPE_I8: {
+		switch (stype) {
+		case STACK_TYPE_I4:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+			break;
+		default:
+			break;
+		}
+		break;
+	}
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U: {
+		switch (stype) {
+		case STACK_TYPE_I4:
+			interp_add_conv (td, sp, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+			break;
+		default:
+			break;
+		}
+	}
+#endif
+	default:
+		break;
+	}
+}
+
+static void
+interp_emit_arg_conv (TransformData *td, MonoMethodSignature *csignature)
+{
+	StackInfo *arg_start = td->sp - csignature->param_count;
+
+	for (int i = 0; i < csignature->param_count; i++)
+		emit_convert (td, &arg_start [i], csignature->params [i]);
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3136,6 +3185,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		--td->sp;
 		fp_sreg = td->sp [0].local;
 	}
+
+	interp_emit_arg_conv (td, csignature);
 
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
@@ -3922,37 +3973,6 @@ interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
 	return TRUE;
 }
 
-/*
- * emit_convert:
- *
- *   Emit some implicit conversions which are not part of the .net spec, but are allowed by MS.NET.
- */
-static void
-emit_convert (TransformData *td, int stype, MonoType *ftype)
-{
-	ftype = mini_get_underlying_type (ftype);
-
-	// FIXME: Add more
-	switch (ftype->type) {
-	case MONO_TYPE_I8: {
-		switch (stype) {
-		case STACK_TYPE_I4:
-			td->sp--;
-			interp_add_ins (td, MINT_CONV_I8_I4);
-			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, STACK_TYPE_I8);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			break;
-		default:
-			break;
-		}
-		break;
-	}
-	default:
-		break;
-	}
-}
-
 static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
@@ -4736,6 +4756,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_RET: {
 			link_bblocks = FALSE;
+			MonoType *ult = mini_type_get_underlying_type (signature->ret);
+			if (ult->type != MONO_TYPE_VOID) {
+				// Convert stack contents to return type if necessary
+				CHECK_STACK (td, 1);
+				emit_convert (td, td->sp - 1, ult);
+			}
 			/* Return from inlined method, return value is on top of stack */
 			if (inlining) {
 				td->ip++;
@@ -4748,9 +4774,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 
 			int vt_size = 0;
-			MonoType *ult = mini_type_get_underlying_type (signature->ret);
 			if (ult->type != MONO_TYPE_VOID) {
-				CHECK_STACK (td, 1);
 				--td->sp;
 				if (mint_type (ult) == MINT_TYPE_VT) {
 					MonoClass *klass = mono_class_from_mono_type_internal (ult);
@@ -5948,7 +5972,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			mt = mint_type (ftype);
 
-			emit_convert (td, td->sp [-1].type, ftype);
+			emit_convert (td, td->sp - 1, ftype);
 
 			/* the vtable of the field might not be initialized at this point */
 			MonoClass *fld_klass = mono_class_from_mono_type_internal (ftype);
