@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Tests;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -14,7 +13,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         public int? Integer { get; }
         public int? IntegerNull { get; }
 
-        public StructWithPublicDefaultConstructor StructWithConstructor { get; }
+        // re-enable once https://github.com/dotnet/csharplang/issues/99 is implemented
+        // see https://github.com/dotnet/runtime/issues/49069
+        //public StructWithPublicDefaultConstructor StructWithConstructor { get; }
 
 #pragma warning disable SA1129
         public ClassWithOptionalArgsCtorWithStructs(
@@ -31,8 +32,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             ConsoleColor? color = ConsoleColor.DarkGreen,
             ConsoleColor? colorNull = null,
             int? integer = 12,
-            int? integerNull = null,
-            StructWithPublicDefaultConstructor structWithConstructor = default
+            int? integerNull = null
+            //StructWithPublicDefaultConstructor structWithConstructor = default
         )
 #pragma warning restore SA1129
         {
@@ -40,7 +41,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             ColorNull = colorNull;
             Integer = integer;
             IntegerNull = integerNull;
-            StructWithConstructor = structWithConstructor;
+            //StructWithConstructor = structWithConstructor;
         }
 
         public struct CustomStruct { }
