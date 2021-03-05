@@ -718,7 +718,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 22);
+                }, "dto_props", num_fields: 20);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
