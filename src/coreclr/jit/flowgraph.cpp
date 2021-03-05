@@ -99,11 +99,12 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     }
 
                     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-                    if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) || (call->fgArgInfo->ArgCount() != 2))
+                    if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) &&
+                        (helpFunc != CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS))
                     {
-                        // Only CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE is currently supported.
                         continue;
                     }
+                    assert(call->fgArgInfo->ArgCount() == 2);
 
                     GenTree* moduleIdArg = call->fgArgInfo->GetArgNode(0);
                     GenTree* clsIdArg    = call->fgArgInfo->GetArgNode(1);
@@ -1156,7 +1157,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
 
-    if (helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE)
+    if ((helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) ||
+        (helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS))
     {
         // Save cls for this helper for fgInsertClsInitChecks phase
         result->gtRetClsHnd = cls;
