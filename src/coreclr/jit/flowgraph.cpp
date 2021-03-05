@@ -125,28 +125,6 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     }
                     assert(isInitMask > 0);
 
-                    bool hasNotSupportedPreds = false;
-                    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
-                    {
-                        BasicBlock* predBlock = pred->getBlock();
-                        // Bail out if one of the preds is e.g. BBJ_SWITCH or some EH type of BB
-                        if ((predBlock->bbJumpKind != BBJ_NONE) && (predBlock->bbJumpKind != BBJ_ALWAYS) &&
-                            (predBlock->bbJumpKind != BBJ_COND))
-                        {
-                            hasNotSupportedPreds = true;
-                            break;
-                        }
-                        if (!BasicBlock::sameEHRegion(predBlock, block))
-                        {
-                            hasNotSupportedPreds = true;
-                            break;
-                        }
-                    }
-                    if (hasNotSupportedPreds)
-                    {
-                        continue;
-                    }
-
                     if (prevBb == nullptr)
                     {
                         // We're going to emit a BB in front of fgFirstBB
@@ -208,8 +186,9 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
 
                     GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAddr, GTF_ICON_CONST_PTR, true);
-                    GenTree* isInitedMaskNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
-                    GenTree* isInitedCmp      = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
+                    GenTree* isInitedMaskNode =
+                        gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                    GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
                     isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(isInitedCmp);
 
