@@ -65,9 +65,6 @@ ovr_tag_to_scalar (llvm_ovr_tag_t tag)
 llvm_ovr_tag_t
 ovr_tag_from_mono_vector_class (MonoClass *klass);
 
-llvm_ovr_tag_t
-ovr_tag_from_mono_vector_type (MonoType *type);
-
 /*
  * Keep in sync with the enum in utils/mono-memory-model.h.
  */

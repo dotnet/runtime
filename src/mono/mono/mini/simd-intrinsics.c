@@ -970,6 +970,13 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareLessThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_Abs},
+	{SN_ReciprocalEstimate},
+	{SN_ReciprocalEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
+	{SN_ReciprocalExponentScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPX},
+	{SN_ReciprocalSquareRootEstimate},
+	{SN_ReciprocalSquareRootEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRSQRTE},
+	{SN_ReciprocalStep, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPS},
+	{SN_ReciprocalStepScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPS},
 	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_RBIT},
 	{SN_ReverseElement16, OP_ARM64_REV32},
 	{SN_ReverseElement32, OP_ARM64_REV64},
@@ -1236,6 +1243,21 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_ReciprocalEstimate:
+		case SN_ReciprocalSquareRootEstimate: {
+			gboolean is_float = FALSE;
+			switch (arg0_type) {
+			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
+			}
+			switch (id) {
+			case SN_ReciprocalEstimate:
+				iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FRECPE: INTRINS_AARCH64_ADV_SIMD_URECPE;
+				break;
+			case SN_ReciprocalSquareRootEstimate:
+				iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FRSQRTE : INTRINS_AARCH64_ADV_SIMD_URSQRTE;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
 		}
 		case SN_ShiftLeftLogicalSaturate:
 		case SN_ShiftLeftLogicalSaturateScalar: {

@@ -680,13 +680,6 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	return ret;
 }
 
-llvm_ovr_tag_t
-ovr_tag_from_mono_vector_type (MonoType *type)
-{
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	return ovr_tag_from_mono_vector_class (klass);
-}
-
 /*
  * mono_llvm_register_intrinsic:
  *
