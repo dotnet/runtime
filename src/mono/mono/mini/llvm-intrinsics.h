@@ -306,10 +306,8 @@ INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_FLOAT, aarch64_neon_facgt, sse
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE, aarch64_neon_facgt, sse_i4_t, sse_r8_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT, aarch64_neon_facge, sse_i4_t, sse_r4_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE, aarch64_neon_facge, sse_i4_t, sse_r8_t)
-INTRINS_OVR(AARCH64_ADV_SIMD_TBX64, aarch64_neon_tbx1, LLVMVectorType (LLVMInt8Type (), 8))
-INTRINS_OVR(AARCH64_ADV_SIMD_TBX128, aarch64_neon_tbx1, sse_i1_t)
-INTRINS_OVR(AARCH64_ADV_SIMD_TBL64, aarch64_neon_tbl1, LLVMVectorType (LLVMInt8Type (), 8))
-INTRINS_OVR(AARCH64_ADV_SIMD_TBL128, aarch64_neon_tbl1, sse_i1_t)
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, V64 | V128 | I1)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Scalar | V64 | V128 | R4 | R8)
@@ -343,6 +341,11 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHLU, aarch64_neon_sqshlu, V64 | V128 | I1 | 
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SLI, aarch64_neon_vsli, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
+
+INTRINS_OVR(AARCH64_ADV_SIMD_TBX64, aarch64_neon_tbx1, LLVMVectorType (LLVMInt8Type (), 8))
+INTRINS_OVR(AARCH64_ADV_SIMD_TBX128, aarch64_neon_tbx1, sse_i1_t)
+INTRINS_OVR(AARCH64_ADV_SIMD_TBL64, aarch64_neon_tbl1, LLVMVectorType (LLVMInt8Type (), 8))
+INTRINS_OVR(AARCH64_ADV_SIMD_TBL128, aarch64_neon_tbl1, sse_i1_t)
 #endif
 
 #undef INTRINS

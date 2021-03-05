@@ -9292,6 +9292,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
+		case OP_ARM64_REV16:
+		case OP_ARM64_REV32:
+		case OP_ARM64_REV64: {
+			unsigned int tmp_bits = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_REV16: tmp_bits = 8; break;
+			case OP_ARM64_REV32: tmp_bits = 16; break;
+			case OP_ARM64_REV64: tmp_bits = 32; break;
+			}
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			unsigned int t_bits = mono_llvm_get_prim_size_bits (t);
+			unsigned int tmp_elements = t_bits / tmp_bits;
+			LLVMTypeRef tmp_t = LLVMVectorType (LLVMIntType (tmp_bits), tmp_elements);
+			LLVMValueRef tmp = LLVMBuildBitCast (builder, lhs, tmp_t, "arm64_rev");
+			int mask [MAX_VECTOR_ELEMS] = { 0 };
+			for (unsigned int i = 0; i < tmp_elements; i += 2) {
+				mask [i] = i + 1;
+				mask [i] = i;
+			}
+			LLVMValueRef result = LLVMBuildShuffleVector(builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (mask, tmp_elements), "");
+			result = LLVMBuildBitCast (builder, result, t, "");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_SHL:
 		case OP_ARM64_SSHR:
 		case OP_ARM64_SSRA:
@@ -11013,7 +11037,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 		llvm_ovr_tag_t spec = intrin_arm64_ovr [id];
 		for (int vw = 0; vw < LLVM_VectorWidths; ++vw) {
 			for (int ew = 0; ew < LLVM_ElementWidths; ++ew) {
-				llvm_ovr_tag_t vec_bit = vw == 0 ? 0 : LLVM_Vector64 << vw;
+				llvm_ovr_tag_t vec_bit = LLVM_Vector128 >> ((LLVM_VectorWidths - 1) - vw);
 				llvm_ovr_tag_t test = vec_bit | (LLVM_Int8 << ew);
 				if (spec & test) {
 					intrins = add_intrins1 (module, id, intrin_types [vw][ew]);

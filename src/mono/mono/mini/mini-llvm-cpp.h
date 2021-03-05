@@ -27,7 +27,8 @@ G_BEGIN_DECLS
 
 /* An intrinsic id. The lower 24 bits are used to store a mono-specific ID. The
  * next 8 bits store arm64 overload tag bits. In the configuration of LLVM 9 we
- * use, there are 7017 total intrinsics defined in IntrinsicEnums.inc.
+ * use, there are 7017 total intrinsics defined in IntrinsicEnums.inc, so only
+ * 13 bits are needed to label each intrinsic overload group.
  */
 typedef enum {
 #define INTRINS(id, llvm_id) INTRINS_ ## id,
