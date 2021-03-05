@@ -383,20 +383,23 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 			DS_IPC_TIMEOUT_INFINITE :
 			ipc_stream_factory_get_next_timeout (poll_timeout_ms);
 
-		poll_attempts++;
-		DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - Poll attempt: %d, timeout: %dms.", poll_attempts, poll_timeout_ms);
-
-		ipc_log_poll_handles (&ipc_poll_handles);
-
-		int32_t ret_val = -1;
-		if ( ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles) > 0)
+		int32_t ret_val;
+		if ( ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles) > 0) {
+			poll_attempts++;
+			DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - Poll attempt: %d, timeout: %dms.", poll_attempts, poll_timeout_ms);
+			ipc_log_poll_handles (&ipc_poll_handles);
 			ret_val = ds_ipc_poll (ds_rt_ipc_poll_handle_array_data (&ipc_poll_handles), ds_rt_ipc_poll_handle_array_size (&ipc_poll_handles), poll_timeout_ms, callback);
-		else
+		} else {
+			if (poll_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
+				poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MAX_MS;
+			DS_LOG_INFO_1 ("ds_ipc_stream_factory_get_next_available_stream - Nothing to poll, sleeping using timeout: %dms.", poll_timeout_ms);
 			ep_rt_thread_sleep ((uint64_t)poll_timeout_ms * NUM_NANOSECONDS_IN_1_MS);
+			ret_val = 0; // timeout
+		}
 
 		bool saw_error = false;
 
-		if (ret_val != 0) {
+		if (ret_val > 0) {
 			uint32_t connection_id = 0;
 			ds_rt_ipc_poll_handle_array_iterator_t ipc_poll_handles_iterator = ds_rt_ipc_poll_handle_array_iterator_begin (&ipc_poll_handles);
 			while (!ds_rt_ipc_poll_handle_array_iterator_end (&ipc_poll_handles, &ipc_poll_handles_iterator)) {
@@ -436,6 +439,16 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 				ds_rt_ipc_poll_handle_array_iterator_next (&ipc_poll_handles_iterator);
 				connection_id++;
 			}
+		}else if (ret_val == 0) {
+			// timeout.
+		} else if (ret_val == -1) {
+			// poll error.
+			DS_LOG_WARNING_0 ("ds_ipc_stream_factory_get_next_available_stream - ds_ipc_poll returned -1");
+			saw_error = true;
+		} else {
+			// unknown return value.
+			DS_LOG_ERROR_1 ("ds_ipc_stream_factory_get_next_available_stream - ds_ipc_poll, uknown return value: %d", ret_val);
+			saw_error = true;
 		}
 
 		if (!stream && saw_error) {
@@ -448,7 +461,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	}
 
 ep_on_exit:
-	DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - EXIT :: Poll attempt: %d, stream using handle %d.", poll_attempts, ds_ipc_stream_get_handle_int32_t (stream));
+	DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - EXIT :: Poll attempt: %d, stream using handle %d.", poll_attempts, stream ? ds_ipc_stream_get_handle_int32_t (stream) : -1);
 	ds_rt_ipc_poll_handle_array_fini (&ipc_poll_handles);
 	return stream;
 
