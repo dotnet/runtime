@@ -474,9 +474,11 @@ DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
 	uint32_t timeout_ms,
-	ds_ipc_error_callback_func callback)
+	ds_ipc_error_callback_func callback,
+	bool *timed_out)
 {
 	EP_ASSERT (ipc != NULL);
+	EP_ASSERT (timed_out != NULL);
 	EP_ASSERT (ipc->mode == DS_IPC_CONNECTION_MODE_CONNECT);
 
 	DiagnosticsIpcStream *stream = NULL;

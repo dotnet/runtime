@@ -48,6 +48,7 @@
 #define DS_IPC_INVALID_SOCKET INVALID_SOCKET
 #define DS_IPC_SOCKET_ERROR SOCKET_ERROR
 #define DS_IPC_SOCKET_ERROR_WOULDBLOCK WSAEWOULDBLOCK
+#define DS_IPC_SOCKET_ERROR_TIMEDOUT WSAETIMEDOUT
 typedef ADDRINFOA ds_ipc_addrinfo_t;
 typedef WSAPOLLFD ds_ipc_pollfd_t;
 typedef int ds_ipc_mode_t;
@@ -55,6 +56,7 @@ typedef int ds_ipc_mode_t;
 #define DS_IPC_INVALID_SOCKET -1
 #define DS_IPC_SOCKET_ERROR -1
 #define DS_IPC_SOCKET_ERROR_WOULDBLOCK EINPROGRESS
+#define DS_IPC_SOCKET_ERROR_TIMEDOUT ETIMEDOUT
 typedef struct addrinfo ds_ipc_addrinfo_t;
 typedef struct pollfd ds_ipc_pollfd_t;
 typedef mode_t ds_ipc_mode_t;
@@ -496,11 +498,15 @@ ipc_socket_connect (
 				pfd.fd = s;
 				pfd.events = POLLOUT;
 				int result_poll = ipc_poll_fds (&pfd, 1, timeout_ms);
-				if (result_poll <= 0 || !(pfd.revents & POLLOUT)) {
-					// timeout or error
+				if (result_poll == 0) {
+					// timeout
+					ipc_set_last_error (DS_IPC_SOCKET_ERROR_TIMEDOUT);
+					result_connect = DS_IPC_SOCKET_ERROR;
+				} else if (result_poll < 0 || !(pfd.revents & POLLOUT)) {
+					// error
 					result_connect = DS_IPC_SOCKET_ERROR;
 				} else {
-					// check non-blocking connect result.
+					// success, check non-blocking connect result.
 					result_connect = ipc_get_last_socket_error (s);
 					if (result_connect != 0 && result_connect != DS_IPC_SOCKET_ERROR) {
 						ipc_set_last_error (result_connect);
@@ -1141,9 +1147,12 @@ DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
 	uint32_t timeout_ms,
-	ds_ipc_error_callback_func callback)
+	ds_ipc_error_callback_func callback,
+	bool *timed_out)
 {
 	EP_ASSERT (ipc != NULL);
+	EP_ASSERT (timed_out != NULL);
+
 	DiagnosticsIpcStream *stream = NULL;
 
 	EP_ASSERT (ipc->mode == DS_IPC_CONNECTION_MODE_CONNECT);
@@ -1159,8 +1168,10 @@ ds_ipc_connect (
 	int result_connect;
 	result_connect = ipc_socket_connect (client_socket, ipc->server_address, ipc->server_address_len, timeout_ms);
 	if (result_connect < 0) {
-		if (callback)
+		if (callback && ipc_get_last_error () != DS_IPC_SOCKET_ERROR_TIMEDOUT)
 			callback (strerror (ipc_get_last_error ()), ipc_get_last_error ());
+		else if (ipc_get_last_error () == DS_IPC_SOCKET_ERROR_TIMEDOUT)
+			*timed_out = true;
 
 		int result_close;
 		result_close = ipc_socket_close (client_socket);

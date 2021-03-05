@@ -47,6 +47,12 @@
 #undef DS_LOG_DEBUG_0
 #define DS_LOG_DEBUG_0(msg) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg)
 
+#undef DS_LOG_DEBUG_1
+#define DS_LOG_DEBUG_1(msg, data1) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1)
+
+#undef DS_LOG_DEBUG_2
+#define DS_LOG_DEBUG_2(msg, data1, data2) mono_trace(G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, msg, data1, data2)
+
 #undef DS_ENTER_BLOCKING_PAL_SECTION
 #define DS_ENTER_BLOCKING_PAL_SECTION \
 	MONO_REQ_GC_UNSAFE_MODE \

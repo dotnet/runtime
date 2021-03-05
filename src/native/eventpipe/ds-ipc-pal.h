@@ -72,7 +72,8 @@ DiagnosticsIpcStream *
 ds_ipc_connect (
 	DiagnosticsIpc *ipc,
 	uint32_t timeout_ms,
-	ds_ipc_error_callback_func callback);
+	ds_ipc_error_callback_func callback,
+	bool *timed_out);
 
 // Closes an open IPC.
 // Only attempts minimal cleanup if is_shutdown==true, i.e.,
