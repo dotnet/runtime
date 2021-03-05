@@ -263,14 +263,6 @@ namespace System.IO.Strategies
             long positionBefore = _filePosition;
             if (CanSeek)
             {
-                // Make sure we set the length of the file appropriately.
-                long len = Length;
-
-                if (positionBefore + source.Length > len)
-                {
-                    SetLengthCore(positionBefore + source.Length);
-                }
-
                 // Now set the position to read from in the NativeOverlapped struct
                 // For pipes, we should leave the offset fields set to 0.
                 intOverlapped->OffsetLow = (int)positionBefore;
