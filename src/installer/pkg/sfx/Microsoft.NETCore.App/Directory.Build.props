@@ -3,8 +3,8 @@
 
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
-    <SharedFrameworkName Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
+    <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
 

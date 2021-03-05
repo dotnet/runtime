@@ -7,6 +7,7 @@
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
     <InstallerName>dotnet-apphost-pack</InstallerName>
+    <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix)</OverridePackageId>
     <VSInsertionShortComponentName>NetCore.AppHostPack</VSInsertionShortComponentName>
   </PropertyGroup>
 
