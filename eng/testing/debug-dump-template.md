@@ -1,10 +1,6 @@
-# Get the dump
-
-Click the link to the dump on the `Helix Test Logs` tab in Azure DevOps. This is the same place you got these instructions from.
-
 # Get the Helix payload
 
-[Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols:
+[Runfo](https://github.com/jaredpar/runfo/tree/master/runfo#runfo) helps get information about helix test runs and azure devops builds. We will use it to download the payload and symbols (recommended version 0.6.4 or later):
 ```sh
 dotnet tool install --global runfo
 dotnet tool update --global runfo
@@ -18,6 +14,8 @@ runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %WOUTDIR%
 # assumes %LOUTDIR% does not exist
 runfo get-helix-payload -j %JOBID% -w %WORKITEM% -o %LOUTDIR%
 ```
+
+Any dump files published by helix will be downloaded.
 
 > NOTE: if the helix job is an internal job, you need to pass down a [helix authentication token](https://helix.dot.net/Account/Tokens) using the `--helix-token` argument.
 
