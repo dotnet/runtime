@@ -100,6 +100,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
                     if ((helpFunc != CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) || (call->fgArgInfo->ArgCount() != 2))
                     {
+                        // Only CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE is currently supported.
                         continue;
                     }
 
@@ -194,7 +195,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     callInitBb->bbSetRunRarely();
                     callInitBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_CALL | BBF_HAS_LABEL);
 
-                    // Replace CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE with a slower CORINFO_HELP_INITCLASS
+                    // Replace the helper call with a slower CORINFO_HELP_INITCLASS
                     // it accepts a single argument instead of two so we can save some space.
                     BOOL                   runtimeLookup;
                     CORINFO_RESOLVED_TOKEN resolvedToken = {};
