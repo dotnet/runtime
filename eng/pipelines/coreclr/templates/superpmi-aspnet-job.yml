@@ -95,7 +95,7 @@ jobs:
       condition: succeeded()
 
     # Run the ASP.NET SPMI script
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet.py -source_directory $(Build.SourcesDirectory) -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper) -arch ${archType} -log_file $(Build.SourcesDirectory)/artifacts/log/spmi-aspnet.log -output_mch_path $(MchFilesLocation)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_aspnet.py -source_directory $(Build.SourcesDirectory) -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper) -arch $(archType) -log_file $(Build.SourcesDirectory)/artifacts/log/spmi-aspnet.log -output_mch_path $(MchFilesLocation)
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MchFilesLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}

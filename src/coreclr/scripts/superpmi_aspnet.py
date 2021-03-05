@@ -157,14 +157,16 @@ def build_and_run(coreclr_args):
         run_command(
             ["git.exe", "sparse-checkout set scenarios"], path.join(temp_location, "benchmarks"), _exit_on_fail=True)
 
-        config = path.join(temp_location, "benchmarks", "scenarios", "json.benchmarks.yml")
+        configName = "json"
+        scenario = "json"
+        configFile = path.join(temp_location, "benchmarks", "scenarios", f"{configName}.benchmarks.yml")
 
         # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
         # and ask crank to send back the runtime directory
         #
-        # crank --config {config}
-        #       --profile aspnet-perf-lin
-        #       --scenario json
+        # crank --config {configFile}
+        #       --profile {machine}
+        #       --scenario {scenario}
         #       --application.framework net6.0
         #       --application.channel edge
         #       --description SPMI
@@ -190,9 +192,9 @@ def build_and_run(coreclr_args):
 
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_command = (f' --config {config}'
+        crank_command = (f' --config {configFile}'
                          f' --profile {benchmark_machine}'
-                         f' --scenario json'
+                         f' --scenario {scenario}'
                          f' --description SPMI-COLLECTION'
                          f' --application.framework net6.0'
                          f' --application.channel edge'
@@ -218,7 +220,8 @@ def build_and_run(coreclr_args):
                             zipObject.extract(zippedFileName, temp_location)
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
-        command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+        mch_file = path.join(coreclr_args.output_mch_path, f"aspnet-{config}-{scenario}" + ".mch")
+        command = [mcs_path, "-merge", mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
             logging.error("mcs -merge Failed with code %s", return_code)
