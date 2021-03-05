@@ -155,20 +155,17 @@ namespace pal
     inline string_t to_string(int value) { return std::to_wstring(value); }
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
-    inline FILE * file_open(const string_t& path, const char_t* mode)
-    {
-        FILE* fd;
-        errno_t err = ::_wfopen_s(&fd, path.c_str(), mode);
-        if (err != 0)
-            return NULL;
-        return fd;
-    }
+
+#pragma warning(suppress : 4996)  // error C4996: '_wfopen': This function or variable may be unsafe.
+    inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
 
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
 
+    // Suppressing warning since the 'safe' version requires an input buffer that is unnecessary for
+    // uses of this function.
 #pragma warning(suppress : 4996) //  error C4996: '_wcserror': This function or variable may be unsafe.
     inline const char_t* strerror(int errnum){ return ::_wcserror(errnum); }
 
