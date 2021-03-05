@@ -8,9 +8,14 @@ parameters:
 steps:
   # Download artifact
   - task: DownloadBuildArtifacts@0
-    displayName: 'Download ${{ parameters.displayName }}'
+    displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
-      buildType: current
+      buildType: specific
+      project:  $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOProjectName'] ]
+      pipeline: 'runtime-coreclr superpmi'
+      buildVersionToDownload: specific
+      branchName: 'refs/pull/42053/head'
+      buildId: '20200925.3'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
@@ -18,8 +23,8 @@ steps:
 
   # Unzip artifact
   - task: ExtractFiles@1
-    displayName: 'Unzip ${{ parameters.displayName }}'
+    displayName: 'Unzip specific ${{ parameters.displayName }}'
     inputs:
-      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/**/${{ parameters.artifactFileName }}
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
       destinationFolder: ${{ parameters.unpackFolder }}
       cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}
