@@ -38,7 +38,7 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
 {
     CONTRACT(ManagedToNativeExceptionCallback)
     {
-        THROWS;
+        NOTHROW;
         MODE_PREEMPTIVE;
         PRECONDITION(codeInfo != NULL);
         PRECONDITION(throwable != NULL);
@@ -46,19 +46,27 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     }
     CONTRACT_END;
 
-#ifdef FEATURE_OBJCBRIDGE
-
-    RETURN (ManagedToNativeExceptionCallback)ObjCBridgeNative::GetPropagatingExceptionCallback(
-        codeInfo,
-        throwable,
-        context);
-
-#else // !FEATURE_OBJCBRIDGE
-
+    ManagedToNativeExceptionCallback callback = NULL;
     *context = NULL;
-    RETURN NULL;
 
-#endif // !FEATURE_OBJCBRIDGE
+#ifdef FEATURE_OBJCBRIDGE
+    EX_TRY
+    {
+        callback = (ManagedToNativeExceptionCallback)ObjCBridgeNative::GetPropagatingExceptionCallback(
+            codeInfo,
+            throwable,
+            context);
+    }
+    EX_CATCH
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+            COR_E_EXECUTIONENGINE,
+            W("Unhandled managed exception handler threw an exception."));
+    }
+    EX_END_CATCH_UNREACHABLE;
+#endif // FEATURE_OBJCBRIDGE
+
+    RETURN callback;
 }
 
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
