@@ -2069,6 +2069,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
                 comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
                 GenTree* loc = new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_STRUCT, tmpLclNum);
                 loc->gtType  = TYP_BYREF;
+                loc->gtFlags |= GTF_VAR_DEF;
                 GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, loc, value, comp->typGetBlkLayout(callerArgDsc->lvExactSize));
                 storeBlk->gtFlags |= GTF_ASG;

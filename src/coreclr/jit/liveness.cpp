@@ -394,7 +394,8 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             if (tree->OperIs(GT_ASG) || tree->OperIsBlkOp())
             {
                 GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                if (tree->DefinesLocal(this, &dummyLclVarTree))
+                bool                 entire          = false;
+                if (tree->DefinesLocal(this, &dummyLclVarTree, &entire))
                 {
                     if (lvaVarAddrExposed(dummyLclVarTree->GetLclNum()))
                     {
@@ -404,6 +405,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                         // memory but not GcHeap memory, so track their
                         // states separately.
                         byrefStatesMatchGcHeapStates = false;
+                    }
+                    if (entire)
+                    {
+                        fgMarkUseDef(dummyLclVarTree);
                     }
                 }
                 else
