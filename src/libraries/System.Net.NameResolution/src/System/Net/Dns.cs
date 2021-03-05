@@ -629,12 +629,12 @@ namespace System.Net
         }
 
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
-        new IPHostEntry
-        {
-            HostName = address.ToString(),
-            Aliases = Array.Empty<string>(),
-            AddressList = new IPAddress[] { address }
-        };
+            new IPHostEntry
+            {
+                HostName = address.ToString(),
+                Aliases = Array.Empty<string>(),
+                AddressList = new IPAddress[] { address }
+            };
 
         private static void ValidateHostName(string hostName)
         {
