@@ -170,7 +170,6 @@ namespace System.Reflection.Tests
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyReferencesTestImage);
                 AssemblyName[] ans = a.GetReferencedAssemblies();
-                Console.WriteLine("GET ASSEMBLY TESTS 3");
                 Assert.Equal(3, ans.Length);
                 {
                     AssemblyName an = ans.Single(an2 => an2.Name == "mscorlib");
