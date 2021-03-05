@@ -7093,16 +7093,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			mono_llvm_build_aligned_store (builder, values [ins->sreg1], dest, FALSE, 1);
 			break;
 		}
-		case OP_XXOR: {
-			LLVMTypeRef t = LLVMTypeOf (lhs);
-			unsigned int bit_width = mono_llvm_get_prim_size_bits (t);
-			LLVMTypeRef intermediate_t = LLVMVectorType (LLVMInt8Type (), bit_width / 8);
-			LLVMValueRef lhs_i8 = convert (ctx, lhs, intermediate_t);
-			LLVMValueRef rhs_i8 = convert (ctx, rhs, intermediate_t);
-			LLVMValueRef result = LLVMBuildXor (builder, lhs_i8, rhs_i8, "");
-			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
-			break;
-		}
 		case OP_XBINOP: {
 			switch (ins->inst_c0) {
 			case OP_IADD:
@@ -7164,6 +7154,34 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		}
+		case OP_XBINOP_FORCEINT: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			LLVMTypeRef elem_t = LLVMGetElementType (t);
+			unsigned int elems = LLVMGetVectorSize (t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+			LLVMTypeRef intermediate_elem_t = LLVMIntType (elem_bits);
+			LLVMTypeRef intermediate_t = LLVMVectorType (intermediate_elem_t, elems);
+			LLVMValueRef lhs_int = convert (ctx, lhs, intermediate_t);
+			LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
+			LLVMValueRef result = NULL;
+			switch (ins->inst_c0) {
+			case XBINOP_FORCEINT_Or:
+				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
+				break;
+			case XBINOP_FORCEINT_OrNot:
+				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
+				break;
+			case XBINOP_FORCEINT_Xor: {
+				int vals [MAX_VECTOR_ELEMS] = { 0 };
+				for (unsigned int i = 0; i < elems; ++i)
+					vals [i] = -1;
+				result = LLVMBuildXor (builder, rhs_int, create_const_vector (intermediate_elem_t, vals, elems), "");
+				result = LLVMBuildOr (builder, result, lhs_int, "");
+				break;
+			}
+			}
+			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
 		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
@@ -9250,7 +9268,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				result = LLVMBuildInsertElement (ctx->builder, LLVMConstNull (t), result, const_int32 (0), "");
 			}
 			values [ins->dreg] = result;
-
 			break;
 		}
 		case OP_LSCNT32:
@@ -9290,6 +9307,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef hi64 = LLVMBuildLShr (builder, mul,
 				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
+			break;
+		}
+		case OP_ARM64_PMULL:
+		case OP_ARM64_PMULL2: {
+			gboolean high = ins->opcode == OP_ARM64_PMULL2;
+			LLVMValueRef val = lhs;
+			if (high)
+				val = extract_high_elements (ctx, val);
+			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_PMULL, LLVM_Vector128 | LLVM_Int16, &val, "arm64_pmull");
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_REV16:

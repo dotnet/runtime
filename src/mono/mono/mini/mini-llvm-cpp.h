@@ -40,6 +40,13 @@ typedef enum {
 	INTRINS_NUM
 } IntrinsicId;
 
+typedef enum {
+	XBINOP_FORCEINT_Not,
+	XBINOP_FORCEINT_Or,
+	XBINOP_FORCEINT_OrNot,
+	XBINOP_FORCEINT_Xor,
+} XBinOpId;
+
 enum {
 	LLVM_Vector64 = 1 << 0,
 	LLVM_Vector128 = 1 << 1,

@@ -830,8 +830,6 @@ MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
-MINI_OP(OP_XXOR, "xxor", XREG, XREG, XREG)
-
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1536,6 +1534,7 @@ MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+MINI_OP(OP_XBINOP_FORCEINT, "xbinop_coerce", XREG, XREG, XREG)
 /* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
@@ -1657,5 +1656,9 @@ MINI_OP(OP_ARM64_SQSHLU, "arm64_sqshlu", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_REV16, "arm64_rev16", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_REV32, "arm64_rev32", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_REV64, "arm64_rev64", XREG, XREG, NONE)
+
+MINI_OP(OP_ARM64_PMULL, "arm64_pmull", XREG, XREG, NONE)
+MINI_OP(OP_ARM64_PMULL2, "arm64_pmull2", XREG, XREG, NONE)
+
 
 #endif // TARGET_ARM64
