@@ -4594,7 +4594,8 @@ public:
     bool fgDomsComputed;     // Have we computed the dominator sets?
     bool fgOptimizedFinally; // Did we optimize any try-finallys?
 
-    bool fgHasSwitch; // any BBJ_SWITCH jumps?
+    bool fgHasSwitch;        // any BBJ_SWITCH jumps?
+    bool fgHasOptStaticInit; // Do we have a static initialization we can optimize?
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.

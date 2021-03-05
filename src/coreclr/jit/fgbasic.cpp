@@ -165,6 +165,7 @@ void Compiler::fgInit()
 #endif
 
     fgHasSwitch          = false;
+    fgHasOptStaticInit   = false;
     fgPgoSchema          = nullptr;
     fgPgoData            = nullptr;
     fgPgoSchemaCount     = 0;
