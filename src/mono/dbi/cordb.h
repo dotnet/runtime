@@ -62,6 +62,14 @@ class CordbTypeEnum;
 class CordbBlockingObjectEnum;
 class CordbFunctionBreakpoint;
 class CordbEval;
+class CordbType;
+
+enum CordbTypeKind {
+    CordbTypeKindSimpleType,
+    CordbTypeKindClassType,
+    CordbTypeKindArrayType,
+    CordbTypeKindTotal
+};
 
 class ReceivedReplyPacket
 {

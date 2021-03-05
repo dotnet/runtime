@@ -8,7 +8,10 @@
 #define __MONO_DEBUGGER_CORDB_PROCESS_H__
 
 #include <arraylist.h>
+#include <shash.h>
 #include <cordb.h>
+
+
 
 class CordbProcess : public CordbBaseMono,
                      public ICorDebugProcess,
@@ -30,6 +33,8 @@ class CordbProcess : public CordbBaseMono,
     CordbAppDomainEnum* m_pAppDomainEnum;
     Cordb*              m_pCordb;
     BOOL                m_bIsJustMyCode;
+    ArrayList*          m_pTypeMapArray; //TODO: define a better data structure to find CordbType
+    MapSHashWithRemove<mdToken, CordbClass*>    m_classMap;
 public:
     ArrayList* m_pAddDomains;
     CordbProcess(Cordb* cordb);
@@ -119,6 +124,10 @@ public:
     void                     AddBreakpoint(CordbFunctionBreakpoint* bp);
     void                     AddPendingEval(CordbEval* eval);
     void                     AddStepper(CordbStepper* step);
+    CordbClass*              FindOrAddClass(mdToken token, int module_id);
+    CordbType*               FindOrAddType(CorElementType type);
+    CordbType*               FindOrAddType(CorElementType type, CordbClass *klass); //use variadic ???
+    CordbType*               FindOrAddType(CorElementType type, CordbType* arrayType); //use variadic ???
     CordbFunction*           FindFunction(int id);
     CordbModule*             GetModule(int module_id);
     CordbStepper*            GetStepper(int id);

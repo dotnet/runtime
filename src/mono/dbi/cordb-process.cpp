@@ -7,12 +7,14 @@
 #include <cordb-appdomain.h>
 #include <cordb-assembly.h>
 #include <cordb-breakpoint.h>
+#include <cordb-class.h>
 #include <cordb-code.h>
 #include <cordb-eval.h>
 #include <cordb-function.h>
 #include <cordb-process.h>
 #include <cordb-thread.h>
 #include <cordb-stepper.h>
+#include <cordb-type.h>
 #include <cordb.h>
 
 using namespace std;
@@ -29,7 +31,12 @@ CordbProcess::CordbProcess(Cordb* cordb) : CordbBaseMono(NULL)
     m_pSteppers      = new ArrayList();
     this->m_pCordb   = cordb;
     m_bIsJustMyCode  = false;
-    m_pSemReadWrite = new UTSemReadWrite();
+    m_pSemReadWrite  = new UTSemReadWrite();
+    m_pTypeMapArray  = new ArrayList();
+    for (DWORD i = 0; i < CordbTypeKindTotal; i++)
+    {
+        m_pTypeMapArray->Append(new MapSHashWithRemove<long, CordbType*>());
+    }
 }
 
 CordbProcess::~CordbProcess()
@@ -83,12 +90,29 @@ CordbProcess::~CordbProcess()
             eval->InternalRelease();
     }
 
+    for (MapSHashWithRemove<mdToken, CordbClass*>::Iterator iter = m_classMap.Begin(), end = m_classMap.End(); iter != end; iter++)
+    {
+        iter->Value()->InternalRelease();
+    }
+    
+
+    for (DWORD i = 0; i < m_pTypeMapArray->GetCount(); i++)
+    {
+        MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*)m_pTypeMapArray->Get(i);
+        for (MapSHashWithRemove<long, CordbType*>::Iterator iter = typeMap->Begin(), end = typeMap->End(); iter != end; iter++)
+        {
+            if (iter->Value())
+                iter->Value()->InternalRelease();
+        }
+    }
+
     delete m_pBreakpoints;
     delete m_pThreads;
     delete m_pFunctions;
     delete m_pModules;
     delete m_pAddDomains;
     delete m_pPendingEval;
+    delete m_pTypeMapArray;
     delete conn;
 }
 
@@ -606,6 +630,76 @@ void CordbProcess::AddStepper(CordbStepper* step)
     m_pSteppers->Append(step);
     step->InternalAddRef();
     dbg_unlock();
+}
+
+CordbClass* CordbProcess::FindOrAddClass(mdToken token, int module_id)
+{
+    CordbClass *ret = NULL;
+    dbg_lock();
+    if (!m_classMap.Lookup(token, &ret)) {
+        ret = new CordbClass(conn, token, module_id);
+        m_classMap.Add(token, ret);
+        ret->InternalAddRef();
+    }
+    dbg_unlock();    
+    return ret;
+}
+
+CordbType* CordbProcess::FindOrAddType(CorElementType type)
+{
+    CordbType* ret = NULL;
+    MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*) m_pTypeMapArray->Get(CordbTypeKindSimpleType);
+    dbg_lock();
+    if (!typeMap->Lookup(type, &ret)) {
+        ret = new CordbType(type, conn);
+        typeMap->Add(type, ret);
+        ret->InternalAddRef();
+    }
+    dbg_unlock();
+    return ret;
+}
+
+CordbType* CordbProcess::FindOrAddType(CorElementType type, CordbClass *klass)
+{
+    CordbType* ret = NULL;
+    mdToken token;
+    if (klass == NULL)
+        return FindOrAddType(type);
+    MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*) m_pTypeMapArray->Get(CordbTypeKindClassType);
+    dbg_lock();
+    klass->GetToken(&token);
+    if (!typeMap->Lookup(token, &ret)) {
+        ret = new CordbType(type, conn, klass);
+        typeMap->Add(token, ret);
+        ret->InternalAddRef();
+    }
+    dbg_unlock();
+    return ret;
+}
+
+CordbType* CordbProcess::FindOrAddType(CorElementType type, CordbType* arrayType)
+{
+    CordbType* ret = NULL;
+    long hash = 0;
+    MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*) m_pTypeMapArray->Get(CordbTypeKindArrayType);
+    dbg_lock();
+    CorElementType eleType;
+    ICorDebugClass *eleClass = 0;
+    mdTypeDef eleToken = 0;
+    arrayType->GetType(&eleType);
+    if (eleType == ELEMENT_TYPE_CLASS)
+    {
+        arrayType->GetClass(&eleClass);
+        eleClass->GetToken(&eleToken);
+    }
+    hash = (long)(pow(2, eleToken & 0xffffff) * pow(3, type) * pow(5, eleType)); //TODO: define a better hash
+    if (!typeMap->Lookup(hash, &ret)) {
+        ret = new CordbType(type, conn, NULL, arrayType);
+        typeMap->Add(hash, ret);
+        ret->InternalAddRef();
+    }
+    dbg_unlock();
+    return ret;
 }
 
 CordbFunction* CordbProcess::FindFunction(int id)

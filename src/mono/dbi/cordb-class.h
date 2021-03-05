@@ -12,7 +12,7 @@
 class CordbClass : public CordbBaseMono, public ICorDebugClass, public ICorDebugClass2
 {
     mdToken m_metadataToken;
-    int     m_debuggerId;
+    int     m_debuggerModuleId;
 
 public:
     CordbClass(Connection* conn, mdToken token, int module_id);

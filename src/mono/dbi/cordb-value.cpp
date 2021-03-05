@@ -8,6 +8,7 @@
 #include <cordb-class.h>
 #include <cordb-type.h>
 #include <cordb-value.h>
+#include <cordb-process.h>
 #include <cordb.h>
 
 using namespace std;
@@ -88,7 +89,7 @@ HRESULT STDMETHODCALLTYPE CordbValue::GetExactType(ICorDebugType** ppType)
     LOG((LF_CORDB, LL_INFO1000000, "CordbValue - GetExactType - IMPLEMENTED\n"));
     if (m_pType == NULL)
     {
-        m_pType = new CordbType(m_type, conn);
+        m_pType = conn->GetProcess()->FindOrAddType(m_type);
         m_pType->InternalAddRef();
     }
     m_pType->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -185,7 +186,7 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetExactType(ICorDebugType** ppTy
         }
         if (m_pClass != NULL)
         {
-            m_pCordbType = new CordbType(m_type, conn, m_pClass);
+            m_pCordbType = conn->GetProcess()->FindOrAddType(m_type, m_pClass);
             m_pCordbType->InternalAddRef();
             m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
             goto __Exit;
@@ -223,9 +224,9 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetExactType(ICorDebugType** ppTy
             type_id                  = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
             int type_id2             = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
             int token                = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-            m_pClass                 = new CordbClass(conn, token, assembly_id);
+            m_pClass                 = conn->GetProcess()->FindOrAddClass(token, module_id);
             m_pClass->InternalAddRef();
-            m_pCordbType = new CordbType(m_type, conn, m_pClass);
+            m_pCordbType = conn->GetProcess()->FindOrAddType(m_type, m_pClass);
             m_pCordbType->InternalAddRef();
             m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
             free(namespace_str);
@@ -271,19 +272,19 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetExactType(ICorDebugType** ppTy
                 int   type_id3           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                 int   type_id2           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                 int   token              = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-                m_pClass                 = new CordbClass(conn, token, module_id);
+                m_pClass                 = conn->GetProcess()->FindOrAddClass(token, module_id);
                 m_pClass->InternalAddRef();
                 free(namespace_str);
                 free(class_name_str);
                 free(class_fullname_str);
             }
 
-            m_pCordbType = new CordbType(m_type, conn, NULL, new CordbType((CorElementType)type_id, conn, m_pClass));
+            m_pCordbType = conn->GetProcess()->FindOrAddType(m_type, conn->GetProcess()->FindOrAddType((CorElementType)type_id, m_pClass));
             m_pCordbType->InternalAddRef();
             m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
             goto __Exit;
         }
-        m_pCordbType = new CordbType(m_type, conn);
+        m_pCordbType = conn->GetProcess()->FindOrAddType(m_type);
         m_pCordbType->InternalAddRef();
         m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
     }
@@ -432,7 +433,7 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetExactType(ICorDebugType** ppType)
     LOG((LF_CORDB, LL_INFO1000000, "CordbObjectValue - GetExactType - IMPLEMENTED\n"));
     if (m_pCordbType == NULL)
     {
-        m_pCordbType = new CordbType(m_type, conn, m_pClass);
+        m_pCordbType = conn->GetProcess()->FindOrAddType(m_type, m_pClass);
         m_pCordbType->InternalAddRef();
     }
     m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -693,7 +694,7 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection* conn, MdbgProtBuffer* pRe
                 int             type_id2           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                 int             token              = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
 
-                CordbClass*          klass    = new CordbClass(conn, token, module_id);
+                CordbClass*          klass    =  conn->GetProcess()->FindOrAddClass(token, module_id);
                 CordbReferenceValue* refValue = new CordbReferenceValue(conn, type, -1, klass);
                 refValue->QueryInterface(IID_ICorDebugValue, (void**)ppValue);
                 free(namespace_str);
@@ -724,12 +725,12 @@ HRESULT CordbObjectValue::CreateCordbValue(Connection* conn, MdbgProtBuffer* pRe
                     int             type_id3           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                     int             type_id2           = m_dbgprot_decode_id(pReply->p, &pReply->p, pReply->end);
                     int             token              = m_dbgprot_decode_int(pReply->p, &pReply->p, pReply->end);
-                    klass                              = new CordbClass(conn, token, module_id);
+                    klass                              =  conn->GetProcess()->FindOrAddClass(token, module_id);
                     free(namespace_str);
                     free(class_name_str);
                     free(class_fullname_str);
                 }
-                CordbType* cordbtype = new CordbType(type, conn, NULL, new CordbType((CorElementType)type_id, conn, klass));
+                CordbType* cordbtype = conn->GetProcess()->FindOrAddType(type, conn->GetProcess()->FindOrAddType((CorElementType)type_id, klass));
                 CordbReferenceValue* refValue = new CordbReferenceValue(conn, type, -1, klass, cordbtype);
                 refValue->QueryInterface(IID_ICorDebugValue, (void**)ppValue);
             }

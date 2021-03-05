@@ -322,7 +322,7 @@ HRESULT CordbModule::GetFunctionFromRVA(CORDB_ADDRESS rva, ICorDebugFunction** p
 
 HRESULT CordbModule::GetClassFromToken(mdTypeDef typeDef, ICorDebugClass** ppClass)
 {
-    CordbClass* pClass = new CordbClass(conn, typeDef, GetDebuggerId());
+    CordbClass* pClass = conn->GetProcess()->FindOrAddClass(typeDef, GetDebuggerId());
     pClass->QueryInterface(IID_ICorDebugClass, (void**)ppClass);
     return S_OK;
 }

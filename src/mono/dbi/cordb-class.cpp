@@ -17,7 +17,7 @@ using namespace std;
 CordbClass::CordbClass(Connection* conn, mdToken token, int module_id) : CordbBaseMono(conn)
 {
     this->m_metadataToken = token;
-    this->m_debuggerId    = module_id;
+    this->m_debuggerModuleId    = module_id;
 }
 
 HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule** pModule)
@@ -25,7 +25,7 @@ HRESULT STDMETHODCALLTYPE CordbClass::GetModule(ICorDebugModule** pModule)
     LOG((LF_CORDB, LL_INFO1000000, "CordbClass - GetModule - IMPLEMENTED\n"));
     if (pModule)
     {
-        CordbModule* module = conn->GetProcess()->GetModule(m_debuggerId);
+        CordbModule* module = conn->GetProcess()->GetModule(m_debuggerModuleId);
         if (module)
         {
             *pModule = static_cast<ICorDebugModule*>(module);
