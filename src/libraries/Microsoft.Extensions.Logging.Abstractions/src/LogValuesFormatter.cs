@@ -129,6 +129,32 @@ namespace Microsoft.Extensions.Logging
 
         public string Format(object?[]? values)
         {
+            object?[]? formattedValues = values;
+
+            if (values != null)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    object formattedValue = FormatArgument(values[i]);
+                    if (!ReferenceEquals(formattedValue, values[i]))
+                    {
+                        formattedValues = new object[values.Length];
+                        Array.Copy(values, 0, formattedValues, 0, i);
+                        formattedValues[i++] = formattedValue;
+                        for (; i < values.Length; i++)
+                        {
+                            formattedValues[i] = FormatArgument(values[i]);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return string.Format(CultureInfo.InvariantCulture, _format, formattedValues ?? Array.Empty<object>());
+        }
+
+        internal string FormatQuick(object?[]? values)
+        {
             if (values != null)
             {
                 for (int i = 0; i < values.Length; i++)
