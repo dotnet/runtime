@@ -62,8 +62,14 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 
 PhaseStatus Compiler::fgInsertClsInitChecks()
 {
-    if (!opts.OptimizationEnabled() || opts.IsReadyToRun() || !fgHasOptStaticInit)
+    if (!opts.OptimizationEnabled() || opts.IsReadyToRun())
     {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!fgHasOptStaticInit)
+    {
+        JITDUMP("fgInsertClsInitChecks: compiler claims there are no cctors we can optimize.");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -108,12 +114,14 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         continue;
                     }
 
-                    int    isInitedMask = 0;
-                    size_t isInitAdr    = info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, &isInitedMask);
-                    if ((isInitAdr == 0) || (isInitedMask == 0))
+                    int    isInitMask = 0;
+                    size_t isInitAddr = info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, &isInitMask);
+                    if ((isInitAddr == 0) || (isInitMask == 0))
                     {
+                        JITDUMP("getIsClassInitedFieldAddress: returned empty isInitAddr or isInitedMask.");
                         return PhaseStatus::MODIFIED_NOTHING;
                     }
+                    assert(isInitMask > 0);
 
                     bool hasNotSupportedPreds = false;
                     for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
@@ -144,6 +152,9 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         prevBb = fgFirstBB;
                         if (prevBb == block)
                         {
+                            JITDUMP("fgInsertClsInitChecks: fgFirstBB is fgFirstBBScratch with a static initialization inside");
+                            // It means the first bb is already a scratch one so we're not allowed
+                            // to insert a new block in front of it.
                             continue;
                         }
                     }
@@ -175,8 +186,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     //     ...
                     //
 
-                    GenTree* isInitAdrNode =
-                        gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAdr, GTF_ICON_CONST_PTR, true);
+                    GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAddr, GTF_ICON_CONST_PTR, true);
 
                     // Let's start from emitting that BB2 "callInitBb"
                     BasicBlock* callInitBb = fgNewBBbefore(BBJ_NONE, block, true);
@@ -188,8 +198,8 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     // it accepts a single argument instead of two so we can save some space.
                     BOOL                   runtimeLookup;
                     CORINFO_RESOLVED_TOKEN resolvedToken = {};
-                    resolvedToken.hClass = call->gtRetClsHnd;
-                    GenTree*     pMT      = impParentClassTokenToHandle(&resolvedToken, &runtimeLookup);
+                    resolvedToken.hClass                 = call->gtRetClsHnd;
+                    GenTree*     pMT                     = impParentClassTokenToHandle(&resolvedToken, &runtimeLookup);
                     GenTreeCall* slowCall = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, gtNewCallArgs(pMT));
                     slowCall->gtFlags |= call->gtFlags;
                     slowCall = fgMorphCall(slowCall)->AsCall();
@@ -208,7 +218,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
 
                     GenTree* isInitedMaskNode =
                         gtNewOperNode(GT_AND, TYP_INT, gtNewCastNode(TYP_INT, isInitAdrNode, true, TYP_INT),
-                                      gtNewIconNode(isInitedMask));
+                                      gtNewIconNode(isInitMask));
 
                     GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
                     isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
