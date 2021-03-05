@@ -12,10 +12,9 @@ steps:
     inputs:
       buildType: specific
       project:  $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOProjectName'] ]
-      pipeline: 'runtime-coreclr superpmi'
+      pipeline: 'runtime'
       buildVersionToDownload: specific
-      branchName: 'refs/pull/49063/head'
-      buildId: '20210304.2'
+      buildId: '20210305.54'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
