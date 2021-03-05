@@ -923,7 +923,7 @@ namespace System.IO.Compression
                     return Task.FromException(new InvalidDataException(SR.GenericInvalidData));
                 }
 
-                return WriteAsyncCore(buffer.AsMemory().Slice(offset, count), cancellationToken).AsTask();
+                return WriteAsyncCore(buffer.AsMemory(offset, count), cancellationToken).AsTask();
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)

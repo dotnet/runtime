@@ -332,6 +332,6 @@ namespace System.IO.Compression
             }
         }
 
-        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != (void*)0;
+        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
     }
 }
