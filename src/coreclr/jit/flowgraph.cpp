@@ -1157,8 +1157,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
 
-    if ((helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) ||
-        (helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS))
+    if ((helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) || (helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS))
     {
         // Save cls for this helper for fgInsertClsInitChecks phase
         result->gtRetClsHnd = cls;
