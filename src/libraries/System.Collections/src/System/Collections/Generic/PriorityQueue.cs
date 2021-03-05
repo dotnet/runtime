@@ -13,6 +13,8 @@ namespace System.Collections.Generic
     /// </summary>
     /// <typeparam name="TElement">The type of the element.</typeparam>
     /// <typeparam name="TPriority">The type of the priority.</typeparam>
+    [DebuggerDisplay("Count = {Count}")]
+    [DebuggerTypeProxy(typeof(PriorityQueueDebugView<,>))]
     public class PriorityQueue<TElement, TPriority>
     {
         /// <summary>
@@ -677,9 +679,11 @@ namespace System.Collections.Generic
         /// <summary>
         /// Represents the contents of a <see cref="PriorityQueue{TElement, TPriority}"/> without ordering.
         /// </summary>
+        [DebuggerDisplay("Count = {Count}")]
+        [DebuggerTypeProxy(typeof(PriorityQueueDebugView<,>))]
         public sealed class UnorderedItemsCollection : IReadOnlyCollection<(TElement Element, TPriority Priority)>, ICollection
         {
-            private readonly PriorityQueue<TElement, TPriority> _queue;
+            internal readonly PriorityQueue<TElement, TPriority> _queue;
 
             internal UnorderedItemsCollection(PriorityQueue<TElement, TPriority> queue) => _queue = queue;
 
