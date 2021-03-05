@@ -11481,9 +11481,9 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FREE_USAGE_STATS
-    memset (gen->gen_free_spaces, 0, sizeof (gen.gen_free_spaces));
-    memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen.gen_current_pinned_free_spaces));
-    memset (gen->gen_plugs, 0, sizeof (gen.gen_plugs));
+    memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
+    memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen->gen_current_pinned_free_spaces));
+    memset (gen->gen_plugs, 0, sizeof (gen->gen_plugs));
 #endif //FREE_USAGE_STATS
 }
 
@@ -16413,7 +16413,6 @@ void gc_heap::init_free_and_plug()
 #else
         memset (gen->gen_free_spaces, 0, sizeof (gen->gen_free_spaces));
 #endif //DOUBLY_LINKED_FL
-        memset (gen->gen_plugs_allocated_in_free, 0, sizeof (gen->gen_plugs_allocated_in_free));
         memset (gen->gen_plugs, 0, sizeof (gen->gen_plugs));
         memset (gen->gen_current_pinned_free_spaces, 0, sizeof (gen->gen_current_pinned_free_spaces));
     }
@@ -16431,7 +16430,7 @@ void gc_heap::init_free_and_plug()
 
 void gc_heap::print_free_and_plug (const char* msg)
 {
-#if defined(FREE_USAGE_STATS) && defined(SIMPLE_DPRINTF)
+#ifdef FREE_USAGE_STATS
     int older_gen = ((settings.condemned_generation == max_generation) ? max_generation : (settings.condemned_generation + 1));
     for (int i = 0; i <= older_gen; i++)
     {
@@ -16452,7 +16451,7 @@ void gc_heap::print_free_and_plug (const char* msg)
     }
 #else
     UNREFERENCED_PARAMETER(msg);
-#endif //FREE_USAGE_STATS && SIMPLE_DPRINTF
+#endif //FREE_USAGE_STATS
 }
 
 // replace with allocator::first_suitable_bucket
@@ -16524,8 +16523,8 @@ void gc_heap::add_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])++;
     if (gen_number == max_generation)
     {
-        dprintf (3, ("Mb b%d: f+ %Id (%Id->%Id)", 
-            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+//        dprintf (3, ("Mb b%d: f+ %Id (%Id->%Id)", 
+//            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);
@@ -16547,8 +16546,8 @@ void gc_heap::remove_gen_free (int gen_number, size_t free_size)
     (gen->gen_free_spaces[i])--;
     if (gen_number == max_generation)
     {
-        dprintf (3, ("Mb b%d: f- %Id (%Id->%Id)", 
-            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
+//        dprintf (3, ("Mb b%d: f- %Id (%Id->%Id)", 
+//            i, free_size, (gen->gen_free_spaces[i]).num_items, (gen->gen_free_spaces[i]).total_size));
     }
 #else
     UNREFERENCED_PARAMETER(gen_number);
@@ -16658,6 +16657,8 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
         for (unsigned int a_l_idx = gen_allocator->first_suitable_bucket(real_size * 2); 
              a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
         {
+            dprintf (3, ("trying free list bucket %u for size %Id", a_l_idx, real_size));
+
             uint8_t* free_list = 0;
             uint8_t* prev_free_item = 0;
 
@@ -35515,7 +35516,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             f = surv_to_growth (cst, limit, max_limit);
             if (conserve_mem_setting != 0)
             {
-                // if this is set, compete a growth factor based on it.
+                // if this is set, compute a growth factor based on it.
                 // formula below means use 50% of the allowable fragmentation
                 float f_conserve = (10.0f / conserve_mem_setting - 1) * 0.5f + 1.0f;
 
@@ -35643,6 +35644,8 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
         dprintf (1, (ThreadStressLog::gcDesiredNewAllocationMsg(),
                     heap_number, gen_number, out, current_size, (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)),
                     (int)(cst*100), (int)(f*100), current_size + new_allocation, new_allocation));
+
+        dprintf (2, ("heap%d gen%d size: %Id MB fragmentation: %Id MB", heap_number, gen_number, generation_size (gen_number)/(1924*1024), dd_fragmentation (dd)/(1924*1024)));
 
         return new_allocation_ret;
     }
