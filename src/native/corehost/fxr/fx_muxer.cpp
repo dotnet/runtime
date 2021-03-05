@@ -849,7 +849,7 @@ int fx_muxer_t::run_app(host_context_t *context)
     if (!context->is_app)
         return StatusCode::InvalidArgFailure;
 
-    int argc = context->argv.size();
+    size_t argc = context->argv.size();
     std::vector<const pal::char_t*> argv;
     argv.reserve(argc);
     for (const auto& str : context->argv)
@@ -863,7 +863,7 @@ int fx_muxer_t::run_app(host_context_t *context)
         if (rc != StatusCode::Success)
             return rc;
 
-        return contract.run_app(argc, argv.data());
+        return contract.run_app((int32_t)argc, argv.data());
     }
 }
 
@@ -992,7 +992,7 @@ int fx_muxer_t::handle_exec_host_command(
         vec_argv.push_back(argv[0]);
         vec_argv.insert(vec_argv.end(), argv + argoff, argv + argc);
         new_argv = vec_argv.data();
-        new_argc = vec_argv.size();
+        new_argc = (int32_t)vec_argv.size();
     }
 
     trace::info(_X("Using dotnet root path [%s]"), host_info.dotnet_root.c_str());
@@ -1083,7 +1083,7 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
@@ -1092,7 +1092,7 @@ int fx_muxer_t::handle_cli(
             host_info,
             sdk_app_candidate,
             opts,
-            new_argv.size(),
+            (int32_t)new_argv.size(),
             new_argv.data(),
             new_argoff,
             host_mode_t::muxer,

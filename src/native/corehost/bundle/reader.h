@@ -40,7 +40,8 @@ namespace bundle
         void read(void* dest, int64_t len)
         {
             bounds_check(len);
-            memcpy(dest, m_ptr, len);
+            assert(len < static_cast<int64_t>(std::numeric_limits<size_t>::max()));
+            memcpy(dest, m_ptr, static_cast<size_t>(len));
             m_ptr += len;
         }
 

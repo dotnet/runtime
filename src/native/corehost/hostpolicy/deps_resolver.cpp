@@ -243,7 +243,7 @@ void deps_resolver_t::setup_probe_config(
     m_probes.push_back(probe_config_t::published_deps_dir());
 
     // The framework locations, starting with highest level framework.
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
         if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
@@ -572,7 +572,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // Probe FX deps entries after app assemblies are added.
     if (m_is_framework_dependent)
     {
-        for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+        for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
         {
             const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
             for (const auto& entry : deps_entries)
@@ -864,7 +864,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // Add fx package locations to fx_dir
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    for (int32_t i = 1; i < static_cast<int32_t>(m_fx_definitions.size()); ++i)
     {
         const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
 
