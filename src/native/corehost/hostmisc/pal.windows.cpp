@@ -53,9 +53,8 @@ pal::string_t pal::get_timestamp()
     const std::size_t elems = 100;
     char_t buf[elems];
 
-    tm dest;
-    ::gmtime_s(&dest, &t);
-    std::wcsftime(buf, elems, _X("%c GMT"), &dest);
+#pragma warning(suppress : 4996)  // error C4996: 'gmtime': This function or variable may be unsafe.
+    std::wcsftime(buf, elems, _X("%c GMT"), std::gmtime(&t));
 
     return pal::string_t(buf);
 }
