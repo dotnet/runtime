@@ -4069,6 +4069,13 @@ CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(
     return m_pEEJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+size_t ZapInfo::getIsClassInitedFieldAddress(
+    CORINFO_CLASS_HANDLE cls,
+    int*                 pIsInitedMask)
+{
+    return m_pEEJitInfo->getIsClassInitedFieldAddress(cls, pIsInitedMask);
+}
+
 CORINFO_CLASS_HANDLE ZapInfo::getDefaultComparerClass(
     CORINFO_CLASS_HANDLE elemType)
 {

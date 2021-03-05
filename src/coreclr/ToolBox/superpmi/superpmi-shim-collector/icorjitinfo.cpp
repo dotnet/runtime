@@ -250,6 +250,19 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return result;
 }
 
+size_t interceptor_ICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask)
+{
+    mc->cr->AddCall("getIsClassInitedFieldAddress");
+    int    localPIsInitedMask = false;
+    size_t result             = original_ICorJitInfo->getIsClassInitedFieldAddress(cls, &localPIsInitedMask);
+    mc->recGetIsClassInitedFieldAddress(cls, &localPIsInitedMask, result);
+    if (pIsInitedMask != nullptr)
+    {
+        *pIsInitedMask = localPIsInitedMask;
+    }
+    return result;
+}
+
 // Given T, return the type of the default Comparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)

@@ -1056,6 +1056,12 @@ namespace Internal.JitInterface
             return result != null ? ObjectToHandle(result) : null;
         }
 
+        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* ftn, ref int pIsInitedMask)
+        {
+            pIsInitedMask = 0;
+            return UIntPtr.Zero;
+        }
+
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);

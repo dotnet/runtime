@@ -9073,6 +9073,44 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
     return result;
 }
 
+size_t CEEInfo::getIsClassInitedFieldAddress(
+    CORINFO_CLASS_HANDLE cls,
+    int*                 pIsInitedMask)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    size_t result;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle VMClsHnd(cls);
+    PTR_MethodTable pMT = VMClsHnd.AsMethodTable();
+
+    UINT32 clsIndex = 0;
+    if (pMT->IsDynamicStatics())
+    {
+        clsIndex = (UINT32)pMT->GetModuleDynamicEntryID();
+    }
+    else
+    {
+        clsIndex = (UINT32)pMT->GetClassIndex();
+    }
+
+    Module* pModule = pMT->GetModuleForStatics();
+    size_t moduleId = pModule->GetModuleID();
+    result = (size_t)((UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex);
+
+    *pIsInitedMask = ClassInitFlags::INITIALIZED_FLAG;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_RESOLVED_TOKEN *        pResolvedToken,

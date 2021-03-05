@@ -85,6 +85,10 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
           CORINFO_METHOD_HANDLE ftn,
           bool* requiresInstMethodTableArg) override;
 
+size_t getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          int* pIsInitedMask) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 

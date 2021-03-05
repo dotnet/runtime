@@ -154,6 +154,16 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
     return temp;
 }
 
+size_t WrapICorJitInfo::getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          int* pIsInitedMask)
+{
+    API_ENTER(getIsClassInitedFieldAddress);
+    size_t temp = wrapHnd->getIsClassInitedFieldAddress(cls, pIsInitedMask);
+    API_LEAVE(getIsClassInitedFieldAddress);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {

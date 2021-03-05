@@ -184,6 +184,13 @@ CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* r
     return result;
 }
 
+size_t MyICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask)
+{
+    jitInstance->mc->cr->AddCall("getIsClassInitedFieldAddress");
+    size_t result = jitInstance->mc->repGetIsClassInitedFieldAddress(cls, pIsInitedMask);
+    return result;
+}
+
 // Given T, return the type of the default Comparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE MyICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)

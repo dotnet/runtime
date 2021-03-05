@@ -132,6 +132,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
     return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+size_t interceptor_ICJI::getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          int* pIsInitedMask)
+{
+    mcs->AddCall("getIsClassInitedFieldAddress");
+    return original_ICorJitInfo->getIsClassInitedFieldAddress(cls, pIsInitedMask);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {

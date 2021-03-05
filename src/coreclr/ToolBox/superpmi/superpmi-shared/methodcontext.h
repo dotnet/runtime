@@ -411,6 +411,10 @@ public:
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 
+    void recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask, size_t result);
+    void dmpGetIsClassInitedFieldAddress(DWORDLONG key, DLD value);
+    size_t repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask);
+
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls);
@@ -881,7 +885,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 191
+// Highest packet number: 192
 // *************************************************************************************
 enum mcPackets
 {
@@ -1012,6 +1016,7 @@ enum mcPackets
     Packet_GetTypeForPrimitiveValueClass                 = 91,
     Packet_GetTypeForPrimitiveNumericClass               = 168, // Added 12/7/2017
     Packet_GetUnboxedEntry                               = 165, // Added 10/26/17
+    Packet_GetIsClassInitedFieldAddress                  = 192, // Added 3/5/2021
     Packet_GetUnBoxHelper                                = 92,
     Packet_GetReadyToRunHelper                           = 150, // Added 10/10/2014
     Packet_GetReadyToRunDelegateCtorHelper               = 157, // Added 3/30/2016

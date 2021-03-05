@@ -86,7 +86,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     }
 
                     GenTreeCall* call = tree->AsCall();
-                    if (call->gtCallType != CT_HELPER)
+                    if ((call->gtCallType != CT_HELPER) || (call->gtRetClsHnd == nullptr))
                     {
                         continue;
                     }
@@ -106,6 +106,13 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         // We can consider optimizing this case too (for R2R)
                         // but it most likely will come with a noticeable size regression.
                         continue;
+                    }
+
+                    int    isInitedMask = 0;
+                    size_t isInitAdr    = info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, &isInitedMask);
+                    if ((isInitAdr == 0) || (isInitedMask == 0))
+                    {
+                        return PhaseStatus::MODIFIED_NOTHING;
                     }
 
                     bool hasNotSupportedPreds = false;
@@ -154,36 +161,19 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     //  \--*  NE        int
                     //     +--*  AND       int
                     //     |  +--*  IND       ubyte
-                    //     |  |  \--*  CNS_INT   long   moduleIdArg + clsIdArg + dataBlobOffset
+                    //     |  |  \--*  CNS_INT   long   isInitAdr
                     //     |  \--*  CNS_INT   int    isInitMask
                     //     \--*  CNS_INT   int    0
                     //
                     //
                     // BB2 "callInitBb":    (preds: BB1)
                     //
-                    //  *  CALL help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-                    //  +--*  CNS_INT   long   moduleIdArg
-                    //  \--*  CNS_INT   int    clsIdArg
+                    //  *  CALL   long   CORINFO_HELP_INITCLASS
+                    //  +--*  CNS_INT   long   cl
                     //
                     // BB3 "block"          (preds: BB1, BB2)
                     //     ...
                     //
-
-                    // TODO: ask VM for these constants:
-#ifdef TARGET_64BIT
-                    const int dataBlobOffset = 48; // DomainLocalModule::GetOffsetOfDataBlob()
-#else
-                    const int dataBlobOffset = 24; // DomainLocalModule::GetOffsetOfDataBlob()
-#endif
-                    const int isInitMask     = 1;  // ClassInitFlags::INITIALIZED_FLAG;
-
-                    // See VM's IsClassInitialized
-                    size_t isInitAdr = moduleIdArg->AsIntCon()->IconValue() + dataBlobOffset +
-                                       clsIdArg->AsIntCon()->IconValue();
-
-                    // TODO-CQ: Actually, we can check the class initialization status right here using that ^
-                    // address, what if it's already initialized while we're compiling code
-                    // in that case we can just drop the call.
 
                     GenTree* isInitAdrNode =
                         gtNewIndOfIconHandleNode(TYP_UBYTE, isInitAdr, GTF_ICON_CONST_PTR, true);
@@ -193,10 +183,19 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     // it's executed only once so can be marked as cold
                     callInitBb->bbSetRunRarely();
                     callInitBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_CALL | BBF_HAS_LABEL);
-                    GenTree* clonedHelperCall = gtCloneExprCallHelper(call);
-                    clonedHelperCall->gtFlags |= call->gtFlags;
 
-                    Statement* callStmt = fgNewStmtFromTree(clonedHelperCall);
+                    // Replace CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE with a slower CORINFO_HELP_INITCLASS
+                    // it accepts a single argument instead of two so we can save some space.
+                    BOOL                   runtimeLookup;
+                    CORINFO_RESOLVED_TOKEN resolvedToken = {};
+                    resolvedToken.hClass = call->gtRetClsHnd;
+                    GenTree*     pMT      = impParentClassTokenToHandle(&resolvedToken, &runtimeLookup);
+                    GenTreeCall* slowCall = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, gtNewCallArgs(pMT));
+                    slowCall->gtFlags |= call->gtFlags;
+                    slowCall = fgMorphCall(slowCall)->AsCall();
+                    gtSetEvalOrder(slowCall);
+
+                    Statement* callStmt = fgNewStmtFromTree(slowCall);
                     gtSetStmtInfo(callStmt);
                     fgSetStmtSeq(callStmt);
                     fgInsertStmtAtEnd(callInitBb, callStmt);
@@ -207,11 +206,11 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     isInitedBb->inheritWeight(block);
                     isInitedBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_LABEL | BBF_HAS_JMP);
 
-                    GenTree* isInitedMask =
+                    GenTree* isInitedMaskNode =
                         gtNewOperNode(GT_AND, TYP_INT, gtNewCastNode(TYP_INT, isInitAdrNode, true, TYP_INT),
-                                      gtNewIconNode(isInitMask));
+                                      gtNewIconNode(isInitedMask));
 
-                    GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMask, gtNewIconNode(0));
+                    GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitedMaskNode, gtNewIconNode(0));
                     isInitedCmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
                     gtSetEvalOrder(isInitedCmp);
 
@@ -1100,6 +1099,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
         case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
             type = TYP_I_IMPL;
@@ -1163,6 +1163,12 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
+
+    if (helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE)
+    {
+        // Save cls for this helper for fgInsertClsInitChecks phase
+        result->gtRetClsHnd = cls;
+    }
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can

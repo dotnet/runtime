@@ -2064,6 +2064,11 @@ public:
         bool* requiresInstMethodTableArg
         ) = 0;
 
+    virtual size_t getIsClassInitedFieldAddress(
+        CORINFO_CLASS_HANDLE cls,
+        int*                 pIsInitedMask
+        ) = 0;
+
     // Given T, return the type of the default Comparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(

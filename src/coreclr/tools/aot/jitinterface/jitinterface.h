@@ -25,6 +25,7 @@ struct JitInterfaceCallbacks
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_DEVIRTUALIZATION_INFO* info);
     CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
+    size_t (* getIsClassInitedFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, int* pIsInitedMask);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     void (* expandRawHandleIntrinsic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult);
@@ -336,6 +337,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_METHOD_HANDLE temp = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual size_t getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          int* pIsInitedMask)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    size_t temp = _callbacks->getIsClassInitedFieldAddress(_thisHandle, &pException, cls, pIsInitedMask);
     if (pException != nullptr) throw pException;
     return temp;
 }

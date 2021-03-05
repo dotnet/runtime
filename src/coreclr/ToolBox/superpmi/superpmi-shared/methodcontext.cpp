@@ -3188,6 +3188,41 @@ CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return (CORINFO_METHOD_HANDLE)(result.A);
 }
 
+void MethodContext::recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask, size_t result)
+{
+    if (GetIsClassInitedFieldAddress == nullptr)
+    {
+        GetIsClassInitedFieldAddress = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = CastHandle(cls);
+    DLD       value;
+    value.A = (DWORDLONG)result;
+    if (pIsInitedMask != nullptr)
+    {
+        value.B = (DWORD)*pIsInitedMask;
+    }
+    else
+    {
+        value.B = 0;
+    }
+    GetIsClassInitedFieldAddress->Add(key, value);
+}
+void MethodContext::dmpGetIsClassInitedFieldAddress(DWORDLONG key, DLD value)
+{
+    printf("GetIsClassInitedFieldAddressedEntry cls-%016llX, result-%016llX, is-init-mask-%u", key, value.A, value.B);
+}
+size_t MethodContext::repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, int* pIsInitedMask)
+{
+    DWORDLONG key = CastHandle(cls);
+    DLD result = GetIsClassInitedFieldAddress->Get(key);
+    if (pIsInitedMask != nullptr)
+    {
+        *pIsInitedMask = (int)result.B;
+    }
+    return (size_t)result.A;
+}
+
 void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultComparerClass == nullptr)
