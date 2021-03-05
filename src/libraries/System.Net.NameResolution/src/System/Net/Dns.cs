@@ -31,8 +31,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -419,8 +418,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -459,13 +457,10 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-            {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
-                // Do the forward lookup to get the IPs for that host name
-                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
-            }
+            // Do the forward lookup to get the IPs for that host name
+            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
 
             object result;
             try
@@ -492,8 +487,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -657,12 +651,9 @@ namespace System.Net
             }
         }
 
-
         private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
-
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
             return false;
         }
     }
