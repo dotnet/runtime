@@ -3,8 +3,8 @@
 
 #include "pal_rsa.h"
 #include "pal_bignum.h"
-#include "pal_utilities.h"
 #include "pal_signature.h"
+#include "pal_utilities.h"
 
 #define RSA_FAIL -1
 
@@ -132,7 +132,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
     return rsa->keyWidth / 8;
 }
 
-PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
+PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
@@ -151,19 +151,19 @@ PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len)
     (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)buf);
     jobject x509keySpec = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, bytes);
 
-    RSA* rsa = AndroidCryptoNative_RsaCreate();
-    rsa->publicKey = ToGRef(env, (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, x509keySpec));
-
+    jobject publicKey = (*env)->CallObjectMethod(env, keyFactory, g_KeyFactoryGenPublicMethod, x509keySpec);
     (*env)->DeleteLocalRef(env, algName);
     (*env)->DeleteLocalRef(env, keyFactory);
     (*env)->DeleteLocalRef(env, bytes);
     (*env)->DeleteLocalRef(env, x509keySpec);
-
     if (CheckJNIExceptions(env))
     {
-        AndroidCryptoNative_RsaDestroy(rsa);
+        (*env)->DeleteLocalRef(env, publicKey);
         return FAIL;
     }
+
+    RSA* rsa = AndroidCryptoNative_NewRsaFromPublicKey(env, publicKey);
+    (*env)->DeleteLocalRef(env, publicKey);
 
     return rsa;
 }
@@ -242,7 +242,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
 
     JNIEnv* env = GetJNIEnv();
     jobject rsaStr = JSTRING("RSA");
-    jobject kpgObj =  (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, rsaStr);
+    jobject kpgObj = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, rsaStr);
     (*env)->CallVoidMethod(env, kpgObj, g_keyPairGenInitializeMethod, bits);
     jobject keyPair = (*env)->CallObjectMethod(env, kpgObj, g_keyPairGenGenKeyPairMethod);
 
@@ -374,4 +374,19 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
     (*env)->DeleteLocalRef(env, rsaPubKeySpec);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+RSA* AndroidCryptoNative_NewRsaFromPublicKey(JNIEnv* env, jobject /*RSAPublicKey*/ key)
+{
+    if (!(*env)->IsInstanceOf(env, key, g_RSAPublicKeyClass))
+        return NULL;
+
+    jobject modulus = (*env)->CallObjectMethod(env, key, g_RSAKeyGetModulus);
+
+    RSA* ret = AndroidCryptoNative_RsaCreate();
+    ret->publicKey = AddGRef(env, key);
+    ret->keyWidth = AndroidCryptoNative_GetBigNumBytes(modulus);
+
+    (*env)->DeleteLocalRef(env, modulus);
+    return ret;
 }

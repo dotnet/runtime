@@ -36,13 +36,12 @@
 
       var App = {
         init: function () {
-          var ret = BINDING.call_static_method("[WebAssembly.Browser.NormalInterp.Test] Sample.Test:TestMeaning", []);
-          document.getElementById("out").innerHTML = ret;
+          var exit_code = BINDING.call_static_method("[WebAssembly.Browser.NormalInterp.Test] Sample.Test:TestMeaning", []);
+          document.getElementById("out").innerHTML = exit_code;
 
           if (is_testing)
           {
-            console.debug(`ret: ${ret}`);
-            let exit_code = ret == 42 ? 0 : 1;
+            console.debug(`exit_code: ${exit_code}`);
             test_exit(exit_code);
           }
         },

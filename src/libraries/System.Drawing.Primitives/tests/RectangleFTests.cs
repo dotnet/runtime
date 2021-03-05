@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-
+using System.Numerics;
 using Xunit;
 
 namespace System.Drawing.PrimitivesTest
@@ -28,6 +28,9 @@ namespace System.Drawing.PrimitivesTest
             RectangleF rect2 = new RectangleF(p, s);
 
             Assert.Equal(rect1, rect2);
+
+            RectangleF rect3 = new RectangleF(new Vector4(x, y, width, height));
+            Assert.Equal(rect1, rect3);
         }
 
         [Theory]
@@ -41,6 +44,21 @@ namespace System.Drawing.PrimitivesTest
             RectangleF actual = RectangleF.FromLTRB(left, top, right, bottom);
 
             Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0, 0)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.MaxValue, 0, 0, float.MaxValue)]
+        [InlineData(0, float.MinValue, float.MaxValue, 0)]
+        public void ToFromVector(float x, float y, float width, float height)
+        {
+            RectangleF rect1 = new RectangleF(x, y, width, height);
+            Vector4 vector1 = new Vector4(x, y, width, height);
+
+            Assert.Equal(vector1, rect1.ToVector4());
+            Assert.Equal(vector1, (Vector4)rect1);
+            Assert.Equal(rect1, (RectangleF)vector1);
         }
 
         [Theory]

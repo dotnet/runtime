@@ -476,7 +476,6 @@
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
     <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\Pbkdf2Implementation.Unix.cs" />
-    <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
@@ -600,6 +599,7 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
@@ -615,6 +615,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs"
@@ -623,8 +625,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Cipher.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
@@ -640,16 +642,15 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
+             Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
+    <Compile Include="Internal\Cryptography\RC2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
-    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
-             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Android.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Android.cs" />
-    <Compile Include="System\Security\Cryptography\RSAAndroid.cs" />
+    <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"

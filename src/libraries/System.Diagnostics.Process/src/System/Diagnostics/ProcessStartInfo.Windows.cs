@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Security;
 
 namespace System.Diagnostics
 {
@@ -14,6 +15,7 @@ namespace System.Diagnostics
         public string? PasswordInClearText { get; set; }
 
         [SupportedOSPlatform("windows")]
+        [AllowNull]
         public string Domain
         {
             get => _domain ?? string.Empty;
