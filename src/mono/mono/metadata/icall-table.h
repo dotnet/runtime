@@ -90,7 +90,6 @@ typedef MonoMethodInfo *MonoMethodInfo_ref;
 typedef MonoResolveTokenError *MonoResolveTokenError_ref;
 typedef MonoType *MonoType_ref;
 typedef MonoTypedRef *MonoTypedRef_ref;
-typedef MonoW32ProcessInfo *MonoW32ProcessInfo_ref;
 
 // Maybe do this in TYPED_HANDLE_DECL.
 typedef MonoArray MonoArrayOut;
@@ -150,7 +149,6 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoClassField_ptr	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoMarshalNative		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoProperty_ptr		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_MonoProtocolType		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_size_t			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoVTable_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_WSABUF_ptr		ICALL_HANDLES_WRAP_NONE

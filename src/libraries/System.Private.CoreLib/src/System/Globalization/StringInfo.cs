@@ -27,7 +27,7 @@ namespace System.Globalization
             this.String = value;
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             return value is StringInfo otherStringInfo
                 && _str.Equals(otherStringInfo._str);

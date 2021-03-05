@@ -1,5 +1,6 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
@@ -10,7 +11,7 @@
         <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
-    <Message Text="RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">

@@ -16,28 +16,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 PkiOptions.AllRevocation,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
-                out CertificateAuthority intermediate,
+                out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
-                pkiOptionsInSubject: false);
+                intermediateAuthorityCount: 2,
+                pkiOptionsInSubject: false,
+                testName: nameof(EmptyAiaResponseIsIgnored));
 
             using (responder)
             using (root)
-            using (intermediate)
+            using (CertificateAuthority intermediate1 = intermediates[0])
+            using (CertificateAuthority intermediate2 = intermediates[1])
             using (endEntity)
             using (ChainHolder holder = new ChainHolder())
-            using (X509Certificate2 rootCert = root.CloneIssuerCert())
-            using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
+            using (X509Certificate2 intermediate2Cert = intermediate2.CloneIssuerCert())
             {
                 responder.RespondEmpty = true;
 
                 X509Chain chain = holder.Chain;
+                chain.ChainPolicy.ExtraStore.Add(intermediate2Cert);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
                 chain.ChainPolicy.UrlRetrievalTimeout = DynamicRevocationTests.s_urlRetrievalLimit;
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 Assert.False(chain.Build(endEntity));
-                Assert.True(chain.AllStatusFlags().HasFlag(X509ChainStatusFlags.PartialChain), "expected partial chain");
+                X509ChainStatusFlags chainFlags = chain.AllStatusFlags();
+                Assert.True(chainFlags.HasFlag(X509ChainStatusFlags.PartialChain), $"expected partial chain flags, got {chainFlags}");
+                Assert.Equal(2, chain.ChainElements.Count);
             }
         }
 
@@ -50,7 +55,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 out CertificateAuthority root,
                 out CertificateAuthority intermediate,
                 out X509Certificate2 endEntity,
-                pkiOptionsInSubject: false);
+                pkiOptionsInSubject: false,
+                testName: nameof(DisableAiaOptionWorks));
 
             using (responder)
             using (root)
@@ -64,6 +70,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 cuCaStore.Open(OpenFlags.ReadWrite);
 
                 X509Chain chain = holder.Chain;
+
+                // macOS combines revocation and AIA fetching in to a single flag. Both need to be disabled
+                // to prevent AIA fetches.
+                if (PlatformDetection.IsOSX)
+                {
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                }
+
                 chain.ChainPolicy.DisableCertificateDownloads = true;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -100,12 +114,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 Assert.Equal(1, chain.ChainElements.Count);
                 Assert.Contains(X509ChainStatusFlags.PartialChain, chain.ChainStatus.Select(s => s.Status));
                 holder.DisposeChainElements();
-
-                // macOS doesn't like our revocation responder, so disable revocation checks there.
-                if (PlatformDetection.IsOSX)
-                {
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                }
 
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 Assert.True(chain.Build(endEntity), "Chain build with intermediate, AIA disabled");

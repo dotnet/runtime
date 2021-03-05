@@ -1326,14 +1326,14 @@ ep_rt_method_get_simple_assembly_name (
 	EP_ASSERT (method != NULL);
 	EP_ASSERT (name != NULL);
 
-	name [0] = 0;
-
 	const ep_char8_t *assembly_name = method->GetLoaderModule ()->GetAssembly ()->GetSimpleName ();
 	if (!assembly_name)
 		return false;
 
 	size_t assembly_name_len = strlen (assembly_name) + 1;
-	memcpy (name, assembly_name, (assembly_name_len < name_len) ? assembly_name_len : name_len);
+	size_t to_copy = assembly_name_len < name_len ? assembly_name_len : name_len;
+	memcpy (name, assembly_name, to_copy);
+	name [to_copy - 1] = 0;
 
 	return true;
 }
@@ -1359,7 +1359,9 @@ ep_rt_method_get_full_name (
 		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
-			memcpy (name, method_name_utf8, (method_name_utf8_len < name_len) ? method_name_utf8_len : name_len);
+			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
+			memcpy (name, method_name_utf8, to_copy);
+			name [to_copy - 1] = 0;
 		} else {
 			result = false;
 		}
@@ -1891,7 +1893,7 @@ ep_rt_execute_rundown (void)
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_alloc
-#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size])
+#define ep_rt_object_array_alloc(obj_type,size) (new (nothrow) obj_type [size]())
 
 // STATIC_CONTRACT_NOTHROW
 #undef ep_rt_object_array_free
@@ -2453,6 +2455,21 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 static
 inline
 ep_char8_t *
+ep_rt_utf8_string_dup_range (const ep_char8_t *str, const ep_char8_t *strEnd)
+{
+	ptrdiff_t byte_len = strEnd - str;
+	ep_char8_t *buffer = reinterpret_cast<ep_char8_t *>(malloc(byte_len + 1));
+	if (buffer != NULL)
+	{
+		memcpy (buffer, str, byte_len);
+		buffer [byte_len] = '\0';
+	}
+	return buffer;
+}
+
+static
+inline
+ep_char8_t *
 ep_rt_utf8_string_strtok (
 	ep_char8_t *str,
 	const ep_char8_t *delimiter,
@@ -2469,6 +2486,38 @@ ep_rt_utf8_string_strtok (
 	str_len, \
 	format, ...) \
 sprintf_s (reinterpret_cast<char *>(str), static_cast<size_t>(str_len), reinterpret_cast<const char *>(format), __VA_ARGS__)
+
+static
+inline
+bool
+ep_rt_utf8_string_replace (
+	ep_char8_t **str,
+	const ep_char8_t *strSearch,
+	const ep_char8_t *strReplacement
+)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if ((*str) == NULL)
+		return false;
+
+	ep_char8_t* strFound = strstr(*str, strSearch);
+	if (strFound != NULL)
+	{
+		size_t strSearchLen = strlen(strSearch);
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		ep_char8_t *newStr =  reinterpret_cast<ep_char8_t *>(malloc(newStrSize));
+		if (newStr == NULL)
+		{
+			*str = NULL;
+			return false;
+		}
+		ep_rt_utf8_string_snprintf(newStr, newStrSize, "%.*s%s%s", (int)(strFound - (*str)), *str, strReplacement, strFound + strSearchLen);
+		ep_rt_utf8_string_free(*str);
+		*str = newStr;
+		return true;
+	}
+	return false;
+}
 
 static
 ep_char16_t *

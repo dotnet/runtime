@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);netcoreapp3.0-Unix;netcoreapp3.0;net47</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;netcoreapp3.0-Unix;netcoreapp3.0;net47</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -12,14 +12,15 @@
     the facades when the package is restored. -->
     <PackageTargetFramework Condition="$(TargetFramework.StartsWith('net4'))">net461</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsUnix)' != 'true'">
+  <PropertyGroup Condition="'$(TargetsUnix)' != 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
+    <UnsupportedPlatformTarget>true</UnsupportedPlatformTarget>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime />
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(TargetsUnix)' == 'true'" />
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(UnsupportedPlatformTarget)' != 'true'" />
+  <ItemGroup Condition="'$(UnsupportedPlatformTarget)' != 'true'">
     <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />

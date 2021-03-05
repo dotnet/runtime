@@ -4073,3 +4073,563 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
         }
     }
 }
+
+#if defined(FEATURE_EH_FUNCLETS)
+
+#if defined(TARGET_ARM)
+
+/*****************************************************************************
+ * We just removed a BBJ_CALLFINALLY/BBJ_ALWAYS pair. If this was the only such pair
+ * targeting the BBJ_ALWAYS target, then we need to clear the BBF_FINALLY_TARGET bit
+ * so that target can also be removed. 'block' is the finally target. Since we just
+ * removed the BBJ_ALWAYS, it better have the BBF_FINALLY_TARGET bit set.
+ */
+
+void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
+{
+    assert(fgComputePredsDone);
+    assert((block->bbFlags & BBF_FINALLY_TARGET) != 0);
+
+    for (flowList* pred = block->bbPreds; pred; pred = pred->flNext)
+    {
+        if (pred->getBlock()->bbJumpKind == BBJ_ALWAYS && pred->getBlock()->bbJumpDest == block)
+        {
+            BasicBlock* pPrev = pred->getBlock()->bbPrev;
+            if (pPrev != NULL)
+            {
+                if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
+                {
+                    // We found a BBJ_CALLFINALLY / BBJ_ALWAYS that still points to this finally target
+                    return;
+                }
+            }
+        }
+    }
+
+    // Didn't find any BBJ_CALLFINALLY / BBJ_ALWAYS that still points here, so clear the bit
+
+    block->bbFlags &= ~BBF_FINALLY_TARGET;
+}
+
+#endif // defined(TARGET_ARM)
+
+/*****************************************************************************
+ * Is this an intra-handler control flow edge?
+ *
+ * 'block' is the head block of a funclet/handler region, or .
+ * 'predBlock' is a predecessor block of 'block' in the predecessor list.
+ *
+ * 'predBlock' can legally only be one of three things:
+ * 1. in the same handler region (e.g., the source of a back-edge of a loop from
+ *    'predBlock' to 'block'), including in nested regions within the handler,
+ * 2. if 'block' begins a handler that is a filter-handler, 'predBlock' must be in the 'filter' region,
+ * 3. for other handlers, 'predBlock' must be in the 'try' region corresponding to handler (or any
+ *    region nested in the 'try' region).
+ *
+ * Note that on AMD64/ARM64, the BBJ_CALLFINALLY block that calls a finally handler is not
+ * within the corresponding 'try' region: it is placed in the corresponding 'try' region's
+ * parent (which might be the main function body). This is how it is represented to the VM
+ * (with a special "cloned finally" EH table entry).
+ *
+ * Return 'true' for case #1, and 'false' otherwise.
+ */
+bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
+{
+    // Some simple preconditions (as stated above)
+    assert(!fgFuncletsCreated);
+    assert(fgGetPredForBlock(block, predBlock) != nullptr);
+    assert(block->hasHndIndex());
+
+    EHblkDsc* xtab = ehGetDsc(block->getHndIndex());
+
+#if FEATURE_EH_CALLFINALLY_THUNKS
+    if (xtab->HasFinallyHandler())
+    {
+        assert((xtab->ebdHndBeg == block) || // The normal case
+               ((xtab->ebdHndBeg->bbNext == block) &&
+                (xtab->ebdHndBeg->bbFlags & BBF_INTERNAL))); // After we've already inserted a header block, and we're
+                                                             // trying to decide how to split up the predecessor edges.
+        if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
+        {
+            assert(predBlock->bbJumpDest == block);
+
+            // A BBJ_CALLFINALLY predecessor of the handler can only come from the corresponding try,
+            // not from any EH clauses nested in this handler. However, we represent the BBJ_CALLFINALLY
+            // as being in the 'try' region's parent EH region, which might be the main function body.
+
+            unsigned tryIndex = xtab->ebdEnclosingTryIndex;
+            if (tryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                assert(!predBlock->hasTryIndex());
+            }
+            else
+            {
+                assert(predBlock->hasTryIndex());
+                assert(tryIndex == predBlock->getTryIndex());
+                assert(ehGetDsc(tryIndex)->InTryRegionBBRange(predBlock));
+            }
+            return false;
+        }
+    }
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
+
+    assert(predBlock->hasHndIndex() || predBlock->hasTryIndex());
+
+    //   We could search the try region looking for predBlock by using bbInTryRegions
+    // but that does a lexical search for the block, and then assumes funclets
+    // have been created and does a lexical search of all funclets that were pulled
+    // out of the parent try region.
+    //   First, funclets haven't been created yet, and even if they had been, we shouldn't
+    // have any funclet directly branching to another funclet (they have to return first).
+    // So we can safely use CheckIsTryRegion instead of bbInTryRegions.
+    //   Second, I believe the depth of any EH graph will on average be smaller than the
+    // breadth of the blocks within a try body. Thus it is faster to get our answer by
+    // looping outward over the region graph. However, I have added asserts, as a
+    // precaution, to ensure both algorithms agree. The asserts also check that the only
+    // way to reach the head of a funclet is from the corresponding try body or from
+    // within the funclet (and *not* any nested funclets).
+
+    if (predBlock->hasTryIndex())
+    {
+        // Because the EH clauses are listed inside-out, any nested trys will be at a
+        // lower index than the current try and if there's no enclosing try, tryIndex
+        // will terminate at NO_ENCLOSING_INDEX
+
+        unsigned tryIndex = predBlock->getTryIndex();
+        while (tryIndex < block->getHndIndex())
+        {
+            tryIndex = ehGetEnclosingTryIndex(tryIndex);
+        }
+        // tryIndex should enclose predBlock
+        assert((tryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || ehGetDsc(tryIndex)->InTryRegionBBRange(predBlock));
+
+        // At this point tryIndex is either block's handler's corresponding try body
+        // or some outer try region that contains both predBlock & block or
+        // NO_ENCLOSING_REGION (because there was no try body that encloses both).
+        if (tryIndex == block->getHndIndex())
+        {
+            assert(xtab->InTryRegionBBRange(predBlock));
+            assert(!xtab->InHndRegionBBRange(predBlock));
+            return false;
+        }
+        // tryIndex should enclose block (and predBlock as previously asserted)
+        assert((tryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || ehGetDsc(tryIndex)->InTryRegionBBRange(block));
+    }
+    if (xtab->HasFilter())
+    {
+        // The block is a handler. Check if the pred block is from its filter. We only need to
+        // check the end filter flag, as there is only a single filter for any handler, and we
+        // already know predBlock is a predecessor of block.
+        if (predBlock->bbJumpKind == BBJ_EHFILTERRET)
+        {
+            assert(!xtab->InHndRegionBBRange(predBlock));
+            return false;
+        }
+    }
+    // It is not in our try region (or filter), so it must be within this handler (or try bodies
+    // within this handler)
+    assert(!xtab->InTryRegionBBRange(predBlock));
+    assert(xtab->InHndRegionBBRange(predBlock));
+    return true;
+}
+
+/*****************************************************************************
+ * Does this block, first block of a handler region, have any predecessor edges
+ * that are not from its corresponding try region?
+ */
+
+bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
+{
+    assert(block->hasHndIndex());
+    assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
+
+    flowList* pred;
+
+    for (pred = block->bbPreds; pred; pred = pred->flNext)
+    {
+        BasicBlock* predBlock = pred->getBlock();
+
+        if (fgIsIntraHandlerPred(predBlock, block))
+        {
+            // We have a predecessor that is not from our try region
+            return true;
+        }
+    }
+
+    return false;
+}
+
+#else // !FEATURE_EH_FUNCLETS
+
+/*****************************************************************************
+ *
+ *  Function called to relocate any and all EH regions.
+ *  Only entire consecutive EH regions will be moved and they will be kept together.
+ *  Except for the first block, the range can not have any blocks that jump into or out of the region.
+ */
+
+bool Compiler::fgRelocateEHRegions()
+{
+    bool result = false; // Our return value
+
+#ifdef DEBUG
+    if (verbose)
+        printf("*************** In fgRelocateEHRegions()\n");
+#endif
+
+    if (fgCanRelocateEHRegions)
+    {
+        unsigned  XTnum;
+        EHblkDsc* HBtab;
+
+        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+        {
+            // Nested EH regions cannot be moved.
+            // Also we don't want to relocate an EH region that has a filter
+            if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
+            {
+                bool movedTry = false;
+#if DEBUG
+                bool movedHnd = false;
+#endif // DEBUG
+
+                // Only try to move the outermost try region
+                if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    // Move the entire try region if it can be moved
+                    if (HBtab->ebdTryBeg->isRunRarely())
+                    {
+                        BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
+                        if (bTryLastBB != NULL)
+                        {
+                            result   = true;
+                            movedTry = true;
+                        }
+                    }
+#if DEBUG
+                    if (verbose && movedTry)
+                    {
+                        printf("\nAfter relocating an EH try region");
+                        fgDispBasicBlocks();
+                        fgDispHandlerTab();
+
+                        // Make sure that the predecessor lists are accurate
+                        if (expensiveDebugCheckLevel >= 2)
+                        {
+                            fgDebugCheckBBlist();
+                        }
+                    }
+#endif // DEBUG
+                }
+
+                // Currently it is not good to move the rarely run handler regions to the end of the method
+                // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
+                // section.
+                CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if 0
+                // Now try to move the entire handler region if it can be moved.
+                // Don't try to move a finally handler unless we already moved the try region.
+                if (HBtab->ebdHndBeg->isRunRarely() &&
+                    !HBtab->ebdHndBeg->hasTryIndex() &&
+                    (movedTry || !HBtab->HasFinallyHandler()))
+                {
+                    BasicBlock* bHndLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+                    if (bHndLastBB != NULL)
+                    {
+                        result   = true;
+                        movedHnd = true;
+                    }
+                }
+#endif // 0
+
+#if DEBUG
+                if (verbose && movedHnd)
+                {
+                    printf("\nAfter relocating an EH handler region");
+                    fgDispBasicBlocks();
+                    fgDispHandlerTab();
+
+                    // Make sure that the predecessor lists are accurate
+                    if (expensiveDebugCheckLevel >= 2)
+                    {
+                        fgDebugCheckBBlist();
+                    }
+                }
+#endif // DEBUG
+            }
+        }
+    }
+
+#if DEBUG
+    fgVerifyHandlerTab();
+
+    if (verbose && result)
+    {
+        printf("\nAfter fgRelocateEHRegions()");
+        fgDispBasicBlocks();
+        fgDispHandlerTab();
+        // Make sure that the predecessor lists are accurate
+        fgDebugCheckBBlist();
+    }
+#endif // DEBUG
+
+    return result;
+}
+
+#endif // !FEATURE_EH_FUNCLETS
+
+/*****************************************************************************
+ * We've inserted a new block before 'block' that should be part of the same EH region as 'block'.
+ * Update the EH table to make this so. Also, set the new block to have the right EH region data
+ * (copy the bbTryIndex, bbHndIndex, and bbCatchTyp from 'block' to the new predecessor, and clear
+ * 'bbCatchTyp' from 'block').
+ */
+void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
+{
+    assert(block->bbPrev != nullptr);
+
+    BasicBlock* bPrev = block->bbPrev;
+
+    bPrev->copyEHRegion(block);
+
+    // The first block (and only the first block) of a handler has bbCatchTyp set
+    bPrev->bbCatchTyp = block->bbCatchTyp;
+    block->bbCatchTyp = BBCT_NONE;
+
+    EHblkDsc* HBtab;
+    EHblkDsc* HBtabEnd;
+
+    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    {
+        /* Multiple pointers in EHblkDsc can point to same block. We can not early out after the first match. */
+        if (HBtab->ebdTryBeg == block)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("EH#%u: New first block of try: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
+            }
+#endif // DEBUG
+            HBtab->ebdTryBeg = bPrev;
+            bPrev->bbFlags |= BBF_TRY_BEG | BBF_DONT_REMOVE | BBF_HAS_LABEL;
+
+            // clear the TryBeg flag unless it begins another try region
+            if (!bbIsTryBeg(block))
+            {
+                block->bbFlags &= ~BBF_TRY_BEG;
+            }
+        }
+
+        if (HBtab->ebdHndBeg == block)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("EH#%u: New first block of handler: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
+            }
+#endif // DEBUG
+
+            // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
+            assert(block->bbRefs > 0);
+            block->bbRefs--;
+
+            HBtab->ebdHndBeg = bPrev;
+            bPrev->bbFlags |= BBF_DONT_REMOVE | BBF_HAS_LABEL;
+
+#if defined(FEATURE_EH_FUNCLETS)
+            if (fgFuncletsCreated)
+            {
+                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
+                bPrev->bbFlags |= BBF_FUNCLET_BEG;
+                block->bbFlags &= ~BBF_FUNCLET_BEG;
+            }
+#endif // FEATURE_EH_FUNCLETS
+
+            bPrev->bbRefs++;
+
+            // If this is a handler for a filter, the last block of the filter will end with
+            // a BBJ_EJFILTERRET block that has a bbJumpDest that jumps to the first block of
+            // it's handler.  So we need to update it to keep things in sync.
+            //
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* bFilterLast = HBtab->BBFilterLast();
+                assert(bFilterLast != nullptr);
+                assert(bFilterLast->bbJumpKind == BBJ_EHFILTERRET);
+                assert(bFilterLast->bbJumpDest == block);
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("EH#%u: Updating bbJumpDest for filter ret block: " FMT_BB " => " FMT_BB "\n",
+                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
+                }
+#endif // DEBUG
+                // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
+                bFilterLast->bbJumpDest = bPrev;
+            }
+        }
+
+        if (HBtab->HasFilter() && (HBtab->ebdFilter == block))
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("EH#%u: New first block of filter: " FMT_BB "\n", ehGetIndex(HBtab), bPrev->bbNum);
+            }
+#endif // DEBUG
+
+            // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
+            assert(block->bbRefs > 0);
+            block->bbRefs--;
+
+            HBtab->ebdFilter = bPrev;
+            bPrev->bbFlags |= BBF_DONT_REMOVE | BBF_HAS_LABEL;
+
+#if defined(FEATURE_EH_FUNCLETS)
+            if (fgFuncletsCreated)
+            {
+                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
+                bPrev->bbFlags |= BBF_FUNCLET_BEG;
+                block->bbFlags &= ~BBF_FUNCLET_BEG;
+            }
+#endif // FEATURE_EH_FUNCLETS
+
+            bPrev->bbRefs++;
+        }
+    }
+}
+
+/*****************************************************************************
+ * We've inserted a new block after 'block' that should be part of the same EH region as 'block'.
+ * Update the EH table to make this so. Also, set the new block to have the right EH region data.
+ */
+
+void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
+{
+    BasicBlock* newBlk = block->bbNext;
+    assert(newBlk != nullptr);
+
+    newBlk->copyEHRegion(block);
+    newBlk->bbCatchTyp =
+        BBCT_NONE; // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
+
+    // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last'
+    // block pointers to update.
+    ehUpdateLastBlocks(block, newBlk);
+}
+
+//------------------------------------------------------------------------
+// fgCheckEHCanInsertAfterBlock: Determine if a block can be inserted after
+// 'blk' and legally be put in the EH region specified by 'regionIndex'. This
+// can be true if the most nested region the block is in is already 'regionIndex',
+// as we'll just extend the most nested region (and any region ending at the same block).
+// It can also be true if it is the end of (a set of) EH regions, such that
+// inserting the block and properly extending some EH regions (if necessary)
+// puts the block in the correct region. We only consider the case of extending
+// an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
+// we don't consider inserting a block as the the first block of an EH region following 'blk'.
+//
+// Consider this example:
+//
+//      try3   try2   try1
+//      |---   |      |      BB01
+//      |      |---   |      BB02
+//      |      |      |---   BB03
+//      |      |      |      BB04
+//      |      |---   |---   BB05
+//      |                    BB06
+//      |-----------------   BB07
+//
+// Passing BB05 and try1/try2/try3 as the region to insert into (as well as putInTryRegion==true)
+// will all return 'true'. Here are the cases:
+// 1. Insert into try1: the most nested EH region BB05 is in is already try1, so we can insert after
+//    it and extend try1 (and try2).
+// 2. Insert into try2: we can extend try2, but leave try1 alone.
+// 3. Insert into try3: we can leave try1 and try2 alone, and put the new block just in try3. Note that
+//    in this case, after we "loop outwards" in the EH nesting, we get to a place where we're in the middle
+//    of the try3 region, not at the end of it.
+// In all cases, it is possible to put a block after BB05 and put it in any of these three 'try' regions legally.
+//
+// Filters are ignored; if 'blk' is in a filter, the answer will be false.
+//
+// Arguments:
+//    blk - the BasicBlock we are checking to see if we can insert after.
+//    regionIndex - the EH region we want to insert a block into. regionIndex is
+//          in the range [0..compHndBBtabCount]; 0 means "main method".
+//    putInTryRegion - 'true' if the new block should be inserted in the 'try' region of 'regionIndex'.
+//          For regionIndex 0 (the "main method"), this should be 'true'.
+//
+// Return Value:
+//    'true' if a block can be inserted after 'blk' and put in EH region 'regionIndex', else 'false'.
+//
+bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionIndex, bool putInTryRegion)
+{
+    assert(blk != nullptr);
+    assert(regionIndex <= compHndBBtabCount);
+
+    if (regionIndex == 0)
+    {
+        assert(putInTryRegion);
+    }
+
+    bool     inTryRegion;
+    unsigned nestedRegionIndex = ehGetMostNestedRegionIndex(blk, &inTryRegion);
+
+    bool insertOK = true;
+    for (;;)
+    {
+        if (nestedRegionIndex == regionIndex)
+        {
+            // This block is in the region we want to be in. We can insert here if it's the right type of region.
+            // (If we want to be in the 'try' region, but the block is in the handler region, then inserting a
+            // new block after 'blk' can't put it in the 'try' region, and vice-versa, since we only consider
+            // extending regions after, not prepending to regions.)
+            // This check will be 'true' if we are trying to put something in the main function (as putInTryRegion
+            // must be 'true' if regionIndex is zero, and inTryRegion will also be 'true' if nestedRegionIndex is zero).
+            insertOK = (putInTryRegion == inTryRegion);
+            break;
+        }
+        else if (nestedRegionIndex == 0)
+        {
+            // The block is in the main function, but we want to put something in a nested region. We can't do that.
+            insertOK = false;
+            break;
+        }
+
+        assert(nestedRegionIndex > 0);
+        EHblkDsc* ehDsc = ehGetDsc(nestedRegionIndex - 1); // ehGetDsc uses [0..compHndBBtabCount) form.
+
+        if (inTryRegion)
+        {
+            if (blk != ehDsc->ebdTryLast)
+            {
+                // Not the last block? Then it must be somewhere else within the try region, so we can't insert here.
+                insertOK = false;
+                break; // exit the 'for' loop
+            }
+        }
+        else
+        {
+            // We ignore filters.
+            if (blk != ehDsc->ebdHndLast)
+            {
+                // Not the last block? Then it must be somewhere else within the handler region, so we can't insert
+                // here.
+                insertOK = false;
+                break; // exit the 'for' loop
+            }
+        }
+
+        // Things look good for this region; check the enclosing regions, if any.
+
+        nestedRegionIndex =
+            ehGetEnclosingRegionIndex(nestedRegionIndex - 1,
+                                      &inTryRegion); // ehGetEnclosingRegionIndex uses [0..compHndBBtabCount) form.
+
+        // Convert to [0..compHndBBtabCount] form.
+        nestedRegionIndex = (nestedRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX) ? 0 : nestedRegionIndex + 1;
+    } // end of for(;;)
+
+    return insertOK;
+}

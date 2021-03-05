@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,6 +29,22 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     [Required]
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// Paths to be passed as MONO_PATH environment variable, when running mono-cross-aot.
+    /// These are in addition to the directory containing the assembly being precompiled.
+    ///
+    /// MONO_PATH=${dir_containing_assembly}:${AdditionalAssemblySearchPaths}
+    ///
+    /// </summary>
+    public string[]? AdditionalAssemblySearchPaths { get; set; }
+
+    /// <summary>
+    /// Directory where the AOT'ed files will be emitted
+    /// </summary>
+    [NotNull]
+    [Required]
+    public string? OutputDir { get; set; }
 
     /// <summary>
     /// Assemblies which were AOT compiled.
@@ -133,6 +150,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
         }
 
+        if (!Path.IsPathRooted(OutputDir))
+            OutputDir = Path.GetFullPath(OutputDir);
+
+        if (!Directory.Exists(OutputDir))
+        {
+            Log.LogError($"OutputDir={OutputDir} doesn't exist");
+            return false;
+        }
+
         if (!string.IsNullOrEmpty(AotProfilePath) && !File.Exists(AotProfilePath))
         {
             Log.LogError($"'{AotProfilePath}' doesn't exist.", nameof(AotProfilePath));
@@ -184,11 +210,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             GenerateAotModulesTable(Assemblies, Profilers);
         }
 
+        string? monoPaths = null;
+        if (AdditionalAssemblySearchPaths != null)
+            monoPaths = string.Join(Path.PathSeparator, AdditionalAssemblySearchPaths);
+
         if (DisableParallelAot)
         {
             foreach (var assemblyItem in Assemblies)
             {
-                if (!PrecompileLibrary(assemblyItem))
+                if (!PrecompileLibrary(assemblyItem, monoPaths))
                     return !Log.HasLoggedErrors;
             }
         }
@@ -196,7 +226,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Parallel.ForEach(Assemblies,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                assemblyItem => PrecompileLibrary (assemblyItem));
+                assemblyItem => PrecompileLibrary(assemblyItem, monoPaths));
         }
 
         CompiledAssemblies = compiledAssemblies.ToArray();
@@ -205,7 +235,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool PrecompileLibrary(ITaskItem assemblyItem)
+    private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
     {
         string assembly = assemblyItem.ItemSpec;
         string directory = Path.GetDirectoryName(assembly)!;
@@ -242,12 +272,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             processArgs.Add("--nollvm");
         }
 
+        string assemblyFilename = Path.GetFileName(assembly);
+
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
         {
             aotArgs.Add("llvmonly");
 
-            string llvmBitcodeFile = Path.ChangeExtension(assembly, ".dll.bc");
+            string llvmBitcodeFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.bc"));
             aotAssembly.SetMetadata("LlvmBitcodeFile", llvmBitcodeFile);
 
             if (parsedAotMode == MonoAotMode.AotInterp)
@@ -276,20 +308,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 aotArgs.Add("asmonly");
 
-                string assemblerFile = Path.ChangeExtension(assembly, ".dll.s");
+                string assemblerFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.s"));
                 aotArgs.Add($"outfile={assemblerFile}");
                 aotAssembly.SetMetadata("AssemblerFile", assemblerFile);
             }
             else
             {
-                string objectFile = Path.ChangeExtension(assembly, ".dll.o");
+                string objectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll.o"));
                 aotArgs.Add($"outfile={objectFile}");
                 aotAssembly.SetMetadata("ObjectFile", objectFile);
             }
 
             if (UseLLVM)
             {
-                string llvmObjectFile = Path.ChangeExtension(assembly, ".dll-llvm.o");
+                string llvmObjectFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".dll-llvm.o"));
                 aotArgs.Add($"llvm-outfile={llvmObjectFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", llvmObjectFile);
             }
@@ -322,7 +354,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", directory},
+            {"MONO_PATH", $"{directory}{Path.PathSeparator}{monoPaths}"},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
@@ -358,11 +390,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             _fileWrites.Add(AotModulesTablePath!);
             if (parsedAotModulesTableLanguage == MonoAotModulesTableLanguage.C)
             {
+                writer.WriteLine("#include <mono/jit/jit.h>");
+
                 foreach (var symbol in symbols)
                 {
                     writer.WriteLine($"extern void *{symbol};");
                 }
-                writer.WriteLine("static void register_aot_modules ()");
+                writer.WriteLine("void register_aot_modules ()");
                 writer.WriteLine("{");
                 foreach (var symbol in symbols)
                 {

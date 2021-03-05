@@ -15,11 +15,12 @@
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
+    <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" Private="true"/>
+    <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
-      <WasmMainAssemblyPath>$(OutDir)debugger-test.dll</WasmMainAssemblyPath>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <WasmDebugLevel>1</WasmDebugLevel>
@@ -28,6 +29,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 

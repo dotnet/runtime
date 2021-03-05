@@ -81,6 +81,47 @@ namespace System.Tests
             Assert.NotNull(utc.ToString());
         }
 
+        //  Due to ICU size limitations, full daylight/standard names are not included.
+        //  name abbreviations, if available, are used instead
+        public static IEnumerable<object []> Platform_TimeZoneNamesTestData()
+        {
+            if (PlatformDetection.IsBrowser)
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) PST", "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) AEST", "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) AWST", "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };
+            else
+                return new TheoryData<TimeZoneInfo, string, string, string>
+                {
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Standard Time", "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australian Eastern Standard Time", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time", "Australian Western Standard Time", "Australian Western Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) +0330", "+0330", "+0430" },
+
+                    { s_NewfoundlandTz, "(UTC-03:30) NST", "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) -03", "-03", "-02" }
+                };        
+        }
+
+        [Theory]
+        [MemberData(nameof(Platform_TimeZoneNamesTestData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
+        {
+            if (PlatformDetection.IsBrowser)
+            {
+                // Console.WriteLine($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}");
+                Assert.Equal($"DisplayName: {tzi.DisplayName}, StandardName: {tzi.StandardName}, DaylightName: {tzi.DaylightName}",
+                            $"DisplayName: {displayName}, StandardName: {standardName}, DaylightName: {daylightName}");
+            }
+        }
+
         [Fact]
         public static void ConvertTime()
         {

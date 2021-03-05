@@ -208,7 +208,6 @@ typedef unsigned char   regNumberSmall;
 #if defined(TARGET_X86)
 
   #define CPU_LOAD_STORE_ARCH      0
-  #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
 
@@ -489,7 +488,6 @@ typedef unsigned char   regNumberSmall;
   // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
 
   #define CPU_LOAD_STORE_ARCH      0
-  #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
@@ -897,7 +895,6 @@ typedef unsigned char   regNumberSmall;
   // TODO-ARM-CQ: Check for sdiv/udiv at runtime and generate it if available
   #define USE_HELPERS_FOR_INT_DIV  1       // BeagleBoard (ARMv7A) doesn't support SDIV/UDIV
   #define CPU_LOAD_STORE_ARCH      1
-  #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
@@ -1208,7 +1205,6 @@ typedef unsigned char   regNumberSmall;
 #elif defined(TARGET_ARM64)
 
   #define CPU_LOAD_STORE_ARCH      1
-  #define CPU_HAS_FP_SUPPORT       1
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
@@ -1555,6 +1551,10 @@ typedef unsigned char   regNumberSmall;
   // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g. "MLA (by element)")
   // have encoding that restricts what registers that can be used for the indexed element when the element size is H (i.e. 2 bytes).
   #define RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
+
+  #define REG_ZERO_INIT_FRAME_REG1 REG_R9
+  #define REG_ZERO_INIT_FRAME_REG2 REG_R10
+  #define REG_ZERO_INIT_FRAME_SIMD REG_V16
 
 #else
   #error Unsupported or unset target architecture
@@ -1974,11 +1974,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 
 inline bool isFloatRegType(var_types type)
 {
-#if CPU_HAS_FP_SUPPORT
     return varTypeUsesFloatReg(type);
-#else
-    return false;
-#endif
 }
 
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.

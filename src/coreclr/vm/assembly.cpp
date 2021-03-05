@@ -94,7 +94,12 @@ enum ReasonForNotSharing
     ReasonForNotSharing_ClosureComparisonFailed = 0x8,
 };
 
-#define NO_FRIEND_ASSEMBLIES_MARKER ((FriendAssemblyDescriptor *)S_FALSE)
+static CrstStatic g_friendAssembliesCrst;
+
+void Assembly::Initialize()
+{
+    g_friendAssembliesCrst.Init(CrstLeafLock);
+}
 
 //----------------------------------------------------------------------------------------------
 // The ctor's job is to initialize the Assembly enough so that the dtor can safely run.
@@ -255,8 +260,8 @@ Assembly::~Assembly()
 
     Terminate();
 
-    if (m_pFriendAssemblyDescriptor != NULL && m_pFriendAssemblyDescriptor != NO_FRIEND_ASSEMBLIES_MARKER)
-        delete m_pFriendAssemblyDescriptor;
+    if (m_pFriendAssemblyDescriptor != NULL)
+        m_pFriendAssemblyDescriptor->Release();
 
     if (m_pManifestFile)
     {
@@ -403,7 +408,7 @@ Assembly * Assembly::Create(
 
 
 #ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -545,44 +550,49 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                                                    &ma));
         pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
-        // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
-        // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
-        //
-        // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
-        // and will have a fallback load context binder associated with it.
-        ICLRPrivBinder *pFallbackLoadContextBinder = nullptr;
+        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
 
-        // There is always a manifest file - wehther working with static or dynamic assemblies.
-        PEFile *pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
-        _ASSERTE(pCallerAssemblyManifestFile != NULL);
-
-        if (!pCallerAssemblyManifestFile->IsDynamic())
+        // If ALC is not specified
+        if (pFallbackLoadContextBinder == nullptr)
         {
-            // Static assemblies with do not have fallback load context
-            _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+            // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
+            // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
+            // caller/creator to ensure that any assembly loads triggered by the dynamic assembly are resolved using the intended load context.
+            //
+            // If the creator assembly has a HostAssembly associated with it, then use it for binding. Otherwise, the creator is dynamic
+            // and will have a fallback load context binder associated with it.
 
-            if (pCallerAssemblyManifestFile->IsSystem())
+            // There is always a manifest file - wehther working with static or dynamic assemblies.
+            PEFile* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+            _ASSERTE(pCallerAssemblyManifestFile != NULL);
+
+            if (!pCallerAssemblyManifestFile->IsDynamic())
             {
-                // CoreLibrary is always bound to TPA binder
-                pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                // Static assemblies with do not have fallback load context
+                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+
+                if (pCallerAssemblyManifestFile->IsSystem())
+                {
+                    // CoreLibrary is always bound to TPA binder
+                    pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
+                }
+                else
+                {
+                    // Fetch the binder from the host assembly
+                    PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                    _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
+
+                    UINT_PTR assemblyBinderID = 0;
+                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
+                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+                }
             }
             else
             {
-                // Fetch the binder from the host assembly
-                PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
-
-                UINT_PTR assemblyBinderID = 0;
-                IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+                // Creator assembly is dynamic too, so use its fallback load context for the one
+                // we are creating.
+                pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
             }
-        }
-        else
-        {
-            // Creator assembly is dynamic too, so use its fallback load context for the one
-            // we are creating.
-            pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
         }
 
         // At this point, we should have a fallback load context binder to work with
@@ -593,6 +603,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
+    BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
 
     {
         GCX_PREEMP();
@@ -612,10 +623,22 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
             pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            createdNewAssemblyLoaderAllocator = TRUE;
         }
         else
         {
-            pLoaderAllocator = pDomain->GetLoaderAllocator();
+            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
+
+            if (pBinderContext != nullptr)
+            {
+                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
+            }
+
+            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+        }
+
+        if (!createdNewAssemblyLoaderAllocator)
+        {
             pLoaderAllocator.SuppressRelease();
         }
 
@@ -638,13 +661,13 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), args->access & ASSEMBLY_ACCESS_COLLECT ? TRUE : FALSE, pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetManifestModule();
             pModule->SetCreatingAssembly( pCallerAssembly );
 
 
-            if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
+            if (createdNewAssemblyLoaderAllocator)
             {
                 // Initializing the virtual call stub manager is delayed to remove the need for the LoaderAllocator destructor to properly handle
                 // uninitializing the VSD system. (There is a need to suspend the runtime, and that's tricky)
@@ -682,7 +705,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
             pamTracker->SuppressRelease();
 
             // Once we reach this point, the loader allocator lifetime is controlled by the Assembly object.
-            if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
+            if (createdNewAssemblyLoaderAllocator)
             {
                 // Atomically transfer ownership to the managed heap
                 pLoaderAllocator->ActivateManagedTracking();
@@ -1234,25 +1257,77 @@ void Assembly::CacheFriendAssemblyInfo()
 
     if (m_pFriendAssemblyDescriptor == NULL)
     {
-        FriendAssemblyDescriptor *pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
-        if (pFriendAssemblies == NULL)
-        {
-            pFriendAssemblies = NO_FRIEND_ASSEMBLIES_MARKER;
-        }
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        _ASSERTE(pFriendAssemblies != NULL);
 
-        void *pvPreviousDescriptor = InterlockedCompareExchangeT(&m_pFriendAssemblyDescriptor,
-                                                                 pFriendAssemblies,
-                                                                 NULL);
+        CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
 
-        if (pvPreviousDescriptor != NULL && pFriendAssemblies != NO_FRIEND_ASSEMBLIES_MARKER)
+        if (m_pFriendAssemblyDescriptor == NULL)
         {
-            if (pFriendAssemblies != NO_FRIEND_ASSEMBLIES_MARKER)
-            {
-                delete pFriendAssemblies;
-            }
+            m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
         }
     }
 } // void Assembly::CacheFriendAssemblyInfo()
+
+void Assembly::UpdateCachedFriendAssemblyInfo()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END
+
+    ReleaseHolder<FriendAssemblyDescriptor> pOldFriendAssemblyDescriptor;
+    
+    {
+        CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+        if (m_pFriendAssemblyDescriptor != NULL)
+        {
+            m_pFriendAssemblyDescriptor->AddRef();
+            pOldFriendAssemblyDescriptor = m_pFriendAssemblyDescriptor;
+        }
+    }
+
+    while (true)
+    {
+        ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(this->GetManifestFile());
+        FriendAssemblyDescriptor* pFriendAssemblyDescriptorNextLoop = NULL;
+
+        {
+            CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+
+            if (m_pFriendAssemblyDescriptor == pOldFriendAssemblyDescriptor)
+            {
+                if (m_pFriendAssemblyDescriptor != NULL)
+                    m_pFriendAssemblyDescriptor->Release();
+
+                m_pFriendAssemblyDescriptor = pFriendAssemblies.Extract();
+                return;
+            }
+            else
+            {
+                m_pFriendAssemblyDescriptor->AddRef();
+                pFriendAssemblyDescriptorNextLoop = m_pFriendAssemblyDescriptor;
+            }
+        }
+
+        // Initialize this here to avoid calling Release on the previous value of pOldFriendAssemblyDescriptor while holding the lock
+        pOldFriendAssemblyDescriptor = pFriendAssemblyDescriptorNextLoop;
+    }
+}
+
+ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
+{
+    CacheFriendAssemblyInfo();
+
+    CrstHolder friendDescriptorLock(&g_friendAssembliesCrst);
+    m_pFriendAssemblyDescriptor->AddRef();
+    ReleaseHolder<FriendAssemblyDescriptor> friendAssemblyDescriptor(m_pFriendAssemblyDescriptor);
+
+    return friendAssemblyDescriptor;
+}
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
@@ -1260,42 +1335,21 @@ bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pFD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pMD);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
 }
 
 bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
 {
     WRAPPER_NO_CONTRACT;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
-    return m_pFriendAssemblyDescriptor->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1308,19 +1362,12 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     }
     CONTRACTL_END;
 
-    CacheFriendAssemblyInfo();
-
-    if (m_pFriendAssemblyDescriptor == NO_FRIEND_ASSEMBLIES_MARKER)
-    {
-        return false;
-    }
-
     if (pAccessedAssembly->IsDisabledPrivateReflection())
     {
         return false;
     }
 
-    return m_pFriendAssemblyDescriptor->IgnoresAccessChecksTo(pAccessedAssembly);
+    return GetFriendAssemblyInfo()->IgnoresAccessChecksTo(pAccessedAssembly);
 }
 
 
@@ -1379,14 +1426,14 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     // Check for types
     SigPointer sig(pFD->GetSigPointer());
 
-    ULONG nCallConv;
+    uint32_t nCallConv;
     if (FAILED(sig.GetData(&nCallConv)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
     if (nCallConv != IMAGE_CEE_CS_CALLCONV_DEFAULT)
         ThrowMainMethodException(pFD, IDS_EE_LOAD_BAD_MAIN_SIG);
 
-    ULONG nParamCount;
+    uint32_t nParamCount;
     if (FAILED(sig.GetData(&nParamCount)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
@@ -2270,11 +2317,11 @@ FriendAssemblyDescriptor::~FriendAssemblyDescriptor()
 //    pAssembly - assembly to get friend assembly information for
 //
 // Return Value:
-//    A friend assembly descriptor if the assembly declares any friend assemblies, otherwise NULL
+//    A friend assembly descriptor if the assembly declares any friend assemblies
 //
 
 // static
-FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(PEAssembly *pAssembly)
+ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAssemblyDescriptor(PEAssembly *pAssembly)
 {
     CONTRACTL
     {
@@ -2284,7 +2331,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
     }
     CONTRACTL_END
 
-    NewHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
+    ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
     ReleaseHolder<IMDInternalImport> pImport(pAssembly->GetMDImportWithRef());
@@ -2373,8 +2420,7 @@ FriendAssemblyDescriptor *FriendAssemblyDescriptor::CreateFriendAssemblyDescript
         }
     }
 
-    pFriendAssemblies.SuppressRelease();
-    return pFriendAssemblies.Extract();
+    return pFriendAssemblies;
 }
 
 //---------------------------------------------------------------------------------------

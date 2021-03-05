@@ -10,15 +10,98 @@ using System.Reflection;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL;
+using Internal.Pgo;
 
 using System.Linq;
 using System.IO;
 using System.Diagnostics;
 
+using System.Reflection.PortableExecutable;
+
 namespace ILCompiler.IBC
 {
     static class MIbcProfileParser
     {
+        private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>
+        {
+            private readonly EcmaMethodIL _ilBody;
+
+            public MetadataLoaderForPgoData(EcmaMethodIL ilBody)
+            {
+                _ilBody = ilBody;
+            }
+            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>.TypeFromLong(long token)
+            {
+                try
+                {
+                    if (token == 0)
+                        return new TypeSystemEntityOrUnknown(0);
+                    if ((token & 0xFF000000) == 0)
+                    {
+                        // token type is 0, therefore it can't be a type
+                        return new TypeSystemEntityOrUnknown((int)token);
+                    }
+                    return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
+                }
+                catch
+                {
+                    return new TypeSystemEntityOrUnknown((int)token);
+                }
+            }
+        }
+
+        public static PEReader OpenMibcAsPEReader(string filename)
+        {
+            byte[] peData = null;
+            PEReader peReader = null;
+
+            {
+                FileStream fsMibcFile = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false);
+                bool disposeOnException = true;
+
+                try
+                {
+                    byte firstByte = (byte)fsMibcFile.ReadByte();
+                    byte secondByte = (byte)fsMibcFile.ReadByte();
+                    fsMibcFile.Seek(0, SeekOrigin.Begin);
+                    if (firstByte == 0x4d && secondByte == 0x5a)
+                    {
+                        // Uncompressed Mibc format, starts with 'MZ' prefix like all other PE files
+                        peReader = new PEReader(fsMibcFile, PEStreamOptions.Default);
+                        disposeOnException = false;
+                    }
+                    else
+                    {
+                        using (var zipFile = new ZipArchive(fsMibcFile, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                        {
+                            disposeOnException = false;
+                            var mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
+                            using (var mibcDataStream = mibcDataEntry.Open())
+                            {
+                                peData = new byte[mibcDataEntry.Length];
+                                using (BinaryReader br = new BinaryReader(mibcDataStream))
+                                {
+                                    peData = br.ReadBytes(checked((int)mibcDataEntry.Length));
+                                }
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    if (disposeOnException)
+                        fsMibcFile.Dispose();
+                }
+            }
+
+            if (peData != null)
+            {
+                peReader = new PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(peData));
+            }
+
+            return peReader;
+        }
+
         /// <summary>
         /// Parse an MIBC file for the methods that are interesting.
         /// The version bubble must be specified and will describe the restrict the set of methods parsed to those relevant to the compilation
@@ -40,61 +123,47 @@ namespace ILCompiler.IBC
         /// 
         /// </summary>
         /// <returns></returns>
-        public static ProfileData ParseMIbcFile(CompilerTypeSystemContext tsc, string filename, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
+        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
         {
-            byte[] peData;
+            var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
-            using (var zipFile = ZipFile.OpenRead(filename))
+            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+            IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
+
+            EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
+            byte[] ilBytes = ilBody.GetILBytes();
+            int currentOffset = 0;
+
+            string mibcGroupName = "";
+            while (currentOffset < ilBytes.Length)
             {
-                var mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
-                using (var mibcDataStream = mibcDataEntry.Open())
+                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
+                if (opcode == ILOpcode.prefix1)
+                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
+                switch (opcode)
                 {
-                    peData = new byte[mibcDataEntry.Length];
-                    using (BinaryReader br = new BinaryReader(mibcDataStream))
-                    {
-                        peData = br.ReadBytes(checked((int)mibcDataEntry.Length));
-                    }
-                }
-            }
+                    case ILOpcode.ldstr:
+                        Debug.Assert(mibcGroupName == "");
+                        if (mibcGroupName == "")
+                        {
+                            UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
+                            mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
+                        }
+                        break;
 
-            using (var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(peData)))
-            {
-                var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
-
-                var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
-                IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
-
-                EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
-                byte[] ilBytes = ilBody.GetILBytes();
-                int currentOffset = 0;
-
-                string mibcGroupName = "";
-                while (currentOffset < ilBytes.Length)
-                {
-                    ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                    if (opcode == ILOpcode.prefix1)
-                        opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                    switch (opcode)
-                    {
-                        case ILOpcode.ldstr:
-                            if (mibcGroupName == "")
-                            {
-                                UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                                mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
-                            }
+                    case ILOpcode.ldtoken:
+                        if (String.IsNullOrEmpty(mibcGroupName))
                             break;
 
-                        case ILOpcode.ldtoken:
-                            if (String.IsNullOrEmpty(mibcGroupName))
-                                break;
+                        string[] assembliesByName = mibcGroupName.Split(';');
 
-                            string[] assembliesByName = mibcGroupName.Split(';');
+                        bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
 
-                            bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
+                        if (!hasMatchingDefinition)
+                            break;
 
-                            if (!hasMatchingDefinition)
-                                break;
-
+                        if (assemblyNamesInVersionBubble != null)
+                        {
                             bool areAllEntriesInVersionBubble = true;
                             foreach (string s in assembliesByName)
                             {
@@ -110,21 +179,21 @@ namespace ILCompiler.IBC
 
                             if (!areAllEntriesInVersionBubble)
                                 break;
+                        }
 
-                            uint token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                            loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
-                            break;
-                        case ILOpcode.pop:
-                            mibcGroupName = "";
-                            break;
-                    }
-
-                    // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                    currentOffset += opcode.GetSize();
+                        uint token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
+                        break;
+                    case ILOpcode.pop:
+                        mibcGroupName = "";
+                        break;
                 }
 
-                return new IBCProfileData(false, loadedMethodProfileData);
+                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
+                currentOffset += opcode.GetSize();
             }
+
+            return new IBCProfileData(false, loadedMethodProfileData);
         }
 
         enum MibcGroupParseState
@@ -135,6 +204,7 @@ namespace ILCompiler.IBC
             ProcessingCallgraphCount,
             ProcessingCallgraphToken,
             ProcessingCallgraphWeight,
+            ProcessingInstrumentationData,
         }
 
         /// <summary>
@@ -164,6 +234,7 @@ namespace ILCompiler.IBC
         static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
+            MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
             byte[] ilBytes = ilBody.GetILBytes();
             int currentOffset = 0;
             object methodInProgress = null;
@@ -176,6 +247,9 @@ namespace ILCompiler.IBC
             double exclusiveWeight = 0;
             Dictionary<MethodDesc, int> weights = null;
             bool processIntValue = false;
+            List<long> instrumentationDataLongs = null;
+            PgoSchemaElem[] pgoSchemaData = null;
+
             while (currentOffset < ilBytes.Length)
             {
                 ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
@@ -187,29 +261,36 @@ namespace ILCompiler.IBC
                     case ILOpcode.ldtoken:
                         {
                             uint token = BitConverter.ToUInt32(ilBytes.AsSpan(currentOffset + 1, 4));
-                            metadataObject = null;
-                            try
+                            if (state == MibcGroupParseState.ProcessingInstrumentationData)
                             {
-                                metadataObject = ilBody.GetObject((int)token);
+                                instrumentationDataLongs.Add(token);
                             }
-                            catch (TypeSystemException)
+                            else
                             {
-                                // The method being referred to may be missing. In that situation,
-                                // use the metadataNotResolvable sentinel to indicate that this record should be ignored
-                                metadataObject = metadataNotResolvable;
-                            }
-                            switch (state)
-                            {
-                                case MibcGroupParseState.ProcessingCallgraphToken:
-                                    state = MibcGroupParseState.ProcessingCallgraphWeight;
-                                    break;
-                                case MibcGroupParseState.LookingForNextMethod:
-                                    methodInProgress = metadataObject;
-                                    state = MibcGroupParseState.LookingForOptionalData;
-                                    break;
-                                default:
-                                    state = MibcGroupParseState.LookingForOptionalData;
-                                    break;
+                                metadataObject = null;
+                                try
+                                {
+                                    metadataObject = ilBody.GetObject((int)token);
+                                }
+                                catch (TypeSystemException)
+                                {
+                                    // The method being referred to may be missing. In that situation,
+                                    // use the metadataNotResolvable sentinel to indicate that this record should be ignored
+                                    metadataObject = metadataNotResolvable;
+                                }
+                                switch (state)
+                                {
+                                    case MibcGroupParseState.ProcessingCallgraphToken:
+                                        state = MibcGroupParseState.ProcessingCallgraphWeight;
+                                        break;
+                                    case MibcGroupParseState.LookingForNextMethod:
+                                        methodInProgress = metadataObject;
+                                        state = MibcGroupParseState.LookingForOptionalData;
+                                        break;
+                                    default:
+                                        state = MibcGroupParseState.LookingForOptionalData;
+                                        break;
+                                }
                             }
                         }
                         break;
@@ -299,6 +380,13 @@ namespace ILCompiler.IBC
                         processIntValue = true;
                         break;
 
+                    case ILOpcode.ldc_i8:
+                        if (state == MibcGroupParseState.ProcessingInstrumentationData)
+                        {
+                            instrumentationDataLongs.Add(BitConverter.ToInt64(ilBytes.AsSpan(currentOffset + 1, 8)));
+                        }
+                        break;
+
                     case ILOpcode.ldstr:
                         {
                             UInt32 userStringToken = BitConverter.ToUInt32(ilBytes.AsSpan(currentOffset + 1, 4));
@@ -313,6 +401,20 @@ namespace ILCompiler.IBC
                                     state = MibcGroupParseState.ProcessingCallgraphCount;
                                     break;
 
+                                case "InstrumentationDataStart":
+                                    state = MibcGroupParseState.ProcessingInstrumentationData;
+                                    instrumentationDataLongs = new List<long>();
+                                    break;
+
+                                case "InstrumentationDataEnd":
+                                    if (instrumentationDataLongs != null)
+                                    {
+                                        instrumentationDataLongs.Add(2); // MarshalMask 2 (Type)
+                                        instrumentationDataLongs.Add(0); // PgoInstrumentationKind.Done (0)
+                                        pgoSchemaData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(metadataLoader, instrumentationDataLongs, false).ToArray();
+                                    }
+                                    state = MibcGroupParseState.LookingForOptionalData;
+                                    break;
                                 default:
                                     state = MibcGroupParseState.LookingForOptionalData;
                                     break;
@@ -329,10 +431,12 @@ namespace ILCompiler.IBC
                                 // If no exclusive weight is found assign a non zero value that assumes the order in the pgo file is significant.
                                 exclusiveWeight = Math.Min(1000000.0 - profileEntryFound, 0.0) / 1000000.0;
                             }
-                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF);
+                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
                             weights = null;
+                            instrumentationDataLongs = null;
+                            pgoSchemaData = null;
                             yield return mibcData;
                         }
                         methodInProgress = null;
@@ -371,8 +475,12 @@ namespace ILCompiler.IBC
                             else
                                 state = MibcGroupParseState.LookingForOptionalData;
                             break;
+                        case MibcGroupParseState.ProcessingInstrumentationData:
+                            instrumentationDataLongs.Add(intValue);
+                            break;
                         default:
                             state = MibcGroupParseState.LookingForOptionalData;
+                            instrumentationDataLongs = null;
                             break;
                     }
                 }

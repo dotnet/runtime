@@ -167,11 +167,11 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(s => {
-                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
+            return RunAsync(static s => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
-            }, address);
+            }, address, CancellationToken.None);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
@@ -547,6 +547,8 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
@@ -571,6 +573,7 @@ namespace System.Net
                     {
                         return t;
                     }
+#pragma warning restore CS0162
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
@@ -578,25 +581,25 @@ namespace System.Net
 
             if (justAddresses)
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
             else
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostEntryCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
         }
 
@@ -631,8 +634,8 @@ namespace System.Net
             }
         }
 
-        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
-            Task.Factory.StartNew(func!, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg, CancellationToken cancellationToken) =>
+            Task.Factory.StartNew(func!, arg, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry

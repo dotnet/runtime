@@ -2159,7 +2159,7 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     // We enable EnC back in code:CordbModule::SetJITCompilerFlags.
     // If EnC isn't enabled, then we'll fail in the LS when we try to ApplyChanges.
     // We'd expect a well-behaved debugger to never actually land here.
@@ -2275,7 +2275,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmDomainFile.IsNull())
         return E_UNEXPECTED;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_ENC_SUPPORTED
     HRESULT hr;
 
     void * pRemoteBuf = NULL;
@@ -2395,9 +2395,9 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         TESTANDRETURNHR(hr2);
     }
     return hr;
-#else // EnC_SUPPORTED
+#else // FEATURE_ENC_SUPPORTED
     return E_NOTIMPL;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_ENC_SUPPORTED
 
 }
 
@@ -3267,7 +3267,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
     {
         PCCOR_SIGNATURE localSignature;
         ULONG size;
-        ULONG localCount;
+        uint32_t localCount;
 
         EX_TRY // // @dbgtodo  exceptions  - push this up
         {
@@ -3286,7 +3286,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
         LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS creating sig parser sig=0x%x size=0x%x\n", localSignature, size));
         SigParser sigParser = SigParser(localSignature, size);
 
-        ULONG data;
+        uint32_t data;
 
         IfFailRet(sigParser.GetCallingConvInfo(&data));
 
@@ -4932,7 +4932,7 @@ HRESULT CordbNativeCode::GetSigParserFromFunction(mdToken mdFunction, mdToken *p
 HRESULT CordbNativeCode::EnsureReturnValueAllowed(Instantiation *currentInstantiation, mdToken targetClass, SigParser &parser, SigParser &methodGenerics)
 {
     HRESULT hr = S_OK;
-    ULONG genCount = 0;
+    uint32_t genCount = 0;
     IfFailRet(SkipToReturn(parser, &genCount));
 
     return EnsureReturnValueAllowedWorker(currentInstantiation, targetClass, parser, methodGenerics, genCount);
@@ -5003,18 +5003,18 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
     if (returnType == ELEMENT_TYPE_MVAR)
     {
         // Get which generic parameter is referenced.
-        ULONG genParam = 0;
+        uint32_t genParam = 0;
         IfFailRet(parser.GetData(&genParam));
 
         // Grab the calling convention of the method, ensure it's GENERICINST.
-        ULONG callingConv = 0;
+        uint32_t callingConv = 0;
         IfFailRet(methodGenerics.GetCallingConvInfo(&callingConv));
         if (callingConv != IMAGE_CEE_CS_CALLCONV_GENERICINST)
             return META_E_BAD_SIGNATURE;
 
         // Ensure sensible bounds.
         SigParser generics(methodGenerics);     // Make a copy since operations are destructive.
-        ULONG maxCount = 0;
+        uint32_t maxCount = 0;
         IfFailRet(generics.GetData(&maxCount));
         if (maxCount <= genParam || genParam > 1024)
             return META_E_BAD_SIGNATURE;
@@ -5031,7 +5031,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
     if (returnType == ELEMENT_TYPE_VAR)
     {
         // Get which type parameter is reference.
-        ULONG typeParam = 0;
+        uint32_t typeParam = 0;
         parser.GetData(&typeParam);
 
         // Ensure something reasonable.
@@ -5058,7 +5058,7 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
 
         IfFailRet(typeParser.GetToken(NULL));
 
-        ULONG totalTypeCount = 0;
+        uint32_t totalTypeCount = 0;
         IfFailRet(typeParser.GetData(&totalTypeCount));
         if (totalTypeCount < typeParam)
             return META_E_BAD_SIGNATURE;
@@ -5081,14 +5081,14 @@ HRESULT CordbNativeCode::EnsureReturnValueAllowedWorker(Instantiation *currentIn
     return S_OK;
 }
 
-HRESULT CordbNativeCode::SkipToReturn(SigParser &parser, ULONG *genCount)
+HRESULT CordbNativeCode::SkipToReturn(SigParser &parser, uint32_t *genCount)
 {
     // Takes a method signature parser (at the beginning of a signature) and skips to the
     // return value.
     HRESULT hr = S_OK;
 
     // Skip calling convention
-    ULONG uCallConv;
+    uint32_t uCallConv;
     IfFailRet(parser.GetCallingConvInfo(&uCallConv));
     if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) || (uCallConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
         return META_E_BAD_SIGNATURE;

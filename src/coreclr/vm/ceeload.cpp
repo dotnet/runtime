@@ -686,11 +686,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         Module::CreateAssemblyRefByNameTable(pamTracker);
     }
 
-    // If the program has the "ForceEnc" env variable set we ensure every eligible
-    // module has EnC turned on.
-    if (g_pConfig->ForceEnc() && IsEditAndContinueCapable())
-        EnableEditAndContinue();
-
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
@@ -1078,17 +1073,13 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED
-    BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable();
-
-    // The only way can change Enc is through debugger override.
-    if (setEnC)
+    if (IsEditAndContinueCapable())
     {
-        EnableEditAndContinue();
-    }
-    else
-    {
-        if (!g_pConfig->ForceEnc())
-            DisableEditAndContinue();
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        if (setEnC)
+        {
+            EnableEditAndContinue();
+        }
     }
 #endif // DEBUGGING_SUPPORTED
 
@@ -7012,7 +7003,7 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
         _ASSERTE(pOwnerMT != NULL);
 
         // decode flags
-        DWORD methodFlags;
+        uint32_t methodFlags;
         IfFailThrow(p.GetData(&methodFlags));
         BOOL isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) == ENCODE_METHOD_SIG_InstantiatingStub);
         BOOL isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) == ENCODE_METHOD_SIG_UnboxingStub);
@@ -7022,7 +7013,7 @@ MethodDesc* Module::LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_
         if ( fMethodUsesSlotEncoding )
         {
             // get the method desc using slot number
-            DWORD slot;
+            uint32_t slot;
             IfFailThrow(p.GetData(&slot));
 
             if (slot >= pOwnerMT->GetNumVtableSlots())

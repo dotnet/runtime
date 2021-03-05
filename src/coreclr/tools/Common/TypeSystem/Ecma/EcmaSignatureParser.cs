@@ -13,24 +13,46 @@ namespace Internal.TypeSystem.Ecma
 {
     public struct EcmaSignatureParser
     {
-        private EcmaModule _module;
+        private TypeSystemContext _tsc;
+        private Func<EntityHandle, TypeDesc> _typeResolver;
+        private EcmaModule _ecmaModule;
         private BlobReader _reader;
 
         private Stack<int> _indexStack;
         private List<EmbeddedSignatureData> _embeddedSignatureDataList;
 
 
-        public EcmaSignatureParser(EcmaModule module, BlobReader reader)
+        public EcmaSignatureParser(TypeSystemContext tsc, Func<EntityHandle, TypeDesc> typeResolver, BlobReader reader)
         {
-            _module = module;
+            _ecmaModule = null;
+            _tsc = tsc;
+            _typeResolver = typeResolver;
             _reader = reader;
             _indexStack = null;
             _embeddedSignatureDataList = null;
         }
 
+        public EcmaSignatureParser(EcmaModule ecmaModule, BlobReader reader)
+        {
+            _ecmaModule = ecmaModule;
+            _tsc = ecmaModule.Context;
+            _typeResolver = null;
+            _reader = reader;
+            _indexStack = null;
+            _embeddedSignatureDataList = null;
+        }
+
+        private TypeDesc ResolveHandle(EntityHandle handle)
+        {
+            if (_ecmaModule != null)
+                return _ecmaModule.GetType(handle);
+            else
+                return _typeResolver(handle);
+        }
+
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
         {
-            return _module.Context.GetWellKnownType(wellKnownType);
+            return _tsc.GetWellKnownType(wellKnownType);
         }
 
         private TypeDesc ParseType(SignatureTypeCode typeCode)
@@ -90,9 +112,9 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.Object:
                     return GetWellKnownType(WellKnownType.Object);
                 case SignatureTypeCode.TypeHandle:
-                    return _module.GetType(_reader.ReadTypeHandle());
+                    return ResolveHandle(_reader.ReadTypeHandle());
                 case SignatureTypeCode.SZArray:
-                    return _module.Context.GetArrayType(ParseType());
+                    return _tsc.GetArrayType(ParseType());
                 case SignatureTypeCode.Array:
                     {
                         var elementType = ParseType();
@@ -106,16 +128,16 @@ namespace Internal.TypeSystem.Ecma
                         for (int j = 0; j < lowerBoundsCount; j++)
                             _reader.ReadCompressedInteger();
 
-                        return _module.Context.GetArrayType(elementType, rank);
+                        return _tsc.GetArrayType(elementType, rank);
                     }
                 case SignatureTypeCode.ByReference:
                     return ParseType().MakeByRefType();
                 case SignatureTypeCode.Pointer:
-                    return _module.Context.GetPointerType(ParseType());
+                    return _tsc.GetPointerType(ParseType());
                 case SignatureTypeCode.GenericTypeParameter:
-                    return _module.Context.GetSignatureVariable(_reader.ReadCompressedInteger(), false);
+                    return _tsc.GetSignatureVariable(_reader.ReadCompressedInteger(), false);
                 case SignatureTypeCode.GenericMethodParameter:
-                    return _module.Context.GetSignatureVariable(_reader.ReadCompressedInteger(), true);
+                    return _tsc.GetSignatureVariable(_reader.ReadCompressedInteger(), true);
                 case SignatureTypeCode.GenericTypeInstance:
                     {
                         TypeDesc typeDef = ParseType();
@@ -126,12 +148,12 @@ namespace Internal.TypeSystem.Ecma
                         TypeDesc[] instance = new TypeDesc[_reader.ReadCompressedInteger()];
                         for (int i = 0; i < instance.Length; i++)
                             instance[i] = ParseType();
-                        return _module.Context.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
+                        return _tsc.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
                     }
                 case SignatureTypeCode.TypedReference:
                     return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
-                    return _module.Context.GetFunctionPointerType(ParseMethodSignatureInternal(skipEmbeddedSignatureData: true));
+                    return _tsc.GetFunctionPointerType(ParseMethodSignatureInternal(skipEmbeddedSignatureData: true));
                 default:
                     throw new BadImageFormatException();
             }
@@ -164,7 +186,7 @@ namespace Internal.TypeSystem.Ecma
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
                     if (_embeddedSignatureDataList != null)
                     {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = _module.GetType(typeHandle) });
+                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     }
                     continue;
                 }
@@ -174,7 +196,7 @@ namespace Internal.TypeSystem.Ecma
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
                     if (_embeddedSignatureDataList != null)
                     {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = _module.GetType(typeHandle) });
+                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     }
                     continue;
                 }

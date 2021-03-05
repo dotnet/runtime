@@ -495,7 +495,7 @@ namespace System.Buffers
                 ReadOnlySequence<T> localThis = this;
                 ReadOnlySequence<char> charSequence = Unsafe.As<ReadOnlySequence<T>, ReadOnlySequence<char>>(ref localThis);
 
-                if (SequenceMarshal.TryGetString(charSequence, out string? text, out int start, out int length))
+                if (charSequence.TryGetString(out string? text, out int start, out int length))
                 {
                     return text.Substring(start, length);
                 }
