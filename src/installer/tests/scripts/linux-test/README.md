@@ -11,7 +11,7 @@ The options are:
    * runtime - verification test for .NET Runtime Linux packages
    * sdk - verification test for .NET SDK Linux packages
 * \<version>
-  * latest - install the latest available .NET package from our master repository
+  * latest - install the latest available .NET package from our main repository
   * \<number> - install the package corresponding to this version number
 * \<command>
   * install - verification test for install

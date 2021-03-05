@@ -49,7 +49,7 @@ namespace System
         }
 
         // Determines whether two Byte objects are equal.
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is byte))
             {

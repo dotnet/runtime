@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "_typeinfo.h"
 
-BOOL Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
+bool Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
 {
 #ifdef DEBUG
 #if VERBOSE_VERIFY
@@ -34,7 +34,7 @@ BOOL Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, b
 #endif // VERBOSE_VERIFY
 #endif // DEBUG
 
-    BOOL compatible = typeInfo::tiCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
+    bool compatible = typeInfo::tiCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
 
 #ifdef DEBUG
 #if VERBOSE_VERIFY
@@ -48,12 +48,12 @@ BOOL Compiler::tiCompatibleWith(const typeInfo& child, const typeInfo& parent, b
     return compatible;
 }
 
-BOOL Compiler::tiMergeCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
+bool Compiler::tiMergeCompatibleWith(const typeInfo& child, const typeInfo& parent, bool normalisedForStack) const
 {
     return typeInfo::tiMergeCompatibleWith(info.compCompHnd, child, parent, normalisedForStack);
 }
 
-BOOL Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const
+bool Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const
 {
 #ifdef DEBUG
 #if VERBOSE_VERIFY
@@ -70,7 +70,7 @@ BOOL Compiler::tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool
 #endif // VERBOSE_VERIFY
 #endif // DEBUG
 
-    BOOL mergeable = typeInfo::tiMergeToCommonParent(info.compCompHnd, pDest, pSrc, changed);
+    bool mergeable = typeInfo::tiMergeToCommonParent(info.compCompHnd, pDest, pSrc, changed);
 
 #ifdef DEBUG
 #if VERBOSE_VERIFY

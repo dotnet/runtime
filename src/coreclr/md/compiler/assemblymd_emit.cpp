@@ -36,7 +36,7 @@ STDMETHODIMP RegMeta::DefineAssembly(         // S_OK or error.
     HRESULT     hr = S_OK;
 
     AssemblyRec *pRecord = NULL;        // The assembly record.
-    ULONG        iRecord;               // RID of the assembly record.
+    RID          iRecord;               // RID of the assembly record.
 
     if (szName == NULL || pMetaData == NULL || pma == NULL)
         return E_INVALIDARG;
@@ -117,7 +117,7 @@ STDMETHODIMP RegMeta::DefineAssemblyRef(      // S_OK or error.
     HRESULT hr = S_OK;
 
     AssemblyRefRec *pRecord = NULL;
-    ULONG           iRecord;
+    RID             iRecord;
 
     if (szName == NULL || pmar == NULL || pMetaData == NULL)
         return E_INVALIDARG;
@@ -208,7 +208,7 @@ STDMETHODIMP RegMeta::DefineFile(             // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     FileRec     *pRecord = NULL;
-    ULONG       iRecord;
+    RID         iRecord;
 
     LOG((LOGMD, "RegMeta::DefineFile(%S, %#08x, %#08x, %#08x, %#08x)\n",
         MDSTR(szName), pbHashValue, cbHashValue, dwFileFlags, pmf));
@@ -281,7 +281,7 @@ STDMETHODIMP RegMeta::DefineExportedType(     // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     ExportedTypeRec  *pRecord = NULL;
-    ULONG       iRecord;
+    RID         iRecord;
     LPSTR       szNameUTF8;
     LPCSTR      szTypeNameUTF8;
     LPCSTR      szTypeNamespaceUTF8;
@@ -381,7 +381,7 @@ STDMETHODIMP RegMeta::DefineManifestResource( // S_OK or error.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     ManifestResourceRec *pRecord = NULL;
-    ULONG       iRecord;
+    RID       iRecord;
 
     LOG((LOGMD, "RegMeta::DefineManifestResource(%S, %#08x, %#08x, %#08x, %#08x)\n",
         MDSTR(szName), tkImplementation, dwOffset, dwResourceFlags, pmmr));

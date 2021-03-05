@@ -3327,7 +3327,7 @@ GetTempFileNameW(
     INT prefix_size = 0;
     CHAR * full_name;
     CHAR * prefix_string;
-    CHAR * tempfile_name;
+    CHAR * tempfile_name = NULL;
     PathCharString full_namePS, prefix_stringPS;
     INT length = 0;
     UINT   uRet;
@@ -3413,8 +3413,6 @@ GetTempFileNameW(
         path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1,
                                            lpTempFileName, MAX_LONGPATH );
 
-        free(tempfile_name);
-        tempfile_name = NULL;
         if (!path_size)
         {
             DWORD dwLastError = GetLastError();
@@ -3434,6 +3432,8 @@ GetTempFileNameW(
     }
 
 done:
+    free(tempfile_name);
+
     LOGEXIT("GetTempFileNameW returns UINT %u\n", uRet);
     PERF_EXIT(GetTempFileNameW);
     return uRet;

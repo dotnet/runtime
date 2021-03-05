@@ -1473,7 +1473,11 @@ namespace System
                 // on work triggered from the signal handling thread.
                 // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
                 // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent) { IsBackground = true };
+                Thread handlerThread = new Thread(HandleBreakEvent)
+                {
+                    IsBackground = true,
+                    Name = ".NET Console Break"
+                };
                 handlerThread.Start(ctrlCode);
             }
 

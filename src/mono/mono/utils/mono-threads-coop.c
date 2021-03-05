@@ -181,15 +181,13 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 
 	stackdata_size = (char*)mono_stackdata_get_stackpointer (stackdata_begin) - (char*)stackdata_end;
 
-	const char *function_name = mono_stackdata_get_function_name (stackdata_begin);
-
 	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", function_name, stackdata_begin, SIZEOF_VOID_P);
+		g_error ("%s stackdata_begin (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_begin, SIZEOF_VOID_P);
 	if (((gsize) stackdata_end & (SIZEOF_VOID_P - 1)) != 0)
-		g_error ("%s stackdata_end (%p) must be %d-byte aligned", function_name, stackdata_end, SIZEOF_VOID_P);
+		g_error ("%s stackdata_end (%p) must be %d-byte aligned", mono_stackdata_get_function_name (stackdata_begin), stackdata_end, SIZEOF_VOID_P);
 
 	if (stackdata_size <= 0)
-		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", function_name, stackdata_size, stackdata_begin, stackdata_end);
+		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", mono_stackdata_get_function_name (stackdata_begin), stackdata_size, stackdata_begin, stackdata_end);
 
 	g_byte_array_set_size (info->stackdata, stackdata_size);
 	state->gc_stackdata = info->stackdata->data;
@@ -201,7 +199,8 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 #ifdef _MSC_VER
 typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
 
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
+#include <emmintrin.h>
 // Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
 typedef struct {
 	__m128d fregs [10];

@@ -775,7 +775,7 @@ CorSigUncompressToken_EndPtr(
     }
     DWORD dwDataSize = (DWORD)cbDataSize;
 
-    ULONG cbTokenOutLength;
+    uint32_t cbTokenOutLength;
     IfFailRet(CorSigUncompressToken(
         pData,
         dwDataSize,

@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Security
@@ -220,7 +221,7 @@ namespace System.Security
             _children.Add(child);
         }
 
-        public bool Equal(SecurityElement? other)
+        public bool Equal([NotNullWhen(true)] SecurityElement? other)
         {
             if (other == null)
                 return false;
@@ -297,7 +298,7 @@ namespace System.Security
             return element;
         }
 
-        public static bool IsValidTag(string? tag)
+        public static bool IsValidTag([NotNullWhen(true)] string? tag)
         {
             if (tag == null)
                 return false;
@@ -305,7 +306,7 @@ namespace System.Security
             return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
         }
 
-        public static bool IsValidText(string? text)
+        public static bool IsValidText([NotNullWhen(true)] string? text)
         {
             if (text == null)
                 return false;
@@ -313,12 +314,12 @@ namespace System.Security
             return text.IndexOfAny(s_textIllegalCharacters) == -1;
         }
 
-        public static bool IsValidAttributeName(string? name)
+        public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
         {
             return IsValidTag(name);
         }
 
-        public static bool IsValidAttributeValue(string? value)
+        public static bool IsValidAttributeValue([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;

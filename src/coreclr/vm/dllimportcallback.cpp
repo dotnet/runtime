@@ -249,10 +249,6 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
     if (pThread->IsAbortRequested())
         pThread->HandleThreadAbort();
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     UMEntryThunk::DoRunTimeInit(pUMEntryThunk);
 
     return (PCODE)pUMEntryThunk->GetCode();
@@ -288,6 +284,11 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
 
     {
         GCX_PREEMP();
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
         pUMEntryThunk->RunTimeInit();
     }
 
@@ -607,7 +608,6 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
     if (nativeCallableInternalData)
     {
         namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
     }
     else
     {
@@ -643,7 +643,7 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
     else
     {
         // Set WinAPI as the default
-        callConvLocal = (CorInfoCallConvExtension)MetaSig::GetDefaultUnmanagedCallingConvention();
+        callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
 
         CaValue* arrayOfTypes = &namedArgs[0].val;
         for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)

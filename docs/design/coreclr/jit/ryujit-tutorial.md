@@ -6,7 +6,7 @@
 - An implementation of the Common Language Infrastructure [ECMA 335]
   - Supports multiple languages, including C#, F# and VB
 - RyuJIT is the "next generation" just in time compiler for .NET
-- Sources are at https://github.com/dotnet/runtime/tree/master/src/coreclr/jit
+- Sources are at https://github.com/dotnet/runtime/tree/main/src/coreclr/jit
 
 #### Notes
 For context, the .NET runtime has been around since about the turn of the millennium. It is a virtual machine that supports the execution of a number of languages, primarily C#, Visual Basic, and F#.
@@ -49,7 +49,7 @@ Finally, while the original JIT was quite x86-oriented, we now have a broader se
 
 ### Execution Environment & External Interface
 - RyuJIT provides just-in-time compilation for the .NET runtime (aka EE or VM or CLR)
-  - It is currently "single-tier" – no interpreter or higher-level optimizer, though multi-tier support is in the works
+  - Supports "tiering", where code can be compiled with most optimizations turned off (Tier 0), and the VM can later request the same method be recompiled with optimizations turned on (Tier 1).
 - ICorJitCompiler – this is the interface that the JIT compiler implements, and includes compileMethod (corjit.h)
 - ICorJitInfo – this is the interface that the EE implements to provide type & method info
   - Inherits from ICorDynamicInfo (corinfo.h)

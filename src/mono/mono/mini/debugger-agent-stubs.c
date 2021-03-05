@@ -36,7 +36,7 @@ stub_debugger_agent_single_step_event (void *sigctx)
 }
 
 static void
-stub_debugger_agent_free_domain_info (MonoDomain *domain)
+stub_debugger_agent_free_mem_manager (gpointer mem_manager)
 {
 }
 
@@ -109,7 +109,6 @@ mono_debugger_agent_stub_init (void)
 	cbs.single_step_event = stub_debugger_agent_single_step_event;
 	cbs.single_step_from_context = stub_debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = stub_debugger_agent_breakpoint_from_context;
-	cbs.free_domain_info = stub_debugger_agent_free_domain_info;
 	cbs.unhandled_exception = stub_debugger_agent_unhandled_exception;
 	cbs.handle_exception = stub_debugger_agent_handle_exception;
 	cbs.begin_exception_filter = stub_debugger_agent_begin_exception_filter;

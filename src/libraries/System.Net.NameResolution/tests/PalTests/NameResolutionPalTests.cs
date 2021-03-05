@@ -98,6 +98,7 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/47591", TestPlatforms.Android)]
         public void TryGetAddrInfo_ExternalHost(bool justAddresses)
         {
             string hostName = "microsoft.com";
@@ -241,6 +242,8 @@ namespace System.Net.NameResolution.PalTests
         {
             Assert.NotNull(NameResolutionPal.GetHostName());
         }
+
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
 
         [Theory]
         [InlineData(false)]
@@ -416,6 +419,8 @@ namespace System.Net.NameResolution.PalTests
 
             Assert.Equal(SocketError.HostNotFound, socketError);
         }
+
+#pragma warning restore CS0162
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

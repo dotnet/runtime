@@ -831,7 +831,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints,	GError **err) 
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err) 
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -881,7 +881,16 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	if (items_written)
 		*items_written = outlen;
 	
-	outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
+	if (G_LIKELY (!custom_alloc_func))
+		outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
+	else
+		outptr = outbuf = (gunichar2 *)custom_alloc_func ((outlen + 1) * sizeof (gunichar2), custom_alloc_data);
+
+	if (G_UNLIKELY (custom_alloc_func && !outbuf)) {
+		mono_set_errno (ENOMEM);
+		goto error;
+	}
+
 	inptr = (char *) str;
 	inleft = len;
 	
@@ -908,8 +917,11 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 	
 	return outbuf;
 	
- error:
-	if (errno == EILSEQ) {
+error:
+	if (errno == ENOMEM) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY,
+			     "Allocation failed.");
+	} else if (errno == EILSEQ) {
 		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
 			     "Illegal byte sequence encounted in the input.");
 	} else if (items_read) {
@@ -931,19 +943,25 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err);
+}
+
+gunichar2 *
+g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err);
 }
 
 gunichar2 *
 eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, NULL, NULL, err);
 }
 
 gunichar2 *
 eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, err);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, NULL, NULL, err);
 }
 
 gunichar *
@@ -1018,8 +1036,9 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 	return outbuf;
 }
 
+static
 gchar *
-g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
+eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
 	char *inptr, *outbuf, *outptr;
 	size_t outlen = 0;
@@ -1077,8 +1096,19 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	
 	if (items_written)
 		*items_written = outlen;
+
+	if (G_LIKELY (!custom_alloc_func))
+		outptr = outbuf = g_malloc (outlen + 1);
+	else
+		outptr = outbuf = (char *)custom_alloc_func (outlen + 1, custom_alloc_data);
+
+	if (G_UNLIKELY (custom_alloc_func && !outbuf)) {
+		g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_NO_MEMORY, "Allocation failed.");
+		if (items_written)
+			*items_written = 0;
+		return NULL;
+	}
 	
-	outptr = outbuf = g_malloc (outlen + 1);
 	inptr = (char *) str;
 	inleft = len * 2;
 	
@@ -1096,6 +1126,18 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	*outptr = '\0';
 	
 	return outbuf;
+}
+
+gchar *
+g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
+{
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err);
+}
+
+gchar *
+g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err);
 }
 
 gunichar *
@@ -1301,4 +1343,18 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 		*items_read = i;
 	
 	return outbuf;
+}
+
+gpointer
+g_fixed_buffer_custom_allocator (gsize req_size, gpointer custom_alloc_data)
+{
+	GFixedBufferCustomAllocatorData *fixed_buffer_custom_alloc_data = (GFixedBufferCustomAllocatorData *)custom_alloc_data;
+	if (!fixed_buffer_custom_alloc_data)
+		return NULL;
+
+	fixed_buffer_custom_alloc_data->req_buffer_size = req_size;
+	if (req_size > fixed_buffer_custom_alloc_data->buffer_size)
+		return NULL;
+
+	return fixed_buffer_custom_alloc_data->buffer;
 }

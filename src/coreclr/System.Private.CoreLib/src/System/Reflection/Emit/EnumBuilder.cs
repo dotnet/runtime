@@ -184,13 +184,13 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetNestedType(name, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetMember(name, type, bindingAttr);
         }
 
-       [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetMembers(bindingAttr);

@@ -77,7 +77,6 @@ int main(int argc, char **argv) {
 
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
@@ -113,7 +112,12 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
 check_function_exists(utimes HAVE_UTIMES)
-check_function_exists(sysctl HAVE_SYSCTL)
+if(CLR_CMAKE_TARGET_LINUX)
+  # sysctl is deprecated on Linux
+  set(HAVE_SYSCTL 0)
+else()
+  check_function_exists(sysctl HAVE_SYSCTL)
+endif()
 check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
@@ -473,26 +477,6 @@ int main()
 }" HAVE_CLOCK_THREAD_CPUTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <fcntl.h>
-
-int main(void) {
-  int devzero;
-  void *retval;
-
-  devzero = open(\"/dev/zero\", O_RDWR);
-  if (-1 == devzero) {
-    exit(1);
-  }
-  retval = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, devzero, 0);
-  if (retval == (void *)-1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_MMAP_DEV_ZERO)
 check_cxx_source_runs("
 #include <sys/types.h>
 #include <sys/mman.h>
