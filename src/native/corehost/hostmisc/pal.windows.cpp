@@ -49,12 +49,13 @@ pal::string_t pal::to_lower(const pal::string_t& in)
 
 pal::string_t pal::get_timestamp()
 {
-    std::time_t t = std::time(0);
+    std::time_t t = std::time(nullptr);
     const std::size_t elems = 100;
     char_t buf[elems];
 
-#pragma warning(suppress : 4996)  // error C4996: 'gmtime': This function or variable may be unsafe.
-    std::wcsftime(buf, elems, _X("%c GMT"), std::gmtime(&t));
+    tm tm_l{};
+    ::gmtime_s(&tm_l, &t);
+    std::wcsftime(buf, elems, _X("%c GMT"), &tm_l);
 
     return pal::string_t(buf);
 }

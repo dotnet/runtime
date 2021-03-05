@@ -162,7 +162,10 @@ namespace pal
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
-    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
+
+    // This API is being used correctly and querying for needed size first.
+#pragma warning(suppress : 4996)  // error C4996: '_vsnwprintf': This function or variable may be unsafe.
+    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf(buffer, count, format, vl); }
 
     // Suppressing warning since the 'safe' version requires an input buffer that is unnecessary for
     // uses of this function.
