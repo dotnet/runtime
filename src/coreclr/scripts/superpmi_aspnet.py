@@ -27,6 +27,7 @@ from superpmi_setup import run_command
 is_windows = platform.system() == "Windows"
 parser = argparse.ArgumentParser(description="description")
 
+parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-core_root", help="Path to Core_Root directory")
 parser.add_argument("-output_mch_path", help="Absolute path to the mch file to produce")
 parser.add_argument("-log_file", help="Name of the log file")
@@ -44,6 +45,11 @@ def setup_args(args):
     """
     coreclr_args = CoreclrArguments(args, require_built_core_root=False, require_built_product_dir=False,
                                     require_built_test_dir=False, default_build_type="Checked")
+
+    coreclr_args.verify(args,
+                        "source_directory",
+                        lambda source_directory: os.path.isdir(source_directory),
+                        "source_directory doesn't exist")
 
     coreclr_args.verify(args,
                         "output_mch_path",
@@ -67,26 +73,6 @@ def setup_args(args):
 
     return coreclr_args
 
-
-def make_executable(file_name):
-    """Make file executable by changing the permission
-
-    Args:
-        file_name (string): file to execute
-    """
-    if is_windows:
-        return
-
-    print("Inside make_executable")
-    run_command(["ls", "-l", file_name])
-    os.chmod(file_name,
-             # read+execute for owner
-             (stat.S_IRUSR | stat.S_IXUSR) |
-             # read+execute for group
-             (stat.S_IRGRP | stat.S_IXGRP) |
-             # read+execute for other
-             (stat.S_IROTH | stat.S_IXOTH))
-    run_command(["ls", "-l", file_name])
 
 def determine_native_name(coreclr_args, base_lib_name):
     """ Determine the name of the native lib based on the OS.
@@ -155,12 +141,15 @@ def build_and_run(coreclr_args, output_mch_name):
     else:
         shim_name = "$JitName"
 
-    make_executable(dotnet_exe)
+    # Make sure ".dotnet" directory exists, by running the script at least once
+    dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
+    dotnet_script_path = path.join(source_directory, dotnet_script_name)
+    run_command([dotnet_script_path, "--info"], jitutils_directory)
 
     ## install crank
 
     run_command(
-       [dotnet_exe, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global"], _exit_on_fail=True)
+       [dotnet_script_path, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global"], _exit_on_fail=True)
 
     ## sparse clone of aspnet/benchmarks to obtain the benchmark config files
 

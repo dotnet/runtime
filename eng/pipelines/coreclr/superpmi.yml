@@ -178,6 +178,7 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
+      liveLibrariesBuildConfig: Release
       collectionType: run
       collectionName: aspnet
 
