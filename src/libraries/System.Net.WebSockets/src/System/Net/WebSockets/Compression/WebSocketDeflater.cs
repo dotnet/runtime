@@ -28,7 +28,7 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose() => _stream?.Dispose();
 
-        public void Deflate( ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
+        public void Deflate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
             Debug.Assert(!continuation || _stream is not null, "Invalid state. The stream should not be null in continuations.");
@@ -47,24 +47,25 @@ namespace System.Net.WebSockets.Compression
             // See comment by Mark Adler https://github.com/madler/zlib/issues/149#issuecomment-225237457
             // At that point there will be at most a few bits left to write.
             // Then call deflate() with Z_FULL_FLUSH and no more input and at least six bytes of available output.
-            written += Flush(output.Slice(written), out needsMoreOutput);
-
-            if (!needsMoreOutput)
+            if (output.Length - written < 6)
             {
-                Debug.Assert(output.Slice(written - WebSocketInflater.FlushMarkerLength, WebSocketInflater.FlushMarkerLength)
-                                   .EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
+                needsMoreOutput = true;
+                return;
+            }
+            written += Flush(output.Slice(written));
+            Debug.Assert(output.Slice(written - WebSocketInflater.FlushMarkerLength, WebSocketInflater.FlushMarkerLength)
+                               .EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
-                if (endOfMessage)
-                {
-                    // As per RFC we need to remove the flush markers
-                    written -= WebSocketInflater.FlushMarkerLength;
-                }
+            if (endOfMessage)
+            {
+                // As per RFC we need to remove the flush markers
+                written -= WebSocketInflater.FlushMarkerLength;
+            }
 
-                if (endOfMessage && !_persisted)
-                {
-                    _stream.Dispose();
-                    _stream = null;
-                }
+            if (endOfMessage && !_persisted)
+            {
+                _stream.Dispose();
+                _stream = null;
             }
         }
 
@@ -95,11 +96,11 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private unsafe int Flush(Span<byte> output, out bool needsMoreBuffer)
+        private unsafe int Flush(Span<byte> output)
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
-            Debug.Assert(output.Length >= 6);
+            Debug.Assert(output.Length >= 6, "We neede at least 6 bytes guarantee the completion of the deflate block.");
 
             fixed (byte* fixedOutput = output)
             {
@@ -111,8 +112,8 @@ namespace System.Net.WebSockets.Compression
 
                 ErrorCode errorCode = Deflate(_stream, (FlushCode)3/*Z_FULL_FLUSH*/);
                 int writtenBytes = output.Length - (int)_stream.AvailOut;
+                Debug.Assert(errorCode == ErrorCode.Ok);
 
-                needsMoreBuffer = errorCode == ErrorCode.BufError;
                 return writtenBytes;
             }
         }
