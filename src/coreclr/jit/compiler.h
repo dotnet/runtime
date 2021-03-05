@@ -454,9 +454,10 @@ public:
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
 
-    unsigned char lvEhWriteThruCandidate : 1;
+    unsigned char lvEhWriteThruCandidate : 1; // variable has a single def and hence is a register candidate if
+                                              // if it is an EH variable
 
-    unsigned char lvDisqualifyForEhWriteThru : 1;
+    unsigned char lvDisqualifyForEhWriteThru : 1;   // tracks variable that are disqualified from register candidancy
 
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
