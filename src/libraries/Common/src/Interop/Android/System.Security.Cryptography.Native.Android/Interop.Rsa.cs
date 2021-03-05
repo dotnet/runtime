@@ -21,11 +21,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_RsaDestroy")]
         internal static extern void RsaDestroy(IntPtr rsa);
 
-        internal static SafeRsaHandle DecodeRsaPublicKey(ReadOnlySpan<byte> buf) =>
-            DecodeRsaPublicKey(ref MemoryMarshal.GetReference(buf), buf.Length);
+        internal static SafeRsaHandle DecodeRsaSubjectPublicKeyInfo(ReadOnlySpan<byte> buf) =>
+            DecodeRsaSubjectPublicKeyInfo(ref MemoryMarshal.GetReference(buf), buf.Length);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DecodeRsaPublicKey")]
-        private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo")]
+        private static extern SafeRsaHandle DecodeRsaSubjectPublicKeyInfo(ref byte buf, int len);
 
         internal static int RsaPublicEncrypt(
             int flen,
@@ -184,6 +184,47 @@ internal static partial class Interop
             Pkcs1 = 0,
             OaepSHA1 = 1,
             NoPadding = 2,
+        }
+    }
+}
+
+namespace System.Security.Cryptography
+{
+    internal sealed class SafeRsaHandle : SafeKeyHandle
+    {
+        public SafeRsaHandle()
+        {
+        }
+
+        public SafeRsaHandle(IntPtr ptr)
+        {
+            SetHandle(ptr);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.AndroidCrypto.RsaDestroy(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        internal override SafeRsaHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
+
+        internal static SafeRsaHandle DuplicateHandle(IntPtr handle)
+        {
+            Debug.Assert(handle != IntPtr.Zero);
+
+            // Reliability: Allocate the SafeHandle before calling RSA_up_ref so
+            // that we don't lose a tracked reference in low-memory situations.
+            SafeRsaHandle safeHandle = new SafeRsaHandle();
+
+            if (!Interop.AndroidCrypto.RsaUpRef(handle))
+            {
+                throw new CryptographicException();
+            }
+
+            safeHandle.SetHandle(handle);
+            return safeHandle;
         }
     }
 }

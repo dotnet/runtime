@@ -761,7 +761,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128

@@ -27,16 +27,18 @@ typedef struct RSA
 PALEXPORT RSA* AndroidCryptoNative_RsaCreate(void);
 PALEXPORT int32_t AndroidCryptoNative_RsaUpRef(RSA* rsa);
 PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa);
-PALEXPORT RSA* AndroidCryptoNative_DecodeRsaPublicKey(uint8_t* buf, int32_t len);
+PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len);
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
 PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa);
 PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa);
 PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits);
-PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa, 
+PALEXPORT int32_t AndroidCryptoNative_GetRsaParameters(RSA* rsa,
     jobject* n, jobject* e, jobject* d, jobject* p, jobject* dmp1, jobject* q, jobject* dmq1, jobject* iqmp);
-PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa, 
-    uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength, 
-    uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength, 
+PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
+    uint8_t* n,    int32_t nLength,    uint8_t* e,    int32_t eLength,    uint8_t* d, int32_t dLength,
+    uint8_t* p,    int32_t pLength,    uint8_t* dmp1, int32_t dmp1Length, uint8_t* q, int32_t qLength,
     uint8_t* dmq1, int32_t dmq1Length, uint8_t* iqmp, int32_t iqmpLength);
+
+RSA* AndroidCryptoNative_NewRsaFromPublicKey(JNIEnv* env, jobject /*RSAPublicKey*/ key);

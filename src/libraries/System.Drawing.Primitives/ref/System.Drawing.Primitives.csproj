@@ -10,5 +10,6 @@
     <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.Numerics.Vectors\ref\System.Numerics.Vectors.csproj" />
   </ItemGroup>
 </Project>

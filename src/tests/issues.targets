@@ -1033,6 +1033,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
+            <Issue>Mono does not define out of range fp to int conversions</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
             <Issue>https://github.com/dotnet/runtime/issues/48190</Issue>
         </ExcludeList>
