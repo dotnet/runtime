@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -10,7 +11,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class RSAKeyFileTests
     {
-        public static bool Supports384BitPrivateKey { get; } = RSAFactory.Supports384PrivateKey;
+        public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
         public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
 
         [Theory]
@@ -734,7 +735,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
                 TestData.RSA16384Params);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -760,7 +761,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -837,7 +838,7 @@ Dmw2pL/LzHORugcg9BxRkur91lenPNcLAvnke76tMGvSGkA82I9NpBDcGRK4cPie
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(Supports384BitPrivateKey))]
+        [ConditionalFact(nameof(Supports384BitPrivateKeyAndRC2))]
         public static void ReadPbes1Rc2EncryptedRsa384()
         {
             // PbeWithSha1AndRC2CBC

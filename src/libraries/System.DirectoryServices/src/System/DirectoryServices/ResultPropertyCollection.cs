@@ -25,7 +25,7 @@ namespace System.DirectoryServices
                 object objectName = name.ToLowerInvariant();
                 if (Contains((string)objectName))
                 {
-                    return (ResultPropertyValueCollection)InnerHashtable[objectName];
+                    return (ResultPropertyValueCollection)InnerHashtable[objectName]!;
                 }
                 else
                 {

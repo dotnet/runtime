@@ -3,9 +3,10 @@
 
 #include "pal_ecdsa.h"
 #include "pal_bignum.h"
+#include "pal_signature.h"
 #include "pal_utilities.h"
 
-static jobject AndroidCryptoNative_GetEsDsaSignatureObject(JNIEnv* env)
+static jobject GetEcDsaSignatureObject(JNIEnv* env)
 {
     jstring algorithmName = JSTRING("NONEwithECDSA");
     jobject signatureObject =
@@ -28,37 +29,23 @@ int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint
 
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = GetEcDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
     }
 
     jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
-    (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitSign, privateKey);
+    if (!privateKey)
+    {
+        ReleaseLRef(env, signatureObject);
+        return FAIL;
+    }
+
+    int32_t returnValue = AndroidCryptoNative_SignWithSignatureObject(env, signatureObject, privateKey, dgst, dgstlen, sig, siglen);
     ReleaseLRef(env, privateKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
-    (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
-    (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
-    ReleaseLRef(env, digestArray);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    jbyteArray sigResult = (*env)->CallObjectMethod(env, signatureObject, g_SignatureSign);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-    jsize sigSize = (*env)->GetArrayLength(env, sigResult);
-    *siglen = sigSize;
-    (*env)->GetByteArrayRegion(env, sigResult, 0, sigSize, (jbyte*)sig);
-    ReleaseLRef(env, sigResult);
-
     ReleaseLRef(env, signatureObject);
-
-    return SUCCESS;
-
-error:
-    ReleaseLRef(env, signatureObject);
-    return FAIL;
+    return returnValue;
 }
 
 int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)
@@ -68,36 +55,17 @@ int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, co
     assert(key);
     JNIEnv* env = GetJNIEnv();
 
-    jobject signatureObject = AndroidCryptoNative_GetEsDsaSignatureObject(env);
+    jobject signatureObject = GetEcDsaSignatureObject(env);
     if (!signatureObject)
     {
         return FAIL;
     }
 
     jobject publicKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPublicMethod);
-    (*env)->CallVoidMethod(env, signatureObject, g_SignatureInitVerify, publicKey);
+    int32_t returnValue = AndroidCryptoNative_VerifyWithSignatureObject(env, signatureObject, publicKey, dgst, dgstlen, sig, siglen);
     ReleaseLRef(env, publicKey);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    jbyteArray digestArray = (*env)->NewByteArray(env, dgstlen);
-    (*env)->SetByteArrayRegion(env, digestArray, 0, dgstlen, (const jbyte*)dgst);
-    (*env)->CallVoidMethod(env, signatureObject, g_SignatureUpdate, digestArray);
-    ReleaseLRef(env, digestArray);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
-    jbyteArray sigArray = (*env)->NewByteArray(env, siglen);
-    (*env)->SetByteArrayRegion(env, sigArray, 0, siglen, (const jbyte*)sig);
-    jboolean verified = (*env)->CallBooleanMethod(env, signatureObject, g_SignatureVerify, sigArray);
-    ReleaseLRef(env, sigArray);
-    ON_EXCEPTION_PRINT_AND_GOTO(error);
-
     ReleaseLRef(env, signatureObject);
-
-    return verified ? SUCCESS : FAIL;
-
-error:
-    ReleaseLRef(env, signatureObject);
-    return -1;
+    return returnValue;
 }
 
 int32_t AndroidCryptoNative_EcDsaSize(const EC_KEY* key)
@@ -113,7 +81,7 @@ int32_t AndroidCryptoNative_EcDsaSize(const EC_KEY* key)
     const int derEncodingBytes = 7;
     JNIEnv* env = GetJNIEnv();
     jobject order = (*env)->CallObjectMethod(env, key->curveParameters, g_ECParameterSpecGetOrder);
-    int byteLength = CryptoNative_GetBigNumBytesIncludingPaddingByteForSign(order);
+    int byteLength = AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(order);
     ReleaseLRef(env, order);
     return 2 * byteLength + derEncodingBytes;
 }

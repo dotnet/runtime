@@ -31,8 +31,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -419,8 +418,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -459,13 +457,10 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-            {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
-                // Do the forward lookup to get the IPs for that host name
-                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
-            }
+            // Do the forward lookup to get the IPs for that host name
+            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
 
             object result;
             try
@@ -492,8 +487,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -547,6 +541,8 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
@@ -571,6 +567,7 @@ namespace System.Net
                     {
                         return t;
                     }
+#pragma warning restore CS0162
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
@@ -654,12 +651,9 @@ namespace System.Net
             }
         }
 
-
         private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
-
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
             return false;
         }
     }

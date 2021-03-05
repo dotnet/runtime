@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Numerics;
 using Xunit;
 
 namespace System.Drawing.PrimitivesTest
@@ -28,6 +29,7 @@ namespace System.Drawing.PrimitivesTest
             Assert.Equal(s1, s2);
             Assert.Equal(s1, new SizeF(p1));
             Assert.Equal(s2, new SizeF(p1));
+            Assert.Equal(s1, new SizeF(new Vector2(width, height)));
 
             Assert.Equal(width, s1.Width);
             Assert.Equal(height, s1.Height);
@@ -37,6 +39,22 @@ namespace System.Drawing.PrimitivesTest
 
             s1.Height = -10.123f;
             Assert.Equal(-10.123, s1.Height, 3);
+        }
+
+        [Theory]
+        [InlineData(float.MaxValue, float.MinValue)]
+        [InlineData(float.MinValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MaxValue)]
+        [InlineData(float.MinValue, float.MaxValue)]
+        [InlineData(0.0, 0.0)]
+        public void ToFromVector(float x, float y)
+        {
+            SizeF size1 = new SizeF(x, y);
+            Vector2 vector1 = new Vector2(x, y);
+
+            Assert.Equal(vector1, size1.ToVector2());
+            Assert.Equal(vector1, (Vector2)size1);
+            Assert.Equal(size1, (SizeF)vector1);
         }
 
         [Fact]
