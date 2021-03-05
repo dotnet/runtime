@@ -150,6 +150,12 @@ public: // Identification
         _In_z_ const char* libraryName,
         _In_z_ const char* entrypointName);
 
+public: // Exceptions
+    static void* GetPropagatingExceptionCallback(
+        _In_ EECodeInfo* codeInfo,
+        _In_ OBJECTHANDLE throwable,
+        _Outptr_ void** context);
+
 public: // GC interaction
     static void OnFullGCStarted();
     static void OnFullGCFinished();

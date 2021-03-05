@@ -31,36 +31,6 @@ bool Interop::ShouldCheckForPendingException(_In_ NDirectMethodDesc* md)
     return false;
 }
 
-namespace
-{
-    void* CallInvokeUnhandledExceptionPropagation(
-        _In_ OBJECTREF* exceptionPROTECTED,
-        _Outptr_ void** callbackContext)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_COOPERATIVE;
-            PRECONDITION(exceptionPROTECTED != NULL);
-            PRECONDITION(callbackContext != NULL);
-        }
-        CONTRACTL_END;
-
-        void* callback = NULL;
-        *callbackContext = NULL;
-
-#ifdef FEATURE_OBJCBRIDGE
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__OBJCBRIDGE__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*exceptionPROTECTED);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(callbackContext);
-        CALL_MANAGED_METHOD(callback, void*, args);
-#endif // FEATURE_OBJCBRIDGE
-
-        return callback;
-    }
-}
-
 ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     _In_ EECodeInfo* codeInfo,
     _In_ OBJECTHANDLE throwable,
@@ -71,33 +41,24 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
         THROWS;
         MODE_PREEMPTIVE;
         PRECONDITION(codeInfo != NULL);
+        PRECONDITION(throwable != NULL);
         PRECONDITION(context != NULL);
     }
     CONTRACT_END;
 
-    ManagedToNativeExceptionCallback callback;
-    void* callbackContext;
+#ifdef FEATURE_OBJCBRIDGE
 
-    {
-        GCX_COOP();
-        struct
-        {
-            OBJECTREF throwableRef;
-        } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
-        GCPROTECT_BEGIN(gc);
+    RETURN (ManagedToNativeExceptionCallback)ObjCBridgeNative::GetPropagatingExceptionCallback(
+        codeInfo,
+        throwable,
+        context);
 
-        gc.throwableRef = ObjectFromHandle(throwable);
+#else // !FEATURE_OBJCBRIDGE
 
-        callback = (ManagedToNativeExceptionCallback)CallInvokeUnhandledExceptionPropagation(
-            &gc.throwableRef,
-            &callbackContext);
+    *context = NULL;
+    RETURN NULL;
 
-        GCPROTECT_END();
-    }
-
-    *context = callbackContext;
-    RETURN callback;
+#endif // !FEATURE_OBJCBRIDGE
 }
 
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)

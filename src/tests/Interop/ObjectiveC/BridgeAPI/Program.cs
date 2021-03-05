@@ -5,6 +5,7 @@ namespace BridgeTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
 
@@ -243,8 +244,14 @@ namespace BridgeTests
         static void DEL_ThrowIntException(int a) => throw new IntException(a);
         static void DEL_ThrowExceptionException(int _) => throw new ExceptionException();
 
-        static unsafe delegate* unmanaged<IntPtr, void> OnUnhandledExceptionPropagationHandler(Exception e, out IntPtr context)
+        static unsafe delegate* unmanaged<IntPtr, void> OnUnhandledExceptionPropagationHandler(
+            Exception e,
+            RuntimeMethodHandle lastMethodHandle,
+            out IntPtr context)
         {
+            var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
+            Assert.IsTrue(lastMethod != null);
+
             context = IntPtr.Zero;
             if (e is IntException ie)
             {

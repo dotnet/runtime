@@ -1827,7 +1827,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static void SetMessageSendCallback(MsgSendFunction msgSendFunction, System.IntPtr func) => throw null;
         public static void SetMessageSendPendingExceptionForThread(System.Exception? exception) => throw null;
         public unsafe delegate delegate* unmanaged<System.IntPtr, void> UnhandledExceptionPropagationHandler(
-            System.Exception e,
+            System.Exception exception,
+            System.RuntimeMethodHandle lastMethod,
             out System.IntPtr context);
         public static event UnhandledExceptionPropagationHandler? UnhandledExceptionPropagation
         {

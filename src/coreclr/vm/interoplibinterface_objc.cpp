@@ -247,6 +247,111 @@ bool ObjCBridgeNative::IsRuntimeMsgSendFunctionOverridden(
     return MessageSendPInvokeOverride(libraryName, entrypointName) != NULL;
 }
 
+namespace
+{
+    bool CallAvailableUnhandledExceptionPropagation()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        MethodDescCallSite dispatch(METHOD__OBJCBRIDGE__AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION);
+        return dispatch.Call_RetBool(NULL);
+    }
+
+    void* CallInvokeUnhandledExceptionPropagation(
+        _In_ OBJECTREF* exceptionPROTECTED,
+        _In_ REFLECTMETHODREF* methodRefPROTECTED,
+        _Outptr_ void** callbackContext)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+            PRECONDITION(exceptionPROTECTED != NULL);
+            PRECONDITION(methodRefPROTECTED != NULL);
+            PRECONDITION(callbackContext != NULL);
+        }
+        CONTRACTL_END;
+
+        void* callback = NULL;
+        *callbackContext = NULL;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__OBJCBRIDGE__INVOKEUNHANDLEDEXCEPTIONPROPAGATION);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*exceptionPROTECTED);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*methodRefPROTECTED);
+        args[ARGNUM_2] = PTR_TO_ARGHOLDER(callbackContext);
+        CALL_MANAGED_METHOD(callback, void*, args);
+
+        return callback;
+    }
+}
+
+void* ObjCBridgeNative::GetPropagatingExceptionCallback(
+    _In_ EECodeInfo* codeInfo,
+    _In_ OBJECTHANDLE throwable,
+    _Outptr_ void** context)
+{
+    CONTRACT(void*)
+    {
+        THROWS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(codeInfo != NULL);
+        PRECONDITION(throwable != NULL);
+        PRECONDITION(context != NULL);
+    }
+    CONTRACT_END;
+
+    void* callback = NULL;
+    void* callbackContext = NULL;
+
+    MethodDesc* method = codeInfo->GetMethodDesc();
+
+    // If this is a dynamic method, let's see if we can
+    // resolve it to its target.
+    if (method->IsDynamicMethod())
+    {
+        DynamicMethodDesc* dynamicMethod = method->AsDynamicMethodDesc();
+        ILStubResolver* resolver = dynamicMethod->GetILStubResolver();
+        MethodDesc* methodMaybe = resolver->GetStubTargetMethodDesc();
+        if (methodMaybe != NULL)
+            method = methodMaybe;
+    }
+
+    {
+        GCX_COOP();
+        struct
+        {
+            OBJECTREF throwableRef;
+            REFLECTMETHODREF methodRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+        GCPROTECT_BEGIN(gc);
+
+        // Creating the StubMethodInfo isn't cheap, so check
+        // if there are any handlers prior to dispatching.
+        if (CallAvailableUnhandledExceptionPropagation())
+        {
+            gc.throwableRef = ObjectFromHandle(throwable);
+            gc.methodRef = method->GetStubMethodInfo();
+
+            callback = CallInvokeUnhandledExceptionPropagation(
+                &gc.throwableRef,
+                &gc.methodRef,
+                &callbackContext);
+        }
+
+        GCPROTECT_END();
+    }
+
+    *context = callbackContext;
+    RETURN callback;
+}
+
 void ObjCBridgeNative::OnFullGCStarted()
 {
     CONTRACTL
