@@ -14,7 +14,7 @@ steps:
       project:  $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOProjectName'] ]
       pipeline: 'runtime'
       buildVersionToDownload: specific
-      buildId: '20210305.54'
+      buildId: '20210305.40'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
