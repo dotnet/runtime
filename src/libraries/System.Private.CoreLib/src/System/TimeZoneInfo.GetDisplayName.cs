@@ -58,7 +58,7 @@ namespace System
 
             // If there is an unknown error, don't set the displayName field.
             // It will be set to the abbreviation that was read out of the tzfile.
-            if (result)
+            if (result && !string.IsNullOrEmpty(timeZoneDisplayName))
             {
                 displayName = timeZoneDisplayName;
             }
