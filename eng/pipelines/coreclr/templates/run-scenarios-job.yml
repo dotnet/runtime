@@ -96,11 +96,6 @@ jobs:
       displayName: Performance Setup (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    # parse Version.props to get the latest stable sdk version on master
-    - script: $(Python) scripts/parse_props.py --branch-name master # defaults to master branch of sdk so we can get the latest
-      displayName: Parse Version.props 
-      workingDirectory: $(PerformanceDirectory)
-      continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
     - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
       displayName: Run ci setup script (Windows)
