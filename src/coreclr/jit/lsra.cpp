@@ -10966,6 +10966,7 @@ void LinearScan::verifyFinalAllocation()
                             {
                                 interval->assignedReg->assignedInterval = nullptr;
                             }
+                            interval->physReg     = REG_NA;
                             interval->assignedReg = nullptr;
                         }
                     }
@@ -11107,6 +11108,16 @@ void LinearScan::verifyFinalAllocation()
                 if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
                 {
                     assert(!currentRefPosition->spillAfter || currentRefPosition->IsActualRef());
+
+                    if (RefTypeIsDef(currentRefPosition->refType))
+                    {
+                        // If an interval got assigned to a different register (while the different
+                        // register got spilled), then clear the assigned interval of current register.
+                        if (interval->physReg != REG_NA && interval->physReg != regNum)
+                        {
+                            interval->assignedReg->assignedInterval = nullptr;
+                        }
+                    }
 
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;
