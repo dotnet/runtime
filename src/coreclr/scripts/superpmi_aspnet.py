@@ -159,7 +159,7 @@ def build_and_run(coreclr_args):
 
         configName = "json"
         scenario = "json"
-        configFile = path.join(temp_location, "benchmarks", "scenarios", f"{configName}.benchmarks.yml")
+        configFile = path.join(temp_location, "benchmarks", "scenarios", (f"{configName}.benchmarks.yml"))
 
         # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
         # and ask crank to send back the runtime directory
@@ -221,7 +221,7 @@ def build_and_run(coreclr_args):
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
         mch_file = path.join(coreclr_args.output_mch_path, f"aspnet-{config}-{scenario}" + ".mch")
-        command = [mcs_path, "-merge", mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+        command = [mcs_path, "-merge", mch_file, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
             logging.error("mcs -merge Failed with code %s", return_code)
@@ -238,6 +238,7 @@ def main(main_args):
     Args:
         main_args ([type]): Arguments to the script
     """
+    print (sys.version)
     coreclr_args = setup_args(main_args)
 
     # all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
