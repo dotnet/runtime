@@ -5,13 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -430,7 +426,6 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine(top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, scripts, top_frame["location"]);
 
