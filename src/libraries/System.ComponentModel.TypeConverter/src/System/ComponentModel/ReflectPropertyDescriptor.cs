@@ -60,6 +60,7 @@ namespace System.ComponentModel
         private static readonly int s_bitSetOnDemand = InterlockedBitVector32.CreateMask(s_bitAmbientValueQueried);
 
         private InterlockedBitVector32 _state;             // Contains the state bits for this proeprty descriptor.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass;             // used to determine if we should all on us or on the designer
         private readonly Type _type;                       // the data type of the property
         private object _defaultValue;               // the default value of the property (or noValue)
@@ -76,7 +77,11 @@ namespace System.ComponentModel
         /// <summary>
         /// The main constructor for ReflectPropertyDescriptors.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Attribute[] attributes)
             : base(name, attributes)
         {
             Debug.WriteLine($"Creating ReflectPropertyDescriptor for {componentClass?.FullName}.{name}");
@@ -107,7 +112,15 @@ namespace System.ComponentModel
         /// <summary>
         /// A constructor for ReflectPropertyDescriptors that have no attributes.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, PropertyInfo propInfo, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            PropertyInfo propInfo,
+            MethodInfo getMethod,
+            MethodInfo setMethod,
+            Attribute[] attrs)
+            : this(componentClass, name, type, attrs)
         {
             _propInfo = propInfo;
             _getMethod = getMethod;
@@ -121,7 +134,15 @@ namespace System.ComponentModel
         /// <summary>
         /// A constructor for ReflectPropertyDescriptors that creates an extender property.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, Type receiverType, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Type receiverType,
+            MethodInfo getMethod,
+            MethodInfo setMethod,
+            Attribute[] attrs)
+            : this(componentClass, name, type, attrs)
         {
             _receiverType = receiverType;
             _getMethod = getMethod;
@@ -133,7 +154,10 @@ namespace System.ComponentModel
         /// This constructor takes an existing ReflectPropertyDescriptor and modifies it by merging in the
         /// passed-in attributes.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, PropertyDescriptor oldReflectPropertyDescriptor, Attribute[] attributes)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            PropertyDescriptor oldReflectPropertyDescriptor,
+            Attribute[] attributes)
             : base(oldReflectPropertyDescriptor, attributes)
         {
             _componentClass = componentClass;
@@ -222,7 +246,7 @@ namespace System.ComponentModel
             {
                 if (!_state[s_bitChangedQueried])
                 {
-                    _realChangedEvent = TypeDescriptor.GetEvents(ComponentType)[Name + "Changed"];
+                    _realChangedEvent = TypeDescriptor.GetEvents(_componentClass)[Name + "Changed"];
                     _state[s_bitChangedQueried] = true;
                 }
 

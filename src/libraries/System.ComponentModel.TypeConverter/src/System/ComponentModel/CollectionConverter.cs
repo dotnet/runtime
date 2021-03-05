@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// Gets a collection of properties for the type of array specified by the value
         /// parameter using the specified context and attributes.
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return new PropertyDescriptorCollection(null);

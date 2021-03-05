@@ -3,18 +3,6 @@
   <assembly fullname="System.ComponentModel.Annotations, PublicKeyToken=b03f5f7f11d50a3a">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptor.TypeDescriptorCache.CheckAssociatedMetadataType(System.Type,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptor.TypeDescriptorCache.GetAssociatedMetadata(System.Type,System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2072</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.DataAnnotations.CompareAttribute.IsValid(System.Object,System.ComponentModel.DataAnnotations.ValidationContext)</property>

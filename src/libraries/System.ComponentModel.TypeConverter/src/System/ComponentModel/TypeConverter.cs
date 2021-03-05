@@ -224,6 +224,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for the type of array specified by the value parameter.
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public PropertyDescriptorCollection GetProperties(object value) => GetProperties(null, value);
 
         /// <summary>
@@ -232,8 +233,8 @@ namespace System.ComponentModel
         /// the specified context.
         ///
         /// </summary>
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(BrowsableAttribute))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
         public PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value)
         {
             return GetProperties(context, value, new Attribute[] { BrowsableAttribute.Yes });
@@ -245,7 +246,7 @@ namespace System.ComponentModel
         /// the specified context and attributes.
         ///
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return null;

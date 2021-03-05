@@ -28,7 +28,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of properties for the type of array specified by the value parameter.
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             if (value == null)

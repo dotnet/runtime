@@ -17,7 +17,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type type, object instance)
+        public override ICustomTypeDescriptor GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance)
         {
             return new XTypeDescriptor<T>(base.GetTypeDescriptor(type, instance));
         }
@@ -29,7 +29,8 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "No attributes are supplied.")]
         public override PropertyDescriptorCollection GetProperties()
         {
             return GetProperties(null);
