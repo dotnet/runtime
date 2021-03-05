@@ -5,16 +5,12 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public partial class RSA : AsymmetricAlgorithm
-    {
-        public static new RSA Create() => new RSAImplementation.RSAAndroid();
-    }
-
     internal static partial class RSAImplementation
     {
         public sealed partial class RSAAndroid : RSA
@@ -32,6 +28,12 @@ namespace System.Security.Cryptography
             {
                 base.KeySize = keySize;
                 _key = new Lazy<SafeRsaHandle>(GenerateKey);
+            }
+
+            internal RSAAndroid(SafeRsaHandle key)
+            {
+                _key = new Lazy<SafeRsaHandle>(key);
+                SetKeySizeFromHandle(key);
             }
 
             public override int KeySize
@@ -52,13 +54,15 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private void ForceSetKeySize(int newKeySize)
+            private void SetKeySizeFromHandle(SafeRsaHandle key)
             {
+                int keySize = BitsPerByte * Interop.AndroidCrypto.RsaSize(key);
+
                 // In the event that a key was loaded via ImportParameters or an IntPtr/SafeHandle
                 // it could be outside of the bounds that we currently represent as "legal key sizes".
                 // Since that is our view into the underlying component it can be detached from the
                 // component's understanding.  If it said it has opened a key, and this is the size, trust it.
-                KeySizeValue = newKeySize;
+                KeySizeValue = keySize;
             }
 
             public override KeySizes[] LegalKeySizes
@@ -422,47 +426,56 @@ namespace System.Security.Cryptography
 
                 FreeKey();
                 _key = new Lazy<SafeRsaHandle>(key);
-
-                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.AndroidCrypto.RsaSize(key));
+                SetKeySizeFromHandle(key);
             }
 
-            public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+            public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
 
-                int read;
-
-                try
+                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
                 {
-                    AsnDecoder.ReadEncodedValue(
-                        source,
-                        AsnEncodingRules.BER,
-                        out _,
-                        out _,
-                        out read);
+                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                    {
+                        ReadOnlyMemory<byte> subjectPublicKey;
+                        try
+                        {
+                            AsnReader reader = new AsnReader(manager.Memory, AsnEncodingRules.BER);
+                            subjectPublicKey = reader.PeekEncodedValue();
+                        }
+                        catch (AsnContentException e)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                        }
+
+                        // Decoding the key on Android requires the encoded SubjectPublicKeyInfo,
+                        // not just the SubjectPublicKey, so we construct one.
+                        SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
+                        {
+                            Algorithm = new AlgorithmIdentifierAsn
+                            {
+                                Algorithm = Oids.Rsa,
+                                Parameters = AlgorithmIdentifierAsn.ExplicitDerNull,
+                            },
+                            SubjectPublicKey = subjectPublicKey,
+                        };
+
+                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                        spki.Encode(writer);
+
+                        SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaSubjectPublicKeyInfo(writer.Encode());
+                        if (key is null || key.IsInvalid)
+                        {
+                            throw new CryptographicException();
+                        }
+
+                        FreeKey();
+                        _key = new Lazy<SafeRsaHandle>(key);
+                        SetKeySizeFromHandle(key);
+
+                        bytesRead = subjectPublicKey.Length;
+                    }
                 }
-                catch (AsnContentException e)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-                }
-
-                SafeRsaHandle key = Interop.AndroidCrypto.DecodeRsaPublicKey(source.Slice(0, read));
-
-                if (key is null || key.IsInvalid)
-                {
-                    throw new CryptographicException();
-                }
-
-                FreeKey();
-                _key = new Lazy<SafeRsaHandle>(key);
-
-                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.AndroidCrypto.RsaSize(key));
-
-                bytesRead = read;
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(
@@ -828,6 +841,8 @@ namespace System.Security.Cryptography
 
                 throw PaddingModeNotSupported();
             }
+
+            internal SafeRsaHandle DuplicateKeyHandle() => _key.Value.DuplicateHandle();
 
             private static Exception PaddingModeNotSupported() =>
                 new CryptographicException(SR.Cryptography_InvalidPaddingMode);
