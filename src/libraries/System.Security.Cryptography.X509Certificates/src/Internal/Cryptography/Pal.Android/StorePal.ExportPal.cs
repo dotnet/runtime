@@ -61,7 +61,10 @@ namespace Internal.Cryptography.Pal
                         throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
                 }
 
-                return algorithm.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
+                using (algorithm)
+                {
+                    return algorithm.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
+                }
             }
         }
     }
