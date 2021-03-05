@@ -152,9 +152,9 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                         prevBb = fgFirstBB;
                         if (prevBb == block)
                         {
-                            JITDUMP("fgInsertClsInitChecks: fgFirstBB is fgFirstBBScratch with a static initialization inside");
-                            // It means the first bb is already a scratch one so we're not allowed
-                            // to insert a new block in front of it.
+                            JITDUMP("fgInsertClsInitChecks: fgFirstBB is fgFirstBBScratch with a static initialization");
+                            // It means the first bb is already a scratch one so it's probably not a good idea
+                            // to insert blocks before them.
                             continue;
                         }
                     }
