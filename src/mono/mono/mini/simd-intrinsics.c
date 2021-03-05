@@ -970,6 +970,10 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareLessThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_Abs},
+	{SN_Negate, OP_ARM64_XNEG},
+	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
+	{SN_NegateSaturateScalar},
+	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
 	{SN_Not, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Not},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Or},
 	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OrNot},
@@ -1251,6 +1255,11 @@ emit_arm64_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
+		case SN_NegateSaturateScalar: {
+			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG, arg0_type, fsig, args);
+			ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
+			return ret;
+		}
 		case SN_ReciprocalEstimate:
 		case SN_ReciprocalSquareRootEstimate: {
 			gboolean is_float = FALSE;
@@ -1263,6 +1272,7 @@ emit_arm64_intrinsics (
 				break;
 			case SN_ReciprocalSquareRootEstimate:
 				iid = is_float ? INTRINS_AARCH64_ADV_SIMD_FRSQRTE : INTRINS_AARCH64_ADV_SIMD_URSQRTE;
+				break;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
 		}

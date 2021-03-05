@@ -64,7 +64,7 @@ enum {
 typedef uint8_t llvm_ovr_tag_t;
 
 static inline llvm_ovr_tag_t
-ovr_tag_to_scalar (llvm_ovr_tag_t tag)
+ovr_tag_force_scalar (llvm_ovr_tag_t tag)
 {
 	return tag & 0xfc;
 }

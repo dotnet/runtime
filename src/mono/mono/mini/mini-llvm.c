@@ -4775,6 +4775,18 @@ concatenate_vectors (EmitContext *ctx, LLVMValueRef xs, LLVMValueRef ys)
 	return LLVMBuildShuffleVector (ctx->builder, xs, ys, create_const_vector_i32 (mask, elems), "");
 }
 
+static LLVMValueRef
+scalar_from_vector (EmitContext *ctx, LLVMValueRef xs)
+{
+	return LLVMBuildExtractElement (ctx->builder, xs, const_int32 (0), "v2s");
+}
+
+static LLVMValueRef
+vector_from_scalar (EmitContext *ctx, LLVMValueRef type_donor, LLVMValueRef x)
+{
+	return LLVMBuildInsertElement (ctx->builder, LLVMGetUndef (LLVMTypeOf (type_donor)), x, const_int32 (0), "s2v");
+}
+
 static void
 emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBlockRef cbb)
 {
@@ -7170,16 +7182,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
 				break;
 			case XBINOP_FORCEINT_OrNot:
-				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
-				break;
-			case XBINOP_FORCEINT_Xor: {
-				int vals [MAX_VECTOR_ELEMS] = { 0 };
-				for (unsigned int i = 0; i < elems; ++i)
-					vals [i] = -1;
-				result = LLVMBuildXor (builder, rhs_int, create_const_vector (intermediate_elem_t, vals, elems), "");
+				result = LLVMBuildNot (builder, rhs_int, "");
 				result = LLVMBuildOr (builder, result, lhs_int, "");
 				break;
-			}
+			case XBINOP_FORCEINT_Xor:
+				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
+				break;
 			}
 			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
 		}
@@ -9309,6 +9317,24 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
+		case OP_ARM64_XNEG:
+		case OP_ARM64_XNEG_SCALAR: {
+			gboolean scalar = ins->opcode == OP_ARM64_XNEG_SCALAR;
+			gboolean is_float = FALSE;
+			switch (ins->inst_c1) {
+			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
+			}
+			LLVMValueRef result = lhs;
+			if (scalar)
+				result = scalar_from_vector (ctx, result);
+			if (is_float)
+				result = LLVMBuildFNeg (builder, result, "arm64_xneg");
+			else
+				result = LLVMBuildNeg (builder, result, "arm64_xneg");
+			if (scalar)
+				result = vector_from_scalar (ctx, lhs, result);
+			values [ins->dreg] = result;
+		}
 		case OP_ARM64_PMULL:
 		case OP_ARM64_PMULL2: {
 			gboolean high = ins->opcode == OP_ARM64_PMULL2;
@@ -9732,12 +9758,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_OVR_SCALAR_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			LLVMTypeRef t = LLVMTypeOf (lhs);
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			ovr_tag = ovr_tag_to_scalar (ovr_tag);
-			LLVMValueRef result = LLVMBuildExtractElement (builder, lhs, const_int32 (0), "xop_ovr_scalar_x_x");
+			ovr_tag = ovr_tag_force_scalar (ovr_tag);
+			LLVMValueRef result = scalar_from_vector (ctx, lhs);
 			result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
-			result = LLVMBuildInsertElement (builder, LLVMGetUndef (t), result, const_int32 (0), "");
+			result = vector_from_scalar (ctx, lhs, result);
 			values [ins->dreg] = result;
 			break;
 		}
