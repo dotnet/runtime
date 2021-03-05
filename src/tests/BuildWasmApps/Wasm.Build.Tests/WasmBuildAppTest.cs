@@ -371,7 +371,6 @@ namespace Wasm.Build.Tests
             => RunWithXHarness("wasm test", "wasm-test", projectName, bundleDir,
                                     envVars: envVars,
                                     expectedAppExitCode: expectedAppExitCode,
-                                    xharnessExitCode: xharnessExitCode,
                                     extraXHarnessArgs: "--js-file=runtime.js --engine=V8 -v trace",
                                     appArgs: appArgs);
 
@@ -379,7 +378,6 @@ namespace Wasm.Build.Tests
             => RunWithXHarness("wasm test-browser", "wasm-test-browser", projectName, bundleDir,
                                     envVars: envVars,
                                     expectedAppExitCode: expectedAppExitCode,
-                                    xharnessExitCode: expectedAppExitCode, // FIXME: using a different exitcode here because xharness wasm test-browser doesn't have support for --expected-exitcode
                                     extraXHarnessArgs: "-v trace", // needed to get messages like those for AOT loading
                                     appArgs: appArgs);
 
