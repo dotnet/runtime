@@ -45,15 +45,15 @@ jobs:
     collectionName: ${{ parameters.collectionName }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     # Test job depends on the corresponding build job
-    dependsOn:
-     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-     # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
-     - ${{ if ne(parameters.archType, 'x64') }}:
-       - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
-     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-     - ${{ if eq(parameters.collectionName, 'tests') }}:
-        - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+#    dependsOn:
+#     - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+#     # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
+#     - ${{ if ne(parameters.archType, 'x64') }}:
+#       - ${{ format('coreclr_{0}_product_build_{1}{2}_x64_{3}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
+#     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+#       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+#     - ${{ if eq(parameters.collectionName, 'tests') }}:
+#        - '${{ parameters.runtimeType }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
 
     variables: ${{ parameters.variables }}
 
@@ -64,7 +64,7 @@ jobs:
 
     # Optionally download live-built libraries
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-specific-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)
           cleanUnpackFolder: false
@@ -73,7 +73,7 @@ jobs:
           displayName: 'live-built libraries'
 
     # Download coreclr
-    - template: /eng/pipelines/common/download-artifact-step.yml
+    - template: /eng/pipelines/common/download-specific-artifact-step.yml
       parameters:
         unpackFolder: $(buildProductRootFolderPath)
         artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
@@ -82,7 +82,7 @@ jobs:
 
     # Download x64 coreclr if running on non-x64 configuration
     - ${{ if ne(parameters.archType, 'x64') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
+      - template: /eng/pipelines/common/download-specific-artifact-step.yml
         parameters:
           unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
           artifactFileName: 'CoreCLRProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
