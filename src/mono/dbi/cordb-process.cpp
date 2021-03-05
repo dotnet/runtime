@@ -645,7 +645,7 @@ CordbClass* CordbProcess::FindOrAddClass(mdToken token, int module_id)
     return ret;
 }
 
-CordbType* CordbProcess::FindOrAddType(CorElementType type)
+CordbType* CordbProcess::FindOrAddPrimitiveType(CorElementType type)
 {
     CordbType* ret = NULL;
     MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*) m_pTypeMapArray->Get(CordbTypeKindSimpleType);
@@ -659,12 +659,12 @@ CordbType* CordbProcess::FindOrAddType(CorElementType type)
     return ret;
 }
 
-CordbType* CordbProcess::FindOrAddType(CorElementType type, CordbClass *klass)
+CordbType* CordbProcess::FindOrAddClassType(CorElementType type, CordbClass *klass)
 {
     CordbType* ret = NULL;
     mdToken token;
     if (klass == NULL)
-        return FindOrAddType(type);
+        return FindOrAddPrimitiveType(type);
     MapSHashWithRemove<long, CordbType*>* typeMap = (MapSHashWithRemove<long, CordbType*>*) m_pTypeMapArray->Get(CordbTypeKindClassType);
     dbg_lock();
     klass->GetToken(&token);
@@ -677,7 +677,7 @@ CordbType* CordbProcess::FindOrAddType(CorElementType type, CordbClass *klass)
     return ret;
 }
 
-CordbType* CordbProcess::FindOrAddType(CorElementType type, CordbType* arrayType)
+CordbType* CordbProcess::FindOrAddArrayType(CorElementType type, CordbType* arrayType)
 {
     CordbType* ret = NULL;
     long hash = 0;

@@ -125,9 +125,10 @@ public:
     void                     AddPendingEval(CordbEval* eval);
     void                     AddStepper(CordbStepper* step);
     CordbClass*              FindOrAddClass(mdToken token, int module_id);
-    CordbType*               FindOrAddType(CorElementType type);
-    CordbType*               FindOrAddType(CorElementType type, CordbClass *klass); //use variadic ???
-    CordbType*               FindOrAddType(CorElementType type, CordbType* arrayType); //use variadic ???
+    CordbType*               FindOrAddPrimitiveType(CorElementType type);
+    CordbType*               FindOrAddClassType(CorElementType type, CordbClass *klass); 
+    CordbType*               FindOrAddArrayType(CorElementType type, CordbType* arrayType);
+    //CordbType*             FindOrAddGenericInstanceType(CorElementType type, std::initializer_list<CordbType*> arrayType); //use std::initializer_list for generic instances
     CordbFunction*           FindFunction(int id);
     CordbModule*             GetModule(int module_id);
     CordbStepper*            GetStepper(int id);
