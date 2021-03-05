@@ -45,9 +45,9 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     return GlobalizationNative_GetICUDTName(culture);
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
 {
     return GlobalizationNative_LoadICUData(pData);
 }
@@ -63,7 +63,7 @@ void mono_wasm_link_icu_shim(void)
 
 #endif
 
-int32_t GlobalizationNative_LoadICUData(void * pData)
+int32_t GlobalizationNative_LoadICUData(void* pData)
 {
 
     UErrorCode status = 0;

@@ -219,33 +219,37 @@ static int32_t load_icu_data ()
     assert (res > 0);
 
     FILE *fp = fopen (path, "rb");
-    if (fp != NULL) {
-        if (fseek (fp, 0L, SEEK_END) != 0) {
-            os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the dat file");
-            exit(1);
-        }
-
-        long bufsize = ftell (fp);
-
-        icu_data = malloc (sizeof (char) * (bufsize + 1));
-
-        if (fseek (fp, 0L, SEEK_SET) != 0) {
-            os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
-            exit(1);
-        }
-
-        size_t len = fread (icu_data, sizeof (char), bufsize, fp);
-        if ( ferror ( fp ) != 0 ) {
-            os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
-            exit (1);
-        }
-
-        fclose (fp);
-    }
-    else {
+    if (fp == NULL) {
         os_log_info (OS_LOG_DEFAULT, "Unable to load ICU dat file '%s'.", dname);
         exit (1);
     }
+
+    if (fseek (fp, 0L, SEEK_END) != 0) {
+        os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the dat file");
+        exit (1);
+    }
+
+    long bufsize = ftell (fp);
+
+    if (bufsize == -1) {
+        os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the ICU dat file.");
+        exit (1);
+    }
+
+    icu_data = malloc (sizeof (char) * (bufsize + 1));
+
+    if (fseek (fp, 0L, SEEK_SET) != 0) {
+        os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
+        exit (1);
+    }
+
+    size_t len = fread (icu_data, sizeof (char), bufsize, fp);
+    if (ferror ( fp ) != 0 ) {
+        os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
+        exit (1);
+    }
+
+    fclose (fp);
 
     return GlobalizationNative_LoadICUData (icu_data);
 }
@@ -270,8 +274,7 @@ mono_ios_runtime_init (void)
 #if !FORCE_INVARIANT
     int32_t ret = load_icu_data ();
 
-    if (ret == 0)
-    {
+    if (ret == 0) {
         os_log_info (OS_LOG_DEFAULT, "ICU BAD EXIT %d.", ret);
         exit (ret);
         return;
