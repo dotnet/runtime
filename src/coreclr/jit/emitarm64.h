@@ -935,4 +935,30 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
             (jmp->idInsFmt() == IF_LARGELDC));
 }
 
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSIMD12ToLclOffset: store SIMD12 value from opReg to varNum+offset.
+//
+// Arguments:
+//     varNum - the variable on the stack to use as a base;
+//     offset - the offset from the varNum;
+//     opReg  - the src reg with SIMD12 value;
+//     tmpReg - a tmp reg to use for the write, can be general or float.
+//
+void emitStoreSIMD12ToLclOffset(unsigned varNum, unsigned offset, regNumber opReg, regNumber tmpReg)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isVectorRegister(opReg));
+
+    // store lower 8 bytes
+    emitIns_S_R(INS_str, EA_8BYTE, opReg, varNum, offset);
+
+    // Extract upper 4-bytes from data
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, opReg, 2);
+
+    // 4-byte write
+    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+}
+#endif // FEATURE_SIMD
+
 #endif // TARGET_ARM64
