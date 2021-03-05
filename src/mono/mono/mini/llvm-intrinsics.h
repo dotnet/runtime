@@ -314,7 +314,28 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSUB, aarch64_neon_uqsub, V64 | V128 | I1 | I2
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSUB, aarch64_neon_sqsub, V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSUBHN, aarch64_neon_rsubhn, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FSQRT, sqrt, V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSHRN, aarch64_neon_uqshrn, V64 | I1 | I2 | I4) // Constant shift
 
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSHRN, aarch64_neon_rshrn, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHRN, aarch64_neon_sqrshrn, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHRUN, aarch64_neon_sqrshrun, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHRN, aarch64_neon_sqshrn, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHRUN, aarch64_neon_sqshrun, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQRSHRN, aarch64_neon_uqrshrn, V64 | I1 | I2 | I4) // Constant shift
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHL, aarch64_neon_sqrshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHL, aarch64_neon_sqshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRSHL, aarch64_neon_srshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SSHL, aarch64_neon_sshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQRSHL, aarch64_neon_uqrshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSHL, aarch64_neon_uqshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_URSHL, aarch64_neon_urshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_USHL, aarch64_neon_ushl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHLU, aarch64_neon_sqshlu, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SLI, aarch64_neon_vsli, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
 #endif
 
 #undef INTRINS

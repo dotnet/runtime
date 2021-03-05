@@ -4683,6 +4683,28 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 }
 
 static LLVMValueRef
+broadcast_element (EmitContext *ctx, LLVMValueRef elem, int count)
+{
+	LLVMTypeRef t = LLVMTypeOf (elem);
+	LLVMTypeRef init_vec_t = LLVMVectorType (t, 1);
+	LLVMValueRef undef = LLVMGetUndef (init_vec_t);
+	LLVMValueRef vec = LLVMBuildInsertElement (ctx->builder, undef, elem, const_int32 (0), "");
+	LLVMValueRef select_zero = LLVMConstNull (LLVMVectorType (LLVMInt32Type (), count));
+	return LLVMBuildShuffleVector (ctx->builder, vec, undef, select_zero, "broadcast");
+}
+
+static LLVMValueRef
+create_shift_vector (EmitContext *ctx, LLVMValueRef shiftarg, LLVMValueRef shiftamt)
+{
+	LLVMTypeRef t = LLVMTypeOf (shiftarg);
+	unsigned int elems = LLVMGetVectorSize (t);
+	LLVMTypeRef elem_t = LLVMGetElementType (t);
+	shiftamt = convert_full (ctx, shiftamt, elem_t, TRUE);
+	shiftamt = broadcast_element (ctx, shiftamt, elems);
+	return shiftamt;
+}
+
+static LLVMValueRef
 create_const_vector (LLVMTypeRef t, const int *vals, int count)
 {
 	g_assert (count <= MAX_VECTOR_ELEMS);
@@ -9270,6 +9292,191 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
+		case OP_ARM64_SHL:
+		case OP_ARM64_SSHR:
+		case OP_ARM64_SSRA:
+		case OP_ARM64_USHR:
+		case OP_ARM64_USRA: {
+			gboolean right = FALSE;
+			gboolean add = FALSE;
+			gboolean arith = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_USHR: right = TRUE; break;
+			case OP_ARM64_USRA: right = TRUE; add = TRUE; break;
+			case OP_ARM64_SSHR: arith = TRUE; break;
+			case OP_ARM64_SSRA: arith = TRUE; add = TRUE; break;
+			}
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			if (add) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			shift = create_shift_vector (ctx, shiftarg, shift);
+			LLVMValueRef result = NULL;
+			if (right)
+				result = LLVMBuildLShr (builder, shiftarg, shift, "");
+			else if (arith)
+				result = LLVMBuildAShr (builder, shiftarg, shift, "");
+			else
+				result = LLVMBuildShl (builder, shiftarg, shift, "");
+			if (add)
+				result = LLVMBuildAdd (builder, lhs, result, "arm64_usra");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_SHRN:
+		case OP_ARM64_SHRN2: {
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			gboolean high = ins->opcode == OP_ARM64_SHRN2;
+			if (high) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			shift = create_shift_vector (ctx, shiftarg, shift);
+			LLVMValueRef result = LLVMBuildLShr (builder, shiftarg, shift, "shrn");
+			if (high)
+				result = concatenate_vectors (ctx, lhs, result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_UQSHRN:
+		case OP_ARM64_UQSHRN2: {
+			// XXXih: TODO: ins->klass is wrong for *2
+			// XXXih: TODO: unroll count/rhs/arg3
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			gboolean high = ins->opcode == OP_ARM64_UQSHRN2;
+			if (high) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef args [] = { shiftarg, shift };
+			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UQSHRN, ovr_tag, args, "");
+			if (high)
+				result = concatenate_vectors (ctx, lhs, result);
+			break;
+		}
+		case OP_ARM64_SRSHR:
+		case OP_ARM64_SRSRA:
+		case OP_ARM64_URSHR:
+		case OP_ARM64_URSRA: {
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			gboolean right = FALSE;
+			gboolean add = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_URSHR: right = TRUE; break;
+			case OP_ARM64_URSRA: right = TRUE; add = TRUE; break;
+			case OP_ARM64_SRSRA: add = TRUE; break;
+			}
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_URSHR:
+			case OP_ARM64_URSRA: iid = INTRINS_AARCH64_ADV_SIMD_URSHL; break;
+			case OP_ARM64_SRSHR:
+			case OP_ARM64_SRSRA: iid = INTRINS_AARCH64_ADV_SIMD_SRSHL; break;
+			}
+			if (add) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			if (right)
+				shift = LLVMBuildNeg (builder, shift, "");
+			shift = create_shift_vector (ctx, shiftarg, shift);
+			LLVMValueRef args [] = { shiftarg, shift };
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			if (add)
+				result = LLVMBuildAdd (builder, result, lhs, "");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_RSHRN:
+		case OP_ARM64_RSHRN2:
+		case OP_ARM64_SQRSHRN:
+		case OP_ARM64_SQRSHRN2:
+		case OP_ARM64_SQRSHRUN:
+		case OP_ARM64_SQRSHRUN2:
+		case OP_ARM64_SQSHRN:
+		case OP_ARM64_SQSHRN2:
+		case OP_ARM64_SQSHRUN:
+		case OP_ARM64_SQSHRUN2:
+		case OP_ARM64_UQRSHRN:
+		case OP_ARM64_UQRSHRN2: {
+			// XXXih: TODO: ins->klass is wrong for *2
+			// XXXih: TODO: unroll count/rhs/arg3
+			LLVMValueRef args [2] = { lhs, rhs };
+			gboolean high = FALSE;
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_RSHRN: iid = INTRINS_AARCH64_ADV_SIMD_RSHRN;
+			case OP_ARM64_RSHRN2: high = TRUE; break;
+			case OP_ARM64_UQRSHRN: iid = INTRINS_AARCH64_ADV_SIMD_UQRSHRN;
+			case OP_ARM64_UQRSHRN2: high = TRUE; break;
+			case OP_ARM64_SQRSHRN: iid = INTRINS_AARCH64_ADV_SIMD_SQRSHRN;
+			case OP_ARM64_SQRSHRN2: high = TRUE; break;
+			case OP_ARM64_SQRSHRUN: iid = INTRINS_AARCH64_ADV_SIMD_SQRSHRUN;
+			case OP_ARM64_SQRSHRUN2: high = TRUE; break;
+			case OP_ARM64_SQSHRN: iid = INTRINS_AARCH64_ADV_SIMD_SQSHRN;
+			case OP_ARM64_SQSHRN2: high = TRUE; break;
+			case OP_ARM64_SQSHRUN: iid = INTRINS_AARCH64_ADV_SIMD_SQSHRUN;
+			case OP_ARM64_SQSHRUN2: high = TRUE; break;
+			}
+			if (high) {
+				args [0] = rhs;
+				args [1] = arg3;
+			}
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			if (high)
+				result = concatenate_vectors (ctx, lhs, result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_UQSHL_IMM:
+		case OP_ARM64_SQSHL_IMM: {
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef shift = create_shift_vector (ctx, lhs, rhs);
+			LLVMValueRef args [] = { lhs, shift };
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_UQSHL_IMM: iid = INTRINS_AARCH64_ADV_SIMD_UQSHL; break;
+			case OP_ARM64_SQSHL_IMM: iid = INTRINS_AARCH64_ADV_SIMD_SQSHL; break;
+			}
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			break;
+		}
+		case OP_ARM64_SQSHLU: {
+			// XXXih: TODO: unroll count/rhs
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef shift = create_shift_vector (ctx, lhs, rhs);
+			LLVMValueRef args [] = { lhs, shift };
+			int iid = INTRINS_AARCH64_ADV_SIMD_SQSHLU; break;
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			break;
+		}
+		case OP_ARM64_USHLL:
+		case OP_ARM64_USHLL2: {
+			gboolean high = ins->opcode == OP_ARM64_USHLL2;
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "arm64_ushll");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_SLI:
+		case OP_ARM64_SRI: {
+			// XXXih: TODO: unroll count/arg3
+			LLVMValueRef args [3] = { lhs, rhs, arg3 };
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			int iid = ins->opcode == OP_ARM64_SLI ? INTRINS_AARCH64_ADV_SIMD_SLI : INTRINS_AARCH64_ADV_SIMD_SRI;
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			break;
+		}
 		case OP_ARM64_SQRT_SCALAR: {
 			int iid = ins->inst_c0 == MONO_TYPE_R8 ? INTRINS_SQRT : INTRINS_SQRTF;
 			LLVMTypeRef t = LLVMTypeOf (lhs);
@@ -9322,24 +9529,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_SUBHN:
 		case OP_ARM64_SUBHN2: {
-			LLVMValueRef l = lhs;
-			LLVMValueRef r = rhs;
-			if (ins->opcode == OP_ARM64_SUBHN2) {
-				l = rhs;
-				r = arg3;
+			LLVMValueRef args [2] = { lhs, rhs };
+			gboolean high = ins->opcode == OP_ARM64_SUBHN2;
+			if (high) {
+				args [0] = rhs;
+				args [1] = arg3;
 			}
-			LLVMValueRef result = LLVMBuildSub (builder, l, r, "");
-			LLVMTypeRef l_t = LLVMTypeOf (l);
-			LLVMTypeRef l_elt_t = LLVMGetElementType (l_t);
-			unsigned int elem_bits = mono_llvm_get_prim_size_bits (l_elt_t);
-			unsigned int elems = LLVMGetVectorSize (l_t);
+			LLVMValueRef result = LLVMBuildSub (builder, args [0], args [1], "");
+			LLVMTypeRef t = LLVMTypeOf (args [0]);
+			LLVMTypeRef elt_t = LLVMGetElementType (t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elt_t);
+			unsigned int elems = LLVMGetVectorSize (t);
 			int shift_vals [MAX_VECTOR_ELEMS] = { 0 };
-			for (unsigned int i = 0; i < elems; ++i) {
+			for (unsigned int i = 0; i < elems; ++i)
 				shift_vals [i] = elem_bits / 2;
-			}
-			result = LLVMBuildLShr (builder, result, create_const_vector (l_elt_t, shift_vals, elems), "");
+			result = LLVMBuildLShr (builder, result, create_const_vector (elt_t, shift_vals, elems), "");
 			result = LLVMBuildTrunc (builder, result, LLVMVectorType (LLVMIntType (elem_bits / 2), elems), "");
-			if (ins->opcode == OP_ARM64_SUBHN2)
+			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
 			values [ins->dreg] = result;
 			break;
@@ -9347,13 +9553,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_RSUBHN:
 		case OP_ARM64_RSUBHN2: {
 			LLVMValueRef args [2] = { lhs, rhs };
-			if (ins->opcode == OP_ARM64_RSUBHN2) {
+			gboolean high = ins->opcode == OP_ARM64_RSUBHN2;
+			if (high) {
 				args [0] = rhs;
 				args [1] = arg3;
 			}
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_RSUBHN, ovr_tag, args, "");
-			if (ins->opcode == OP_ARM64_RSUBHN2)
+			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
 			values [ins->dreg] = result;
 			break;
@@ -9431,6 +9638,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				laneix += 2;
 			}
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, create_const_vector_i32 (mask, src_elems), "arm64_uzp");
+			break;
 		}
 		case OP_ARM64_UZP1:
 		case OP_ARM64_UZP2: {
@@ -9460,13 +9668,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_OVR_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ins->inst_c1;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
 			break;
 		}
 		case OP_XOP_OVR_X_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ins->inst_c1;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef args [] = { lhs, rhs };
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;

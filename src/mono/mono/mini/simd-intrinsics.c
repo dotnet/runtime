@@ -963,17 +963,78 @@ static SimdIntrinsic sha256_methods [] = {
 };
 
 static SimdIntrinsic advsimd_methods [] = {
-	{SN_Abs},
 	{SN_AbsSaturate},
 	{SN_AbsScalar},
-	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareGreaterThanOrEqual},
-	{SN_AbsoluteCompareLessThan},
+	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_AbsoluteCompareLessThan},
+	{SN_Abs},
+	{SN_ShiftArithmetic, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
+	{SN_ShiftArithmeticRounded, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRSHL},
+	{SN_ShiftArithmeticRoundedSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
+	{SN_ShiftArithmeticRoundedSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
+	{SN_ShiftArithmeticRoundedScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRSHL},
+	{SN_ShiftArithmeticSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSHL},
+	{SN_ShiftArithmeticSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSHL},
+	{SN_ShiftArithmeticScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
+	{SN_ShiftLeftAndInsert, OP_ARM64_SRI},
+	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SRI},
+	{SN_ShiftLeftLogical, OP_ARM64_SHL},
+	{SN_ShiftLeftLogicalSaturateScalar},
+	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
+	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU},
+	{SN_ShiftLeftLogicalSaturate},
+	{SN_ShiftLeftLogicalScalar, OP_ARM64_SHL},
+	{SN_ShiftLeftLogicalWideningLower, OP_ARM64_USHLL},
+	{SN_ShiftLeftLogicalWideningUpper, OP_ARM64_USHLL2},
+	{SN_ShiftLogical, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
+	{SN_ShiftLogicalRounded, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URSHL},
+	{SN_ShiftLogicalRoundedSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQRSHL},
+	{SN_ShiftLogicalRoundedSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQRSHL},
+	{SN_ShiftLogicalRoundedScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URSHL},
+	{SN_ShiftLogicalSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSHL},
+	{SN_ShiftLogicalSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSHL},
+	{SN_ShiftLogicalScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
+	{SN_ShiftRightAndInsert, OP_ARM64_SRI},
+	{SN_ShiftRightAndInsertScalar, OP_ARM64_SRI},
+	{SN_ShiftRightArithmetic, OP_ARM64_SSHR},
+	{SN_ShiftRightArithmeticAdd, OP_ARM64_SSRA},
+	{SN_ShiftRightArithmeticAddScalar, OP_ARM64_SSRA},
+	{SN_ShiftRightArithmeticNarrowingSaturateLower, OP_ARM64_SQSHRN},
+	{SN_ShiftRightArithmeticNarrowingSaturateUnsignedLower, OP_ARM64_SQSHRUN},
+	{SN_ShiftRightArithmeticNarrowingSaturateUnsignedUpper, OP_ARM64_SQSHRUN2},
+	{SN_ShiftRightArithmeticNarrowingSaturateUpper, OP_ARM64_SQSHRN2},
+	{SN_ShiftRightArithmeticRounded, OP_ARM64_SRSHR},
+	{SN_ShiftRightArithmeticRoundedAdd, OP_ARM64_SRSRA},
+	{SN_ShiftRightArithmeticRoundedAddScalar, OP_ARM64_SRSRA},
+	{SN_ShiftRightArithmeticRoundedNarrowingSaturateLower, OP_ARM64_SQRSHRN},
+	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedLower, OP_ARM64_SQRSHRUN},
+	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper, OP_ARM64_SQRSHRUN2},
+	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUpper, OP_ARM64_SQRSHRN2},
+	{SN_ShiftRightArithmeticRoundedScalar, OP_ARM64_SRSHR},
+	{SN_ShiftRightArithmeticScalar, OP_ARM64_SSHR},
+	{SN_ShiftRightLogical, OP_ARM64_USHR},
+	{SN_ShiftRightLogicalAdd, OP_ARM64_USRA},
+	{SN_ShiftRightLogicalAddScalar, OP_ARM64_USRA},
+	{SN_ShiftRightLogicalNarrowingLower, OP_ARM64_SHRN},
+	{SN_ShiftRightLogicalNarrowingSaturateLower, OP_ARM64_UQSHRN},
+	{SN_ShiftRightLogicalNarrowingSaturateUpper, OP_ARM64_UQSHRN2},
+	{SN_ShiftRightLogicalNarrowingUpper, OP_ARM64_SHRN2},
+	{SN_ShiftRightLogicalRounded, OP_ARM64_URSHR},
+	{SN_ShiftRightLogicalRoundedAdd, OP_ARM64_URSRA},
+	{SN_ShiftRightLogicalRoundedAddScalar, OP_ARM64_URSRA},
+	{SN_ShiftRightLogicalRoundedNarrowingLower, OP_ARM64_RSHRN},
+	{SN_ShiftRightLogicalRoundedNarrowingSaturateLower, OP_ARM64_UQRSHRN},
+	{SN_ShiftRightLogicalRoundedNarrowingSaturateScalar},
+	{SN_ShiftRightLogicalRoundedNarrowingSaturateUpper, OP_ARM64_UQRSHRN2},
+	{SN_ShiftRightLogicalRoundedNarrowingUpper, OP_ARM64_RSHRN2},
+	{SN_ShiftRightLogicalRoundedScalar, OP_ARM64_URSHR},
+	{SN_ShiftRightLogicalScalar, OP_ARM64_USHR},
 	{SN_SignExtendWideningLower, OP_ARM64_SXTL},
 	{SN_SignExtendWideningUpper, OP_ARM64_SXTL2},
+	{SN_Sqrt, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT},
 	{SN_SqrtScalar, OP_ARM64_SQRT_SCALAR},
-	{SN_Sqrt},
 	{SN_Store, OP_ARM64_ST1},
 	{SN_StorePair, OP_ARM64_STP},
 	{SN_StorePairNonTemporal, OP_ARM64_STNP},
@@ -1162,9 +1223,16 @@ emit_arm64_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
-		case SN_Sqrt: {
-			llvm_ovr_tag_t tag = ovr_tag_from_mono_vector_type (fsig->ret);
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, tag, fsig, args);
+		case SN_ShiftLeftLogicalSaturate:
+		case SN_ShiftLeftLogicalSaturateScalar: {
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			op = is_unsigned ? OP_ARM64_UQSHL_IMM : OP_ARM64_SQSHL_IMM;
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+		}
+		case SN_ShiftRightLogicalRoundedNarrowingSaturateScalar: {
+			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_ARM64_UQRSHRN, 0, arg0_type, fsig, args);
+			ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
+			return ret;
 		}
 		case SN_SubtractScalar:
 		case SN_Subtract: {
@@ -1180,10 +1248,9 @@ emit_arm64_intrinsics (
 		}
 		case SN_SubtractSaturate:
 		case SN_SubtractSaturateScalar: {
-			llvm_ovr_tag_t tag = ovr_tag_from_mono_vector_type (fsig->ret);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSUB : INTRINS_AARCH64_ADV_SIMD_SQSUB;
-			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, iid, tag, fsig, args);
+			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, iid, 0, fsig, args);
 			/* LLVM has intrinsic functions for only the 32 and 64-bit forms of the scalar variants
 			 * of NEON uqsub and sqsub. The CoreCLR runtime tests for these intrinsics look like they
 			 * assert that all lanes > 0 are zeroed out, so just use the vector variant of these
