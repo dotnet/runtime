@@ -40,20 +40,26 @@ typedef enum {
 } IntrinsicId;
 
 enum {
-    LLVM_Vector64 = 1 << 0,
-    LLVM_Vector128 = 1 << 1,
-    LLVM_VectorWidths = 2,
+	LLVM_Vector64 = 1 << 0,
+	LLVM_Vector128 = 1 << 1,
+	LLVM_VectorWidths = 3, // Scalar, 64, 128
 
-    LLVM_Int8 = 1 << 2,
-    LLVM_Int16 = 1 << 3,
-    LLVM_Int32 = 1 << 4,
-    LLVM_Int64 = 1 << 5,
-    LLVM_Float32 = 1 << 6,
-    LLVM_Float64 = 1 << 7,
-    LLVM_ElementWidths = 6,
+	LLVM_Int8 = 1 << 2,
+	LLVM_Int16 = 1 << 3,
+	LLVM_Int32 = 1 << 4,
+	LLVM_Int64 = 1 << 5,
+	LLVM_Float32 = 1 << 6,
+	LLVM_Float64 = 1 << 7,
+	LLVM_ElementWidths = 6,
 };
 
 typedef uint8_t llvm_ovr_tag_t;
+
+static inline llvm_ovr_tag_t
+ovr_tag_to_scalar (llvm_ovr_tag_t tag)
+{
+	return tag & 0xfc;
+}
 
 llvm_ovr_tag_t
 ovr_tag_from_mono_vector_class (MonoClass *klass);

@@ -12,6 +12,7 @@
  * 	 To define an overloaded intrinsic with three arguments
  */
 
+#define Scalar 0
 #define V64 LLVM_Vector64
 #define V128 LLVM_Vector128
 #define I1 LLVM_Int8
@@ -310,6 +311,12 @@ INTRINS_OVR(AARCH64_ADV_SIMD_TBX128, aarch64_neon_tbx1, sse_i1_t)
 INTRINS_OVR(AARCH64_ADV_SIMD_TBL64, aarch64_neon_tbl1, LLVMVectorType (LLVMInt8Type (), 8))
 INTRINS_OVR(AARCH64_ADV_SIMD_TBL128, aarch64_neon_tbl1, sse_i1_t)
 
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Scalar | V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Scalar | V64 | V128 | R4 | R8)
+
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSUB, aarch64_neon_uqsub, V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSUB, aarch64_neon_sqsub, V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSUBHN, aarch64_neon_rsubhn, V64 | I1 | I2 | I4)
@@ -343,6 +350,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, V64 | V128 | I1 | I2 | 
 #undef INTRINS_OVR_2_ARG
 #undef INTRINS_OVR_3_ARG
 #undef INTRINS_OVR_TAG
+#undef Scalar
 #undef V64
 #undef V128
 #undef I1

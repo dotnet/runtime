@@ -9679,6 +9679,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
+		case OP_XOP_OVR_SCALAR_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			ovr_tag = ovr_tag_to_scalar (ovr_tag);
+			LLVMValueRef result = LLVMBuildExtractElement (builder, lhs, const_int32 (0), "xop_ovr_scalar_x_x");
+			result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
+			result = LLVMBuildInsertElement (builder, LLVMGetUndef (t), result, const_int32 (0), "");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_ZERO_UPPER: {
 			values [ins->dreg] = select_lowest_element (ctx, lhs);
 			break;
@@ -11002,7 +11013,8 @@ add_intrinsic (LLVMModuleRef module, int id)
 		llvm_ovr_tag_t spec = intrin_arm64_ovr [id];
 		for (int vw = 0; vw < LLVM_VectorWidths; ++vw) {
 			for (int ew = 0; ew < LLVM_ElementWidths; ++ew) {
-				llvm_ovr_tag_t test = (LLVM_Vector64 << vw) | (LLVM_Int8 << ew);
+				llvm_ovr_tag_t vec_bit = vw == 0 ? 0 : LLVM_Vector64 << vw;
+				llvm_ovr_tag_t test = vec_bit | (LLVM_Int8 << ew);
 				if (spec & test) {
 					intrins = add_intrins1 (module, id, intrin_types [vw][ew]);
 					int ovr_id = int_from_id_and_ovr_tag (test, id);
@@ -11085,19 +11097,26 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-	intrin_types [0][0] = v64_i1_t = LLVMVectorType (LLVMInt8Type (), 8);
-	intrin_types [0][1] = v64_i2_t = LLVMVectorType (LLVMInt16Type (), 4);
-	intrin_types [0][2] = v64_i4_t = LLVMVectorType (LLVMInt32Type (), 2);
-	intrin_types [0][3] = v64_i8_t = LLVMVectorType (LLVMInt64Type (), 1);
-	intrin_types [0][4] = v64_r4_t = LLVMVectorType (LLVMFloatType (), 2);
-	intrin_types [0][5] = v64_r8_t = LLVMVectorType (LLVMDoubleType (), 1);
+	intrin_types [0][0] = LLVMInt8Type ();
+	intrin_types [0][1] = LLVMInt16Type ();
+	intrin_types [0][2] = LLVMInt32Type ();
+	intrin_types [0][3] = LLVMInt64Type ();
+	intrin_types [0][4] = LLVMFloatType ();
+	intrin_types [0][5] = LLVMDoubleType ();
 
-	intrin_types [1][0] = v128_i1_t = sse_i1_t = type_to_sse_type (MONO_TYPE_I1);
-	intrin_types [1][1] = v128_i2_t = sse_i2_t = type_to_sse_type (MONO_TYPE_I2);
-	intrin_types [1][2] = v128_i4_t = sse_i4_t = type_to_sse_type (MONO_TYPE_I4);
-	intrin_types [1][3] = v128_i8_t = sse_i8_t = type_to_sse_type (MONO_TYPE_I8);
-	intrin_types [1][4] = v128_r4_t = sse_r4_t = type_to_sse_type (MONO_TYPE_R4);
-	intrin_types [1][5] = v128_r8_t = sse_r8_t = type_to_sse_type (MONO_TYPE_R8);
+	intrin_types [1][0] = v64_i1_t = LLVMVectorType (LLVMInt8Type (), 8);
+	intrin_types [1][1] = v64_i2_t = LLVMVectorType (LLVMInt16Type (), 4);
+	intrin_types [1][2] = v64_i4_t = LLVMVectorType (LLVMInt32Type (), 2);
+	intrin_types [1][3] = v64_i8_t = LLVMVectorType (LLVMInt64Type (), 1);
+	intrin_types [1][4] = v64_r4_t = LLVMVectorType (LLVMFloatType (), 2);
+	intrin_types [1][5] = v64_r8_t = LLVMVectorType (LLVMDoubleType (), 1);
+
+	intrin_types [2][0] = v128_i1_t = sse_i1_t = type_to_sse_type (MONO_TYPE_I1);
+	intrin_types [2][1] = v128_i2_t = sse_i2_t = type_to_sse_type (MONO_TYPE_I2);
+	intrin_types [2][2] = v128_i4_t = sse_i4_t = type_to_sse_type (MONO_TYPE_I4);
+	intrin_types [2][3] = v128_i8_t = sse_i8_t = type_to_sse_type (MONO_TYPE_I8);
+	intrin_types [2][4] = v128_r4_t = sse_r4_t = type_to_sse_type (MONO_TYPE_R4);
+	intrin_types [2][5] = v128_r8_t = sse_r8_t = type_to_sse_type (MONO_TYPE_R8);
 
 	intrins_id_to_intrins = g_hash_table_new (NULL, NULL);
 

@@ -1555,6 +1555,7 @@ MINI_OP3(OP_XOP_X_X_X_X, "xop_x_x_x_x", XREG, XREG, XREG, XREG)
 
 MINI_OP(OP_XOP_OVR_X_X, "xop_ovr_x", XREG, XREG, NONE)
 MINI_OP(OP_XOP_OVR_X_X_X, "xop_ovr_x_x", XREG, XREG, XREG)
+MINI_OP(OP_XOP_OVR_SCALAR_X_X, "xop_ovr_scalar_x_x", XREG, XREG, NONE)
 
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
@@ -1652,4 +1653,5 @@ MINI_OP(OP_ARM64_UQSHL_IMM, "arm64_uqshl_imm", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SQSHL_IMM, "arm64_uqshl_imm", XREG, XREG, IREG)
 
 MINI_OP(OP_ARM64_SQSHLU, "arm64_sqshlu", XREG, XREG, IREG)
+
 #endif // TARGET_ARM64
