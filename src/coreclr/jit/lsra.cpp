@@ -10955,6 +10955,21 @@ void LinearScan::verifyFinalAllocation()
                 }
                 if (regNum == REG_NA)
                 {
+                    // If this interval is still assigned to a register
+                    if (interval->physReg != REG_NA)
+                    {
+                        // then unassign it if no new register was assigned to the RefTypeDef
+                        if (RefTypeIsDef(currentRefPosition->refType))
+                        {
+                            assert(interval->assignedReg != nullptr);
+                            if (interval->assignedReg->assignedInterval == interval)
+                            {
+                                interval->assignedReg->assignedInterval = nullptr;
+                            }
+                            interval->assignedReg = nullptr;
+                        }
+                    }
+
                     dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, interval);
                 }
                 else if (RefTypeIsDef(currentRefPosition->refType))
