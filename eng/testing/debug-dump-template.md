@@ -74,7 +74,7 @@ dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
-dotnet-dump analyze <path-to-dump>
+dotnet-dump analyze <win-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
@@ -104,7 +104,7 @@ Install or update LLDB if necessary ([instructions here](https://github.com/dotn
 
 Load the dump:
 ```sh
-lldb --core <path-to-dmp> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
+lldb --core <lin-path-to-dump> %LOUTDIR%/shared/Microsoft.NETCore.App/6.0.0/dotnet
 ```
 
 Within lldb:
@@ -127,7 +127,7 @@ dotnet tool update --global dotnet-dump
 ```
 If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
-dotnet-dump analyze <path-to-dump>
+dotnet-dump analyze <lin-path-to-dump>
 ```
 Within dotnet-dump:
 ```sh
