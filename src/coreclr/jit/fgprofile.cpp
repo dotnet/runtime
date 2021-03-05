@@ -419,10 +419,13 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     // Find the address of the entry block's counter.
     //
-    const int firstSchemaIndex = (int)m_entryBlock->bbCountSchemaIndex;
-    assert(m_entryBlock->bbCodeOffs == (IL_OFFSET)schema[firstSchemaIndex].ILOffset);
+    assert(m_entryBlock != nullptr);
     assert(m_entryBlock->bbCodeOffs == 0);
+
+    const int firstSchemaIndex = (int)m_entryBlock->bbCountSchemaIndex;
+    assert((IL_OFFSET)schema[firstSchemaIndex].ILOffset == 0);
     assert(schema[firstSchemaIndex].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount);
+
     const size_t addrOfFirstExecutionCount = (size_t)(schema[firstSchemaIndex].Offset + profileMemory);
 
     GenTree* arg;
