@@ -407,7 +407,7 @@ namespace System.Reflection
 
                 ParameterInfo returnParameter = mi.ReturnParameter;
                 Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
-                Type[] returnOptMods = returnParameter.GetRequiredCustomModifiers();
+                Type[] returnOptMods = returnParameter.GetOptionalCustomModifiers();
 
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis,
                     returnParameter.ParameterType, returnReqMods, returnOptMods,
