@@ -12,15 +12,13 @@
 # via "crank" (https://github.com/dotnet/crank)
 
 import argparse
-import re
+import logging
 import sys
+import zipfile
 
-import stat
 from os import path
-from os.path import isfile
-from shutil import copyfile
 from coreclr_arguments import *
-from superpmi import ChangeDir, TempDir
+from superpmi import TempDir, determine_mcs_tool_path, run_and_log
 from superpmi_setup import run_command
 
 # Start of parser object creation.
@@ -118,33 +116,25 @@ def determine_benchmark_machine(coreclr_args):
         if coreclr_args.host_os == "Linux":
             return "aspnet-citrine-arm"
         else:
-           raise RuntimeError("Invalid OS for arm64.")
+            raise RuntimeError("Invalid OS for arm64.")
     else:
         raise RuntimeError("Invalid arch.")
 
-def build_and_run(coreclr_args, output_mch_name):
+def build_and_run(coreclr_args):
     """Run perf scenarios under crank and collect data with SPMI"
 
     Args:
         coreclr_args (CoreClrArguments): Arguments use to drive
         output_mch_name (string): Name of output mch file name
     """
-    arch = coreclr_args.arch
-    python_path = sys.executable
     core_root = coreclr_args.core_root
-    log_file = coreclr_args.log_file
-    dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-    dotnet_exe = os.path.join(dotnet_directory, "dotnet")
-
-    if is_windows:
-        shim_name = "%JitName%"
-    else:
-        shim_name = "$JitName"
+    # log_file = coreclr_args.log_file
+    source_directory = coreclr_args.source_directory
 
     # Make sure ".dotnet" directory exists, by running the script at least once
     dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
     dotnet_script_path = path.join(source_directory, dotnet_script_name)
-    run_command([dotnet_script_path, "--info"], jitutils_directory)
+    run_command([dotnet_script_path, "--info"])
 
     ## install crank
 
@@ -187,9 +177,10 @@ def build_and_run(coreclr_args, output_mch_name):
         #       --application.options.outputFiles {build}/{coreclr}
         #       --application.options.outputFiles {build}/{SPC}
 
-        jitname = determine_native_name("clrjit")
-        coreclrname = determine_native_name("coreclr")
-        spminame = determine_native_name("superpmi-shim-collector")
+        jitname = determine_native_name(coreclr_args, "clrjit")
+        coreclrname = determine_native_name(coreclr_args, "coreclr")
+        spminame = determine_native_name(coreclr_args, "superpmi-shim-collector")
+        corelibname = "System.Private.CoreLib.dll"
 
         jitpath = path.join(".", jitname)
         jitlib  = path.join(core_root, jitname)
@@ -199,19 +190,19 @@ def build_and_run(coreclr_args, output_mch_name):
 
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_command = f" --config {config}" \
-                        f" --profile {benchmark_machine}" \
-                        f" --scenario json" \
-                        f" --description SPMI-COLLECTION" \
-                        f" --application.framework net6.0" \
-                        f" --application.channel edge" \
-                        f" --application.environmentVariables COMPlus_JitName={spminame}" \
-                        f" --application.environmentVariables SuperPMIShimLogPath=." \
-                        f" --application.environmentVariables SuperPMIShimPath={jitpath}" \
-                        f" --application.options.fetch true" \
-                        f" --application.outputFiles {jitlib}" \
-                        f" --application.outputFiles {coreclr}" \
-                        f" --application.outputFiles {corelib}"
+        crank_command = (f' --config {config}'
+                         f' --profile {benchmark_machine}'
+                         f' --scenario json'
+                         f' --description SPMI-COLLECTION'
+                         f' --application.framework net6.0'
+                         f' --application.channel edge'
+                         f' --application.environmentVariables COMPlus_JitName={spmi}'
+                         f' --application.environmentVariables SuperPMIShimLogPath=.'
+                         f' --application.environmentVariables SuperPMIShimPath={jitpath}'
+                         f' --application.options.fetch true'
+                         f' --application.outputFiles {jitlib}'
+                         f' --application.outputFiles {coreclr}'
+                         f' --application.outputFiles {corelib}')
 
         run_command(
             ["crank", crank_command], temp_location, _exit_on_fail=True)
@@ -224,7 +215,7 @@ def build_and_run(coreclr_args, output_mch_name):
                     listOfFileNames = zipObject.namelist()
                     for zippedFileName in listOfFileNames:
                         if zippedFileName.endswith('.mc'):
-                              zipObject.extract(zippedFileName, temp_location)
+                            zipObject.extract(zippedFileName, temp_location)
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
         command = [mcs_path, "-merge", coreclr_args.output_mch_path, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
@@ -246,14 +237,14 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
-    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
-    build_and_run(coreclr_args, all_output_mch_name)
-    if os.path.isfile(all_output_mch_name):
-        pass
-    else:
-        print("No mch file generated.")
+    # all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
+    build_and_run(coreclr_args)
+    # if os.path.isfile(all_output_mch_name):
+    #     pass
+    # else:
+    #     print("No mch file generated.")
 
-    strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
+    # strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
 
 
 if __name__ == "__main__":
