@@ -38,7 +38,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     })
                     .ConfigureLogging(logging =>
                     {
-                        logging.AddConsole();
+                        logging.AddSimpleConsole(options => options.SingleLine = true)
+                               .AddFilter(null, LogLevel.Information);
                     })
                     .ConfigureServices((ctx, services) =>
                     {

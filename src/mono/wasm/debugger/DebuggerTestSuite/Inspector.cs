@@ -41,8 +41,9 @@ namespace DebuggerTests
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            _loggerFactory = LoggerFactory.Create(
-                builder => builder.AddConsole().AddFilter(null, LogLevel.Trace));
+            _loggerFactory = LoggerFactory.Create(builder =>
+                    builder.AddSimpleConsole(options => options.SingleLine = true)
+                           .AddFilter(null, LogLevel.Trace));
 
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
             _logger = _loggerFactory.CreateLogger<Inspector>();
