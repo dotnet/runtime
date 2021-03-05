@@ -238,7 +238,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
     {
         string assembly = assemblyItem.ItemSpec;
-        string directory = Path.GetDirectoryName(assembly)!;
+        string assemblyDir = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
@@ -350,18 +350,18 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // values, which wont work.
         processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
-        processArgs.Add(assembly);
+        processArgs.Add(assemblyFilename);
 
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", $"{directory}{Path.PathSeparator}{monoPaths}"},
+            {"MONO_PATH", $"{assemblyDir}{Path.PathSeparator}{monoPaths}"},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
         try
         {
             // run the AOT compiler
-            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, directory, silent: false, outputMessageImportance: MessageImportance.Low);
+            Utils.RunProcess(CompilerBinaryPath, string.Join(" ", processArgs), envVariables, assemblyDir, silent: false, outputMessageImportance: MessageImportance.Low);
         }
         catch (Exception ex)
         {
