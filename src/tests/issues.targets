@@ -715,9 +715,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/47294</Issue>
         </ExcludeList>
         <!-- JitStress1 Failures -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/SIMD/RayTracer/RayTracer/*">
-            <Issue>https://github.com/dotnet/runtime/issues/48787</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/**">
             <Issue>https://github.com/dotnet/runtime/issues/48791</Issue>
         </ExcludeList>
