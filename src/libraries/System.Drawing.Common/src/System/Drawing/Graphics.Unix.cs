@@ -581,6 +581,18 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void GetContextInfo(out PointF offset)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void GetContextInfo(out PointF offset, out Region? clip)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         private void CheckErrorStatus(int status)
         {
             Gdip.CheckStatus(status);

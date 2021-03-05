@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -117,6 +117,7 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <Compile Include="GraphicsTests.Core.cs" />
+    <Compile Include="Graphics_GetContextTests.Core.cs" />
     <Compile Include="Drawing2D\MatrixTests.Core.cs" />
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
   </ItemGroup>

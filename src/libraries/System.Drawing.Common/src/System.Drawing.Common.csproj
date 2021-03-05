@@ -30,6 +30,7 @@
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
     <Compile Include="System\Drawing\ImageType.cs" />
+    <Compile Include="System\Drawing\NumericsExtensions.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
