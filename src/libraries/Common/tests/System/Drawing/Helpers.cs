@@ -54,7 +54,7 @@ namespace System.Drawing
             return installedVersion.Major >= 6;
         }
 
-        public static bool GetIsWindows() => PlatformDetection.IsWindows;
+        public static bool GetIsWindows() => PlatformDetection.IsDrawingSupported && PlatformDetection.IsWindows;
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
