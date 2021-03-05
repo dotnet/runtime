@@ -394,9 +394,25 @@ namespace System.Reflection
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
-                Type[] paramTypes = ParamTypes(parameters, false);
+                Type[] paramTypes = new Type[parameters.Length];
+                Type[][] paramReqMods = new Type[paramTypes.Length][];
+                Type[][] paramOptMods = new Type[paramTypes.Length][];
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, mi.ReturnType, paramTypes);
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    paramTypes[i] = parameters[i].ParameterType;
+                    paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                    paramOptMods[i] = parameters[i].GetOptionalCustomModifiers();
+                }
+
+                ParameterInfo returnParameter = mi.ReturnParameter;
+                Type[] returnReqMods = returnParameter.GetRequiredCustomModifiers();
+                Type[] returnOptMods = returnParameter.GetRequiredCustomModifiers();
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.HasThis,
+                    returnParameter.ParameterType, returnReqMods, returnOptMods,
+                    paramTypes, paramReqMods, paramOptMods);
+
                 if (mi.ContainsGenericParameters)
                 {
                     Type[] ts = mi.GetGenericArguments();

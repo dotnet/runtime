@@ -603,6 +603,7 @@ namespace DispatchProxyTests
             testRefOutInInvocation(p => p.Out(out _), null);
             testRefOutInInvocation(p => p.OutAttribute(value), "Hello");
             testRefOutInInvocation(p => p.Ref(ref value), "Hello");
+            testRefOutInInvocation(p => p.In(in value), "Hello");
         }
 
         private static void testRefOutInInvocation(Action<TestType_IOut_Ref> invocation, string expected)
