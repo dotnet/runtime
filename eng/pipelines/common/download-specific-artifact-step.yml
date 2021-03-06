@@ -11,7 +11,7 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project:  $[ dependencies.setupMaestroVars.outputs['setReleaseVars.AzDOProjectName'] ]
+      project: 'public'
       pipeline: 'runtime'
       buildVersionToDownload: specific
       buildId: '20210305.40'
