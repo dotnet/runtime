@@ -131,22 +131,26 @@ def build_and_run(coreclr_args):
     # log_file = coreclr_args.log_file
     source_directory = coreclr_args.source_directory
 
-    # Make sure ".dotnet" directory exists, by running the script at least once
-    dotnet_script_name = "dotnet-install.ps1" if is_windows else "dotnet-install.sh"
-    dotnet_script_path = path.join(source_directory, "eng", "common", dotnet_script_name)
+    # We'll use repo script to install dotnet
+    dotnet_install_script_name = "dotnet-install.cmd" if is_windows else "dotnet-install.sh"
+    dotnet_install_script_path = path.join(source_directory, "eng", "common", dotnet_install_script_name)
 
     with TempDir(skip_cleanup=True) as temp_location:
 
         print ("Executing in " + temp_location)
 
-        # insstall dotnet 5.0
-        run_command([dotnet_script_name, "-Runtime", "-InstallDir", temp_location], temp_location, _exit_on_fail=True)
-        run_command([path.join(temp_location, "dotnet"), "--info"], temp_location, _exit_on_fail=True)
-        os.environ["DOTNET_ROOT"] = temp_location
+        # install dotnet 5.0
+        run_command([dotnet_install_script_path, "-Version", "5.0.3"], temp_location, _exit_on_fail=True)
+        os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
+        os.environ['DOTNET_SKIP_FIRST_TIME_EXPERIENCE'] = '1'
+        dotnet_path = path.join(source_directory, ".dotnet")
+        dotnet_exe = path.join(dotnet_path, "dotnet.exe") if is_windows else path.join(dotnet_path, "dotnet")
+        run_command([dotnet_exe, "--info"], temp_location, _exit_on_fail=True)
+        os.environ['DOTNET_ROOT'] = dotnet_path
 
         ## install crank as local tool
         run_command(
-            [dotnet_script_path, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
+            [dotnet_exe, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
 
         ## ideally just do sparse clone, but this doesn't work locally
         ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
