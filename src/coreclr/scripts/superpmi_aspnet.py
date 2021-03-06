@@ -136,16 +136,14 @@ def build_and_run(coreclr_args):
     dotnet_script_path = path.join(source_directory, dotnet_script_name)
     run_command([dotnet_script_path, "--info"])
 
-    ## install crank... note this returns error code 1 if tool is installed.
-
-    run_command(
-        [dotnet_script_path, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--global"])
-
-    ## sparse clone of aspnet/benchmarks to obtain the benchmark config files
-
     with TempDir(skip_cleanup=True) as temp_location:
 
-        print (f"Executing in {temp_location}")
+        print (f'Executing in {temp_location}')
+
+        ## install crank as local tool
+
+        run_command(
+            [dotnet_script_path, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
 
         ## ideally just do sparse clone, but this doesn't work locally
         ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
@@ -153,12 +151,14 @@ def build_and_run(coreclr_args):
         ## git sparse-checkout init --cone
         ## git sparse-checkout set scenarios
 
+        ## could probably just pass a URL and avoid this
+
         run_command(
             ["git.exe", "clone", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
         configName = "json"
         scenario = "json"
-        configYml = f"{configName}.benchmarks.yml"
+        configYml = f'{configName}.benchmarks.yml'
         configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
 
         # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
@@ -206,8 +206,10 @@ def build_and_run(coreclr_args):
                            '--application.options.outputFiles', coreclr,
                            '--application.options.outputFiles', corelib]
 
+        crank_app = path.join(temp_location, "crank")
+
         run_command(
-            ["crank"] + crank_arguments, temp_location, _exit_on_fail=True)
+            [crank_app] + crank_arguments, temp_location, _exit_on_fail=True)
 
         crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
 
@@ -220,7 +222,7 @@ def build_and_run(coreclr_args):
                             zipObject.extract(zippedFileName, temp_location)
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
-        mch_file = path.join(coreclr_args.output_mch_path, f"aspnet-{configName}-{scenario}" + ".mch")
+        mch_file = path.join(coreclr_args.output_mch_path, f'aspnet-{configName}-{scenario}.mch')
         command = [mcs_path, "-merge", mch_file, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
