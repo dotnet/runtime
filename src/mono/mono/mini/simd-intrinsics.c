@@ -1011,6 +1011,15 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_FusedAddHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHADD},
+	{SN_FusedAddRoundedHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URHADD},
+	{SN_FusedMultiplyAdd, OP_ARM64_FMADD},
+	{SN_FusedMultiplyAddNegatedScalar, OP_ARM64_FNMADD_SCALAR},
+	{SN_FusedMultiplyAddScalar, OP_ARM64_FMADD_SCALAR},
+	{SN_FusedMultiplySubtract, OP_ARM64_FMSUB},
+	{SN_FusedMultiplySubtractNegatedScalar, OP_ARM64_FNMSUB_SCALAR},
+	{SN_FusedMultiplySubtractScalar, OP_ARM64_FMSUB_SCALAR},
+	{SN_FusedSubtractHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHSUB, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHSUB},
 	{SN_Insert},
 	{SN_InsertScalar},
 	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
@@ -1369,7 +1378,6 @@ emit_arm64_intrinsics (
 		case SN_Insert: {
 			int insert_op = 0;
 			int extract_op = 0;
-			printf ("XXXih: arg0_type = %d\n", arg0_type);
 			switch (arg0_type) {
 			case MONO_TYPE_I1: case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
 			case MONO_TYPE_I2: case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;

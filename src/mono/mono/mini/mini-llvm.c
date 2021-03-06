@@ -9389,6 +9389,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_FMSUB:
+		case OP_ARM64_FMSUB_SCALAR:
+		case OP_ARM64_FNMSUB_SCALAR:
+		case OP_ARM64_FMADD:
+		case OP_ARM64_FMADD_SCALAR:
+		case OP_ARM64_FNMADD_SCALAR: {
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			gboolean scalar = FALSE;
+			gboolean negate = FALSE;
+			gboolean subtract = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_FMSUB: subtract = TRUE; break;
+			case OP_ARM64_FMSUB_SCALAR: subtract = TRUE; scalar = TRUE; break;
+			case OP_ARM64_FNMSUB_SCALAR: subtract = TRUE; scalar = TRUE; negate = TRUE; break;
+			case OP_ARM64_FMADD: break;
+			case OP_ARM64_FMADD_SCALAR: scalar = TRUE; break;
+			case OP_ARM64_FNMADD_SCALAR: scalar = TRUE; negate = TRUE; break;
+			}
+			// llvm.fma argument order: mulop1, mulop2, addend
+			LLVMValueRef args [] = { rhs, arg3, lhs };
+			if (scalar) {
+				ovr_tag = ovr_tag_force_scalar (ovr_tag);
+				for (int i = 0; i < 3; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			}
+			if (subtract)
+				args [0] = LLVMBuildFNeg (builder, args [0], "arm64_fma_sub");
+			if (negate) {
+				args [0] = LLVMBuildFNeg (builder, args [0], "arm64_fma_negate");
+				args [2] = LLVMBuildFNeg (builder, args [2], "arm64_fma_negate");
+			}
+			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_FMA, ovr_tag, args, "arm64_fma");
+			if (scalar)
+				result = vector_from_scalar (ctx, lhs, result);
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_SQDMULL:
 		case OP_ARM64_SQDMULL_SCALAR:
 		case OP_ARM64_SQDMULL2:
@@ -10042,11 +10079,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_XOP_OVR_SCALAR_X_X:
-		case OP_XOP_OVR_SCALAR_X_X_X: {
+		case OP_XOP_OVR_SCALAR_X_X_X:
+		case OP_XOP_OVR_SCALAR_X_X_X_X: {
 			int num_args = 0;
 			switch (ins->opcode) {
 			case OP_XOP_OVR_SCALAR_X_X: num_args = 1; break;
 			case OP_XOP_OVR_SCALAR_X_X_X: num_args = 2; break;
+			case OP_XOP_OVR_SCALAR_X_X_X_X: num_args = 3; break;
 			}
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
@@ -10067,7 +10106,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #if !defined(TARGET_ARM64)
 			arm64_fake_scalar_op = FALSE;
 #endif
-			LLVMValueRef args [2] = { lhs, rhs };
+			LLVMValueRef args [3] = { lhs, rhs, arg3 };
 			if (!arm64_fake_scalar_op) {
 				ovr_tag = ovr_tag_force_scalar (ovr_tag);
 				for (int i = 0; i < num_args; ++i)
