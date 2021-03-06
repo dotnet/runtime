@@ -105,6 +105,9 @@ struct _MonoMemoryManager {
 	GPtrArray *class_vtable_array;
 	GHashTable *generic_virtual_cases;
 
+	/* Used to store offsets of thread static fields */
+	GHashTable         *special_static_fields;
+
 	/* Information maintained by mono-debug.c */
 	gpointer debug_info;
 

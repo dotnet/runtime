@@ -22,8 +22,17 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
-            SafeX509Handle[] certs = Interop.AndroidCrypto.X509DecodeCollection(rawData);
-            return new AndroidCertLoader(certs);
+            X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
+            if (contentType == X509ContentType.Pkcs12)
+            {
+                ICertificatePal[] certPals = ReadPkcs12Collection(rawData, password);
+                return new AndroidCertLoader(certPals);
+            }
+            else
+            {
+                SafeX509Handle[] certs = Interop.AndroidCrypto.X509DecodeCollection(rawData);
+                return new AndroidCertLoader(certs);
+            }
         }
 
         public static ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
@@ -34,17 +43,41 @@ namespace Internal.Cryptography.Pal
 
         public static IExportPal FromCertificate(ICertificatePalCore cert)
         {
-            throw new NotImplementedException(nameof(FromCertificate));
+            return new AndroidExportProvider(cert);
         }
 
         public static IExportPal LinkFromCertificateCollection(X509Certificate2Collection certificates)
         {
-            throw new NotImplementedException(nameof(LinkFromCertificateCollection));
+            return new AndroidExportProvider(certificates);
         }
 
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
             throw new NotImplementedException(nameof(FromSystemStore));
+        }
+
+        private static ICertificatePal[] ReadPkcs12Collection(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
+        {
+            using (var reader = new AndroidPkcs12Reader(rawData))
+            {
+                reader.Decrypt(password);
+
+                ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];
+                int idx = 0;
+                foreach (UnixPkcs12Reader.CertAndKey certAndKey in reader.EnumerateAll())
+                {
+                    AndroidCertificatePal pal = (AndroidCertificatePal)certAndKey.Cert!;
+                    if (certAndKey.Key != null)
+                    {
+                        pal.SetPrivateKey(AndroidPkcs12Reader.GetPrivateKey(certAndKey.Key));
+                    }
+
+                    certs[idx] = pal;
+                    idx++;
+                }
+
+                return certs;
+            }
         }
     }
 }

@@ -6,7 +6,6 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
-include(CMakePushCheckState)
 include(CheckLibraryExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
@@ -194,6 +193,16 @@ check_symbol_exists(
     strlcpy
     string.h
     HAVE_STRLCPY)
+
+check_symbol_exists(
+    strcat_s
+    string.h
+    HAVE_STRCAT_S)
+
+check_symbol_exists(
+    strlcat
+    string.h
+    HAVE_STRLCAT)
 
 check_symbol_exists(
     posix_fadvise
@@ -917,19 +926,6 @@ check_symbol_exists(
     sys/inotify.h
     HAVE_INOTIFY_RM_WATCH)
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
-
-if (CLR_CMAKE_TARGET_LINUX)
-    cmake_push_check_state(RESET)
-    set (CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
-    set (CMAKE_REQUIRED_LIBRARIES "-lanl")
-
-    check_symbol_exists(
-        getaddrinfo_a
-        netdb.h
-        HAVE_GETADDRINFO_A)
-
-    cmake_pop_check_state()
-endif ()
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)

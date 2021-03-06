@@ -63,9 +63,6 @@
 		mono_thread_info_tls_set (info, TLS_KEY_DOMAIN, (x));	\
 } while (FALSE)
 
-#define GET_APPCONTEXT() NULL
-#define SET_APPCONTEXT(x)
-
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
@@ -300,7 +297,7 @@ mono_domain_create (void)
   
 	if (!domain_gc_desc) {
 		unsigned int i, bit = 0;
-		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i < G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED); i += sizeof (gpointer)) {
+		for (i = G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_OBJECT); i <= G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_OBJECT); i += sizeof (gpointer)) {
 			bit = i / sizeof (gpointer);
 			domain_gc_bitmap [bit / 32] |= (gsize) 1 << (bit % 32);
 		}
@@ -315,25 +312,14 @@ mono_domain_create (void)
 
 	domain->domain = NULL;
 	domain->friendly_name = NULL;
-	domain->search_path = NULL;
 
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-	domain->env = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
-	mono_jit_code_hash_init (&domain->jit_code_hash);
-	domain->ldstr_table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
-	domain->num_jit_info_table_duplicates = 0;
-	domain->jit_info_table = mono_jit_info_table_new (domain);
-	domain->jit_info_free_queue = NULL;
-	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
 	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
-	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
-	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
@@ -417,6 +403,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_root_domain = domain;
 
 	mono_alcs_init ();
+	mono_jit_info_tables_init ();
 
 	SET_APPDOMAIN (domain);
 
@@ -778,7 +765,6 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 		return;
 
 	SET_APPDOMAIN (domain);
-	SET_APPCONTEXT (domain->default_context);
 
 	if (migrate_exception) {
 		thread = mono_thread_internal_current ();
@@ -831,10 +817,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
-	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
-
-		domain->entry_assembly = assembly;
-	}
+	mono_runtime_ensure_entry_assembly (assembly);
 }
 
 /**
@@ -876,7 +859,7 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm
 	// AppContext.BaseDirectory can sometimes fall back to checking the location of the entry_assembly, which should be non-null
-	mono_domain_ensure_entry_assembly (domain, ass);
+	mono_runtime_ensure_entry_assembly (ass);
 
 	return ass;
 }
@@ -954,13 +937,6 @@ mono_domain_get_friendly_name (MonoDomain *domain)
 void 
 mono_context_set (MonoAppContext * new_context)
 {
-	SET_APPCONTEXT (new_context);
-}
-
-void
-mono_context_set_handle (MonoAppContextHandle new_context)
-{
-	SET_APPCONTEXT (MONO_HANDLE_RAW (new_context));
 }
 
 /**
@@ -971,18 +947,7 @@ mono_context_set_handle (MonoAppContextHandle new_context)
 MonoAppContext * 
 mono_context_get (void)
 {
-	return GET_APPCONTEXT ();
-}
-
-/**
- * mono_context_get_handle:
- *
- * Returns: the current Mono Application Context.
- */
-MonoAppContextHandle
-mono_context_get_handle (void)
-{
-	return MONO_HANDLE_NEW (MonoAppContext, GET_APPCONTEXT ());
+	return NULL;
 }
 
 /**

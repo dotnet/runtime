@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // Array size is the count of the following tests.
-            Task[] tasks = new Task[14];
+            Task[] tasks = new Task[16];
 
             // Simple models can be deserialized.
             tasks[0] = Task.Run(async () => await RunTestAsync<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
@@ -48,10 +48,12 @@ namespace System.Text.Json.Serialization.Tests
             tasks[8] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data));
             tasks[9] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data));
             tasks[10] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data));
+            tasks[11] = Task.Run(async () => await RunTestAsync<Point_MembersHave_JsonInclude>(Point_MembersHave_JsonInclude.s_data));
+            tasks[12] = Task.Run(async () => await RunTestAsync<ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes>(ClassWithFiveArgs_MembersHave_JsonNumberHandlingAttributes.s_data));
             // Complex JSON as last argument works
-            tasks[11] = Task.Run(async () => await RunTestAsync<Point_With_Array>(Point_With_Array.s_data));
-            tasks[12] = Task.Run(async () => await RunTestAsync<Point_With_Dictionary>(Point_With_Dictionary.s_data));
-            tasks[13] = Task.Run(async () => await RunTestAsync<Point_With_Object>(Point_With_Object.s_data));
+            tasks[13] = Task.Run(async () => await RunTestAsync<Point_With_Array>(Point_With_Array.s_data));
+            tasks[14] = Task.Run(async () => await RunTestAsync<Point_With_Dictionary>(Point_With_Dictionary.s_data));
+            tasks[15] = Task.Run(async () => await RunTestAsync<Point_With_Object>(Point_With_Object.s_data));
 
             await Task.WhenAll(tasks);
         }
