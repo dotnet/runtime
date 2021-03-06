@@ -97,10 +97,10 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
       displayName: Run ci setup script (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
