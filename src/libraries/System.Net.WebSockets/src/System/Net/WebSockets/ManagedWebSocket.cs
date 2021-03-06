@@ -250,7 +250,10 @@ namespace System.Net.WebSockets
             {
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
-                _stream?.Dispose();
+                _stream.Dispose();
+                _inflater?.Dispose();
+                _deflater?.Dispose();
+
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
