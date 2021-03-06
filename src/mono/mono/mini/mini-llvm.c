@@ -9321,7 +9321,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_XNEG_SCALAR: {
 			gboolean scalar = ins->opcode == OP_ARM64_XNEG_SCALAR;
 			gboolean is_float = FALSE;
-			switch (ins->inst_c1) {
+			switch (inst_c1_type (ins)) {
 			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
 			}
 			LLVMValueRef result = lhs;
@@ -9566,31 +9566,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_STP_SCALAR:
 		case OP_ARM64_STNP:
 		case OP_ARM64_STNP_SCALAR: {
+			gboolean nontemporal = FALSE;
+			gboolean scalar = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_STNP: nontemporal = TRUE; break;
+			case OP_ARM64_STNP_SCALAR: nontemporal = TRUE; scalar = TRUE; break;
+			case OP_ARM64_STP_SCALAR: scalar = TRUE; break;
+			}
 			LLVMTypeRef lhs_t = LLVMTypeOf (lhs);
 			unsigned int lhs_elems = LLVMGetVectorSize (lhs_t);
 			LLVMTypeRef lhs_elt_t = LLVMGetElementType (lhs_t);
 			LLVMValueRef val = NULL;
 			LLVMTypeRef dst_t = lhs_t;
-			switch (ins->opcode) {
-			case OP_ARM64_STP:
-			case OP_ARM64_STNP: {
+			if (scalar)
+				val = LLVMBuildShuffleVector (builder, rhs, arg3, create_const_vector_2_i32 (0, 2), "");
+			else {
 				dst_t = LLVMPointerType (LLVMVectorType (lhs_elt_t, lhs_elems * 2), 0);
 				val = concatenate_vectors (ctx, rhs, arg3);
-				break;
-			}
-			case OP_ARM64_STP_SCALAR:
-			case OP_ARM64_STNP_SCALAR: {
-				val = LLVMBuildShuffleVector (builder, rhs, arg3, create_const_vector_2_i32 (0, 2), "");
-				break;
-			}
 			}
 			LLVMValueRef addr = convert (ctx, lhs, dst_t);
 			LLVMValueRef store = mono_llvm_build_store (builder, val, addr, FALSE, LLVM_BARRIER_NONE);
-			switch (ins->opcode) {
-			case OP_ARM64_STNP:
-			case OP_ARM64_STNP_SCALAR:
+			if (nontemporal)
 				set_nontemporal_flag (store);
-			}
 			break;
 		}
 		case OP_ARM64_ST1: {
@@ -9648,24 +9645,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_USUB2: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			gboolean is_unsigned = FALSE;
-			gboolean select_high = FALSE;
+			gboolean high = FALSE;
 			switch (ins->opcode) {
 			case OP_ARM64_USUB: is_unsigned = TRUE; break;
-			case OP_ARM64_SSUB2: select_high = TRUE; break;
-			case OP_ARM64_USUB2: select_high = TRUE; is_unsigned = TRUE; break;
+			case OP_ARM64_SSUB2: high = TRUE; break;
+			case OP_ARM64_USUB2: high = TRUE; is_unsigned = TRUE; break;
 			}
 			LLVMValueRef args [2] = { lhs, rhs };
-			int mask [MAX_VECTOR_ELEMS] = { 0 };
 			for (int i = 0; i < 2; ++i) {
 				LLVMValueRef arg = args [i];
-				LLVMTypeRef arg_t = LLVMTypeOf (arg);
-				unsigned int elems = LLVMGetVectorSize (arg_t) / 2;
-				int laneix = select_high ? elems : 0;
-				for (int i = 0; i < elems; ++i) {
-					mask [i] = laneix;
-					++laneix;
-				}
-				arg = LLVMBuildShuffleVector (builder, arg, LLVMGetUndef (arg_t), create_const_vector_i32 (mask, elems), "");
+				if (high)
+					arg = extract_high_elements (ctx, arg);
 				if (is_unsigned)
 					arg = LLVMBuildZExt (builder, arg, ret_t, "");
 				else
@@ -9679,36 +9669,38 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_SXTL2:
 		case OP_ARM64_UXTL:
 		case OP_ARM64_UXTL2: {
+			gboolean high = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_SXTL2: high = TRUE; break;
+			case OP_ARM64_UXTL: is_unsigned = TRUE; break;
+			case OP_ARM64_UXTL2: high = TRUE; is_unsigned = TRUE; break;
+			}
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			unsigned int elem_bits = LLVMGetIntTypeWidth (LLVMGetElementType (t));
 			unsigned int src_elems = LLVMGetVectorSize (t);
 			unsigned int dst_elems = src_elems;
 			LLVMValueRef arg = lhs;
-			switch (ins->opcode) {
-			case OP_ARM64_SXTL2:
-			case OP_ARM64_UXTL2:
+			if (high) {
 				arg = extract_high_elements (ctx, lhs);
 				dst_elems = LLVMGetVectorSize (LLVMTypeOf (arg));
 			}
 			LLVMTypeRef result_t = LLVMVectorType (LLVMIntType (elem_bits * 2), dst_elems);
 			LLVMValueRef result = NULL;
-			switch (ins->opcode) {
-			case OP_ARM64_SXTL:
-			case OP_ARM64_SXTL2:
-				result = LLVMBuildSExt (builder, arg, result_t, "arm64_sxtl");
-				break;
-			default:
+			if (is_unsigned)
 				result = LLVMBuildZExt (builder, arg, result_t, "arm64_uxtl");
-			}
+			else
+				result = LLVMBuildSExt (builder, arg, result_t, "arm64_sxtl");
 			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_TRN1:
 		case OP_ARM64_TRN2: {
+			gboolean high = ins->opcode == OP_ARM64_TRN2;
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			unsigned int src_elems = LLVMGetVectorSize (t);
 			int mask [MAX_VECTOR_ELEMS] = { 0 };
-			int laneix = ins->opcode == OP_ARM64_TRN2 ? 1 : 0;
+			int laneix = high ? 1 : 0;
 			for (unsigned int i = 0; i < src_elems; i += 2) {
 				mask [i] = laneix;
 				mask [i + 1] = laneix + src_elems;
@@ -9719,10 +9711,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_UZP1:
 		case OP_ARM64_UZP2: {
+			gboolean high = ins->opcode == OP_ARM64_UZP2;
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			unsigned int src_elems = LLVMGetVectorSize (t);
 			int mask [MAX_VECTOR_ELEMS] = { 0 };
-			int laneix = ins->opcode == OP_ARM64_UZP2 ? 1 : 0;
+			int laneix = high ? 1 : 0;
 			for (unsigned int i = 0; i < src_elems; ++i) {
 				mask [i] = laneix;
 				laneix += 2;
@@ -9732,10 +9725,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_ZIP1:
 		case OP_ARM64_ZIP2: {
+			gboolean high = ins->opcode == OP_ARM64_ZIP2;
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			unsigned int src_elems = LLVMGetVectorSize (t);
 			int mask [MAX_VECTOR_ELEMS] = { 0 };
-			int laneix = ins->opcode == OP_ARM64_ZIP2 ? src_elems / 2 : 0;
+			int laneix = high ? src_elems / 2 : 0;
 			for (unsigned int i = 0; i < src_elems; i += 2) {
 				mask [i] = laneix;
 				mask [i + 1] = laneix + src_elems;
@@ -9759,10 +9753,32 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XOP_OVR_SCALAR_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			ovr_tag = ovr_tag_force_scalar (ovr_tag);
-			LLVMValueRef result = scalar_from_vector (ctx, lhs);
+			/* LLVM 9 NEON intrinsic functions have scalar overloads. Unfortunately
+			 * only overloads for 32 and 64-bit integers and floating point types are
+			 * supported. 8 and 16-bit integers are unsupported, and will fail during
+			 * instruction selection. This is worked around by using a vector
+			 * operation and then explicitly clearing the upper bits of the register.
+			 */
+			gboolean fake_scalar_op = FALSE;
+#if defined(TARGET_ARM64)
+			switch (inst_c1_type (ins)) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+				fake_scalar_op = TRUE;
+			}
+#endif
+			LLVMValueRef result = lhs;
+			if (!fake_scalar_op) {
+				ovr_tag = ovr_tag_force_scalar (ovr_tag);
+				result = scalar_from_vector (ctx, result);
+			}
 			result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
-			result = vector_from_scalar (ctx, lhs, result);
+			if (!fake_scalar_op)
+				result = vector_from_scalar (ctx, lhs, result);
+			else
+				result = select_lowest_element (ctx, result);
 			values [ins->dreg] = result;
 			break;
 		}

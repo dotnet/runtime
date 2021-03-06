@@ -54,13 +54,16 @@ enum {
 
 static int register_size;
 
+#define None 0
+
 typedef struct {
-	// One of the SN_ constants
-	guint16 id;
-	// ins->opcode
-	int op;
-	// ins->inst_c0
-	int instc0;
+	uint16_t id; // One of the SN_ constants
+	uint16_t default_op; // ins->opcode
+	uint16_t default_instc0; // ins->inst_c0
+	uint16_t unsigned_op;
+	uint16_t unsigned_instc0;
+	uint16_t floating_op;
+	uint16_t floating_instc0;
 } SimdIntrinsic;
 
 static const SimdIntrinsic unsupported [] = { {SN_get_IsSupported} };
@@ -397,8 +400,31 @@ emit_hardware_intrinsics (
 
 		id = info->id;
 
-		if (info->op != 0)
-			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
+		uint16_t op = info->default_op;
+		uint16_t c0 = info->default_instc0;
+		gboolean is_unsigned = FALSE;
+		gboolean is_float = FALSE;
+		switch (arg0_type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_U8:
+			is_unsigned = TRUE;
+			break;
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			is_float = TRUE;
+			break;
+		}
+		if (is_unsigned && info->unsigned_op != 0) {
+			op = info->unsigned_op;
+			c0 = info->unsigned_instc0;
+		} else if (is_float && info->floating_op != 0) {
+			op = info->floating_op;
+			c0 = info->floating_instc0;
+		}
+		if (op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	}
 support_probe_complete:
 	if (id == SN_get_IsSupported) {
@@ -925,7 +951,7 @@ static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingZeroCount},
 	{SN_MultiplyHigh},
 	{SN_ReverseElementBits},
-	{SN_get_IsSupported}
+	{SN_get_IsSupported},
 };
 
 static SimdIntrinsic crc32_methods [] = {
@@ -970,6 +996,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareLessThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_Abs},
+	{SN_MultiplyWideningUpperAndSubtract, OP_ARM64_SMLSL2},
 	{SN_Negate, OP_ARM64_XNEG},
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar},
@@ -1077,9 +1104,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
 	{SN_SubtractRoundedHighNarrowingLower, OP_ARM64_RSUBHN},
 	{SN_SubtractRoundedHighNarrowingUpper, OP_ARM64_RSUBHN2},
-	{SN_SubtractSaturateScalar},
+	{SN_SubtractSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSUB, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSUB},
+	{SN_SubtractSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQSUB, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_UQSUB},
 	{SN_SubtractScalar},
-	{SN_SubtractWideningUpper},
+	{SN_SubtractWideningLower, OP_ARM64_SSUB, None, OP_ARM64_USUB},
+	{SN_SubtractWideningUpper, OP_ARM64_SSUB2, None, OP_ARM64_USUB2},
 	{SN_Subtract},
 	{SN_TransposeEven, OP_ARM64_TRN1},
 	{SN_TransposeOdd, OP_ARM64_TRN2},
@@ -1298,35 +1327,6 @@ emit_arm64_intrinsics (
 			if (id == SN_SubtractScalar)
 				ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
 			return ret;
-		}
-		case SN_SubtractSaturate:
-		case SN_SubtractSaturateScalar: {
-			gboolean is_unsigned = type_is_unsigned (fsig->ret);
-			iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSUB : INTRINS_AARCH64_ADV_SIMD_SQSUB;
-			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, iid, 0, fsig, args);
-			/* LLVM has intrinsic functions for only the 32 and 64-bit forms of the scalar variants
-			 * of NEON uqsub and sqsub. The CoreCLR runtime tests for these intrinsics look like they
-			 * assert that all lanes > 0 are zeroed out, so just use the vector variant of these
-			 * instructions here and then set the upper "non-scalar" bits to zero.
-			 */
-			if (id == SN_SubtractSaturateScalar)
-				ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
-			return ret;
-		}
-		case SN_SubtractWideningLower:
-		case SN_SubtractWideningUpper: {
-			gboolean is_upper = id == SN_SubtractWideningUpper;
-			MonoTypeEnum ret_t = get_underlying_type (fsig->params [1]);
-			int op = is_upper ? OP_ARM64_SSUB2 : OP_ARM64_SSUB;
-			switch (ret_t) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_U8:
-				op = is_upper ? OP_ARM64_USUB2 : OP_ARM64_USUB;
-				break;
-			}
-			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();
