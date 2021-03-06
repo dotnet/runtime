@@ -288,6 +288,18 @@ type_is_unsigned (MonoType *type) {
 	return FALSE;
 }
 
+static gboolean
+type_is_float (MonoType *type) {
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	switch (etype->type) {
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static int
 type_to_expand_op (MonoType *type)
 {
@@ -999,6 +1011,39 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_Multiply, OP_XBINOP, OP_IMUL, None, None, OP_XBINOP, OP_FMUL},
+	{SN_MultiplyAdd, OP_ARM64_MLA},
+	{SN_MultiplyAddByScalar, OP_ARM64_MLA_SCALAR},
+	{SN_MultiplyAddBySelectedScalar},
+	{SN_MultiplyByScalar, OP_XBINOP_BYSCALAR, OP_IMUL, None, None, OP_XBINOP_BYSCALAR, OP_FMUL},
+	{SN_MultiplyBySelectedScalar},
+	{SN_MultiplyBySelectedScalarWideningLower},
+	{SN_MultiplyBySelectedScalarWideningLowerAndAdd},
+	{SN_MultiplyBySelectedScalarWideningLowerAndSubtract},
+	{SN_MultiplyBySelectedScalarWideningUpper},
+	{SN_MultiplyBySelectedScalarWideningUpperAndAdd},
+	{SN_MultiplyBySelectedScalarWideningUpperAndSubtract},
+	{SN_MultiplyDoublingByScalarSaturateHigh, OP_XOP_OVR_BYSCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
+	{SN_MultiplyDoublingBySelectedScalarSaturateHigh},
+	{SN_MultiplyDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
+	{SN_MultiplyDoublingWideningLowerAndAddSaturate, OP_ARM64_SQDMLAL},
+	{SN_MultiplyDoublingWideningLowerAndSubtractSaturate, OP_ARM64_SQDMLSL},
+	{SN_MultiplyDoublingWideningLowerByScalarAndAddSaturate, OP_ARM64_SQDMLAL_SCALAR},
+	{SN_MultiplyDoublingWideningLowerByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL_SCALAR},
+	{SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate},
+	{SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate},
+	{SN_MultiplyDoublingWideningSaturateLower, OP_ARM64_SQDMULL},
+	{SN_MultiplyDoublingWideningSaturateLowerByScalar, OP_ARM64_SQDMULL_SCALAR},
+	{SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar},
+	{SN_MultiplyDoublingWideningSaturateUpper, OP_ARM64_SQDMULL2},
+	{SN_MultiplyDoublingWideningSaturateUpperByScalar, OP_ARM64_SQDMULL2_SCALAR},
+	{SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar},
+	{SN_MultiplyDoublingWideningUpperAndAddSaturate, OP_ARM64_SQDMLAL2},
+	{SN_MultiplyDoublingWideningUpperAndSubtractSaturate, OP_ARM64_SQDMLSL2},
+	{SN_MultiplyDoublingWideningUpperByScalarAndAddSaturate, OP_ARM64_SQDMLAL2_SCALAR},
+	{SN_MultiplyDoublingWideningUpperByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL2_SCALAR},
+	{SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate},
+	{SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate},
 	{SN_MultiplyRoundedDoublingByScalarSaturateHigh, OP_ARM64_SQRDMULH_SCALAR},
 	{SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh, OP_ARM64_SQRDMULH_SEL},
 	{SN_MultiplyRoundedDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRDMULH},
@@ -1006,6 +1051,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyScalarBySelectedScalar, OP_ARM64_FMUL_SEL},
 	{SN_MultiplySubtract, OP_ARM64_MLS},
 	{SN_MultiplySubtractByScalar, OP_ARM64_MLS_SCALAR},
+	{SN_MultiplySubtractBySelectedScalar},
 	{SN_MultiplyWideningLower, OP_ARM64_SMULL, None, OP_ARM64_UMULL},
 	{SN_MultiplyWideningLowerAndAdd, OP_ARM64_SMLAL, None, OP_ARM64_UMLAL},
 	{SN_MultiplyWideningLowerAndSubtract, OP_ARM64_SMLSL, None, OP_ARM64_UMLSL},
@@ -1298,6 +1344,76 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_MultiplyBySelectedScalar:
+		case SN_MultiplyBySelectedScalarWideningLower:
+		case SN_MultiplyBySelectedScalarWideningUpper:
+		case SN_MultiplyDoublingBySelectedScalarSaturateHigh:
+		case SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar:
+		case SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar: {
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			gboolean is_float = type_is_float (fsig->ret);
+			int opcode = 0;
+			int c0 = 0;
+			switch (id) {
+			case SN_MultiplyBySelectedScalar: opcode = OP_XBINOP_BYSCALAR; c0 = OP_IMUL; break;
+			case SN_MultiplyBySelectedScalarWideningLower: opcode = OP_ARM64_SMULL_SCALAR; break;
+			case SN_MultiplyBySelectedScalarWideningUpper: opcode = OP_ARM64_SMULL2_SCALAR; break;
+			case SN_MultiplyDoublingBySelectedScalarSaturateHigh: opcode = OP_XOP_OVR_BYSCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_SQDMULH; break;
+			case SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar: opcode = OP_ARM64_SQDMULL_SCALAR; break;
+			case SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar: opcode = OP_ARM64_SQDMULL2_SCALAR; break;
+			default: g_assert_not_reached();
+			}
+			if (is_unsigned)
+				switch (opcode) {
+				case OP_ARM64_SMULL_SCALAR: opcode = OP_ARM64_UMULL_SCALAR; break;
+				case OP_ARM64_SMULL2_SCALAR: opcode = OP_ARM64_UMULL2_SCALAR; break;
+				}
+			if (is_float)
+				switch (opcode) {
+				case OP_XBINOP_BYSCALAR: c0 = OP_FMUL;
+				}
+			MonoInst *scalar = emit_simd_ins (cfg, klass, OP_ARM64_SELECT_SCALAR, args [1]->dreg, args [2]->dreg);
+			MonoInst *ret = emit_simd_ins (cfg, klass, opcode, args [0]->dreg, scalar->dreg);
+			ret->inst_c0 = c0;
+			return ret;
+		}
+		case SN_MultiplyAddBySelectedScalar:
+		case SN_MultiplySubtractBySelectedScalar:
+		case SN_MultiplyBySelectedScalarWideningLowerAndAdd:
+		case SN_MultiplyBySelectedScalarWideningLowerAndSubtract:
+		case SN_MultiplyBySelectedScalarWideningUpperAndAdd:
+		case SN_MultiplyBySelectedScalarWideningUpperAndSubtract:
+		case SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate:
+		case SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate:
+		case SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate:
+		case SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate: {
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			int opcode = 0;
+			switch (id) {
+			case SN_MultiplyAddBySelectedScalar: opcode = OP_ARM64_MLA_SCALAR; break;
+			case SN_MultiplySubtractBySelectedScalar: opcode = OP_ARM64_MLS_SCALAR; break;
+			case SN_MultiplyBySelectedScalarWideningLowerAndAdd: opcode = OP_ARM64_SMLAL_SCALAR; break;
+			case SN_MultiplyBySelectedScalarWideningLowerAndSubtract: opcode = OP_ARM64_SMLSL_SCALAR; break;
+			case SN_MultiplyBySelectedScalarWideningUpperAndAdd: opcode = OP_ARM64_SMLAL2_SCALAR; break;
+			case SN_MultiplyBySelectedScalarWideningUpperAndSubtract: opcode = OP_ARM64_SMLSL2_SCALAR; break;
+			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL_SCALAR; break;
+			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL_SCALAR; break;
+			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL2_SCALAR; break;
+			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL2_SCALAR; break;
+			default: g_assert_not_reached();
+			}
+			if (is_unsigned)
+				switch (opcode) {
+				case OP_ARM64_SMLAL_SCALAR: opcode = OP_ARM64_UMLAL_SCALAR; break;
+				case OP_ARM64_SMLSL_SCALAR: opcode = OP_ARM64_UMLSL_SCALAR; break;
+				case OP_ARM64_SMLAL2_SCALAR: opcode = OP_ARM64_UMLAL2_SCALAR; break;
+				case OP_ARM64_SMLSL2_SCALAR: opcode = OP_ARM64_UMLSL2_SCALAR; break;
+				}
+			MonoInst *scalar = emit_simd_ins (cfg, klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
+			MonoInst *ret = emit_simd_ins (cfg, klass, opcode, args [0]->dreg, args [1]->dreg);
+			ret->sreg3 = scalar->dreg;
+			return ret;
 		}
 		case SN_NegateSaturateScalar: {
 			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG, arg0_type, fsig, args);
