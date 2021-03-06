@@ -329,6 +329,12 @@ set_failure (EmitContext *ctx, const char *message)
 }
 
 static LLVMValueRef
+const_int1 (int v)
+{
+	return LLVMConstInt (LLVMInt1Type (), v ? 1 : 0, FALSE);
+}
+
+static LLVMValueRef
 const_int32 (int v)
 {
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
@@ -9351,6 +9357,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef hi64 = LLVMBuildLShr (builder, mul,
 				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
+			break;
+		}
+		case OP_ARM64_CLZ: {
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMValueRef args [] = { lhs, const_int1 (0) };
+			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_CLZ, ovr_tag, args, "");
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_SQDMULL:

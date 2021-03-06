@@ -1011,6 +1011,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
+	{SN_LeadingZeroCount, OP_ARM64_CLZ},
 	{SN_LoadAndInsertScalar, OP_ARM64_LD1_INSERT},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector64, OP_ARM64_LD1R},
