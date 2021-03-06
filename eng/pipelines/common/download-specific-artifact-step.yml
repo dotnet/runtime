@@ -14,7 +14,7 @@ steps:
       project: 'public'
       pipeline: 'runtime'
       buildVersionToDownload: specific
-      buildId: '20210305.40'
+      buildId: '1024953'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
