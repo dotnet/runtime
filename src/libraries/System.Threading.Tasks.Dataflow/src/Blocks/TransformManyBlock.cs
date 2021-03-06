@@ -24,7 +24,7 @@ namespace System.Threading.Tasks.Dataflow
     /// <typeparam name="TOutput">Specifies the type of data output by this <see cref="TransformManyBlock{TInput,TOutput}"/>.</typeparam>
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     [DebuggerTypeProxy(typeof(TransformManyBlock<,>.DebugView))]
-    public sealed class TransformManyBlock<TInput, TOutput> : IPropagatorBlock<TInput, TOutput>, IReceivableSourceBlock<TOutput>, IDebuggerDisplay
+    public sealed partial class TransformManyBlock<TInput, TOutput> : IPropagatorBlock<TInput, TOutput>, IReceivableSourceBlock<TOutput>, IDebuggerDisplay
     {
         /// <summary>The target side.</summary>
         private readonly TargetCore<TInput> _target;
@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Dataflow
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform) :
-            this(transform, null, ExecutionDataflowBlockOptions.Default)
+            this(transform, ExecutionDataflowBlockOptions.Default)
         { }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function and <see cref="ExecutionDataflowBlockOptions"/>.</summary>
@@ -64,9 +64,12 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions) :
-            this(transform, null, dataflowBlockOptions)
-        { }
+        public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
+        {
+            // Validate arguments.
+            if (transform == null) throw new ArgumentNullException(nameof(transform));
+            Initialize(messageWithId => ProcessMessage(transform, messageWithId), dataflowBlockOptions, ref _source!, ref _target!, ref _reorderingBuffer, TargetCoreOptions.None);
+        }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function.</summary>
         /// <param name="transform">
@@ -75,7 +78,7 @@ namespace System.Threading.Tasks.Dataflow
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform) :
-            this(null, transform, ExecutionDataflowBlockOptions.Default)
+            this(transform, ExecutionDataflowBlockOptions.Default)
         { }
 
         /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function and <see cref="ExecutionDataflowBlockOptions"/>.</summary>
@@ -86,23 +89,23 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions) :
-            this(null, transform, dataflowBlockOptions)
-        { }
-
-        /// <summary>Initializes the <see cref="TransformManyBlock{TInput,TOutput}"/> with the specified function and <see cref="ExecutionDataflowBlockOptions"/>.</summary>
-        /// <param name="transformSync">The synchronous function to invoke with each data element received.</param>
-        /// <param name="transformAsync">The asynchronous function to invoke with each data element received.</param>
-        /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="transformSync"/> and <paramref name="transformAsync"/> are both null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        private TransformManyBlock(Func<TInput, IEnumerable<TOutput>>? transformSync, Func<TInput, Task<IEnumerable<TOutput>>>? transformAsync, ExecutionDataflowBlockOptions dataflowBlockOptions)
+        public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments.  It's ok for the filterFunction to be null, but not the other parameters.
-            if (transformSync == null && transformAsync == null) throw new ArgumentNullException("transform");
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            // Validate arguments.
+            if (transform == null) throw new ArgumentNullException(nameof(transform));
+            Initialize(messageWithId => ProcessMessageWithTask(transform, messageWithId), dataflowBlockOptions, ref _source!, ref _target!, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
+        }
 
-            Debug.Assert(transformSync == null ^ transformAsync == null, "Exactly one of transformSync and transformAsync must be null.");
+        private void Initialize(
+            Action<KeyValuePair<TInput, long>> processMessageAction,
+            ExecutionDataflowBlockOptions dataflowBlockOptions,
+            ref SourceCore<TOutput> source,
+            ref TargetCore<TInput> target,
+            ref ReorderingBuffer<IEnumerable<TOutput>>? reorderingBuffer,
+            TargetCoreOptions targetCoreOptions)
+        {
+            // Validate arguments.
+            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -113,7 +116,7 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved = (owningSource, count) => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.ChangeBoundingCount(-count);
 
             // Initialize source component
-            _source = new SourceCore<TOutput>(this, dataflowBlockOptions,
+            source = new SourceCore<TOutput>(this, dataflowBlockOptions,
                 owningSource => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.Complete(exception: null, dropPendingMessages: true),
                 onItemsRemoved);
 
@@ -121,49 +124,30 @@ namespace System.Threading.Tasks.Dataflow
             // However, a developer can override this with EnsureOrdered == false.
             if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.EnsureOrdered)
             {
-                _reorderingBuffer = new ReorderingBuffer<IEnumerable<TOutput>>(
+                reorderingBuffer = new ReorderingBuffer<IEnumerable<TOutput>>(
                     this, (source, messages) => ((TransformManyBlock<TInput, TOutput>)source)._source.AddMessages(messages));
             }
 
             // Create the underlying target and source
-            if (transformSync != null) // sync
-            {
-                // If an enumerable function was provided, we can use synchronous completion, meaning
-                // that the target will consider a message fully processed as soon as the
-                // delegate returns.
-                _target = new TargetCore<TInput>(this,
-                    messageWithId => ProcessMessage(transformSync, messageWithId),
-                    _reorderingBuffer, dataflowBlockOptions, TargetCoreOptions.None);
-            }
-            else // async
-            {
-                Debug.Assert(transformAsync != null, "Incorrect delegate type.");
-
-                // If a task-based function was provided, we need to use asynchronous completion, meaning
-                // that the target won't consider a message completed until the task
-                // returned from that delegate has completed.
-                _target = new TargetCore<TInput>(this,
-                    messageWithId => ProcessMessageWithTask(transformAsync, messageWithId),
-                    _reorderingBuffer, dataflowBlockOptions, TargetCoreOptions.UsesAsyncCompletion);
-            }
+            target = new TargetCore<TInput>(this, processMessageAction, _reorderingBuffer, dataflowBlockOptions, targetCoreOptions);
 
             // Link up the target half with the source half.  In doing so,
             // ensure exceptions are propagated, and let the source know no more messages will arrive.
             // As the target has completed, and as the target synchronously pushes work
             // through the reordering buffer when async processing completes,
             // we know for certain that no more messages will need to be sent to the source.
-            _target.Completion.ContinueWith((completed, state) =>
+            target.Completion.ContinueWith((completed, state) =>
             {
                 var sourceCore = (SourceCore<TOutput>)state!;
                 if (completed.IsFaulted) sourceCore.AddAndUnwrapAggregateException(completed.Exception!);
                 sourceCore.Complete();
-            }, _source, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
+            }, source, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformManyBlock<TInput, TOutput>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -172,7 +156,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), _target);
+                dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), target);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -378,7 +362,7 @@ namespace System.Threading.Tasks.Dataflow
             // Handle invalid items (null enumerables) by delegating to the base
             if (item == null)
             {
-                _reorderingBuffer.AddItem(id, null!, false);
+                _reorderingBuffer.AddItem(id, null, false);
                 if (isBounded) target.ChangeBoundingCount(count: -1);
                 return;
             }
