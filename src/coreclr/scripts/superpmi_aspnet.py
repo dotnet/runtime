@@ -192,19 +192,19 @@ def build_and_run(coreclr_args):
 
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_arguments = [f'--config {configFile}',
-                           f'--profile {benchmark_machine}',
-                           f'--scenario {scenario}',
-                           '--application.framework net6.0',
-                           '--application.channel edge',
-                           f'--application.environmentVariables COMPlus_JitName={spminame}',
-                           '--application.environmentVariables SuperPMIShimLogPath=.',
-                           f'--application.environmentVariables SuperPMIShimPath={jitpath}',
-                           '--application.options.fetch true',
-                           f'--application.options.outputFiles {spmi}',
-                           f'--application.options.outputFiles {jitlib}',
-                           f'--application.options.outputFiles {coreclr}',
-                           f'--application.options.outputFiles {corelib}']
+        crank_arguments = ['--config', configFile,
+                           '--profile', benchmark_machine,
+                           '--scenario', scenario,
+                           '--application.framework', 'net6.0',
+                           '--application.channel', 'edge',
+                           '--application.environmentVariables', f'COMPlus_JitName={spminame}',
+                           '--application.environmentVariables', 'SuperPMIShimLogPath=.',
+                           '--application.environmentVariables', f'SuperPMIShimPath={jitpath}',
+                           '--application.options.fetch', 'true',
+                           '--application.options.outputFiles', spmi,
+                           '--application.options.outputFiles', jitlib,
+                           '--application.options.outputFiles', coreclr,
+                           '--application.options.outputFiles', corelib]
 
         run_command(
             ["crank"] + crank_arguments, temp_location, _exit_on_fail=True)
@@ -220,7 +220,7 @@ def build_and_run(coreclr_args):
                             zipObject.extract(zippedFileName, temp_location)
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
-        mch_file = path.join(coreclr_args.output_mch_path, f"aspnet-{config}-{scenario}" + ".mch")
+        mch_file = path.join(coreclr_args.output_mch_path, f"aspnet-{configName}-{scenario}" + ".mch")
         command = [mcs_path, "-merge", mch_file, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
