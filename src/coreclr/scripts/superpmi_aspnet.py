@@ -132,16 +132,19 @@ def build_and_run(coreclr_args):
     source_directory = coreclr_args.source_directory
 
     # Make sure ".dotnet" directory exists, by running the script at least once
-    dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
-    dotnet_script_path = path.join(source_directory, dotnet_script_name)
-    run_command([dotnet_script_path, "--info"])
+    dotnet_script_name = "dotnet-install.ps1" if is_windows else "dotnet-install.sh"
+    dotnet_script_path = path.join(source_directory, "eng", "common", dotnet_script_name)
 
     with TempDir(skip_cleanup=True) as temp_location:
 
         print ("Executing in " + temp_location)
 
-        ## install crank as local tool
+        # insstall dotnet 5.0
+        run_command([dotnet_script_name, "-Runtime", "-InstallDir", temp_location], temp_location, _exit_on_fail=True)
+        run_command([path.join(temp_location, "dotnet"), "--info"], temp_location, _exit_on_fail=True)
+        os.environ["DOTNET_ROOT"] = temp_location
 
+        ## install crank as local tool
         run_command(
             [dotnet_script_path, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--tool-path", temp_location], _exit_on_fail=True)
 
