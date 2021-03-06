@@ -936,7 +936,7 @@ namespace System.Xml.Serialization
                 {
                     i++;
                     uniqueName = name + i.ToString(CultureInfo.InvariantCulture);
-                    m = Enums[uniqueName];
+                    Enums.TryGetValue(uniqueName, out m);
                 }
             }
             Enums.Add(uniqueName, mapping);
