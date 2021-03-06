@@ -168,6 +168,19 @@ extern jmethodID g_KeyFactoryGenPrivateMethod;
 extern jmethodID g_KeyFactoryGenPublicMethod;
 extern jmethodID g_KeyFactoryGetKeySpecMethod;
 
+// java/security/spec/DSAPublicKeySpec
+extern jclass    g_DSAPublicKeySpecClass;
+extern jmethodID g_DSAPublicKeySpecCtor;
+extern jmethodID g_DSAPublicKeySpecGetY;
+extern jmethodID g_DSAPublicKeySpecGetP;
+extern jmethodID g_DSAPublicKeySpecGetQ;
+extern jmethodID g_DSAPublicKeySpecGetG;
+
+// java/security/spec/DSAPrivateKeySpec
+extern jclass    g_DSAPrivateKeySpecClass;
+extern jmethodID g_DSAPrivateKeySpecCtor;
+extern jmethodID g_DSAPrivateKeySpecGetX;
+
 // java/security/spec/ECField
 extern jclass    g_ECFieldClass;
 extern jmethodID g_ECFieldGetFieldSize;

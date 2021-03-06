@@ -159,6 +159,19 @@ jmethodID g_KeyFactoryGenPrivateMethod;
 jmethodID g_KeyFactoryGenPublicMethod;
 jmethodID g_KeyFactoryGetKeySpecMethod;
 
+// java/security/spec/DSAPublicKeySpec
+jclass    g_DSAPublicKeySpecClass;
+jmethodID g_DSAPublicKeySpecCtor;
+jmethodID g_DSAPublicKeySpecGetY;
+jmethodID g_DSAPublicKeySpecGetP;
+jmethodID g_DSAPublicKeySpecGetQ;
+jmethodID g_DSAPublicKeySpecGetG;
+
+// java/security/spec/DSAPrivateKeySpec
+jclass    g_DSAPrivateKeySpecClass;
+jmethodID g_DSAPrivateKeySpecCtor;
+jmethodID g_DSAPrivateKeySpecGetX;
+
 // java/security/spec/ECParameterSpec
 jclass    g_ECParameterSpecClass;
 jmethodID g_ECParameterSpecCtor;
@@ -563,6 +576,17 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyFactoryGenPrivateMethod =     GetMethod(env, false, g_KeyFactoryClass, "generatePrivate", "(Ljava/security/spec/KeySpec;)Ljava/security/PrivateKey;");
     g_KeyFactoryGenPublicMethod =      GetMethod(env, false, g_KeyFactoryClass, "generatePublic", "(Ljava/security/spec/KeySpec;)Ljava/security/PublicKey;");
     g_KeyFactoryGetKeySpecMethod =     GetMethod(env, false, g_KeyFactoryClass, "getKeySpec", "(Ljava/security/Key;Ljava/lang/Class;)Ljava/security/spec/KeySpec;");
+
+    g_DSAPublicKeySpecClass =              GetClassGRef(env, "java/security/spec/DSAPublicKeySpec");
+    g_DSAPublicKeySpecCtor =               GetMethod(env, false, g_DSAPublicKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
+    g_DSAPublicKeySpecGetY =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getY", "()Ljava/math/BigInteger;");
+    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;"); 
+    g_DSAPublicKeySpecGetQ =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getQ", "()Ljava/math/BigInteger;");
+    g_DSAPublicKeySpecGetG =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getG", "()Ljava/math/BigInteger;");
+
+    g_DSAPrivateKeySpecClass =             GetClassGRef(env, "java/security/spec/DSAPrivateKeySpec");
+    g_DSAPrivateKeySpecGetX =              GetMethod(env, false, g_DSAPrivateKeySpecClass, "getX", "()Ljava/math/BigInteger;");
+    g_DSAPrivateKeySpecCtor =              GetMethod(env, false, g_DSAPrivateKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
 
     g_ECGenParameterSpecClass =        GetClassGRef(env, "java/security/spec/ECGenParameterSpec");
     g_ECGenParameterSpecCtor =         GetMethod(env, false, g_ECGenParameterSpecClass, "<init>", "(Ljava/lang/String;)V");

@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         private void UseAfterDispose(bool importKey)
         {
-            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);
+            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
             byte[] data = { 1 };
             byte[] sig;
 
