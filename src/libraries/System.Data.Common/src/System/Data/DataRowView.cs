@@ -242,13 +242,13 @@ namespace System.Data
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
 
-        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) => new EventDescriptorCollection(null);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() => ((ICustomTypeDescriptor)this).GetProperties(null);
 
-        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
             (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
 

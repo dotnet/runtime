@@ -47,7 +47,7 @@ namespace System.ComponentModel
     {
         public ArrayConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -63,9 +63,9 @@ namespace System.ComponentModel
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public bool Contains(System.Attribute attribute) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public bool Contains(System.Attribute[] attributes) { throw null; }
         public void CopyTo(System.Array array, int index) { }
         public static System.ComponentModel.AttributeCollection FromExisting(System.ComponentModel.AttributeCollection existing, params System.Attribute[] newAttributes) { throw null; }
@@ -205,7 +205,7 @@ namespace System.ComponentModel
     {
         public CollectionConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -224,7 +224,7 @@ namespace System.ComponentModel
     public partial class ComponentConverter : System.ComponentModel.ReferenceConverter
     {
         public ComponentConverter(System.Type type) : base (default(System.Type)) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -289,10 +289,10 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.PropertyDescriptor GetDefaultProperty() { throw null; }
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[] attributes) { throw null; }
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[] attributes) { throw null; }
         public virtual object GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
     }
@@ -478,7 +478,7 @@ namespace System.ComponentModel
     public partial class ExpandableObjectConverter : System.ComponentModel.TypeConverter
     {
         public ExpandableObjectConverter() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -567,10 +567,10 @@ namespace System.ComponentModel
         System.ComponentModel.PropertyDescriptor GetDefaultProperty();
         object GetEditor(System.Type editorBaseType);
         System.ComponentModel.EventDescriptorCollection GetEvents();
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.EventDescriptorCollection GetEvents(System.Attribute[] attributes);
         System.ComponentModel.PropertyDescriptorCollection GetProperties();
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[] attributes);
         object GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd);
     }
@@ -980,7 +980,7 @@ namespace System.ComponentModel
     {
         public MultilineStringConverter() { }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -1005,7 +1005,7 @@ namespace System.ComponentModel
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
@@ -1045,11 +1045,11 @@ namespace System.ComponentModel
         protected override void FillAttributes(System.Collections.IList attributeList) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The PropertyDescriptor's PropertyType cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(System.Attribute[] filter) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance, System.Attribute[] filter) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
@@ -1293,7 +1293,7 @@ namespace System.ComponentModel
         public virtual bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered.")]
         public System.ComponentModel.PropertyDescriptorCollection GetProperties(object value) { throw null; }
@@ -1431,30 +1431,30 @@ namespace System.ComponentModel
         public static object GetEditor(System.Type type, System.Type editorBaseType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType, System.Attribute[] attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetFullComponentName(object component) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, System.Attribute[] attributes, bool noCustomTypeDesc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType, System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
@@ -2238,7 +2238,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2251,7 +2251,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2264,7 +2264,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
@@ -2277,7 +2277,7 @@ namespace System.Drawing
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext context, object value, System.Attribute[] attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }

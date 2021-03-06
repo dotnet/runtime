@@ -12,7 +12,7 @@ namespace System.ComponentModel
     /// </summary>
     public class AttributeCollection : ICollection, IEnumerable
     {
-        internal const string FilterRequiresUnreferencedCodeMessage = "Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.";
+        internal const string FilterRequiresUnreferencedCodeMessage = "The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.";
 
         /// <summary>
         /// An empty AttributeCollection that can used instead of creating a new one.

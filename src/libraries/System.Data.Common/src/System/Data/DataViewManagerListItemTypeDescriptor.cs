@@ -83,7 +83,7 @@ namespace System.Data
         /// additional events.  The returned array of events will be
         /// filtered by the given set of attributes.
         /// </summary>
-        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) =>
             new EventDescriptorCollection(null);
 
@@ -104,7 +104,7 @@ namespace System.Data
         ///     additional properties.  The returned array of properties will be
         ///     filtered by the given set of attributes.
         /// </summary>
-        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
             if (_propsCollection == null)

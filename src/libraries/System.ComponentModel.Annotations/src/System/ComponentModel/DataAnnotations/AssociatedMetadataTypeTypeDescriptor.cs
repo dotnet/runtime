@@ -33,7 +33,7 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
-        [RequiresUnreferencedCode("Requires unreferenced code because the public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type. Ensure those members are preserved.")]
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             return GetPropertiesWithMetadata(base.GetProperties(attributes));
