@@ -11,10 +11,10 @@ steps:
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
-      project: 'public'
-      pipeline: 'runtime'
+      project: 'internal'
+      pipeline: 'runtime-coreclr superpmi'
       buildVersionToDownload: specific
-      buildId: '1024953'
+      buildId: '1019940'
       downloadType: single
       downloadPath: '$(Build.SourcesDirectory)/__download__'
       artifactName: '${{ parameters.artifactName }}'
