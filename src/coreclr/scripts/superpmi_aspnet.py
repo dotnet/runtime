@@ -136,30 +136,30 @@ def build_and_run(coreclr_args):
     dotnet_script_path = path.join(source_directory, dotnet_script_name)
     run_command([dotnet_script_path, "--info"])
 
-    ## install crank
+    ## install crank... note this returns error code 1 if tool is installed.
 
     run_command(
-       [dotnet_script_path, "tool install Microsoft.Crank.Controller --version \"0.2.0-*\" --global"], _exit_on_fail=True)
+        [dotnet_script_path, "tool", "install", "Microsoft.Crank.Controller", "--version", "0.2.0-*", "--global"])
 
     ## sparse clone of aspnet/benchmarks to obtain the benchmark config files
 
-    with TempDir() as temp_location:
+    with TempDir(skip_cleanup=True) as temp_location:
 
+        print (f"Executing in {temp_location}")
+
+        ## ideally just do sparse clone, but this doesn't work locally
         ## git clone --filter=blob:none --no-checkout https://github.com/aspnet/benchmarks
         ## cd benchmarks
         ## git sparse-checkout init --cone
         ## git sparse-checkout set scenarios
 
         run_command(
-            ["git.exe", "--filter=blob:none --no-checkout https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
-        run_command(
-            ["git.exe", "sparse-checkout init --cone"], path.join(temp_location, "benchmarks"), _exit_on_fail=True)
-        run_command(
-            ["git.exe", "sparse-checkout set scenarios"], path.join(temp_location, "benchmarks"), _exit_on_fail=True)
+            ["git.exe", "clone", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
         configName = "json"
         scenario = "json"
-        configFile = path.join(temp_location, "benchmarks", "scenarios", (f"{configName}.benchmarks.yml"))
+        configYml = f"{configName}.benchmarks.yml"
+        configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
 
         # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
         # and ask crank to send back the runtime directory
@@ -192,22 +192,21 @@ def build_and_run(coreclr_args):
 
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_command = (f' --config {configFile}'
-                         f' --profile {benchmark_machine}'
-                         f' --scenario {scenario}'
-                         f' --description SPMI-COLLECTION'
-                         f' --application.framework net6.0'
-                         f' --application.channel edge'
-                         f' --application.environmentVariables COMPlus_JitName={spmi}'
-                         f' --application.environmentVariables SuperPMIShimLogPath=.'
-                         f' --application.environmentVariables SuperPMIShimPath={jitpath}'
-                         f' --application.options.fetch true'
-                         f' --application.outputFiles {jitlib}'
-                         f' --application.outputFiles {coreclr}'
-                         f' --application.outputFiles {corelib}')
+        crank_arguments = [f'--config {configFile}',
+                           f'--profile {benchmark_machine}',
+                           f'--scenario {scenario}',
+                           '--application.framework net6.0',
+                           '--application.channel edge',
+                           f'--application.environmentVariables COMPlus_JitName={spmi}',
+                           '--application.environmentVariables SuperPMIShimLogPath=.',
+                           f'--application.environmentVariables SuperPMIShimPath={jitpath}',
+                           '--application.options.fetch true',
+                           f'--application.outputFiles {jitlib}',
+                           f'--application.outputFiles {coreclr}',
+                           f'--application.outputFiles {corelib}']
 
         run_command(
-            ["crank", crank_command], temp_location, _exit_on_fail=True)
+            ["crank"] + crank_arguments, temp_location, _exit_on_fail=True)
 
         crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
 
