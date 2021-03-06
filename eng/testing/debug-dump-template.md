@@ -53,6 +53,9 @@ dotnet sos install --architecture x64
 Install or update WinDbg if necessary ([external](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/debugger-download-tools), [internal](https://osgwiki.com/wiki/Installing_WinDbg)). If you don't have a recent WinDbg you may have to do `.update sos`.
 
 Open WinDbg and open the dump with `File>Open Dump`.
+```
+<win-path-to-dump>
+```
 
 ```
 !setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\6.0.0
