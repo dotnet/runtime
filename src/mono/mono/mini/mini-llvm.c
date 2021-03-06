@@ -299,6 +299,7 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 static MonoLLVMModule aot_module;
 
 static GHashTable *intrins_id_to_intrins;
+static LLVMTypeRef i1_t, i2_t, i4_t, i8_t, r4_t, r8_t;
 static LLVMTypeRef sse_i1_t, sse_i2_t, sse_i4_t, sse_i8_t, sse_r4_t, sse_r8_t;
 static LLVMTypeRef v64_i1_t, v64_i2_t, v64_i4_t, v64_i8_t, v64_r4_t, v64_r8_t;
 static LLVMTypeRef v128_i1_t, v128_i2_t, v128_i4_t, v128_i8_t, v128_r4_t, v128_r8_t;
@@ -4781,6 +4782,12 @@ scalar_from_vector (EmitContext *ctx, LLVMValueRef xs)
 }
 
 static LLVMValueRef
+vector_zero_from_scalar (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
+{
+	return LLVMBuildInsertElement (ctx->builder, LLVMConstNull (type), x, const_int32 (0), "s2vz");
+}
+
+static LLVMValueRef
 vector_from_scalar_ty (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
 {
 	return LLVMBuildInsertElement (ctx->builder, LLVMGetUndef (type), x, const_int32 (0), "s2v");
@@ -9257,33 +9264,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
+		case OP_XOP_SX_X:
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			gboolean pack_result = FALSE;
 			gboolean getLowerElement = FALSE;
-			switch (ins->inst_c0) {
-			case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
-			case SIMD_OP_ARM64_AES_AESMC: id = INTRINS_AARCH64_AESMC; break;
-			case SIMD_OP_ARM64_FABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT; break;
-			case SIMD_OP_ARM64_DABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE; break;
-			case SIMD_OP_ARM64_I8ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT8; break;
-			case SIMD_OP_ARM64_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
-			case SIMD_OP_ARM64_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
-			case SIMD_OP_ARM64_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
-			case SIMD_OP_ARM64_I8ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT8; break;
-			case SIMD_OP_ARM64_I16ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT16; break;
-			case SIMD_OP_ARM64_I32ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT32; break;
-			case SIMD_OP_ARM64_I64ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT64; break;
-			case SIMD_OP_ARM64_SHA1H: id = INTRINS_AARCH64_SHA1H; getLowerElement = TRUE; break;
-			default: g_assert_not_reached (); break;
+			switch (ins->opcode) {
+			case OP_XOP_SX_X:
+				pack_result = TRUE;
+				id = ins->inst_c0;
+				break;
+			default:
+				switch (ins->inst_c0) {
+				case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
+				case SIMD_OP_ARM64_AES_AESMC: id = INTRINS_AARCH64_AESMC; break;
+				case SIMD_OP_ARM64_FABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT; break;
+				case SIMD_OP_ARM64_DABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE; break;
+				case SIMD_OP_ARM64_I8ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT8; break;
+				case SIMD_OP_ARM64_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
+				case SIMD_OP_ARM64_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
+				case SIMD_OP_ARM64_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
+				case SIMD_OP_ARM64_I8ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT8; break;
+				case SIMD_OP_ARM64_I16ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT16; break;
+				case SIMD_OP_ARM64_I32ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT32; break;
+				case SIMD_OP_ARM64_I64ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT64; break;
+				case SIMD_OP_ARM64_SHA1H: id = INTRINS_AARCH64_SHA1H; getLowerElement = TRUE; break;
+				default: g_assert_not_reached (); break;
+				}
 			}
+			if (getLowerElement)
+				pack_result = TRUE;
 			LLVMValueRef arg0 = lhs;
-			LLVMValueRef result;
 			if (getLowerElement)
 				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
-			result = call_intrins (ctx, id, &arg0, "");
-			if (getLowerElement) {
+			LLVMValueRef result = call_intrins (ctx, id, &arg0, "");
+			if (pack_result) {
 				LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
-				result = LLVMBuildInsertElement (ctx->builder, LLVMConstNull (t), result, const_int32 (0), "");
+				result = vector_zero_from_scalar (ctx, t, result);
 			}
 			values [ins->dreg] = result;
 			break;
@@ -11397,12 +11414,12 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-	intrin_types [0][0] = LLVMInt8Type ();
-	intrin_types [0][1] = LLVMInt16Type ();
-	intrin_types [0][2] = LLVMInt32Type ();
-	intrin_types [0][3] = LLVMInt64Type ();
-	intrin_types [0][4] = LLVMFloatType ();
-	intrin_types [0][5] = LLVMDoubleType ();
+	intrin_types [0][0] = i1_t = LLVMInt8Type ();
+	intrin_types [0][1] = i2_t = LLVMInt16Type ();
+	intrin_types [0][2] = i4_t = LLVMInt32Type ();
+	intrin_types [0][3] = i8_t = LLVMInt64Type ();
+	intrin_types [0][4] = r4_t = LLVMFloatType ();
+	intrin_types [0][5] = r8_t = LLVMDoubleType ();
 
 	intrin_types [1][0] = v64_i1_t = LLVMVectorType (LLVMInt8Type (), 8);
 	intrin_types [1][1] = v64_i2_t = LLVMVectorType (LLVMInt16Type (), 4);

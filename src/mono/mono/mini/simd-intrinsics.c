@@ -1011,6 +1011,17 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},
+	{SN_MaxNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
+	{SN_MaxNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
+	{SN_MaxPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXP},
+	{SN_Min, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMIN},
+	{SN_MinNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
+	{SN_MinNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
+	{SN_MinPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINP},
+	{SN_MinPairwiseScalar},
+	{SN_MinPairwiseScalar},
+	{SN_MinScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMIN},
 	{SN_Multiply, OP_XBINOP, OP_IMUL, None, None, OP_XBINOP, OP_FMUL},
 	{SN_MultiplyAdd, OP_ARM64_MLA},
 	{SN_MultiplyAddByScalar, OP_ARM64_MLA_SCALAR},
@@ -1344,6 +1355,19 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_MaxPairwiseScalar:
+		case SN_MinPairwiseScalar: {
+			int iid = 0;
+			switch (id) {
+			case SN_MaxPairwiseScalar:
+				iid = arg0_type == MONO_TYPE_R4 ? INTRINS_AARCH64_ADV_SIMD_FMAXV_F32 : INTRINS_AARCH64_ADV_SIMD_FMAXV_F64;
+				break;
+			case SN_MinPairwiseScalar:
+				iid = arg0_type == MONO_TYPE_R4 ? INTRINS_AARCH64_ADV_SIMD_FMINV_F32 : INTRINS_AARCH64_ADV_SIMD_FMINV_F64;
+				break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_SX_X, iid, arg0_type, fsig, args);
 		}
 		case SN_MultiplyBySelectedScalar:
 		case SN_MultiplyBySelectedScalarWideningLower:
