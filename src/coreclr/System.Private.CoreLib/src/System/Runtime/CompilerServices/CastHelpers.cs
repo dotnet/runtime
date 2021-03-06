@@ -210,28 +210,40 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nuint interfaceCount = mt->InterfaceCount;
+                nint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount != 0)
                 {
                     MethodTable** interfaceMap = mt->InterfaceMap;
-                    for (nuint i = 0; ; i += 4)
+                    nint i = 0;
+                    for (; i <= interfaceCount - 4; i += 4)
                     {
-                        if (interfaceMap[i + 0] == toTypeHnd)
+                        // Calculate next offset now to hide latency
+                        MethodTable** map = interfaceMap + 4;
+
+                        if (interfaceMap[0] == toTypeHnd ||
+                            interfaceMap[1] == toTypeHnd ||
+                            interfaceMap[2] == toTypeHnd ||
+                            interfaceMap[3] == toTypeHnd)
+                        {
                             goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 1] == toTypeHnd)
+                        }
+
+                        // Assign next offset
+                        interfaceMap = map;
+                    }
+
+                    for (; i < interfaceCount; i++)
+                    {
+                        // Calculate next offset now to hide latency
+                        MethodTable** map = interfaceMap + 1;
+
+                        if (interfaceMap[0] == toTypeHnd)
+                        {
                             goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 2] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
-                        if (interfaceMap[i + 3] == toTypeHnd)
-                            goto done;
-                        if (--interfaceCount == 0)
-                            break;
+                        }
+
+                        // Assign next offset
+                        interfaceMap = map;
                     }
                 }
 
@@ -255,10 +267,14 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
-            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
+            if (obj == null)
                 return obj;
 
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->ParentMethodTable;
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+            if (mt == toTypeHnd)
+                return obj;
+
+            mt = mt->ParentMethodTable;
             for (; ; )
             {
                 if (mt == toTypeHnd)
@@ -377,32 +393,46 @@ namespace System.Runtime.CompilerServices
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-                nuint interfaceCount = mt->InterfaceCount;
+                nint interfaceCount = mt->InterfaceCount;
                 if (interfaceCount == 0)
                 {
                     goto slowPath;
                 }
 
                 MethodTable** interfaceMap = mt->InterfaceMap;
-                for (nuint i = 0; ; i += 4)
+                nint i = 0;
+                for (; i <= interfaceCount - 4; i += 4)
                 {
-                    if (interfaceMap[i + 0] == toTypeHnd)
+                    // Calculate next offset now to hide latency
+                    MethodTable** map = interfaceMap + 4;
+
+                    if (interfaceMap[0] == toTypeHnd ||
+                        interfaceMap[1] == toTypeHnd ||
+                        interfaceMap[2] == toTypeHnd ||
+                        interfaceMap[3] == toTypeHnd)
+                    {
                         goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 1] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 2] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
-                    if (interfaceMap[i + 3] == toTypeHnd)
-                        goto done;
-                    if (--interfaceCount == 0)
-                        goto slowPath;
+                    }
+
+                    // Assign next offset
+                    interfaceMap = map;
                 }
+
+                for (; i < interfaceCount; i++)
+                {
+                    // Calculate next offset now to hide latency
+                    MethodTable** map = interfaceMap + 1;
+
+                    if (interfaceMap[0] == toTypeHnd)
+                    {
+                        goto done;
+                    }
+
+                    // Assign next offset
+                    interfaceMap = map;
+                }
+
+                goto slowPath;
             }
 
         done:
