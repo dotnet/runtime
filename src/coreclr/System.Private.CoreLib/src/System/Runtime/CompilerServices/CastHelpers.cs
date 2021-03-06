@@ -214,8 +214,14 @@ namespace System.Runtime.CompilerServices
                 if (interfaceCount != 0)
                 {
                     MethodTable** interfaceMap = mt->InterfaceMap;
-                    nint i = 0;
-                    for (; i <= interfaceCount - 4; i += 4)
+                    if (interfaceCount >= 4)
+                    {
+                        // If not enough for unrolled, jmp straight to small loop
+                        // as we already know there is one or more interfaces so don't need to check again.
+                        goto few;
+                    }
+
+                    do
                     {
                         // Calculate next offset now to hide latency
                         MethodTable** map = interfaceMap + 4;
@@ -230,9 +236,17 @@ namespace System.Runtime.CompilerServices
 
                         // Assign next offset
                         interfaceMap = map;
+                        interfaceCount -= 4;
+                    } while (interfaceCount >= 4);
+
+                    if (interfaceCount == 0)
+                    {
+                        // If none remaining, skip the short loop
+                        goto extra;
                     }
 
-                    for (; i < interfaceCount; i++)
+                few:
+                    do
                     {
                         // Calculate next offset now to hide latency
                         MethodTable** map = interfaceMap + 1;
@@ -244,9 +258,11 @@ namespace System.Runtime.CompilerServices
 
                         // Assign next offset
                         interfaceMap = map;
-                    }
+                        interfaceCount--;
+                    } while (interfaceCount > 0);
                 }
 
+            extra:
                 if (mt->NonTrivialInterfaceCast)
                 {
                     goto slowPath;
@@ -400,8 +416,14 @@ namespace System.Runtime.CompilerServices
                 }
 
                 MethodTable** interfaceMap = mt->InterfaceMap;
-                nint i = 0;
-                for (; i <= interfaceCount - 4; i += 4)
+                if (interfaceCount >= 4)
+                {
+                    // If not enough for unrolled, jmp straight to small loop
+                    // as we already know there is one or more interfaces so don't need to check again.
+                    goto few;
+                }
+
+                do
                 {
                     // Calculate next offset now to hide latency
                     MethodTable** map = interfaceMap + 4;
@@ -416,9 +438,17 @@ namespace System.Runtime.CompilerServices
 
                     // Assign next offset
                     interfaceMap = map;
+                    interfaceCount -= 4;
+                } while (interfaceCount >= 4);
+
+                if (interfaceCount == 0)
+                {
+                    // If none remaining, skip the short loop
+                    goto slowPath;
                 }
 
-                for (; i < interfaceCount; i++)
+            few:
+                do
                 {
                     // Calculate next offset now to hide latency
                     MethodTable** map = interfaceMap + 1;
@@ -430,7 +460,8 @@ namespace System.Runtime.CompilerServices
 
                     // Assign next offset
                     interfaceMap = map;
-                }
+                    interfaceCount--;
+                } while (interfaceCount > 0);
 
                 goto slowPath;
             }
