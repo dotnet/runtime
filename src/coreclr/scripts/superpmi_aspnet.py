@@ -197,13 +197,14 @@ def build_and_run(coreclr_args):
                            f'--scenario {scenario}',
                            '--application.framework net6.0',
                            '--application.channel edge',
-                           f'--application.environmentVariables COMPlus_JitName={spmi}',
+                           f'--application.environmentVariables COMPlus_JitName={spminame}',
                            '--application.environmentVariables SuperPMIShimLogPath=.',
                            f'--application.environmentVariables SuperPMIShimPath={jitpath}',
                            '--application.options.fetch true',
-                           f'--application.outputFiles {jitlib}',
-                           f'--application.outputFiles {coreclr}',
-                           f'--application.outputFiles {corelib}']
+                           f'--application.options.outputFiles {spmi}',
+                           f'--application.options.outputFiles {jitlib}',
+                           f'--application.options.outputFiles {coreclr}',
+                           f'--application.options.outputFiles {corelib}']
 
         run_command(
             ["crank"] + crank_arguments, temp_location, _exit_on_fail=True)
