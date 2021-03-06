@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -684,6 +685,7 @@ namespace System.Drawing
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Use one of the other overloads.")]
+        [SupportedOSPlatform("windows")]
         public object GetContextInfo()
         {
             GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: true, out Region? cumulativeClip);
@@ -766,6 +768,7 @@ namespace System.Drawing
         /// </summary>
         /// <param name="offset">The cumulative offset.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
         public void GetContextInfo(out PointF offset)
         {
             GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: false, out _);
@@ -779,6 +782,7 @@ namespace System.Drawing
         /// <param name="offset">The cumulative offset.</param>
         /// <param name="clip">The cumulative clip region or null if the clip region is infinite.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [SupportedOSPlatform("windows")]
         public void GetContextInfo(out PointF offset, out Region? clip)
         {
             GetContextInfo(out Matrix3x2 cumulativeTransform, calculateClip: true, out clip);
