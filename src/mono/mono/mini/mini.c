@@ -4323,3 +4323,23 @@ mini_get_cpu_features (MonoCompile* cfg)
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }
+
+llvm_ovr_tag_t
+ovr_tag_from_mono_vector_class (MonoClass *klass) {
+	int size = mono_class_value_size (klass, NULL);
+	llvm_ovr_tag_t ret = 0;
+	switch (size) {
+	case 8: ret |= LLVM_Vector64; break;
+	case 16: ret |= LLVM_Vector128; break;
+	}
+	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	switch (etype->type) {
+	case MONO_TYPE_I1: case MONO_TYPE_U1: ret |= LLVM_Int8; break;
+	case MONO_TYPE_I2: case MONO_TYPE_U2: ret |= LLVM_Int16; break;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: ret |= LLVM_Int32; break;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: ret |= LLVM_Int64; break;
+	case MONO_TYPE_R4: ret |= LLVM_Float32; break;
+	case MONO_TYPE_R8: ret |= LLVM_Float64; break;
+	}
+	return ret;
+}

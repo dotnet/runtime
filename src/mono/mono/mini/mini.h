@@ -2999,6 +2999,67 @@ typedef enum {
 	SIMD_OP_ARM64_PMULL64_UPPER,
 } SimdOp;
 
+/* An intrinsic id. The lower 23 bits are used to store a mono-specific ID. The
+ * next 9 bits store overload tag bits. In the configuration of LLVM 9 we use,
+ * there are 7017 total intrinsics defined in IntrinsicEnums.inc, so only 13
+ * bits are needed to label each intrinsic overload group.
+ */
+typedef enum {
+#define INTRINS(id, llvm_id) INTRINS_ ## id,
+#define INTRINS_OVR(id, llvm_id, ty) INTRINS_ ## id,
+#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) INTRINS_ ## id,
+#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) INTRINS_ ## id,
+#define INTRINS_OVR_TAG(id, ...) INTRINS_ ## id,
+#include "llvm-intrinsics.h"
+	INTRINS_NUM
+} IntrinsicId;
+
+typedef enum {
+	XBINOP_FORCEINT_Not,
+	XBINOP_FORCEINT_Or,
+	XBINOP_FORCEINT_OrNot,
+	XBINOP_FORCEINT_Xor,
+} XBinOpId;
+
+enum {
+	LLVM_Scalar = 1 << 0,
+	LLVM_Vector64 = 1 << 1,
+	LLVM_Vector128 = 1 << 2,
+	LLVM_VectorWidths = 3,
+	LLVM_VectorMask = 0x7,
+
+	LLVM_Int8 = 1 << 3,
+	LLVM_Int16 = 1 << 4,
+	LLVM_Int32 = 1 << 5,
+	LLVM_Int64 = 1 << 6,
+	LLVM_Float32 = 1 << 7,
+	LLVM_Float64 = 1 << 8,
+	LLVM_ElementWidths = 6,
+};
+
+typedef uint16_t llvm_ovr_tag_t;
+
+static inline llvm_ovr_tag_t
+ovr_tag_force_scalar (llvm_ovr_tag_t tag)
+{
+	return (tag & ~LLVM_VectorMask) | LLVM_Scalar;
+}
+
+static inline llvm_ovr_tag_t
+ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
+{
+	return (tag & ~LLVM_VectorMask) | ((tag & LLVM_VectorMask) >> 1);
+}
+
+llvm_ovr_tag_t
+ovr_tag_from_mono_vector_class (MonoClass *klass);
+
+static int
+int_from_id_and_ovr_tag (int id, llvm_ovr_tag_t ovr_tag)
+{
+	return (((int) ovr_tag) << 23) | id;
+}
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
