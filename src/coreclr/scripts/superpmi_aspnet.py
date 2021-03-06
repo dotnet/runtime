@@ -154,7 +154,7 @@ def build_and_run(coreclr_args):
         ## could probably just pass a URL and avoid this
 
         run_command(
-            ["git.exe", "clone", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
+            ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
         configName = "json"
         scenario = "json"
@@ -188,23 +188,23 @@ def build_and_run(coreclr_args):
         jitlib  = path.join(core_root, jitname)
         coreclr = path.join(core_root, coreclrname)
         corelib = path.join(core_root, corelibname)
-        spmi    = path.join(core_root, spminame)
+        spmilib = path.join(core_root, spminame)
 
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_arguments = ['--config', configFile,
-                           '--profile', benchmark_machine,
-                           '--scenario', scenario,
-                           '--application.framework', 'net6.0',
-                           '--application.channel', 'edge',
-                           '--application.environmentVariables', 'COMPlus_JitName= ' + spminame,
-                           '--application.environmentVariables', 'SuperPMIShimLogPath=.',
-                           '--application.environmentVariables', 'SuperPMIShimPath=' + jitpath,
-                           '--application.options.fetch', 'true',
-                           '--application.options.outputFiles', spmi,
-                           '--application.options.outputFiles', jitlib,
-                           '--application.options.outputFiles', coreclr,
-                           '--application.options.outputFiles', corelib]
+        crank_arguments = ["--config", configFile,
+                           "--profile", benchmark_machine,
+                           "--scenario", scenario,
+                           "--application.framework", "net6.0",
+                           "--application.channel", "edge",
+                           "--application.environmentVariables", "COMPlus_JitName=" + spminame,
+                           "--application.environmentVariables", "SuperPMIShimLogPath=.",
+                           "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
+                           "--application.options.fetch", "true",
+                           "--application.options.outputFiles", spmilib,
+                           "--application.options.outputFiles", jitlib,
+                           "--application.options.outputFiles", coreclr,
+                           "--application.options.outputFiles", corelib]
 
         crank_app = path.join(temp_location, "crank")
 
