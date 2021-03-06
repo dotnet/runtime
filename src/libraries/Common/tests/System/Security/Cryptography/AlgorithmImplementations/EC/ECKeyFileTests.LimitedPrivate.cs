@@ -39,7 +39,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
             Assert.Equal(NTE_PERM, ex.HResult);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadWriteNistP521Pkcs8_LimitedPrivate()
         {
             const string base64 = @"
@@ -50,7 +50,7 @@ FmY=";
             ReadWriteBase64Pkcs8(base64, EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_LimitedPrivateKey()
         {
             const string base64 = @"
@@ -70,7 +70,7 @@ PFzVQfJ396S+yx4IIC4=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_LimitedPrivateKey_PasswordBytes()
         {
             const string base64 = @"
@@ -90,7 +90,7 @@ PFzVQfJ396S+yx4IIC4=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadWriteNistP256ECPrivateKey_LimitedPrivateKey()
         {
             const string base64 = @"
@@ -102,7 +102,7 @@ AwEH";
                 EccTestData.GetNistP256ReferenceKey());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadWriteNistP256ExplicitECPrivateKey_LimitedPrivate()
         {
             ReadWriteBase64ECPrivateKey(
@@ -134,7 +134,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
                 SupportsExplicitCurves);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
         public void ReadWriteNistP256ExplicitEncryptedPkcs8_LimitedPrivate()
         {
             ReadWriteBase64EncryptedPkcs8(

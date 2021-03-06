@@ -17,18 +17,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return IsValueOrFriendlyNameValid(oid.FriendlyName);
         }
 
-        public bool ExplicitCurvesSupported
-        {
-            get
-            {
-                if (PlatformDetection.IsOSXLike)
-                {
-                    return false;
-                }
+        public bool ExplicitCurvesSupported => true;
 
-                return true;
-            }
-        }
+        public bool CanDeriveNewPublicKey => false;
 
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {

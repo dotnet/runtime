@@ -34,6 +34,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        public bool CanDeriveNewPublicKey => true;
+
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
             if (string.IsNullOrEmpty(friendlyNameOrValue))

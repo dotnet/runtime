@@ -36,6 +36,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        public bool CanDeriveNewPublicKey => true;
+
         private static bool NativeOidFriendlyNameExists(string oidFriendlyName)
         {
             if (string.IsNullOrEmpty(oidFriendlyName))

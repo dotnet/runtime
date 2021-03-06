@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
+        bool CanDeriveNewPublicKey { get; }
     }
 
     public static partial class ECDiffieHellmanFactory
