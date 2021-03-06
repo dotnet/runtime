@@ -375,6 +375,8 @@ emit_hardware_intrinsics (
 	MonoInst *ins = NULL;
 	gboolean supported = FALSE;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	uint16_t op = 0;
+	uint16_t c0 = 0;
 	if (intrin_group) {
 		const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
 		int intrinsics_size = intrin_group->intrinsics_size;
@@ -393,15 +395,10 @@ emit_hardware_intrinsics (
 		else
 			supported = TRUE;
 
-#if defined(TARGET_ARM64)
-		// HACK: Mark AdvSimd as unsupported until it's completely implemented
-		if (feature == MONO_CPU_ARM64_NEON) supported = FALSE;
-#endif
-
 		id = info->id;
 
-		uint16_t op = info->default_op;
-		uint16_t c0 = info->default_instc0;
+		op = info->default_op;
+		c0 = info->default_instc0;
 		gboolean is_unsigned = FALSE;
 		gboolean is_float = FALSE;
 		switch (arg0_type) {
@@ -423,8 +420,6 @@ emit_hardware_intrinsics (
 			op = info->floating_op;
 			c0 = info->floating_instc0;
 		}
-		if (op != 0)
-			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	}
 support_probe_complete:
 	if (id == SN_get_IsSupported) {
@@ -442,6 +437,8 @@ support_probe_complete:
 			return NULL;
 		}
 	}
+	if (op != 0)
+		return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	return custom_emit (cfg, fsig, args, klass, intrin_group, info, id, arg0_type, is_64bit);
 }
 
@@ -988,14 +985,20 @@ static SimdIntrinsic sha256_methods [] = {
 	{SN_get_IsSupported}
 };
 
+// This table must be kept in sorted order. ASCII } is sorted after alphanumeric
+// characters, so blind use of your editor's "sort lines" facility will
+// mis-order the lines.
+//
+// In Vim you can use `sort /.*{[0-9A-z]*/ r` to sort this table.
+
 static SimdIntrinsic advsimd_methods [] = {
+	{SN_Abs},
 	{SN_AbsSaturate},
 	{SN_AbsScalar},
-	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareGreaterThan},
-	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
-	{SN_Abs},
+	{SN_AbsoluteCompareLessThanOrEqual},
 	{SN_MultiplyWideningUpperAndSubtract, OP_ARM64_SMLSL2},
 	{SN_Negate, OP_ARM64_XNEG},
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
@@ -1008,11 +1011,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_PolynomialMultiplyWideningLower, OP_ARM64_PMULL},
 	{SN_PolynomialMultiplyWideningUpper, OP_ARM64_PMULL2},
 	{SN_PopCount, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_CNT},
-	{SN_ReciprocalEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalEstimate},
+	{SN_ReciprocalEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalExponentScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPX},
-	{SN_ReciprocalSquareRootEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRSQRTE},
 	{SN_ReciprocalSquareRootEstimate},
+	{SN_ReciprocalSquareRootEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRSQRTE},
 	{SN_ReciprocalStep, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPS},
 	{SN_ReciprocalStepScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPS},
 	{SN_ReverseElement16, OP_ARM64_REV32},
@@ -1040,10 +1043,10 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftLeftAndInsert, OP_ARM64_SRI},
 	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SRI},
 	{SN_ShiftLeftLogical, OP_ARM64_SHL},
+	{SN_ShiftLeftLogicalSaturate},
 	{SN_ShiftLeftLogicalSaturateScalar},
 	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU},
-	{SN_ShiftLeftLogicalSaturate},
 	{SN_ShiftLeftLogicalScalar, OP_ARM64_SHL},
 	{SN_ShiftLeftLogicalWideningLower, OP_ARM64_USHLL},
 	{SN_ShiftLeftLogicalWideningUpper, OP_ARM64_USHLL2},
@@ -1100,22 +1103,22 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairScalar, OP_ARM64_STP_SCALAR},
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar, OP_ARM64_ST1_SCALAR},
+	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP_SCALAR, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
 	{SN_SubtractRoundedHighNarrowingLower, OP_ARM64_RSUBHN},
 	{SN_SubtractRoundedHighNarrowingUpper, OP_ARM64_RSUBHN2},
 	{SN_SubtractSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSUB, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSUB},
-	{SN_SubtractSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQSUB, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_UQSUB},
-	{SN_SubtractScalar},
+	{SN_SubtractSaturateScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSUB, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSUB},
+	{SN_SubtractScalar, OP_XBINOP_SCALAR, OP_ISUB, None, None, OP_XBINOP_SCALAR, OP_FSUB},
 	{SN_SubtractWideningLower, OP_ARM64_SSUB, None, OP_ARM64_USUB},
 	{SN_SubtractWideningUpper, OP_ARM64_SSUB2, None, OP_ARM64_USUB2},
-	{SN_Subtract},
 	{SN_TransposeEven, OP_ARM64_TRN1},
 	{SN_TransposeOdd, OP_ARM64_TRN2},
 	{SN_UnzipEven, OP_ARM64_UZP1},
 	{SN_UnzipOdd, OP_ARM64_UZP2},
-	{SN_VectorTableLookup, OP_XOP_X_X_X, SIMD_OP_ARM64_TBL},
-	{SN_VectorTableLookupExtension, OP_XOP_X_X_X_X, SIMD_OP_ARM64_TBX},
+	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
+	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
@@ -1314,18 +1317,6 @@ emit_arm64_intrinsics (
 		case SN_ShiftRightLogicalRoundedNarrowingSaturateScalar: {
 			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_ARM64_UQRSHRN, 0, arg0_type, fsig, args);
 			ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
-			return ret;
-		}
-		case SN_SubtractScalar:
-		case SN_Subtract: {
-			gboolean is_float = FALSE;
-			switch (arg0_type) {
-			case MONO_TYPE_R4: case MONO_TYPE_R8: is_float = TRUE;
-			}
-			op = is_float ? OP_FSUB : OP_ISUB;
-			MonoInst *ret = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, op, arg0_type, fsig, args);
-			if (id == SN_SubtractScalar)
-				ret = emit_simd_ins (cfg, klass, OP_ARM64_ZERO_UPPER, ret->dreg, -1);
 			return ret;
 		}
 		default:

@@ -12,7 +12,7 @@
  * 	 To define an overloaded intrinsic with three arguments
  */
 
-#define Scalar 0
+#define Scalar LLVM_Scalar
 #define V64 LLVM_Vector64
 #define V128 LLVM_Vector128
 #define I1 LLVM_Int8
@@ -357,10 +357,8 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHLU, aarch64_neon_sqshlu, V64 | V128 | I1 | 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SLI, aarch64_neon_vsli, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SRI, aarch64_neon_vsri, V64 | V128 | I1 | I2 | I4 | I8) // Constant shift
 
-INTRINS_OVR(AARCH64_ADV_SIMD_TBX64, aarch64_neon_tbx1, LLVMVectorType (LLVMInt8Type (), 8))
-INTRINS_OVR(AARCH64_ADV_SIMD_TBX128, aarch64_neon_tbx1, sse_i1_t)
-INTRINS_OVR(AARCH64_ADV_SIMD_TBL64, aarch64_neon_tbl1, LLVMVectorType (LLVMInt8Type (), 8))
-INTRINS_OVR(AARCH64_ADV_SIMD_TBL128, aarch64_neon_tbl1, sse_i1_t)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBX1, aarch64_neon_tbx1, V64 | V128 | I1)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, V64 | V128 | I1)
 #endif
 
 #undef INTRINS

@@ -2997,8 +2997,6 @@ typedef enum {
 	SIMD_OP_ARM64_SHA256SU1,
 	SIMD_OP_ARM64_PMULL64_LOWER,
 	SIMD_OP_ARM64_PMULL64_UPPER,
-	SIMD_OP_ARM64_TBL,
-	SIMD_OP_ARM64_TBX,
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);

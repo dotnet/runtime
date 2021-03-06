@@ -48,29 +48,43 @@ typedef enum {
 } XBinOpId;
 
 enum {
-	LLVM_Vector64 = 1 << 0,
-	LLVM_Vector128 = 1 << 1,
-	LLVM_VectorWidths = 3, // Scalar, 64, 128
+	LLVM_Scalar = 1 << 0,
+	LLVM_Vector64 = 1 << 1,
+	LLVM_Vector128 = 1 << 2,
+	LLVM_VectorWidths = 3,
+	LLVM_VectorMask = 0x7,
 
-	LLVM_Int8 = 1 << 2,
-	LLVM_Int16 = 1 << 3,
-	LLVM_Int32 = 1 << 4,
-	LLVM_Int64 = 1 << 5,
-	LLVM_Float32 = 1 << 6,
-	LLVM_Float64 = 1 << 7,
+	LLVM_Int8 = 1 << 3,
+	LLVM_Int16 = 1 << 4,
+	LLVM_Int32 = 1 << 5,
+	LLVM_Int64 = 1 << 6,
+	LLVM_Float32 = 1 << 7,
+	LLVM_Float64 = 1 << 8,
 	LLVM_ElementWidths = 6,
 };
 
-typedef uint8_t llvm_ovr_tag_t;
+typedef uint16_t llvm_ovr_tag_t;
 
 static inline llvm_ovr_tag_t
 ovr_tag_force_scalar (llvm_ovr_tag_t tag)
 {
-	return tag & 0xfc;
+	return (tag & ~LLVM_VectorMask) | LLVM_Scalar;
+}
+
+static inline llvm_ovr_tag_t
+ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
+{
+	return (tag & ~LLVM_VectorMask) | ((tag & LLVM_VectorMask) >> 1);
 }
 
 llvm_ovr_tag_t
 ovr_tag_from_mono_vector_class (MonoClass *klass);
+
+static int
+int_from_id_and_ovr_tag (int id, llvm_ovr_tag_t ovr_tag)
+{
+	return (((int) ovr_tag) << 23) | id;
+}
 
 /*
  * Keep in sync with the enum in utils/mono-memory-model.h.
