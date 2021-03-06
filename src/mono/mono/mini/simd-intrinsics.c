@@ -1428,7 +1428,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_COERCE, XBINOP_Xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
 	{SN_get_IsSupported}
 };
 
@@ -1540,7 +1540,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_COERCE, XBINOP_Xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
 	{SN_get_IsSupported}
 };
 
@@ -2082,10 +2082,10 @@ emit_x86_intrinsics (
 		case SN_RoundToPositiveInfinityScalar:
 		case SN_RoundToZeroScalar:
 			if (fsig->param_count == 2) {
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_ROUNDS, info->instc0, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_ROUNDS, info->default_instc0, arg0_type, fsig, args);
 			} else {
 				MonoInst* ins = emit_simd_ins (cfg, klass, OP_SSE41_ROUNDS, args [0]->dreg, args [0]->dreg);
-				ins->inst_c0 = info->instc0;
+				ins->inst_c0 = info->default_instc0;
 				ins->inst_c1 = arg0_type;
 				return ins;
 			}
