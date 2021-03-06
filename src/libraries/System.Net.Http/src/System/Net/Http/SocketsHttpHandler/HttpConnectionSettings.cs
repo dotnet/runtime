@@ -177,7 +177,9 @@ namespace System.Net.Http
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
+#if HTTP3_SUPPORTED
         private byte[]? _http3SettingsFrame;
         internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
+#endif
     }
 }

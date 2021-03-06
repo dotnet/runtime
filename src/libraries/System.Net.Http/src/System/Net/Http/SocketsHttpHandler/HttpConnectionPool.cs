@@ -49,7 +49,7 @@ namespace System.Net.Http
         /// </summary>
         private volatile HashSet<HttpAuthority>? _altSvcBlocklist;
         private CancellationTokenSource? _altSvcBlocklistTimerCancellation;
-        private volatile bool _altSvcEnabled = true;
+        private volatile bool _altSvcEnabled;
 
         /// <summary>
         /// If <see cref="_altSvcBlocklist"/> exceeds this size, Alt-Svc will be disabled entirely for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds.
@@ -72,10 +72,15 @@ namespace System.Net.Http
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
 
+#if HTTP3_SUPPORTED
         private readonly bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
+        private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
+#else
+        private const bool _http3Enabled = false;
+#endif
 
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
         private readonly byte[]? _hostHeaderValueBytes;
@@ -83,7 +88,6 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
-        private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
         private Queue<TaskCompletionSourceWithCancellation<HttpConnection?>>? _waiters;
@@ -119,7 +123,6 @@ namespace System.Net.Http
             }
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
-            _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
             switch (kind)
             {
@@ -129,7 +132,6 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
 
-                    _http3Enabled = false;
                     break;
 
                 case HttpConnectionKind.Https:
@@ -137,6 +139,11 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri == null);
+
+#if HTTP3_SUPPORTED
+                    _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+                    _altSvcEnabled = _http3Enabled;
+#endif
                     break;
 
                 case HttpConnectionKind.Proxy:
@@ -146,7 +153,6 @@ namespace System.Net.Http
                     Debug.Assert(proxyUri != null);
 
                     _http2Enabled = false;
-                    _http3Enabled = false;
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -156,7 +162,6 @@ namespace System.Net.Http
                     Debug.Assert(proxyUri != null);
 
                     _http2Enabled = false;
-                    _http3Enabled = false;
                     break;
 
                 case HttpConnectionKind.SslProxyTunnel:
@@ -165,7 +170,7 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName != null);
                     Debug.Assert(proxyUri != null);
 
-                    _http3Enabled = false; // TODO: how do we tunnel HTTP3?
+                    // TODO: how do we tunnel HTTP3?
                     break;
 
                 case HttpConnectionKind.ProxyConnect:
@@ -175,18 +180,11 @@ namespace System.Net.Http
                     Debug.Assert(proxyUri != null);
 
                     _http2Enabled = false;
-                    _http3Enabled = false;
                     break;
 
                 default:
                     Debug.Fail("Unkown HttpConnectionKind in HttpConnectionPool.ctor");
                     break;
-            }
-
-            if (!_http3Enabled)
-            {
-                // Avoid parsing Alt-Svc headers if they won't be used.
-                _altSvcEnabled = false;
             }
 
             string? hostHeader = null;
@@ -205,7 +203,9 @@ namespace System.Net.Http
                 if (sslHostName == null)
                 {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
+#if HTTP3_SUPPORTED
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+#endif
                 }
             }
 
@@ -237,14 +237,18 @@ namespace System.Net.Http
 
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
+#if HTTP3_SUPPORTED
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
+#endif
                 }
 
+#if HTTP3_SUPPORTED
                 if (_http3Enabled)
                 {
                     _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
                 }
+#endif
             }
 
             // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.
@@ -256,7 +260,9 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
+#if HTTP3_SUPPORTED
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { Http3Connection.Http3ApplicationProtocol31, Http3Connection.Http3ApplicationProtocol30, Http3Connection.Http3ApplicationProtocol29 };
+#endif
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
 
@@ -352,6 +358,7 @@ namespace System.Net.Http
                 }
             }
 
+#if HTTP3_SUPPORTED
             // Either H3 explicitly requested or secured upgraded allowed.
             if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
@@ -372,7 +379,7 @@ namespace System.Net.Http
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
             }
-
+#endif
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
@@ -745,6 +752,7 @@ namespace System.Net.Http
             }
         }
 
+#if HTTP3_SUPPORTED
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
@@ -840,6 +848,18 @@ namespace System.Net.Http
             }
         }
 
+        public void InvalidateHttp3Connection(Http3Connection connection)
+        {
+            lock (SyncObj)
+            {
+                if (_http3Connection == connection)
+                {
+                    _http3Connection = null;
+                }
+            }
+        }
+#endif
+
         public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             while (true)
@@ -917,6 +937,7 @@ namespace System.Net.Http
                     continue;
                 }
 
+#if HTTP3_SUPPORTED
                 // Check for the Alt-Svc header, to upgrade to HTTP/3.
                 if (_altSvcEnabled && response.Headers.TryGetValues(KnownHeaders.AltSvc.Descriptor, out IEnumerable<string>? altSvcHeaderValues))
                 {
@@ -932,7 +953,7 @@ namespace System.Net.Http
                     BlocklistAuthority(h3Connection.Authority);
                     continue;
                 }
-
+#endif
                 return response;
             }
         }
@@ -1641,17 +1662,6 @@ namespace System.Net.Http
                     }
 
                     _http2Connections = newHttp2Connections;
-                }
-            }
-        }
-
-        public void InvalidateHttp3Connection(Http3Connection connection)
-        {
-            lock (SyncObj)
-            {
-                if (_http3Connection == connection)
-                {
-                    _http3Connection = null;
                 }
             }
         }

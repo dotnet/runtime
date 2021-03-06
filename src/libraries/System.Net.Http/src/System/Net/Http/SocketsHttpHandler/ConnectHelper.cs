@@ -100,6 +100,7 @@ namespace System.Net.Http
             return sslStream;
         }
 
+#if HTTP3_SUPPORTED
         public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
             QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
@@ -114,6 +115,7 @@ namespace System.Net.Http
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
         }
+#endif
 
         internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
         {
