@@ -138,7 +138,7 @@ def build_and_run(coreclr_args):
 
     with TempDir(skip_cleanup=True) as temp_location:
 
-        print (f'Executing in {temp_location}')
+        print ("Executing in " + temp_location)
 
         ## install crank as local tool
 
@@ -158,7 +158,7 @@ def build_and_run(coreclr_args):
 
         configName = "json"
         scenario = "json"
-        configYml = f'{configName}.benchmarks.yml'
+        configYml = configName + ".benchmarks.yml"
         configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
 
         # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
@@ -197,9 +197,9 @@ def build_and_run(coreclr_args):
                            '--scenario', scenario,
                            '--application.framework', 'net6.0',
                            '--application.channel', 'edge',
-                           '--application.environmentVariables', f'COMPlus_JitName={spminame}',
+                           '--application.environmentVariables', 'COMPlus_JitName= ' + spminame,
                            '--application.environmentVariables', 'SuperPMIShimLogPath=.',
-                           '--application.environmentVariables', f'SuperPMIShimPath={jitpath}',
+                           '--application.environmentVariables', 'SuperPMIShimPath=' + jitpath,
                            '--application.options.fetch', 'true',
                            '--application.options.outputFiles', spmi,
                            '--application.options.outputFiles', jitlib,
@@ -222,7 +222,7 @@ def build_and_run(coreclr_args):
                             zipObject.extract(zippedFileName, temp_location)
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
-        mch_file = path.join(coreclr_args.output_mch_path, f'aspnet-{configName}-{scenario}.mch')
+        mch_file = path.join(coreclr_args.output_mch_path, "aspnet-" + configName + "-" + scenario + ".mch")
         command = [mcs_path, "-merge", mch_file, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
