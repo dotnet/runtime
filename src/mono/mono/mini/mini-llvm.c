@@ -9798,6 +9798,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				set_nontemporal_flag (store);
 			break;
 		}
+		case OP_ARM64_LD1_INSERT: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			unsigned int bytes = mono_llvm_get_prim_size_bits (ret_t) / 8;
+			LLVMValueRef address = arg3;
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1_insert", FALSE, bytes);
+			result = LLVMBuildInsertElement (builder, lhs, result, rhs, "arm64_ld1_insert");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_LD1R:
+		case OP_ARM64_LD1: {
+			gboolean replicate = ins->opcode == OP_ARM64_LD1R;
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			unsigned int bytes = mono_llvm_get_prim_size_bits (ret_t) / 8;
+			LLVMValueRef address = lhs;
+			if (!replicate)
+				address = convert (ctx, address, LLVMPointerType (ret_t, 0));
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1", FALSE, bytes);
+			if (replicate) {
+				unsigned int elems = LLVMGetVectorSize (ret_t);
+				result = broadcast_element (ctx, result, elems);
+			}
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_ST1: {
 			LLVMTypeRef t = LLVMTypeOf (rhs);
 			LLVMValueRef address = convert (ctx, lhs, LLVMPointerType (t, 0));
