@@ -7229,6 +7229,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+
 		case OP_PADDB:
 		case OP_PADDW:
 		case OP_PADDD:
@@ -7462,7 +7463,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), "");
 			break;
 		}
-
 		case OP_INSERT_I1:
 			values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->sreg1], convert (ctx, values [ins->sreg2], LLVMInt8Type ()), LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), dname);
 			break;
@@ -9186,6 +9186,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 
 #if defined(TARGET_ARM64)
+		case OP_EXTRACT_I1:
+		case OP_EXTRACT_I2:
+		case OP_EXTRACT_I4:
+		case OP_EXTRACT_I8:
+		case OP_EXTRACT_R4:
+		case OP_EXTRACT_R8: {
+			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, const_int32 (ins->inst_c0), "extract");
+			break;
+		}
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)0;
@@ -9308,6 +9317,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
 				result = vector_zero_from_scalar (ctx, t, result);
 			}
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_XINSERT_I1:
+		case OP_XINSERT_I2:
+		case OP_XINSERT_I4:
+		case OP_XINSERT_I8:
+		case OP_XINSERT_R4:
+		case OP_XINSERT_R8: {
+			LLVMTypeRef t = LLVMTypeOf (lhs);
+			LLVMTypeRef elem_t = LLVMGetElementType (t);
+			MonoTypeEnum primty = inst_c1_type (ins);
+			LLVMValueRef val = convert_full(ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
+			LLVMValueRef result = LLVMBuildInsertElement (builder, lhs, val, arg3, "xinsert");
 			values [ins->dreg] = result;
 			break;
 		}
