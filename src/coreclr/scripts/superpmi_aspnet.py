@@ -230,12 +230,11 @@ def build_and_run(coreclr_args):
 
         mcs_path = determine_mcs_tool_path(coreclr_args)
         mch_file = path.join(coreclr_args.output_mch_path, "aspnet-" + configName + "-" + scenario + ".mch")
-        command = [mcs_path, "-merge", mch_file, coreclr_args.pattern, "-recursive", "-dedup", "-thin"]
+        command = [mcs_path, "-merge", mch_file, "\"*.mc\"", "-recursive", "-dedup", "-thin"]
         return_code = run_and_log(command)
         if return_code != 0:
             logging.error("mcs -merge Failed with code %s", return_code)
 
-        logging.info("Creating MCT file for %s", coreclr_args.output_mch_path)
         command = [mcs_path, "-toc", coreclr_args.output_mch_path]
         return_code = run_and_log(command)
         if return_code != 0:
@@ -250,15 +249,7 @@ def main(main_args):
     print (sys.version)
     coreclr_args = setup_args(main_args)
 
-    # all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
     build_and_run(coreclr_args)
-    # if os.path.isfile(all_output_mch_name):
-    #     pass
-    # else:
-    #     print("No mch file generated.")
-
-    # strip_unrelated_mc(coreclr_args, all_output_mch_name, coreclr_args.output_mch_path)
-
 
 if __name__ == "__main__":
     args = parser.parse_args()
