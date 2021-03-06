@@ -235,7 +235,7 @@ def build_and_run(coreclr_args):
         if return_code != 0:
             logging.error("mcs -merge Failed with code %s", return_code)
 
-        command = [mcs_path, "-toc", coreclr_args.output_mch_path]
+        command = [mcs_path, "-toc", mch_file]
         return_code = run_and_log(command)
         if return_code != 0:
             logging.error("mcs -toc Failed with code %s", return_code)
