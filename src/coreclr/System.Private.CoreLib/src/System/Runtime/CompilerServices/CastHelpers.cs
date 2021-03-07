@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
