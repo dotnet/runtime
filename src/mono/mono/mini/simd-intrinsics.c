@@ -1728,7 +1728,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
+	{SN_Xor, OP_SSE_XOR},
 	{SN_get_IsSupported}
 };
 
@@ -1840,7 +1840,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
+	{SN_Xor, OP_SSE_XOR},
 	{SN_get_IsSupported}
 };
 
