@@ -301,6 +301,22 @@ type_is_float (MonoType *type) {
 }
 
 static int
+type_to_extract_var_op (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1: return OP_EXTRACT_VAR_U1;
+	case MONO_TYPE_U1: return OP_EXTRACT_VAR_I1;
+	case MONO_TYPE_I2: return OP_EXTRACT_VAR_U2;
+	case MONO_TYPE_U2: return OP_EXTRACT_VAR_I2;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_EXTRACT_VAR_I4;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_EXTRACT_VAR_I8;
+	case MONO_TYPE_R4: return OP_EXTRACT_VAR_R4;
+	case MONO_TYPE_R8: return OP_EXTRACT_VAR_R8;
+	default: g_assert_not_reached ();
+	}
+}
+
+static int
 type_to_expand_op (MonoType *type)
 {
 	switch (type->type) {
@@ -1011,6 +1027,10 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_DuplicateSelectedScalarToVector128},
+	{SN_DuplicateSelectedScalarToVector64},
+	{SN_DuplicateToVector128},
+	{SN_DuplicateToVector64},
 	{SN_Extract},
 	{SN_ExtractNarrowingLower, OP_ARM64_XTN},
 	{SN_ExtractNarrowingSaturateLower, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQXTN, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_UQXTN},
@@ -1383,19 +1403,26 @@ emit_arm64_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
-		case SN_Extract: {
-			int extract_op = 0;
-			switch (arg0_type) {
-			case MONO_TYPE_I1: extract_op = OP_EXTRACT_VAR_U1; break;
-			case MONO_TYPE_U1: extract_op = OP_EXTRACT_VAR_I1; break;
-			case MONO_TYPE_I2: extract_op = OP_EXTRACT_VAR_U2; break;
-			case MONO_TYPE_U2: extract_op = OP_EXTRACT_VAR_I2; break;
-			case MONO_TYPE_I4: case MONO_TYPE_U4: extract_op = OP_EXTRACT_VAR_I4; break;
-			case MONO_TYPE_I8: case MONO_TYPE_U8: extract_op = OP_EXTRACT_VAR_I8; break;
-			case MONO_TYPE_R4: extract_op = OP_EXTRACT_VAR_R4; break;
-			case MONO_TYPE_R8: extract_op = OP_EXTRACT_VAR_R8; break;
-			default: g_assert_not_reached ();
+		case SN_DuplicateSelectedScalarToVector128:
+		case SN_DuplicateSelectedScalarToVector64:
+		case SN_DuplicateToVector64:
+		case SN_DuplicateToVector128: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
+			MonoType *rtype = get_vector_t_elem_type (fsig->ret);
+			int scalar_src_reg = args [0]->dreg;
+			switch (id) {
+			case SN_DuplicateSelectedScalarToVector128:
+			case SN_DuplicateSelectedScalarToVector64: {
+				int extract_op = type_to_extract_var_op (arg0_type);
+				MonoInst *ins = emit_simd_ins (cfg, ret_klass, type_to_extract_var_op (rtype->type), args [0]->dreg, args [1]->dreg);
+				scalar_src_reg = ins->dreg;
+				break;
 			}
+			}
+			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype), scalar_src_reg, -1);
+		}
+		case SN_Extract: {
+			int extract_op = type_to_extract_var_op (arg0_type);
 			MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, args [0]->dreg, args [1]->dreg);
 			ins->inst_c1 = arg0_type;
 			return ins;
