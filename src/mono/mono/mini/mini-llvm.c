@@ -368,6 +368,12 @@ ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
 	return (tag & ~INTRIN_vectormask) | ((tag & INTRIN_vectormask) >> 1);
 }
 
+static inline llvm_ovr_tag_t
+ovr_tag_corresponding_integer (llvm_ovr_tag_t tag)
+{
+	return ((tag & ~INTRIN_vectormask) >> 2) | (tag & INTRIN_vectormask);
+}
+
 static int
 int_from_id_and_ovr_tag (int id, llvm_ovr_tag_t ovr_tag)
 {
@@ -9409,14 +9415,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_AES_ENC: id = INTRINS_AARCH64_AESE; break;
 			case SIMD_OP_ARM64_SHA1SU1: id = INTRINS_AARCH64_SHA1SU1; break;
 			case SIMD_OP_ARM64_SHA256SU0: id = INTRINS_AARCH64_SHA256SU0; break;
-			case SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_FLOAT; break;
-			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GT_DOUBLE; break;
-			case SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_FLOAT; break;
-			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_GTE_DOUBLE; break;
-			case SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_FLOAT; break;
-			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE; break;
-			case SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT; break;
-			case SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL: id = INTRINS_AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE; break;
 			case SIMD_OP_ARM64_PMULL64_LOWER:
 				id = INTRINS_AARCH64_PMULL64;
 				getElement = TRUE;
@@ -10537,6 +10535,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				++laneix;
 			}
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, rhs, create_const_vector_i32 (mask, src_elems), "arm64_zip");
+			break;
+		}
+		case OP_ARM64_ABSCOMPARE: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			gboolean scalar = ins->inst_c1;
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			ovr_tag = ovr_tag_corresponding_integer (ovr_tag);
+			LLVMValueRef args [] = { lhs, rhs };
+			LLVMTypeRef result_t = ret_t;
+			if (scalar) {
+				ovr_tag = ovr_tag_force_scalar (ovr_tag);
+				result_t = elem_t;
+				for (int i = 0; i < 2; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			}
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			result = LLVMBuildBitCast (builder, result, result_t, "");
+			if (scalar)
+				result = vector_from_scalar_ty (ctx, ret_t, result);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_XOP_OVR_X_X: {

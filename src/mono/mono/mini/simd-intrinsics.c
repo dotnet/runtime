@@ -1025,8 +1025,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_ABS, None, None, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS},
 	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareGreaterThanOrEqual},
+	{SN_AbsoluteCompareGreaterThanOrEqualScalar},
+	{SN_AbsoluteCompareGreaterThanScalar},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_AbsoluteCompareLessThanOrEqualScalar},
+	{SN_AbsoluteCompareLessThanScalar},
 	{SN_AbsoluteDifference, OP_ARM64_SABD, None, OP_ARM64_UABD, None, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FABD},
 	{SN_AbsoluteDifferenceAdd, OP_ARM64_SABA, None, OP_ARM64_UABA},
 	{SN_AbsoluteDifferenceScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FABD_SCALAR},
@@ -1340,25 +1344,6 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_get_IsSupported},
 };
 
-static
-MonoInst *emit_absolute_compare (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum arg0_type, MonoInst **args, SimdOp op_for_r4, SimdOp op_for_r8)
-{
-	SimdOp op = (SimdOp)0;
-
-	switch (get_underlying_type (fsig->params [0])) {
-	case MONO_TYPE_R4:
-		op = op_for_r4;
-	  	break;
-	case MONO_TYPE_R8:
-		op = op_for_r8;
-		break;
-	default:
-		g_assert_not_reached();
-	}
-
-	return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
-}
-
 static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
@@ -1425,30 +1410,37 @@ emit_arm64_intrinsics (
 		IntrinsicId iid = (IntrinsicId) -1;
 		switch (id) {
 
-		case SN_AbsoluteCompareGreaterThan: {
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN, SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN);
-		}
+		case SN_AbsoluteCompareGreaterThan:
+		case SN_AbsoluteCompareGreaterThanOrEqual:
+		case SN_AbsoluteCompareLessThan:
+		case SN_AbsoluteCompareLessThanOrEqual:
+		case SN_AbsoluteCompareGreaterThanScalar:
+		case SN_AbsoluteCompareGreaterThanOrEqualScalar:
+		case SN_AbsoluteCompareLessThanScalar:
+		case SN_AbsoluteCompareLessThanOrEqualScalar: {
+			gboolean reverse_args = FALSE;
+			gboolean use_geq = FALSE;
+			gboolean scalar = FALSE;
+			MonoInst *cmp_args [] = { args [0], args [1] };
+			switch (id) {
+			case SN_AbsoluteCompareGreaterThanScalar: scalar = TRUE;
+			case SN_AbsoluteCompareGreaterThan: break;
 
-	    	case SN_AbsoluteCompareGreaterThanOrEqual: {
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL, SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL);
-		}
+			case SN_AbsoluteCompareGreaterThanOrEqualScalar: scalar = TRUE;
+			case SN_AbsoluteCompareGreaterThanOrEqual: use_geq = TRUE; break;
 
-		case SN_AbsoluteCompareLessThan: {
-			// Compare less than uses the same instructions as greater than, with arguments swapped.
-			MonoInst *temp_for_swap = args [0];
-			args [0] = args [1];
-			args [1] = temp_for_swap;
+			case SN_AbsoluteCompareLessThanScalar: scalar = TRUE;
+			case SN_AbsoluteCompareLessThan: reverse_args = TRUE; break;
 
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN, SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN);
-		}
-
-		case SN_AbsoluteCompareLessThanOrEqual: {
-			// Compare less than uses the same instructions as greater than, with arguments swapped.
-			MonoInst *temp_for_swap = args [0];
-			args [0] = args [1];
-			args [1] = temp_for_swap;
-
-			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL, SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL);
+			case SN_AbsoluteCompareLessThanOrEqualScalar: scalar = TRUE;
+			case SN_AbsoluteCompareLessThanOrEqual: reverse_args = TRUE; use_geq = TRUE; break;
+			}
+			if (reverse_args) {
+				cmp_args [0] = args [1];
+				cmp_args [1] = args [0];
+			}
+			int iid = use_geq ? INTRINS_AARCH64_ADV_SIMD_FACGE : INTRINS_AARCH64_ADV_SIMD_FACGT;
+			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_ABSCOMPARE, iid, scalar, fsig, cmp_args);
 		}
 
 		case SN_AddSaturate:
