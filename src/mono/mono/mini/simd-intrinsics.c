@@ -1011,6 +1011,15 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_Extract},
+	{SN_ExtractNarrowingLower, OP_ARM64_XTN},
+	{SN_ExtractNarrowingSaturateLower, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQXTN, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_UQXTN},
+	{SN_ExtractNarrowingSaturateUnsignedLower, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQXTUN},
+	{SN_ExtractNarrowingSaturateUnsignedUpper, OP_ARM64_SQXTUN2},
+	{SN_ExtractNarrowingSaturateUpper, OP_ARM64_SQXTN2, None, OP_ARM64_UQXTN2},
+	{SN_ExtractNarrowingUpper, OP_ARM64_XTN2},
+	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
+	{SN_FloorScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
 	{SN_FusedAddHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHADD},
 	{SN_FusedAddRoundedHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URHADD},
 	{SN_FusedMultiplyAdd, OP_ARM64_FMADD},
@@ -1374,13 +1383,32 @@ emit_arm64_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
 		}
+		case SN_Extract: {
+			int extract_op = 0;
+			switch (arg0_type) {
+			case MONO_TYPE_I1: extract_op = OP_EXTRACT_VAR_U1; break;
+			case MONO_TYPE_U1: extract_op = OP_EXTRACT_VAR_I1; break;
+			case MONO_TYPE_I2: extract_op = OP_EXTRACT_VAR_U2; break;
+			case MONO_TYPE_U2: extract_op = OP_EXTRACT_VAR_I2; break;
+			case MONO_TYPE_I4: case MONO_TYPE_U4: extract_op = OP_EXTRACT_VAR_I4; break;
+			case MONO_TYPE_I8: case MONO_TYPE_U8: extract_op = OP_EXTRACT_VAR_I8; break;
+			case MONO_TYPE_R4: extract_op = OP_EXTRACT_VAR_R4; break;
+			case MONO_TYPE_R8: extract_op = OP_EXTRACT_VAR_R8; break;
+			default: g_assert_not_reached ();
+			}
+			MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, args [0]->dreg, args [1]->dreg);
+			ins->inst_c1 = arg0_type;
+			return ins;
+		}
 		case SN_InsertScalar:
 		case SN_Insert: {
 			int insert_op = 0;
 			int extract_op = 0;
 			switch (arg0_type) {
-			case MONO_TYPE_I1: case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
-			case MONO_TYPE_I2: case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;
+			case MONO_TYPE_I1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_U1; break;
+			case MONO_TYPE_U1: insert_op = OP_XINSERT_I1; extract_op = OP_EXTRACT_I1; break;
+			case MONO_TYPE_I2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_U2; break;
+			case MONO_TYPE_U2: insert_op = OP_XINSERT_I2; extract_op = OP_EXTRACT_I2; break;
 			case MONO_TYPE_I4: case MONO_TYPE_U4: insert_op = OP_XINSERT_I4; extract_op = OP_EXTRACT_I4; break;
 			case MONO_TYPE_I8: case MONO_TYPE_U8: insert_op = OP_XINSERT_I8; extract_op = OP_EXTRACT_I8; break;
 			case MONO_TYPE_R4: insert_op = OP_XINSERT_R4; extract_op = OP_EXTRACT_R4; break;

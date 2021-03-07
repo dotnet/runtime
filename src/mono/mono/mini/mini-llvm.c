@@ -9186,13 +9186,55 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 
 #if defined(TARGET_ARM64)
+		case OP_EXTRACT_VAR_I1:
+		case OP_EXTRACT_VAR_U1:
+		case OP_EXTRACT_VAR_I2:
+		case OP_EXTRACT_VAR_U2:
+		case OP_EXTRACT_VAR_I4:
+		case OP_EXTRACT_VAR_R4:
+		case OP_EXTRACT_VAR_R8:
+		case OP_EXTRACT_VAR_I8:
+		case OP_EXTRACT_U1:
 		case OP_EXTRACT_I1:
+		case OP_EXTRACT_U2:
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_I4:
 		case OP_EXTRACT_I8:
 		case OP_EXTRACT_R4:
 		case OP_EXTRACT_R8: {
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, const_int32 (ins->inst_c0), "extract");
+			gboolean sext = FALSE;
+			gboolean zext = FALSE;
+			switch (ins->opcode) {
+			case OP_EXTRACT_U1: case OP_EXTRACT_U2: zext = TRUE; break;
+			case OP_EXTRACT_I1: case OP_EXTRACT_I2: sext = TRUE; break;
+			case OP_EXTRACT_VAR_U1: case OP_EXTRACT_VAR_U2: zext = TRUE; break;
+			case OP_EXTRACT_VAR_I1: case OP_EXTRACT_VAR_I2: sext = TRUE; break;
+			}
+			LLVMValueRef element_ix = NULL;
+			switch (ins->opcode) {
+			case OP_EXTRACT_VAR_I1:
+			case OP_EXTRACT_VAR_U1:
+			case OP_EXTRACT_VAR_I2:
+			case OP_EXTRACT_VAR_U2:
+			case OP_EXTRACT_VAR_I4:
+			case OP_EXTRACT_VAR_R4:
+			case OP_EXTRACT_VAR_R8:
+			case OP_EXTRACT_VAR_I8:
+				element_ix = rhs;
+				break;
+			default:
+				element_ix = const_int32 (ins->inst_c0);
+			}
+			LLVMValueRef result = LLVMBuildExtractElement (builder, lhs, element_ix, "extract");
+			/* TODO: Scalar types smaller than i32 seem to be
+			 * normalized to i32 via zero or sign extension.
+			 * Is this still necessary?
+			 */
+			if (zext)
+				result = LLVMBuildZExt (builder, result, i4_t, "extract_zext");
+			else if (sext)
+				result = LLVMBuildSExt (builder, result, i4_t, "extract_sext");
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_XOP_I4_I4:
@@ -9326,10 +9368,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XINSERT_I8:
 		case OP_XINSERT_R4:
 		case OP_XINSERT_R8: {
+			/* TODO: Scalar types smaller than i32 seem to be
+			 * normalized to i32 via zero or sign extension.
+			 * Is this still necessary?
+			 */
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			LLVMTypeRef elem_t = LLVMGetElementType (t);
 			MonoTypeEnum primty = inst_c1_type (ins);
-			LLVMValueRef val = convert_full(ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
+			LLVMValueRef val = convert_full (ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
 			LLVMValueRef result = LLVMBuildInsertElement (builder, lhs, val, arg3, "xinsert");
 			values [ins->dreg] = result;
 			break;
@@ -9380,6 +9426,39 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef hi64 = LLVMBuildLShr (builder, mul,
 				LLVMConstInt (LLVMInt128Type (), 64, FALSE), "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
+			break;
+		}
+		case OP_ARM64_SQXTUN2:
+		case OP_ARM64_UQXTN2:
+		case OP_ARM64_SQXTN2:
+		case OP_ARM64_XTN:
+		case OP_ARM64_XTN2: {
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			gboolean high = FALSE;
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_SQXTUN2: high = TRUE; iid = INTRINS_AARCH64_ADV_SIMD_SQXTUN; break;
+			case OP_ARM64_UQXTN2: high = TRUE; iid = INTRINS_AARCH64_ADV_SIMD_UQXTN; break;
+			case OP_ARM64_SQXTN2: high = TRUE; iid = INTRINS_AARCH64_ADV_SIMD_SQXTN; break;
+			case OP_ARM64_XTN2: high = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			if (high) {
+				result = rhs;
+				ovr_tag = ovr_tag_smaller_vector (ovr_tag);
+			}
+			LLVMTypeRef t = LLVMTypeOf (result);
+			LLVMTypeRef elem_t = LLVMGetElementType (t);
+			unsigned int elems = LLVMGetVectorSize (t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+			LLVMTypeRef result_t = LLVMVectorType (LLVMIntType (elem_bits / 2), elems);
+			if (iid != 0)
+				result = call_overloaded_intrins (ctx, iid, ovr_tag, &result, "");
+			else
+				result = LLVMBuildTrunc (builder, result, result_t, "arm64_xtn");
+			if (high)
+				result = concatenate_vectors (ctx, lhs, result);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_CLZ: {
