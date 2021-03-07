@@ -9397,6 +9397,39 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_FCVTL:
+		case OP_ARM64_FCVTL2: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = ins->opcode == OP_ARM64_FCVTL2;
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			result = LLVMBuildFPExt (builder, result, ret_t, "arm64_fcvtl");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_FCVTXN:
+		case OP_ARM64_FCVTXN2:
+		case OP_ARM64_FCVTN:
+		case OP_ARM64_FCVTN2: {
+			gboolean high = FALSE;
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_FCVTXN2: high = TRUE; case OP_ARM64_FCVTXN: iid = INTRINS_AARCH64_ADV_SIMD_FCVTXN; break;
+			case OP_ARM64_FCVTN2: high = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			if (high)
+				result = rhs;
+			if (iid)
+				result = call_intrins (ctx, iid, &result, "");
+			else
+				result = LLVMBuildFPTrunc (builder, result, v64_r4_t, "");
+			if (high)
+				result = concatenate_vectors (ctx, lhs, result);
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_UCVTF:
 		case OP_ARM64_SCVTF:
 		case OP_ARM64_UCVTF_SCALAR:
