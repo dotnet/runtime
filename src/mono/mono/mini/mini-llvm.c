@@ -4763,6 +4763,25 @@ create_const_vector_2_i32 (int v0, int v1)
 	return LLVMConstVector (mask, 2);
 }
 
+static LLVMTypeRef
+to_integral_vector_type (LLVMTypeRef t)
+{
+	unsigned int elems = LLVMGetVectorSize (t);
+	LLVMTypeRef elem_t = LLVMGetElementType (t);
+	unsigned int bits = mono_llvm_get_prim_size_bits (elem_t);
+	return LLVMVectorType (LLVMIntType (bits), elems);
+}
+
+static LLVMValueRef
+bitcast_to_integral (EmitContext *ctx, LLVMValueRef vec)
+{
+	LLVMTypeRef src_t = LLVMTypeOf (vec);
+	LLVMTypeRef dst_t = to_integral_vector_type (src_t);
+	if (dst_t != src_t)
+		return LLVMBuildBitCast (ctx->builder, vec, dst_t, "bc2i");
+	return vec;
+}
+
 static LLVMValueRef
 extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
 {
@@ -9394,6 +9413,53 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoTypeEnum primty = inst_c1_type (ins);
 			LLVMValueRef val = convert_full (ctx, rhs, elem_t, primitive_type_is_unsigned (primty));
 			LLVMValueRef result = LLVMBuildInsertElement (builder, lhs, val, arg3, "xinsert");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_XCOMPARE_FP_SCALAR:
+		case OP_XCOMPARE_FP: {
+			g_assert (LLVMTypeOf (lhs) == LLVMTypeOf (rhs));
+			gboolean scalar = ins->opcode == OP_XCOMPARE_FP_SCALAR;
+			LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMTypeRef reti_t = to_integral_vector_type (ret_t);
+			LLVMValueRef args [] = { lhs, rhs };
+			if (scalar)
+				for (int i = 0; i < 2; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			LLVMValueRef result = LLVMBuildFCmp (builder, pred, args [0], args [1], "xcompare_fp");
+			if (scalar)
+				result = vector_from_scalar_ty (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (reti_t)), result);
+			result = LLVMBuildSExt (builder, result, reti_t, "");
+			result = LLVMBuildBitCast (builder, result, ret_t, "");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_XCOMPARE_SCALAR:
+		case OP_XCOMPARE: {
+			g_assert (LLVMTypeOf (lhs) == LLVMTypeOf (rhs));
+			gboolean scalar = ins->opcode == OP_XCOMPARE_SCALAR;
+			LLVMIntPredicate pred = cond_to_llvm_cond [ins->inst_c0];
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef args [] = { lhs, rhs };
+			if (scalar)
+				for (int i = 0; i < 2; ++i)
+					args [i] = scalar_from_vector (ctx, args [i]);
+			LLVMValueRef result = LLVMBuildICmp (builder, pred, args [0], args [1], "xcompare");
+			if (scalar)
+				result = vector_from_scalar_ty (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (ret_t)), result);
+			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
+			break;
+		}
+		case OP_ARM64_CMTST: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMValueRef l = bitcast_to_integral (ctx, lhs);
+			LLVMValueRef r = bitcast_to_integral (ctx, rhs);
+			LLVMValueRef result = LLVMBuildAnd (builder, l, r, "arm64_cmtst");
+			LLVMTypeRef t = LLVMTypeOf (l);
+			result = LLVMBuildICmp (builder, LLVMIntNE, result, LLVMConstNull (t), "");
+			result = LLVMBuildSExt (builder, result, t, "");
+			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
 		}

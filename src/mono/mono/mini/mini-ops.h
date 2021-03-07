@@ -1528,7 +1528,9 @@ MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
 MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
+MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
+MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
@@ -1771,5 +1773,7 @@ MINI_OP(OP_ARM64_FCVTXN2, "arm64_fcvtxn2", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_FCVTL, "arm64_fcvtl", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTL2, "arm64_fcvtl2", XREG, XREG, NONE)
+
+MINI_OP(OP_ARM64_CMTST, "arm64_cmtst", XREG, XREG, XREG)
 
 #endif // TARGET_ARM64
