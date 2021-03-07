@@ -7248,6 +7248,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
 			LLVMValueRef result = NULL;
 			switch (ins->inst_c0) {
+			case XBINOP_FORCEINT_and:
+				result = LLVMBuildAnd (builder, lhs_int, rhs_int, "");
+				break;
 			case XBINOP_FORCEINT_or:
 				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
 				break;
@@ -9457,6 +9460,36 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (scalar)
 				result = vector_from_scalar_ty (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (ret_t)), result);
 			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
+			break;
+		}
+		case OP_ARM64_MVN: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "arm64_mvn");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_BIC: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			LLVMValueRef mask = bitcast_to_integral (ctx, rhs);
+			mask = LLVMBuildNot (builder, mask, "");
+			result = LLVMBuildAnd (builder, mask, result, "arm64_bic");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_BSL: {
+			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
+			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
+			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
+			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
+			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "arm64_bsl");
+			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
+			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_CMTST: {

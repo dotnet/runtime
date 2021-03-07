@@ -3000,7 +3000,7 @@ typedef enum {
 } SimdOp;
 
 enum {
-	XBINOP_FORCEINT_not,
+	XBINOP_FORCEINT_and,
 	XBINOP_FORCEINT_or,
 	XBINOP_FORCEINT_ornot,
 	XBINOP_FORCEINT_xor,
