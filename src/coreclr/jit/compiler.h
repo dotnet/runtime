@@ -6007,7 +6007,9 @@ private:
 public:
     void optInit();
 
-    void optRemoveRangeCheck(GenTree* tree, Statement* stmt);
+    GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
+    GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
+    void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
     bool optIsRangeCheckRemovable(GenTree* tree);
 
 protected:
@@ -7286,7 +7288,7 @@ public:
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree);
+    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
