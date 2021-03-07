@@ -1613,6 +1613,11 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeReg(tree->gtGetOp1());
         }
+        else if (tree->OperIs(GT_MUL) && tree->isContained())
+        {
+            genConsumeReg(tree->gtGetOp1());
+            genConsumeReg(tree->gtGetOp2());
+        }
         else
         {
 #ifdef FEATURE_SIMD

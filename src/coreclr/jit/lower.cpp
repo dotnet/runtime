@@ -5064,6 +5064,19 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 
     if (node->OperIs(GT_ADD))
     {
+#ifdef TARGET_ARM64
+        if (node->gtGetOp1()->OperIs(GT_MUL))
+        {
+            GenTree* arg1 = node->gtGetOp1()->gtGetOp1();
+            GenTree* arg2 = node->gtGetOp1()->gtGetOp2();
+            GenTree* arg3 = node->gtGetOp2();
+            // TODO: enable for const args
+            if (!arg1->IsCnsIntOrI() && !arg2->IsCnsIntOrI() && !arg3->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, node->gtGetOp1());
+            }
+        }
+#endif
         ContainCheckBinary(node);
     }
     return nullptr;

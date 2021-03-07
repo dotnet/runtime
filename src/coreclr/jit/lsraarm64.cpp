@@ -275,10 +275,19 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSH:
         case GT_RSZ:
         case GT_ROR:
+        {
             srcCount = BuildBinaryUses(tree->AsOp());
+            if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->OperIs(GT_MUL) && tree->gtGetOp1()->isContained())
+            {
+                srcCount = BuildBinaryUses(tree->gtGetOp1()->AsOp());
+                srcCount += BuildBinaryUses(tree->AsOp());
+                BuildDef(tree);
+                break;
+            }
             assert(dstCount == 1);
             BuildDef(tree);
             break;
+        }
 
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int

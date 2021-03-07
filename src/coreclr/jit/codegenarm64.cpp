@@ -1812,6 +1812,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     GenTree*    op2 = treeNode->gtGetOp2();
     instruction ins = genGetInsForOper(treeNode->OperGet(), targetType);
 
+    if (treeNode->OperIs(GT_ADD) && treeNode->gtGetOp1()->OperIs(GT_MUL) && treeNode->gtGetOp1()->isContained())
+    {
+        GenTree* arg1 = treeNode->gtGetOp1()->gtGetOp1();
+        GenTree* arg2 = treeNode->gtGetOp1()->gtGetOp2();
+        GenTree* arg3 = treeNode->gtGetOp2();
+        emit->emitIns_R_R_R_R(INS_madd, emitActualTypeSize(treeNode), treeNode->GetRegNum(), arg1->GetRegNum(), arg2->GetRegNum(), arg3->GetRegNum());
+        genProduceReg(treeNode);
+        return;
+    }
+
     if ((treeNode->gtFlags & GTF_SET_FLAGS) != 0)
     {
         switch (oper)
