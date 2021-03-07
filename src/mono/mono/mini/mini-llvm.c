@@ -9477,16 +9477,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				switch (ins->inst_c0) {
 				case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
 				case SIMD_OP_ARM64_AES_AESMC: id = INTRINS_AARCH64_AESMC; break;
-				case SIMD_OP_ARM64_FABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_FLOAT; break;
-				case SIMD_OP_ARM64_DABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_DOUBLE; break;
-				case SIMD_OP_ARM64_I8ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT8; break;
-				case SIMD_OP_ARM64_I16ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT16; break;
-				case SIMD_OP_ARM64_I32ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT32; break;
-				case SIMD_OP_ARM64_I64ABS: id = INTRINS_AARCH64_ADV_SIMD_ABS_INT64; break;
-				case SIMD_OP_ARM64_I8ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT8; break;
-				case SIMD_OP_ARM64_I16ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT16; break;
-				case SIMD_OP_ARM64_I32ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT32; break;
-				case SIMD_OP_ARM64_I64ABS_SATURATE: id = INTRINS_AARCH64_ADV_SIMD_ABS_SATURATE_INT64; break;
 				case SIMD_OP_ARM64_SHA1H: id = INTRINS_AARCH64_SHA1H; getLowerElement = TRUE; break;
 				default: g_assert_not_reached (); break;
 				}
@@ -10371,6 +10361,50 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				result = LLVMBuildSub (builder, args [0], args [1], "arm64_sub");
 			else
 				result = LLVMBuildAdd (builder, args [0], args [1], "arm64_add");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_SABAL:
+		case OP_ARM64_SABAL2:
+		case OP_ARM64_UABAL:
+		case OP_ARM64_UABAL2:
+		case OP_ARM64_SABDL:
+		case OP_ARM64_SABDL2:
+		case OP_ARM64_UABDL:
+		case OP_ARM64_UABDL2:
+		case OP_ARM64_SABA:
+		case OP_ARM64_UABA:
+		case OP_ARM64_SABD:
+		case OP_ARM64_UABD: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean is_unsigned = FALSE;
+			gboolean high = FALSE;
+			gboolean add = FALSE;
+			gboolean widen = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_SABAL2: high = TRUE; case OP_ARM64_SABAL: widen = TRUE; add = TRUE; break;
+			case OP_ARM64_UABAL2: high = TRUE; case OP_ARM64_UABAL: widen = TRUE; add = TRUE; is_unsigned = TRUE; break;
+			case OP_ARM64_SABDL2: high = TRUE; case OP_ARM64_SABDL: widen = TRUE; break;
+			case OP_ARM64_UABDL2: high = TRUE; case OP_ARM64_UABDL: widen = TRUE; is_unsigned = TRUE; break;
+			case OP_ARM64_SABA: add = TRUE; break;
+			case OP_ARM64_UABA: add = TRUE; is_unsigned = TRUE; break;
+			case OP_ARM64_UABD: is_unsigned = TRUE; break;
+			}
+			LLVMValueRef args [] = { lhs, rhs };
+			if (add) {
+				args [0] = rhs;
+				args [1] = arg3;
+			}
+			if (high)
+				for (int i = 0; i < 2; ++i)
+					args [i] = extract_high_elements (ctx, args [i]);
+			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UABD : INTRINS_AARCH64_ADV_SIMD_SABD;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (LLVMTypeOf (args [0]));
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			if (widen)
+				result = LLVMBuildZExt (builder, result, ret_t, "");
+			if (add)
+				result = LLVMBuildAdd (builder, result, lhs, "");
 			values [ins->dreg] = result;
 			break;
 		}

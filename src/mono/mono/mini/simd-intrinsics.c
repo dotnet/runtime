@@ -1019,13 +1019,21 @@ static SimdIntrinsic sha256_methods [] = {
 // In Vim you can use `sort /.*{[0-9A-z]*/ r` to sort this table.
 
 static SimdIntrinsic advsimd_methods [] = {
-	{SN_Abs},
-	{SN_AbsSaturate},
-	{SN_AbsScalar},
+	{SN_Abs, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_ABS, None, None, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS},
+	{SN_AbsSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQABS},
+	{SN_AbsSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQABS},
+	{SN_AbsScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_ABS, None, None, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FABS},
 	{SN_AbsoluteCompareGreaterThan},
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_AbsoluteDifference, OP_ARM64_SABD, None, OP_ARM64_UABD, None, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FABD},
+	{SN_AbsoluteDifferenceAdd, OP_ARM64_SABA, None, OP_ARM64_UABA},
+	{SN_AbsoluteDifferenceScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FABD_SCALAR},
+	{SN_AbsoluteDifferenceWideningLower, OP_ARM64_SABDL, None, OP_ARM64_UABDL},
+	{SN_AbsoluteDifferenceWideningLowerAndAdd, OP_ARM64_SABAL, None, OP_ARM64_UABAL},
+	{SN_AbsoluteDifferenceWideningUpper, OP_ARM64_SABDL2, None, OP_ARM64_UABDL2},
+	{SN_AbsoluteDifferenceWideningUpperAndAdd, OP_ARM64_SABAL2, None, OP_ARM64_UABAL2},
 	{SN_Add, OP_XBINOP, OP_IADD, None, None, OP_XBINOP_SCALAR, OP_FADD},
 	{SN_AddAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SADDV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UADDV},
 	{SN_AddAcrossWidening, OP_ARM64_SADDLV, None, OP_ARM64_UADDLV},
@@ -1416,33 +1424,6 @@ emit_arm64_intrinsics (
 		SimdOp op = (SimdOp) 0;
 		IntrinsicId iid = (IntrinsicId) -1;
 		switch (id) {
-		case SN_Abs: {
-			// HACK: Temporary, while Vector64 support is completed
-			MonoClass *arg0_klass = mono_class_from_mono_type_internal (fsig->params [0]);
-			if (m_class_get_name (arg0_klass), "Vector64`1")
-				mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
-
-			switch (arg0_type) {
-			case MONO_TYPE_R8:
-				op = SIMD_OP_ARM64_DABS;
-				break;
-			case MONO_TYPE_R4:
-				op = SIMD_OP_ARM64_FABS;
-				break;
-			case MONO_TYPE_I1:
-				op = SIMD_OP_ARM64_I8ABS;
-				break;
-			case MONO_TYPE_I2:
-				op = SIMD_OP_ARM64_I16ABS;
-				break;
-			case MONO_TYPE_I4:
-				op = SIMD_OP_ARM64_I32ABS;
-				break;
-			case MONO_TYPE_I8:
-				op = SIMD_OP_ARM64_I64ABS;
-				break;
-			}
-		}
 
 		case SN_AbsoluteCompareGreaterThan: {
 			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN, SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN);
@@ -1470,28 +1451,6 @@ emit_arm64_intrinsics (
 			return emit_absolute_compare (cfg, klass, fsig, arg0_type, args, SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL, SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL);
 		}
 
-		case SN_AbsSaturate: {
-			switch (arg0_type) {
-			case MONO_TYPE_I1: op = SIMD_OP_ARM64_I8ABS_SATURATE; break;
-			case MONO_TYPE_I2: op = SIMD_OP_ARM64_I16ABS_SATURATE; break;
-			case MONO_TYPE_I4: op = SIMD_OP_ARM64_I32ABS_SATURATE; break;
-			case MONO_TYPE_I8: op = SIMD_OP_ARM64_I64ABS_SATURATE; break;
-			default: g_assert_not_reached ();
-			}
-
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
-		}
-
-		case SN_AbsScalar: {
-			switch (arg0_type) {
-			case MONO_TYPE_I1: op = SIMD_OP_ARM64_I8ABS_SATURATE; break;
-			case MONO_TYPE_I2: op = SIMD_OP_ARM64_I16ABS_SATURATE; break;
-			case MONO_TYPE_I4: op = SIMD_OP_ARM64_I32ABS_SATURATE; break;
-			case MONO_TYPE_I8: op = SIMD_OP_ARM64_I64ABS_SATURATE; break;
-			default: g_assert_not_reached ();
-			}
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
-		}
 		case SN_AddSaturate:
 		case SN_AddSaturateScalar: {
 			gboolean arg0_unsigned = type_is_unsigned (fsig->params [0]);
