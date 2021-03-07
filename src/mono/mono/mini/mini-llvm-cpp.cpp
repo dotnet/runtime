@@ -633,11 +633,11 @@ get_intrins_id (IntrinsicId id)
 	Intrinsic::ID intrins_id = Intrinsic::ID::not_intrinsic;
 	switch (id) {
 #define INTRINS(id, llvm_id) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR(id, llvm_id, ty) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR_TAG(id, llvm_id, ...) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
-#define INTRINS_OVR_TAG_FTOI(id, llvm_id, ...) case INTRINS_ ## id: intrins_id = Intrinsic::ID::llvm_id; break;
+#define INTRINS_OVR(id, llvm_id, ty) INTRINS(id, llvm_id)
+#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) INTRINS(id, llvm_id)
+#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) INTRINS(id, llvm_id)
+#define INTRINS_OVR_TAG(id, llvm_id, ...) INTRINS(id, llvm_id)
+#define INTRINS_OVR_TAG_KIND(id, llvm_id, ...) INTRINS(id, llvm_id)
 #include "llvm-intrinsics.h"
 	default:
 		break;
@@ -654,7 +654,7 @@ is_overloaded_intrins (IntrinsicId id)
 #define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) case INTRINS_ ## id: return true;
 #define INTRINS_OVR_TAG(id, llvm_id, ...) case INTRINS_ ## id: return true;
-#define INTRINS_OVR_TAG_FTOI(id, llvm_id, ...) case INTRINS_ ## id: return true;
+#define INTRINS_OVR_TAG_KIND(id, llvm_id, ...) case INTRINS_ ## id: return true;
 #include "llvm-intrinsics.h"
 	default:
 		break;

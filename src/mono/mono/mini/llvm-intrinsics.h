@@ -21,6 +21,10 @@
 #define I8 INTRIN_int64
 #define R4 INTRIN_float32
 #define R8 INTRIN_float64
+#define Ftoi INTRIN_kind_ftoi
+#define Widen INTRIN_kind_widen
+#define WidenAcross INTRIN_kind_widen_across
+#define Across INTRIN_kind_across
 
 INTRINS_OVR_2_ARG(MEMSET, memset, LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type ())
 INTRINS_OVR_3_ARG(MEMCPY, memcpy, LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type () )
@@ -307,17 +311,36 @@ INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE, aarch64_neon_facgt, ss
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT, aarch64_neon_facge, sse_i4_t, sse_r4_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE, aarch64_neon_facge, sse_i4_t, sse_r8_t)
 
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLV, aarch64_neon_uaddlv, WidenAcross, V64 | V128 | I1 | I2 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLV, aarch64_neon_saddlv, WidenAcross, V64 | V128 | I1 | I2 | I4)
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_ADDP, aarch64_neon_addp, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FADDP, aarch64_neon_faddp, V64 | V128 | R4 | R8)
+
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMAXNMV, aarch64_neon_fmaxnmv, Across, V128 | R4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FMINNMV, aarch64_neon_fminnmv, Across, V128 | R4)
+
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDV, aarch64_neon_saddv, Across, V64 | V128 | I1 | I2 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDV, aarch64_neon_uaddv, Across, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SMAXV, aarch64_neon_smaxv, Across, V64 | V128 | I1 | I2 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UMAXV, aarch64_neon_umaxv, Across, V64 | V128 | I1 | I2 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SMINV, aarch64_neon_sminv, Across, V64 | V128 | I1 | I2 | I4)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UMINV, aarch64_neon_uminv, Across, V64 | V128 | I1 | I2 | I4)
+
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDLP, aarch64_neon_saddlp, Widen, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDLP, aarch64_neon_uaddlp, Widen, V64 | V128 | I1 | I2 | I4 | I8)
+
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_FCVTXN, aarch64_neon_fcvtxn, v64_r4_t, v128_r8_t)
 
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTAS, aarch64_neon_fcvtas, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTNS, aarch64_neon_fcvtns, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTMS, aarch64_neon_fcvtms, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTPS, aarch64_neon_fcvtps, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTAS, aarch64_neon_fcvtas, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTNS, aarch64_neon_fcvtns, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTMS, aarch64_neon_fcvtms, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTPS, aarch64_neon_fcvtps, Ftoi, Scalar | V64 | V128 | I4 | I8)
 
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTAU, aarch64_neon_fcvtau, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTNU, aarch64_neon_fcvtnu, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTMU, aarch64_neon_fcvtmu, Scalar | V64 | V128 | I4 | I8)
-INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTPU, aarch64_neon_fcvtpu, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTAU, aarch64_neon_fcvtau, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTNU, aarch64_neon_fcvtnu, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTMU, aarch64_neon_fcvtmu, Ftoi, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTPU, aarch64_neon_fcvtpu, Ftoi, Scalar | V64 | V128 | I4 | I8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTUN, aarch64_neon_sqxtun, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTN, aarch64_neon_sqxtn, V64 | I1 | I2 | I4)
@@ -360,7 +383,6 @@ INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_FMINV_F64, aarch64_neon_fminv, r8_t, v128_r8_
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQDMULH, aarch64_neon_sqdmulh, V64 | V128 | I2 | I4)
 
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQADD, aarch64_neon_sqadd, V128 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQDMULL, aarch64_neon_sqdmull, V128 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRDMULH, aarch64_neon_sqrdmulh, V64 | V128 | I2 | I4)
 
@@ -390,10 +412,18 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Scalar | V64 | V128 | R4 | R8)
 
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SUQADD, aarch64_neon_suqadd, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_USQADD, aarch64_neon_usqadd, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQADD, aarch64_neon_uqadd, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQADD, aarch64_neon_sqadd, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSUB, aarch64_neon_uqsub, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSUB, aarch64_neon_sqsub, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
+
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RADDHN, aarch64_neon_raddhn, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSUBHN, aarch64_neon_rsubhn, V64 | I1 | I2 | I4)
+
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FSQRT, sqrt, V64 | V128 | R4 | R8)
+
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSHRN, aarch64_neon_uqshrn, V64 | I1 | I2 | I4) // Constant shift
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSHRN, aarch64_neon_rshrn, V64 | I1 | I2 | I4) // Constant shift
@@ -426,7 +456,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, V64 | V128 | I1)
 #undef INTRINS_OVR_2_ARG
 #undef INTRINS_OVR_3_ARG
 #undef INTRINS_OVR_TAG
-#undef INTRINS_OVR_TAG_FTOI
+#undef INTRINS_OVR_TAG_KIND
 #undef Scalar
 #undef V64
 #undef V128
@@ -436,3 +466,6 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, V64 | V128 | I1)
 #undef I8
 #undef R4
 #undef R8
+#undef Ftoi
+#undef WidenAcross
+#undef Across

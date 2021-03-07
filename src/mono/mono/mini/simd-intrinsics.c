@@ -1026,6 +1026,24 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_Add, OP_XBINOP, OP_IADD, None, None, OP_XBINOP_SCALAR, OP_FADD},
+	{SN_AddAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SADDV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UADDV},
+	{SN_AddAcrossWidening, OP_ARM64_SADDLV, None, OP_ARM64_UADDLV},
+	{SN_AddHighNarrowingLower, OP_ARM64_ADDHN},
+	{SN_AddHighNarrowingUpper, OP_ARM64_ADDHN2},
+	{SN_AddPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_ADDP, None, None, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FADDP},
+	{SN_AddPairwiseScalar, OP_ARM64_ADDP_SCALAR, None, None, None, OP_ARM64_FADDP_SCALAR},
+	{SN_AddPairwiseWidening, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SADDLP, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_UADDLP},
+	{SN_AddPairwiseWideningAndAdd, OP_ARM64_SADALP, None, OP_ARM64_UADALP},
+	{SN_AddPairwiseWideningAndAddScalar, OP_ARM64_SADALP, None, OP_ARM64_UADALP},
+	{SN_AddPairwiseWideningScalar, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SADDLP, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_UADDLP},
+	{SN_AddRoundedHighNarrowingLower, OP_ARM64_RADDHN},
+	{SN_AddRoundedHighNarrowingUpper, OP_ARM64_RADDHN2},
+	{SN_AddSaturate},
+	{SN_AddSaturateScalar},
+	{SN_AddScalar, OP_XBINOP_SCALAR, OP_IADD, None, None, OP_XBINOP_SCALAR, OP_FADD},
+	{SN_AddWideningLower, OP_ARM64_SADD, None, OP_ARM64_UADD},
+	{SN_AddWideningUpper, OP_ARM64_SADD2, None, OP_ARM64_UADD2},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_and},
 	{SN_BitwiseClear, OP_ARM64_BIC},
 	{SN_BitwiseSelect, OP_ARM64_BSL},
@@ -1126,11 +1144,15 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_LoadVector128, OP_ARM64_LD1},
 	{SN_LoadVector64, OP_ARM64_LD1},
 	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},
+	{SN_MaxAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMAXV},
 	{SN_MaxNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
+	{SN_MaxNumberAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMAXNMV},
 	{SN_MaxNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
 	{SN_MaxPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXP},
 	{SN_Min, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMIN},
+	{SN_MinAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMINV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMINV},
 	{SN_MinNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
+	{SN_MinNumberAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMINNMV},
 	{SN_MinNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
 	{SN_MinPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINP},
 	{SN_MinPairwiseScalar},
@@ -1469,6 +1491,22 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_AddSaturate:
+		case SN_AddSaturateScalar: {
+			gboolean arg0_unsigned = type_is_unsigned (fsig->params [0]);
+			gboolean arg1_unsigned = type_is_unsigned (fsig->params [1]);
+			int iid = 0;
+			if (arg0_unsigned && arg1_unsigned)
+				iid = INTRINS_AARCH64_ADV_SIMD_UQADD;
+			else if (arg0_unsigned && !arg1_unsigned)
+				iid = INTRINS_AARCH64_ADV_SIMD_USQADD;
+			else if (!arg0_unsigned && arg1_unsigned)
+				iid = INTRINS_AARCH64_ADV_SIMD_SUQADD;
+			else
+				iid = INTRINS_AARCH64_ADV_SIMD_SQADD;
+			int op = id == SN_AddSaturateScalar ? OP_XOP_OVR_SCALAR_X_X_X : OP_XOP_OVR_X_X_X;
+			return emit_simd_ins_for_sig (cfg, klass, op, iid, arg0_type, fsig, args);
 		}
 		case SN_DuplicateSelectedScalarToVector128:
 		case SN_DuplicateSelectedScalarToVector64:
