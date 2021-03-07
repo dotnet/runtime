@@ -45,14 +45,9 @@ namespace System.Threading.Tasks.Sources
         public void Reset()
         {
             // Reset/update state for the next use/await of this instance.
-            _version++;
-            _completed = false;
-            _result = default;
-            _error = null;
-            _executionContext = null;
-            _capturedContext = null;
-            _continuation = null;
-            _continuationState = null;
+            short version = _version;
+            this = default;
+            _version = (short)(version + 1);
         }
 
         /// <summary>Completes with a successful result.</summary>
