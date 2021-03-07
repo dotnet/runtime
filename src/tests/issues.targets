@@ -1029,7 +1029,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/DynamicPgo/**">
             <Issue>Mono doesn't have a dynamic pgo or tiered compilation infrastructure</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorOrder/*">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorOrderEffects/*">
             <Issue>The order of static initialization is different on Mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/*">

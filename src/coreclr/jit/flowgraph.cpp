@@ -78,7 +78,9 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
     BasicBlock* prevBb = nullptr;
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        if (!block->isRunRarely())
+        // Skip cold blocks. Also, we might want to split basic-blocks in the middle
+        // so let's skip those with BBF_GC_SAFE_POINT for simplicity.
+        if (!block->isRunRarely() && !(block->bbFlags & BBF_GC_SAFE_POINT))
         {
             Statement* prevStmt = nullptr;
             for (Statement* stmt : block->Statements())

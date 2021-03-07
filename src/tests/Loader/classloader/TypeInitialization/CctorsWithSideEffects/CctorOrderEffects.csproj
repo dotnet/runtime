@@ -4,6 +4,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CctorOrder.cs" />
+    <Compile Include="CctorOrderEffects.cs" />
   </ItemGroup>
 </Project>
