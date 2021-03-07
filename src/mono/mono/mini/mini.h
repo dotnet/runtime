@@ -2999,42 +2999,27 @@ typedef enum {
 	SIMD_OP_ARM64_PMULL64_UPPER,
 } SimdOp;
 
-/* An intrinsic id. The lower 23 bits are used to store a mono-specific ID. The
- * next 9 bits store overload tag bits. In the configuration of LLVM 9 we use,
- * there are 7017 total intrinsics defined in IntrinsicEnums.inc, so only 13
- * bits are needed to label each intrinsic overload group.
- */
-typedef enum {
-#define INTRINS(id, llvm_id) INTRINS_ ## id,
-#define INTRINS_OVR(id, llvm_id, ty) INTRINS_ ## id,
-#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) INTRINS_ ## id,
-#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) INTRINS_ ## id,
-#define INTRINS_OVR_TAG(id, ...) INTRINS_ ## id,
-#include "llvm-intrinsics.h"
-	INTRINS_NUM
-} IntrinsicId;
-
-typedef enum {
-	XBINOP_FORCEINT_Not,
-	XBINOP_FORCEINT_Or,
-	XBINOP_FORCEINT_OrNot,
-	XBINOP_FORCEINT_Xor,
-} XBinOpId;
+enum {
+	XBINOP_FORCEINT_not,
+	XBINOP_FORCEINT_or,
+	XBINOP_FORCEINT_ornot,
+	XBINOP_FORCEINT_xor,
+};
 
 enum {
-	LLVM_Scalar = 1 << 0,
-	LLVM_Vector64 = 1 << 1,
-	LLVM_Vector128 = 1 << 2,
-	LLVM_VectorWidths = 3,
-	LLVM_VectorMask = 0x7,
+	INTRIN_scalar = 1 << 0,
+	INTRIN_vector64 = 1 << 1,
+	INTRIN_vector128 = 1 << 2,
+	INTRIN_vectorwidths = 3,
+	INTRIN_vectormask = 0x7,
 
-	LLVM_Int8 = 1 << 3,
-	LLVM_Int16 = 1 << 4,
-	LLVM_Int32 = 1 << 5,
-	LLVM_Int64 = 1 << 6,
-	LLVM_Float32 = 1 << 7,
-	LLVM_Float64 = 1 << 8,
-	LLVM_ElementWidths = 6,
+	INTRIN_int8 = 1 << 3,
+	INTRIN_int16 = 1 << 4,
+	INTRIN_int32 = 1 << 5,
+	INTRIN_int64 = 1 << 6,
+	INTRIN_float32 = 1 << 7,
+	INTRIN_float64 = 1 << 8,
+	INTRIN_elementwidths = 6,
 };
 
 typedef uint16_t llvm_ovr_tag_t;
@@ -3042,13 +3027,13 @@ typedef uint16_t llvm_ovr_tag_t;
 static inline llvm_ovr_tag_t
 ovr_tag_force_scalar (llvm_ovr_tag_t tag)
 {
-	return (tag & ~LLVM_VectorMask) | LLVM_Scalar;
+	return (tag & ~INTRIN_vectormask) | INTRIN_scalar;
 }
 
 static inline llvm_ovr_tag_t
 ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
 {
-	return (tag & ~LLVM_VectorMask) | ((tag & LLVM_VectorMask) >> 1);
+	return (tag & ~INTRIN_vectormask) | ((tag & INTRIN_vectormask) >> 1);
 }
 
 llvm_ovr_tag_t
@@ -3059,6 +3044,22 @@ int_from_id_and_ovr_tag (int id, llvm_ovr_tag_t ovr_tag)
 {
 	return (((int) ovr_tag) << 23) | id;
 }
+
+/* An intrinsic id. The lower 23 bits are used to store a mono-specific ID. The
+ * next 8 bits store overload tag bits. In the configuration of LLVM 9 we use,
+ * there are 7017 total intrinsics defined in IntrinsicEnums.inc, so only 13
+ * bits are needed to label each intrinsic overload group.
+ */
+typedef enum {
+#define INTRINS(id, llvm_id) INTRINS_ ## id,
+#define INTRINS_OVR(id, llvm_id, ty) INTRINS_ ## id,
+#define INTRINS_OVR_2_ARG(id, llvm_id, ty1, ty2) INTRINS_ ## id,
+#define INTRINS_OVR_3_ARG(id, llvm_id, ty1, ty2, ty3) INTRINS_ ## id,
+#define INTRINS_OVR_TAG(id, ...) INTRINS_ ## id,
+#define INTRINS_OVR_TAG_FTOI(id, ...) INTRINS_ ## id,
+#include "llvm-intrinsics.h"
+	INTRINS_NUM
+} IntrinsicId;
 
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

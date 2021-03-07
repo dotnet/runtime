@@ -51,17 +51,6 @@
 #error "The version of the mono llvm repository is too old."
 #endif
 
-static LLVMTypeRef intrin_types [LLVM_VectorWidths][LLVM_ElementWidths];
-
-static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
-	#define INTRINS(sym, ...) 0,
-	#define INTRINS_OVR(sym, ...) 0,
-	#define INTRINS_OVR_2_ARG(sym, ...) 0,
-	#define INTRINS_OVR_3_ARG(sym, ...) 0,
-	#define INTRINS_OVR_TAG(sym, _, spec) spec,
-	#include "llvm-intrinsics.h"
-};
-
  /*
   * Information associated by mono with LLVM modules.
   */
@@ -319,6 +308,34 @@ static void mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, Mo
 static void create_aot_info_var (MonoLLVMModule *module);
 static void set_invariant_load_flag (LLVMValueRef v);
 static void set_nonnull_load_flag (LLVMValueRef v);
+
+
+static LLVMTypeRef intrin_types [INTRIN_vectorwidths][INTRIN_elementwidths];
+
+static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
+	#define INTRINS(sym, ...) 0,
+	#define INTRINS_OVR(sym, ...) 0,
+	#define INTRINS_OVR_2_ARG(sym, ...) 0,
+	#define INTRINS_OVR_3_ARG(sym, ...) 0,
+	#define INTRINS_OVR_TAG(sym, _, spec) spec,
+	#define INTRINS_OVR_TAG_FTOI(sym, _, spec) spec,
+	#include "llvm-intrinsics.h"
+};
+
+static gboolean
+is_ftoi_intrinsic(IntrinsicId id) {
+	switch (id) {
+	#define INTRINS(sym, ...)
+	#define INTRINS_OVR(sym, ...)
+	#define INTRINS_OVR_2_ARG(sym, ...)
+	#define INTRINS_OVR_3_ARG(sym, ...)
+	#define INTRINS_OVR_TAG(sym, _, spec)
+	#define INTRINS_OVR_TAG_FTOI(sym, _, spec) case INTRINS_ ## sym:
+	#include "llvm-intrinsics.h"
+		return TRUE;
+	}
+	return FALSE;
+}
 
 static inline void
 set_failure (EmitContext *ctx, const char *message)
@@ -7212,14 +7229,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef rhs_int = convert (ctx, rhs, intermediate_t);
 			LLVMValueRef result = NULL;
 			switch (ins->inst_c0) {
-			case XBINOP_FORCEINT_Or:
+			case XBINOP_FORCEINT_or:
 				result = LLVMBuildOr (builder, lhs_int, rhs_int, "");
 				break;
-			case XBINOP_FORCEINT_OrNot:
+			case XBINOP_FORCEINT_ornot:
 				result = LLVMBuildNot (builder, rhs_int, "");
 				result = LLVMBuildOr (builder, result, lhs_int, "");
 				break;
-			case XBINOP_FORCEINT_Xor:
+			case XBINOP_FORCEINT_xor:
 				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
 				break;
 			}
@@ -9380,6 +9397,58 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_UCVTF:
+		case OP_ARM64_SCVTF:
+		case OP_ARM64_UCVTF_SCALAR:
+		case OP_ARM64_SCVTF_SCALAR: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean scalar = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_UCVTF_SCALAR: scalar = TRUE; case OP_ARM64_UCVTF: is_unsigned = TRUE; break;
+			case OP_ARM64_SCVTF_SCALAR: scalar = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			LLVMTypeRef cvt_t = ret_t;
+			if (scalar) {
+				result = scalar_from_vector (ctx, result);
+				cvt_t = LLVMGetElementType (ret_t);
+			}
+			if (is_unsigned)
+				result = LLVMBuildUIToFP (builder, result, cvt_t, "arm64_ucvtf");
+			else
+				result = LLVMBuildSIToFP (builder, result, cvt_t, "arm64_scvtf");
+			if (scalar)
+				result = vector_from_scalar_ty (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_FCVTZS:
+		case OP_ARM64_FCVTZS_SCALAR:
+		case OP_ARM64_FCVTZU:
+		case OP_ARM64_FCVTZU_SCALAR: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean scalar = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_FCVTZU_SCALAR: scalar = TRUE; case OP_ARM64_FCVTZU: is_unsigned = TRUE; break;
+			case OP_ARM64_FCVTZS_SCALAR: scalar = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			LLVMTypeRef cvt_t = ret_t;
+			if (scalar) {
+				result = scalar_from_vector (ctx, result);
+				cvt_t = LLVMGetElementType (ret_t);
+			}
+			if (is_unsigned)
+				result = LLVMBuildFPToUI (builder, result, cvt_t, "arm64_fcvtzu");
+			else
+				result = LLVMBuildFPToSI (builder, result, cvt_t, "arm64_fcvtzs");
+			if (scalar)
+				result = vector_from_scalar_ty (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_SELECT_SCALAR: {
 			LLVMValueRef result = LLVMBuildExtractElement (builder, lhs, rhs, "");
 			LLVMTypeRef elem_t = LLVMTypeOf (result);
@@ -9707,7 +9776,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef val = lhs;
 			if (high)
 				val = extract_high_elements (ctx, val);
-			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_PMULL, LLVM_Vector128 | LLVM_Int16, &val, "arm64_pmull");
+			LLVMValueRef result = call_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_PMULL, &val, "arm64_pmull");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10192,9 +10261,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					args [i] = scalar_from_vector (ctx, args [i]);
 			}
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-			if (!arm64_fake_scalar_op)
-				result = vector_from_scalar (ctx, lhs, result);
-			else
+			if (!arm64_fake_scalar_op) {
+				LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+				result = vector_from_scalar_ty (ctx, ret_t, result);
+			} else
 				result = keep_lowest_element (ctx, result);
 			values [ins->dreg] = result;
 			break;
@@ -11518,13 +11588,16 @@ add_intrinsic (LLVMModuleRef module, int id)
 
 	if (intrin_arm64_ovr [id] != 0) {
 		llvm_ovr_tag_t spec = intrin_arm64_ovr [id];
-		for (int vw = 0; vw < LLVM_VectorWidths; ++vw) {
-			for (int ew = 0; ew < LLVM_ElementWidths; ++ew) {
-				llvm_ovr_tag_t vec_bit = LLVM_Vector128 >> ((LLVM_VectorWidths - 1) - vw);
-				llvm_ovr_tag_t elem_bit = LLVM_Int8 << ew;
+		for (int vw = 0; vw < INTRIN_vectorwidths; ++vw) {
+			for (int ew = 0; ew < INTRIN_elementwidths; ++ew) {
+				llvm_ovr_tag_t vec_bit = INTRIN_vector128 >> ((INTRIN_vectorwidths - 1) - vw);
+				llvm_ovr_tag_t elem_bit = INTRIN_int8 << ew;
 				llvm_ovr_tag_t test = vec_bit | elem_bit;
 				if ((spec & test) == test) {
-					intrins = add_intrins1 (module, id, intrin_types [vw][ew]);
+					if (is_ftoi_intrinsic (id) && (elem_bit & (INTRIN_int32 | INTRIN_int64))) {
+						intrins = add_intrins2 (module, id, intrin_types [vw][ew], intrin_types [vw][ew + 2]);
+					} else
+						intrins = add_intrins1 (module, id, intrin_types [vw][ew]);
 					int ovr_id = int_from_id_and_ovr_tag (id, test);
 					g_hash_table_insert (intrins_id_to_intrins, GINT_TO_POINTER (ovr_id), intrins);
 				}
@@ -11540,6 +11613,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 	#define INTRINS_OVR_2_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2) case INTRINS_ ## intrin_name: intrins = add_intrins2(module, id, llvm_type1, llvm_type2); break;
 	#define INTRINS_OVR_3_ARG(intrin_name, llvm_id, llvm_type1, llvm_type2, llvm_type3) case INTRINS_ ## intrin_name: intrins = add_intrins3(module, id, llvm_type1, llvm_type2, llvm_type3); break;
 	#define INTRINS_OVR_TAG(...)
+	#define INTRINS_OVR_TAG_FTOI(...)
 	#include "llvm-intrinsics.h"
 
 	default:

@@ -301,22 +301,6 @@ type_is_float (MonoType *type) {
 }
 
 static int
-type_to_extract_var_op (MonoTypeEnum type)
-{
-	switch (type) {
-	case MONO_TYPE_I1: return OP_EXTRACT_VAR_U1;
-	case MONO_TYPE_U1: return OP_EXTRACT_VAR_I1;
-	case MONO_TYPE_I2: return OP_EXTRACT_VAR_U2;
-	case MONO_TYPE_U2: return OP_EXTRACT_VAR_I2;
-	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_EXTRACT_VAR_I4;
-	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_EXTRACT_VAR_I8;
-	case MONO_TYPE_R4: return OP_EXTRACT_VAR_R4;
-	case MONO_TYPE_R8: return OP_EXTRACT_VAR_R8;
-	default: g_assert_not_reached ();
-	}
-}
-
-static int
 type_to_expand_op (MonoType *type)
 {
 	switch (type->type) {
@@ -970,6 +954,21 @@ emit_invalid_operation (MonoCompile *cfg, const char* message)
 
 #ifdef TARGET_ARM64
 
+static int
+type_to_extract_var_op (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1: return OP_EXTRACT_VAR_U1;
+	case MONO_TYPE_U1: return OP_EXTRACT_VAR_I1;
+	case MONO_TYPE_I2: return OP_EXTRACT_VAR_U2;
+	case MONO_TYPE_U2: return OP_EXTRACT_VAR_I2;
+	case MONO_TYPE_I4: case MONO_TYPE_U4: return OP_EXTRACT_VAR_I4;
+	case MONO_TYPE_I8: case MONO_TYPE_U8: return OP_EXTRACT_VAR_I8;
+	case MONO_TYPE_R4: return OP_EXTRACT_VAR_R4;
+	case MONO_TYPE_R8: return OP_EXTRACT_VAR_R8;
+	default: g_assert_not_reached ();
+	}
+}
 
 static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingSignCount},
@@ -1027,6 +1026,28 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_ConvertToInt32RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAS},
+	{SN_ConvertToInt32RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAS},
+	{SN_ConvertToInt32RoundToEven, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTNS},
+	{SN_ConvertToInt32RoundToEvenScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTNS},
+	{SN_ConvertToInt32RoundToNegativeInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTMS},
+	{SN_ConvertToInt32RoundToNegativeInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTMS},
+	{SN_ConvertToInt32RoundToPositiveInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTPS},
+	{SN_ConvertToInt32RoundToPositiveInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTPS},
+	{SN_ConvertToInt32RoundToZero, OP_ARM64_FCVTZS},
+	{SN_ConvertToInt32RoundToZeroScalar, OP_ARM64_FCVTZS_SCALAR},
+	{SN_ConvertToSingle, OP_ARM64_SCVTF, None, OP_ARM64_UCVTF},
+	{SN_ConvertToSingleScalar, OP_ARM64_SCVTF_SCALAR, None, OP_ARM64_UCVTF_SCALAR},
+	{SN_ConvertToUInt32RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAU},
+	{SN_ConvertToUInt32RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAU},
+	{SN_ConvertToUInt32RoundToEven, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTNU},
+	{SN_ConvertToUInt32RoundToEvenScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTNU},
+	{SN_ConvertToUInt32RoundToNegativeInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTMU},
+	{SN_ConvertToUInt32RoundToNegativeInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTMU},
+	{SN_ConvertToUInt32RoundToPositiveInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTPU},
+	{SN_ConvertToUInt32RoundToPositiveInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTPU},
+	{SN_ConvertToUInt32RoundToZero, OP_ARM64_FCVTZU},
+	{SN_ConvertToUInt32RoundToZeroScalar, OP_ARM64_FCVTZU_SCALAR},
 	{SN_Divide, OP_XBINOP, OP_FDIV},
 	{SN_DivideScalar, OP_XBINOP_SCALAR, OP_FDIV},
 	{SN_DuplicateSelectedScalarToVector128},
@@ -1122,9 +1143,9 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar},
 	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
-	{SN_Not, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Not},
-	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Or},
-	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OrNot},
+	{SN_Not, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_not},
+	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_or},
+	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ornot},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
 	{SN_PolynomialMultiplyWideningLower, OP_ARM64_PMULL},
 	{SN_PolynomialMultiplyWideningUpper, OP_ARM64_PMULL2},
@@ -1237,7 +1258,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_UnzipOdd, OP_ARM64_UZP2},
 	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
 	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
 	{SN_ZipHigh, OP_ARM64_ZIP2},
@@ -1666,7 +1687,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_SubtractScalar, OP_SSE_SUBSS},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
 	{SN_get_IsSupported}
 };
 
@@ -1778,7 +1799,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
 	{SN_UnpackLow, OP_SSE_UNPACKLO},
-	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_Xor},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_xor},
 	{SN_get_IsSupported}
 };
 

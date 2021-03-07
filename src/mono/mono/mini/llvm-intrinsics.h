@@ -12,15 +12,15 @@
  * 	 To define an overloaded intrinsic with three arguments
  */
 
-#define Scalar LLVM_Scalar
-#define V64 LLVM_Vector64
-#define V128 LLVM_Vector128
-#define I1 LLVM_Int8
-#define I2 LLVM_Int16
-#define I4 LLVM_Int32
-#define I8 LLVM_Int64
-#define R4 LLVM_Float32
-#define R8 LLVM_Float64
+#define Scalar INTRIN_scalar
+#define V64 INTRIN_vector64
+#define V128 INTRIN_vector128
+#define I1 INTRIN_int8
+#define I2 INTRIN_int16
+#define I4 INTRIN_int32
+#define I8 INTRIN_int64
+#define R4 INTRIN_float32
+#define R8 INTRIN_float64
 
 INTRINS_OVR_2_ARG(MEMSET, memset, LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type ())
 INTRINS_OVR_3_ARG(MEMCPY, memcpy, LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type () )
@@ -307,6 +307,16 @@ INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LT_DOUBLE, aarch64_neon_facgt, ss
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_FLOAT, aarch64_neon_facge, sse_i4_t, sse_r4_t)
 INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_ABS_COMPARE_LTE_DOUBLE, aarch64_neon_facge, sse_i4_t, sse_r8_t)
 
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTAS, aarch64_neon_fcvtas, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTNS, aarch64_neon_fcvtns, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTMS, aarch64_neon_fcvtms, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTPS, aarch64_neon_fcvtps, Scalar | V64 | V128 | I4 | I8)
+
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTAU, aarch64_neon_fcvtau, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTNU, aarch64_neon_fcvtnu, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTMU, aarch64_neon_fcvtmu, Scalar | V64 | V128 | I4 | I8)
+INTRINS_OVR_TAG_FTOI(AARCH64_ADV_SIMD_FCVTPU, aarch64_neon_fcvtpu, Scalar | V64 | V128 | I4 | I8)
+
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTUN, aarch64_neon_sqxtun, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTN, aarch64_neon_sqxtn, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQXTN, aarch64_neon_uqxtn, V64 | I1 | I2 | I4)
@@ -358,7 +368,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UMULL, aarch64_neon_umull, V128 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQNEG, aarch64_neon_sqneg, V64 | V128 | I1 | I2 | I4 | I8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_PMUL, aarch64_neon_pmul, V64 | V128 | I1)
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_PMULL, aarch64_neon_pmull, V128 | I2)
+INTRINS_OVR(AARCH64_ADV_SIMD_PMULL, aarch64_neon_pmull, v128_i2_t)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_CNT, ctpop, V64 | V128 | I8)
 
@@ -414,6 +424,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_TBL1, aarch64_neon_tbl1, V64 | V128 | I1)
 #undef INTRINS_OVR_2_ARG
 #undef INTRINS_OVR_3_ARG
 #undef INTRINS_OVR_TAG
+#undef INTRINS_OVR_TAG_FTOI
 #undef Scalar
 #undef V64
 #undef V128
