@@ -207,6 +207,8 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
+            const int unrollSize = 4;
+
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
@@ -214,7 +216,7 @@ namespace System.Runtime.CompilerServices
                 if (interfaceCount != 0)
                 {
                     MethodTable** interfaceMap = mt->InterfaceMap;
-                    if (interfaceCount >= 4)
+                    if (interfaceCount < unrollSize)
                     {
                         // If not enough for unrolled, jmp straight to small loop
                         // as we already know there is one or more interfaces so don't need to check again.
@@ -223,9 +225,6 @@ namespace System.Runtime.CompilerServices
 
                     do
                     {
-                        // Calculate next offset now to hide latency
-                        MethodTable** map = interfaceMap + 4;
-
                         if (interfaceMap[0] == toTypeHnd ||
                             interfaceMap[1] == toTypeHnd ||
                             interfaceMap[2] == toTypeHnd ||
@@ -234,10 +233,9 @@ namespace System.Runtime.CompilerServices
                             goto done;
                         }
 
-                        // Assign next offset
-                        interfaceMap = map;
-                        interfaceCount -= 4;
-                    } while (interfaceCount >= 4);
+                        interfaceMap += unrollSize;
+                        interfaceCount -= unrollSize;
+                    } while (interfaceCount >= unrollSize);
 
                     if (interfaceCount == 0)
                     {
@@ -248,16 +246,13 @@ namespace System.Runtime.CompilerServices
                 few:
                     do
                     {
-                        // Calculate next offset now to hide latency
-                        MethodTable** map = interfaceMap + 1;
-
                         if (interfaceMap[0] == toTypeHnd)
                         {
                             goto done;
                         }
 
                         // Assign next offset
-                        interfaceMap = map;
+                        interfaceMap++;
                         interfaceCount--;
                     } while (interfaceCount > 0);
                 }
@@ -406,6 +401,8 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
+            const int unrollSize = 4;
+
             if (obj != null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
@@ -416,7 +413,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 MethodTable** interfaceMap = mt->InterfaceMap;
-                if (interfaceCount >= 4)
+                if (interfaceCount < unrollSize)
                 {
                     // If not enough for unrolled, jmp straight to small loop
                     // as we already know there is one or more interfaces so don't need to check again.
@@ -425,9 +422,6 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    // Calculate next offset now to hide latency
-                    MethodTable** map = interfaceMap + 4;
-
                     if (interfaceMap[0] == toTypeHnd ||
                         interfaceMap[1] == toTypeHnd ||
                         interfaceMap[2] == toTypeHnd ||
@@ -437,9 +431,9 @@ namespace System.Runtime.CompilerServices
                     }
 
                     // Assign next offset
-                    interfaceMap = map;
-                    interfaceCount -= 4;
-                } while (interfaceCount >= 4);
+                    interfaceMap += unrollSize;
+                    interfaceCount -= unrollSize;
+                } while (interfaceCount >= unrollSize);
 
                 if (interfaceCount == 0)
                 {
@@ -450,16 +444,13 @@ namespace System.Runtime.CompilerServices
             few:
                 do
                 {
-                    // Calculate next offset now to hide latency
-                    MethodTable** map = interfaceMap + 1;
-
                     if (interfaceMap[0] == toTypeHnd)
                     {
                         goto done;
                     }
 
                     // Assign next offset
-                    interfaceMap = map;
+                    interfaceMap++;
                     interfaceCount--;
                 } while (interfaceCount > 0);
 
