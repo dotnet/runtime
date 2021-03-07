@@ -8224,7 +8224,7 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 // Assumptions:
 //    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level ones.
 //    In case of a COMMA-based check, "check" must be a non-null first operand of a non-null COMMA.
-//    If case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
+//    In case of a standalone check, "comma" must be null and "check" - "stmt"'s root.
 //
 GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt)
 {
@@ -8238,7 +8238,7 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     noway_assert(check->OperIsBoundsCheck());
 
     GenTree* tree = comma != nullptr ? comma : check;
-    
+
 #ifdef DEBUG
     if (verbose)
     {
