@@ -278,14 +278,10 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
-            if (obj == null)
+            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return obj;
 
-            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
-            if (mt == toTypeHnd)
-                return obj;
-
-            mt = mt->ParentMethodTable;
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->ParentMethodTable;
             for (; ; )
             {
                 if (mt == toTypeHnd)
