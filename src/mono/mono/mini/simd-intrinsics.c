@@ -1027,6 +1027,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AbsoluteCompareGreaterThanOrEqual},
 	{SN_AbsoluteCompareLessThan},
 	{SN_AbsoluteCompareLessThanOrEqual},
+	{SN_Divide, OP_XBINOP, OP_FDIV},
+	{SN_DivideScalar, OP_XBINOP_SCALAR, OP_FDIV},
 	{SN_DuplicateSelectedScalarToVector128},
 	{SN_DuplicateSelectedScalarToVector64},
 	{SN_DuplicateToVector128},
@@ -1413,7 +1415,6 @@ emit_arm64_intrinsics (
 			switch (id) {
 			case SN_DuplicateSelectedScalarToVector128:
 			case SN_DuplicateSelectedScalarToVector64: {
-				int extract_op = type_to_extract_var_op (arg0_type);
 				MonoInst *ins = emit_simd_ins (cfg, ret_klass, type_to_extract_var_op (rtype->type), args [0]->dreg, args [1]->dreg);
 				scalar_src_reg = ins->dreg;
 				break;
