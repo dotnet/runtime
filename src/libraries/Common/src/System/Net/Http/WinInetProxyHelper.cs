@@ -122,11 +122,11 @@ namespace System.Net.Http
             // Underlying code does not understand WebSockets so we need to convert it to http or https.
             if (uri.Scheme == UriScheme.Wss)
             {
-                destination = "https" + destination.Substring(3);
+                destination = UriScheme.Https + destination.Substring(UriScheme.Wss.Length);
             }
             else if (uri.Scheme == UriScheme.Ws)
             {
-                destination = "http" + destination.Substring(2);
+                destination = UriScheme.Http + destination.Substring(UriScheme.Ws.Length);
             }
 
             var repeat = false;
