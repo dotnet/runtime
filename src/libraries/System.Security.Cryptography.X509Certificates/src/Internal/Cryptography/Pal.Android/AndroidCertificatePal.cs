@@ -345,7 +345,14 @@ namespace Internal.Cryptography.Pal
 
         public RSA? GetRSAPrivateKey()
         {
-            throw new NotImplementedException(nameof(GetRSAPrivateKey));
+            if (_privateKey == null || _privateKey.IsInvalid)
+                return null;
+
+            SafeRsaHandle? rsaKey = _privateKey as SafeRsaHandle;
+            if (rsaKey == null)
+                throw new CryptographicException();
+
+            return new RSAImplementation.RSAAndroid(rsaKey);
         }
 
         public DSA? GetDSAPrivateKey()
@@ -358,10 +365,11 @@ namespace Internal.Cryptography.Pal
             if (_privateKey == null || _privateKey.IsInvalid)
                 return null;
 
-            if (_privateKey is SafeEcKeyHandle ecKey)
-                return new ECDsaImplementation.ECDsaAndroid(ecKey);
+            SafeEcKeyHandle? ecKey = _privateKey as SafeEcKeyHandle;
+            if (ecKey == null)
+                throw new CryptographicException();
 
-            throw new CryptographicException();
+            return new ECDsaImplementation.ECDsaAndroid(ecKey);
         }
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
@@ -369,10 +377,11 @@ namespace Internal.Cryptography.Pal
             if (_privateKey == null || _privateKey.IsInvalid)
                 return null;
 
-            if (_privateKey is SafeEcKeyHandle ecKey)
-                return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(ecKey);
+            SafeEcKeyHandle? ecKey = _privateKey as SafeEcKeyHandle;
+            if (ecKey == null)
+                throw new CryptographicException();
 
-            throw new CryptographicException();
+            return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(ecKey);
         }
 
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
@@ -416,7 +425,24 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            throw new NotImplementedException($"{nameof(CopyWithPrivateKey)}(RSA)");
+            RSAImplementation.RSAAndroid? typedKey = privateKey as RSAImplementation.RSAAndroid;
+            if (typedKey != null)
+            {
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
+
+            RSAParameters rsaParameters = privateKey.ExportParameters(true);
+            using (PinAndClear.Track(rsaParameters.D!))
+            using (PinAndClear.Track(rsaParameters.P!))
+            using (PinAndClear.Track(rsaParameters.Q!))
+            using (PinAndClear.Track(rsaParameters.DP!))
+            using (PinAndClear.Track(rsaParameters.DQ!))
+            using (PinAndClear.Track(rsaParameters.InverseQ!))
+            using (typedKey = new RSAImplementation.RSAAndroid())
+            {
+                typedKey.ImportParameters(rsaParameters);
+                return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
+            }
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)

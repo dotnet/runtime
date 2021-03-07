@@ -136,4 +136,7 @@ mono_runtime_get_caller_from_stack_mark (MonoStackCrawlMark *stack_mark);
 void
 mono_reflection_get_param_info_member_and_pos (MonoReflectionParameterHandle p, MonoObjectHandle member_impl, int *out_position);
 
+MonoGCHandle
+mono_method_to_dyn_method (MonoMethod *method);
+
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

@@ -29,6 +29,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public static implicit operator ReadOnlySpan<TypeDesc>(Instantiation instantiation)
+        {
+            return instantiation._genericParameters;
+        }
+
         public int Length
         {
             get

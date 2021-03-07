@@ -7,9 +7,8 @@
 enum
 {
     CIPHER_NONE = 0,
-    CIPHER_IS_SUPPORTED = 1,
-    CIPHER_HAS_TAG = 2,
-    CIPHER_REQUIRES_IV = 4,
+    CIPHER_HAS_TAG = 1,
+    CIPHER_REQUIRES_IV = 2,
 };
 typedef uint32_t CipherFlags;
 
@@ -23,14 +22,7 @@ typedef struct CipherInfo
 #define DEFINE_CIPHER(cipherId, width, javaName, flags) \
 CipherInfo* AndroidCryptoNative_ ## cipherId() \
 { \
-    static CipherInfo info = { flags | CIPHER_IS_SUPPORTED, width, javaName }; \
-    return &info; \
-}
-
-#define DEFINE_UNSUPPORTED_CIPHER(cipherId) \
-CipherInfo* AndroidCryptoNative_ ## cipherId() \
-{ \
-    static CipherInfo info = { CIPHER_NONE, 0, NULL }; \
+    static CipherInfo info = { flags, width, javaName }; \
     return &info; \
 }
 
@@ -59,14 +51,6 @@ DEFINE_CIPHER(Des3Ecb,      128, "DESede/ECB/NoPadding", CIPHER_NONE)
 DEFINE_CIPHER(Des3Cbc,      128, "DESede/CBC/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb8,     128, "DESede/CFB8/NoPadding", CIPHER_REQUIRES_IV)
 DEFINE_CIPHER(Des3Cfb64,    128, "DESede/CFB/NoPadding", CIPHER_REQUIRES_IV)
-DEFINE_UNSUPPORTED_CIPHER(RC2Ecb)
-DEFINE_UNSUPPORTED_CIPHER(RC2Cbc)
-
-
-static bool IsSupported(CipherInfo* type)
-{
-    return (type->flags & CIPHER_IS_SUPPORTED) == CIPHER_IS_SUPPORTED;
-}
 
 static bool HasTag(CipherInfo* type)
 {
@@ -78,24 +62,8 @@ static bool RequiresIV(CipherInfo* type)
     return (type->flags & CIPHER_REQUIRES_IV) == CIPHER_REQUIRES_IV;
 }
 
-static int32_t GetAlgorithmDefaultWidth(CipherInfo* type)
-{
-    if (!IsSupported(type))
-    {
-        assert(false);
-        return FAIL;
-    }
-    return type->width;
-}
-
 static jobject GetAlgorithmName(JNIEnv* env, CipherInfo* type)
 {
-    if (!IsSupported(type))
-    {
-        LOG_ERROR("This cipher is not supported");
-        assert(false);
-        return FAIL;
-    }
     return JSTRING(type->name);
 }
 
@@ -118,7 +86,7 @@ CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type)
     ctx->cipher = cipher;
     ctx->type = type;
     ctx->tagLength = TAG_MAX_LENGTH;
-    ctx->keySizeInBits = GetAlgorithmDefaultWidth(type);
+    ctx->keySizeInBits = type->width;
     ctx->ivLength = 0;
     ctx->encMode = 0;
     ctx->key = NULL;

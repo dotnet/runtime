@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace System.IO
 {
@@ -34,24 +35,28 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            while (count > 0)
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            while (!buffer.IsEmpty)
             {
                 if (_currentChunk != null)
                 {
                     int remaining = _currentChunk._buffer.Length - _currentChunk._freeOffset;
                     if (remaining > 0)
                     {
-                        int toCopy = Math.Min(remaining, count);
-                        Buffer.BlockCopy(buffer, offset, _currentChunk._buffer, _currentChunk._freeOffset, toCopy);
-                        count -= toCopy;
-                        offset += toCopy;
+                        int toCopy = Math.Min(remaining, buffer.Length);
+                        buffer.Slice(0, toCopy).CopyTo(new Span<byte>(_currentChunk._buffer, _currentChunk._freeOffset, toCopy));
+                        buffer = buffer.Slice(toCopy);
                         _totalLength += toCopy;
                         _currentChunk._freeOffset += toCopy;
                         continue;
                     }
                 }
 
-                AppendChunk(count);
+                AppendChunk(buffer.Length);
             }
         }
 
@@ -64,6 +69,17 @@ namespace System.IO
 
             Write(buffer, offset, count);
             return Task.CompletedTask;
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            Write(buffer.Span);
+            return ValueTask.CompletedTask;
         }
 
         private void AppendChunk(long count)

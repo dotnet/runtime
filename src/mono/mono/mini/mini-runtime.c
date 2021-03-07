@@ -483,7 +483,7 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 
 	ji->unwind_info = mono_cache_unwind_info (info->uw_info, info->uw_info_len);
 
-	mono_jit_info_table_add (domain, ji);
+	mono_jit_info_table_add (ji);
 }
 
 /*
@@ -1370,7 +1370,6 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 {
 	unsigned char *ip = patch_info->ip.i + code;
 	gconstpointer target = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -1512,12 +1511,8 @@ mono_resolve_patch_target (MonoMethod *method, guint8 *code, MonoJumpInfo *patch
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
-			gpointer addr = NULL;
-
-			mono_domain_lock (domain);
-			if (domain->special_static_fields)
-				addr = g_hash_table_lookup (domain->special_static_fields, patch_info->data.field);
-			mono_domain_unlock (domain);
+			gpointer addr = mono_special_static_field_get_offset (patch_info->data.field, error);
+			mono_error_assert_ok (error);
 			g_assert (addr);
 			return addr;
 		}
@@ -1839,16 +1834,16 @@ MonoJitInfo*
 mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 {
 	MonoJitInfo *ji;
-	MonoDomain *domain = mono_get_root_domain ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 	static gboolean inited = FALSE;
 	static int lookups = 0;
 	static int failed_lookups = 0;
 
-	mono_domain_jit_code_hash_lock (domain);
-	ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&domain->jit_code_hash, method);
+	jit_code_hash_lock (jit_mm);
+	ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&jit_mm->jit_code_hash, method);
 	if (!ji && shared) {
 		/* Try generic sharing */
-		ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&domain->jit_code_hash, shared);
+		ji = (MonoJitInfo *)mono_internal_hash_table_lookup (&jit_mm->jit_code_hash, shared);
 		if (ji && !ji->has_generic_jit_info)
 			ji = NULL;
 		if (!inited) {
@@ -1861,7 +1856,7 @@ mini_lookup_method (MonoMethod *method, MonoMethod *shared)
 		if (!ji)
 			++failed_lookups;
 	}
-	mono_domain_jit_code_hash_unlock (domain);
+	jit_code_hash_unlock (jit_mm);
 
 	return ji;
 }
@@ -2491,7 +2486,7 @@ compile_special (MonoMethod *method, MonoError *error)
 			else
 				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);
 			jinfo = create_jit_info_for_trampoline (method, tinfo);
-			mono_jit_info_table_add (mono_get_root_domain (), jinfo);
+			mono_jit_info_table_add (jinfo);
 			if (is_in)
 				in_tinfo = tinfo;
 			else
@@ -2734,7 +2729,6 @@ mono_jit_free_method (MonoMethod *method)
 	GHashTableIter iter;
 	MonoJumpList *jlist;
 	MonoJitMemoryManager *jit_mm;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (method->dynamic);
 
@@ -2748,18 +2742,16 @@ mono_jit_free_method (MonoMethod *method)
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
 
-	mono_domain_lock (domain);
-	mono_domain_jit_code_hash_lock (domain);
-	removed = mono_internal_hash_table_remove (&domain->jit_code_hash, method);
-	g_assert (removed);
-	mono_domain_jit_code_hash_unlock (domain);
-	ji->ji->seq_points = NULL;
-	mono_domain_unlock (domain);
-
 	jit_mm = jit_mm_for_method (method);
 
-	jit_mm_lock (jit_mm);
+	jit_code_hash_lock (jit_mm);
+	removed = mono_internal_hash_table_remove (&jit_mm->jit_code_hash, method);
+	g_assert (removed);
+	jit_code_hash_unlock (jit_mm);
 
+	ji->ji->seq_points = NULL;
+
+	jit_mm_lock (jit_mm);
 	mono_conc_hashtable_remove (jit_mm->runtime_invoke_hash, method);
 	g_hash_table_remove (jit_mm->dynamic_code_hash, method);
 	g_hash_table_remove (jit_mm->jump_trampoline_hash, method);
@@ -2803,7 +2795,7 @@ mono_jit_free_method (MonoMethod *method)
 	 * key in the table, so if we free the code_mp first, another thread can grab the
 	 * same code address and replace our entry in the table.
 	 */
-	mono_jit_info_table_remove (domain, ji->ji);
+	mono_jit_info_table_remove (ji->ji);
 
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
@@ -3179,7 +3171,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 {
 	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
-	MonoDomain *domain = mono_get_root_domain ();
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
@@ -3290,6 +3281,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		*exc = NULL;
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+	MonoDomain *domain = mono_get_root_domain ();
 	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
 	if (info->dyn_call_info) {
 		if (!dyn_runtime_invoke) {
@@ -3973,10 +3965,21 @@ mini_create_ftnptr (gpointer addr)
 {
 #if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	gpointer* desc = NULL;
+	static GHashTable *ftnptrs_hash;
+
+	if (!ftnptrs_hash) {
+		GHashTable *hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_memory_barrier ();
+		ftnptrs_hash = hash;
+	}
+
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
-	if ((desc = (gpointer*)g_hash_table_lookup (domain->ftnptrs_hash, addr)))
+	mono_jit_lock ();
+	desc = (gpointer*)g_hash_table_lookup (ftnptrs_hash, addr);
+	mono_jit_unlock ();
+	if (desc)
 		return desc;
 #if defined(__mono_ppc64__)
 	desc = mono_mem_manager_alloc0 (jit_mm->mem_manager, 3 * sizeof (gpointer));
@@ -3985,7 +3988,9 @@ mini_create_ftnptr (gpointer addr)
 	desc [1] = NULL;
 	desc [2] = NULL;
 #	endif
-	g_hash_table_insert (domain->ftnptrs_hash, addr, desc);
+	mono_jit_lock ();
+	g_hash_table_insert (ftnptrs_hash, addr, desc);
+	mono_jit_unlock ();
 	return desc;
 #else
 	return addr;
@@ -4045,7 +4050,9 @@ init_jit_mem_manager (MonoMemoryManager *mem_manager)
 	info->seq_points = g_hash_table_new_full (mono_aligned_addr_hash, NULL, NULL, mono_seq_point_info_free);
 	info->runtime_invoke_hash = mono_conc_hashtable_new_full (mono_aligned_addr_hash, NULL, NULL, runtime_invoke_info_free);
 	info->arch_seq_points = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	mono_jit_code_hash_init (&info->jit_code_hash);
 	mono_jit_code_hash_init (&info->interp_code_hash);
+	mono_os_mutex_init_recursive (&info->jit_code_hash_lock);
 
 	mem_manager->runtime_info = info;
 }
@@ -4450,7 +4457,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (mono_aot_only) {
 		/* This helps catch code allocation requests */
-		mono_code_manager_set_read_only (mono_domain_ambient_memory_manager (domain)->code_mp);
+		mono_code_manager_set_read_only (mono_mem_manager_get_ambient ()->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
@@ -5223,7 +5230,7 @@ mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc G_GNUC_
 MonoMemoryManager*
 mini_get_default_mem_manager (void)
 {
-	return mono_domain_ambient_memory_manager (mono_get_root_domain ());
+	return mono_mem_manager_get_ambient ();
 }
 
 gpointer

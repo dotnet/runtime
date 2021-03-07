@@ -9943,8 +9943,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 step->bbJumpDest->bbRefs++;
 
                 /* The new block will inherit this block's weight */
-                callBlock->setBBWeight(block->bbWeight);
-                callBlock->bbFlags |= block->bbFlags & BBF_RUN_RARELY;
+                callBlock->inheritWeight(block);
 
 #ifdef DEBUG
                 if (verbose)
@@ -9973,8 +9972,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             step = fgNewBBafter(BBJ_ALWAYS, callBlock, true);
             /* The new block will inherit this block's weight */
-            step->setBBWeight(block->bbWeight);
-            step->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
+            step->inheritWeight(block);
+            step->bbFlags |= BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
 
 #ifdef DEBUG
             if (verbose)
@@ -10034,8 +10033,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         step->bbJumpDest = finalStep;
 
         /* The new block will inherit this block's weight */
-        finalStep->setBBWeight(block->bbWeight);
-        finalStep->bbFlags |= block->bbFlags & BBF_RUN_RARELY;
+        finalStep->inheritWeight(block);
 
 #ifdef DEBUG
         if (verbose)
@@ -10197,8 +10195,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
-                exitBlock->setBBWeight(block->bbWeight);
-                exitBlock->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
+                exitBlock->inheritWeight(block);
+                exitBlock->bbFlags |= BBF_IMPORTED;
 
                 /* This exit block is the new step */
                 step     = exitBlock;
@@ -10242,8 +10240,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 block->bbJumpDest->bbRefs++;
 
                 /* The new block will inherit this block's weight */
-                callBlock->setBBWeight(block->bbWeight);
-                callBlock->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
+                callBlock->inheritWeight(block);
+                callBlock->bbFlags |= BBF_IMPORTED;
 
 #ifdef DEBUG
                 if (verbose)
@@ -10342,8 +10340,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
-                callBlock->setBBWeight(block->bbWeight);
-                callBlock->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
+                callBlock->inheritWeight(block);
+                callBlock->bbFlags |= BBF_IMPORTED;
 
 #ifdef DEBUG
                 if (verbose)
@@ -10359,8 +10357,8 @@ void Compiler::impImportLeave(BasicBlock* block)
             stepType = ST_FinallyReturn;
 
             /* The new block will inherit this block's weight */
-            step->setBBWeight(block->bbWeight);
-            step->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
+            step->inheritWeight(block);
+            step->bbFlags |= BBF_IMPORTED | BBF_KEEP_BBJ_ALWAYS;
 
 #ifdef DEBUG
             if (verbose)
@@ -10446,8 +10444,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
-                catchStep->setBBWeight(block->bbWeight);
-                catchStep->bbFlags |= (block->bbFlags & BBF_RUN_RARELY) | BBF_IMPORTED;
+                catchStep->inheritWeight(block);
+                catchStep->bbFlags |= BBF_IMPORTED;
 
 #ifdef DEBUG
                 if (verbose)

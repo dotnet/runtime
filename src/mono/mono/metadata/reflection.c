@@ -167,7 +167,8 @@ mono_reflected_equal (gconstpointer a, gconstpointer b)
 }
 
 guint
-mono_reflected_hash (gconstpointer a) {
+mono_reflected_hash (gconstpointer a)
+{
 	const ReflectedEntry *ea = (const ReflectedEntry *)a;
 	/* Combine hashes for item and refclass. Identical to boost's hash_combine */
 	guint seed = mono_aligned_addr_hash (ea->item) + 0x9e3779b9;
@@ -176,24 +177,21 @@ mono_reflected_hash (gconstpointer a) {
 }
 
 static void
-clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
+clear_cached_object (MonoMemoryManager *mem_manager, gpointer o, MonoClass *klass)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
-
-	mono_mem_manager_lock (memory_manager);
-
 	gpointer orig_pe, orig_value;
 	ReflectedEntry pe;
 	pe.item = o;
 	pe.refclass = klass;
 
+	mono_mem_manager_lock (mem_manager);
 
-	if (mono_conc_g_hash_table_lookup_extended (memory_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
-		mono_conc_g_hash_table_remove (memory_manager->refobject_hash, &pe);
+	if (mono_conc_g_hash_table_lookup_extended (mem_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
+		mono_conc_g_hash_table_remove (mem_manager->refobject_hash, &pe);
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (mem_manager);
 }
 
 /**
@@ -439,7 +437,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 
 	g_assert (type != NULL);
 	klass = mono_class_from_mono_type_internal (type);
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
@@ -645,21 +643,23 @@ mono_method_get_object_checked (MonoMethod *method, MonoClass *refclass, MonoErr
  *   Clear the cached reflection objects for the dynamic method METHOD.
  */
 void
-mono_method_clear_object (MonoDomain *domain, MonoMethod *method)
+mono_method_clear_object (MonoMethod *method)
 {
 	MonoClass *klass;
 	g_assert (method_is_dynamic (method));
 
+	MonoMemoryManager *mem_manager = mono_mem_manager_get_ambient ();
+
 	klass = method->klass;
 	while (klass) {
-		clear_cached_object (domain, method, klass);
+		clear_cached_object (mem_manager, method, klass);
 		klass = m_class_get_parent (klass);
 	}
 	/* Added by mono_param_get_objects () */
-	clear_cached_object (domain, &(method->signature), NULL);
+	clear_cached_object (mem_manager, &(method->signature), NULL);
 	klass = method->klass;
 	while (klass) {
-		clear_cached_object (domain, &(method->signature), klass);
+		clear_cached_object (mem_manager, &(method->signature), klass);
 		klass = m_class_get_parent (klass);
 	}
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -26,12 +27,12 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _disposed;
         private ApplicationPartitionType _appType = (ApplicationPartitionType)(-1);
         private bool _committed = true;
-        private DirectoryEntry _domainDNSEntry;
-        private DirectoryEntry _crossRefEntry;
-        private string _dnsName;
-        private DirectoryServerCollection _cachedDirectoryServers;
+        private DirectoryEntry? _domainDNSEntry;
+        private DirectoryEntry? _crossRefEntry;
+        private string? _dnsName;
+        private DirectoryServerCollection? _cachedDirectoryServers;
         private bool _securityRefDomainModified;
-        private string _securityRefDomain;
+        private string? _securityRefDomain;
 
         #region constructors
         // Public Constructors
@@ -54,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         // Internal Constructors
-        internal ApplicationPartition(DirectoryContext context, string distinguishedName, string dnsName, ApplicationPartitionType appType, DirectoryEntryManager directoryEntryMgr)
+        internal ApplicationPartition(DirectoryContext context, string distinguishedName, string? dnsName, ApplicationPartitionType appType, DirectoryEntryManager directoryEntryMgr)
             : base(context, distinguishedName)
         {
             this.directoryEntryMgr = directoryEntryMgr;
@@ -127,9 +128,9 @@ namespace System.DirectoryServices.ActiveDirectory
             context = new DirectoryContext(context);
 
             // bind to the application partition head (this will verify credentials)
-            string distinguishedName = Utils.GetDNFromDnsName(context.Name);
+            string distinguishedName = Utils.GetDNFromDnsName(context.Name!);
             DirectoryEntryManager directoryEntryMgr = new DirectoryEntryManager(context);
-            DirectoryEntry appNCHead = null;
+            DirectoryEntry? appNCHead = null;
 
             try
             {
@@ -156,9 +157,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static ApplicationPartition FindByName(DirectoryContext context, string distinguishedName)
         {
-            ApplicationPartition partition = null;
-            DirectoryEntryManager directoryEntryMgr = null;
-            DirectoryContext appNCContext = null;
+            ApplicationPartition? partition = null;
+            DirectoryEntryManager? directoryEntryMgr = null;
+            DirectoryContext? appNCContext = null;
 
             // check that the argument is not null
             if (context == null)
@@ -194,7 +195,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // search in the partitions container of the forest for
             // crossRef objects that have their nCName set to the specified distinguishedName
             directoryEntryMgr = new DirectoryEntryManager(context);
-            DirectoryEntry partitionsEntry = null;
+            DirectoryEntry? partitionsEntry = null;
 
             try
             {
@@ -235,7 +236,7 @@ namespace System.DirectoryServices.ActiveDirectory
             propertiesToLoad[1] = PropertyManager.NCName;
 
             ADSearcher searcher = new ADSearcher(partitionsEntry, filter, propertiesToLoad, SearchScope.OneLevel, false /*not paged search*/, false /*no cached results*/);
-            SearchResult res = null;
+            SearchResult? res = null;
 
             try
             {
@@ -264,10 +265,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
             }
 
-            string appNCDnsName = null;
+            string? appNCDnsName = null;
             try
             {
-                appNCDnsName = (res.Properties[PropertyManager.DnsRoot].Count > 0) ? (string)res.Properties[PropertyManager.DnsRoot][0] : null;
+                appNCDnsName = (res.Properties[PropertyManager.DnsRoot].Count > 0) ? (string)res.Properties[PropertyManager.DnsRoot][0]! : null;
             }
             catch (COMException e)
             {
@@ -341,14 +342,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     appNCContext = Utils.GetNewDirectoryContext(adamInstName, DirectoryContextType.DirectoryServer, context);
                 }
             }
-            partition = new ApplicationPartition(appNCContext, (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.NCName), appNCDnsName, appType, directoryEntryMgr);
+            partition = new ApplicationPartition(appNCContext, (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.NCName)!, appNCDnsName, appType, directoryEntryMgr);
 
             return partition;
         }
 
         public DirectoryServer FindDirectoryServer()
         {
-            DirectoryServer directoryServer = null;
+            DirectoryServer? directoryServer = null;
 
             CheckIfDisposed();
 
@@ -371,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryServer FindDirectoryServer(string siteName)
         {
-            DirectoryServer directoryServer = null;
+            DirectoryServer? directoryServer = null;
 
             CheckIfDisposed();
 
@@ -400,7 +401,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryServer FindDirectoryServer(bool forceRediscovery)
         {
-            DirectoryServer directoryServer = null;
+            DirectoryServer? directoryServer = null;
 
             CheckIfDisposed();
 
@@ -425,7 +426,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryServer FindDirectoryServer(string siteName, bool forceRediscovery)
         {
-            DirectoryServer directoryServer = null;
+            DirectoryServer? directoryServer = null;
 
             CheckIfDisposed();
 
@@ -585,7 +586,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     try
                     {
-                        _domainDNSEntry.CommitChanges();
+                        _domainDNSEntry!.CommitChanges();
                     }
                     catch (COMException e)
                     {
@@ -621,7 +622,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-                        _domainDNSEntry.CommitChanges();
+                        _domainDNSEntry!.CommitChanges();
                     }
                     catch (COMException e)
                     {
@@ -662,7 +663,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // on DC2, the FSMO, and can only be done if the crossRef on DC2 is enabled)
                 // get the ntdsa name of the server on which the partition is created
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
-                string primaryServerNtdsaName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DsServiceName);
+                string primaryServerNtdsaName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DsServiceName)!;
 
                 // get the DN of the crossRef entry that needs to be replicated to the fsmo role
                 if (_appType == ApplicationPartitionType.ADApplicationPartition)
@@ -670,7 +671,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // for AD we may not have the crossRef entry yet
                     GetCrossRefEntry();
                 }
-                string crossRefDN = (string)PropertyManager.GetPropertyValue(context, _crossRefEntry, PropertyManager.DistinguishedName);
+                string crossRefDN = (string)PropertyManager.GetPropertyValue(context, _crossRefEntry!, PropertyManager.DistinguishedName)!;
 
                 // Now set the operational attribute "replicateSingleObject" on the Rootdse of the fsmo role
                 // to <ntdsa name of the source>:<DN of the crossRef object which needs to be replicated>
@@ -699,15 +700,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (_cachedDirectoryServers != null)
                     {
-                        _crossRefEntry.Properties[PropertyManager.MsDSNCReplicaLocations].AddRange(_cachedDirectoryServers.GetMultiValuedProperty());
+                        _crossRefEntry!.Properties[PropertyManager.MsDSNCReplicaLocations].AddRange(_cachedDirectoryServers.GetMultiValuedProperty());
                     }
                     if (_securityRefDomainModified)
                     {
-                        _crossRefEntry.Properties[PropertyManager.MsDSSDReferenceDomain].Value = _securityRefDomain;
+                        _crossRefEntry!.Properties[PropertyManager.MsDSSDReferenceDomain].Value = _securityRefDomain;
                     }
                     try
                     {
-                        _crossRefEntry.CommitChanges();
+                        _crossRefEntry!.CommitChanges();
                     }
                     catch (COMException e)
                     {
@@ -783,7 +784,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public string SecurityReferenceDomain
+        public string? SecurityReferenceDomain
         {
             get
             {
@@ -802,7 +803,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         if (_crossRefEntry.Properties[PropertyManager.MsDSSDReferenceDomain].Count > 0)
                         {
-                            return (string)_crossRefEntry.Properties[PropertyManager.MsDSSDReferenceDomain].Value;
+                            return (string?)_crossRefEntry.Properties[PropertyManager.MsDSSDReferenceDomain].Value;
                         }
                         else
                         {
@@ -860,7 +861,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #endregion public properties
 
         #region private methods
-        private void ValidateApplicationPartitionParameters(DirectoryContext context, string distinguishedName, string objectClass, bool objectClassSpecified)
+        private void ValidateApplicationPartitionParameters(DirectoryContext context, string distinguishedName, string? objectClass, bool objectClassSpecified)
         {
             // validate context
             if (context == null)
@@ -931,11 +932,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 // (since application partition creation will fail if dns name is not specified)
                 //
 
-                string serverDnsName = null;
+                string? serverDnsName = null;
                 try
                 {
                     DirectoryEntry rootDSEEntry = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
-                    serverDnsName = (string)PropertyManager.GetPropertyValue(this.context, rootDSEEntry, PropertyManager.DnsHostName);
+                    serverDnsName = (string?)PropertyManager.GetPropertyValue(this.context, rootDSEEntry, PropertyManager.DnsHostName);
                 }
                 catch (COMException e)
                 {
@@ -946,6 +947,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+        [MemberNotNull(nameof(_domainDNSEntry))]
         private void CreateApplicationPartition(string distinguishedName, string objectClass)
         {
             if (_appType == ApplicationPartitionType.ADApplicationPartition)
@@ -957,8 +959,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 // 3. Set the instanceType and the description for the application partitin object
                 //
 
-                DirectoryEntry tempEntry = null;
-                DirectoryEntry parent = null;
+                DirectoryEntry? tempEntry = null;
+                DirectoryEntry? parent = null;
 
                 try
                 {
@@ -1006,8 +1008,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     InitializeCrossRef(distinguishedName);
 
-                    DirectoryEntry tempEntry = null;
-                    DirectoryEntry parent = null;
+                    DirectoryEntry? tempEntry = null;
+                    DirectoryEntry? parent = null;
 
                     try
                     {
@@ -1047,13 +1049,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+        [MemberNotNull(nameof(_crossRefEntry))]
         private void InitializeCrossRef(string distinguishedName)
         {
             if (_crossRefEntry != null)
                 // already initialized
                 return;
 
-            DirectoryEntry partitionsEntry = null;
+            DirectoryEntry? partitionsEntry = null;
 
             try
             {
@@ -1063,12 +1066,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 string uniqueName = "CN={" + Guid.NewGuid() + "}";
                 _crossRefEntry = partitionsEntry.Children.Add(uniqueName, "crossRef");
 
-                string dnsHostName = null;
+                string? dnsHostName = null;
                 if (_appType == ApplicationPartitionType.ADAMApplicationPartition)
                 {
                     // Bind to rootdse and get the server name
                     DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
-                    string ntdsaName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DsServiceName);
+                    string ntdsaName = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.DsServiceName)!;
                     dnsHostName = Utils.GetAdamHostNameAndPortsFromNTDSA(context, ntdsaName);
                 }
                 else
@@ -1133,6 +1136,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         // we always get the crossEntry bound to the FSMO role
         // this is so that we do not encounter any replication delay related issues
+        [MemberNotNull(nameof(_crossRefEntry))]
         internal DirectoryEntry GetCrossRefEntry()
         {
             if (_crossRefEntry != null)
@@ -1154,17 +1158,17 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string GetNamingRoleOwner()
         {
-            string namingFsmo = null;
+            string? namingFsmo = null;
             DirectoryEntry partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.PartitionsContainer));
             try
             {
                 if (_appType == ApplicationPartitionType.ADApplicationPartition)
                 {
-                    namingFsmo = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner));
+                    namingFsmo = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner)!);
                 }
                 else
                 {
-                    namingFsmo = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner));
+                    namingFsmo = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner)!);
                 }
             }
             finally
@@ -1174,9 +1178,9 @@ namespace System.DirectoryServices.ActiveDirectory
             return namingFsmo;
         }
 
-        private DirectoryServer FindDirectoryServerInternal(string siteName, bool forceRediscovery)
+        private DirectoryServer FindDirectoryServerInternal(string? siteName, bool forceRediscovery)
         {
-            DirectoryServer directoryServer = null;
+            DirectoryServer? directoryServer = null;
             LocatorOptions flag = 0;
             int errorCode = 0;
             DomainControllerInfo domainControllerInfo;
@@ -1221,7 +1225,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return directoryServer;
         }
 
-        private ReadOnlyDirectoryServerCollection FindAllDirectoryServersInternal(string siteName)
+        private ReadOnlyDirectoryServerCollection FindAllDirectoryServersInternal(string? siteName)
         {
             if (siteName != null && siteName.Length == 0)
             {
@@ -1244,7 +1248,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return new ReadOnlyDirectoryServerCollection(dcList);
         }
 
-        private ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServersInternal(string siteName)
+        private ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServersInternal(string? siteName)
         {
             if (siteName != null && siteName.Length == 0)
             {

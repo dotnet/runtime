@@ -94,6 +94,8 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
  * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
  * are not kept.
  */
+void mono_wasm_link_icu_shim(void);
+
 void mono_wasm_link_icu_shim(void)
 {
 }

@@ -10,9 +10,7 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
-    /// <summary>
-    /// Default <see cref="PipeWriter"/> and <see cref="PipeReader"/> implementation.
-    /// </summary>
+    /// <summary>The default <see cref="System.IO.Pipelines.PipeWriter" /> and <see cref="System.IO.Pipelines.PipeReader" /> implementation.</summary>
     public sealed partial class Pipe
     {
         internal const int InitialSegmentPoolSize = 16; // 65K
@@ -85,16 +83,13 @@ namespace System.IO.Pipelines
 
         internal long Length => _unconsumedBytes;
 
-        /// <summary>
-        /// Initializes the <see cref="Pipe"/> using <see cref="PipeOptions.Default"/> as options.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="System.IO.Pipelines.Pipe" /> class using <see cref="System.IO.Pipelines.PipeOptions.Default" /> as options.</summary>
         public Pipe() : this(PipeOptions.Default)
         {
         }
 
-        /// <summary>
-        /// Initializes the <see cref="Pipe"/> with the specified <see cref="PipeOptions"/>.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="System.IO.Pipelines.Pipe" /> class with the specified options.</summary>
+        /// <param name="options">The set of options for this pipe.</param>
         public Pipe(PipeOptions options)
         {
             if (options == null)
@@ -1060,19 +1055,15 @@ namespace System.IO.Pipelines
             TrySchedule(_writerScheduler, completionData);
         }
 
-        /// <summary>
-        /// Gets the <see cref="PipeReader"/> for this pipe.
-        /// </summary>
+        /// <summary>Gets the <see cref="System.IO.Pipelines.PipeReader" /> for this pipe.</summary>
+        /// <value>A <see cref="System.IO.Pipelines.PipeReader" /> instance for this pipe.</value>
         public PipeReader Reader => _reader;
 
-        /// <summary>
-        /// Gets the <see cref="PipeWriter"/> for this pipe.
-        /// </summary>
+        /// <summary>Gets the <see cref="System.IO.Pipelines.PipeWriter" /> for this pipe.</summary>
+        /// <value>A <see cref="System.IO.Pipelines.PipeWriter" /> instance for this pipe.</value>
         public PipeWriter Writer => _writer;
 
-        /// <summary>
-        /// Resets the pipe
-        /// </summary>
+        /// <summary>Resets the pipe.</summary>
         public void Reset()
         {
             lock (_sync)

@@ -243,6 +243,8 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(NameResolutionPal.GetHostName());
         }
 
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -417,6 +419,8 @@ namespace System.Net.NameResolution.PalTests
 
             Assert.Equal(SocketError.HostNotFound, socketError);
         }
+
+#pragma warning restore CS0162
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
