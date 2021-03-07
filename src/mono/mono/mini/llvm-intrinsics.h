@@ -384,12 +384,12 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRDMULH, aarch64_neon_sqrdmulh, V64 | V128 | I
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SMULL, aarch64_neon_smull, V128 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UMULL, aarch64_neon_umull, V128 | I2 | I4 | I8)
 
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQNEG, aarch64_neon_sqneg, V64 | V128 | I1 | I2 | I4 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQNEG, aarch64_neon_sqneg, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_PMUL, aarch64_neon_pmul, V64 | V128 | I1)
 INTRINS_OVR(AARCH64_ADV_SIMD_PMULL, aarch64_neon_pmull, v128_i2_t)
 
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_CNT, ctpop, V64 | V128 | I8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_CNT, ctpop, V64 | V128 | I1)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_URECPE, aarch64_neon_urecpe, V64 | V128 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPE, aarch64_neon_frecpe, Scalar | V64 | V128 | R4 | R8)
@@ -417,7 +417,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSUB, aarch64_neon_sqsub, Scalar | V64 | V128 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RADDHN, aarch64_neon_raddhn, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RSUBHN, aarch64_neon_rsubhn, V64 | I1 | I2 | I4)
 
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FSQRT, sqrt, V64 | V128 | R4 | R8)
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FSQRT, sqrt, Scalar | V64 | V128 | R4 | R8)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQSHRN, aarch64_neon_uqshrn, V64 | I1 | I2 | I4) // Constant shift
 
@@ -426,7 +426,7 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHRN, aarch64_neon_sqrshrn, V64 | I1 | I2 | 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHRUN, aarch64_neon_sqrshrun, V64 | I1 | I2 | I4) // Constant shift
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHRN, aarch64_neon_sqshrn, V64 | I1 | I2 | I4) // Constant shift
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHRUN, aarch64_neon_sqshrun, V64 | I1 | I2 | I4) // Constant shift
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQRSHRN, aarch64_neon_uqrshrn, V64 | I1 | I2 | I4) // Constant shift
+INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQRSHRN, aarch64_neon_uqrshrn, Scalar | V64 | I1 | I2 | I4) // Constant shift
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQRSHL, aarch64_neon_sqrshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQSHL, aarch64_neon_sqshl, V64 | V128 | I1 | I2 | I4 | I8) // Variable shift

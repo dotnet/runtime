@@ -375,7 +375,7 @@ ovr_tag_corresponding_integer (llvm_ovr_tag_t tag)
 }
 
 static int
-int_from_id_and_ovr_tag (int id, llvm_ovr_tag_t ovr_tag)
+key_from_id_and_tag (int id, llvm_ovr_tag_t ovr_tag)
 {
 	return (((int) ovr_tag) << 23) | id;
 }
@@ -427,6 +427,21 @@ ovr_tag_from_llvm_type (LLVMTypeRef type)
 	if (elem_t == r4_t) ret |= INTRIN_float32;
 	if (elem_t == r8_t) ret |= INTRIN_float64;
 	return ret;
+}
+
+static inline gboolean
+check_needs_fake_scalar_op (MonoTypeEnum type)
+{
+#if defined(TARGET_ARM64)
+	switch (type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		return TRUE;
+	}
+#endif
+	return FALSE;
 }
 
 static inline void
@@ -5145,8 +5160,8 @@ get_float_const (MonoCompile *cfg, float val)
 static LLVMValueRef
 call_overloaded_intrins (EmitContext *ctx, int id, llvm_ovr_tag_t ovr_tag, LLVMValueRef *args, const char *name)
 {
-	int ovr_id = int_from_id_and_ovr_tag (id, ovr_tag);
-	LLVMValueRef intrins = get_intrins (ctx, ovr_id);
+	int key = key_from_id_and_tag (id, ovr_tag);
+	LLVMValueRef intrins = get_intrins (ctx, key);
 	int nargs = LLVMCountParamTypes (LLVMGetElementType (LLVMTypeOf (intrins)));
 	for (int i = 0; i < nargs; ++i) {
 		LLVMTypeRef t1 = LLVMTypeOf (args [i]);
@@ -9996,10 +10011,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_PMULL:
 		case OP_ARM64_PMULL2: {
 			gboolean high = ins->opcode == OP_ARM64_PMULL2;
-			LLVMValueRef val = lhs;
+			LLVMValueRef args [] = { lhs, rhs };
 			if (high)
-				val = extract_high_elements (ctx, val);
-			LLVMValueRef result = call_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_PMULL, &val, "arm64_pmull");
+				for (int i = 0; i < 2; ++i)
+					args [i] = extract_high_elements (ctx, args [i]);
+			LLVMValueRef result = call_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_PMULL, args, "arm64_pmull");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10069,29 +10085,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				shiftarg = rhs;
 				shift = arg3;
 			}
+			LLVMTypeRef arg_t = LLVMTypeOf (shiftarg);
+			LLVMTypeRef elem_t = LLVMGetElementType (arg_t);
+			unsigned int elems = LLVMGetVectorSize (arg_t);
+			unsigned int bits = mono_llvm_get_prim_size_bits (elem_t);
+			LLVMTypeRef trunc_t = LLVMVectorType (LLVMIntType (bits / 2), elems);
 			shift = create_shift_vector (ctx, shiftarg, shift);
 			LLVMValueRef result = LLVMBuildLShr (builder, shiftarg, shift, "shrn");
-			if (high)
-				result = concatenate_vectors (ctx, lhs, result);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_UQSHRN:
-		case OP_ARM64_UQSHRN2: {
-			// XXXih: TODO: unroll count/rhs/arg3
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			LLVMValueRef shiftarg = lhs;
-			LLVMValueRef shift = rhs;
-			gboolean high = ins->opcode == OP_ARM64_UQSHRN2;
+			result = LLVMBuildTrunc (builder, result, trunc_t, "");
 			if (high) {
-				shiftarg = rhs;
-				shift = arg3;
-				ovr_tag = ovr_tag_smaller_vector (ovr_tag);
-			}
-			LLVMValueRef args [] = { shiftarg, shift };
-			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UQSHRN, ovr_tag, args, "");
-			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
+			}
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_SRSHR:
@@ -10129,39 +10134,36 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_RSHRN:
-		case OP_ARM64_RSHRN2:
-		case OP_ARM64_SQRSHRN:
-		case OP_ARM64_SQRSHRN2:
-		case OP_ARM64_SQRSHRUN:
-		case OP_ARM64_SQRSHRUN2:
-		case OP_ARM64_SQSHRN:
-		case OP_ARM64_SQSHRN2:
-		case OP_ARM64_SQSHRUN:
-		case OP_ARM64_SQSHRUN2:
-		case OP_ARM64_UQRSHRN:
-		case OP_ARM64_UQRSHRN2: {
+		case OP_ARM64_XRSHIFT_SCALAR:
+		case OP_ARM64_XRSHIFT:
+		case OP_ARM64_XRSHIFT2: {
 			// XXXih: TODO: unroll count/rhs/arg3
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef args [2] = { lhs, rhs };
 			gboolean high = FALSE;
-			int iid = 0;
+			gboolean scalar = FALSE;
+			int iid = ins->inst_c0;
 			switch (ins->opcode) {
-			case OP_ARM64_RSHRN: iid = INTRINS_AARCH64_ADV_SIMD_RSHRN; case OP_ARM64_RSHRN2: high = TRUE; break;
-			case OP_ARM64_UQRSHRN: iid = INTRINS_AARCH64_ADV_SIMD_UQRSHRN; case OP_ARM64_UQRSHRN2: high = TRUE; break;
-			case OP_ARM64_SQRSHRN: iid = INTRINS_AARCH64_ADV_SIMD_SQRSHRN; case OP_ARM64_SQRSHRN2: high = TRUE; break;
-			case OP_ARM64_SQRSHRUN: iid = INTRINS_AARCH64_ADV_SIMD_SQRSHRUN; case OP_ARM64_SQRSHRUN2: high = TRUE; break;
-			case OP_ARM64_SQSHRN: iid = INTRINS_AARCH64_ADV_SIMD_SQSHRN; case OP_ARM64_SQSHRN2: high = TRUE; break;
-			case OP_ARM64_SQSHRUN: iid = INTRINS_AARCH64_ADV_SIMD_SQSHRUN; case OP_ARM64_SQSHRUN2: high = TRUE; break;
+			case OP_ARM64_XRSHIFT_SCALAR: scalar = TRUE; break;
+			case OP_ARM64_XRSHIFT2: high = TRUE; break;
 			}
 			if (high) {
 				args [0] = rhs;
 				args [1] = arg3;
 				ovr_tag = ovr_tag_smaller_vector (ovr_tag);
 			}
+			if (scalar) {
+				LLVMTypeRef arg_t = LLVMTypeOf (args [0]);
+				LLVMTypeRef elem_t = LLVMGetElementType (arg_t);
+				unsigned int elems = LLVMGetVectorSize (arg_t);
+				LLVMValueRef lo = scalar_from_vector (ctx, args [0]);
+				args [0] = vector_from_scalar_ty (ctx, LLVMVectorType (elem_t, elems * 2), lo);
+			}
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
+			if (scalar)
+				result = keep_lowest_element (ctx, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10183,17 +10185,29 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef shift = create_shift_vector (ctx, lhs, rhs);
 			LLVMValueRef args [] = { lhs, shift };
-			int iid = INTRINS_AARCH64_ADV_SIMD_SQSHLU; break;
+			int iid = INTRINS_AARCH64_ADV_SIMD_SQSHLU;
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
+		case OP_ARM64_SSHLL:
+		case OP_ARM64_SSHLL2:
 		case OP_ARM64_USHLL:
 		case OP_ARM64_USHLL2: {
-			gboolean high = ins->opcode == OP_ARM64_USHLL2;
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_SSHLL2: high = TRUE; break;
+			case OP_ARM64_USHLL2: high = TRUE; case OP_ARM64_USHLL: is_unsigned = TRUE; break;
+			}
 			LLVMValueRef result = lhs;
 			if (high)
 				result = extract_high_elements (ctx, result);
-			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "arm64_ushll");
+			if (is_unsigned)
+				result = LLVMBuildZExt (builder, result, ret_t, "arm64_ushll");
+			else
+				result = LLVMBuildSExt (builder, result, ret_t, "arm64_ushll");
+			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10606,17 +10620,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * instruction selection. This is worked around by using a vector
 			 * operation and then explicitly clearing the upper bits of the register.
 			 */
-			gboolean arm64_fake_scalar_op = FALSE;
-			switch (inst_c1_type (ins)) {
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I2:
-				arm64_fake_scalar_op = TRUE;
-			}
-#if !defined(TARGET_ARM64)
-			arm64_fake_scalar_op = FALSE;
-#endif
+			gboolean arm64_fake_scalar_op = check_needs_fake_scalar_op (inst_c1_type (ins));
 			LLVMValueRef args [3] = { lhs, rhs, arg3 };
 			if (!arm64_fake_scalar_op) {
 				ovr_tag = ovr_tag_force_scalar (ovr_tag);
@@ -11994,8 +11998,8 @@ add_intrinsic (LLVMModuleRef module, int id)
 						intrins = add_intrins2 (module, id, associated_scalar_type, distinguishing_type);
 					} else
 						intrins = add_intrins1 (module, id, distinguishing_type);
-					int ovr_id = int_from_id_and_ovr_tag (id, test);
-					g_hash_table_insert (intrins_id_to_intrins, GINT_TO_POINTER (ovr_id), intrins);
+					int key = key_from_id_and_tag (id, test);
+					g_hash_table_insert (intrins_id_to_intrins, GINT_TO_POINTER (key), intrins);
 				}
 			}
 		}
