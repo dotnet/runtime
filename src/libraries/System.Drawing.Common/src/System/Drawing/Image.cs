@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Imaging;
@@ -333,27 +334,27 @@ namespace System.Drawing
                 if (size == 0 || count == 0)
                     return Array.Empty<PropertyItem>();
 
-                PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
                 var result = new PropertyItem[(int)count];
-                try
+                byte[] buffer = ArrayPool<byte>.Shared.Rent((int)size);
+                fixed (byte *pBuffer = buffer)
                 {
-                    Gdip.CheckStatus(Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata));
+                    PropertyItemInternal* pPropData = (PropertyItemInternal*)pBuffer;
+                    Gdip.CheckStatus(Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, pPropData));
+
                     for (int i = 0; i < count; i++)
                     {
                         result[i] = new PropertyItem
                         {
-                            Id = propdata[i].id,
-                            Len = propdata[i].len,
-                            Type = propdata[i].type,
-                            Value = propdata[i].Value.ToArray()
+                            Id = pPropData[i].id,
+                            Len = pPropData[i].len,
+                            Type = pPropData[i].type,
+                            Value = pPropData[i].Value.ToArray()
                         };
                     }
-                    return result;
                 }
-                finally
-                {
-                    Marshal.FreeHGlobal((IntPtr)propdata);
-                }
+
+                ArrayPool<byte>.Shared.Return(buffer);
+                return result;
             }
         }
 
@@ -377,22 +378,24 @@ namespace System.Drawing
             if (size == 0)
                 return null;
 
-            PropertyItemInternal* propdata = (PropertyItemInternal*)Marshal.AllocHGlobal((int)size);
-            try
+            PropertyItem result;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent((int)size);
+            fixed (byte *pBuffer = buffer)
             {
-                Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata));
-                return new PropertyItem
+                PropertyItemInternal* pPropData = (PropertyItemInternal*)pBuffer;
+                Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, pPropData));
+
+                result = new PropertyItem
                 {
-                    Id = propdata->id,
-                    Len = propdata->len,
-                    Type = propdata->type,
-                    Value = propdata->Value.ToArray()
+                    Id = pPropData->id,
+                    Len = pPropData->len,
+                    Type = pPropData->type,
+                    Value = pPropData->Value.ToArray()
                 };
             }
-            finally
-            {
-                Marshal.FreeHGlobal((IntPtr)propdata);
-            }
+
+            ArrayPool<byte>.Shared.Return(buffer);
+            return result;
         }
 
         /// <summary>
