@@ -759,6 +759,8 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
+            Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
+
             try
             {
                 while (true)
@@ -766,6 +768,18 @@ namespace System.Net.Security
                     if (_decryptedBytesCount != 0)
                     {
                         return CopyDecryptedData(buffer);
+                    }
+
+                    if (buffer.Length == 0 && _internalBuffer is null)
+                    {
+                        // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                        // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                        // for reduced memory consumption when data is not immediately available.
+                        // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
+                        // until data is actually available from the underlying stream.
+                        // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
+                        // complete immediately and won't save any memory, but will still function correctly.
+                        await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
                     }
 
                     ResetReadBuffer();
@@ -890,6 +904,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReturnReadBufferIfEmpty();
                 _nestedRead = 0;
             }
         }
@@ -1010,8 +1025,6 @@ namespace System.Net.Security
 
             _internalOffset += byteCount;
             _internalBufferCount -= byteCount;
-
-            ReturnReadBufferIfEmpty();
         }
 
         private int CopyDecryptedData(Memory<byte> buffer)
@@ -1027,7 +1040,6 @@ namespace System.Net.Security
                 _decryptedBytesCount -= copyBytes;
             }
 
-            ReturnReadBufferIfEmpty();
             return copyBytes;
         }
 
@@ -1038,6 +1050,8 @@ namespace System.Net.Security
             if (_internalBuffer == null)
             {
                 _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+                Debug.Assert(_internalOffset == 0);
+                Debug.Assert(_internalBufferCount == 0);
             }
             else if (_internalOffset > 0)
             {
@@ -1047,21 +1061,6 @@ namespace System.Net.Security
                 Buffer.BlockCopy(_internalBuffer, _internalOffset, _internalBuffer, 0, _internalBufferCount);
                 _internalOffset = 0;
             }
-        }
-
-        private static byte[] EnsureBufferSize(byte[] buffer, int copyCount, int size)
-        {
-            if (buffer == null || buffer.Length < size)
-            {
-                byte[]? saved = buffer;
-                buffer = new byte[size];
-                if (saved != null && copyCount != 0)
-                {
-                    Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
-                }
-            }
-
-            return buffer;
         }
 
         // We need at least 5 bytes to determine what we have.
