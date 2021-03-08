@@ -410,6 +410,8 @@
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.ImportExport.cs"
@@ -430,8 +432,12 @@
              Link="Common\System\Security\Cryptography\ECAndroid.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDsaAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAAndroid.cs"
