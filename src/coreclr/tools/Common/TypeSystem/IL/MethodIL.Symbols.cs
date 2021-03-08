@@ -31,19 +31,21 @@ namespace Internal.IL
     {
         public static MethodDebugInformation None = new MethodDebugInformation();
 
+        public virtual bool IsStateMachineMoveNextMethod => false;
+
         public virtual IEnumerable<ILSequencePoint> GetSequencePoints()
         {
-            return null;
+            return Array.Empty<ILSequencePoint>();
         }
 
         public virtual IEnumerable<ILLocalVariable> GetLocalVariables()
         {
-            return null;
+            return Array.Empty<ILLocalVariable>();
         }
 
         public virtual IEnumerable<string> GetParameterNames()
         {
-            return null;
+            return Array.Empty<string>();
         }
     }
 

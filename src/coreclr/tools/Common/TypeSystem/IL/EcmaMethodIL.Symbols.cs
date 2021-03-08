@@ -38,6 +38,8 @@ namespace Internal.IL
             _method = method;
         }
 
+        public override bool IsStateMachineMoveNextMethod => _method.Module.PdbReader.GetStateMachineKickoffMethod(MetadataTokens.GetToken(_method.Handle)) != 0;
+
         public override IEnumerable<ILSequencePoint> GetSequencePoints()
         {
             return _method.Module.PdbReader.GetSequencePointsForMethod(MetadataTokens.GetToken(_method.Handle));

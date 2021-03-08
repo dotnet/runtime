@@ -44,7 +44,6 @@ namespace Internal.JitInterface
             NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
                 IntPtr libHandle = IntPtr.Zero;
-#if READYTORUN
                 if (libName == CorInfoImpl.JitLibrary)
                 {
                     if (!string.IsNullOrEmpty(jitPath))
@@ -56,9 +55,6 @@ namespace Internal.JitInterface
                         libHandle = NativeLibrary.Load("clrjit_" + GetTargetSpec(target), assembly, searchPath);
                     }
                 }
-#else
-                Debug.Assert(jitPath == null);
-#endif
                 if (libName == CorInfoImpl.JitSupportLibrary)
                 {
                     libHandle = NativeLibrary.Load("jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), assembly, searchPath);
