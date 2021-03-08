@@ -9747,6 +9747,34 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildTrunc (builder, hi64, LLVMInt64Type (), "");
 			break;
 		}
+		case OP_ARM64_XNARROW_SCALAR: {
+			// Unfortunately, @llvm.aarch64.neon.scalar.sqxtun isn't available for i8 or i16.
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (ret_t);
+			LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+			LLVMValueRef result = NULL;
+			int iid = ins->inst_c0;
+			int scalar_iid = 0;
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_SQXTUN: scalar_iid = INTRINS_AARCH64_ADV_SIMD_SCALAR_SQXTUN; break;
+			case INTRINS_AARCH64_ADV_SIMD_SQXTN: scalar_iid = INTRINS_AARCH64_ADV_SIMD_SCALAR_SQXTN; break;
+			case INTRINS_AARCH64_ADV_SIMD_UQXTN: scalar_iid = INTRINS_AARCH64_ADV_SIMD_SCALAR_UQXTN; break;
+			default: g_assert_not_reached ();
+			}
+			if (elem_t == i4_t) {
+				LLVMValueRef arg = scalar_from_vector (ctx, lhs);
+				result = call_intrins (ctx, scalar_iid, &arg, "arm64_xnarrow_scalar");
+				result = vector_from_scalar_ty (ctx, ret_t, result);
+			} else {
+				LLVMTypeRef arg_t = LLVMTypeOf (lhs);
+				LLVMTypeRef argelem_t = LLVMGetElementType (arg_t);
+				unsigned int argelems = LLVMGetVectorSize (arg_t);
+				LLVMValueRef arg = undef_upper_elements (ctx, LLVMVectorType (argelem_t, argelems * 2), lhs);
+				result = call_overloaded_intrins (ctx, iid, ovr_tag, &arg, "arm64_xnarrow_scalar");
+			}
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_SQXTUN2:
 		case OP_ARM64_UQXTN2:
 		case OP_ARM64_SQXTN2:
@@ -9947,7 +9975,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_ARM64_SQRDMULH_SCALAR_SEL: sel = TRUE; scalar = TRUE; break;
 			case OP_ARM64_SQRDMULH_SEL: sel = TRUE; break;
 			}
-			// XXXih: TODO: unroll arg3, bounds checks for arg3
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef lane = arg3;
 			if (!sel)

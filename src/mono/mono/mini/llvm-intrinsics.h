@@ -337,6 +337,9 @@ INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTNU, aarch64_neon_fcvtnu, Ftoi, Scalar 
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTMU, aarch64_neon_fcvtmu, Ftoi, Scalar | V64 | V128 | I4 | I8)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FCVTPU, aarch64_neon_fcvtpu, Ftoi, Scalar | V64 | V128 | I4 | I8)
 
+INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_SCALAR_SQXTUN, aarch64_neon_scalar_sqxtun, i4_t, i8_t)
+INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_SCALAR_SQXTN, aarch64_neon_scalar_sqxtn, i4_t, i8_t)
+INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_SCALAR_UQXTN, aarch64_neon_scalar_uqxtn, i4_t, i8_t)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTUN, aarch64_neon_sqxtun, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SQXTN, aarch64_neon_sqxtn, V64 | I1 | I2 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_UQXTN, aarch64_neon_uqxtn, V64 | I1 | I2 | I4)
