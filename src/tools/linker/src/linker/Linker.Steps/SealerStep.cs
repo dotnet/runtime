@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps
 {
@@ -18,10 +19,7 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
-				return;
-
-			if (!Context.Optimizations.IsEnabled (CodeOptimizations.Sealer, assembly))
+			if (!Context.CanApplyOptimization (CodeOptimizations.Sealer, assembly))
 				return;
 
 			foreach (var type in assembly.MainModule.Types)
@@ -38,16 +36,20 @@ namespace Mono.Linker.Steps
 			if (referencedBaseTypeCache == null) {
 				referencedBaseTypeCache = new HashSet<TypeDefinition> ();
 				foreach (var a in Context.GetAssemblies ()) {
-					foreach (var s in a.MainModule.Types) {
-						var btd = s.BaseType?.Resolve ();
-						if (btd != null)
-							referencedBaseTypeCache.Add (btd);
+					if (!Annotations.IsMarked (a))
+						continue;
 
-						if (s.HasNestedTypes) {
-							foreach (var ns in s.NestedTypes) {
-								btd = s.BaseType?.Resolve ();
-								if (btd != null)
-									referencedBaseTypeCache.Add (btd);
+					PopulateCache (a.MainModule.Types);
+
+					void PopulateCache (Collection<TypeDefinition> types)
+					{
+						foreach (var t in types) {
+							var btd = t.BaseType?.Resolve ();
+							if (btd != null)
+								referencedBaseTypeCache.Add (btd);
+
+							if (t.HasNestedTypes) {
+								PopulateCache (t.NestedTypes);
 							}
 						}
 					}
