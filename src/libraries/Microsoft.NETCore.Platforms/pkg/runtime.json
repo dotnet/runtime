@@ -1073,6 +1073,12 @@
         "unix"
       ]
     },
+    "ios-sim": {
+      "#import": [
+        "ios",
+        "unix"
+      ]
+    },
     "ios-arm": {
       "#import": [
         "ios",
@@ -1085,21 +1091,32 @@
         "unix-arm64"
       ]
     },
-    "ios-x64": {
+    "ios-sim-arm64": {
       "#import": [
-        "ios",
+        "ios-sim",
+        "unix-arm64"
+      ]
+    },
+    "ios-sim-x64": {
+      "#import": [
+        "ios-sim",
         "unix-x64"
       ]
     },
-    "ios-x86": {
+    "ios-sim-x86": {
       "#import": [
-        "ios",
+        "ios-sim",
         "unix-x86"
       ]
     },
     "ios.10": {
       "#import": [
         "ios.9"
+      ]
+    },
+    "ios.10-sim": {
+      "#import": [
+        "ios.9-sim"
       ]
     },
     "ios.10-arm": {
@@ -1114,21 +1131,32 @@
         "ios.9-arm64"
       ]
     },
-    "ios.10-x64": {
+    "ios.10-sim-arm64": {
       "#import": [
-        "ios.10",
-        "ios.9-x64"
+        "ios.10-sim",
+        "ios.9-sim-arm64"
       ]
     },
-    "ios.10-x86": {
+    "ios.10-sim-x64": {
       "#import": [
-        "ios.10",
-        "ios.9-x86"
+        "ios.10-sim",
+        "ios.9-sim-x64"
+      ]
+    },
+    "ios.10-sim-x86": {
+      "#import": [
+        "ios.10-sim",
+        "ios.9-sim-x86"
       ]
     },
     "ios.11": {
       "#import": [
         "ios.10"
+      ]
+    },
+    "ios.11-sim": {
+      "#import": [
+        "ios.10-sim"
       ]
     },
     "ios.11-arm64": {
@@ -1137,15 +1165,26 @@
         "ios.10-arm64"
       ]
     },
-    "ios.11-x64": {
+    "ios.11-sim-arm64": {
       "#import": [
-        "ios.11",
-        "ios.10-x64"
+        "ios.11-sim",
+        "ios.10-sim-arm64"
+      ]
+    },
+    "ios.11-sim-x64": {
+      "#import": [
+        "ios.11-sim",
+        "ios.10-sim-x64"
       ]
     },
     "ios.12": {
       "#import": [
         "ios.11"
+      ]
+    },
+    "ios.12-sim": {
+      "#import": [
+        "ios.11-sim"
       ]
     },
     "ios.12-arm64": {
@@ -1154,15 +1193,26 @@
         "ios.11-arm64"
       ]
     },
-    "ios.12-x64": {
+    "ios.12-sim-arm64": {
       "#import": [
-        "ios.12",
-        "ios.11-x64"
+        "ios.12-sim",
+        "ios.11-sim-arm64"
+      ]
+    },
+    "ios.12-sim-x64": {
+      "#import": [
+        "ios.12-sim",
+        "ios.11-sim-x64"
       ]
     },
     "ios.13": {
       "#import": [
         "ios.12"
+      ]
+    },
+    "ios.13-sim": {
+      "#import": [
+        "ios.12-sim"
       ]
     },
     "ios.13-arm64": {
@@ -1171,15 +1221,26 @@
         "ios.12-arm64"
       ]
     },
-    "ios.13-x64": {
+    "ios.13-sim-arm64": {
       "#import": [
-        "ios.13",
-        "ios.12-x64"
+        "ios.13-sim",
+        "ios.12-sim-arm64"
+      ]
+    },
+    "ios.13-sim-x64": {
+      "#import": [
+        "ios.13-sim",
+        "ios.12-sim-x64"
       ]
     },
     "ios.8": {
       "#import": [
         "ios"
+      ]
+    },
+    "ios.8-sim": {
+      "#import": [
+        "ios-sim"
       ]
     },
     "ios.8-arm": {
@@ -1194,21 +1255,32 @@
         "ios-arm64"
       ]
     },
-    "ios.8-x64": {
+    "ios.8-sim-arm64": {
       "#import": [
-        "ios.8",
-        "ios-x64"
+        "ios.8-sim",
+        "ios-sim-arm64"
       ]
     },
-    "ios.8-x86": {
+    "ios.8-sim-x64": {
       "#import": [
-        "ios.8",
-        "ios-x86"
+        "ios.8-sim",
+        "ios-sim-x64"
+      ]
+    },
+    "ios.8-sim-x86": {
+      "#import": [
+        "ios.8-sim",
+        "ios-sim-x86"
       ]
     },
     "ios.9": {
       "#import": [
         "ios.8"
+      ]
+    },
+    "ios.9-sim": {
+      "#import": [
+        "ios.8-sim"
       ]
     },
     "ios.9-arm": {
@@ -1223,16 +1295,22 @@
         "ios.8-arm64"
       ]
     },
-    "ios.9-x64": {
+    "ios.9-sim-arm64": {
       "#import": [
-        "ios.9",
-        "ios.8-x64"
+        "ios.9-sim",
+        "ios.8-sim-arm64"
       ]
     },
-    "ios.9-x86": {
+    "ios.9-sim-x64": {
       "#import": [
-        "ios.9",
-        "ios.8-x86"
+        "ios.9-sim",
+        "ios.8-sim-x64"
+      ]
+    },
+    "ios.9-sim-x86": {
+      "#import": [
+        "ios.9-sim",
+        "ios.8-sim-x86"
       ]
     },
     "linux": {
@@ -2334,19 +2412,35 @@
         "unix"
       ]
     },
+    "tvos-sim": {
+      "#import": [
+        "tvos"
+      ]
+    },
     "tvos-arm64": {
       "#import": [
         "tvos",
         "unix-arm64"
       ]
     },
-    "tvos-x64": {
+    "tvos-sim-arm64": {
       "#import": [
-        "tvos",
+        "tvos-arm64",
+        "tvos-sim"
+      ]
+    },
+    "tvos-sim-x64": {
+      "#import": [
+        "tvos-sim",
         "unix-x64"
       ]
     },
     "tvos.10": {
+      "#import": [
+        "tvos"
+      ]
+    },
+    "tvos.10-sim": {
       "#import": [
         "tvos"
       ]
@@ -2357,15 +2451,26 @@
         "tvos-arm64"
       ]
     },
-    "tvos.10-x64": {
+    "tvos.10-sim-arm64": {
       "#import": [
-        "tvos.10",
-        "tvos-x64"
+        "tvos.10-sim",
+        "tvos-sim-arm64"
+      ]
+    },
+    "tvos.10-sim-x64": {
+      "#import": [
+        "tvos.10-sim",
+        "tvos-sim-x64"
       ]
     },
     "tvos.11": {
       "#import": [
         "tvos.10"
+      ]
+    },
+    "tvos.11-sim": {
+      "#import": [
+        "tvos.10-sim"
       ]
     },
     "tvos.11-arm64": {
@@ -2374,15 +2479,26 @@
         "tvos.10-arm64"
       ]
     },
-    "tvos.11-x64": {
+    "tvos.11-sim-arm64": {
       "#import": [
-        "tvos.11",
-        "tvos.10-x64"
+        "tvos.11-sim",
+        "tvos.10-sim-arm64"
+      ]
+    },
+    "tvos.11-sim-x64": {
+      "#import": [
+        "tvos.11-sim",
+        "tvos.10-sim-x64"
       ]
     },
     "tvos.12": {
       "#import": [
         "tvos.11"
+      ]
+    },
+    "tvos.12-sim": {
+      "#import": [
+        "tvos.11-sim"
       ]
     },
     "tvos.12-arm64": {
@@ -2391,15 +2507,26 @@
         "tvos.11-arm64"
       ]
     },
-    "tvos.12-x64": {
+    "tvos.12-sim-arm64": {
       "#import": [
-        "tvos.12",
-        "tvos.11-x64"
+        "tvos.12-sim",
+        "tvos.11-sim-arm64"
+      ]
+    },
+    "tvos.12-sim-x64": {
+      "#import": [
+        "tvos.12-sim",
+        "tvos.11-sim-x64"
       ]
     },
     "tvos.13": {
       "#import": [
         "tvos.12"
+      ]
+    },
+    "tvos.13-sim": {
+      "#import": [
+        "tvos.12-sim"
       ]
     },
     "tvos.13-arm64": {
@@ -2408,10 +2535,16 @@
         "tvos.12-arm64"
       ]
     },
-    "tvos.13-x64": {
+    "tvos.13-sim-arm64": {
       "#import": [
-        "tvos.13",
-        "tvos.12-x64"
+        "tvos.13-sim",
+        "tvos.12-sim-arm64"
+      ]
+    },
+    "tvos.13-sim-x64": {
+      "#import": [
+        "tvos.13-sim",
+        "tvos.12-sim-x64"
       ]
     },
     "ubuntu": {

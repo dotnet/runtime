@@ -266,8 +266,12 @@ while [[ $# > 0 ]]; do
           os="MacCatalyst" ;;
         tvos)
           os="tvOS" ;;
+        tvos-sim)
+          os="tvOS-sim" ;;
         ios)
           os="iOS" ;;
+        ios-sim)
+          os="iOS-sim" ;;
         android)
           os="Android" ;;
         browser)
@@ -278,7 +282,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, iOS, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOS-sim, iOS, iOS-sim, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac
