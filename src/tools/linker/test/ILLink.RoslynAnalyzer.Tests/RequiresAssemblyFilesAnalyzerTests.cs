@@ -29,7 +29,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 	}
 }" + Environment.NewLine + source;
 			return VerifyCS.VerifyAnalyzerAsync (source,
-				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.PublishSingleFile),
+				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
 				expected);
 		}
 

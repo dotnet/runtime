@@ -15,7 +15,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		static Task VerifySingleFileAnalyzer (string source, params DiagnosticResult[] expected)
 		{
 			return VerifyCS.VerifyAnalyzerAsync (source,
-				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.PublishSingleFile),
+				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
 				expected);
 		}
 

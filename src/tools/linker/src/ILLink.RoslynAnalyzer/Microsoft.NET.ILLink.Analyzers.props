@@ -1,7 +1,7 @@
 <Project>
   <ItemGroup>
-    <CompilerVisibleProperty Include="PublishSingleFile"/>
-    <CompilerVisibleProperty Include="PublishTrimmed"/>
+    <CompilerVisibleProperty Include="EnableSingleFileAnalyzer"/>
+    <CompilerVisibleProperty Include="EnableTrimAnalyzer"/>
     <CompilerVisibleProperty Include="IncludeAllContentForSelfExtract"/>
   </ItemGroup>
 </Project>
