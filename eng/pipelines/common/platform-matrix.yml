@@ -397,7 +397,7 @@ jobs:
       osGroup: tvOS-sim
       archType: x64
       targetRid: tvos-sim-x64
-      platform: tvOS-sim_x64
+      platform: tvOS_sim_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -418,7 +418,7 @@ jobs:
       osGroup: tvOS-sim
       archType: arm64
       targetRid: tvos-sim-arm64
-      platform: tvOS-sim_arm64
+      platform: tvOS_sim_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -481,7 +481,7 @@ jobs:
       osGroup: iOS-sim
       archType: x64
       targetRid: ios-sim-x64
-      platform: iOS-sim_x64
+      platform: iOS_sim_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -502,7 +502,7 @@ jobs:
       osGroup: iOS-sim
       archType: x86
       targetRid: ios-sim-x86
-      platform: iOS-sim_x86
+      platform: iOS_sim_x86
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -524,7 +524,7 @@ jobs:
       osGroup: iOS-sim
       archType: arm64
       targetRid: ios-sim-arm64
-      platform: iOS-sim_arm64
+      platform: iOS_sim_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
