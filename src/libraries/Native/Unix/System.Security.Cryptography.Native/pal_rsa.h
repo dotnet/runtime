@@ -86,13 +86,6 @@ Returns the RSA modulus size in bytes.
 PALEXPORT int32_t CryptoNative_RsaSize(RSA* rsa);
 
 /*
-Shims the RSA_generate_key_ex method.
-
-Returns 1 upon success, otherwise 0.
-*/
-PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e);
-
-/*
 Shims the RSA_sign method.
 
 Returns 1 upon success, otherwise 0.

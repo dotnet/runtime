@@ -788,4 +788,20 @@ int local_BIO_up_ref(BIO *bio)
 
     return CRYPTO_add_lock(&bio->references, 1, CRYPTO_LOCK_BIO, __FILE__, __LINE__) > 1;
 }
+
+int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2)
+{
+    if (ctx != NULL)
+    {
+        EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+        if (EVP_PKEY_base_id(pkey) != NID_rsaEncryption)
+        {
+            return -1;
+        }
+    }
+
+    return EVP_PKEY_CTX_ctrl(ctx, -1, optype, cmd, p1, p2);
+}
+
 #endif
