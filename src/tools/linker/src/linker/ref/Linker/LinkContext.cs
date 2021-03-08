@@ -13,6 +13,7 @@ namespace Mono.Linker
 		public AnnotationStore Annotations { get { throw null; } }
 
 		public TypeDefinition GetType (string fullName) { throw null; }
+		public string GetAssemblyLocation (AssemblyDefinition assembly) { throw null; }
 		public AssemblyDefinition GetLoadedAssembly (string name) { throw null; }
 
 		public void LogMessage (MessageContainer message) { throw null; }

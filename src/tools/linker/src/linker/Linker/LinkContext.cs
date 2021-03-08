@@ -197,9 +197,7 @@ namespace Mono.Linker
 			_pipeline = pipeline;
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
-			_resolver = new AssemblyResolver () {
-				Context = this
-			};
+			_resolver = new AssemblyResolver (this);
 			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
@@ -328,7 +326,7 @@ namespace Mono.Linker
 			try {
 				var symbolReader = _symbolReaderProvider.GetSymbolReader (
 					assembly.MainModule,
-					_resolver.GetAssemblyFileName (assembly));
+					GetAssemblyLocation (assembly));
 
 				if (symbolReader == null)
 					return;
@@ -419,8 +417,7 @@ namespace Mono.Linker
 					continue;
 
 				if (args[1].Value is not string value || !value.Equals ("True", StringComparison.OrdinalIgnoreCase)) {
-					var assemblyFileName = Resolver.GetAssemblyFileName (assembly);
-					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\"", 2102, assemblyFileName);
+					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\"", 2102, GetAssemblyLocation (assembly));
 					continue;
 				}
 
@@ -444,6 +441,11 @@ namespace Mono.Linker
 				return ad;
 
 			return null;
+		}
+
+		public string GetAssemblyLocation (AssemblyDefinition assembly)
+		{
+			return Resolver.GetAssemblyLocation (assembly);
 		}
 
 		public IEnumerable<AssemblyDefinition> GetReferencedAssemblies ()
