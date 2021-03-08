@@ -11,10 +11,6 @@ namespace System.IO.Pipelines
     {
         private const int DefaultMinimumSegmentSize = 4096;
 
-        private const int DefaultResumeWriterThreshold = DefaultMinimumSegmentSize * Pipe.InitialSegmentPoolSize / 2;
-
-        private const int DefaultPauseWriterThreshold = DefaultMinimumSegmentSize * Pipe.InitialSegmentPoolSize;
-
         /// <summary>Gets the default instance of <see cref="System.IO.Pipelines.PipeOptions" />.</summary>
         /// <value>A <see cref="System.IO.Pipelines.PipeOptions" /> object initialized with default parameters.</value>
         public static PipeOptions Default { get; } = new PipeOptions();
@@ -36,6 +32,24 @@ namespace System.IO.Pipelines
             int minimumSegmentSize = -1,
             bool useSynchronizationContext = true)
         {
+            MinimumSegmentSize = minimumSegmentSize == -1 ? DefaultMinimumSegmentSize : minimumSegmentSize;
+
+            // TODO: These *should* be computed based on how much users want to buffer and the minimum segment size. Today we don't have a way
+            // to let users specify the maximum buffer size, so we pick a reasonable number based on defaults. They can influence
+            // how much gets buffered by increasing the minimum segment size.
+
+            // With a defaukt segment size of 4K this maps to 16K
+            InitialSegmentPoolSize = 4;
+
+            // With a defaukt segment size of 4K this maps to 1MB. If the pipe has large segments this will be bigger than 1MB...
+            MaxSegmentPoolSize = 256;
+
+            // By default, we'll throttle the writer at 64K of buffered data
+            const int DefaultPauseWriterThreshold = 65536;
+
+            // Resume threshold is 1/2 of the pause threshold to prevent thrashing at the limit
+            const int DefaultResumeWriterThreshold = DefaultPauseWriterThreshold / 2;
+
             if (pauseWriterThreshold == -1)
             {
                 pauseWriterThreshold = DefaultPauseWriterThreshold;
@@ -55,11 +69,11 @@ namespace System.IO.Pipelines
             }
 
             Pool = pool ?? MemoryPool<byte>.Shared;
+            IsDefaultSharedMemoryPool = Pool == MemoryPool<byte>.Shared;
             ReaderScheduler = readerScheduler ?? PipeScheduler.ThreadPool;
             WriterScheduler = writerScheduler ?? PipeScheduler.ThreadPool;
             PauseWriterThreshold = pauseWriterThreshold;
             ResumeWriterThreshold = resumeWriterThreshold;
-            MinimumSegmentSize = minimumSegmentSize == -1 ? DefaultMinimumSegmentSize : minimumSegmentSize;
             UseSynchronizationContext = useSynchronizationContext;
         }
 
@@ -90,5 +104,20 @@ namespace System.IO.Pipelines
         /// <summary>Gets the <see cref="System.Buffers.MemoryPool{T}" /> object used for buffer management.</summary>
         /// <value>A pool of memory blocks used for buffer management.</value>
         public MemoryPool<byte> Pool { get; }
+
+        /// <summary>
+        /// Returns true if Pool is <see cref="MemoryPool{Byte}"/>.Shared
+        /// </summary>
+        internal bool IsDefaultSharedMemoryPool { get; }
+
+        /// <summary>
+        /// The initialize size of the segment pool
+        /// </summary>
+        internal int InitialSegmentPoolSize { get; }
+
+        /// <summary>
+        /// The maximum number of segments to pool
+        /// </summary>
+        internal int MaxSegmentPoolSize { get; }
     }
 }
