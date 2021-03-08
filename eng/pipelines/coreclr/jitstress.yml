@@ -7,12 +7,6 @@ schedules:
     include:
     - main
   always: true
-- cron: "0 4 * * *"
-  displayName: Daily (if changes) at 8:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
-  always: false
 
 jobs:
 
