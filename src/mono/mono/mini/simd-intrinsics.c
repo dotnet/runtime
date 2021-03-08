@@ -1137,6 +1137,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ExtractNarrowingSaturateUnsignedUpper, OP_ARM64_SQXTUN2},
 	{SN_ExtractNarrowingSaturateUpper, OP_ARM64_SQXTN2, None, OP_ARM64_UQXTN2},
 	{SN_ExtractNarrowingUpper, OP_ARM64_XTN2},
+	{SN_ExtractVector128, OP_ARM64_EXT},
+	{SN_ExtractVector64, OP_ARM64_EXT},
 	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
 	{SN_FloorScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
 	{SN_FusedAddHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHADD},

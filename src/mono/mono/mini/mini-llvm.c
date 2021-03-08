@@ -9572,6 +9572,45 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
 			break;
 		}
+		case OP_ARM64_EXT: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			unsigned int elems = LLVMGetVectorSize (ret_t);
+			const int unrolled_mask [MAX_VECTOR_ELEMS] = {
+				0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+				16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+			};
+			LLVMValueRef index = arg3;
+			enum { ARM64_EXT_MAX_INDEX = MAX_VECTOR_ELEMS / 2 };
+			const int max_index = elems;
+			LLVMBasicBlockRef cases [ARM64_EXT_MAX_INDEX] = { 0 };
+			LLVMValueRef case_values [ARM64_EXT_MAX_INDEX] = { 0 };
+
+			LLVMBasicBlockRef default_case = gen_bb (ctx, "arm64_ext_default");
+			LLVMValueRef default_value = lhs;
+
+			LLVMValueRef llvmswitch = LLVMBuildSwitch (builder, index, default_case, ARM64_EXT_MAX_INDEX);
+			cbb = gen_bb (ctx, "arm64_ext_unroll_continue");
+			for (int i = 0; i < max_index; ++i) {
+				LLVMBasicBlockRef llvmcase = gen_bb (ctx, "arm64_ext_case");
+				LLVMAddCase (llvmswitch, const_int32 (i), llvmcase);
+				LLVMPositionBuilderAtEnd (builder, llvmcase);
+				LLVMValueRef mask = create_const_vector_i32 (&unrolled_mask [i], elems);
+				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "arm64_ext");
+				LLVMBuildBr (builder, cbb);
+				cases [i] = llvmcase;
+				case_values [i] = result;
+			}
+			LLVMPositionBuilderAtEnd (builder, default_case);
+			LLVMBuildBr (builder, cbb);
+
+			LLVMPositionBuilderAtEnd (builder, cbb);
+			LLVMValueRef phi = LLVMBuildPhi (builder, ret_t, "");
+			LLVMAddIncoming (phi, case_values, cases, max_index);
+			LLVMAddIncoming (phi, &default_value, &default_case, 1);
+			ctx->bblocks [bb->block_num].end_bblock = cbb;
+			values [ins->dreg] = phi;
+			break;
+		}
 		case OP_ARM64_MVN: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
