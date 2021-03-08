@@ -124,7 +124,7 @@ PhaseStatus Compiler::fgInsertClsInitChecks()
                     if ((isInitAddr == 0) || (isInitMask == 0))
                     {
                         JITDUMP("getIsClassInitedFieldAddress: returned empty isInitAddr or isInitedMask.");
-                        return PhaseStatus::MODIFIED_NOTHING;
+                        continue;
                     }
                     assert(isInitMask > 0);
 
@@ -1163,7 +1163,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     {
         // Save cls for this helper for fgInsertClsInitChecks phase
         result->gtRetClsHnd = cls;
-        fgHasOptStaticInit  = true;
     }
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default

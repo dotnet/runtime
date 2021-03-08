@@ -9237,6 +9237,17 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
+    // Look for candidates for fgInsertClsInitChecks phase.
+    if (fgGlobalMorph && (call->gtCallType == CT_HELPER) && (call->gtRetClsHnd != nullptr))
+    {
+        CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        if ((helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE) ||
+            (helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS))
+        {
+            fgHasOptStaticInit = true;
+        }
+    }
+
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
     //
     // We need to do these before the arguments are morphed
