@@ -1656,10 +1656,10 @@ MINI_OP(OP_ARM64_USHLL2, "arm64_ushll2", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SSHLL, "arm64_sshll", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SSHLL2, "arm64_sshll2", XREG, XREG, IREG)
 
-
-MINI_OP(OP_ARM64_XRSHIFT_SCALAR, "arm64_xrshift_scalar", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_XRSHIFT, "arm64_xrshift", XREG, XREG, IREG)
-MINI_OP3(OP_ARM64_XRSHIFT2, "arm64_xrshift2", XREG, XREG, XREG, IREG)
+/* Narrowing arm64 shifts that aren't decomposed into urshl or srshl. */
+MINI_OP(OP_ARM64_XNSHIFT_SCALAR, "arm64_xrshift_scalar", XREG, XREG, IREG)
+MINI_OP(OP_ARM64_XNSHIFT, "arm64_xnshift", XREG, XREG, IREG)
+MINI_OP3(OP_ARM64_XNSHIFT2, "arm64_xnshift2", XREG, XREG, XREG, IREG)
 
 MINI_OP(OP_ARM64_UQSHL_IMM, "arm64_uqshl_imm", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SQSHL_IMM, "arm64_uqshl_imm", XREG, XREG, IREG)

@@ -380,6 +380,22 @@ ovr_tag_corresponding_integer (llvm_ovr_tag_t tag)
 	return ((tag & ~INTRIN_vectormask) >> 2) | (tag & INTRIN_vectormask);
 }
 
+static LLVMTypeRef
+ovr_tag_to_llvm_type (llvm_ovr_tag_t tag)
+{
+	int vw = 0;
+	int ew = 0;
+	if (tag & INTRIN_vector64) vw = 1;
+	else if (tag & INTRIN_vector128) vw = 2;
+
+	if (tag & INTRIN_int16) ew = 1;
+	else if (tag & INTRIN_int32) ew = 2;
+	else if (tag & INTRIN_int64) ew = 3;
+	else if (tag & INTRIN_float32) ew = 4;
+	else if (tag & INTRIN_float64) ew = 5;
+	return intrin_types [vw][ew];
+}
+
 static int
 key_from_id_and_tag (int id, llvm_ovr_tag_t ovr_tag)
 {
@@ -1303,6 +1319,88 @@ gen_bb (EmitContext *ctx, const char *prefix)
 
 	sprintf (bb_name, "%s%d", prefix, ++ ctx->ex_index);
 	return LLVMAppendBasicBlock (ctx->lmethod, bb_name);
+}
+
+typedef struct {
+	EmitContext *ctx;
+	MonoBasicBlock *bb;
+	LLVMBasicBlockRef continuation;
+	LLVMValueRef phi;
+	LLVMValueRef switch_ins;
+	LLVMBasicBlockRef tmp_block;
+	LLVMBasicBlockRef default_case;
+	LLVMTypeRef switch_index_type;
+	const char *name;
+	int max_cases;
+	int i;
+} ImmediateUnrollCtx;
+
+
+static ImmediateUnrollCtx
+immediate_unroll_begin (
+	EmitContext *ctx, MonoBasicBlock *bb, int max_cases,
+	LLVMValueRef switch_index, LLVMTypeRef return_type, const char *name)
+{
+	LLVMBasicBlockRef default_case = gen_bb (ctx, name);
+	LLVMBasicBlockRef continuation = gen_bb (ctx, name);
+	LLVMValueRef switch_ins = LLVMBuildSwitch (ctx->builder, switch_index, default_case, max_cases);
+	LLVMPositionBuilderAtEnd (ctx->builder, continuation);
+	LLVMValueRef phi = LLVMBuildPhi (ctx->builder, return_type, name);
+	ImmediateUnrollCtx ictx = { 0 };
+	ictx.ctx = ctx;
+	ictx.bb = bb;
+	ictx.continuation = continuation;
+	ictx.phi = phi;
+	ictx.switch_ins = switch_ins;
+	ictx.default_case = default_case;
+	ictx.switch_index_type = LLVMTypeOf (switch_index);
+	ictx.name = name;
+	ictx.max_cases = max_cases;
+	return ictx;
+}
+
+static gboolean
+immediate_unroll_next (ImmediateUnrollCtx *ictx, int *i)
+{
+	if (ictx->i >= ictx->max_cases)
+		return FALSE;
+	ictx->tmp_block = gen_bb (ictx->ctx, ictx->name);
+	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->tmp_block);
+	*i = ictx->i;
+	++ictx->i;
+	return TRUE;
+}
+
+static void
+immediate_unroll_commit (ImmediateUnrollCtx *ictx, int switch_const, LLVMValueRef value)
+{
+	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
+	LLVMAddCase (ictx->switch_ins, LLVMConstInt (ictx->switch_index_type, switch_const, FALSE), ictx->tmp_block);
+	LLVMAddIncoming (ictx->phi, &value, &ictx->tmp_block, 1);
+}
+
+static void
+immediate_unroll_default (ImmediateUnrollCtx *ictx)
+{
+	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->default_case);
+}
+
+static void
+immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
+{
+	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
+	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
+}
+
+static LLVMValueRef
+immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
+{
+	EmitContext *ctx = ictx->ctx;
+	LLVMBuilderRef builder = ctx->builder;
+	LLVMPositionBuilderAtEnd (builder, ictx->continuation);
+	*continuation = ictx->continuation;
+	ctx->bblocks [ictx->bb->block_num].end_bblock = ictx->continuation;
+	return ictx->phi;
 }
 
 /*
@@ -9579,36 +9677,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 				16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
 			};
-			LLVMValueRef index = arg3;
 			enum { ARM64_EXT_MAX_INDEX = MAX_VECTOR_ELEMS / 2 };
-			const int max_index = elems;
-			LLVMBasicBlockRef cases [ARM64_EXT_MAX_INDEX] = { 0 };
-			LLVMValueRef case_values [ARM64_EXT_MAX_INDEX] = { 0 };
-
-			LLVMBasicBlockRef default_case = gen_bb (ctx, "arm64_ext_default");
+			int max_index = elems;
+			LLVMValueRef index = arg3;
 			LLVMValueRef default_value = lhs;
-
-			LLVMValueRef llvmswitch = LLVMBuildSwitch (builder, index, default_case, ARM64_EXT_MAX_INDEX);
-			cbb = gen_bb (ctx, "arm64_ext_unroll_continue");
-			for (int i = 0; i < max_index; ++i) {
-				LLVMBasicBlockRef llvmcase = gen_bb (ctx, "arm64_ext_case");
-				LLVMAddCase (llvmswitch, const_int32 (i), llvmcase);
-				LLVMPositionBuilderAtEnd (builder, llvmcase);
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, index, ret_t, "arm64_ext");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
 				LLVMValueRef mask = create_const_vector_i32 (&unrolled_mask [i], elems);
 				LLVMValueRef result = LLVMBuildShuffleVector (builder, lhs, rhs, mask, "arm64_ext");
-				LLVMBuildBr (builder, cbb);
-				cases [i] = llvmcase;
-				case_values [i] = result;
+				immediate_unroll_commit (&ictx, i, result);
 			}
-			LLVMPositionBuilderAtEnd (builder, default_case);
-			LLVMBuildBr (builder, cbb);
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			LLVMValueRef phi = LLVMBuildPhi (builder, ret_t, "");
-			LLVMAddIncoming (phi, case_values, cases, max_index);
-			LLVMAddIncoming (phi, &default_value, &default_case, 1);
-			ctx->bblocks [bb->block_num].end_bblock = cbb;
-			values [ins->dreg] = phi;
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, default_value);
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 		case OP_ARM64_MVN: {
@@ -10283,32 +10365,52 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_XRSHIFT_SCALAR:
-		case OP_ARM64_XRSHIFT:
-		case OP_ARM64_XRSHIFT2: {
-			// XXXih: TODO: unroll count/rhs/arg3
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			LLVMValueRef args [2] = { lhs, rhs };
+		case OP_ARM64_XNSHIFT_SCALAR:
+		case OP_ARM64_XNSHIFT:
+		case OP_ARM64_XNSHIFT2: {
+			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
+			LLVMValueRef shift_arg = lhs;
+			LLVMValueRef shift_amount = rhs;
 			gboolean high = FALSE;
 			gboolean scalar = FALSE;
 			int iid = ins->inst_c0;
 			switch (ins->opcode) {
-			case OP_ARM64_XRSHIFT_SCALAR: scalar = TRUE; break;
-			case OP_ARM64_XRSHIFT2: high = TRUE; break;
+			case OP_ARM64_XNSHIFT_SCALAR: scalar = TRUE; break;
+			case OP_ARM64_XNSHIFT2: high = TRUE; break;
 			}
 			if (high) {
-				args [0] = rhs;
-				args [1] = arg3;
+				shift_arg = rhs;
+				shift_amount = arg3;
 				ovr_tag = ovr_tag_smaller_vector (ovr_tag);
+				intrin_result_t = ovr_tag_to_llvm_type (ovr_tag);
 			}
+			LLVMTypeRef shift_arg_t = LLVMTypeOf (shift_arg);
+			LLVMTypeRef shift_arg_elem_t = LLVMGetElementType (shift_arg_t);
+			unsigned int element_bits = mono_llvm_get_prim_size_bits (shift_arg_elem_t);
+			int range_min = 1;
+			int range_max = element_bits / 2;
 			if (scalar) {
-				LLVMTypeRef arg_t = LLVMTypeOf (args [0]);
-				LLVMTypeRef elem_t = LLVMGetElementType (arg_t);
-				unsigned int elems = LLVMGetVectorSize (arg_t);
-				LLVMValueRef lo = scalar_from_vector (ctx, args [0]);
-				args [0] = vector_from_scalar_ty (ctx, LLVMVectorType (elem_t, elems * 2), lo);
+				unsigned int elems = LLVMGetVectorSize (shift_arg_t);
+				LLVMValueRef lo = scalar_from_vector (ctx, shift_arg);
+				shift_arg = vector_from_scalar_ty (ctx, LLVMVectorType (shift_arg_elem_t, elems * 2), lo);
 			}
-			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			int max_index = range_max - range_min + 1;
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, shift_amount, intrin_result_t, "arm64_xnshift");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int shift_const = i + range_min;
+				LLVMValueRef intrin_args [] = { shift_arg, const_int32 (shift_const) };
+				LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, intrin_args, "");
+				immediate_unroll_commit (&ictx, shift_const, result);
+			}
+			{
+				immediate_unroll_default (&ictx);
+				LLVMValueRef intrin_args [] = { shift_arg, const_int32 (range_max) };
+				LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, intrin_args, "");
+				immediate_unroll_commit_default (&ictx, result);
+			}
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
 			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
 			if (scalar)
@@ -10330,12 +10432,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ARM64_SQSHLU: {
-			// XXXih: TODO: unroll count/rhs
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			LLVMValueRef shift = create_shift_vector (ctx, lhs, rhs);
-			LLVMValueRef args [] = { lhs, shift };
+			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
+			unsigned int element_bits = mono_llvm_get_prim_size_bits (LLVMGetElementType (intrin_result_t));
+			int max_index = element_bits;
 			int iid = INTRINS_AARCH64_ADV_SIMD_SQSHLU;
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, rhs, intrin_result_t, "arm64_sqshlu");
+			LLVMValueRef args [] = { lhs, NULL };
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int shift_const = i;
+				args [1] = create_shift_vector (ctx, lhs, const_int32 (shift_const));
+				LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				immediate_unroll_commit (&ictx, shift_const, result);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, lhs);
+			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 		case OP_ARM64_SSHLL:
@@ -10362,11 +10475,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_SLI:
 		case OP_ARM64_SRI: {
-			// XXXih: TODO: unroll count/arg3
-			LLVMValueRef args [3] = { lhs, rhs, arg3 };
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			int iid = ins->opcode == OP_ARM64_SLI ? INTRINS_AARCH64_ADV_SIMD_SLI : INTRINS_AARCH64_ADV_SIMD_SRI;
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
+			unsigned int element_bits = mono_llvm_get_prim_size_bits (LLVMGetElementType (intrin_result_t));
+			int range_min = 0;
+			int range_max = element_bits - 1;
+			if (ins->opcode == OP_ARM64_SRI) {
+				++range_min;
+				++range_max;
+			}
+			int iid = ins->opcode == OP_ARM64_SRI ? INTRINS_AARCH64_ADV_SIMD_SRI : INTRINS_AARCH64_ADV_SIMD_SLI;
+			int max_index = range_max - range_min + 1;
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, arg3, intrin_result_t, "arm64_ext");
+			LLVMValueRef intrin_args [3] = { lhs, rhs, arg3 };
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				int shift_const = i + range_min;
+				intrin_args [2] = const_int32 (shift_const);
+				LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, intrin_args, "");
+				immediate_unroll_commit (&ictx, shift_const, result);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, lhs);
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_SQRT_SCALAR: {
@@ -10407,9 +10539,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_LD1_INSERT: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			unsigned int bytes = mono_llvm_get_prim_size_bits (ret_t) / 8;
+			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
 			LLVMValueRef address = arg3;
-			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1_insert", FALSE, bytes);
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1_insert", FALSE, alignment);
 			result = LLVMBuildInsertElement (builder, lhs, result, rhs, "arm64_ld1_insert");
 			values [ins->dreg] = result;
 			break;
@@ -10418,11 +10550,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_LD1: {
 			gboolean replicate = ins->opcode == OP_ARM64_LD1R;
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			unsigned int bytes = mono_llvm_get_prim_size_bits (ret_t) / 8;
+			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
 			LLVMValueRef address = lhs;
 			if (!replicate)
 				address = convert (ctx, address, LLVMPointerType (ret_t, 0));
-			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1", FALSE, bytes);
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1", FALSE, alignment);
 			if (replicate) {
 				unsigned int elems = LLVMGetVectorSize (ret_t);
 				result = broadcast_element (ctx, result, elems);
@@ -10433,14 +10565,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ARM64_ST1: {
 			LLVMTypeRef t = LLVMTypeOf (rhs);
 			LLVMValueRef address = convert (ctx, lhs, LLVMPointerType (t, 0));
-			unsigned int bytes = mono_llvm_get_prim_size_bits (t) / 8;
-			mono_llvm_build_aligned_store (builder, rhs, address, FALSE, bytes);
+			unsigned int alignment = mono_llvm_get_prim_size_bits (t) / 8;
+			mono_llvm_build_aligned_store (builder, rhs, address, FALSE, alignment);
 			break;
 		}
 		case OP_ARM64_ST1_SCALAR: {
-			// XXXih: TODO: unroll arg3
+			LLVMTypeRef t = LLVMGetElementType (LLVMTypeOf (rhs));
+			unsigned int alignment = mono_llvm_get_prim_size_bits (t) / 8;
 			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, arg3, "arm64_st1_scalar");
-			mono_llvm_build_store (builder, val, lhs, FALSE, LLVM_BARRIER_NONE);
+			mono_llvm_build_aligned_store (builder, val, lhs, FALSE, alignment);
 			break;
 		}
 		case OP_ARM64_ADDHN:
