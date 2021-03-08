@@ -205,9 +205,7 @@ jobs:
     platforms:
     - Android_x64
     - Browser_wasm
-    - tvOS_sim_x64
     - tvOS_arm64
-    - iOS_sim_x64
     - iOS_arm64
     jobParameters:
       condition: >-
@@ -498,9 +496,7 @@ jobs:
       - mono_android_offsets
       - mono_browser_offsets
       - mono_tvos_offsets
-      - mono_tvos_sim_offsets
       - mono_ios_offsets
-      - mono_ios_sim_offsets
       monoCrossAOTTargetOS:
       - Android
       - Browser
