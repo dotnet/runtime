@@ -105,12 +105,12 @@ stages:
       - Android_arm64
       - MacCatalyst_x64
       - MacCatalyst_arm64
-      - tvOS-sim_x64
-      - tvOS-sim_arm64
+      - tvOS_sim_x64
+      - tvOS_sim_arm64
       - tvOS_arm64
-      - iOS-sim_x64
-      - iOS-sim_x86
-      - iOS-sim_arm64
+      - iOS_sim_x64
+      - iOS_sim_x86
+      - iOS_sim_arm64
       - iOS_arm
       - iOS_arm64
       - OSX_x64
@@ -143,9 +143,9 @@ stages:
       platforms:
       - Android_x64
       - Browser_wasm
-      - tvOS-sim_x64
+      - tvOS_sim_x64
       - tvOS_arm64
-      - iOS-sim_x64
+      - iOS_sim_x64
       - iOS_arm64
 
   #

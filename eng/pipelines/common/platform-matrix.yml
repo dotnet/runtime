@@ -388,13 +388,14 @@ jobs:
 
 # tvOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS-sim_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOS_sim_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS-sim
+      osGroup: tvOS
+      osSubGroup: _sim
       archType: x64
       targetRid: tvos-sim-x64
       platform: tvOS_sim_x64
@@ -409,13 +410,14 @@ jobs:
 
 # tvOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS-sim_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOS_sim_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS-sim
+      osGroup: tvOS
+      osSubGroup: _sim
       archType: arm64
       targetRid: tvos-sim-arm64
       platform: tvOS_sim_arm64
@@ -472,13 +474,14 @@ jobs:
 
 # iOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'iOS-sim_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_sim_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS-sim
+      osGroup: iOS
+      osSubGroup: _sim
       archType: x64
       targetRid: ios-sim-x64
       platform: iOS_sim_x64
@@ -493,13 +496,14 @@ jobs:
 
 # iOS Simulator x86
 
-- ${{ if containsValue(parameters.platforms, 'iOS-sim_x86') }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_sim_x86') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS-sim
+      osGroup: iOS
+      osSubGroup: _sim
       archType: x86
       targetRid: ios-sim-x86
       platform: iOS_sim_x86
@@ -515,13 +519,14 @@ jobs:
 
 # iOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'iOS-sim_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_sim_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS-sim
+      osGroup: iOS
+      osSubGroup: _sim
       archType: arm64
       targetRid: ios-sim-arm64
       platform: iOS_sim_arm64
