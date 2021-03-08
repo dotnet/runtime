@@ -115,7 +115,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient\tests\System.Net.WebClient.Tests.csproj" />
     
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Context\tests\System.Reflection.Context.Tests.csproj" />

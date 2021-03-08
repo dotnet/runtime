@@ -116,7 +116,7 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Forces the runtime to use the invariant mode
     /// </summary>
-    public bool ForceInvariant { get; set; }
+    public bool InvariantGlobalization { get; set; }
 
     /// <summary>
     /// Forces the runtime to use the interpreter
@@ -186,7 +186,7 @@ public class AppleAppBuilderTask : Task
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, ForceInvariant, Optimized, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, NativeMainSource);
 
             if (BuildAppBundle)
             {

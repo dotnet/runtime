@@ -18,7 +18,6 @@
 #include <stdio.h>
 
 static char *bundle_path;
-static char *icu_data = NULL;
 
 // no-op for iOS and tvOS.
 // watchOS is not supported yet.
@@ -204,7 +203,7 @@ register_dllmap (void)
 //%DllMap%
 }
 
-int32_t GlobalizationNative_LoadICUData(void *pData);
+int32_t GlobalizationNative_LoadICUData(char *path);
 
 static int32_t load_icu_data ()
 {
@@ -218,40 +217,7 @@ static int32_t load_icu_data ()
     res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
     assert (res > 0);
 
-    FILE *fp = fopen (path, "rb");
-    if (fp == NULL) {
-        os_log_info (OS_LOG_DEFAULT, "Unable to load ICU dat file '%s'.", dname);
-        exit (1);
-    }
-
-    if (fseek (fp, 0L, SEEK_END) != 0) {
-        os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the dat file");
-        exit (1);
-    }
-
-    long bufsize = ftell (fp);
-
-    if (bufsize == -1) {
-        os_log_info (OS_LOG_DEFAULT, "Unable to determine size of the ICU dat file.");
-        exit (1);
-    }
-
-    icu_data = malloc (sizeof (char) * (bufsize + 1));
-
-    if (fseek (fp, 0L, SEEK_SET) != 0) {
-        os_log_info (OS_LOG_DEFAULT, "Unable to seek ICU dat file.");
-        exit (1);
-    }
-
-    size_t len = fread (icu_data, sizeof (char), bufsize, fp);
-    if (ferror ( fp ) != 0 ) {
-        os_log_info (OS_LOG_DEFAULT, "Unable to read ICU dat file");
-        exit (1);
-    }
-
-    fclose (fp);
-
-    return GlobalizationNative_LoadICUData (icu_data);
+    return GlobalizationNative_LoadICUData(path);
 }
 
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
@@ -262,7 +228,7 @@ void register_aot_modules (void);
 void
 mono_ios_runtime_init (void)
 {
-#if FORCE_INVARIANT
+#if INVARIANT_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
 
@@ -271,7 +237,7 @@ mono_ios_runtime_init (void)
     setenv ("MONO_LOG_MASK", "all", TRUE);
 #endif
 
-#if !FORCE_INVARIANT
+#if !INVARIANT_GLOBALIZATION
     int32_t ret = load_icu_data ();
 
     if (ret == 0) {
@@ -337,11 +303,6 @@ mono_ios_runtime_init (void)
     int res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
-
-    if (icu_data) {
-        free (icu_data);
-        icu_data = NULL;
-    }
 
     exit (res);
 }

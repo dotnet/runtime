@@ -176,7 +176,7 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        ForceInvariant="$(InvariantGlobalization)"
+        InvariantGlobalization="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"

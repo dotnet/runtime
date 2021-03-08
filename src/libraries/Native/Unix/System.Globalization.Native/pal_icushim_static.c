@@ -49,7 +49,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
 {
-    return GlobalizationNative_LoadICUData(pData);
+    return load_icu_data(pData);
 }
 
 /*
@@ -65,7 +65,7 @@ void mono_wasm_link_icu_shim(void)
 
 #endif
 
-int32_t GlobalizationNative_LoadICUData(void* pData)
+static int32_t load_icu_data(void* pData)
 {
 
     UErrorCode status = 0;
@@ -84,6 +84,47 @@ int32_t GlobalizationNative_LoadICUData(void* pData)
         isDataSet = 1;
         return 1;
     }
+}
+
+int32_t GlobalizationNative_LoadICUData(char* path)
+{
+    int32_t ret = -1;
+    char* icu_data;
+
+    FILE *fp = fopen (path, "rb");
+    if (fp == NULL) {
+        fprintf (stderr,  "Unable to load ICU dat file '%s'.", path);
+        return ret;
+    }
+
+    if (fseek (fp, 0L, SEEK_END) != 0) {
+        fprintf (stderr, "Unable to determine size of the dat file");
+        return ret;
+    }
+
+    long bufsize = ftell (fp);
+
+    if (bufsize == -1) {
+        fprintf (stderr, "Unable to determine size of the ICU dat file.");
+        return ret;
+    }
+
+    icu_data = malloc (sizeof (char) * (bufsize + 1));
+
+    if (fseek (fp, 0L, SEEK_SET) != 0) {
+        fprintf (stderr, "Unable to seek ICU dat file.");
+        return ret;
+    }
+
+    size_t len = fread (icu_data, sizeof (char), bufsize, fp);
+    if (ferror ( fp ) != 0 ) {
+        fprintf (stderr, "Unable to read ICU dat file");
+        return ret;
+    }
+
+    fclose (fp);
+
+    return load_icu_data (icu_data);
 }
 
 const char* GlobalizationNative_GetICUDTName(const char* culture)
