@@ -257,6 +257,22 @@ int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity
     return SecIdentityCopyPrivateKey(identity, pPrivateKeyOut);
 }
 
+int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus)
+{
+    if (cert == NULL || ppDataOut == NULL || pOSStatus == NULL)
+    {
+        if (ppDataOut != NULL)
+            *ppDataOut = NULL;
+        if (pOSStatus != NULL)
+            *pOSStatus = noErr;
+        return kErrorBadInput;
+    }
+
+    *ppDataOut = SecCertificateCopyData(cert);
+    *pOSStatus = *ppDataOut == NULL ? errSecParam : noErr;
+    return (*pOSStatus == noErr);
+}
+
 #if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t ReadX509(uint8_t* pbData,
                         int32_t cbData,
@@ -508,26 +524,6 @@ int32_t AppleCryptoNative_X509ExportData(CFArrayRef data,
     *pOSStatus = SecItemExport(data, dataFormat, 0, &keyParams, pExportOut);
 
     return *pOSStatus == noErr;
-}
-
-int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus)
-{
-    if (ppDataOut != NULL)
-        *ppDataOut = NULL;
-    if (pOSStatus != NULL)
-        *pOSStatus = noErr;
-
-    if (cert == NULL || ppDataOut == NULL || pOSStatus == NULL)
-        return kErrorBadInput;
-
-    SecExternalFormat dataFormat = kSecFormatX509Cert;
-    SecItemImportExportKeyParameters keyParams;
-    memset(&keyParams, 0, sizeof(SecItemImportExportKeyParameters));
-
-    keyParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
-
-    *pOSStatus = SecItemExport(cert, dataFormat, 0, &keyParams, ppDataOut);
-    return (*pOSStatus == noErr);
 }
 
 static OSStatus AddKeyToKeychain(SecKeyRef privateKey, SecKeychainRef targetKeychain, SecKeyRef* importedKey)
