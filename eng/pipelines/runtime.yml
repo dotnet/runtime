@@ -498,7 +498,9 @@ jobs:
       - mono_android_offsets
       - mono_browser_offsets
       - mono_tvos_offsets
+      - mono_tvos_sim_offsets
       - mono_ios_offsets
+      - mono_ios_sim_offsets
       monoCrossAOTTargetOS:
       - Android
       - Browser
