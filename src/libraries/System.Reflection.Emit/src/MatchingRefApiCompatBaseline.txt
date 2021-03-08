@@ -2,16 +2,9 @@ Compat issues with assembly System.Reflection.Emit:
 MembersMustExist : Member 'public System.Reflection.Emit.ModuleBuilder System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String, System.Boolean)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.Module System.Reflection.Emit.ConstructorBuilder.GetModule()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.String System.Reflection.Emit.ConstructorBuilder.Signature.get()' does not exist in the reference but it does exist in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
-MembersMustExist : Member 'public System.Type System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'public System.Boolean System.Reflection.Emit.EnumBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
-MembersMustExist : Member 'public System.Boolean System.Reflection.Emit.GenericTypeParameterBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.Module System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.String System.Reflection.Emit.MethodBuilder.Signature.get()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Diagnostics.SymbolStore.ISymbolDocumentWriter System.Reflection.Emit.ModuleBuilder.DefineDocument(System.String, System.Guid, System.Guid, System.Guid)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Emit.ModuleBuilder.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Boolean System.Reflection.Emit.ModuleBuilder.IsTransient()' does not exist in the reference but it does exist in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the reference but it does in the implementation.
-MembersMustExist : Member 'public System.Boolean System.Reflection.Emit.TypeBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the reference but it does exist in the implementation.
-Total Issues: 15
+Total Issues: 8
