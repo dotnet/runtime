@@ -391,10 +391,16 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.HandleRequestAsync(headers: new[]
+                    // The client may detect the bad header and close the connection before we are done sending the response.
+                    // So, eat any IOException that occurs here.
+                    try
                     {
-                        new HttpHeaderData("", "foo")
-                    });
+                        await server.HandleRequestAsync(headers: new[]
+                        {
+                            new HttpHeaderData("", "foo")
+                        });
+                    }
+                    catch (IOException) { }
                 });
         }
 

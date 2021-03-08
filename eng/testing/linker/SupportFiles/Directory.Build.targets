@@ -1,22 +1,25 @@
 <Project>
-  <Target Name="RestoreProject">
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="Configuration=$(Configuration);ForceEvaluation=true"
-             Targets="Restore" />
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
+
+  <PropertyGroup>
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
+    <WasmMainAssemblyFileName>project.dll</WasmMainAssemblyFileName>
+  </PropertyGroup>
 
   <Target Name="RemoveRuntimePackFromDownloadItem"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
-                       Condition="$([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+      <PackageReference Remove="@(PackageReference)"
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
     </ItemGroup>
   </Target>
 
   <Target Name="UpdateRuntimePack"
-          DependsOnTargets="ResolveFrameworkReferences">
+          AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(RuntimePackDir)" />
+      <ResolvedRuntimePack Update="@(ResolvedRuntimePack)" PackageDirectory="$(MicrosoftNetCoreAppRuntimePackRidDir)../../" />
       <ResolvedTargetingPack Update="@(ResolvedTargetingPack)" Path="$(TargetingPackDir)" />
     </ItemGroup>
   </Target>
@@ -33,25 +36,12 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PublishTrimmed" DependsOnTargets="ProcessFrameworkReferences;RestoreProject;UpdateRuntimePack;Publish" />
+  <Target Name="CreateTestWasmAppBundle"
+          AfterTargets="Publish"
+          DependsOnTargets="BundleTestWasmApp"
+          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOs)' == 'browser'" />
 
-  <ItemGroup>
-    <KnownFrameworkReference Include="Microsoft.NETCore.App"
-      DefaultRuntimeFrameworkVersion="$(MicrosoftNETCoreAppVersion)"
-      IsTrimmable="true"
-      LatestRuntimeFrameworkVersion="$(MicrosoftNETCoreAppVersion)"
-      RuntimeFrameworkName="Microsoft.NETCore.App"
-      RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
-      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;ios-arm64;ios-arm;ios-x64;ios-x86;tvos-arm64;tvos-x64;android-arm64;android-arm;android-x64;android-x86;browser-wasm"
-      TargetFramework="net6.0"
-      TargetingPackName="Microsoft.NETCore.App.Ref"
-      TargetingPackVersion="$(MicrosoftNETCoreAppVersion)" />
-
-    <KnownAppHostPack Include="Microsoft.NETCore.App" 
-      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
-      AppHostPackVersion="$(MicrosoftNETCoreAppVersion)"
-      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86"
-      TargetFramework="net6.0" />
-  </ItemGroup>
+  <!-- Overriding these targets as these projects won't need to binplace -->
+  <Target Name="PublishTestAsSelfContained" />
 
 </Project>

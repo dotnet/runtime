@@ -24,8 +24,16 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="VSInstallationPath" />
     </Exec>
 
+    <PropertyGroup>
+      <_MsDiaSubDir>$(BuildArchitecture)</_MsDiaSubDir>
+      <_MsDiaSubDir Condition="'$(BuildArchitecture)' == 'x86'" />
+      <_MsDiaSubDir Condition="'$(BuildArchitecture)' == 'x64'">amd64</_MsDiaSubDir>
+    </PropertyGroup>
+
     <ItemGroup>
-      <Content Include="$(VSInstallationPath)\DIA SDK\bin\amd64\msdia140.dll" CopyToOutputDirectory="PreserveNewest" />
+      <Content
+        Include="$([MSBuild]::NormalizePath('$(VSInstallationPath)\DIA SDK\bin','$(_MsDiaSubDir)','msdia140.dll'))"
+        CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
   </Target>
 

@@ -27,6 +27,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Globalization
@@ -656,7 +657,7 @@ namespace System.Globalization
             }
         }
 
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (object.ReferenceEquals(this, value))
             {

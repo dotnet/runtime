@@ -3,6 +3,8 @@
 
 using System;
 using System.ComponentModel;
+using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -56,6 +58,42 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
             Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
             Assert.NotEqual(currentWindowsIdentity.Name, WindowsIdentity.GetCurrent().Name);
         }
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [OuterLoop]
+    public void RunImpersonated_NameResolution()
+    {
+        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+
+        WindowsIdentity.RunImpersonated(_fixture.TestAccount.AccountTokenHandle, () =>
+        {
+            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+
+            IPAddress[] a1 = Dns.GetHostAddressesAsync("").GetAwaiter().GetResult();
+            IPAddress[] a2 = Dns.GetHostAddresses("");
+
+            Assert.True(a1.Length > 0);
+            Assert.True(a1.SequenceEqual(a2));
+        });
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [OuterLoop]
+    public async Task RunImpersonatedAsync_NameResolution()
+    {
+        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+
+        await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
+        {
+            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+
+            IPAddress[] a1 = await Dns.GetHostAddressesAsync("");
+            IPAddress[] a2 = Dns.GetHostAddresses("");
+
+            Assert.True(a1.Length > 0);
+            Assert.True(a1.SequenceEqual(a2));
+        });
     }
 }
 

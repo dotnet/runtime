@@ -770,6 +770,17 @@
         "debian-x86"
       ]
     },
+    "exherbo": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "exherbo-x64": {
+      "#import": [
+        "exherbo",
+        "linux-x64"
+      ]
+    },
     "fedora": {
       "#import": [
         "linux"
@@ -1419,6 +1430,57 @@
       "#import": [
         "linuxmint.19.2",
         "linuxmint.19.1-x64"
+      ]
+    },
+    "maccatalyst": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "maccatalyst-arm64": {
+      "#import": [
+        "maccatalyst",
+        "ios-arm64"
+      ]
+    },
+    "maccatalyst-x64": {
+      "#import": [
+        "maccatalyst",
+        "ios-x64"
+      ]
+    },
+    "maccatalyst.13": {
+      "#import": [
+        "maccatalyst"
+      ]
+    },
+    "maccatalyst.13-arm64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-arm64"
+      ]
+    },
+    "maccatalyst.13-x64": {
+      "#import": [
+        "maccatalyst.13",
+        "maccatalyst-x64"
+      ]
+    },
+    "maccatalyst.14": {
+      "#import": [
+        "maccatalyst.13"
+      ]
+    },
+    "maccatalyst.14-arm64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-arm64"
+      ]
+    },
+    "maccatalyst.14-x64": {
+      "#import": [
+        "maccatalyst.14",
+        "maccatalyst.13-x64"
       ]
     },
     "ol": {

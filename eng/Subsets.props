@@ -202,6 +202,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
@@ -210,7 +211,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Category="mono" Pack="true" />
+    <ProjectToBuild Include="$(MonoProjectRoot)nuget\mono-packages.proj" Category="mono" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
@@ -222,7 +223,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
+    <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
 
   <!-- Libraries sets -->
@@ -256,7 +257,7 @@
 
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
+    <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
@@ -305,7 +306,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+publish+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
   </ItemGroup>
 
   <!-- Utility -->

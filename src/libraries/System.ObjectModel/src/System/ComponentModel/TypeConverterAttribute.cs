@@ -64,7 +64,7 @@ namespace System.ComponentModel
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ConverterTypeName { get; }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return
                 obj is TypeConverterAttribute other &&

@@ -41,9 +41,10 @@ namespace System.Linq.Tests
                 nameof(Enumerable.ToArray),
                 nameof(Enumerable.AsEnumerable),
                 nameof(Enumerable.ToList),
+                nameof(Enumerable.ToHashSet),
+                nameof(Enumerable.TryGetNonEnumeratedCount),
                 "Fold",
                 "LeftJoin",
-                "ToHashSet"
             };
 
             return result;

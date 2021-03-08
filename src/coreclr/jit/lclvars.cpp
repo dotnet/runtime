@@ -2892,6 +2892,13 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
     }
     assert(structHandle != NO_CLASS_HANDLE);
     (void)typGetObjLayout(structHandle);
+    DWORD typeFlags = info.compCompHnd->getClassAttribs(structHandle);
+    if (StructHasNoPromotionFlagSet(typeFlags))
+    {
+        // In AOT ReadyToRun compilation, don't query fields of types
+        // outside of the current version bubble.
+        return;
+    }
     unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
     impNormStructType(structHandle);
 #ifdef TARGET_ARMARCH
@@ -3344,7 +3351,7 @@ public:
         {
             if (dsc1->lvIsRegArg)
             {
-                weight2 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
+                weight1 += 2 * BB_UNITY_WEIGHT_UNSIGNED;
             }
 
             if (varTypeIsGC(dsc1->TypeGet()))
@@ -3584,10 +3591,8 @@ void Compiler::lvaSortByRefCount()
 
             switch (type)
             {
-#if CPU_HAS_FP_SUPPORT
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
-#endif
                 case TYP_INT:
                 case TYP_LONG:
                 case TYP_REF:

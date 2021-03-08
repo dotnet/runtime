@@ -54,7 +54,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         public void LogModuleLoadSuccess(string simpleName, string filePath)
         {
-            _logger.PrintMessage($"Loaded '{simpleName}' from '{filePath}'");
+            _logger.PrintDetailedMessage($"Loaded '{simpleName}' from '{filePath}'");
         }
     }
 }

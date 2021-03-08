@@ -1065,7 +1065,7 @@ namespace System.Net.Http.Functional.Tests
                             cts.Cancel();
                             for (int i = 0; i < 100; ++i)
                             {
-                                await connection.Writer.WriteLineAsync(content);
+                                await connection.WriteStringAsync(content);
                                 await Task.Delay(TimeSpan.FromSeconds(0.1));
                             }
                         }
@@ -1090,8 +1090,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Content-Length", (Content.Length * 100).ToString()) });
                 for (int i = 0; i < 100; ++i)
                 {
-                    await connection.Writer.WriteLineAsync(Content);
-                    await connection.Writer.FlushAsync();
+                    await connection.WriteStringAsync(Content);
                     await Task.Delay(TimeSpan.FromSeconds(0.1));
                 }
             });

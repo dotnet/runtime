@@ -55,6 +55,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public CompilationModuleGroup CompilationModuleGroup { get; }
 
+        public ProfileDataManager ProfileDataManager { get; }
+
         public NameMangler NameMangler { get; }
 
         public MetadataManager MetadataManager { get; }
@@ -146,6 +148,7 @@ namespace ILCompiler.DependencyAnalysis
         public NodeFactory(
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
+            ProfileDataManager profileDataManager,
             NameMangler nameMangler,
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
@@ -154,6 +157,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
+            ProfileDataManager = profileDataManager;
             Target = context.Target;
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);
@@ -317,6 +321,8 @@ namespace ILCompiler.DependencyAnalysis
         public ManifestMetadataTableNode ManifestMetadataTable;
 
         public ImportSectionsTableNode ImportSectionsTable;
+
+        public InstrumentationDataTableNode InstrumentationDataTable;
 
         public Import ModuleImport;
 
@@ -637,6 +643,29 @@ namespace ILCompiler.DependencyAnalysis
                 FilterFuncletPersonalityRoutine = new ImportThunk(this,
                     ReadyToRunHelper.PersonalityRoutineFilterFunclet, EagerImports, useVirtualCall: false);
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
+            }
+
+            if ((ProfileDataManager != null) && (ProfileDataManager.EmbedPgoDataInR2RImage))
+            {
+                // Profile instrumentation data attaches here
+                HashSet<MethodDesc> methodsToInsertInstrumentationDataFor = new HashSet<MethodDesc>();
+                foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+                {
+                    foreach (MethodDesc method in ProfileDataManager.GetMethodsForModuleDesc(inputModule))
+                    {
+                        if (ProfileDataManager[method].SchemaData != null)
+                        {
+                            methodsToInsertInstrumentationDataFor.Add(method);
+                        }
+                    }
+                }
+                if (methodsToInsertInstrumentationDataFor.Count != 0)
+                {
+                    MethodDesc[] methodsToInsert = methodsToInsertInstrumentationDataFor.ToArray();
+                    methodsToInsert.MergeSort(new TypeSystemComparer().Compare);
+                    InstrumentationDataTable = new InstrumentationDataTableNode(this, methodsToInsert, ProfileDataManager);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
+                }
             }
 
             MethodImports = new ImportSectionNode(

@@ -78,7 +78,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 	MonoImage* image;
 	gchar* file_name;
 	gchar* error;
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_get_root_domain ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_default (mono_get_root_domain ());
 
 	switch (dwReason)
 	{
@@ -132,7 +132,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			/* The process is terminating. */
 			return TRUE;
 		file_name = mono_get_module_file_name (hInst);
-		image = mono_image_loaded_internal (alc, file_name, FALSE);
+		image = mono_image_loaded_internal (alc, file_name);
 		if (image)
 			mono_image_close (image);
 
@@ -173,7 +173,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	}
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default (mono_get_root_domain ()));
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
 	mono_close_exe_image ();
 	if (!assembly) {

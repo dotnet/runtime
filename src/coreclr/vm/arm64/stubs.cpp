@@ -284,6 +284,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
 
+    context.ContextFlags = 0; // Read by PAL_VirtualUnwind.
+
     context.X19 = unwoundstate->captureX19_X29[0] = baseState->captureX19_X29[0];
     context.X20 = unwoundstate->captureX19_X29[1] = baseState->captureX19_X29[1];
     context.X21 = unwoundstate->captureX19_X29[2] = baseState->captureX19_X29[2];
@@ -1192,7 +1194,11 @@ AdjustContextForVirtualStub(
 
     // Lr must already have been saved before calling so it should not be necessary to restore Lr
 
-    pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    if (pExceptionRecord != NULL)
+    {
+        pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    }
+	
     SetIP(pContext, callsite);
 
     return TRUE;

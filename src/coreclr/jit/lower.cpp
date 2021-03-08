@@ -318,10 +318,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
 
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
             {
@@ -1151,7 +1155,11 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
+#if !defined(TARGET_64BIT) || defined(OSX_ARM64_ABI)
                     assert(info->GetByteSize() == 12);
+#else  // TARGET_64BIT && !OSX_ARM64_ABI
+                    assert(info->GetByteSize() == 16);
+#endif // FEATURE_SIMD && FEATURE_PUT_STRUCT_ARG_STK
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1556,7 +1564,8 @@ void Lowering::LowerCall(GenTree* node)
     LowerArgsForCall(call);
 
     // note that everything generated from this point on runs AFTER the outgoing args are placed
-    GenTree* controlExpr = nullptr;
+    GenTree* controlExpr          = nullptr;
+    bool     callWasExpandedEarly = false;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -1577,8 +1586,17 @@ void Lowering::LowerCall(GenTree* node)
                 break;
 
             case GTF_CALL_VIRT_VTABLE:
-                // stub dispatching is off or this is not a virtual call (could be a tailcall)
-                controlExpr = LowerVirtualVtableCall(call);
+                assert(call->IsVirtualVtable());
+                if (!call->IsExpandedEarly())
+                {
+                    assert(call->gtControlExpr == nullptr);
+                    controlExpr = LowerVirtualVtableCall(call);
+                }
+                else
+                {
+                    callWasExpandedEarly = true;
+                    controlExpr          = call->gtControlExpr;
+                }
                 break;
 
             case GTF_CALL_NONVIRT:
@@ -1615,7 +1633,9 @@ void Lowering::LowerCall(GenTree* node)
         controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
-    if (controlExpr != nullptr)
+    // Check if we need to thread a newly created controlExpr into the LIR
+    //
+    if ((controlExpr != nullptr) && !callWasExpandedEarly)
     {
         LIR::Range controlExprRange = LIR::SeqTree(comp, controlExpr);
 
@@ -3864,8 +3884,9 @@ GenTree* Lowering::CreateReturnTrapSeq()
 
     // The only thing to do here is build up the expression that evaluates 'g_TrapReturningThreads'.
 
-    void* pAddrOfCaptureThreadGlobal = nullptr;
-    LONG* addrOfCaptureThreadGlobal = comp->info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
+    void*    pAddrOfCaptureThreadGlobal = nullptr;
+    int32_t* addrOfCaptureThreadGlobal =
+        comp->info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
     GenTree* testTree;
     if (addrOfCaptureThreadGlobal != nullptr)

@@ -35,7 +35,7 @@ namespace System.DirectoryServices
 
                 string name = propertyName.ToLowerInvariant();
                 if (valueTable.Contains(name))
-                    return (PropertyValueCollection)valueTable[name];
+                    return (PropertyValueCollection)valueTable[name]!;
                 else
                 {
                     PropertyValueCollection value = new PropertyValueCollection(_entry, propertyName);
@@ -69,7 +69,7 @@ namespace System.DirectoryServices
 
         public bool Contains(string propertyName)
         {
-            object var;
+            object? var;
             int unmanagedResult = _entry.AdsObject.GetEx(propertyName, out var);
             if (unmanagedResult != 0)
             {
@@ -115,7 +115,7 @@ namespace System.DirectoryServices
             return new PropertyEnumerator(_entry, entryToUse);
         }
 
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key]
         {
             get => this[(string)key];
             set => throw new NotSupportedException(SR.DSPropertySetSupported);
@@ -127,7 +127,7 @@ namespace System.DirectoryServices
 
         ICollection IDictionary.Keys => new KeysCollection(this);
 
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             throw new NotSupportedException(SR.DSAddNotSupported);
         }
@@ -175,7 +175,7 @@ namespace System.DirectoryServices
         {
             private readonly DirectoryEntry _entry;               // clone (to be disposed)
             private readonly DirectoryEntry _parentEntry;         // original entry to pass to PropertyValueCollection
-            private string _currentPropName;
+            private string? _currentPropName;
 
             public PropertyEnumerator(DirectoryEntry parent, DirectoryEntry clone)
             {
@@ -199,7 +199,7 @@ namespace System.DirectoryServices
                 }
             }
 
-            public object Current => Entry.Value;
+            public object Current => Entry.Value!;
 
             public DictionaryEntry Entry
             {
@@ -214,11 +214,11 @@ namespace System.DirectoryServices
 
             public object Key => Entry.Key;
 
-            public object Value => Entry.Value;
+            public object Value => Entry.Value!;
 
             public bool MoveNext()
             {
-                object prop;
+                object? prop;
                 int hr = 0;
                 try
                 {

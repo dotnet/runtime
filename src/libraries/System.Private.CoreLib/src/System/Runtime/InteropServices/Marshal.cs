@@ -867,11 +867,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            // COMPAT: This block of code isn't entirely correct.
-            // Users passing in typeof(MulticastDelegate) as 't' skip this check
-            // since Delegate is a base type of MulticastDelegate.
-            Type? c = t.BaseType;
-            if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
+            // For backward compatibility, we allow lookup up of existing delegate to
+            // function pointer mappings using abstract MulticastDelegate type. We will check
+            // for the non-abstract delegate type later if no existing mapping is found.
+            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
             }

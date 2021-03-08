@@ -19,6 +19,7 @@ namespace System.DirectoryServices.Protocols
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
             _workThreadWaitHandle = eventHandle;
+            _ = new PartialResultsRetriever(eventHandle, this);
         }
 
         public void Add(LdapPartialAsyncResult asyncResult)
@@ -345,7 +346,8 @@ namespace System.DirectoryServices.Protocols
             // Start the thread.
             var thread = new Thread(new ThreadStart(ThreadRoutine))
             {
-                IsBackground = true
+                IsBackground = true,
+                Name = ".NET LDAP Results Retriever"
             };
             thread.Start();
         }

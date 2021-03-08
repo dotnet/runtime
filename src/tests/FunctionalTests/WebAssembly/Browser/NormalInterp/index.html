@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+  <head>
+    <title>TESTS</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body onload="onLoad()">
+    <h3 id="header">Wasm Browser Sample</h3>
+    Result from Sample.Test.TestMeaning: <span id="out"></span>
+    <script type='text/javascript'>
+      var is_testing = false;
+      var onLoad = function() {
+        var url = new URL(decodeURI(window.location));
+        let args = url.searchParams.getAll('arg');
+        is_testing = args !== undefined && (args.find(arg => arg == '--testing') !== undefined);
+      };
+
+      var test_exit = function(exit_code)
+      {
+        if (!is_testing) {
+          console.log(`test_exit: ${exit_code}`);
+          return;
+        }
+
+        /* Set result in a tests_done element, to be read by xharness */
+        var tests_done_elem = document.createElement("label");
+        tests_done_elem.id = "tests_done";
+        tests_done_elem.innerHTML = exit_code.toString();
+        document.body.appendChild(tests_done_elem);
+
+        console.log(`WASM EXIT ${exit_code}`);
+      };
+
+      var App = {
+        init: function () {
+          var exit_code = BINDING.call_static_method("[WebAssembly.Browser.NormalInterp.Test] Sample.Test:TestMeaning", []);
+          document.getElementById("out").innerHTML = exit_code;
+
+          if (is_testing)
+          {
+            console.debug(`exit_code: ${exit_code}`);
+            test_exit(exit_code);
+          }
+        },
+      };
+    </script>
+    <script type="text/javascript" src="mono-config.js"></script>
+    <script type="text/javascript" src="runtime.js"></script>
+
+    <script defer src="dotnet.js"></script>
+
+  </body>
+</html>
