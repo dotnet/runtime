@@ -1,19 +1,5 @@
 trigger: none
 
-schedules:
-- cron: "0 7 * * *"
-  displayName: Daily at 11:00 PM (UTC-8:00)
-  branches:
-    include:
-    - master
-  always: true
-- cron: "0 7 * * *"
-  displayName: Daily (if changes) at 11:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
-  always: false
-
 jobs:
 
 #
