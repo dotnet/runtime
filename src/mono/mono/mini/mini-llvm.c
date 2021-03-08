@@ -9788,25 +9788,34 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ARM64_FMSUB:
+		case OP_ARM64_FMSUB_BYSCALAR:
 		case OP_ARM64_FMSUB_SCALAR:
 		case OP_ARM64_FNMSUB_SCALAR:
 		case OP_ARM64_FMADD:
+		case OP_ARM64_FMADD_BYSCALAR:
 		case OP_ARM64_FMADD_SCALAR:
 		case OP_ARM64_FNMADD_SCALAR: {
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			gboolean scalar = FALSE;
 			gboolean negate = FALSE;
 			gboolean subtract = FALSE;
+			gboolean byscalar = FALSE;
 			switch (ins->opcode) {
 			case OP_ARM64_FMSUB: subtract = TRUE; break;
+			case OP_ARM64_FMSUB_BYSCALAR: byscalar = TRUE; break;
 			case OP_ARM64_FMSUB_SCALAR: subtract = TRUE; scalar = TRUE; break;
 			case OP_ARM64_FNMSUB_SCALAR: subtract = TRUE; scalar = TRUE; negate = TRUE; break;
 			case OP_ARM64_FMADD: break;
+			case OP_ARM64_FMADD_BYSCALAR: byscalar = TRUE; break;
 			case OP_ARM64_FMADD_SCALAR: scalar = TRUE; break;
 			case OP_ARM64_FNMADD_SCALAR: scalar = TRUE; negate = TRUE; break;
 			}
 			// llvm.fma argument order: mulop1, mulop2, addend
 			LLVMValueRef args [] = { rhs, arg3, lhs };
+			if (byscalar) {
+				unsigned int elems = LLVMGetVectorSize (LLVMTypeOf (args [0]));
+				args [1] = broadcast_element (ctx, scalar_from_vector (ctx, args [1]), elems);
+			}
 			if (scalar) {
 				ovr_tag = ovr_tag_force_scalar (ovr_tag);
 				for (int i = 0; i < 3; ++i)

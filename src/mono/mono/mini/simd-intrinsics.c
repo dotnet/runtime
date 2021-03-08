@@ -1140,11 +1140,16 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_FusedAddHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHADD},
 	{SN_FusedAddRoundedHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URHADD},
 	{SN_FusedMultiplyAdd, OP_ARM64_FMADD},
+	{SN_FusedMultiplyAddBySelectedScalar},
 	{SN_FusedMultiplyAddNegatedScalar, OP_ARM64_FNMADD_SCALAR},
 	{SN_FusedMultiplyAddScalar, OP_ARM64_FMADD_SCALAR},
+	{SN_FusedMultiplyAddScalarBySelectedScalar},
 	{SN_FusedMultiplySubtract, OP_ARM64_FMSUB},
+	{SN_FusedMultiplySubtractByScalar, OP_ARM64_FMSUB_BYSCALAR},
+	{SN_FusedMultiplySubtractBySelectedScalar},
 	{SN_FusedMultiplySubtractNegatedScalar, OP_ARM64_FNMSUB_SCALAR},
 	{SN_FusedMultiplySubtractScalar, OP_ARM64_FMSUB_SCALAR},
+	{SN_FusedMultiplySubtractScalarBySelectedScalar},
 	{SN_FusedSubtractHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHSUB, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHSUB},
 	{SN_Insert},
 	{SN_InsertScalar},
@@ -1595,6 +1600,10 @@ emit_arm64_intrinsics (
 			ret->inst_c0 = c0;
 			return ret;
 		}
+		case SN_FusedMultiplyAddBySelectedScalar:
+		case SN_FusedMultiplyAddScalarBySelectedScalar:
+		case SN_FusedMultiplySubtractBySelectedScalar:
+		case SN_FusedMultiplySubtractScalarBySelectedScalar:
 		case SN_MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate:
 		case SN_MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate:
 		case SN_MultiplyAddBySelectedScalar:
@@ -1611,6 +1620,10 @@ emit_arm64_intrinsics (
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			int opcode = 0;
 			switch (id) {
+			case SN_FusedMultiplyAddBySelectedScalar: opcode = OP_ARM64_FMADD_BYSCALAR; break;
+			case SN_FusedMultiplyAddScalarBySelectedScalar: opcode = OP_ARM64_FMADD_SCALAR; break;
+			case SN_FusedMultiplySubtractBySelectedScalar: opcode = OP_ARM64_FMSUB_BYSCALAR; break;
+			case SN_FusedMultiplySubtractScalarBySelectedScalar: opcode = OP_ARM64_FMSUB_SCALAR; break;
 			case SN_MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL_SCALAR; break;
 			case SN_MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL_SCALAR; break;
 			case SN_MultiplyAddBySelectedScalar: opcode = OP_ARM64_MLA_SCALAR; break;
