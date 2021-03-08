@@ -5,6 +5,7 @@ using System.IO.Tests;
 using System.Threading.Tasks;
 using Xunit;
 
+
 namespace System.IO.MemoryMappedFiles.Tests
 {
     public abstract class MemoryMappedViewStreamConformanceTests : StandaloneStreamConformanceTests
