@@ -1935,6 +1935,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_21990/**">
+            <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">
             <Issue>https://github.com/dotnet/runtime/issues/37955</Issue>
         </ExcludeList>
