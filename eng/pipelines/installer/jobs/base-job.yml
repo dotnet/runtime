@@ -150,7 +150,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if in(parameters.osGroup, 'iOS', 'iOS-sim', 'tvOS', 'tvOS-sim', 'Android', 'Browser') }}:
+  - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android', 'Browser') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -379,7 +379,7 @@ jobs:
         displayName: 'Libraries artifacts'
         cleanUnpackFolder: false
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'iOS-sim', 'tvOS', 'tvOS-sim') }}:
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
     - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
       displayName: Install Build Dependencies
 
@@ -415,7 +415,7 @@ jobs:
       displayName: Build and Package
       continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'iOS-sim', 'tvOS', 'tvOS-sim') }}:
+  - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
     - script: |
         du -sh $(Build.SourcesDirectory)/*
         df -h
