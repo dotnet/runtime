@@ -52,8 +52,7 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
-        /// <summary>Terminates the associated process immediately.</summary>
-        public void Kill()
+        private void KillCore()
         {
             EnsureState(State.HaveId);
 

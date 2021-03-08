@@ -88,8 +88,7 @@ namespace System.Diagnostics
             SetPrivilege(Interop.Advapi32.SeDebugPrivilege, 0);
         }
 
-        /// <summary>Terminates the associated process immediately.</summary>
-        public void Kill()
+        private void KillCore()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
             {

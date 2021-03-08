@@ -1080,6 +1080,16 @@ namespace System.Diagnostics
             return new Process(".", false, Environment.ProcessId, null);
         }
 
+        /// <summary>Terminates the associated process immediately.</summary>
+        public void Kill()
+        {
+            KillCore();
+
+            // Don't wait for output on WaitForExit.
+            _output?.CancelOperation(fakeEof: true);
+            _error?.CancelOperation(fakeEof: true);
+        }
+
         /// <devdoc>
         ///    <para>
         ///       Raises the <see cref='System.Diagnostics.Process.Exited'/> event.

@@ -22,6 +22,12 @@ namespace System.Diagnostics
 {
     internal sealed class AsyncStreamReader : IDisposable
     {
+        private const int OperationStateNone = 0;
+        private const int OperationStateReading = 1;
+        private const int OperationStateCanceled = 2;
+        private const int OperationStateCanceledPendingEof = 3;
+        private const int OperationStateEof = 4;
+
         private const int DefaultBufferSize = 1024;  // Byte buffer size
 
         private readonly Stream _stream;
@@ -37,7 +43,8 @@ namespace System.Diagnostics
         private readonly Queue<string?> _messageQueue;
         private StringBuilder? _sb;
         private bool _bLastCarriageReturn;
-        private bool _cancelOperation;
+        private int _operationState = OperationStateNone; // modify using Interlocked to ensure we don't overwrite OperationStateEof.
+        private bool _flushing;
 
         // Cache the last position scanned in sb when searching for lines.
         private int _currentLinePos;
@@ -67,7 +74,17 @@ namespace System.Diagnostics
         // User calls BeginRead to start the asynchronous read
         internal void BeginReadLine()
         {
-            _cancelOperation = false;
+            int state = _operationState;
+            if ((state != OperationStateNone) &&
+                (state != OperationStateCanceled))
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _operationState, OperationStateReading, state) != state)
+            {
+                return;
+            }
 
             if (_sb == null)
             {
@@ -80,9 +97,29 @@ namespace System.Diagnostics
             }
         }
 
-        internal void CancelOperation()
+        internal void CancelOperation(bool fakeEof = false)
         {
-            _cancelOperation = true;
+            if (_operationState == OperationStateReading)
+            {
+                if (fakeEof)
+                {
+                    bool flushQueue = false;
+                    lock (_messageQueue)
+                    {
+                        if (Interlocked.CompareExchange(ref _operationState, OperationStateCanceledPendingEof, OperationStateReading) == OperationStateReading)
+                        {
+                            _messageQueue.Enqueue(null);
+                            flushQueue = !_flushing;
+                        }
+                    }
+                    if (flushQueue)
+                    {
+                        ThreadPool.QueueUserWorkItem(reader => ((AsyncStreamReader)reader!).FlushMessageQueue(rethrowInNewThread: false), this);
+                        return;
+                    }
+                }
+                Interlocked.CompareExchange(ref _operationState, OperationStateCanceled, OperationStateReading);
+            }
         }
 
         // This is the async callback function. Only one thread could/should call this.
@@ -118,7 +155,7 @@ namespace System.Diagnostics
 
                 // If user's delegate throws exception we treat this as EOF and
                 // completing without processing current buffer content
-                if (FlushMessageQueue(rethrowInNewThread: true))
+                if (!FlushMessageQueue(rethrowInNewThread: true))
                 {
                     return;
                 }
@@ -208,13 +245,14 @@ namespace System.Diagnostics
             }
         }
 
-        // If everything runs without exception, returns false.
-        // If an exception occurs and rethrowInNewThread is true, returns true.
-        // If an exception occurs and rethrowInNewThread is false, the exception propagates.
+        // Returns true if more messages should be read.
+        // Returns false when there is an EOF condition.
         private bool FlushMessageQueue(bool rethrowInNewThread)
         {
+            bool isFlushing = false;
             try
             {
+                bool continueReading;
                 // Keep going until we're out of data to process.
                 while (true)
                 {
@@ -223,29 +261,54 @@ namespace System.Diagnostics
                     string? line;
                     lock (_messageQueue)
                     {
+                        continueReading = _operationState != OperationStateEof &&
+                                          _operationState != OperationStateCanceledPendingEof;
+                        if (!isFlushing)
+                        {
+                            if (_flushing)
+                            {
+                                // someone else is flushing.
+                                break;
+                            }
+                            _flushing = isFlushing = true;
+                        }
                         if (_messageQueue.Count == 0)
                         {
+                            isFlushing = _flushing = false;
                             break;
                         }
                         line = _messageQueue.Dequeue();
+                        if (_operationState == OperationStateCanceled ||
+                            _operationState == OperationStateEof)
+                        {
+                            continue;
+                        }
+                        if (line == null)
+                        {
+                            _operationState = OperationStateEof;
+                        }
                     }
 
-                    if (!_cancelOperation)
-                    {
-                        _userCallBack(line); // invoked outside of the lock
-                    }
+                    _userCallBack(line); // invoked outside of the lock
                 }
-                return false;
+                return continueReading;
             }
             catch (Exception e)
             {
+                lock (_messageQueue)
+                {
+                    if (isFlushing)
+                    {
+                        _flushing = false;
+                    }
+                }
                 // If rethrowInNewThread is true, we can't let the exception propagate synchronously on this thread,
-                // so propagate it in a thread pool thread and return true to indicate to the caller that this failed.
+                // so propagate it in a thread pool thread and return false to indicate to the caller that this failed.
                 // Otherwise, let the exception propagate.
                 if (rethrowInNewThread)
                 {
                     ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi!).Throw(), ExceptionDispatchInfo.Capture(e));
-                    return true;
+                    return false;
                 }
                 throw;
             }
@@ -255,7 +318,7 @@ namespace System.Diagnostics
         // We will lose some information if we don't do this.
         internal void WaitUntilEOF()
         {
-            if (_readToBufferTask is Task task)
+            if (_operationState == OperationStateReading && _readToBufferTask is Task task)
             {
                 task.GetAwaiter().GetResult();
             }
@@ -263,7 +326,7 @@ namespace System.Diagnostics
 
         internal Task WaitUntilEOFAsync(CancellationToken cancellationToken)
         {
-            if (_readToBufferTask is Task task)
+            if (_operationState == OperationStateReading && _readToBufferTask is Task task)
             {
                 return task.WithCancellation(cancellationToken);
             }
