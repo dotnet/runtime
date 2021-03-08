@@ -1509,7 +1509,7 @@ private:
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
-    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
+    static const var_types LargeVectorSaveType = TYP_DOUBLE;
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_SIMD")
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
