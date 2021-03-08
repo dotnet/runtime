@@ -5,6 +5,7 @@ using System.IO.Tests;
 using System.Threading.Tasks;
 using Xunit;
 
+
 namespace System.IO.MemoryMappedFiles.Tests
 {
     public abstract class MemoryMappedViewStreamConformanceTests : StandaloneStreamConformanceTests
@@ -45,6 +46,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class AnonymousMemoryMappedViewStreamConformanceTests : MemoryMappedViewStreamConformanceTests
     {
         protected override MemoryMappedFile CreateFile(int length) =>
