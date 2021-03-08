@@ -153,12 +153,12 @@ namespace Mono.Linker.Steps
 
 		void CategorizeSubSteps (AssemblyDefinition assembly)
 		{
-			on_assemblies = null;
-			on_types = null;
-			on_fields = null;
-			on_methods = null;
-			on_properties = null;
-			on_events = null;
+			on_assemblies = new List<ISubStep> ();
+			on_types = new List<ISubStep> ();
+			on_fields = new List<ISubStep> ();
+			on_methods = new List<ISubStep> ();
+			on_properties = new List<ISubStep> ();
+			on_events = new List<ISubStep> ();
 
 			foreach (var substep in substeps)
 				CategorizeSubStep (substep, assembly);
@@ -169,21 +169,18 @@ namespace Mono.Linker.Steps
 			if (!substep.IsActiveFor (assembly))
 				return;
 
-			CategorizeTarget (substep, SubStepTargets.Assembly, ref on_assemblies);
-			CategorizeTarget (substep, SubStepTargets.Type, ref on_types);
-			CategorizeTarget (substep, SubStepTargets.Field, ref on_fields);
-			CategorizeTarget (substep, SubStepTargets.Method, ref on_methods);
-			CategorizeTarget (substep, SubStepTargets.Property, ref on_properties);
-			CategorizeTarget (substep, SubStepTargets.Event, ref on_events);
+			CategorizeTarget (substep, SubStepTargets.Assembly, on_assemblies);
+			CategorizeTarget (substep, SubStepTargets.Type, on_types);
+			CategorizeTarget (substep, SubStepTargets.Field, on_fields);
+			CategorizeTarget (substep, SubStepTargets.Method, on_methods);
+			CategorizeTarget (substep, SubStepTargets.Property, on_properties);
+			CategorizeTarget (substep, SubStepTargets.Event, on_events);
 		}
 
-		static void CategorizeTarget (ISubStep substep, SubStepTargets target, ref List<ISubStep> list)
+		static void CategorizeTarget (ISubStep substep, SubStepTargets target, List<ISubStep> list)
 		{
 			if (!Targets (substep, target))
 				return;
-
-			if (list == null)
-				list = new List<ISubStep> ();
 
 			list.Add (substep);
 		}
