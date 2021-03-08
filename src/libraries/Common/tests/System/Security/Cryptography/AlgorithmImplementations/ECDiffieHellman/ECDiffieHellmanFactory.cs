@@ -40,5 +40,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
+
+        public static bool CanDeriveNewPublicKey => s_provider.CanDeriveNewPublicKey;
     }
 }
