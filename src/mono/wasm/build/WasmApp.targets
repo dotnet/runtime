@@ -40,7 +40,7 @@
                                               packaging, or app bundle generation, eg. Blazor.
 
       - $(WasmStripAOTAssemblies)           - Whether to run `mono-cil-strip` on the assemblies.
-                                              Defaults to true
+                                              Always set to false!
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Publish`.
@@ -63,8 +63,10 @@
   -->
 
   <PropertyGroup>
-    <WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>
-    <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
+    <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
+
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
