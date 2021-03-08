@@ -457,7 +457,7 @@ public:
     unsigned char lvEhWriteThruCandidate : 1; // variable has a single def and hence is a register candidate if
                                               // if it is an EH variable
 
-    unsigned char lvDisqualifyForEhWriteThru : 1;   // tracks variable that are disqualified from register candidancy
+    unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
 
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
