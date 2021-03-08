@@ -7,8 +7,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     internal static class TestData
     {
-        private static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;
-
         public static byte[] MsCertificate = (
             "308204ec308203d4a003020102021333000000b011af0a8bd03b9fdd00010000" +
             "00b0300d06092a864886f70d01010505003079310b3009060355040613025553" +
@@ -289,7 +287,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             "60FD0414C8A2B10C67EAECB3D48BEC69616133185721613D020207D0").HexToByteArray();
 
         public static readonly byte[] PfxData =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? PfxData_RC2ContentEncryption
                 : PfxData_TripleDESContentEncryption;
 
@@ -600,7 +598,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             "0414F83662B2693DF36BA3583ABA17BDF6590C903841020207D0").HexToByteArray();
 
         public static readonly byte[] Dsa1024Pfx =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? Dsa1024Pfx_RC2ContentEncryption
                 : Dsa1024Pfx_TripleDESContentEncryption;
 
@@ -966,7 +964,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             "140F226E1BFC1FED6205670D7C624A3A9C1C20470B020207D0").HexToByteArray();
 
         internal static readonly byte[] MultiPrivateKeyPfx =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? MultiPrivateKeyPfx_RC2ContentEncryption
                 : MultiPrivateKeyPfx_TripleDESContentEncryption;
 
@@ -1291,7 +1289,7 @@ tcCZhP5KEu6XKKc1GcTqbyA0vi92YyyZViUa36hhVrNqPxtpclir+lcnNgnlqg==
             "0E87036AC61E020207D0").HexToByteArray();
 
         public static readonly byte[] ChainPfxBytes =
-           IsRC2Supported
+           PlatformSupport.IsRC2Supported
                 ? ChainPfxBytes_RC2ContentEncryption
                 : ChainPfxBytes_TripleDESContentEncryption;
 
@@ -2043,7 +2041,7 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "D0").HexToByteArray();
 
         internal static readonly byte[] ECDsaP256_DigitalSignature_Pfx_Windows =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? ECDsaP256_DigitalSignature_Pfx_Windows_RC2ContentEncryption
                 : ECDsaP256_DigitalSignature_Pfx_Windows_TripleDESContentEncryption;
 
@@ -2112,7 +2110,7 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "B3F3C6F9C1C07BA92E77D8016E51A7D38C04FF020207D0").HexToByteArray();
 
         internal static readonly byte[] ECDsaP256_DigitalSignature_Pfx_OpenSsl =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? ECDsaP256_DigitalSignature_Pfx_OpenSsl_RC2ContentEncryption
                 : ECDsaP256_DigitalSignature_Pfx_OpenSsl_TripleDESContentEncryption;
 
@@ -2218,7 +2216,7 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "C61FF7C3D0020207D0").HexToByteArray();
 
         public static readonly byte[] EcDhP256_KeyAgree_Pfx_Windows =
-            IsRC2Supported
+            PlatformSupport.IsRC2Supported
                 ? EcDhP256_KeyAgree_Pfx_Windows_RC2ContentEncryption
                 : EcDhP256_KeyAgree_Pfx_Windows_TripleDESContentEncryption;
 
