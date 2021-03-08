@@ -43,6 +43,8 @@
     <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="ImportTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
