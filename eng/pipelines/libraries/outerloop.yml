@@ -86,6 +86,20 @@ jobs:
           runTests: true
           testScope: outerloop
           liveRuntimeBuildConfig: release
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/libraries/build-job.yml
+        buildConfig: Debug
+        platforms:
+        - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
+          - OSX_arm64
+        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+        jobParameters:
+          isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+          isFullMatrix: ${{ variables['isFullMatrix'] }}
+          runTests: true
+          testScope: all
+          liveRuntimeBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
