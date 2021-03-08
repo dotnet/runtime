@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        private Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
         {
             if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
