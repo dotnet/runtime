@@ -1,19 +1,5 @@
 trigger: none
 
-schedules:
-- cron: "0 4 * * *"
-  displayName: Daily at 8:00 PM (UTC-8:00)
-  branches:
-    include:
-    - master
-  always: true
-- cron: "0 4 * * *"
-  displayName: Daily (if changes) at 8:00 PM (UTC-8:00)
-  branches:
-    include:
-    - release/*.*
-  always: false
-
 jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
