@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
 
             if (_callbacks != null)
             {
-                for (var i = 0; i < count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     var callback = _callbacks[i];
                     Execute(callback, ref exceptions);

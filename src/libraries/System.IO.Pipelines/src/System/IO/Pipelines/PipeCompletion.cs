@@ -60,7 +60,7 @@ namespace System.IO.Pipelines
 
             if (_state is ExceptionDispatchInfo edi)
             {
-                ThrowLatchedException(edi);
+                edi.Throw();
             }
 
             return true;
@@ -86,12 +86,6 @@ namespace System.IO.Pipelines
             Debug.Assert(IsCompleted);
             Debug.Assert(_callbacks == null);
             _state = null;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void ThrowLatchedException(ExceptionDispatchInfo edi)
-        {
-            edi.Throw();
         }
 
         public override string ToString()

@@ -45,14 +45,14 @@ namespace System.IO.Pipelines
             MaxSegmentPoolSize = 256;
 
             // By default, we'll throttle the writer at 64K of buffered data
-            const int defaultPauseWriterThreshold = 65536;
+            const int DefaultPauseWriterThreshold = 65536;
 
             // Resume threshold is 1/2 of the pause threshold to prevent thrashing at the limit
-            const int defaultResumeWriterThreshold = defaultPauseWriterThreshold / 2;
+            const int DefaultResumeWriterThreshold = DefaultPauseWriterThreshold / 2;
 
             if (pauseWriterThreshold == -1)
             {
-                pauseWriterThreshold = defaultPauseWriterThreshold;
+                pauseWriterThreshold = DefaultPauseWriterThreshold;
             }
             else if (pauseWriterThreshold < 0)
             {
@@ -61,7 +61,7 @@ namespace System.IO.Pipelines
 
             if (resumeWriterThreshold == -1)
             {
-                resumeWriterThreshold = defaultResumeWriterThreshold;
+                resumeWriterThreshold = DefaultResumeWriterThreshold;
             }
             else if (resumeWriterThreshold < 0 || resumeWriterThreshold > pauseWriterThreshold)
             {
