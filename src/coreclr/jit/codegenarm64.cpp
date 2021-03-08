@@ -4821,14 +4821,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     // Need an additional integer register to extract upper 4 bytes from data.
     regNumber tmpReg = lclVar->GetSingleTempReg();
 
-    // store lower 8 bytes
-    GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, operandReg, varNum, offs);
-
-    // Extract upper 4-bytes from data
-    GetEmitter()->emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, operandReg, 2);
-
-    // 4-byte write
-    GetEmitter()->emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offs + 8);
+    GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
 }
 
 #endif // FEATURE_SIMD

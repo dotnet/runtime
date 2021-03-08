@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Security;
 
 namespace System.Diagnostics
 {
@@ -13,13 +13,14 @@ namespace System.Diagnostics
     public sealed partial class ProcessStartInfo
     {
         [SupportedOSPlatform("windows")]
-        public string PasswordInClearText
+        public string? PasswordInClearText
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(PasswordInClearText))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(PasswordInClearText))); }
         }
 
         [SupportedOSPlatform("windows")]
+        [AllowNull]
         public string Domain
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Domain))); }
@@ -39,7 +40,7 @@ namespace System.Diagnostics
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        public SecureString Password
+        public SecureString? Password
         {
             get { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(Password))); }

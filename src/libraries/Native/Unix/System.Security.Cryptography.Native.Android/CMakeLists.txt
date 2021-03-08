@@ -6,6 +6,7 @@ add_compile_options(-Wno-unused-function)
 
 set(NATIVECRYPTO_SOURCES
     pal_bignum.c
+    pal_dsa.c
     pal_ecdsa.c
     pal_ecc_import_export.c
     pal_eckey.c

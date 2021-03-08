@@ -43,12 +43,12 @@ namespace Internal.Cryptography.Pal
 
         public static IExportPal FromCertificate(ICertificatePalCore cert)
         {
-            throw new NotImplementedException(nameof(FromCertificate));
+            return new AndroidExportProvider(cert);
         }
 
         public static IExportPal LinkFromCertificateCollection(X509Certificate2Collection certificates)
         {
-            throw new NotImplementedException(nameof(LinkFromCertificateCollection));
+            return new AndroidExportProvider(certificates);
         }
 
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)

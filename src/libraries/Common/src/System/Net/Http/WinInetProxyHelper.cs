@@ -117,13 +117,25 @@ namespace System.Net.Http
             //    fAutoLogonIfChallenged member set to TRUE.
             //
             // We match behavior of WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY and ignore errors.
+
+            string destination = uri.AbsoluteUri;
+            // Underlying code does not understand WebSockets so we need to convert it to http or https.
+            if (uri.Scheme == UriScheme.Wss)
+            {
+                destination = UriScheme.Https + destination.Substring(UriScheme.Wss.Length);
+            }
+            else if (uri.Scheme == UriScheme.Ws)
+            {
+                destination = UriScheme.Http + destination.Substring(UriScheme.Ws.Length);
+            }
+
             var repeat = false;
             do
             {
                 _autoDetectionFailed = false;
                 if (Interop.WinHttp.WinHttpGetProxyForUrl(
                     sessionHandle!,
-                    uri.AbsoluteUri,
+                    destination,
                     ref autoProxyOptions,
                     out proxyInfo))
                 {
