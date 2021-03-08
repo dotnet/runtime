@@ -205,8 +205,10 @@ jobs:
     platforms:
     - Android_x64
     - Browser_wasm
-    - tvOS_x64
-    - iOS_x64
+    - tvOS-sim_x64
+    - tvOS_arm64
+    - iOS-sim_x64
+    - iOS_arm64
     jobParameters:
       condition: >-
         or(
@@ -226,9 +228,9 @@ jobs:
     - Android_x86
     - MacCatalyst_x64
     - MacCatalyst_arm64
-    - tvOS_x64
+    - tvOS-sim_x64
+    - iOS-sim_x86
     - iOS_arm64
-    - iOS_x86
     - Linux_arm
     jobParameters:
       testGroup: innerloop
