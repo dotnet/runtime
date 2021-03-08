@@ -39,7 +39,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
             Assert.Equal(NTE_PERM, ex.HResult);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadWriteNistP521Pkcs8_LimitedPrivate()
         {
             const string base64 = @"
@@ -47,10 +47,10 @@ MGACAQAwEAYHKoZIzj0CAQYFK4EEACMESTBHAgEBBEIBpV+HhaVzC67h1rPTAQaf
 f9ZNiwTM6lfv1ZYeaPM/q0NUUWbKZVPNOP9xPRKJxpi9fQhrVeAbW9XtJ+NjA3ax
 FmY=";
 
-            ReadWriteBase64Pkcs8(base64, EccTestData.GetNistP521Key2());
+            ReadWriteBase64Pkcs8(base64, EccTestData.GetNistP521Key2(), CanDeriveNewPublicKey);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_LimitedPrivateKey()
         {
             const string base64 = @"
@@ -67,10 +67,11 @@ PFzVQfJ396S+yx4IIC4=";
                     PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                     HashAlgorithmName.SHA1,
                     12321),
-                EccTestData.GetNistP521Key2());
+                EccTestData.GetNistP521Key2(),
+                CanDeriveNewPublicKey);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_LimitedPrivateKey_PasswordBytes()
         {
             const string base64 = @"
@@ -87,10 +88,11 @@ PFzVQfJ396S+yx4IIC4=";
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA1,
                     12321),
-                EccTestData.GetNistP521Key2());
+                EccTestData.GetNistP521Key2(),
+                CanDeriveNewPublicKey);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadWriteNistP256ECPrivateKey_LimitedPrivateKey()
         {
             const string base64 = @"
@@ -99,10 +101,11 @@ AwEH";
 
             ReadWriteBase64ECPrivateKey(
                 base64,
-                EccTestData.GetNistP256ReferenceKey());
+                EccTestData.GetNistP256ReferenceKey(),
+                CanDeriveNewPublicKey);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadWriteNistP256ExplicitECPrivateKey_LimitedPrivate()
         {
             ReadWriteBase64ECPrivateKey(
@@ -115,7 +118,7 @@ axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
 K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
 YyVRAgEB",
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
-                SupportsExplicitCurves);
+                SupportsExplicitCurves && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -134,7 +137,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
                 SupportsExplicitCurves);
         }
 
-        [ConditionalFact(nameof(CanDeriveNewPublicKey))]
+        [Fact]
         public void ReadWriteNistP256ExplicitEncryptedPkcs8_LimitedPrivate()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -154,7 +157,7 @@ hjy6jYfLa1BCJhvq+WbNc7zEb2MfXVhnImaG+XTqXI0c",
                     HashAlgorithmName.SHA256,
                     1234),
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
-                SupportsExplicitCurves);
+                SupportsExplicitCurves && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -163,7 +166,7 @@ hjy6jYfLa1BCJhvq+WbNc7zEb2MfXVhnImaG+XTqXI0c",
             ReadWriteBase64ECPrivateKey(
                 "MCYCAQEEFMXZRFR94RXbJYjcb966O0c+nE2WoAsGCSskAwMCCAEBAQ==",
                 EccTestData.BrainpoolP160r1Key1,
-                SupportsBrainpool);
+                SupportsBrainpool && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -201,7 +204,7 @@ heDtThcoFBJUsNhEHrc=",
             ReadWriteBase64ECPrivateKey(
                 "MCMCAQEEFQPBmVrfrowFGNwT3+YwS7AQF+akEqAHBgUrgQQAAQ==",
                 EccTestData.Sect163k1Key1,
-                SupportsSect163k1);
+                SupportsSect163k1 && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -226,7 +229,7 @@ AAAAAAABBBUAAAAAAAAAAAAAAAAAAAAAAAAAAAEEKwQC/hPAU3u8EayqB9eT3k5t
 XlyU7ugCiQcPsF04/1gyHy6ABTbVOMzao9kCFQQAAAAAAAAAAAACAQii4MwNmfil
 7wIBAg==",
                 EccTestData.Sect163k1Key1Explicit,
-                SupportsSect163k1);
+                SupportsSect163k1 && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -290,7 +293,7 @@ RVA9DXUNz5+yUlfGzgErHYGwRLaLCACU6+WAC34Kkyk=",
 MDICAQEEJAC08a4ef9zUsOggU8CKkIhSsmIx5sAWcPzGw+osXT/tQO3wN6AHBgUr
 gQQAEA==",
                 EccTestData.Sect283k1Key1,
-                SupportsSect283k1);
+                SupportsSect283k1 && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -304,7 +307,7 @@ yJQ13lJCBBUAyVF9BtUkDTz/OMdLILbNTW+d1NkDFQDSwPsVdghg3vHu9NaW5naH
 VhUXVAQrBAevaZiVRhA9eTKfzD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfK
 nwIVBAAAAAAAAAAAAAHmD8iCHMdNrq/BAgEC",
                 EccTestData.C2pnb163v1Key1Explicit,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1 && CanDeriveNewPublicKey);
         }
 
         [Fact]
@@ -377,7 +380,7 @@ vW82QOEXDhi1gO24nhx2gUeqVTHjhFq14blAu5l5",
             ReadWriteBase64ECPrivateKey(
                 "MCYCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hqAKBggqhkjOPQMAAQ==",
                 EccTestData.C2pnb163v1Key1,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1 && CanDeriveNewPublicKey);
         }
 
         [Fact]
