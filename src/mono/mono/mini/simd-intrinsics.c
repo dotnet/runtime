@@ -1148,6 +1148,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_FusedSubtractHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHSUB, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHSUB},
 	{SN_Insert},
 	{SN_InsertScalar},
+	{SN_InsertSelectedScalar},
 	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
 	{SN_LeadingZeroCount, OP_ARM64_CLZ},
 	{SN_LoadAndInsertScalar, OP_ARM64_LD1_INSERT},
@@ -1159,15 +1160,20 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MaxAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMAXV},
 	{SN_MaxNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
 	{SN_MaxNumberAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMAXNMV},
+	{SN_MaxNumberPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNMP},
+	{SN_MaxNumberPairwiseScalar, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMAXNMV},
 	{SN_MaxNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
 	{SN_MaxPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAXP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXP},
+	{SN_MaxPairwiseScalar},
+	{SN_MaxScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},
 	{SN_Min, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMIN, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMIN},
 	{SN_MinAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMINV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMINV},
 	{SN_MinNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
 	{SN_MinNumberAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMINNMV},
+	{SN_MinNumberPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNMP},
+	{SN_MinNumberPairwiseScalar, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMINNMV},
 	{SN_MinNumberScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINNM},
 	{SN_MinPairwise, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMINP, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMINP},
-	{SN_MinPairwiseScalar},
 	{SN_MinPairwiseScalar},
 	{SN_MinScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMIN},
 	{SN_Multiply, OP_XBINOP, OP_IMUL, None, None, OP_XBINOP, OP_FMUL},
@@ -1185,27 +1191,42 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyDoublingByScalarSaturateHigh, OP_XOP_OVR_BYSCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
 	{SN_MultiplyDoublingBySelectedScalarSaturateHigh},
 	{SN_MultiplyDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
+	{SN_MultiplyDoublingSaturateHighScalar, OP_ARM64_SQDMULH_SCALAR},
+	{SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh},
+	{SN_MultiplyDoublingWideningAndAddSaturateScalar, OP_ARM64_SQDMLAL_SCALAR},
+	{SN_MultiplyDoublingWideningAndSubtractSaturateScalar, OP_ARM64_SQDMLSL_SCALAR},
 	{SN_MultiplyDoublingWideningLowerAndAddSaturate, OP_ARM64_SQDMLAL},
-	{SN_MultiplyDoublingWideningLowerAndSubtractSaturate, OP_ARM64_SQDMLSL},
-	{SN_MultiplyDoublingWideningLowerByScalarAndAddSaturate, OP_ARM64_SQDMLAL_SCALAR},
-	{SN_MultiplyDoublingWideningLowerByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL_SCALAR},
+	{SN_MultiplyDoublingWideningLowerAndSubtractSaturate, OP_ARM64_SQDMLSL_BYSCALAR},
+	{SN_MultiplyDoublingWideningLowerByScalarAndAddSaturate, OP_ARM64_SQDMLAL_BYSCALAR},
+	{SN_MultiplyDoublingWideningLowerByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL_BYSCALAR},
 	{SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate},
 	{SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate},
 	{SN_MultiplyDoublingWideningSaturateLower, OP_ARM64_SQDMULL},
-	{SN_MultiplyDoublingWideningSaturateLowerByScalar, OP_ARM64_SQDMULL_SCALAR},
+	{SN_MultiplyDoublingWideningSaturateLowerByScalar, OP_ARM64_SQDMULL_BYSCALAR},
 	{SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar},
+	{SN_MultiplyDoublingWideningSaturateScalar, OP_ARM64_SQDMULL_SCALAR},
+	{SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar},
 	{SN_MultiplyDoublingWideningSaturateUpper, OP_ARM64_SQDMULL2},
-	{SN_MultiplyDoublingWideningSaturateUpperByScalar, OP_ARM64_SQDMULL2_SCALAR},
+	{SN_MultiplyDoublingWideningSaturateUpperByScalar, OP_ARM64_SQDMULL2_BYSCALAR},
 	{SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar},
+	{SN_MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate},
+	{SN_MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate},
 	{SN_MultiplyDoublingWideningUpperAndAddSaturate, OP_ARM64_SQDMLAL2},
 	{SN_MultiplyDoublingWideningUpperAndSubtractSaturate, OP_ARM64_SQDMLSL2},
-	{SN_MultiplyDoublingWideningUpperByScalarAndAddSaturate, OP_ARM64_SQDMLAL2_SCALAR},
-	{SN_MultiplyDoublingWideningUpperByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL2_SCALAR},
+	{SN_MultiplyDoublingWideningUpperByScalarAndAddSaturate, OP_ARM64_SQDMLAL2_BYSCALAR},
+	{SN_MultiplyDoublingWideningUpperByScalarAndSubtractSaturate, OP_ARM64_SQDMLSL2_BYSCALAR},
 	{SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate},
 	{SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate},
-	{SN_MultiplyRoundedDoublingByScalarSaturateHigh, OP_ARM64_SQRDMULH_SCALAR},
+	{SN_MultiplyExtended, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMULX},
+	{SN_MultiplyExtendedByScalar, OP_XOP_OVR_BYSCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMULX},
+	{SN_MultiplyExtendedBySelectedScalar},
+	{SN_MultiplyExtendedScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMULX},
+	{SN_MultiplyExtendedScalarBySelectedScalar},
+	{SN_MultiplyRoundedDoublingByScalarSaturateHigh, OP_ARM64_SQRDMULH_BYSCALAR},
 	{SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh, OP_ARM64_SQRDMULH_SEL},
 	{SN_MultiplyRoundedDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRDMULH},
+	{SN_MultiplyRoundedDoublingSaturateHighScalar, OP_ARM64_SQRDMULH_SCALAR},
+	{SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh, OP_ARM64_SQRDMULH_SCALAR_SEL},
 	{SN_MultiplyScalar, OP_XBINOP_SCALAR, OP_FMUL},
 	{SN_MultiplyScalarBySelectedScalar, OP_ARM64_FMUL_SEL},
 	{SN_MultiplySubtract, OP_ARM64_MLS},
@@ -1484,6 +1505,7 @@ emit_arm64_intrinsics (
 			ins->inst_c1 = arg0_type;
 			return ins;
 		}
+		case SN_InsertSelectedScalar:
 		case SN_InsertScalar:
 		case SN_Insert: {
 			int insert_op = 0;
@@ -1500,10 +1522,18 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 			int val_src_reg = args [2]->dreg;
-			if (id == SN_InsertScalar) {
+			switch (id) {
+			case SN_InsertSelectedScalar: {
+				MonoInst *scalar = emit_simd_ins (cfg, klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
+				val_src_reg = scalar->dreg;
+				// fallthrough
+			}
+			case SN_InsertScalar: {
 				MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, val_src_reg, -1);
 				ins->inst_c0 = 0;
 				val_src_reg = ins->dreg;
+				break;
+			}
 			}
 			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, val_src_reg);
 			ins->sreg3 = args [1]->dreg;
@@ -1523,23 +1553,32 @@ emit_arm64_intrinsics (
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_SX_X, iid, arg0_type, fsig, args);
 		}
+		case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh:
+		case SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar:
+		case SN_MultiplyExtendedBySelectedScalar:
+		case SN_MultiplyExtendedScalarBySelectedScalar:
 		case SN_MultiplyBySelectedScalar:
 		case SN_MultiplyBySelectedScalarWideningLower:
 		case SN_MultiplyBySelectedScalarWideningUpper:
 		case SN_MultiplyDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar:
 		case SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			gboolean is_float = type_is_float (fsig->ret);
 			int opcode = 0;
 			int c0 = 0;
 			switch (id) {
+			case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh: opcode = OP_ARM64_SQDMULH_SCALAR; break;
+			case SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar: opcode = OP_ARM64_SQDMULL_SCALAR; break;
+			case SN_MultiplyExtendedBySelectedScalar: opcode = OP_XOP_OVR_BYSCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_FMULX; break;
+			case SN_MultiplyExtendedScalarBySelectedScalar: opcode = OP_XOP_OVR_SCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_FMULX; break;
 			case SN_MultiplyBySelectedScalar: opcode = OP_XBINOP_BYSCALAR; c0 = OP_IMUL; break;
 			case SN_MultiplyBySelectedScalarWideningLower: opcode = OP_ARM64_SMULL_SCALAR; break;
 			case SN_MultiplyBySelectedScalarWideningUpper: opcode = OP_ARM64_SMULL2_SCALAR; break;
 			case SN_MultiplyDoublingBySelectedScalarSaturateHigh: opcode = OP_XOP_OVR_BYSCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_SQDMULH; break;
-			case SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar: opcode = OP_ARM64_SQDMULL_SCALAR; break;
-			case SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar: opcode = OP_ARM64_SQDMULL2_SCALAR; break;
+			case SN_MultiplyDoublingWideningSaturateLowerBySelectedScalar: opcode = OP_ARM64_SQDMULL_BYSCALAR; break;
+			case SN_MultiplyDoublingWideningSaturateUpperBySelectedScalar: opcode = OP_ARM64_SQDMULL2_BYSCALAR; break;
 			default: g_assert_not_reached();
 			}
 			if (is_unsigned)
@@ -1551,11 +1590,13 @@ emit_arm64_intrinsics (
 				switch (opcode) {
 				case OP_XBINOP_BYSCALAR: c0 = OP_FMUL;
 				}
-			MonoInst *scalar = emit_simd_ins (cfg, klass, OP_ARM64_SELECT_SCALAR, args [1]->dreg, args [2]->dreg);
-			MonoInst *ret = emit_simd_ins (cfg, klass, opcode, args [0]->dreg, scalar->dreg);
+			MonoInst *scalar = emit_simd_ins (cfg, ret_klass, OP_ARM64_SELECT_SCALAR, args [1]->dreg, args [2]->dreg);
+			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, scalar->dreg);
 			ret->inst_c0 = c0;
 			return ret;
 		}
+		case SN_MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate:
+		case SN_MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate:
 		case SN_MultiplyAddBySelectedScalar:
 		case SN_MultiplySubtractBySelectedScalar:
 		case SN_MultiplyBySelectedScalarWideningLowerAndAdd:
@@ -1566,19 +1607,22 @@ emit_arm64_intrinsics (
 		case SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate:
 		case SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate:
 		case SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			int opcode = 0;
 			switch (id) {
+			case SN_MultiplyDoublingWideningScalarBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL_SCALAR; break;
+			case SN_MultiplyDoublingWideningScalarBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL_SCALAR; break;
 			case SN_MultiplyAddBySelectedScalar: opcode = OP_ARM64_MLA_SCALAR; break;
 			case SN_MultiplySubtractBySelectedScalar: opcode = OP_ARM64_MLS_SCALAR; break;
 			case SN_MultiplyBySelectedScalarWideningLowerAndAdd: opcode = OP_ARM64_SMLAL_SCALAR; break;
 			case SN_MultiplyBySelectedScalarWideningLowerAndSubtract: opcode = OP_ARM64_SMLSL_SCALAR; break;
 			case SN_MultiplyBySelectedScalarWideningUpperAndAdd: opcode = OP_ARM64_SMLAL2_SCALAR; break;
 			case SN_MultiplyBySelectedScalarWideningUpperAndSubtract: opcode = OP_ARM64_SMLSL2_SCALAR; break;
-			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL_SCALAR; break;
-			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL_SCALAR; break;
-			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL2_SCALAR; break;
-			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL2_SCALAR; break;
+			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL_BYSCALAR; break;
+			case SN_MultiplyDoublingWideningLowerBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL_BYSCALAR; break;
+			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndAddSaturate: opcode = OP_ARM64_SQDMLAL2_BYSCALAR; break;
+			case SN_MultiplyDoublingWideningUpperBySelectedScalarAndSubtractSaturate: opcode = OP_ARM64_SQDMLSL2_BYSCALAR; break;
 			default: g_assert_not_reached();
 			}
 			if (is_unsigned)
@@ -1588,8 +1632,8 @@ emit_arm64_intrinsics (
 				case OP_ARM64_SMLAL2_SCALAR: opcode = OP_ARM64_UMLAL2_SCALAR; break;
 				case OP_ARM64_SMLSL2_SCALAR: opcode = OP_ARM64_UMLSL2_SCALAR; break;
 				}
-			MonoInst *scalar = emit_simd_ins (cfg, klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
-			MonoInst *ret = emit_simd_ins (cfg, klass, opcode, args [0]->dreg, args [1]->dreg);
+			MonoInst *scalar = emit_simd_ins (cfg, ret_klass, OP_ARM64_SELECT_SCALAR, args [2]->dreg, args [3]->dreg);
+			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = scalar->dreg;
 			return ret;
 		}

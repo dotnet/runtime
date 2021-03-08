@@ -369,6 +369,12 @@ ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
 }
 
 static inline llvm_ovr_tag_t
+ovr_tag_double_width (llvm_ovr_tag_t tag)
+{
+	return ((tag & ~INTRIN_vectormask) << 1) | ((tag & INTRIN_vectormask) << 1);
+}
+
+static inline llvm_ovr_tag_t
 ovr_tag_corresponding_integer (llvm_ovr_tag_t tag)
 {
 	return ((tag & ~INTRIN_vectormask) >> 2) | (tag & INTRIN_vectormask);
@@ -4955,6 +4961,12 @@ static LLVMValueRef
 vector_from_scalar (EmitContext *ctx, LLVMValueRef type_donor, LLVMValueRef x)
 {
 	return vector_from_scalar_ty (ctx, LLVMTypeOf (type_donor), x);
+}
+
+static LLVMValueRef
+undef_upper_elements (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
+{
+	return vector_from_scalar_ty (ctx, type, scalar_from_vector (ctx, x));
 }
 
 static void
@@ -9813,29 +9825,29 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ARM64_SQDMULL:
-		case OP_ARM64_SQDMULL_SCALAR:
+		case OP_ARM64_SQDMULL_BYSCALAR:
 		case OP_ARM64_SQDMULL2:
-		case OP_ARM64_SQDMULL2_SCALAR:
+		case OP_ARM64_SQDMULL2_BYSCALAR:
 		case OP_ARM64_SQDMLAL:
-		case OP_ARM64_SQDMLAL_SCALAR:
-		case OP_ARM64_SQDMLSL:
-		case OP_ARM64_SQDMLSL_SCALAR:
+		case OP_ARM64_SQDMLAL_BYSCALAR:
 		case OP_ARM64_SQDMLAL2:
-		case OP_ARM64_SQDMLAL2_SCALAR:
+		case OP_ARM64_SQDMLAL2_BYSCALAR:
+		case OP_ARM64_SQDMLSL:
+		case OP_ARM64_SQDMLSL_BYSCALAR:
 		case OP_ARM64_SQDMLSL2:
-		case OP_ARM64_SQDMLSL2_SCALAR: {
+		case OP_ARM64_SQDMLSL2_BYSCALAR: {
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			gboolean scalar = FALSE;
 			gboolean add = FALSE;
 			gboolean subtract = FALSE;
 			gboolean high = FALSE;
 			switch (ins->opcode) {
-			case OP_ARM64_SQDMULL_SCALAR: scalar = TRUE; case OP_ARM64_SQDMULL: break;
-			case OP_ARM64_SQDMULL2_SCALAR: scalar = TRUE; case OP_ARM64_SQDMULL2: high = TRUE; break;
-			case OP_ARM64_SQDMLAL_SCALAR: scalar = TRUE; case OP_ARM64_SQDMLAL: add = TRUE; break;
-			case OP_ARM64_SQDMLSL_SCALAR: scalar = TRUE; case OP_ARM64_SQDMLSL: subtract = TRUE; break;
-			case OP_ARM64_SQDMLAL2_SCALAR: scalar = TRUE; case OP_ARM64_SQDMLAL2: high = TRUE; add = TRUE; break;
-			case OP_ARM64_SQDMLSL2_SCALAR: scalar = TRUE; case OP_ARM64_SQDMLSL2: high = TRUE; subtract = TRUE; break;
+			case OP_ARM64_SQDMULL_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMULL: break;
+			case OP_ARM64_SQDMULL2_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMULL2: high = TRUE; break;
+			case OP_ARM64_SQDMLAL_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMLAL: add = TRUE; break;
+			case OP_ARM64_SQDMLAL2_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMLAL2: high = TRUE; add = TRUE; break;
+			case OP_ARM64_SQDMLSL_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMLSL: subtract = TRUE; break;
+			case OP_ARM64_SQDMLSL2_BYSCALAR: scalar = TRUE; case OP_ARM64_SQDMLSL2: high = TRUE; subtract = TRUE; break;
 			}
 			int iid = 0;
 			if (add)
@@ -9864,9 +9876,68 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_SQDMULH_SCALAR:
+		case OP_ARM64_SQDMULL_SCALAR:
+		case OP_ARM64_SQDMLAL_SCALAR:
+		case OP_ARM64_SQDMLSL_SCALAR: {
+			/*
+			 * define dso_local i32 @__vqdmlslh_lane_s16(i32, i16, <4 x i16>, i32) local_unnamed_addr #0 {
+			 *   %5 = insertelement <4 x i16> undef, i16 %1, i64 0
+			 *   %6 = shufflevector <4 x i16> %2, <4 x i16> undef, <4 x i32> <i32 3, i32 undef, i32 undef, i32 undef>
+			 *   %7 = tail call <4 x i32> @llvm.aarch64.neon.sqdmull.v4i32(<4 x i16> %5, <4 x i16> %6)
+			 *   %8 = extractelement <4 x i32> %7, i64 0
+			 *   %9 = tail call i32 @llvm.aarch64.neon.sqsub.i32(i32 %0, i32 %8)
+			 *   ret i32 %9
+			 * }
+			 */
+			gboolean widening = TRUE;
+			int mulid = INTRINS_AARCH64_ADV_SIMD_SQDMULL;
+			int iid = 0;
+			switch (ins->opcode) {
+			case OP_ARM64_SQDMULH_SCALAR: mulid = INTRINS_AARCH64_ADV_SIMD_SQDMULH; widening = FALSE; break;
+			case OP_ARM64_SQDMLAL_SCALAR: iid = INTRINS_AARCH64_ADV_SIMD_SQADD; break;
+			case OP_ARM64_SQDMLSL_SCALAR: iid = INTRINS_AARCH64_ADV_SIMD_SQSUB; break;
+			}
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMValueRef mularg = lhs;
+			LLVMValueRef selected_scalar = rhs;
+			if (iid != 0) {
+				mularg = rhs;
+				selected_scalar = arg3;
+			}
+			LLVMTypeRef mularg_t = LLVMTypeOf (mularg);
+			llvm_ovr_tag_t multag = ovr_tag_from_llvm_type (mularg_t);
+			llvm_ovr_tag_t iidtag = ovr_tag_force_scalar (ovr_tag_from_llvm_type (ret_t));
+			if (widening)
+				multag = ovr_tag_double_width (multag);
+
+			mularg = undef_upper_elements (ctx, mularg_t, mularg);
+			selected_scalar = undef_upper_elements (ctx, mularg_t, selected_scalar);
+
+			LLVMValueRef mulargs [] = { mularg, selected_scalar };
+			LLVMValueRef result = call_overloaded_intrins (ctx, mulid, multag, mulargs, "arm64_sqdmlsl");
+			result = scalar_from_vector (ctx, result);
+
+			if (iid != 0) {
+				LLVMValueRef minuend = scalar_from_vector (ctx, lhs);
+				LLVMValueRef subargs [] = { minuend, result };
+				result = call_overloaded_intrins (ctx, iid, iidtag, subargs, "arm64_sqdmlsl");
+			}
+			result = vector_from_scalar_ty (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_SQRDMULH_BYSCALAR:
 		case OP_ARM64_SQRDMULH_SCALAR:
+		case OP_ARM64_SQRDMULH_SCALAR_SEL:
 		case OP_ARM64_SQRDMULH_SEL: {
-			gboolean sel = ins->opcode == OP_ARM64_SQRDMULH_SEL;
+			gboolean sel = FALSE;
+			gboolean scalar = FALSE;
+			switch (ins->opcode) {
+			case OP_ARM64_SQRDMULH_SCALAR: scalar = TRUE; break;
+			case OP_ARM64_SQRDMULH_SCALAR_SEL: sel = TRUE; scalar = TRUE; break;
+			case OP_ARM64_SQRDMULH_SEL: sel = TRUE; break;
+			}
 			// XXXih: TODO: unroll arg3, bounds checks for arg3
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			LLVMValueRef lane = arg3;
@@ -9875,7 +9946,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef t = LLVMTypeOf (lhs);
 			unsigned int elems = LLVMGetVectorSize (t);
 			LLVMValueRef arg = LLVMBuildExtractElement (builder, rhs, lane, "");
-			arg = broadcast_element (ctx, arg, elems);
+			if (scalar)
+				arg = vector_from_scalar_ty (ctx, t, arg);
+			else
+				arg = broadcast_element (ctx, arg, elems);
 			LLVMValueRef args [] = { lhs, arg };
 			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SQRDMULH, ovr_tag, args, "");
 			values [ins->dreg] = result;
