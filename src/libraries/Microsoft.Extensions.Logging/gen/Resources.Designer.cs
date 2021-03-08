@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -57,6 +57,42 @@ namespace Microsoft.Extensions.Logging.Generators {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Argument {0} is not referenced from the logging message.
+        /// </summary>
+        internal static string ArgumentHasNoCorrespondingTemplateMessage {
+            get {
+                return ResourceManager.GetString("ArgumentHasNoCorrespondingTemplateMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Argument is not referenced from the logging message.
+        /// </summary>
+        internal static string ArgumentHasNoCorrespondingTemplateTitle {
+            get {
+                return ResourceManager.GetString("ArgumentHasNoCorrespondingTemplateTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care.
+        /// </summary>
+        internal static string DontMentionExceptionInMessageMessage {
+            get {
+                return ResourceManager.GetString("DontMentionExceptionInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include exception parameters as templates in the logging message.
+        /// </summary>
+        internal static string DontMentionExceptionInMessageTitle {
+            get {
+                return ResourceManager.GetString("DontMentionExceptionInMessageTitle", resourceCulture);
             }
         }
         
@@ -169,6 +205,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Logging methods cannot have a body.
+        /// </summary>
+        internal static string ErrorMethodHasBodyMessage {
+            get {
+                return ResourceManager.GetString("ErrorMethodHasBodyMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging methods cannot have a body.
+        /// </summary>
+        internal static string ErrorMethodHasBodyTitle {
+            get {
+                return ResourceManager.GetString("ErrorMethodHasBodyTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Logging methods cannot be generic.
         /// </summary>
         internal static string ErrorMethodIsGenericMessage {
@@ -255,6 +309,60 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string ErrorNotStaticMethodTitle {
             get {
                 return ResourceManager.GetString("ErrorNotStaticMethodTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly.
+        /// </summary>
+        internal static string PassingDateTimeMessage {
+            get {
+                return ResourceManager.GetString("PassingDateTimeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No need to supply a DateTime value as argument since the logging infrastructure inserts one implicitly.
+        /// </summary>
+        internal static string PassingDateTimeTitle {
+            get {
+                return ResourceManager.GetString("PassingDateTimeTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level..
+        /// </summary>
+        internal static string RedundantQualifierInMessageMessage {
+            get {
+                return ResourceManager.GetString("RedundantQualifierInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Redundant qualifier in logging message.
+        /// </summary>
+        internal static string RedundantQualifierInMessageTitle {
+            get {
+                return ResourceManager.GetString("RedundantQualifierInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Template {0} is not provided as argument to the logging method.
+        /// </summary>
+        internal static string TemplateHasNoCorrespondingArgumentMessage {
+            get {
+                return ResourceManager.GetString("TemplateHasNoCorrespondingArgumentMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Logging template has no corresponding method argument.
+        /// </summary>
+        internal static string TemplateHasNoCorrespondingArgumentTitle {
+            get {
+                return ResourceManager.GetString("TemplateHasNoCorrespondingArgumentTitle", resourceCulture);
             }
         }
     }

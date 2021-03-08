@@ -93,5 +93,53 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor RedundantQualifierInMessage { get; } = new (
+            id: "LG0011",
+            title: Resources.RedundantQualifierInMessageTitle,
+            messageFormat: Resources.RedundantQualifierInMessageMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor PassingDateTime { get; } = new (
+            id: "LG0012",
+            title: Resources.PassingDateTimeTitle,
+            messageFormat: Resources.PassingDateTimeMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor DontMentionExceptionInMessage { get; } = new (
+            id: "LG0013",
+            title: Resources.DontMentionExceptionInMessageTitle,
+            messageFormat: Resources.DontMentionExceptionInMessageMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor TemplateHasNoCorrespondingArgument { get; } = new (
+            id: "LG0014",
+            title: Resources.TemplateHasNoCorrespondingArgumentTitle,
+            messageFormat: Resources.TemplateHasNoCorrespondingArgumentMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ArgumentHasNoCorrespondingTemplate { get; } = new (
+            id: "LG0015",
+            title: Resources.ArgumentHasNoCorrespondingTemplateTitle,
+            messageFormat: Resources.ArgumentHasNoCorrespondingTemplateMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ErrorMethodHasBody { get; } = new (
+            id: "LG0016",
+            title: Resources.ErrorMethodHasBodyTitle,
+            messageFormat: Resources.ErrorMethodHasBodyMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

@@ -1,50 +1,71 @@
-// © Microsoft Corporation. All rights reserved.
+// Â© Microsoft Corporation. All rights reserved.
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
-using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "<Pending>")]
     public class LoggerMessageGeneratorEmitterTests
     {
-        [Fact]
-        public async Task TestEmitter()
+        private class Options : AnalyzerConfigOptions
         {
-            var testSourceCode = File.ReadAllText(@"..\..\..\Definitions.cs");
+            private readonly string _response;
 
-            var proj = RoslynTestUtils.CreateTestProject()
-                .WithLoggingBoilerplate()
-                .WithDocument("Definitions.cs", testSourceCode);
+            public Options(string response)
+            {
+                _response = response;
+            }
 
-            await proj.CommitChanges("CS8795").ConfigureAwait(false);
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-            var comp = (await proj.GetCompilationAsync().ConfigureAwait(false))!;
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
+            public override bool TryGetValue(string key, out string value)
+            {
+                value = _response;
+                return _response.Length > 0;
+            }
+        }
 
-            // This tests exists strictly to calculate the code coverage
+        private class OptionsProvider : AnalyzerConfigOptionsProvider
+        {
+            private readonly string _response;
+
+            public OptionsProvider(string response)
+            {
+                _response = response;
+            }
+
+            public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => throw new NotImplementedException();
+            public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => throw new NotImplementedException();
+            public override AnalyzerConfigOptions GlobalOptions => new Options(_response);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("TRUE")]
+        [InlineData("FALSE")]
+        public async Task TestEmitter(string response)
+        {
+            // This test exists strictly to calculate the code coverage
             // attained by processing Definitions.cs. The functionality of the
             // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
-            for (int i = 0; i < 2; i++)
-            {
-                var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(comp, d => { }, CancellationToken.None);
-                var e = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Emitter(i == 0);
 
-                var allNodes = comp.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
-                var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();
-                var lc = p.GetLogClasses(allClasses);
+            var testSourceCode = await File.ReadAllTextAsync(@"..\..\..\Definitions.cs");
 
-                var generatedSource = e.Emit(lc, CancellationToken.None);
-                Assert.True(!string.IsNullOrEmpty(generatedSource));
+            var (d, r) = await RoslynTestUtils.RunGenerator(
+                new LoggerMessageGenerator(),
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
+                new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
+                new[] { testSourceCode },
+                optionsProvider: new OptionsProvider(response)).ConfigureAwait(false);
 
-                Assert.Throws<OperationCanceledException>(() => _ = e.Emit(lc, new CancellationToken(true)));
-            }
+            Assert.Empty(d);
+            Assert.Single(r);
         }
     }
 }

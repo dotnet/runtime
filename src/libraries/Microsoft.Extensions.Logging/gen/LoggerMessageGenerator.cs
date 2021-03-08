@@ -16,14 +16,12 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggerMessageGenerator : ISourceGenerator
     {
-        /// <inheritdoc />
         [ExcludeFromCodeCoverage]
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(SyntaxReceiver.Create);
         }
 
-        /// <inheritdoc />
         [ExcludeFromCodeCoverage]
         public void Execute(GeneratorExecutionContext context)
         {
@@ -60,8 +58,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                var classSyntax = syntaxNode as ClassDeclarationSyntax;
-                if (classSyntax != null)
+                if (syntaxNode is ClassDeclarationSyntax classSyntax)
                 {
                     ClassDeclarations.Add(classSyntax);
                 }

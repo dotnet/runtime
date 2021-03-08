@@ -1,4 +1,4 @@
-// © Microsoft Corporation. All rights reserved.
+// ï¿½ Microsoft Corporation. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             logger.Reset();
             ArgTestExtensions.Method2(logger, "arg1");
             Assert.Null(logger.LastException);
-            Assert.Equal("M2", logger.LastFormattedString);
+            Assert.Equal("M2 arg1", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
@@ -79,24 +79,24 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             logger.Reset();
             ArgTestExtensions.Method5(logger, new InvalidOperationException("A"), new InvalidOperationException("B"));
             Assert.Equal("A", logger.LastException!.Message);
-            Assert.Equal("M5", logger.LastFormattedString);
+            Assert.Equal("M5 System.InvalidOperationException: B", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method6(logger, new InvalidOperationException("A"), 2);
             Assert.Equal("A", logger.LastException!.Message);
-            Assert.Equal("M6", logger.LastFormattedString);
+            Assert.Equal("M6 2", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method7(logger, 1, new InvalidOperationException("B"));
             Assert.Equal("B", logger.LastException!.Message);
-            Assert.Equal("M7", logger.LastFormattedString);
+            Assert.Equal("M7 1", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
             ArgTestExtensions.Method8(logger, 1, 2, 3, 4, 5, 6, 7);
-            Assert.Equal("M8", logger.LastFormattedString);
+            Assert.Equal("M81234567", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
 
             logger.Reset();
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             logger.Reset();
             ArgTestExtensions.Method10(logger, 1);
-            Assert.Equal("M10", logger.LastFormattedString);
+            Assert.Equal("M101", logger.LastFormattedString);
             Assert.Equal(1, logger.CallCount);
         }
 

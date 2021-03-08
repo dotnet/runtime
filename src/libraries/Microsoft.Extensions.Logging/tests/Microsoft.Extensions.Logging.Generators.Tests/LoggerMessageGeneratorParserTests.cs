@@ -1,23 +1,22 @@
-// © Microsoft Corporation. All rights reserved.
+// Â© Microsoft Corporation. All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "<Pending>")]
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
-        public void InvalidMethodName()
+        public async Task InvalidMethodName()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -25,15 +24,33 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(lc);
             Assert.Single(d);
             Assert.Equal("LG0000", d[0].Id);
         }
 
         [Fact]
-        public void InvalidMessage()
+        public async Task InvalidMethodBody()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    static partial void M1(ILogger logger);
+
+                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    static partial void M1(ILogger logger)
+                    {
+                    }
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0016", d[0].Id);
+        }
+
+        [Fact]
+        public async Task InvalidMessage()
+        {
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, """")]
@@ -41,31 +58,104 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(lc);
             Assert.Single(d);
             Assert.Equal("LG0001", d[0].Id);
         }
 
         [Fact]
-        public void InvalidParameterName()
+        public async Task MissingTemplate()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(0, LogLevel.Debug, ""This is a message without foo"")]
+                    static partial void M1(ILogger logger, string foo);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0015", d[0].Id);
+        }
+
+        [Fact]
+        public async Task MissingArgument()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""{foo}"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0014", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NeedlessQualifierInMessage()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Information, ""INFO: this is an informative message"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0011", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NeedlessExceptionInMessage()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {ex} {ex2}"")]
+                    static partial void M1(ILogger logger, System.Exception ex, System.Exception ex2);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0013", d[0].Id);
+        }
+
+        [Fact]
+        public async Task InvalidParameterName()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {__foo}"")]
                     static partial void M1(ILogger logger, string __foo);
                 }
             ");
 
-            Assert.Single(lc);
             Assert.Single(d);
             Assert.Equal("LG0002", d[0].Id);
         }
 
         [Fact]
-        public void NestedType()
+        public async Task DateTimeAsParameterType()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {timeStamp}"")]
+                    static partial void M1(ILogger logger, System.DateTime timeStamp);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0012", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NestedType()
+        {
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     public partial class Nested
@@ -76,15 +166,14 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0003", d[0].Id);
         }
 
         [Fact]
-        public void RequiredTypes()
+        public async Task MissingExceptionType()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 namespace System
                 {
                     public class Object
@@ -101,23 +190,58 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 partial class C
                 {
                 }
-            ", false, includeReferences: false);
+            ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0004", d[0].Id);
+        }
 
-            (lc, d) = TryParser(@"
+        [Fact]
+        public async Task MissingDateTimeType()
+        {
+            var d = await RunGenerator(@"
+                namespace System
+                {
+                    public class Object
+                    {
+                    }
+
+                    public class Void
+                    {
+                    }
+
+                    public class Exception
+                    {
+                    }
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                }
                 partial class C
                 {
                 }
-            ", false);
+            ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0004", d[0].Id);
+        }
 
-            (lc, d) = TryParser(@"
+        [Fact]
+        public async Task MissingLoggerMessageAttributeType()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                }
+            ", false, includeLoggingReferences: false);
+
+            Assert.Empty(d);
+        }
+
+        [Fact]
+        public async Task MissingILoggerType()
+        {
+            var d = await RunGenerator(@"
                 namespace Microsoft.Extensions.Logging
                 {
                     public sealed class LoggerMessageAttribute : System.Attribute {}
@@ -125,17 +249,15 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 partial class C
                 {
                 }
-            ", false);
+            ", false, includeLoggingReferences: false);
 
-            Assert.Empty(lc);
-            Assert.Single(d);
-            Assert.Equal("LG0004", d[0].Id);
+            Assert.Empty(d);
         }
 
         [Fact]
-        public void EventIdReuse()
+        public async Task EventIdReuse()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -146,15 +268,14 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Single(lc);
             Assert.Single(d);
             Assert.Equal("LG0005", d[0].Id);
         }
 
         [Fact]
-        public void MethodReturnType()
+        public async Task MethodReturnType()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -164,31 +285,29 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0006", d[0].Id);
         }
 
         [Fact]
-        public void FirstArgILogger()
+        public async Task FirstArgILogger()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {logger}"")]
                     static partial void M1(int p1, ILogger logger);
                 }
             ");
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0007", d[0].Id);
         }
 
         [Fact]
-        public void NotStatic()
+        public async Task NotStatic()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -196,15 +315,14 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0008", d[0].Id);
         }
 
         [Fact]
-        public void NotPartial()
+        public async Task NotPartial()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -212,15 +330,15 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Empty(lc);
-            Assert.Single(d);
+            Assert.Equal(2, d.Count);
             Assert.Equal("LG0009", d[0].Id);
+            Assert.Equal("LG0016", d[1].Id);
         }
 
         [Fact]
-        public void MethodGeneric()
+        public async Task MethodGeneric()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
@@ -228,181 +346,59 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 }
             ");
 
-            Assert.Empty(lc);
             Assert.Single(d);
             Assert.Equal("LG0010", d[0].Id);
         }
 
         [Fact]
-        public void Templates()
+        public async Task Templates()
         {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(1, LogLevel.Debug, ""M1"")]
-                    static partial void M1(ILogger logger, string arg1, string arg2);
+                    static partial void M1(ILogger logger);
 
                     [LoggerMessage(2, LogLevel.Debug, ""M2 {arg1} {arg2}"")]
                     static partial void M2(ILogger logger, string arg1, string arg2);
 
                     [LoggerMessage(3, LogLevel.Debug, ""M3 {arg1"")]
-                    static partial void M3(ILogger logger, string arg1);
+                    static partial void M3(ILogger logger);
 
                     [LoggerMessage(4, LogLevel.Debug, ""M4 arg1}"")]
-                    static partial void M4(ILogger logger, string arg1);
+                    static partial void M4(ILogger logger);
 
                     [LoggerMessage(5, LogLevel.Debug, ""M5 {"")]
-                    static partial void M5(ILogger logger, string arg1);
- 
+                    static partial void M5(ILogger logger);
+
                     [LoggerMessage(6, LogLevel.Debug, ""}M6 "")]
-                    static partial void M6(ILogger logger, string arg1);
+                    static partial void M6(ILogger logger);
 
                     [LoggerMessage(7, LogLevel.Debug, ""M7 {{arg1}}"")]
-                    static partial void M7(ILogger logger, string arg1);
+                    static partial void M7(ILogger logger);
                 }
             ");
 
-            Assert.Single(lc);
-            Assert.False(lc[0].Methods[0].MessageHasTemplates);
-            Assert.True(lc[0].Methods[1].MessageHasTemplates);
-            Assert.False(lc[0].Methods[2].MessageHasTemplates);
-            Assert.False(lc[0].Methods[3].MessageHasTemplates);
-            Assert.False(lc[0].Methods[4].MessageHasTemplates);
-            Assert.False(lc[0].Methods[5].MessageHasTemplates);
-            Assert.True(lc[0].Methods[6].MessageHasTemplates);
             Assert.Empty(d);
         }
 
         [Fact]
-        public void Namespace()
+        public async Task Cancellation()
         {
-            var (lc, d) = TryParser(@"
-                namespace Foo
-                {
-                    partial class C
-                    {
-                        [LoggerMessage(0, LogLevel.Debug, ""M1"")]
-                        static partial void M1(ILogger logger);
-                    }
-                }
-            ");
-
-            Assert.Single(lc);
-            Assert.Equal("Test.Foo", lc[0].Namespace);
-            Assert.Equal("C", lc[0].Name);
-            Assert.Empty(d);
-
-            (lc, d) = TryParser(@"
+            await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+                _ = await RunGenerator(@"
                 partial class C
                 {
                     [LoggerMessage(0, LogLevel.Debug, ""M1"")]
                     static partial void M1(ILogger logger);
                 }
-            ");
-
-            Assert.Single(lc);
-            Assert.Equal("Test", lc[0].Namespace);
-            Assert.Equal("C", lc[0].Name);
-            Assert.Empty(d);
-
-            (lc, d) = TryParser(@"
-                partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
-                    static partial void M1(ILogger logger);
-                }
-            ", true, false);
-
-            Assert.Single(lc);
-            Assert.Equal(string.Empty, lc[0].Namespace);
-            Assert.Equal("C", lc[0].Name);
-            Assert.Empty(d);
+            ", cancellationToken: new CancellationToken(true)));
         }
 
         [Fact]
-        public void Generic()
+        public async Task SourceErrors()
         {
-            var (lc, d) = TryParser(@"
-                partial class C<T>
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
-                    static partial void M1(ILogger logger);
-                }
-            ");
-
-            Assert.Single(lc);
-            Assert.Equal("Test", lc[0].Namespace);
-            Assert.Equal("C<T>", lc[0].Name);
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public void EventName()
-        {
-            var (lc, d) = TryParser(@"
-                partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"", EventName = ""MyEvent"")]
-                    static partial void M1(ILogger logger);
-                }
-            ");
-
-            Assert.Single(lc);
-            Assert.Equal("Test", lc[0].Namespace);
-            Assert.Equal("C", lc[0].Name);
-            Assert.Equal("MyEvent", lc[0].Methods[0].EventName);
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public void Cancellation()
-        {
-            var (lc, d) = TryParser(@"
-                partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1"")]
-                    static partial void M1(ILogger logger);
-                }
-            ", cancellationToken: new CancellationToken(true));
-
-            Assert.Empty(lc);
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public void RandomAttribute()
-        {
-            var (lc, d) = TryParser(@"
-                partial class C
-                {
-                    [System.Obsolete(""Foo"")]
-                    static partial void M1(ILogger logger);
-                }
-            ", checkDiags: false);
-
-            Assert.Empty(lc);
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public void ExtensionMethod()
-        {
-            var (lc, d) = TryParser(@"
-                static partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, ""Hello"")]
-                    static partial void M1(this ILogger logger);
-                }
-            ");
-
-            Assert.True(lc[0].Methods[0].IsExtensionMethod);
-            Assert.Empty(d);
-        }
-
-        [Fact]
-        public void SourceErrors()
-        {
-            var (lc, d) = TryParser(@"
+            var d = await RunGenerator(@"
                 static partial class C
                 {
                     // bogus argument type
@@ -425,18 +421,17 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                     [LoggerMessage(4, "", ""Hello"")]
                     int M5;
                 }
-            ", checkDiags: false);
+            ");
 
-            Assert.Empty(lc);
             Assert.Empty(d);    // should fail quietly on broken code
         }
 
-        private static (IReadOnlyList<LoggerMessageGenerator.LoggerClass>, IReadOnlyList<Diagnostic>) TryParser(
+        private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code,
             bool wrap = true,
             bool inNamespace = true,
-            bool includeReferences = true,
-            bool checkDiags = true,
+            bool includeBaseReferences = true,
+            bool includeLoggingReferences = true,
             CancellationToken cancellationToken = default)
         {
             var text = code;
@@ -455,47 +450,27 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                     using Microsoft.Extensions.Logging;
                     {code}
                     {nspaceEnd}
-                    {RoslynTestUtils.LoggingBoilerplate}
                 ";
             }
 
-            var refs = Array.Empty<PortableExecutableReference>();
-            if (includeReferences)
+#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
+            Assembly[]? refs = null;
+#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
+            if (includeLoggingReferences)
             {
 #pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-                refs = new[]
-                {
-                    MetadataReference.CreateFromFile(Assembly.GetAssembly(typeof(System.Exception))!.Location),
-                };
+                refs = new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! };
 #pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             }
 
-            var compilation = CSharpCompilation.Create(
-                "example.dll",
-                new[] { CSharpSyntaxTree.ParseText(text, cancellationToken: CancellationToken.None) },
-                refs)
-                .WithOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
+            var (d, r) = await RoslynTestUtils.RunGenerator(
+                new LoggerMessageGenerator(),
+                refs,
+                new[] { text },
+                includeBaseReferences: includeBaseReferences,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            if (checkDiags)
-            {
-                // make sure we have valid syntax
-                Assert.Empty(compilation.GetDiagnostics(CancellationToken.None));
-            }
-
-            var results = new List<Diagnostic>();
-            var p = new Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator.Parser(
-                compilation,
-                (d) =>
-                {
-                    results.Add(d);
-                },
-                cancellationToken);
-
-            var allNodes = compilation.SyntaxTrees.SelectMany(s => s.GetRoot().DescendantNodes());
-            var allClasses = allNodes.Where(d => d.IsKind(SyntaxKind.ClassDeclaration)).OfType<ClassDeclarationSyntax>();
-            var lc = p.GetLogClasses(allClasses);
-
-            return (lc, results);
+            return d;
         }
     }
 }

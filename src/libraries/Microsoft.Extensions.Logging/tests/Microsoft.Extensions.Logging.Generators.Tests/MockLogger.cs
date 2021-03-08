@@ -1,4 +1,4 @@
-// © Microsoft Corporation. All rights reserved.
+// Â© Microsoft Corporation. All rights reserved.
 
 using System;
 using Microsoft.Extensions.Logging;
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         public int CallCount { get; private set; }
 
         /// <summary>
-        /// Dummy disposable type, for use with BeginScope
+        /// Dummy disposable type, for use with BeginScope.
         /// </summary>
         private class Disposable : IDisposable
         {
