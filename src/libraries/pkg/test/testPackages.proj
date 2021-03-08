@@ -13,7 +13,9 @@
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
-
+    <TestPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" />
+    <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
+    <TestPackages Remove="@(SymbolsPackages)" />
     <!-- we don't build alpine or older OSX versions -->
     <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
 
@@ -70,10 +72,12 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
+  <UsingTask TaskName="GetCompatibilePackageTargetFrameworks" AssemblyFile="$(NuGetPackageRoot)\microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\net5.0\Microsoft.DotNet.PackageValidation.dll"/>
+
   <Target Name="GetSupportedPackages">
-    <GetSupportedPackagesFromPackageReports PackageReports="@(PackageReports)">
-      <Output TaskParameter="SupportedPackages" ItemName="SupportedPackage"/>
-    </GetSupportedPackagesFromPackageReports>
+    <GetCompatibilePackageTargetFrameworks PackagePaths="@(TestPackages)">
+      <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />     
+    </GetCompatibilePackageTargetFrameworks>
 
     <ItemGroup>
       <SupportedPackage>
@@ -119,7 +123,7 @@
 
   <Target Name="GenerateProjects"
           DependsOnTargets="GetSupportedPackages;CreateTestDir"
-          Inputs="@(PackageReports);$(ProjectTemplate)"
+          Inputs="@(TestPackages);$(ProjectTemplate)"
           Outputs="%(SupportedPackage.ProjectFile)">
     <PropertyGroup>
       <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>
