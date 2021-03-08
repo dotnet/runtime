@@ -627,7 +627,7 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
     else
     {
         // Set WinAPI as the default
-        callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
+        callConvLocal = CorInfoCallConvExtension::Managed;
 
         MetaSig::CallingConventionModifiers modifiers = MetaSig::CALL_CONV_MOD_NONE;
 
@@ -650,6 +650,12 @@ bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCal
                 return false;
             }
         }
+
+        if (callConvLocal == CorInfoCallConvExtension::Managed)
+        {
+            callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
+        }
+
         if (modifiers & MetaSig::CALL_CONV_MOD_MEMBERFUNCTION)
         {
             callConvLocal = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(callConvLocal);
