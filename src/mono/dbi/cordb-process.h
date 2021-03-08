@@ -127,7 +127,7 @@ public:
     CordbClass*              FindOrAddClass(mdToken token, int module_id);
     CordbType*               FindOrAddPrimitiveType(CorElementType type);
     CordbType*               FindOrAddClassType(CorElementType type, CordbClass *klass); 
-    CordbType*               FindOrAddArrayType(CorElementType type, CordbType* arrayType);
+    CordbType*               FindOrAddArrayType(CorElementType type, CordbType* elementType);
     //CordbType*             FindOrAddGenericInstanceType(CorElementType type, std::initializer_list<CordbType*> arrayType); //use std::initializer_list for generic instances
     CordbFunction*           FindFunction(int id);
     CordbModule*             GetModule(int module_id);
