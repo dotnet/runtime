@@ -7068,7 +7068,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS || block->bbJumpKind == BBJ_THROW);
+            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdNode));
         }
     }
