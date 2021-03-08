@@ -17,7 +17,7 @@ namespace Mono.Linker
 
 		readonly Collection<string> directories;
 
-		protected readonly Dictionary<AssemblyDefinition, string> assemblyToPath = new Dictionary<AssemblyDefinition, string> ();
+		readonly Dictionary<AssemblyDefinition, string> assemblyToPath = new Dictionary<AssemblyDefinition, string> ();
 
 		readonly List<MemoryMappedViewStream> viewStreams = new List<MemoryMappedViewStream> ();
 
@@ -33,6 +33,14 @@ namespace Mono.Linker
 			defaultReaderParameters = new ReaderParameters ();
 			defaultReaderParameters.AssemblyResolver = this;
 			directories = new Collection<string> ();
+		}
+
+		public string GetAssemblyLocation (AssemblyDefinition assembly)
+		{
+			if (assemblyToPath.TryGetValue (assembly, out string path))
+				return path;
+
+			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using linker resolver");
 		}
 
 		public AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)

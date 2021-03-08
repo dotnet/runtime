@@ -33,56 +33,27 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-
 	public class AssemblyResolver : DirectoryAssemblyResolver
 	{
-
-		readonly Dictionary<string, AssemblyDefinition> _assemblies;
 		HashSet<string> _unresolvedAssemblies;
-		bool _ignoreUnresolved;
-		LinkContext _context;
 		readonly List<string> _references;
+		readonly LinkContext _context;
 
-
-		public IDictionary<string, AssemblyDefinition> AssemblyCache {
-			get { return _assemblies; }
-		}
-
-		public AssemblyResolver ()
-			: this (new Dictionary<string, AssemblyDefinition> (StringComparer.OrdinalIgnoreCase))
+		public AssemblyResolver (LinkContext context)
 		{
+			AssemblyCache = new Dictionary<string, AssemblyDefinition> (StringComparer.OrdinalIgnoreCase);
+			_references = new List<string> ();
+			_context = context;
 		}
 
-		public AssemblyResolver (Dictionary<string, AssemblyDefinition> assembly_cache)
-		{
-			_assemblies = assembly_cache;
-			_references = new List<string> () { };
-		}
+		public bool IgnoreUnresolved { get; set; }
 
-		public bool IgnoreUnresolved {
-			get { return _ignoreUnresolved; }
-			set { _ignoreUnresolved = value; }
-		}
-
-		public LinkContext Context {
-			get { return _context; }
-			set { _context = value; }
-		}
-
-		public string GetAssemblyFileName (AssemblyDefinition assembly)
-		{
-			if (assemblyToPath.TryGetValue (assembly, out string path)) {
-				return path;
-			}
-
-			// Must be an assembly that we didn't open through the resolver
-			return assembly.MainModule.FileName;
-		}
+		public Dictionary<string, AssemblyDefinition> AssemblyCache { get; }
 
 		AssemblyDefinition ResolveFromReferences (AssemblyNameReference name, ReaderParameters parameters)
 		{
 			foreach (var reference in _references) {
-				foreach (var extension in DirectoryAssemblyResolver.Extensions) {
+				foreach (var extension in Extensions) {
 					var fileName = name.Name + extension;
 					if (Path.GetFileName (reference) != fileName)
 						continue;
@@ -105,7 +76,7 @@ namespace Mono.Linker
 			if (parameters == null)
 				throw new ArgumentNullException (nameof (parameters));
 
-			if (!_assemblies.TryGetValue (name.Name, out AssemblyDefinition asm) && (_unresolvedAssemblies == null || !_unresolvedAssemblies.Contains (name.Name))) {
+			if (!AssemblyCache.TryGetValue (name.Name, out AssemblyDefinition asm) && (_unresolvedAssemblies == null || !_unresolvedAssemblies.Contains (name.Name))) {
 				try {
 					// Any full path explicit reference takes precedence over other look up logic
 					asm = ResolveFromReferences (name, parameters);
@@ -116,7 +87,7 @@ namespace Mono.Linker
 
 					CacheAssembly (asm);
 				} catch (AssemblyResolutionException) {
-					if (!_ignoreUnresolved)
+					if (!IgnoreUnresolved)
 						throw;
 					_context.LogMessage ($"Ignoring unresolved assembly '{name.Name}'.");
 					if (_unresolvedAssemblies == null)
@@ -130,7 +101,7 @@ namespace Mono.Linker
 
 		public void CacheAssembly (AssemblyDefinition assembly)
 		{
-			_assemblies[assembly.Name.Name] = assembly;
+			AssemblyCache[assembly.Name.Name] = assembly;
 			if (assembly != null)
 				_context.RegisterAssembly (assembly);
 		}
@@ -147,11 +118,11 @@ namespace Mono.Linker
 
 		protected override void Dispose (bool disposing)
 		{
-			foreach (var asm in _assemblies.Values) {
+			foreach (var asm in AssemblyCache.Values) {
 				asm.Dispose ();
 			}
 
-			_assemblies.Clear ();
+			AssemblyCache.Clear ();
 			if (_unresolvedAssemblies != null)
 				_unresolvedAssemblies.Clear ();
 
