@@ -1502,7 +1502,7 @@ private:
 #if defined(TARGET_AMD64)
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static const var_types LargeVectorSaveType = TYP_DOUBLE;
+    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
