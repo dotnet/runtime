@@ -1378,7 +1378,9 @@ namespace System.Xml
                     string value = Declaration.Encoding;
                     if (value.Length > 0)
                     {
-                        return System.Text.Encoding.GetEncoding(value);
+                        return string.Equals(value, "utf-8", StringComparison.OrdinalIgnoreCase) ?
+                                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false) :
+                                    System.Text.Encoding.GetEncoding(value);
                     }
                 }
                 return null;
