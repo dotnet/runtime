@@ -13,7 +13,6 @@
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsOSX)' == 'true'">
-    <DefineConstants>$(DefineConstants);HTTP3_SUPPORTED</DefineConstants>
     <SupportsQuic>true</SupportsQuic>
   </PropertyGroup>
   <!-- ILLinker settings -->
@@ -219,6 +218,12 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.Quic.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.Quic.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SupportsQuic)' != 'true' and '$(TargetsBrowser)' != 'true'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.NoQuic.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.NoQuic.cs" />
   </ItemGroup>
   <!-- Header support -->
   <ItemGroup>
