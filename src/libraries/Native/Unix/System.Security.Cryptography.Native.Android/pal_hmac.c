@@ -40,8 +40,8 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
         return FAIL;
     }
     assert(sksObj && "Unable to create an instance of SecretKeySpec");
-    jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_macClass, g_macGetInstanceMethod, macName));
-    (*env)->CallVoidMethod(env, macObj, g_macInitMethod, sksObj);
+    jobject macObj = ToGRef(env, (*env)->CallStaticObjectMethod(env, g_MacClass, g_MacGetInstance, macName));
+    (*env)->CallVoidMethod(env, macObj, g_MacInit, sksObj);
     (*env)->DeleteLocalRef(env, keyBytes);
     (*env)->DeleteLocalRef(env, sksObj);
     (*env)->DeleteLocalRef(env, macName);
@@ -55,7 +55,7 @@ int32_t CryptoNative_HmacReset(jobject ctx)
         return FAIL;
 
     JNIEnv* env = GetJNIEnv();
-    (*env)->CallVoidMethod(env, ctx, g_macResetMethod);
+    (*env)->CallVoidMethod(env, ctx, g_MacReset);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
@@ -68,7 +68,19 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
     JNIEnv* env = GetJNIEnv();
     jbyteArray dataBytes = (*env)->NewByteArray(env, len);
     (*env)->SetByteArrayRegion(env, dataBytes, 0, len, (jbyte*)data);
-    (*env)->CallVoidMethod(env, ctx, g_macUpdateMethod, dataBytes);
+    (*env)->CallVoidMethod(env, ctx, g_MacUpdate, dataBytes);
+    (*env)->DeleteLocalRef(env, dataBytes);
+
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+}
+
+static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data, int32_t* len)
+{
+    // mac.doFinal();
+    jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
+    jsize dataBytesLen = (*env)->GetArrayLength(env, dataBytes);
+    *len = (int32_t)dataBytesLen;
+    (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
     (*env)->DeleteLocalRef(env, dataBytes);
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
@@ -76,22 +88,27 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
 
 int32_t CryptoNative_HmacFinal(jobject ctx, uint8_t* data, int32_t* len)
 {
-    return CryptoNative_HmacCurrent(ctx, data, len);
+    assert(ctx != NULL);
+
+    JNIEnv* env = GetJNIEnv();
+    return DoFinal(env, ctx, data, len);
 }
 
 int32_t CryptoNative_HmacCurrent(jobject ctx, uint8_t* data, int32_t* len)
 {
-    if (!ctx)
-        return FAIL;
+    assert(ctx != NULL);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_macDoFinalMethod);
-    jsize dataBytesLen = (*env)->GetArrayLength(env, dataBytes);
-    *len = (int32_t)dataBytesLen;
-    (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
-    (*env)->DeleteLocalRef(env, dataBytes);
+    int32_t ret = FAIL;
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    // ctx.clone();
+    jobject clone = (*env)->CallObjectMethod(env, ctx, g_MacClone);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = DoFinal(env, clone, data, len);
+
+cleanup:
+    (*env)->DeleteLocalRef(env, clone);
+    return ret;
 }
 
 void CryptoNative_HmacDestroy(jobject ctx)

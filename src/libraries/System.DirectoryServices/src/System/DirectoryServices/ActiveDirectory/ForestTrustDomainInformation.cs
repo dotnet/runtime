@@ -34,7 +34,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                DomainSid = Marshal.PtrToStringUni(ptr);
+                DomainSid = Marshal.PtrToStringUni(ptr)!;
             }
             finally
             {

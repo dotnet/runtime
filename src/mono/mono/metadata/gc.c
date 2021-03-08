@@ -80,6 +80,16 @@ static gboolean finalizer_thread_exited;
 static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
+#ifndef HOST_WASM
+static RuntimeInvokeFunction finalize_runtime_invoke;
+#endif
+
+/*
+ * This must be a GHashTable, since these objects can't be finalized
+ * if the hashtable contains a GC visible reference to them.
+ */
+static GHashTable *finalizable_objects_hash;
+static mono_mutex_t finalizable_objects_hash_lock;
 
 #ifdef TARGET_WIN32
 static HANDLE pending_done_event;
@@ -88,6 +98,9 @@ static gboolean pending_done;
 static MonoCoopCond pending_done_cond;
 static MonoCoopMutex pending_done_mutex;
 #endif
+
+#define finalizers_lock() mono_os_mutex_lock (&finalizable_objects_hash_lock);
+#define finalizers_unlock() mono_os_mutex_unlock (&finalizable_objects_hash_lock);
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -213,11 +226,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
-	mono_domain_finalizers_lock (domain);
+	finalizers_lock ();
 
-	o2 = (MonoObject *)g_hash_table_lookup (domain->finalizable_objects_hash, o);
+	o2 = (MonoObject *)g_hash_table_lookup (finalizable_objects_hash, o);
 
-	mono_domain_finalizers_unlock (domain);
+	finalizers_unlock ();
 
 	if (!o2)
 		/* Already finalized somehow */
@@ -292,16 +305,16 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
 #ifndef HOST_WASM
-	if (!domain->finalize_runtime_invoke) {
+	if (!finalize_runtime_invoke) {
 		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "Finalize", 0, 0, error);
 		mono_error_assert_ok (error);
 		MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
 
-		domain->finalize_runtime_invoke = mono_compile_method_checked (invoke, error);
+		finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
 		mono_error_assert_ok (error); /* expect this not to fail */
 	}
 
-	RuntimeInvokeFunction runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
+	RuntimeInvokeFunction runtime_invoke = finalize_runtime_invoke;
 #endif
 
 	mono_runtime_class_init_full (o->vtable, error);
@@ -352,21 +365,17 @@ unhandled_error:
 static void
 object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
-	MonoDomain *domain;
-
 	g_assert (obj != NULL);
 
-	domain = obj->vtable->domain;
-
 #if HAVE_BOEHM_GC
-	mono_domain_finalizers_lock (domain);
+	finalizers_lock ();
 
 	if (callback)
-		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
+		g_hash_table_insert (finalizable_objects_hash, obj, obj);
 	else
-		g_hash_table_remove (domain->finalizable_objects_hash, obj);
+		g_hash_table_remove (finalizable_objects_hash, obj);
 
-	mono_domain_finalizers_unlock (domain);
+	finalizers_unlock ();
 
 	mono_gc_register_for_finalization (obj, callback);
 #elif defined(HAVE_SGEN_GC)
@@ -776,7 +785,7 @@ finalize_domain_objects (void)
 	mono_gc_invoke_finalizers ();
 
 #ifdef HAVE_BOEHM_GC
-	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
+	while (g_hash_table_size (finalizable_objects_hash) > 0) {
 		int i;
 		GPtrArray *objs;
 		/* 
@@ -785,7 +794,7 @@ finalize_domain_objects (void)
 		 * remove entries from the hash table, so we make a copy.
 		 */
 		objs = g_ptr_array_new ();
-		g_hash_table_foreach (domain->finalizable_objects_hash, collect_objects, objs);
+		g_hash_table_foreach (finalizable_objects_hash, collect_objects, objs);
 		/* printf ("FINALIZING %d OBJECTS.\n", objs->len); */
 
 		for (i = 0; i < objs->len; ++i) {
@@ -895,7 +904,7 @@ static void
 init_finalizer_thread (void)
 {
 	ERROR_DECL (error);
-	gc_thread = mono_thread_create_internal (mono_domain_get (), (gpointer)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 }
 
@@ -930,6 +939,8 @@ mono_gc_init (void)
 {
 	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
+	mono_os_mutex_init_recursive (&finalizable_objects_hash_lock);
+	finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.major_gc_count);

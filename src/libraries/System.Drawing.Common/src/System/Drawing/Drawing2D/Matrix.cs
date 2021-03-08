@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -24,9 +25,31 @@ namespace System.Drawing.Drawing2D
             NativeMatrix = nativeMatrix;
         }
 
+        /// <summary>
+        /// Construct a <see cref="Matrix"/> utilizing the given <paramref name="matrix"/>.
+        /// </summary>
+        /// <param name="matrix">Matrix data to construct from.</param>
+        public Matrix(Matrix3x2 matrix) : this(CreateNativeHandle(matrix))
+        {
+        }
+
         private Matrix(IntPtr nativeMatrix)
         {
             NativeMatrix = nativeMatrix;
+        }
+
+        internal static IntPtr CreateNativeHandle(Matrix3x2 matrix)
+        {
+            Gdip.CheckStatus(Gdip.GdipCreateMatrix2(
+                matrix.M11,
+                matrix.M12,
+                matrix.M21,
+                matrix.M22,
+                matrix.M31,
+                matrix.M32,
+                out IntPtr nativeMatrix));
+
+            return nativeMatrix;
         }
 
         public unsafe Matrix(RectangleF rect, PointF[] plgpts)
@@ -90,6 +113,30 @@ namespace System.Drawing.Drawing2D
                 float[] elements = new float[6];
                 GetElements(elements);
                 return elements;
+            }
+        }
+
+        /// <summary>
+        ///  Gets/sets the elements for the matrix.
+        /// </summary>
+        public unsafe Matrix3x2 MatrixElements
+        {
+            get
+            {
+                Matrix3x2 matrix = default;
+                Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(this, NativeMatrix), (float*)&matrix));
+                return matrix;
+            }
+            set
+            {
+                Gdip.CheckStatus(Gdip.GdipSetMatrixElements(
+                    new HandleRef(this, NativeMatrix),
+                    value.M11,
+                    value.M12,
+                    value.M21,
+                    value.M22,
+                    value.M31,
+                    value.M32));
             }
         }
 

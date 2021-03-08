@@ -204,16 +204,28 @@ if(CLR_CMAKE_TARGET_WIN32)
     endif()
 
     add_custom_command(
-        DEPENDS coreclr mscordaccore mscordbi ${CLR_DIR}/debug/daccess/daccess.cpp
+        DEPENDS coreclr singlefilehost mscordaccore mscordbi ${CLR_DIR}/debug/daccess/daccess.cpp
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
         COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/debug/daccess/daccess.cpp
+
+        # make and inject dactable for coreclr
         COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:coreclr> /dll:$<TARGET_FILE:coreclr> /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
+
+        # make and inject dactable for singlefilehost
+        COMMAND cmd /c ${CLR_REPO_ROOT_DIR}/dotnet.cmd exec ${CMAKE_INSTALL_PREFIX}/DacTableGen/DacTableGen.dll /dac:${CMAKE_CURRENT_BINARY_DIR}/daccess.i /pdb:$<TARGET_PDB_FILE:singlefilehost> /dll:$<TARGET_FILE:singlefilehost> /bin:${CMAKE_CURRENT_BINARY_DIR}/sfh.bin
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/sfh.bin /dll:$<TARGET_FILE:singlefilehost>
+
+        # make CLRDEBUGINFO resource and inject into coreclr and singlefilehost
         COMMAND GenClrDebugResource /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
         COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
+        COMMAND InjectResource /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:singlefilehost> /name:CLRDEBUGINFO
+
+        # inject MINIDUMP_AUXILIARY_PROVIDER into coreclr
         COMMAND InjectResource /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
+
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
-        COMMENT Add dactable, debug resources, and dump helper resources to coreclr
+        COMMENT Add dactable, debug resources, and dump helper resources to coreclr and singlefilehost
     )
 
     if(NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)

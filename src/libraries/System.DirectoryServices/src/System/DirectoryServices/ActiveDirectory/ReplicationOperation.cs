@@ -8,10 +8,10 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     public class ReplicationOperation
     {
-        private readonly string _dsaDN;
+        private readonly string? _dsaDN;
 
         private readonly DirectoryServer _server;
-        private string _sourceServer;
+        private string? _sourceServer;
         private readonly Hashtable _nameTable;
 
         internal ReplicationOperation(IntPtr addr, DirectoryServer server, Hashtable table)
@@ -52,9 +52,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ReplicationOperationType OperationType { get; }
 
-        public string PartitionName { get; }
+        public string? PartitionName { get; }
 
-        public string SourceServer
+        public string? SourceServer
         {
             get
             {
@@ -63,11 +63,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     // check whether we have got it before
                     if (_nameTable.Contains(SourceServerGuid))
                     {
-                        _sourceServer = (string)_nameTable[SourceServerGuid];
+                        _sourceServer = (string)_nameTable[SourceServerGuid]!;
                     }
                     else if (_dsaDN != null)
                     {
-                        _sourceServer = Utils.GetServerNameFromInvocationID(_dsaDN, SourceServerGuid, _server);
+                        _sourceServer = Utils.GetServerNameFromInvocationID(_dsaDN, SourceServerGuid, _server)!;
                         // add it to the hashtable
                         _nameTable.Add(SourceServerGuid, _sourceServer);
                     }

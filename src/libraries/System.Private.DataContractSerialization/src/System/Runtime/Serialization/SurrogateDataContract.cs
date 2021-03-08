@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
         [MethodImpl(MethodImplOptions.NoInlining)]
         private object GetUninitializedObject(Type objType)
         {
-            return FormatterServices.GetUninitializedObject(objType);
+            return RuntimeHelpers.GetUninitializedObject(objType);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
