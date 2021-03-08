@@ -21,6 +21,8 @@ namespace Mono.Linker.Tests.Cases.Sealer
 			t = typeof (Data.Derived);
 			t = typeof (Data.DerivedWithNested.Nested);
 			t = typeof (Data.DerivedWithNested);
+			t = typeof (Data.DerivedWithNestedDeep);
+			t = typeof (Data.DerivedWithNestedDeep.DerivedNested);
 			t = typeof (Data.BaseWithUnusedDerivedClass);
 		}
 
@@ -77,6 +79,28 @@ namespace Mono.Linker.Tests.Cases.Sealer.Data
 	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
 	class DerivedWithNested : BaseWithNested
 	{
+	}
+
+	[Kept]
+	class BaseWithNested2
+	{
+		[Kept]
+		internal class Nested2
+		{
+		}
+	}
+
+	[Kept]
+	[KeptBaseType (typeof (BaseWithNested2))]
+	[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
+	class DerivedWithNestedDeep : BaseWithNested2
+	{
+		[Kept]
+		[KeptBaseType (typeof (Nested2))]
+		[AddedPseudoAttributeAttribute ((uint) TypeAttributes.Sealed)]
+		internal class DerivedNested : Nested2
+		{
+		}
 	}
 
 	class UnusedClass
