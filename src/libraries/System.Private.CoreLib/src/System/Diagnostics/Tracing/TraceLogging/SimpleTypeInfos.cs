@@ -271,6 +271,9 @@ namespace System.Diagnostics.Tracing
     {
         private readonly TraceLoggingTypeInfo valueInfo;
 
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
+#endif
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
             : base(type)
         {

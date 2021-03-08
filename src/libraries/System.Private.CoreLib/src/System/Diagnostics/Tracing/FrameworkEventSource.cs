@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Tracing
 {
@@ -10,6 +11,9 @@ namespace System.Diagnostics.Tracing
     [EventSourceAutoGenerate]
     internal sealed partial class FrameworkEventSource : EventSource
     {
+#if !ES_BUILD_STANDALONE
+        private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
+#endif
         public static readonly FrameworkEventSource Log = new FrameworkEventSource();
 
         // Keyword definitions.  These represent logical groups of events that can be turned on and off independently
@@ -34,6 +38,10 @@ namespace System.Diagnostics.Tracing
         private FrameworkEventSource(int _) { }
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string? arg3, bool arg4, int arg5, int arg6)
         {
@@ -67,6 +75,10 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string? arg3)
         {
