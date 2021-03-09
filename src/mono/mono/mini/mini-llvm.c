@@ -10518,16 +10518,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				dst_t = LLVMPointerType (LLVMVectorType (rhs_elt_t, rhs_elems * 2), 0);
 				val = concatenate_vectors (ctx, rhs, arg3);
 			}
-			LLVMValueRef addr = convert (ctx, lhs, dst_t);
-			LLVMValueRef store = mono_llvm_build_store (builder, val, addr, FALSE, LLVM_BARRIER_NONE);
+			LLVMValueRef address = convert (ctx, lhs, dst_t);
+			LLVMValueRef store = mono_llvm_build_store (builder, val, address, FALSE, LLVM_BARRIER_NONE);
 			if (nontemporal)
 				set_nontemporal_flag (store);
 			break;
 		}
 		case OP_ARM64_LD1_INSERT: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+			LLVMValueRef address = convert (ctx, arg3, LLVMPointerType (elem_t, 0));
 			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
-			LLVMValueRef address = arg3;
 			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1_insert", FALSE, alignment);
 			result = LLVMBuildInsertElement (builder, lhs, result, rhs, "arm64_ld1_insert");
 			values [ins->dreg] = result;
@@ -10558,9 +10559,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_ARM64_ST1_SCALAR: {
 			LLVMTypeRef t = LLVMGetElementType (LLVMTypeOf (rhs));
-			unsigned int alignment = mono_llvm_get_prim_size_bits (t) / 8;
 			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, arg3, "arm64_st1_scalar");
-			mono_llvm_build_aligned_store (builder, val, lhs, FALSE, alignment);
+			LLVMValueRef address = convert (ctx, lhs, LLVMPointerType (t, 0));
+			unsigned int alignment = mono_llvm_get_prim_size_bits (t) / 8;
+			mono_llvm_build_aligned_store (builder, val, address, FALSE, alignment);
 			break;
 		}
 		case OP_ARM64_ADDHN:
