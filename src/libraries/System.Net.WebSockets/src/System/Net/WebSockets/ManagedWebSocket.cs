@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.WebSockets.Compression;
 using System.Numerics;
@@ -151,18 +150,6 @@ namespace System.Net.WebSockets
         private object ReceiveAsyncLock => _utf8TextState; // some object, as we're simply lock'ing on it
 
         private readonly WebSocketInflater? _inflater;
-        private byte[]? _inflateBuffer;
-
-        /// <summary>
-        /// The position for the next unconsumed byte in the inflate buffer.
-        /// </summary>
-        private int _inflateBufferPosition;
-
-        /// <summary>
-        /// How many unconsumed bytes are left in the inflate buffer.
-        /// </summary>
-        private int _inflateBufferAvailable;
-
         private readonly WebSocketDeflater? _deflater;
 
         private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
@@ -600,69 +587,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        /// <summary>
-        /// Inflates the last receive payload into the provided buffer.
-        /// </summary>
-        /// <returns>true if inflate operation finished and no more data needs to be written</returns>
-        private bool Inflate(Span<byte> output, bool finish, out int written)
-        {
-            Debug.Assert(_inflater is not null);
-
-            if (_inflateBufferAvailable > 0)
-            {
-                _inflater.Inflate(input: new ReadOnlySpan<byte>(_inflateBuffer, _inflateBufferPosition, _inflateBufferAvailable),
-                    output, out int consumed, out written);
-
-                _inflateBufferPosition += consumed;
-                _inflateBufferAvailable -= consumed;
-            }
-            else
-            {
-                written = 0;
-            }
-
-            if (_inflateBufferAvailable <= 0)
-            {
-                ReleaseInflateBuffer();
-
-                if (finish)
-                {
-                    if (_inflater.Finish(output.Slice(written), out int byteCount))
-                    {
-                        _inflateBufferAvailable = 0;
-                    }
-                    else
-                    {
-                        // Setting this to -1 instructs the receive operation to not try and
-                        // read any more data from the stream.
-                        _inflateBufferAvailable = -1;
-                    }
-
-                    written += byteCount;
-                }
-            }
-
-            return _inflateBufferAvailable == 0;
-        }
-
-        [MemberNotNull(nameof(_inflateBuffer))]
-        private void RentInflateBuffer(long payloadLength)
-        {
-            Debug.Assert(_inflateBuffer is null);
-
-            _inflateBufferPosition = 0;
-            _inflateBuffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(payloadLength, 1_000_000));
-        }
-
-        private void ReleaseInflateBuffer()
-        {
-            if (_inflateBuffer is not null)
-            {
-                ArrayPool<byte>.Shared.Return(_inflateBuffer);
-                _inflateBuffer = null;
-            }
-        }
-
         private void SendKeepAliveFrameAsync()
         {
 #pragma warning disable CA1416 // Validate platform compatibility, will not wait because timeout equals 0
@@ -875,9 +799,8 @@ namespace System.Net.WebSockets
                     // First copy any data lingering in the receive buffer.
                     int totalBytesReceived = 0;
 
-                    // Only start a new receive when we've consumed everything from the inflate buffer. When
-                    // there is no compression, this will always be 0.
-                    if (_inflateBufferAvailable == 0)
+                    // Only start a new receive when we've consumed everything from the inflater, if present.
+                    if (_inflater is null || _inflater.Finished)
                     {
                         if (_receiveBufferCount > 0)
                         {
@@ -888,10 +811,9 @@ namespace System.Net.WebSockets
 
                             if (header.Compressed)
                             {
-                                Debug.Assert(_inflateBufferAvailable == 0);
-                                RentInflateBuffer(header.PayloadLength);
-
-                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(_inflateBuffer);
+                                Debug.Assert(_inflater is not null);
+                                _inflater.Initialize(header.PayloadLength);
+                                _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(_inflater.Span);
                                 ConsumeFromBuffer(receiveBufferBytesToCopy);
                                 totalBytesReceived += receiveBufferBytesToCopy;
                                 Debug.Assert(_receiveBufferCount == 0 || totalBytesReceived == header.PayloadLength);
@@ -909,16 +831,17 @@ namespace System.Net.WebSockets
                         }
                         else if (header.Compressed)
                         {
-                            RentInflateBuffer(header.PayloadLength);
+                            Debug.Assert(_inflater is not null);
+                            _inflater.Initialize(header.PayloadLength);
                         }
 
                         // Then read directly into the appropriate buffer until we've hit a limit.
-                        int limit = (int)Math.Min(header.Compressed ? _inflateBuffer!.Length : payloadBuffer.Length, header.PayloadLength);
+                        int limit = (int)Math.Min(header.Compressed ? _inflater!.Memory.Length : payloadBuffer.Length, header.PayloadLength);
                         while (totalBytesReceived < limit)
                         {
                             int numBytesRead = await _stream.ReadAsync(
                                 header.Compressed ?
-                                    _inflateBuffer.AsMemory(totalBytesReceived, limit - totalBytesReceived) :
+                                    _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
                                     payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
                                 cancellationToken).ConfigureAwait(false);
                             if (numBytesRead <= 0)
@@ -932,24 +855,20 @@ namespace System.Net.WebSockets
                         if (_isServer)
                         {
                             _receivedMaskOffsetOffset = ApplyMask(header.Compressed ?
-                                _inflateBuffer.AsSpan(0, totalBytesReceived) :
+                                _inflater!.Span.Slice(0, totalBytesReceived) :
                                 payloadBuffer.Span.Slice(0, totalBytesReceived), header.Mask, _receivedMaskOffsetOffset);
                         }
 
                         header.PayloadLength -= totalBytesReceived;
-                    }
-                    else
-                    {
-                        totalBytesReceived = _inflateBufferAvailable;
                     }
 
                     if (header.Compressed)
                     {
                         // In case of compression totalBytesReceived should actually represent how much we've
                         // inflated, rather than how much we've read from the stream.
-                        _inflateBufferAvailable = totalBytesReceived;
-                        header.Processed = Inflate(payloadBuffer.Span,
-                            finish: header.Fin && header.PayloadLength == 0, out totalBytesReceived);
+                        _inflater!.Inflate(totalBytesReceived, payloadBuffer.Span,
+                            flush: header.Fin && header.PayloadLength == 0, out totalBytesReceived);
+                        header.Processed = _inflater.Finished && header.PayloadLength == 0;
                     }
                     else
                     {
@@ -973,8 +892,6 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                ReleaseInflateBuffer();
-
                 if (exc is OperationCanceledException)
                 {
                     throw;

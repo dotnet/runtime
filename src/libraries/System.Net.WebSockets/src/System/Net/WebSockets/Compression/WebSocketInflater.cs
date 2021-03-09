@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -35,6 +36,18 @@ namespace System.Net.WebSockets.Compression
         /// </summary>
         private bool _needsFlushMarker;
 
+        private byte[]? _buffer;
+
+        /// <summary>
+        /// The position for the next unconsumed byte in the inflate buffer.
+        /// </summary>
+        private int _position;
+
+        /// <summary>
+        /// How many unconsumed bytes are left in the inflate buffer.
+        /// </summary>
+        private int _available;
+
         internal WebSocketInflater(int windowBits, bool persisted)
         {
             Debug.Assert(windowBits >= 9 && windowBits <= 15);
@@ -44,9 +57,74 @@ namespace System.Net.WebSockets.Compression
             _persisted = persisted;
         }
 
-        public void Dispose() => _stream?.Dispose();
+        public bool Finished { get; private set; } = true;
 
-        public unsafe void Inflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
+        public Memory<byte> Memory => _buffer;
+
+        public Span<byte> Span => _buffer;
+
+        public void Dispose()
+        {
+            _stream?.Dispose();
+            ReleaseBuffer();
+        }
+
+        public void Initialize(long payloadLength)
+        {
+            Debug.Assert(_available == 0);
+            Debug.Assert(_buffer is null);
+
+            // Do not try to rent anythin above 1MB because the array pool
+            // will not pool the buffer but allocate it.
+            _buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(payloadLength, 1_000_000));
+            _position = 0;
+        }
+
+        /// <summary>
+        /// Inflates the last receive payload into the provided buffer.
+        /// </summary>
+        public void Inflate(int totalBytesReceived, Span<byte> output, bool flush, out int written)
+        {
+            if (totalBytesReceived > 0)
+            {
+                Debug.Assert(_buffer is not null, "Initialize must be called.");
+                _available = totalBytesReceived;
+            }
+
+            if (_available > 0)
+            {
+                UnsafeInflate(input: new ReadOnlySpan<byte>(_buffer, _position, _available),
+                    output, out int consumed, out written);
+
+                _position += consumed;
+                _available -= consumed;
+            }
+            else
+            {
+                written = 0;
+            }
+
+            if (_available == 0)
+            {
+                ReleaseBuffer();
+
+                if (flush)
+                {
+                    Finished = Flush(output.Slice(written), out int byteCount);
+                    written += byteCount;
+                }
+                else
+                {
+                    Finished = true;
+                }
+            }
+            else
+            {
+                Finished = false;
+            }
+        }
+
+        private unsafe void UnsafeInflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written)
         {
             if (_stream is null)
             {
@@ -71,19 +149,20 @@ namespace System.Net.WebSockets.Compression
         }
 
         /// <summary>
-        /// Finishes the decoding by writing any outstanding data to the output.
+        /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
-        /// <returns>true if the finish completed, false to indicate that there is more outstanding data.</returns>
-        public bool Finish(Span<byte> output, out int written)
+        /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
+        private bool Flush(Span<byte> output, out int written)
         {
             Debug.Assert(_stream is not null);
+            Debug.Assert(_available == 0);
 
             if (_needsFlushMarker)
             {
-                Inflate(FlushMarker, output, out var _, out written);
+                UnsafeInflate(FlushMarker, output, out var _, out written);
                 _needsFlushMarker = false;
 
-                if ( written < output.Length || IsFinished(_stream, out _remainingByte) )
+                if (written < output.Length || IsFinished(_stream, out _remainingByte))
                 {
                     OnFinished();
                     return true;
@@ -133,6 +212,16 @@ namespace System.Net.WebSockets.Compression
             {
                 _stream.Dispose();
                 _stream = null;
+            }
+        }
+
+        private void ReleaseBuffer()
+        {
+            if (_buffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_buffer);
+                _buffer = null;
+                _available = 0;
             }
         }
 
