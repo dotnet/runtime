@@ -451,21 +451,6 @@ ovr_tag_from_llvm_type (LLVMTypeRef type)
 	return ret;
 }
 
-static inline gboolean
-check_needs_fake_scalar_op (MonoTypeEnum type)
-{
-#if defined(TARGET_ARM64)
-	switch (type) {
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-		return TRUE;
-	}
-#endif
-	return FALSE;
-}
-
 static inline void
 set_failure (EmitContext *ctx, const char *message)
 {
@@ -1319,87 +1304,6 @@ gen_bb (EmitContext *ctx, const char *prefix)
 
 	sprintf (bb_name, "%s%d", prefix, ++ ctx->ex_index);
 	return LLVMAppendBasicBlock (ctx->lmethod, bb_name);
-}
-
-typedef struct {
-	EmitContext *ctx;
-	MonoBasicBlock *bb;
-	LLVMBasicBlockRef continuation;
-	LLVMValueRef phi;
-	LLVMValueRef switch_ins;
-	LLVMBasicBlockRef tmp_block;
-	LLVMBasicBlockRef default_case;
-	LLVMTypeRef switch_index_type;
-	const char *name;
-	int max_cases;
-	int i;
-} ImmediateUnrollCtx;
-
-static ImmediateUnrollCtx
-immediate_unroll_begin (
-	EmitContext *ctx, MonoBasicBlock *bb, int max_cases,
-	LLVMValueRef switch_index, LLVMTypeRef return_type, const char *name)
-{
-	LLVMBasicBlockRef default_case = gen_bb (ctx, name);
-	LLVMBasicBlockRef continuation = gen_bb (ctx, name);
-	LLVMValueRef switch_ins = LLVMBuildSwitch (ctx->builder, switch_index, default_case, max_cases);
-	LLVMPositionBuilderAtEnd (ctx->builder, continuation);
-	LLVMValueRef phi = LLVMBuildPhi (ctx->builder, return_type, name);
-	ImmediateUnrollCtx ictx = { 0 };
-	ictx.ctx = ctx;
-	ictx.bb = bb;
-	ictx.continuation = continuation;
-	ictx.phi = phi;
-	ictx.switch_ins = switch_ins;
-	ictx.default_case = default_case;
-	ictx.switch_index_type = LLVMTypeOf (switch_index);
-	ictx.name = name;
-	ictx.max_cases = max_cases;
-	return ictx;
-}
-
-static gboolean
-immediate_unroll_next (ImmediateUnrollCtx *ictx, int *i)
-{
-	if (ictx->i >= ictx->max_cases)
-		return FALSE;
-	ictx->tmp_block = gen_bb (ictx->ctx, ictx->name);
-	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->tmp_block);
-	*i = ictx->i;
-	++ictx->i;
-	return TRUE;
-}
-
-static void
-immediate_unroll_commit (ImmediateUnrollCtx *ictx, int switch_const, LLVMValueRef value)
-{
-	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
-	LLVMAddCase (ictx->switch_ins, LLVMConstInt (ictx->switch_index_type, switch_const, FALSE), ictx->tmp_block);
-	LLVMAddIncoming (ictx->phi, &value, &ictx->tmp_block, 1);
-}
-
-static void
-immediate_unroll_default (ImmediateUnrollCtx *ictx)
-{
-	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->default_case);
-}
-
-static void
-immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
-{
-	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
-	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
-}
-
-static LLVMValueRef
-immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
-{
-	EmitContext *ctx = ictx->ctx;
-	LLVMBuilderRef builder = ctx->builder;
-	LLVMPositionBuilderAtEnd (builder, ictx->continuation);
-	*continuation = ictx->continuation;
-	ctx->bblocks [ictx->bb->block_num].end_bblock = ictx->continuation;
-	return ictx->phi;
 }
 
 /*
@@ -5064,6 +4968,138 @@ static LLVMValueRef
 undef_upper_elements (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
 {
 	return vector_from_scalar_ty (ctx, type, scalar_from_vector (ctx, x));
+}
+
+typedef struct {
+	EmitContext *ctx;
+	MonoBasicBlock *bb;
+	LLVMBasicBlockRef continuation;
+	LLVMValueRef phi;
+	LLVMValueRef switch_ins;
+	LLVMBasicBlockRef tmp_block;
+	LLVMBasicBlockRef default_case;
+	LLVMTypeRef switch_index_type;
+	const char *name;
+	int max_cases;
+	int i;
+} ImmediateUnrollCtx;
+
+static ImmediateUnrollCtx
+immediate_unroll_begin (
+	EmitContext *ctx, MonoBasicBlock *bb, int max_cases,
+	LLVMValueRef switch_index, LLVMTypeRef return_type, const char *name)
+{
+	LLVMBasicBlockRef default_case = gen_bb (ctx, name);
+	LLVMBasicBlockRef continuation = gen_bb (ctx, name);
+	LLVMValueRef switch_ins = LLVMBuildSwitch (ctx->builder, switch_index, default_case, max_cases);
+	LLVMPositionBuilderAtEnd (ctx->builder, continuation);
+	LLVMValueRef phi = LLVMBuildPhi (ctx->builder, return_type, name);
+	ImmediateUnrollCtx ictx = { 0 };
+	ictx.ctx = ctx;
+	ictx.bb = bb;
+	ictx.continuation = continuation;
+	ictx.phi = phi;
+	ictx.switch_ins = switch_ins;
+	ictx.default_case = default_case;
+	ictx.switch_index_type = LLVMTypeOf (switch_index);
+	ictx.name = name;
+	ictx.max_cases = max_cases;
+	return ictx;
+}
+
+static gboolean
+immediate_unroll_next (ImmediateUnrollCtx *ictx, int *i)
+{
+	if (ictx->i >= ictx->max_cases)
+		return FALSE;
+	ictx->tmp_block = gen_bb (ictx->ctx, ictx->name);
+	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->tmp_block);
+	*i = ictx->i;
+	++ictx->i;
+	return TRUE;
+}
+
+static void
+immediate_unroll_commit (ImmediateUnrollCtx *ictx, int switch_const, LLVMValueRef value)
+{
+	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
+	LLVMAddCase (ictx->switch_ins, LLVMConstInt (ictx->switch_index_type, switch_const, FALSE), ictx->tmp_block);
+	LLVMAddIncoming (ictx->phi, &value, &ictx->tmp_block, 1);
+}
+
+static void
+immediate_unroll_default (ImmediateUnrollCtx *ictx)
+{
+	LLVMPositionBuilderAtEnd (ictx->ctx->builder, ictx->default_case);
+}
+
+static void
+immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
+{
+	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
+	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
+}
+
+static LLVMValueRef
+immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
+{
+	EmitContext *ctx = ictx->ctx;
+	LLVMBuilderRef builder = ctx->builder;
+	LLVMPositionBuilderAtEnd (builder, ictx->continuation);
+	*continuation = ictx->continuation;
+	ctx->bblocks [ictx->bb->block_num].end_bblock = ictx->continuation;
+	return ictx->phi;
+}
+
+typedef struct {
+	EmitContext *ctx;
+	LLVMTypeRef return_type;
+	gboolean needs_fake_scalar_op;
+} ScalarOpFromVectorOpCtx;
+
+static inline gboolean
+check_needs_fake_scalar_op (MonoTypeEnum type)
+{
+#if defined(TARGET_ARM64)
+	switch (type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		return TRUE;
+	}
+#endif
+	return FALSE;
+}
+
+static ScalarOpFromVectorOpCtx
+scalar_op_from_vector_op (EmitContext *ctx, LLVMTypeRef return_type, MonoInst *ins)
+{
+	ScalarOpFromVectorOpCtx ret = { 0 };
+	ret.ctx = ctx;
+	ret.return_type = return_type;
+	ret.needs_fake_scalar_op = check_needs_fake_scalar_op (inst_c1_type (ins));
+	return ret;
+}
+
+static llvm_ovr_tag_t
+scalar_op_from_vector_op_process_args (ScalarOpFromVectorOpCtx *sctx, LLVMValueRef *args, int num_args)
+{
+	llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (sctx->return_type);
+	if (!sctx->needs_fake_scalar_op) {
+		ovr_tag = ovr_tag_force_scalar (ovr_tag);
+		for (int i = 0; i < num_args; ++i)
+			args [i] = scalar_from_vector (sctx->ctx, args [i]);
+	}
+	return ovr_tag;
+}
+
+static LLVMValueRef
+scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValueRef result)
+{
+	if (!sctx->needs_fake_scalar_op)
+		return vector_from_scalar_ty (sctx->ctx, sctx->return_type, result);
+	return keep_lowest_element (sctx->ctx, result);
 }
 
 static void
@@ -10402,24 +10438,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_SQSHLU: {
+		case OP_ARM64_SQSHLU:
+		case OP_ARM64_SQSHLU_SCALAR: {
+			gboolean scalar = ins->opcode == OP_ARM64_SQSHLU_SCALAR;
 			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef elem_t = LLVMGetElementType (intrin_result_t);
+			unsigned int element_bits = mono_llvm_get_prim_size_bits (elem_t);
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
-			unsigned int element_bits = mono_llvm_get_prim_size_bits (LLVMGetElementType (intrin_result_t));
 			int max_index = element_bits;
-			int iid = INTRINS_AARCH64_ADV_SIMD_SQSHLU;
+			ScalarOpFromVectorOpCtx sctx = scalar_op_from_vector_op (ctx, intrin_result_t, ins);
 			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, rhs, intrin_result_t, "arm64_sqshlu");
-			LLVMValueRef args [] = { lhs, NULL };
 			int i = 0;
 			while (immediate_unroll_next (&ictx, &i)) {
 				int shift_const = i;
-				args [1] = create_shift_vector (ctx, lhs, const_int32 (shift_const));
-				LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				LLVMValueRef args [2] = { lhs, create_shift_vector (ctx, lhs, const_int32 (shift_const)) };
+				if (scalar)
+					ovr_tag = scalar_op_from_vector_op_process_args (&sctx, args, 2);
+				LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SQSHLU, ovr_tag, args, "");
 				immediate_unroll_commit (&ictx, shift_const, result);
 			}
 			immediate_unroll_default (&ictx);
 			immediate_unroll_commit_default (&ictx, lhs);
-			values [ins->dreg] = immediate_unroll_end (&ictx, &cbb);
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+			if (scalar)
+				result = scalar_op_from_vector_op_process_result (&sctx, result);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_SSHLL:
@@ -10863,7 +10906,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XOP_OVR_SCALAR_X_X_X_X: {
 			int num_args = 0;
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			switch (ins->opcode) {
 			case OP_XOP_OVR_SCALAR_X_X: num_args = 1; break;
 			case OP_XOP_OVR_SCALAR_X_X_X: num_args = 2; break;
@@ -10875,19 +10918,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * instruction selection. This is worked around by using a vector
 			 * operation and then explicitly clearing the upper bits of the register.
 			 */
-			gboolean arm64_fake_scalar_op = check_needs_fake_scalar_op (inst_c1_type (ins));
+			ScalarOpFromVectorOpCtx sctx = scalar_op_from_vector_op (ctx, ret_t, ins);
 			LLVMValueRef args [3] = { lhs, rhs, arg3 };
-			if (!arm64_fake_scalar_op) {
-				ovr_tag = ovr_tag_force_scalar (ovr_tag);
-				for (int i = 0; i < num_args; ++i)
-					args [i] = scalar_from_vector (ctx, args [i]);
-			}
+			llvm_ovr_tag_t ovr_tag = scalar_op_from_vector_op_process_args (&sctx, args, num_args);
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-			if (!arm64_fake_scalar_op) {
-				LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-				result = vector_from_scalar_ty (ctx, ret_t, result);
-			} else
-				result = keep_lowest_element (ctx, result);
+			result = scalar_op_from_vector_op_process_result (&sctx, result);
 			values [ins->dreg] = result;
 			break;
 		}
