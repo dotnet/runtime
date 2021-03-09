@@ -278,5 +278,10 @@ namespace Internal.TypeSystem.Ecma
             ProbeScopeForLocals(variables, rootScope);
             return variables;
         }
+
+        public override int GetStateMachineKickoffMethod(int methodToken)
+        {
+            return 0;
+        }
     }
 }
