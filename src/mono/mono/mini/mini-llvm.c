@@ -10328,16 +10328,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean right = FALSE;
 			gboolean add = FALSE;
 			switch (ins->opcode) {
-			case OP_ARM64_URSHR: right = TRUE; break;
-			case OP_ARM64_URSRA: right = TRUE; add = TRUE; break;
-			case OP_ARM64_SRSRA: add = TRUE; break;
+			case OP_ARM64_URSRA: add = TRUE; case OP_ARM64_URSHR: right = TRUE; break;
+			case OP_ARM64_SRSRA: add = TRUE; case OP_ARM64_SRSHR: right = TRUE; break;
 			}
 			int iid = 0;
 			switch (ins->opcode) {
-			case OP_ARM64_URSHR:
-			case OP_ARM64_URSRA: iid = INTRINS_AARCH64_ADV_SIMD_URSHL; break;
-			case OP_ARM64_SRSHR:
-			case OP_ARM64_SRSRA: iid = INTRINS_AARCH64_ADV_SIMD_SRSHL; break;
+			case OP_ARM64_URSRA: case OP_ARM64_URSHR: iid = INTRINS_AARCH64_ADV_SIMD_URSHL; break;
+			case OP_ARM64_SRSRA: case OP_ARM64_SRSHR: iid = INTRINS_AARCH64_ADV_SIMD_SRSHL; break;
 			}
 			if (add) {
 				shiftarg = rhs;
