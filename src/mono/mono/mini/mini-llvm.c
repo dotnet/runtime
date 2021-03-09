@@ -9939,7 +9939,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			gboolean byscalar = FALSE;
 			switch (ins->opcode) {
 			case OP_ARM64_FMSUB: subtract = TRUE; break;
-			case OP_ARM64_FMSUB_BYSCALAR: byscalar = TRUE; break;
+			case OP_ARM64_FMSUB_BYSCALAR: subtract = TRUE; byscalar = TRUE; break;
 			case OP_ARM64_FMSUB_SCALAR: subtract = TRUE; scalar = TRUE; break;
 			case OP_ARM64_FNMSUB_SCALAR: subtract = TRUE; scalar = TRUE; negate = TRUE; break;
 			case OP_ARM64_FMADD: break;
