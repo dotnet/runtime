@@ -420,6 +420,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
@@ -444,6 +446,8 @@
              Link="Common\System\Security\Cryptography\RSAAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
+             Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs"
