@@ -8216,7 +8216,7 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
 // Arguments:
 //    check  -  Range check tree, the raw CHECK node (ARRAY, SIMD or HWINTRINSIC).
 //    comma  -  GT_COMMA to which the "check" belongs, "nullptr" if the check is a standalone one.
-//    stmt   -  Statement the indexing nodes belongs to.
+//    stmt   -  Statement the indexing nodes belong to.
 //
 // Return Value:
 //    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
@@ -8302,6 +8302,14 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
 //------------------------------------------------------------------------------
 // optRemoveStandaloneRangeCheck : A thin wrapper over optRemoveRangeCheck that removes standalone checks.
 //
+// Arguments:
+//    check - The standalone top-level CHECK node.
+//    stmt  - The statement "check" is a root node of.
+//
+// Return Value:
+//    If "check" has no side effects, it is retuned, bashed to a no-op.
+//    If it has side effects, the tree that executes them is returned.
+//
 GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt)
 {
     assert(check != nullptr);
@@ -8313,6 +8321,10 @@ GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statem
 
 //------------------------------------------------------------------------------
 // optRemoveCommaBasedRangeCheck : A thin wrapper over optRemoveRangeCheck that removes COMMA-based checks.
+//
+// Arguments:
+//    comma - GT_COMMA of which the first operand is the CHECK to be removed.
+//    stmt  - The statement "comma" belongs to.
 //
 void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
 {
