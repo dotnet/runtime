@@ -77,6 +77,8 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: MergedMchFileLocation
         value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
@@ -88,6 +90,8 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: MergedMchFileLocation
         value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
@@ -136,10 +140,12 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir -p $(MergedMchFileLocation)
+          mkdir -p $(SpmiLogsLocation)
         displayName: Create directory for merged collection
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir $(MergedMchFileLocation)
+          mkdir $(SpmiLogsLocation)
         displayName: Create directories
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
@@ -160,18 +166,28 @@ jobs:
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 
-  # #TODO: superpmi logs as well
-  #   - task: PublishPipelineArtifact@1
-  #     displayName: Publish SuperPMI collection
-  #     inputs:
-  #       targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-  #       artifactName: 'SuperPMI_Result_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
-  #     continueOnError: true # continue to next step of merging with whatever partition data we gathered. 
-  #     condition: always()   # Always publish whatever we collected.
+    - task: CopyFiles@2
+      displayName: Copying superpmi.log of all partitions
+      inputs:
+        sourceFolder: '$(MchFilesLocation)'
+        contents: '**/$(CollectionName).$(CollectionType)*.log'
+        targetFolder: '$(SpmiLogsLocation)'
+      condition: always()
+
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(SpmiLogsLocation)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        displayName: ${{ format('Upload SuperPMI logs {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
       condition: always()
