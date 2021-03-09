@@ -3968,7 +3968,6 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS) ||
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
-
         {
             GenTree* arg1 = gtArgEntryByArgNum(call, 1)->GetNode();
             if (arg1->gtOper != GT_LCL_VAR)
