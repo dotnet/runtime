@@ -31,6 +31,8 @@ internal class Xcode
         }
     }
 
+    public bool EnableRuntimeLogging { get; set; }
+
     public string GenerateXCode(
         string projectName,
         string entryPointLib,
@@ -42,6 +44,7 @@ internal class Xcode
         bool useConsoleUiTemplate,
         bool forceAOT,
         bool forceInterpreter,
+        bool invariantGlobalization,
         bool stripDebugSymbols,
         string? nativeMainSource = null)
     {
@@ -116,16 +119,27 @@ internal class Xcode
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
 
-        string defines = "";
+        var defines = new StringBuilder();
         if (forceInterpreter)
         {
-            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+            defines.Append("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (forceAOT)
         {
-            defines = "add_definitions(-DFORCE_AOT=1)";
+            defines.Append("add_definitions(-DFORCE_AOT=1)");
         }
-        cmakeLists = cmakeLists.Replace("%Defines%", defines);
+
+        if (invariantGlobalization)
+        {
+            defines.Append("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+        }
+
+        if (EnableRuntimeLogging)
+        {
+            defines.Append("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+        }
+
+        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
             .Replace("%BundleIdentifier%", projectName);
@@ -174,6 +188,8 @@ internal class Xcode
             aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
             dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
         }
+
+        dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
 
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")

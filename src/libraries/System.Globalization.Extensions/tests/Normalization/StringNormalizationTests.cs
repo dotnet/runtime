@@ -49,9 +49,9 @@ namespace System.Globalization.Tests
             yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormC, "\u1E9b\u0323" };
             yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormD, "\u017f\u0323\u0307" };
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
+                // Mobile / Browser ICU doesn't support FormKC and FormKD
                 yield return new object[] { "\uFB01", NormalizationForm.FormKC, "fi" };
                 yield return new object[] { "\uFB01", NormalizationForm.FormKD, "fi" };
                 yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormKC, "\u1E69" };
