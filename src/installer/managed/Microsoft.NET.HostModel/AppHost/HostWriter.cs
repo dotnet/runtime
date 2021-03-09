@@ -7,7 +7,6 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -91,7 +90,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     try
                     {
                         // Open the source host file.
-                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.CopyOnWrite);
+                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
                         memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
                         // Transform the host file in-memory.
