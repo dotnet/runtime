@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Buffers;
 using System.Reflection;
 using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
@@ -21,14 +22,28 @@ namespace System.Diagnostics.Tracing
         public byte[]? GenerateEventMetadata(EventMetadata eventMetadata)
         {
             ParameterInfo[] parameters = eventMetadata.Parameters;
-            EventParameterInfo[] eventParams = new EventParameterInfo[parameters.Length];
+
+            if (parameters.Length == 0)
+            {
+                return GenerateMetadata(
+                    eventMetadata.Descriptor.EventId,
+                    eventMetadata.Name,
+                    eventMetadata.Descriptor.Keywords,
+                    eventMetadata.Descriptor.Level,
+                    eventMetadata.Descriptor.Version,
+                    (EventOpcode)eventMetadata.Descriptor.Opcode,
+                    default);
+            }
+
+            EventParameterInfo[] array = ArrayPool<EventParameterInfo>.Shared.Rent(parameters.Length);
+            ReadOnlySpan<EventParameterInfo> eventParams = array.AsSpan(0, parameters.Length);
             for (int i = 0; i < parameters.Length; i++)
             {
                 EventParameterInfo.GetTypeInfoFromType(parameters[i].ParameterType, out TraceLoggingTypeInfo? paramTypeInfo);
                 eventParams[i].SetInfo(parameters[i].Name!, parameters[i].ParameterType, paramTypeInfo);
             }
 
-            return GenerateMetadata(
+            byte[]? metadata = GenerateMetadata(
                 eventMetadata.Descriptor.EventId,
                 eventMetadata.Name,
                 eventMetadata.Descriptor.Keywords,
@@ -36,6 +51,8 @@ namespace System.Diagnostics.Tracing
                 eventMetadata.Descriptor.Version,
                 (EventOpcode)eventMetadata.Descriptor.Opcode,
                 eventParams);
+            ArrayPool<EventParameterInfo>.Shared.Return(array);
+            return metadata;
         }
 
         public byte[]? GenerateEventMetadata(
@@ -48,8 +65,14 @@ namespace System.Diagnostics.Tracing
             TraceLoggingEventTypes eventTypes)
         {
             TraceLoggingTypeInfo[] typeInfos = eventTypes.typeInfos;
+            if (typeInfos.Length == 0)
+            {
+                return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, default);
+            }
+
             string[]? paramNames = eventTypes.paramNames;
-            EventParameterInfo[] eventParams = new EventParameterInfo[typeInfos.Length];
+            EventParameterInfo[] array = ArrayPool<EventParameterInfo>.Shared.Rent(typeInfos.Length);
+            ReadOnlySpan<EventParameterInfo> eventParams = array.AsSpan(0, typeInfos.Length);
             for (int i = 0; i < typeInfos.Length; i++)
             {
                 string paramName = string.Empty;
@@ -60,7 +83,9 @@ namespace System.Diagnostics.Tracing
                 eventParams[i].SetInfo(paramName, typeInfos[i].DataType, typeInfos[i]);
             }
 
-            return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
+            byte[]? metadata = GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
+            ArrayPool<EventParameterInfo>.Shared.Return(array);
+            return metadata;
         }
 
         internal unsafe byte[]? GenerateMetadata(
@@ -70,7 +95,7 @@ namespace System.Diagnostics.Tracing
             uint level,
             uint version,
             EventOpcode opcode,
-            EventParameterInfo[] parameters)
+            ReadOnlySpan<EventParameterInfo> parameters)
         {
             byte[]? metadata = null;
             bool hasV2ParameterTypes = false;
@@ -170,7 +195,7 @@ namespace System.Diagnostics.Tracing
                             if (!parameter.GenerateMetadata(pMetadata, ref offset, totalMetadataLength))
                             {
                                 // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
-                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, default);
                             }
                         }
                     }
@@ -200,7 +225,7 @@ namespace System.Diagnostics.Tracing
                             if (!parameter.GenerateMetadataV2(pMetadata, ref offset, totalMetadataLength))
                             {
                                 // If we fail to generate metadata for any parameter, we should return the "default" metadata without any parameters
-                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, Array.Empty<EventParameterInfo>());
+                                return GenerateMetadata(eventId, eventName, keywords, level, version, opcode, default);
                             }
                         }
                     }
