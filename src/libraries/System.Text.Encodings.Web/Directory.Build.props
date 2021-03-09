@@ -3,7 +3,6 @@
   <PropertyGroup>
     <AssemblyVersion>5.0.0.1</AssemblyVersion>
     <PackageVersion>5.0.1</PackageVersion>
-    <HarvestVersion>4.5.1</HarvestVersion>
     <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 </Project>
