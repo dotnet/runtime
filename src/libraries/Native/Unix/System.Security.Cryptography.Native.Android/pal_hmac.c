@@ -44,6 +44,7 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
         // so this effectively creates the same key as if it were a zero byte-length key.
         keyBytes = (*env)->NewByteArray(env, 1);
     }
+
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
     if (CheckJNIExceptions(env))
     {
