@@ -187,13 +187,15 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
-    if (!(treeParent->OperIs(GT_COMMA) || (treeParent->OperIsBoundsCheck() && treeParent == stmt->GetRootNode())))
+    bool isComma        = treeParent->OperIs(GT_COMMA);
+    bool isTopLevelNode = treeParent == stmt->GetRootNode();
+    if (!(isComma || isTopLevelNode))
     {
         return;
     }
 
     // If we are not looking at array bounds check, bail.
-    GenTree* tree = treeParent->OperIs(GT_COMMA) ? treeParent->AsOp()->gtOp1 : treeParent;
+    GenTree* tree = isComma ? treeParent->AsOp()->gtOp1 : treeParent;
     if (!tree->OperIsBoundsCheck())
     {
         return;
