@@ -70,7 +70,9 @@ typedef int T_CONTEXT;
 #include <elf.h>
 #include <link.h>
 #endif
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #else
 #include <dbghelp.h>

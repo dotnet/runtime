@@ -6,7 +6,9 @@
 #include <cstddef>
 #include <cstdio>
 #include <cassert>
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <cinttypes>
 #include <memory>
 #include <pthread.h>

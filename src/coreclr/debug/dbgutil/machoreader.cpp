@@ -5,7 +5,9 @@
 #include <clrdata.h>
 #include <cor.h>
 #include <cordebug.h>
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #include <arrayholder.h>
 #include "machoreader.h"
@@ -72,7 +74,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 }
 
 //--------------------------------------------------------------------
-// MachO module 
+// MachO module
 //--------------------------------------------------------------------
 
 MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mach_header_64* header, std::string* name) :
@@ -202,7 +204,7 @@ MachOModule::ReadLoadCommands()
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-                // segment to get the actual address. 
+                // segment to get the actual address.
                 if (strcmp(segment->segname, SEG_TEXT) == 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
