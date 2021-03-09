@@ -7,6 +7,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <TestFramework>xunit</TestFramework>
     <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
+    <EnableDefaultItems>true</EnableDefaultItems>
 
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
@@ -27,8 +28,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="WasmBuildAppTest.cs" />
-
     <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
