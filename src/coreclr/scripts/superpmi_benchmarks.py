@@ -157,8 +157,10 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
+    # Disable ReadyToRun so we always JIT R2R methods and collect them
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
                          f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
+                         "--envVars COMPlus_ZapDisable:1 --envVars COMPlus_ReadyToRun:0" \
                          "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
     # Generate the execution script in Temp location
@@ -170,16 +172,10 @@ def build_and_run(coreclr_args, output_mch_name):
         if is_windows:
             contents.append("set JitName=%COMPlus_JitName%")
             contents.append("set COMPlus_JitName=")
-            # Disable ReadyToRun so we always JIT R2R methods and collect them
-            contents.append("set COMPlus_ZapDisable=1")
-            contents.append("set COMPlus_ReadyToRun=0")
         else:
             contents.append("#!/bin/bash")
             contents.append("export JitName=$COMPlus_JitName")
             contents.append("unset COMPlus_JitName")
-            # Disable ReadyToRun so we always JIT R2R methods and collect them
-            contents.append("export COMPlus_ZapDisable=1")
-            contents.append("export COMPlus_ReadyToRun=0")
         contents.append(f"pushd {performance_directory}")
         contents.append(collection_command)
 
