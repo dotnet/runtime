@@ -66,7 +66,7 @@ jobs:
     platforms:
     - Android_x64
     - Android_arm64
-    - iOS_x64
+    - iOS_sim_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
