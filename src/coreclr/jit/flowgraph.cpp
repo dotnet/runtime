@@ -684,13 +684,23 @@ PhaseStatus Compiler::fgImport()
 
 bool Compiler::fgIsThrow(GenTree* tree)
 {
-    if ((tree->gtOper != GT_CALL) || (tree->AsCall()->gtCallType != CT_HELPER))
+    if (!tree->IsCall())
+    {
+        return false;
+    }
+
+    GenTreeCall* call = tree->AsCall();
+    if (call->IsNoReturn())
+    {
+        return true;
+    }
+
+    if ((tree->AsCall()->gtCallType != CT_HELPER))
     {
         return false;
     }
 
     // TODO-Throughput: Replace all these calls to eeFindHelper() with a table based lookup
-
     if ((tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW)) ||
         (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
         (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
@@ -705,23 +715,6 @@ bool Compiler::fgIsThrow(GenTree* tree)
         noway_assert(tree->gtFlags & GTF_EXCEPT);
         return true;
     }
-
-    /*if (!tree->IsCall())
-    {
-        return false;
-    }
-
-    GenTreeCall* call = tree->AsCall();
-    if (call->IsNoReturn())
-    {
-        return true;
-    }
-
-    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
-    {
-        noway_assert(call->gtFlags & GTF_EXCEPT);
-        return true;
-    }*/
     return false;
 }
 
