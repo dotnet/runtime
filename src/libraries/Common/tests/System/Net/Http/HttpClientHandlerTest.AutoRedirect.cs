@@ -50,6 +50,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { statusCode, "PATCH", statusCode == 303 ? "GET" : "PATCH" };
                 yield return new object[] { statusCode, "OPTIONS", statusCode == 303 ? "GET" : "OPTIONS" };
                 yield return new object[] { statusCode, "HEAD", "HEAD" };
+                yield return new object[] { statusCode, "MYCUSTOMMETHOD", statusCode == 303 ? "GET" : "MYCUSTOMMETHOD" };
             }
         }
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
