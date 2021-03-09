@@ -21,18 +21,40 @@ namespace Internal.Cryptography.Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDsaPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDsaImplementation.ECDsaAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodeECDiffieHellmanPublicKey));
+                if (certificatePal == null)
+                    throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(DecodeECPublicKey(certificatePal));
             }
 
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodePublicKey));
+                switch (oid.Value)
+                {
+                    case Oids.Dsa:
+                        throw new NotImplementedException($"{nameof(DecodePublicKey)} (DSA)");
+                    case Oids.Rsa:
+                        if (certificatePal != null)
+                        {
+                            var handle = new SafeRsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.RSA));
+                            return new RSAImplementation.RSAAndroid(handle);
+                        }
+                        else
+                        {
+                            return DecodeRsaPublicKey(encodedKeyValue);
+                        }
+                    default:
+                        throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+                }
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
@@ -60,17 +82,53 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException();
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);
+                if (contentType != X509ContentType.Unknown)
+                {
+                    return contentType;
+                }
 
-                // TODO: [AndroidCrypto] Handle PKCS#12
-                if (contentType == X509ContentType.Unknown)
-                    throw new CryptographicException();
+                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                {
+                    return X509ContentType.Pkcs12;
+                }
 
-                return contentType;
+                // Throw on unknown type to match Unix and Windows
+                throw new CryptographicException(SR.Cryptography_UnknownCertContentType);
             }
 
             public X509ContentType GetCertContentType(string fileName)
             {
                 return GetCertContentType(File.ReadAllBytes(fileName));
+            }
+
+            private static SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
+            {
+                return new SafeEcKeyHandle(GetPublicKey(pal, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC));
+            }
+
+            private static IntPtr GetPublicKey(ICertificatePal pal, Interop.AndroidCrypto.PAL_KeyAlgorithm algorithm)
+            {
+                AndroidCertificatePal certPal = (AndroidCertificatePal)pal;
+                IntPtr ptr = Interop.AndroidCrypto.X509GetPublicKey(certPal.SafeHandle, algorithm);
+                if (ptr == IntPtr.Zero)
+                    throw new CryptographicException();
+
+                return ptr;
+            }
+
+            private static RSA DecodeRsaPublicKey(byte[] encodedKeyValue)
+            {
+                RSA rsa = RSA.Create();
+                try
+                {
+                    rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
+                    return rsa;
+                }
+                catch (Exception)
+                {
+                    rsa.Dispose();
+                    throw;
+                }
             }
         }
     }

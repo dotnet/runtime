@@ -3617,7 +3617,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 				break;
 		}
 	} else {
-		mono_jit_info_table_add (domain, jinfo);
+		mono_jit_info_table_add (jinfo);
 	}
 
 	if ((guint8*)addr >= (guint8*)jinfo->code_start + jinfo->code_size)

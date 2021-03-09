@@ -8,6 +8,24 @@ namespace System.Collections.Generic
     /// </summary>
     internal static partial class EnumerableHelpers
     {
+        /// <summary>Attempt to determine the count of the source enumerable without forcing an enumeration.</summary>
+        /// <param name="source">The source enumerable.</param>
+        /// <param name="count">The count determined by the type test.</param>
+        /// <returns>
+        /// True if the source enumerable could be determined without enumerating, false otherwise.
+        /// </returns>
+        internal static bool TryGetCount<T>(IEnumerable<T> source, out int count)
+        {
+            if (source is ICollection<T> ict)
+            {
+                count = ict.Count;
+                return true;
+            }
+
+            count = 0;
+            return false;
+        }
+
         /// <summary>Converts an enumerable to an array using the same logic as List{T}.</summary>
         /// <param name="source">The enumerable to convert.</param>
         /// <param name="length">The number of items stored in the resulting array, 0-indexed.</param>

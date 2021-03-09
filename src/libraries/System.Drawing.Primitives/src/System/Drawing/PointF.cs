@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System.Drawing
 {
@@ -30,6 +32,21 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.PointF'/> struct from the specified
+        /// <see cref="System.Numerics.Vector2"/>.
+        /// </summary>
+        public PointF(Vector2 vector)
+        {
+            x = vector.X;
+            y = vector.Y;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="System.Numerics.Vector2"/> from this <see cref="System.Drawing.PointF"/>.
+        /// </summary>
+        public Vector2 ToVector2() => new Vector2(x, y);
+
+        /// <summary>
         /// Gets a value indicating whether this <see cref='System.Drawing.PointF'/> is empty.
         /// </summary>
         [Browsable(false)]
@@ -52,6 +69,16 @@ namespace System.Drawing
             readonly get => y;
             set => y = value;
         }
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Drawing.PointF"/> to a <see cref="System.Numerics.Vector2"/>.
+        /// </summary>
+        public static explicit operator Vector2(PointF point) => point.ToVector2();
+
+        /// <summary>
+        /// Converts the specified <see cref="System.Numerics.Vector2"/> to a <see cref="System.Drawing.PointF"/>.
+        /// </summary>
+        public static explicit operator PointF(Vector2 vector) => new PointF(vector);
 
         /// <summary>
         /// Translates a <see cref='System.Drawing.PointF'/> by a given <see cref='System.Drawing.Size'/> .

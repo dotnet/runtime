@@ -3207,8 +3207,24 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
             srcInterval->assignRelatedInterval(varDefInterval);
         }
     }
-    RefPosition* def =
-        newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(varDsc->TypeGet()), index);
+
+    regMaskTP defCandidates = RBM_NONE;
+    var_types type          = varDsc->TypeGet();
+
+#ifdef TARGET_X86
+    if (varTypeIsByte(type))
+    {
+        defCandidates = allByteRegs();
+    }
+    else
+    {
+        defCandidates = allRegs(type);
+    }
+#else
+    defCandidates = allRegs(type);
+#endif // TARGET_X86
+
+    RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
     {
         // We always make write-thru defs reg-optional, as we can store them if they don't
@@ -3326,7 +3342,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     RefPosition* internalFloatDef = nullptr;
     if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
-        // Need an additional register to extract upper 4 bytes of Vector3.
+        // Need an additional register to extract upper 4 bytes of Vector3,
+        // it has to be float for x86.
         internalFloatDef = buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
     }
 #endif // FEATURE_SIMD

@@ -8186,11 +8186,12 @@ parse_cpu_features (const gchar *attr)
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
 	
 #elif defined(TARGET_ARM64)
-	if (!strcmp (attr + prefix, "base"))
-		feature = MONO_CPU_ARM64_BASE;
-	else if (!strcmp (attr + prefix, "crc"))
+	// MONO_CPU_ARM64_BASE is unconditionally set in mini_get_cpu_features.
+	if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
-	else if (!strcmp (attr + prefix, "simd"))
+	else if (!strcmp (attr + prefix, "crypto"))
+		feature = MONO_CPU_ARM64_CRYPTO;
+	else if (!strcmp (attr + prefix, "neon"))
 		feature = MONO_CPU_ARM64_NEON;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
@@ -12253,7 +12254,7 @@ compile_methods (MonoAotCompile *acfg)
 			user_data [0] = acfg;
 			user_data [1] = frag;
 			
-			thread = mono_thread_create_internal (mono_domain_get (), (gpointer)compile_thread_main, user_data, MONO_THREAD_CREATE_FLAGS_NONE, error);
+			thread = mono_thread_create_internal ((MonoThreadStart)compile_thread_main, user_data, MONO_THREAD_CREATE_FLAGS_NONE, error);
 			mono_error_assert_ok (error);
 
 			thread_handle = mono_threads_open_thread_handle (thread->handle);

@@ -25,7 +25,7 @@ namespace System.Diagnostics
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? message) { }
-        public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
+        public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? format, params object?[]? args) { }
     }
     public partial class TextWriterTraceListener : System.Diagnostics.TraceListener
     {
@@ -56,7 +56,7 @@ namespace System.Diagnostics
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         public override void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? message) { }
-        public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
+        public override void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? format, params object?[]? args) { }
         public override void TraceTransfer(System.Diagnostics.TraceEventCache? eventCache, string source, int id, string? message, System.Guid relatedActivityId) { }
         public override void Write(string? message) { }
         public override void WriteLine(string? message) { }

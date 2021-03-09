@@ -44,31 +44,23 @@ namespace Microsoft.NET.HostModel.AppHost
                 throw new AppNameTooLongException(appBinaryFilePath);
             }
 
-            BinaryUtils.CopyFile(appHostSourceFilePath, appHostDestinationFilePath);
-
             bool appHostIsPEImage = false;
 
-            void RewriteAppHost()
+            void RewriteAppHost(MemoryMappedViewAccessor accessor)
             {
                 // Re-write the destination apphost with the proper contents.
-                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationFilePath))
+                BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
+
+                appHostIsPEImage = PEUtils.IsPEImage(accessor);
+
+                if (windowsGraphicalUserInterface)
                 {
-                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
+                    if (!appHostIsPEImage)
                     {
-                        BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
-
-                        appHostIsPEImage = PEUtils.IsPEImage(accessor);
-
-                        if (windowsGraphicalUserInterface)
-                        {
-                            if (!appHostIsPEImage)
-                            {
-                                throw new AppHostNotPEFileException();
-                            }
-
-                            PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
-                        }
+                        throw new AppHostNotPEFileException();
                     }
+
+                    PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
                 }
             }
 
@@ -90,19 +82,42 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
-            void RemoveSignatureIfMachO()
-            {
-                MachOUtils.RemoveSignature(appHostDestinationFilePath);
-            }
-
-            void SetLastWriteTime()
-            {
-                // Memory-mapped write does not updating last write time
-                File.SetLastWriteTimeUtc(appHostDestinationFilePath, DateTime.UtcNow);
-            }
-
             try
             {
+                RetryUtil.RetryOnIOError(() =>
+                {
+                    MemoryMappedFile memoryMappedFile = null;
+                    MemoryMappedViewAccessor memoryMappedViewAccessor = null;
+                    try
+                    {
+                        // Open the source host file.
+                        memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.CopyOnWrite);
+                        memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
+
+                        // Transform the host file in-memory.
+                        RewriteAppHost(memoryMappedViewAccessor);
+
+                        // Save the transformed host.
+                        using (FileStream fileStream = new FileStream(appHostDestinationFilePath, FileMode.Create))
+                        {
+                            BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream);
+
+                            // Remove the signature from MachO hosts.
+                            if (!appHostIsPEImage)
+                            {
+                                MachOUtils.RemoveSignature(fileStream);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        memoryMappedViewAccessor?.Dispose();
+                        memoryMappedFile?.Dispose();
+                    }
+                });
+
+                RetryUtil.RetryOnWin32Error(UpdateResources);
+
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
@@ -120,14 +135,6 @@ namespace Microsoft.NET.HostModel.AppHost
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
                     }
                 }
-
-                RetryUtil.RetryOnIOError(RewriteAppHost);
-
-                RetryUtil.RetryOnWin32Error(UpdateResources);
-
-                RetryUtil.RetryOnIOError(RemoveSignatureIfMachO);
-
-                RetryUtil.RetryOnIOError(SetLastWriteTime);
             }
             catch (Exception ex)
             {

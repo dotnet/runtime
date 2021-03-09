@@ -2323,7 +2323,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 {
                     newEdge2Max = BB_ZERO_WEIGHT;
                 }
-                edge2->setEdgeWeights(newEdge2Min, newEdge2Max);
+                edge2->setEdgeWeights(newEdge2Min, newEdge2Max, bDest);
             }
         }
 

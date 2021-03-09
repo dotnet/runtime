@@ -132,7 +132,7 @@ internal class Xcode
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
         var targetName = (Target == TargetNames.MacCatalyst) ? "Darwin" : Target.ToString();
-        var deployTarget = (Target == TargetNames.MacCatalyst) ? "" : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
+        var deployTarget = (Target == TargetNames.MacCatalyst) ? " -DCMAKE_OSX_ARCHITECTURES=\"x86_64 arm64\"" : " -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1";
         var cmakeArgs = new StringBuilder();
         cmakeArgs
             .Append("-S.")

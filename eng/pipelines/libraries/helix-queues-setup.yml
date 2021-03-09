@@ -87,8 +87,7 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - OSX.1100.ARM64.Open
+      - OSX.1100.ARM64.Open
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:

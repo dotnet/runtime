@@ -16,6 +16,7 @@ typedef struct CipherCtx
 {
     jobject cipher;
     CipherInfo* type;
+    int32_t keySizeInBits;
     int32_t ivLength;
     int32_t tagLength;
     int32_t encMode;
@@ -23,7 +24,7 @@ typedef struct CipherCtx
     uint8_t* iv;
 } CipherCtx;
 
-PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
+PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreate(CipherInfo* type, uint8_t* key, int32_t keySizeInBits, int32_t effectiveKeyLength, uint8_t* iv, int32_t enc);
 PALEXPORT CipherCtx* AndroidCryptoNative_CipherCreatePartial(CipherInfo* type);
 PALEXPORT int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength);
 PALEXPORT int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc);
@@ -59,5 +60,3 @@ PALEXPORT CipherInfo* AndroidCryptoNative_Des3Cfb64(void);
 PALEXPORT CipherInfo* AndroidCryptoNative_DesEcb(void);
 PALEXPORT CipherInfo* AndroidCryptoNative_DesCfb8(void);
 PALEXPORT CipherInfo* AndroidCryptoNative_DesCbc(void);
-PALEXPORT CipherInfo* AndroidCryptoNative_RC2Ecb(void);
-PALEXPORT CipherInfo* AndroidCryptoNative_RC2Cbc(void);

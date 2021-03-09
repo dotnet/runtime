@@ -4423,8 +4423,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (exit loop)\n", bTest->bbNum, bTest->bbNext->bbNum,
                 testToAfterWeight);
 
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight);
-        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight);
+        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTest->bbJumpDest);
+        edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->bbNext);
 
         // Adjust edges out of block, using the same distribution.
         //
@@ -4444,8 +4444,8 @@ void Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to %f (avoid loop)\n", block->bbNum,
                 block->bbJumpDest->bbNum, blockToAfterWeight);
 
-        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight);
-        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight);
+        edgeBlockToNext->setEdgeWeights(blockToNextWeight, blockToNextWeight, block->bbNext);
+        edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, block->bbJumpDest);
 
 #ifdef DEBUG
         // Verify profile for the two target blocks is consistent.
@@ -7578,17 +7578,25 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                     loopSkippedCount = head->bbJumpDest->bbWeight;
                 }
 
+                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                        loopSkippedCount);
+
                 BasicBlock::weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
 
+                JITDUMP("%s; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
+                        fgHaveValidEdgeWeights ? "valid edge weights" : "no edge weights", loopEnteredCount,
+                        loopSkippedCount, loopTakenRatio);
+
                 // Calculate a good approximation of the preHead's block weight
-                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio) + 0.5f;
-                preHead->setBBWeight(max(preHeadWeight, 1));
+                BasicBlock::weight_t preHeadWeight = (head->bbWeight * loopTakenRatio);
+                preHead->setBBProfileWeight(preHeadWeight);
                 noway_assert(!preHead->isRunRarely());
             }
         }
     }
 
-    // Link in the preHead block.
+    // Link in the preHead block
     fgInsertBBbefore(top, preHead);
 
     // Ideally we would re-run SSA and VN if we optimized by doing loop hoisting.
@@ -7639,8 +7647,9 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
        All predecessors of 'beg', (which is the entry in the loop)
        now have to jump to 'preHead', unless they are dominated by 'head' */
 
-    preHead->bbRefs = 0;
-    fgAddRefPred(preHead, head);
+    preHead->bbRefs                 = 0;
+    flowList* const edgeToPreHeader = fgAddRefPred(preHead, head);
+    edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
     bool checkNestedLoops = false;
 
     for (flowList* pred = top->bbPreds; pred; pred = pred->flNext)
@@ -7722,7 +7731,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     noway_assert(!fgGetPredForBlock(top, preHead));
     fgRemoveRefPred(top, head);
-    fgAddRefPred(top, preHead);
+    flowList* const edgeFromPreHeader = fgAddRefPred(top, preHead);
+    edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, top);
 
     /*
         If we found at least one back-edge in the flowgraph pointing to the top/entry of the loop
@@ -9327,11 +9337,11 @@ void Compiler::optOptimizeBools()
             BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
             if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
             {
-                edge1->setEdgeWeights(edgeSumMin, edgeSumMax);
+                edge1->setEdgeWeights(edgeSumMin, edgeSumMax, b1->bbJumpDest);
             }
             else
             {
-                edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
+                edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, b1->bbJumpDest);
             }
 
             /* Get rid of the second block (which is a BBJ_COND) */

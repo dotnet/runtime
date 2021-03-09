@@ -40,6 +40,8 @@ namespace System
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
         public static bool IsMacOsCatalinaOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 15);
+        public static bool IsMacOsAppleSilicon => IsOSX && IsArm64Process;
+        public static bool IsNotMacOsAppleSilicon => !IsMacOsAppleSilicon;
 
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
