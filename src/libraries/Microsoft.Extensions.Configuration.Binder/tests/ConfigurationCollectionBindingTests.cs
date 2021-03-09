@@ -1005,7 +1005,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         [Fact]
         public void CanBindArray()
         {
-            var input = new[] {"abc", "def", "ghi"};
+            var input = new Dictionary<string, string>
+            {
+                {"0", "abc"},
+                {"1", "def"},
+                {"2", "ghi"}
+            };
 
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(input);
