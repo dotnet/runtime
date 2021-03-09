@@ -38,7 +38,7 @@ namespace System.ComponentModel
         public AmbientValueAttribute(object value) { }
         public AmbientValueAttribute(float value) { }
         public AmbientValueAttribute(string value) { }
-        public AmbientValueAttribute(System.Type type, string value) { }
+        public AmbientValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string value) { }
         public object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -1384,8 +1384,8 @@ namespace System.ComponentModel
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
         public static object CreateInstance(System.IServiceProvider provider, System.Type objectType, System.Type[] argTypes, object[] args) { throw null; }
-        public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
-        public static System.ComponentModel.PropertyDescriptor CreateProperty(System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static object GetAssociation(System.Type type, object primary) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
@@ -1393,13 +1393,13 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.AttributeCollection GetAttributes(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.AttributeCollection GetAttributes(System.Type componentType) { throw null; }
+        public static System.ComponentModel.AttributeCollection GetAttributes([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetClassName(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetClassName(object component, bool noCustomTypeDesc) { throw null; }
-        public static string GetClassName(System.Type componentType) { throw null; }
+        public static string GetClassName([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetComponentName(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1410,13 +1410,13 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.TypeConverter GetConverter(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.TypeConverter GetConverter(System.Type type) { throw null; }
+        public static System.ComponentModel.TypeConverter GetConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.EventDescriptor GetDefaultEvent(System.Type componentType) { throw null; }
+        public static System.ComponentModel.EventDescriptor GetDefaultEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1428,7 +1428,7 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, System.Type editorBaseType, bool noCustomTypeDesc) { throw null; }
-        public static object GetEditor(System.Type type, System.Type editorBaseType) { throw null; }
+        public static object GetEditor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, System.Type editorBaseType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of component cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
@@ -1439,9 +1439,9 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType) { throw null; }
+        public static System.ComponentModel.EventDescriptorCollection GetEvents([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        public static System.ComponentModel.EventDescriptorCollection GetEvents(System.Type componentType, System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.EventDescriptorCollection GetEvents([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.Attribute[] attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetFullComponentName(object component) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
@@ -1453,9 +1453,9 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptorCollection GetProperties(object component, bool noCustomTypeDesc) { throw null; }
-        public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType) { throw null; }
+        public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        public static System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Type componentType, System.Attribute[] attributes) { throw null; }
+        public static System.ComponentModel.PropertyDescriptorCollection GetProperties([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider GetProvider(object instance) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
