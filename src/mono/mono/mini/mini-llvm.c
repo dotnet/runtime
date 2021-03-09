@@ -255,6 +255,7 @@ mini_llvm_ins_info[] = {
 
 enum {
 	MAX_VECTOR_ELEMS = 32, // 2 vectors * 128 bits per vector / 8 bits per element
+	ARM64_MAX_VECTOR_ELEMS = 16,
 };
 
 static LLVMIntPredicate cond_to_llvm_cond [] = {
@@ -10273,26 +10274,27 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_REV16:
-		case OP_ARM64_REV32:
-		case OP_ARM64_REV64: {
-			unsigned int tmp_bits = 0;
-			switch (ins->opcode) {
-			case OP_ARM64_REV16: tmp_bits = 8; break;
-			case OP_ARM64_REV32: tmp_bits = 16; break;
-			case OP_ARM64_REV64: tmp_bits = 32; break;
-			}
+		case OP_ARM64_REVN: {
 			LLVMTypeRef t = LLVMTypeOf (lhs);
-			unsigned int t_bits = mono_llvm_get_prim_size_bits (t);
-			unsigned int tmp_elements = t_bits / tmp_bits;
-			LLVMTypeRef tmp_t = LLVMVectorType (LLVMIntType (tmp_bits), tmp_elements);
-			LLVMValueRef tmp = LLVMBuildBitCast (builder, lhs, tmp_t, "arm64_rev");
-			int mask [MAX_VECTOR_ELEMS] = { 0 };
-			for (unsigned int i = 0; i < tmp_elements; i += 2) {
-				mask [i] = i + 1;
-				mask [i + 1] = i;
+			LLVMTypeRef elem_t = LLVMGetElementType (t);
+			unsigned int group_bits = mono_llvm_get_prim_size_bits (elem_t);
+			unsigned int vec_bits = mono_llvm_get_prim_size_bits (t);
+			unsigned int tmp_bits = ins->inst_c0;
+			unsigned int tmp_elements = vec_bits / tmp_bits;
+			const int cycle8 [] = { 7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8 };
+			const int cycle4 [] = { 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12 };
+			const int cycle2 [] = { 1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14 };
+			const int *cycle = NULL;
+			switch (group_bits / tmp_bits) {
+			case 2: cycle = cycle2; break;
+			case 4: cycle = cycle4; break;
+			case 8: cycle = cycle8; break;
+			default: g_assert_not_reached ();
 			}
-			LLVMValueRef result = LLVMBuildShuffleVector (builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (mask, tmp_elements), "");
+			g_assert (tmp_elements <= ARM64_MAX_VECTOR_ELEMS);
+			LLVMTypeRef tmp_t = LLVMVectorType (LLVMIntType (tmp_bits), tmp_elements);
+			LLVMValueRef tmp = LLVMBuildBitCast (builder, lhs, tmp_t, "arm64_revn");
+			LLVMValueRef result = LLVMBuildShuffleVector (builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (cycle, tmp_elements), "");
 			result = LLVMBuildBitCast (builder, result, t, "");
 			values [ins->dreg] = result;
 			break;
