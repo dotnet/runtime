@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Buffers;
 using System.Reflection;
+using System.Runtime.InteropServices;
+
 using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
 namespace System.Diagnostics.Tracing
@@ -15,6 +16,25 @@ namespace System.Diagnostics.Tracing
             ParameterPayload = 2
         }
 
+        // stackalloc doesn't allow arrays with objectrefs
+        // so we use a struct with sequential fields and slice
+        // that as a Span instead for short lengths.
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ParamInfoFixedArray
+        {
+            public EventParameterInfo val0;
+            public EventParameterInfo val1;
+            public EventParameterInfo val2;
+            public EventParameterInfo val3;
+            public EventParameterInfo val4;
+            public EventParameterInfo val5;
+        }
+
+        // We must pay the zeroing cost for the objectrefs
+        // so keep the max fields short before we fallback to array
+        // 6 was observed to cover 90% of the calls
+        private const int MaxFixedArraySize = 6;
+
         public static EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
 
         private EventPipeMetadataGenerator() { }
@@ -22,7 +42,6 @@ namespace System.Diagnostics.Tracing
         public byte[]? GenerateEventMetadata(EventMetadata eventMetadata)
         {
             ParameterInfo[] parameters = eventMetadata.Parameters;
-
             if (parameters.Length == 0)
             {
                 return GenerateMetadata(
@@ -35,15 +54,18 @@ namespace System.Diagnostics.Tracing
                     default);
             }
 
-            EventParameterInfo[] array = ArrayPool<EventParameterInfo>.Shared.Rent(parameters.Length);
-            ReadOnlySpan<EventParameterInfo> eventParams = array.AsSpan(0, parameters.Length);
+            ParamInfoFixedArray paramInfo = default;
+            ReadOnlySpan<EventParameterInfo> eventParams = parameters.Length > MaxFixedArraySize ?
+                new EventParameterInfo[parameters.Length] :
+                MemoryMarshal.CreateReadOnlySpan(ref paramInfo.val0, parameters.Length);
+
             for (int i = 0; i < parameters.Length; i++)
             {
                 EventParameterInfo.GetTypeInfoFromType(parameters[i].ParameterType, out TraceLoggingTypeInfo? paramTypeInfo);
                 eventParams[i].SetInfo(parameters[i].Name!, parameters[i].ParameterType, paramTypeInfo);
             }
 
-            byte[]? metadata = GenerateMetadata(
+            return GenerateMetadata(
                 eventMetadata.Descriptor.EventId,
                 eventMetadata.Name,
                 eventMetadata.Descriptor.Keywords,
@@ -51,8 +73,6 @@ namespace System.Diagnostics.Tracing
                 eventMetadata.Descriptor.Version,
                 (EventOpcode)eventMetadata.Descriptor.Opcode,
                 eventParams);
-            ArrayPool<EventParameterInfo>.Shared.Return(array);
-            return metadata;
         }
 
         public byte[]? GenerateEventMetadata(
@@ -71,8 +91,12 @@ namespace System.Diagnostics.Tracing
             }
 
             string[]? paramNames = eventTypes.paramNames;
-            EventParameterInfo[] array = ArrayPool<EventParameterInfo>.Shared.Rent(typeInfos.Length);
-            ReadOnlySpan<EventParameterInfo> eventParams = array.AsSpan(0, typeInfos.Length);
+
+            ParamInfoFixedArray paramInfo = default;
+            ReadOnlySpan<EventParameterInfo> eventParams = typeInfos.Length > MaxFixedArraySize ?
+                new EventParameterInfo[typeInfos.Length] :
+                MemoryMarshal.CreateReadOnlySpan(ref paramInfo.val0, typeInfos.Length);
+
             for (int i = 0; i < typeInfos.Length; i++)
             {
                 string paramName = string.Empty;
@@ -83,9 +107,7 @@ namespace System.Diagnostics.Tracing
                 eventParams[i].SetInfo(paramName, typeInfos[i].DataType, typeInfos[i]);
             }
 
-            byte[]? metadata = GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
-            ArrayPool<EventParameterInfo>.Shared.Return(array);
-            return metadata;
+            return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
         }
 
         internal unsafe byte[]? GenerateMetadata(
