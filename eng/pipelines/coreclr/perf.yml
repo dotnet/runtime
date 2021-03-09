@@ -69,6 +69,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
@@ -221,6 +222,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
 
 # run coreclr Windows arm64 microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
