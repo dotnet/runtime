@@ -17698,6 +17698,11 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     // Finally remove the nested qmark stmt.
     fgRemoveStmt(block, stmt);
 
+    if (true2Expr->OperIs(GT_CALL) && (true2Expr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+    {
+        fgConvertBBToThrowBB(helperBlock);
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
