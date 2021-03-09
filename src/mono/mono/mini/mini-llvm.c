@@ -5098,9 +5098,9 @@ scalar_op_from_vector_op_process_args (ScalarOpFromVectorOpCtx *sctx, LLVMValueR
 static LLVMValueRef
 scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValueRef result)
 {
-	if (!sctx->needs_fake_scalar_op)
-		return vector_from_scalar_ty (sctx->ctx, sctx->return_type, result);
-	return keep_lowest_element (sctx->ctx, result);
+	if (sctx->needs_fake_scalar_op)
+		return keep_lowest_element (sctx->ctx, result);
+	return vector_from_scalar_ty (sctx->ctx, sctx->return_type, result);
 }
 
 static void
@@ -9916,6 +9916,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				unsigned int argelems = LLVMGetVectorSize (arg_t);
 				LLVMValueRef arg = undef_upper_elements (ctx, LLVMVectorType (argelem_t, argelems * 2), lhs);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, &arg, "arm64_xnarrow_scalar");
+				result = keep_lowest_element (ctx, result);
 			}
 			values [ins->dreg] = result;
 			break;
