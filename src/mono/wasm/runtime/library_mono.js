@@ -1759,9 +1759,9 @@ var MonoSupportLib = {
 				try {
 					load_runtime ("unused", args.debug_level);
 				} catch (ex) {
-					print ("MONO_WASM: load_runtime () failed: " + ex);
-					print ("MONO_WASM: Stacktrace: \n");
-					print (ex.stack);
+					Module.print ("MONO_WASM: load_runtime () failed: " + ex);
+					Module.print ("MONO_WASM: Stacktrace: \n");
+					Module.print (ex.stack);
 
 					var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
 					wasm_exit (1);
@@ -2454,6 +2454,8 @@ var MonoSupportLib = {
 		++MONO.pump_count;
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (MONO.pump_message, 0);
+		} else {
+			Promise.resolve().then (MONO.pump_message);
 		}
 	},
 
@@ -2461,15 +2463,12 @@ var MonoSupportLib = {
 		if (!this.mono_set_timeout_exec)
 			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
+		var timer = function () { this.mono_set_timeout_exec (id) }.bind (this);
 		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
-			}, timeout);
+			globalThis.setTimeout (timer, timeout);
 		} else {
 			++MONO.pump_count;
-			MONO.timeout_queue.push(function() {
-				this.mono_set_timeout_exec (id);
-			})
+			MONO.timeout_queue.push(timer);
 		}
 	},
 
