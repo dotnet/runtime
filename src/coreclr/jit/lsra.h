@@ -510,9 +510,6 @@ public:
     void tinyDump();
 #endif // DEBUG
 
-    // RefPosition   * getNextRefPosition();
-    // LsraLocation    getNextRefLocation();
-
     // DATA
 
     // interval to which this register is currently allocated.
