@@ -119,7 +119,7 @@ int32_t GlobalizationNative_LoadICUData(char* path)
         return ret;
     }
 
-    size_t len = fread (icu_data, sizeof (char), bufsize, fp);
+    fread (icu_data, sizeof (char), bufsize, fp);
     if (ferror ( fp ) != 0 ) {
         fprintf (stderr, "Unable to read ICU dat file");
         return ret;
