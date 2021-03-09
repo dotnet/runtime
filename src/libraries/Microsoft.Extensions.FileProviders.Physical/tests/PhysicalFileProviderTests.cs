@@ -1286,7 +1286,7 @@ namespace Microsoft.Extensions.FileProviders
 
                 fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.RootPath, newDirectoryName, oldDirectoryName));
 
-                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).TimeoutAfter(TimeSpan.FromSeconds(30));
+                await Task.WhenAll(oldDirectoryTcs.Task, newDirectoryTcs.Task, newSubDirectoryTcs.Task, newFileTcs.Task).WaitAsync(TimeSpan.FromSeconds(30));
 
                 Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
                 Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
