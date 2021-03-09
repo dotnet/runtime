@@ -200,7 +200,7 @@ namespace System.Net.WebSockets
                 }
 
                 // Store the negotiated deflate options in the original options, because
-                // otherwise there is now way of clients to actually check whether we are using
+                // otherwise there is no way of clients to actually check whether we are using
                 // per message deflate or not.
                 options.DeflateOptions = deflateOptions;
 
@@ -218,7 +218,7 @@ namespace System.Net.WebSockets
                     IsServer = false,
                     SubProtocol = subprotocol,
                     KeepAliveInterval = options.KeepAliveInterval,
-                    DeflateOptions = deflateOptions,
+                    DeflateOptions = deflateOptions
                 });
             }
             catch (Exception exc)

@@ -1050,7 +1050,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// Returns either <see cref="ValueWebSocketReceiveResult"/> or <see cref="ValueWebSocketReceiveResult"/>.
+        /// Returns either <see cref="ValueWebSocketReceiveResult"/> or <see cref="WebSocketReceiveResult"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TResult GetReceiveResult<TResult>(int count, WebSocketMessageType messageType, bool endOfMessage)

@@ -1,4 +1,7 @@
-﻿using System.Buffers;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -8,7 +11,6 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]
     public class WebSocketDeflateTests
     {
         private readonly CancellationTokenSource? _cancellation;
