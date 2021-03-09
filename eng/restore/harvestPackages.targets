@@ -23,7 +23,6 @@
 
     <!-- Allow to override package download and versions in case there is already a PackageDownload set -->
     <ItemGroup>
-      <PackageDownload Include="System.Text.Encodings.Web" Version="4.5.1" />
       <_OverridenPackageDownloads Include="@(_PackageDownload)" Condition="'@(PackageDownload)' == '@(_PackageDownload)' and %(Identity) != ''" />
       <_PackageDownload Remove="@(_OverridenPackageDownloads)" />
       <_PackageDownload Include="@(PackageDownload)" />
