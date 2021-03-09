@@ -423,33 +423,12 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
             CultureData? retVal = null;
-            try
+            // First check if GetCultureData() can find it (ie: its a real culture)
+            retVal = GetCultureData(cultureName, useUserOverride);
+            if (retVal != null && !retVal.IsNeutralCulture)
             {
-                // First check if GetCultureData() can find it (ie: its a real culture)
-                retVal = GetCultureData(cultureName, useUserOverride);
-                if (retVal != null && !retVal.IsNeutralCulture)
-                {
-                    return retVal;
-                }
+                return retVal;
             }
-            catch (CultureNotFoundException) when (GlobalizationMode.PredefinedCulturesOnly)
-            {
-                // Catching this exception because GetCultureData will throw if the region name is not defined yet
-                // If not a valid mapping from the registry we'll have to try the hard coded table
-                if (retVal == null || retVal.IsNeutralCulture)
-                {
-                    // Not a valid mapping, try the hard coded table
-                    if (RegionNames.TryGetValue(cultureName, out string? name))
-                    {
-                        // Make sure we can get culture data for it
-                        retVal = GetCultureData(name, useUserOverride);
-                        return retVal;
-                    }
-                }
-            }
-
-            // Not a specific culture, perhaps it's region-only name
-            // (Remember this isn't a core clr path where that's not supported)
 
             // If it was neutral remember that so that RegionInfo() can throw the right exception
             CultureData? neutral = retVal;
@@ -694,7 +673,7 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.PredefinedCulturesOnly)
+            if (GlobalizationMode.PredefinedCulturesOnly && !GlobalizationMode.Invariant)
             {
                 if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
                     return null;
