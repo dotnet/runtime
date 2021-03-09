@@ -240,49 +240,19 @@
           Condition="'$(ShouldBuildWasmLocally)' == 'true'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
-      <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
   </PropertyGroup>
 
-  <Target Condition="'$(ShouldBuildWasmLocally)' == 'true'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp;StageEmSdkForHelix" />
+  <Target Condition="'$(ShouldBuildWasmLocally)' == 'true'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
-  <Target Name="BundleTestWasmApp"
-          Condition="'$(TargetOS)' == 'Browser' and '$(ShouldBuildWasmLocally)' != 'true'">
-
-    <PropertyGroup>
-      <DestEmsdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</DestEmsdkDir>
-      <ShouldCopyEmsdkFiles Condition="!Exists('$(DestEmsdkDir)')">true</ShouldCopyEmsdkFiles>
-    </PropertyGroup>
+  <Target Condition="'$(TargetOS)' == 'Browser' and '$(ShouldBuildWasmLocally)' != 'true'" Name="BundleTestWasmApp">
     <ItemGroup>
       <BundleFiles Include="$(PublishDir)\*.*" />
       <BundleFiles Include="$(MonoProjectRoot)\wasm\build\aot-build.proj" />
       <BundleFiles Include="$(MonoProjectRoot)\wasm\runtime-test.js" />
-      <EmsdkFiles Include="$(EMSDK_PATH)\**\*.*" />
     </ItemGroup>
-
-    <MakeDir Condition="'$(ShouldCopyEmsdkFiles)' == 'true'"
-             Directories="$(DestEmsdkDir)" />
-
-    <!-- Stage Emscripten in repo for helix submission -->
-    <Copy Condition="'$(ShouldCopyEmsdkFiles)' == 'true'"
-          SourceFiles="@(EmsdkFiles)"
-          DestinationFolder="$(DestEmsdkDir)\%(RecursiveDir)" />
 
     <Copy SourceFiles="@(BundleFiles)"
           DestinationFolder="$(BundleDir)publish" />
-  </Target>
-
-  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
-   attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
-   payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'BuildWasmApps' and '$(ContinuousIntegrationBuild)' == 'true' and !Exists($(EmSdkDir))">
-    <Error Condition="!Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDir) or in EMSDK_PATH=$(EMSDK_PATH)" />
-
-    <ItemGroup>
-      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(EmSdkDir)" />
-    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDir)\%(RecursiveDir)" />
   </Target>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
