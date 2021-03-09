@@ -1019,7 +1019,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = Array.Empty<string>();
             config.Bind(options);
 
-            Assert.Equal(3, options.Count);
+            Assert.Equal(3, options.Length);
 
             Assert.Equal("abc", options[0]);
             Assert.Equal("def", options[1]);
