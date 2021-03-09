@@ -38,6 +38,8 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+static int32_t load_icu_data(void* pData);
+
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
@@ -51,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
 {
     return load_icu_data(pData);
 }
+
 
 /*
  * driver.c calls this to make sure this file is linked, otherwise
