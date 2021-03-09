@@ -1001,6 +1001,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val_2", options.IReadOnlyDictionary["def"]);
             Assert.Equal("val_3", options.IReadOnlyDictionary["ghi"]);
         }
+        
+        [Fact]
+        public void CanBindArray()
+        {
+            var input = new[] {"abc", "def", "ghi"};
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = Array.Empty<string>();
+            config.Bind(options);
+
+            Assert.Equal(3, options.Count);
+
+            Assert.Equal("abc", options[0]);
+            Assert.Equal("def", options[1]);
+            Assert.Equal("ghi", options[2]);
+        }
 
         private class UnintializedCollectionsOptions
         {
