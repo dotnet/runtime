@@ -76,7 +76,7 @@ jobs:
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: MergedMchFileLocation
-        value: '$(Build.SourcesDirectory)\artifacts\'
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_collection'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
@@ -87,7 +87,7 @@ jobs:
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: MergedMchFileLocation
-        value: '$(Build.SourcesDirectory)/artifacts/'
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_collection'
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
@@ -132,23 +132,42 @@ jobs:
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
 
-    - task: PublishPipelineArtifact@1
-      displayName: Publish SuperPMI collection
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-        artifactName: 'SuperPMI_Result_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
-      continueOnError: true # continue to next step of merging with whatever partition data we gathered. 
-      condition: always()   # Always publish whatever we collected.
+    # Create directories and ensure crossgen is executable
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p $(MergedMchFileLocation)
+        displayName: Create directory for merged collection
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir $(MergedMchFileLocation)
+        displayName: Create directories
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
 
-    # For now, we won't upload merged collection as an artifact.
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(MergedMchFileLocation)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
       displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+  # #TODO: superpmi logs as well
+  #   - task: PublishPipelineArtifact@1
+  #     displayName: Publish SuperPMI collection
+  #     inputs:
+  #       targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+  #       artifactName: 'SuperPMI_Result_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}'
+  #     continueOnError: true # continue to next step of merging with whatever partition data we gathered. 
+  #     condition: always()   # Always publish whatever we collected.
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
