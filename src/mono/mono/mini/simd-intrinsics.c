@@ -1285,16 +1285,16 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftArithmetic, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftArithmeticRounded, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRSHL},
 	{SN_ShiftArithmeticRoundedSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
-	{SN_ShiftArithmeticRoundedSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
+	{SN_ShiftArithmeticRoundedSaturateScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
 	{SN_ShiftArithmeticRoundedScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRSHL},
 	{SN_ShiftArithmeticSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSHL},
-	{SN_ShiftArithmeticSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSHL},
+	{SN_ShiftArithmeticSaturateScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQSHL},
 	{SN_ShiftArithmeticScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftLeftAndInsert, OP_ARM64_SLI},
 	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SLI},
 	{SN_ShiftLeftLogical, OP_ARM64_SHL},
-	{SN_ShiftLeftLogicalSaturate, OP_ARM64_SQSHL_IMM, None, OP_ARM64_UQSHL_IMM},
-	{SN_ShiftLeftLogicalSaturateScalar, OP_ARM64_SQSHL_IMM, None, OP_ARM64_UQSHL_IMM},
+	{SN_ShiftLeftLogicalSaturate},
+	{SN_ShiftLeftLogicalSaturateScalar},
 	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalScalar, OP_ARM64_SHL},
@@ -1306,7 +1306,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftLogicalRoundedSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQRSHL},
 	{SN_ShiftLogicalRoundedScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URSHL},
 	{SN_ShiftLogicalSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSHL},
-	{SN_ShiftLogicalSaturateScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSHL},
+	{SN_ShiftLogicalSaturateScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQSHL},
 	{SN_ShiftLogicalScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
 	{SN_ShiftRightAndInsert, OP_ARM64_SRI},
 	{SN_ShiftRightAndInsertScalar, OP_ARM64_SRI},
@@ -1550,6 +1550,22 @@ emit_arm64_intrinsics (
 			ins->sreg3 = args [1]->dreg;
 			ins->inst_c1 = arg0_type;
 			return ins;
+		}
+		case SN_ShiftLeftLogicalSaturate:
+		case SN_ShiftLeftLogicalSaturateScalar: {
+			MonoClass *ret_klass = mono_class_from_mono_type_internal (fsig->ret);
+			MonoType *etype = get_vector_t_elem_type (fsig->ret);
+			gboolean is_unsigned = type_is_unsigned (fsig->ret);
+			gboolean scalar = id == SN_ShiftLeftLogicalSaturateScalar;
+			int s2v = scalar ? OP_CREATE_SCALAR_UNSAFE : type_to_expand_op (etype);
+			int xop = scalar ? OP_XOP_OVR_SCALAR_X_X_X : OP_XOP_OVR_X_X_X;
+			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSHL : INTRINS_AARCH64_ADV_SIMD_SQSHL;
+			MonoInst *shift_vector = emit_simd_ins (cfg, ret_klass, s2v, args [1]->dreg, -1);
+			shift_vector->inst_c1 = etype->type;
+			MonoInst *ret = emit_simd_ins (cfg, ret_klass, xop, args [0]->dreg, shift_vector->dreg);
+			ret->inst_c0 = iid;
+			ret->inst_c1 = etype->type;
+			return ret;
 		}
 		case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh:
 		case SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar:

@@ -7490,6 +7490,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
 			break;
 		}
+		case OP_CREATE_SCALAR:
+		case OP_CREATE_SCALAR_UNSAFE: {
+			MonoTypeEnum primty = inst_c1_type (ins);
+			LLVMTypeRef type = simd_class_to_llvm_type (ctx, ins->klass);
+			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
+			// and zero one for OP_CREATE_SCALAR
+			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
+			LLVMValueRef val = convert_full (ctx, lhs, primitive_type_to_llvm_type (primty), primitive_type_is_unsigned (primty));
+			values [ins->dreg] = LLVMBuildInsertElement (builder, vector, val, const_int32 (0), "");
+			break;
+		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -9057,18 +9068,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_CREATE_SCALAR:
-		case OP_CREATE_SCALAR_UNSAFE: {
-			MonoTypeEnum primty = inst_c1_type (ins);
-			LLVMTypeRef type = simd_class_to_llvm_type (ctx, ins->klass);
-			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
-			// and zero one for OP_CREATE_SCALAR
-			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
-			LLVMValueRef insert_pos = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			LLVMValueRef val = convert_full (ctx, lhs, primitive_type_to_llvm_type (primty), primitive_type_is_unsigned (primty));
-			values [ins->dreg] = LLVMBuildInsertElement (builder, vector, val, insert_pos, "");
-			break;
-		}
 		case OP_SSE41_ROUNDP: {
 			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE) };
 			values [ins->dreg] = call_intrins (ctx, ins->inst_c1 == MONO_TYPE_R4 ? INTRINS_SSE_ROUNDPS : INTRINS_SSE_ROUNDPD, args, dname);
@@ -10403,19 +10402,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_UQSHL_IMM:
-		case OP_ARM64_SQSHL_IMM: {
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			LLVMValueRef shift = create_shift_vector (ctx, lhs, rhs);
-			LLVMValueRef args [] = { lhs, shift };
-			int iid = 0;
-			switch (ins->opcode) {
-			case OP_ARM64_UQSHL_IMM: iid = INTRINS_AARCH64_ADV_SIMD_UQSHL; break;
-			case OP_ARM64_SQSHL_IMM: iid = INTRINS_AARCH64_ADV_SIMD_SQSHL; break;
-			}
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-			break;
-		}
 		case OP_ARM64_SQSHLU: {
 			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
@@ -10876,13 +10862,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XOP_OVR_SCALAR_X_X_X:
 		case OP_XOP_OVR_SCALAR_X_X_X_X: {
 			int num_args = 0;
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			switch (ins->opcode) {
 			case OP_XOP_OVR_SCALAR_X_X: num_args = 1; break;
 			case OP_XOP_OVR_SCALAR_X_X_X: num_args = 2; break;
 			case OP_XOP_OVR_SCALAR_X_X_X_X: num_args = 3; break;
 			}
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 			/* LLVM 9 NEON intrinsic functions have scalar overloads. Unfortunately
 			 * only overloads for 32 and 64-bit integers and floating point types are
 			 * supported. 8 and 16-bit integers are unsupported, and will fail during
