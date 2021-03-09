@@ -368,7 +368,6 @@ namespace System.ComponentModel
             /// <summary>
             /// Gets a value indicating whether this property is read-only.
             /// </summary>
-
             public override bool IsReadOnly
             {
                 [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(ReadOnlyAttribute))]
