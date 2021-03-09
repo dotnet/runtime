@@ -17,6 +17,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                          $(TargetFramework.StartsWith('net4'))">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

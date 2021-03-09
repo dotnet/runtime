@@ -20,6 +20,7 @@
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <!-- This is merge marker 1 to help automerge -->
     <!-- This is merge marker 2 to help automerge --> 
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Text.Encodings.Web\pkg\System.Text.Encodings.Web.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 3 to help automerge --> 
     <!-- This is merge marker 4 to help automerge --> 
     <!-- This is merge marker 5 to help automerge --> 
