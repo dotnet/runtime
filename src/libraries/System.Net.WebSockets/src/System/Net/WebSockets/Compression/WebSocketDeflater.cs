@@ -17,6 +17,8 @@ namespace System.Net.WebSockets.Compression
         private readonly int _windowBits;
         private readonly bool _persisted;
 
+        private byte[]? _buffer;
+
         internal WebSocketDeflater(int windowBits, bool persisted)
         {
             Debug.Assert(windowBits >= 9 && windowBits <= 15);
@@ -28,7 +30,54 @@ namespace System.Net.WebSockets.Compression
 
         public void Dispose() => _stream?.Dispose();
 
-        public void Deflate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
+        public void ReleaseBuffer()
+        {
+            if (_buffer is not null)
+            {
+                ArrayPool<byte>.Shared.Return(_buffer);
+                _buffer = null;
+            }
+        }
+
+        public ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload, bool continuation, bool endOfMessage)
+        {
+            Debug.Assert(_buffer is null, "Invalid state, ReleaseBuffer not called.");
+
+            // Do not try to rent more than 1MB initially, because it will actually allocate
+            // instead of renting. Be optimistic that what we're sending is actually going to fit.
+            const int MaxInitialBufferLength = 1024 * 1024;
+
+            // For small payloads there might actually be overhead in the compression and the resulting
+            // output might be larger than the payload. This is why we rent at least 4KB initially.
+            const int MinInitialBufferLength = 4 * 1024;
+
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(Math.Max(payload.Length, MinInitialBufferLength), MaxInitialBufferLength));
+            int position = 0;
+
+            while (true)
+            {
+                DeflatePrivate(payload, _buffer.AsSpan(position), continuation, endOfMessage,
+                    out int consumed, out int written, out bool needsMoreOutput);
+                position += written;
+
+                if (!needsMoreOutput)
+                {
+                    break;
+                }
+
+                payload = payload.Slice(consumed);
+
+                // Rent a 30% bigger buffer
+                byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)(_buffer.Length * 1.3));
+                _buffer.AsSpan(0, position).CopyTo(newBuffer);
+                ArrayPool<byte>.Shared.Return(_buffer);
+                _buffer = newBuffer;
+            }
+
+            return new ReadOnlySpan<byte>(_buffer, 0, position);
+        }
+
+        private void DeflatePrivate(ReadOnlySpan<byte> payload, Span<byte> output, bool continuation, bool endOfMessage,
             out int consumed, out int written, out bool needsMoreOutput)
         {
             Debug.Assert(!continuation || _stream is not null, "Invalid state. The stream should not be null in continuations.");
@@ -38,7 +87,7 @@ namespace System.Net.WebSockets.Compression
                 Initialize();
             }
 
-            Deflate(payload, output, out consumed, out written, out needsMoreOutput);
+            UnsafeDeflate(payload, output, out consumed, out written, out needsMoreOutput);
             if (needsMoreOutput)
             {
                 return;
@@ -52,7 +101,7 @@ namespace System.Net.WebSockets.Compression
                 needsMoreOutput = true;
                 return;
             }
-            written += Flush(output.Slice(written));
+            written += UnsafeFlush(output.Slice(written));
             Debug.Assert(output.Slice(written - WebSocketInflater.FlushMarkerLength, WebSocketInflater.FlushMarkerLength)
                                .EndsWith(WebSocketInflater.FlushMarker), "The deflated block must always end with a flush marker.");
 
@@ -69,7 +118,7 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private unsafe void Deflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written, out bool needsMoreBuffer)
+        private unsafe void UnsafeDeflate(ReadOnlySpan<byte> input, Span<byte> output, out int consumed, out int written, out bool needsMoreBuffer)
         {
             Debug.Assert(_stream is not null);
 
@@ -96,7 +145,7 @@ namespace System.Net.WebSockets.Compression
             }
         }
 
-        private unsafe int Flush(Span<byte> output)
+        private unsafe int UnsafeFlush(Span<byte> output)
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);

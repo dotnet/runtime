@@ -164,8 +164,6 @@ namespace System.Net.WebSockets
         private int _inflateBufferAvailable;
 
         private readonly WebSocketDeflater? _deflater;
-        private byte[]? _deflateBuffer;
-        private int _deflateBufferPosition;
 
         private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
         {
@@ -553,7 +551,7 @@ namespace System.Net.WebSockets
             {
                 if (_deflater is not null && !payloadBuffer.IsEmpty)
                 {
-                    payloadBuffer = Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
+                    payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
                 }
 
                 // Ensure we have a _sendBuffer.
@@ -597,56 +595,8 @@ namespace System.Net.WebSockets
             {
                 if (_deflater is not null)
                 {
-                    ReleaseDeflateBuffer();
+                    _deflater.ReleaseBuffer();
                 }
-            }
-        }
-
-        private ReadOnlySpan<byte> Deflate(ReadOnlySpan<byte> payload, bool continuation, bool endOfMessage)
-        {
-            Debug.Assert(_deflater is not null);
-            Debug.Assert(_deflateBuffer is null);
-
-            // Do not try to rent more than 1MB initially, because it will actually allocate
-            // instead of renting. Be optimistic that what we're sending is actually going to fit.
-            const int MaxInitialBufferLength = 1024 * 1024;
-
-            // For small payloads there might actually be overhead in the compression and the resulting
-            // output might be larger than the payload. This is why we rent at least 4KB initially.
-            const int MinInitialBufferLength = 4 * 1024;
-
-            _deflateBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(Math.Max(payload.Length, MinInitialBufferLength), MaxInitialBufferLength));
-            _deflateBufferPosition = 0;
-
-            while (true)
-            {
-                _deflater.Deflate(payload, _deflateBuffer.AsSpan(_deflateBufferPosition), continuation, endOfMessage,
-                    out int consumed, out int written, out bool needsMoreOutput);
-                _deflateBufferPosition += written;
-
-                if (!needsMoreOutput)
-                {
-                    break;
-                }
-
-                payload = payload.Slice(consumed);
-
-                // Rent a 30% bigger buffer
-                byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)(_deflateBuffer.Length * 1.3));
-                _deflateBuffer.AsSpan(0, _deflateBufferPosition).CopyTo(newBuffer);
-                ArrayPool<byte>.Shared.Return(_deflateBuffer);
-                _deflateBuffer = newBuffer;
-            }
-
-            return new ReadOnlySpan<byte>(_deflateBuffer, 0, _deflateBufferPosition);
-        }
-
-        private void ReleaseDeflateBuffer()
-        {
-            if (_deflateBuffer is not null)
-            {
-                ArrayPool<byte>.Shared.Return(_deflateBuffer);
-                _deflateBuffer = null;
             }
         }
 
