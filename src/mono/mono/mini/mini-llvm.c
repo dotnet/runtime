@@ -1335,7 +1335,6 @@ typedef struct {
 	int i;
 } ImmediateUnrollCtx;
 
-
 static ImmediateUnrollCtx
 immediate_unroll_begin (
 	EmitContext *ctx, MonoBasicBlock *bb, int max_cases,
@@ -9586,16 +9585,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
-		case OP_XOP_SX_X:
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
-			gboolean pack_result = FALSE;
 			gboolean getLowerElement = FALSE;
 			switch (ins->opcode) {
-			case OP_XOP_SX_X:
-				pack_result = TRUE;
-				id = ins->inst_c0;
-				break;
 			default:
 				switch (ins->inst_c0) {
 				case SIMD_OP_AES_IMC: id = INTRINS_AARCH64_AESIMC; break;
@@ -9604,16 +9597,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				default: g_assert_not_reached (); break;
 				}
 			}
-			if (getLowerElement)
-				pack_result = TRUE;
 			LLVMValueRef arg0 = lhs;
 			if (getLowerElement)
 				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
 			LLVMValueRef result = call_intrins (ctx, id, &arg0, "");
-			if (pack_result) {
-				LLVMTypeRef t = simd_class_to_llvm_type (ctx, ins->klass);
-				result = vector_zero_from_scalar (ctx, t, result);
-			}
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10269,7 +10256,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				mask [i] = i + 1;
 				mask [i + 1] = i;
 			}
-			LLVMValueRef result = LLVMBuildShuffleVector(builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (mask, tmp_elements), "");
+			LLVMValueRef result = LLVMBuildShuffleVector (builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (mask, tmp_elements), "");
 			result = LLVMBuildBitCast (builder, result, t, "");
 			values [ins->dreg] = result;
 			break;
