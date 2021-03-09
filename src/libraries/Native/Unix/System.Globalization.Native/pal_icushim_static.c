@@ -38,9 +38,99 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+static int32_t load_icu_data(void* pData);
+
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
+{
+    return GlobalizationNative_GetICUDTName(culture);
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
+
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
+{
+    return load_icu_data(pData);
+}
+
+
+/*
+ * driver.c calls this to make sure this file is linked, otherwise
+ * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
+ * are not kept.
+ */
+void mono_wasm_link_icu_shim(void);
+
+void mono_wasm_link_icu_shim(void)
+{
+}
+
+#endif
+
+static int32_t load_icu_data(void* pData)
+{
+
+    UErrorCode status = 0;
+    udata_setCommonData(pData, &status);
+
+    if (U_FAILURE(status)) {
+        log_icu_error("udata_setCommonData", status);
+        return 0;
+    } else {
+
+#if defined(ICU_TRACING)
+        // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
+        utrace_setFunctions(0, 0, 0, icu_trace_data);
+        utrace_setLevel(UTRACE_VERBOSE);
+#endif
+        isDataSet = 1;
+        return 1;
+    }
+}
+
+int32_t GlobalizationNative_LoadICUData(char* path)
+{
+    int32_t ret = -1;
+    char* icu_data;
+
+    FILE *fp = fopen (path, "rb");
+    if (fp == NULL) {
+        fprintf (stderr,  "Unable to load ICU dat file '%s'.", path);
+        return ret;
+    }
+
+    if (fseek (fp, 0L, SEEK_END) != 0) {
+        fprintf (stderr, "Unable to determine size of the dat file");
+        return ret;
+    }
+
+    long bufsize = ftell (fp);
+
+    if (bufsize == -1) {
+        fprintf (stderr, "Unable to determine size of the ICU dat file.");
+        return ret;
+    }
+
+    icu_data = malloc (sizeof (char) * (bufsize + 1));
+
+    if (fseek (fp, 0L, SEEK_SET) != 0) {
+        fprintf (stderr, "Unable to seek ICU dat file.");
+        return ret;
+    }
+
+    fread (icu_data, sizeof (char), bufsize, fp);
+    if (ferror ( fp ) != 0 ) {
+        fprintf (stderr, "Unable to read ICU dat file");
+        return ret;
+    }
+
+    fclose (fp);
+
+    return load_icu_data (icu_data);
+}
+
+const char* GlobalizationNative_GetICUDTName(const char* culture)
 {
     // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
 
@@ -68,39 +158,6 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     // full except CJK cultures
     return "icudt_no_CJK.dat";
 }
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData);
-
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void * pData)
-{
-    UErrorCode status = 0;
-    udata_setCommonData(pData, &status);
-
-    if (U_FAILURE(status)) {
-        log_icu_error("udata_setCommonData", status);
-        return 0;
-    } else {
-        //// Uncomment to enable ICU tracing,
-        //// see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-        // utrace_setFunctions(0, 0, 0, icu_trace_data);
-        // utrace_setLevel(UTRACE_VERBOSE);
-        isDataSet = 1;
-        return 1;
-    }
-}
-
-/*
- * driver.c calls this to make sure this file is linked, otherwise
- * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
- * are not kept.
- */
-void mono_wasm_link_icu_shim(void);
-
-void mono_wasm_link_icu_shim(void)
-{
-}
-
-#endif
 
 int32_t GlobalizationNative_LoadICU(void)
 {

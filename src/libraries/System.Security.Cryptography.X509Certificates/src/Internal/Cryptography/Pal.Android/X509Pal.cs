@@ -93,7 +93,7 @@ namespace Internal.Cryptography.Pal
                 }
 
                 // Throw on unknown type to match Unix and Windows
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_UnknownCertContentType);
             }
 
             public X509ContentType GetCertContentType(string fileName)
