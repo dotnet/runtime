@@ -174,19 +174,15 @@ jobs:
         targetFolder: '$(SpmiLogsLocation)'
       condition: always()
 
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(SpmiLogsLocation)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Superpmi logs
+      inputs:
+        targetPath: $(SpmiLogsLocation)
         artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
-        displayName: ${{ format('Upload SuperPMI logs {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
       condition: always()
 
     - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
+      displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
         artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
