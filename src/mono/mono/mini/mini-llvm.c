@@ -9550,6 +9550,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				getElement = TRUE;
 				element_idx = 1;
 				bitcast_result = TRUE;
+				break;
 			default: g_assert_not_reached (); break;
 			}
 			LLVMValueRef arg1 = rhs;
