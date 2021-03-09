@@ -63,13 +63,13 @@ jobs:
     # extra private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - AdditionalHelixPreCommands: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
         - IsInternal: -Internal      
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - AdditionalHelixPreCommands: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
         - IsInternal: --internal
       - ${{ if and(ne(parameters.osGroup, 'windows'), eq(parameters.osSubGroup, '_musl')) }}:
-        - AdditionalHelixPreCommands: 'sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - AdditionalHelixPreCommands: 'sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
         - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
@@ -96,16 +96,11 @@ jobs:
       displayName: Performance Setup (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    # parse Version.props to get the latest stable sdk version on master
-    - script: $(Python) scripts/parse_props.py --branch-name master # defaults to master branch of sdk so we can get the latest
-      displayName: Parse Version.props 
-      workingDirectory: $(PerformanceDirectory)
-      continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
       displayName: Run ci setup script (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm

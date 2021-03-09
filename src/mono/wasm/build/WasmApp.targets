@@ -58,8 +58,10 @@
   -->
 
   <PropertyGroup>
-    <WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>
-    <WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>
+    <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+
+    <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
+    <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
@@ -69,6 +71,7 @@
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="'@(_WasmAssemblies)' == ''" Text="Item _WasmAssemblies is empty" />
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
+    <Error Condition="!Exists($(EMSDK_PATH))" Text="Cannot find EMSDK_PATH=$(EMSDK_PATH)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -323,7 +326,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm runtime.js -- --run $(WasmMainAssemblyFileName) $*"
+      Lines="v8 --expose_wasm runtime.js -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 

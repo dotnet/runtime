@@ -682,7 +682,7 @@ MonoMethod *
 mono_get_delegate_end_invoke_checked (MonoClass *klass, MonoError *error);
 
 void
-mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
+mono_runtime_free_method    (MonoMethod *method);
 
 void
 mono_install_callbacks      (MonoRuntimeCallbacks *cbs);

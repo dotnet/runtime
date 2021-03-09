@@ -21,11 +21,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_RsaDestroy")]
         internal static extern void RsaDestroy(IntPtr rsa);
 
-        internal static SafeRsaHandle DecodeRsaPublicKey(ReadOnlySpan<byte> buf) =>
-            DecodeRsaPublicKey(ref MemoryMarshal.GetReference(buf), buf.Length);
+        internal static SafeRsaHandle DecodeRsaSubjectPublicKeyInfo(ReadOnlySpan<byte> buf) =>
+            DecodeRsaSubjectPublicKeyInfo(ref MemoryMarshal.GetReference(buf), buf.Length);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DecodeRsaPublicKey")]
-        private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo")]
+        private static extern SafeRsaHandle DecodeRsaSubjectPublicKeyInfo(ref byte buf, int len);
 
         internal static int RsaPublicEncrypt(
             int flen,
@@ -102,61 +102,65 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            bool addedRef = false;
-
-            try
+            SafeBignumHandle n, e, d, p, dmp1, q, dmq1, iqmp;
+            if (!GetRsaParameters(key,
+                out n,
+                out e,
+                out d,
+                out p,
+                out dmp1,
+                out q,
+                out dmq1,
+                out iqmp))
             {
-                key.DangerousAddRef(ref addedRef);
-
-                IntPtr n, e, d, p, dmp1, q, dmq1, iqmp;
-                if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
-                {
-                    throw new CryptographicException();
-                }
-
-                int modulusSize = RsaSize(key);
-
-                // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
-                // be padded up to half the modulus size.
-                int halfModulus = modulusSize / 2;
-
-                RSAParameters rsaParameters = new RSAParameters
-                {
-                    Modulus = Crypto.ExtractBignum(n, modulusSize)!,
-                    Exponent = Crypto.ExtractBignum(e, 0)!,
-                };
-
-                if (includePrivateParameters)
-                {
-                    rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
-                    rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
-                    rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
-                    rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
-                    rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
-                    rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
-                }
-
-                return rsaParameters;
+                n.Dispose();
+                e.Dispose();
+                d.Dispose();
+                p.Dispose();
+                dmp1.Dispose();
+                q.Dispose();
+                dmq1.Dispose();
+                iqmp.Dispose();
+                throw new CryptographicException();
             }
-            finally
+
+            int modulusSize = RsaSize(key);
+
+            // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
+            // be padded up to half the modulus size.
+            int halfModulus = modulusSize / 2;
+
+            RSAParameters rsaParameters = new RSAParameters
             {
-                if (addedRef)
-                    key.DangerousRelease();
+                Modulus = Crypto.ExtractBignum(n, modulusSize)!,
+                Exponent = Crypto.ExtractBignum(e, 0)!,
+            };
+
+            if (includePrivateParameters)
+            {
+                rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
+                rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
+                rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
+                rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
+                rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
+                rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
             }
+
+            return rsaParameters;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_GetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetRsaParameters(
             SafeRsaHandle key,
-            out IntPtr n,
-            out IntPtr e,
-            out IntPtr d,
-            out IntPtr p,
-            out IntPtr dmp1,
-            out IntPtr q,
-            out IntPtr dmq1,
-            out IntPtr iqmp);
+            out SafeBignumHandle n,
+            out SafeBignumHandle e,
+            out SafeBignumHandle d,
+            out SafeBignumHandle p,
+            out SafeBignumHandle dmp1,
+            out SafeBignumHandle q,
+            out SafeBignumHandle dmq1,
+            out SafeBignumHandle iqmp);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_SetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -184,6 +188,47 @@ internal static partial class Interop
             Pkcs1 = 0,
             OaepSHA1 = 1,
             NoPadding = 2,
+        }
+    }
+}
+
+namespace System.Security.Cryptography
+{
+    internal sealed class SafeRsaHandle : SafeKeyHandle
+    {
+        public SafeRsaHandle()
+        {
+        }
+
+        public SafeRsaHandle(IntPtr ptr)
+        {
+            SetHandle(ptr);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.AndroidCrypto.RsaDestroy(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+
+        internal override SafeRsaHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());
+
+        internal static SafeRsaHandle DuplicateHandle(IntPtr handle)
+        {
+            Debug.Assert(handle != IntPtr.Zero);
+
+            // Reliability: Allocate the SafeHandle before calling RSA_up_ref so
+            // that we don't lose a tracked reference in low-memory situations.
+            SafeRsaHandle safeHandle = new SafeRsaHandle();
+
+            if (!Interop.AndroidCrypto.RsaUpRef(handle))
+            {
+                throw new CryptographicException();
+            }
+
+            safeHandle.SetHandle(handle);
+            return safeHandle;
         }
     }
 }

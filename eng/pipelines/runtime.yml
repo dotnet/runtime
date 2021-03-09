@@ -169,8 +169,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    # Issue: https://github.com/dotnet/runtime/issues/40034
-    #- windows_x64
+    - windows_x64
     jobParameters:
       condition: >-
         and(
@@ -283,7 +282,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -298,6 +297,7 @@ jobs:
         scenarios:
         - normal
         - wasmtestonbrowser
+        - buildwasmapps
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

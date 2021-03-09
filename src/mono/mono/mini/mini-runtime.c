@@ -3171,7 +3171,6 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 {
 	MonoMethod *invoke, *callee;
 	MonoObject *(*runtime_invoke) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
-	MonoDomain *domain = mono_get_root_domain ();
 	RuntimeInvokeInfo *info, *info2;
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
@@ -3282,6 +3281,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		*exc = NULL;
 
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
+	MonoDomain *domain = mono_get_root_domain ();
 	static RuntimeInvokeDynamicFunction dyn_runtime_invoke = NULL;
 	if (info->dyn_call_info) {
 		if (!dyn_runtime_invoke) {

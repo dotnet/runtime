@@ -12,7 +12,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' != 'false'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
@@ -176,6 +176,7 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        InvariantGlobalization="$(InvariantGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
@@ -232,9 +233,24 @@
   <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" Condition="'$(TargetOS)' == 'Browser'" />
   <PropertyGroup>
       <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+      <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
   </PropertyGroup>
 
-  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+  <Target Condition="'$(TargetOS)' == 'Browser'" Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp;StageEmSdkForHelix" />
+
+  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
+   attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation 
+   payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'BuildWasmApps' and '$(ContinuousIntegrationBuild)' == 'true' and !Exists($(EmSdkDir))">
+    <Error Condition="!Exists($(EMSDK_PATH))" Text="Could not find emscripten sdk in $(EmSdkDir) or in EMSDK_PATH=$(EMSDK_PATH)" />
+
+    <ItemGroup>
+      <EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(EmSdkDir)" />
+    <Copy SourceFiles="@(EmSdkFiles)" DestinationFolder="$(EmSdkDir)\%(RecursiveDir)" />
+  </Target>
 
   <Target Condition="'$(TargetOS)' == 'Browser'" Name="PrepareForWasmBuildApp">
     <PropertyGroup>

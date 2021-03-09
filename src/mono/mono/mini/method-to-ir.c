@@ -3326,7 +3326,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		MonoMethod* method = get_method_nofail (klass, "Box", 1, 0);
 
 		if (context_used) {
-			if (cfg->llvm_only && cfg->gsharedvt) {
+			if (cfg->llvm_only) {
 				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
 														MONO_RGCTX_INFO_METHOD_FTNDESC);
 				return mini_emit_llvmonly_calli (cfg, mono_method_signature_internal (method), &val, addr);

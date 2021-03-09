@@ -126,5 +126,6 @@ namespace ILCompiler
     {
         public const string None = "";
         public const string TrimAnalysis = "Trim analysis";
+        public const string AotAnalysis = "AOT analysis";
     }
 }

@@ -35,19 +35,21 @@ extern jmethodID g_randNextBytesMethod;
 
 // java/security/MessageDigest
 extern jclass    g_mdClass;
-extern jmethodID g_mdGetInstanceMethod;
-extern jmethodID g_mdDigestMethod;
-extern jmethodID g_mdDigestCurrentMethodId;
-extern jmethodID g_mdResetMethod;
-extern jmethodID g_mdUpdateMethod;
+extern jmethodID g_mdGetInstance;
+extern jmethodID g_mdClone;
+extern jmethodID g_mdDigest;
+extern jmethodID g_mdDigestWithInputBytes;
+extern jmethodID g_mdReset;
+extern jmethodID g_mdUpdate;
 
 // javax/crypto/Mac
-extern jclass    g_macClass;
-extern jmethodID g_macGetInstanceMethod;
-extern jmethodID g_macDoFinalMethod;
-extern jmethodID g_macUpdateMethod;
-extern jmethodID g_macInitMethod;
-extern jmethodID g_macResetMethod;
+extern jclass    g_MacClass;
+extern jmethodID g_MacGetInstance;
+extern jmethodID g_MacClone;
+extern jmethodID g_MacDoFinal;
+extern jmethodID g_MacInit;
+extern jmethodID g_MacReset;
+extern jmethodID g_MacUpdate;
 
 // javax/crypto/spec/SecretKeySpec
 extern jclass    g_sksClass;
@@ -97,8 +99,13 @@ extern jclass    g_CertFactoryClass;
 extern jmethodID g_CertFactoryGetInstance;
 extern jmethodID g_CertFactoryGenerateCertificate;
 extern jmethodID g_CertFactoryGenerateCertificates;
-extern jmethodID g_CertFactoryGenerateCertPath;
+extern jmethodID g_CertFactoryGenerateCertPathFromList;
+extern jmethodID g_CertFactoryGenerateCertPathFromStream;
 extern jmethodID g_CertFactoryGenerateCRL;
+
+// java/security/cert/CertPath
+extern jclass    g_CertPathClass;
+extern jmethodID g_CertPathGetEncoded;
 
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
@@ -160,6 +167,19 @@ extern jmethodID g_KeyFactoryGetInstanceMethod;
 extern jmethodID g_KeyFactoryGenPrivateMethod;
 extern jmethodID g_KeyFactoryGenPublicMethod;
 extern jmethodID g_KeyFactoryGetKeySpecMethod;
+
+// java/security/spec/DSAPublicKeySpec
+extern jclass    g_DSAPublicKeySpecClass;
+extern jmethodID g_DSAPublicKeySpecCtor;
+extern jmethodID g_DSAPublicKeySpecGetY;
+extern jmethodID g_DSAPublicKeySpecGetP;
+extern jmethodID g_DSAPublicKeySpecGetQ;
+extern jmethodID g_DSAPublicKeySpecGetG;
+
+// java/security/spec/DSAPrivateKeySpec
+extern jclass    g_DSAPrivateKeySpecClass;
+extern jmethodID g_DSAPrivateKeySpecCtor;
+extern jmethodID g_DSAPrivateKeySpecGetX;
 
 // java/security/spec/ECField
 extern jclass    g_ECFieldClass;
@@ -228,6 +248,11 @@ extern jmethodID g_X509EncodedKeySpecCtor;
 // javax/security/auth
 extern jclass    g_DestroyableClass;
 extern jmethodID g_destroy;
+
+// java/util/Collection
+extern jclass    g_ArrayListClass;
+extern jmethodID g_ArrayListCtor;
+extern jmethodID g_ArrayListAdd;
 
 // java/util/Collection
 extern jclass    g_CollectionClass;

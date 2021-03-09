@@ -3342,7 +3342,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     RefPosition* internalFloatDef = nullptr;
     if (varTypeIsSIMD(storeLoc) && !op1->IsCnsIntOrI() && (storeLoc->TypeGet() == TYP_SIMD12))
     {
-        // Need an additional register to extract upper 4 bytes of Vector3.
+        // Need an additional register to extract upper 4 bytes of Vector3,
+        // it has to be float for x86.
         internalFloatDef = buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
     }
 #endif // FEATURE_SIMD

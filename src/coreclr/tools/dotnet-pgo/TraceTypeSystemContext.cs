@@ -25,8 +25,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private readonly ModuleLoadLogger _moduleLoadLogger;
         private int _clrInstanceID;
 
+        private readonly Dictionary<string,string> _normalizedFilePathToFilePath = new Dictionary<string,string> (StringComparer.OrdinalIgnoreCase);
+
         public TraceTypeSystemContext(PgoTraceProcess traceProcess, int clrInstanceID, Logger logger)
         {
+            foreach (var traceData in traceProcess.TraceProcess.EventsInProcess.ByEventType<ModuleLoadUnloadTraceData>())
+            {
+                if (traceData.ModuleILPath != null)
+                {
+                    _normalizedFilePathToFilePath[traceData.ModuleILPath] = traceData.ModuleILPath;
+                }
+            }
+
             _pgoTraceProcess = traceProcess;
             _clrInstanceID = clrInstanceID;
             _moduleLoadLogger = new ModuleLoadLogger(logger);
@@ -132,7 +142,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
                 {
-                    filePath = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+                    string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+
+                    // This path may be normalized
+                    if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
+                        filePath = filePathTemp;
                     break;
                 }
             }

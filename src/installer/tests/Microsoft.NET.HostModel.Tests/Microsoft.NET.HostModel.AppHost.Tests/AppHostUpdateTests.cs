@@ -201,6 +201,25 @@ namespace Microsoft.NET.HostModel.Tests
             int GetLastError() => Marshal.GetLastWin32Error();
         }
 
+        [Fact]
+        public void CanCreateAppHost()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                File.SetAttributes(sourceAppHostMock, FileAttributes.Normal);
+            }
+        }
+
         private string PrepareAppHostMockFile(TestDirectory testDirectory, Action<byte[]> customize = null)
         {
             // For now we're testing the AppHost on Windows PE files only.
