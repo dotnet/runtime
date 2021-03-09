@@ -206,5 +206,9 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>88f5732717457aff2c903fbdc66994d01fa1c8f1</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.PackageValidation" Version="6.0.0-beta.21159.4">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>2b3b963619612f078a7b11bc652998bd9db685af</Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>
