@@ -145,7 +145,7 @@ namespace System.Net.Http
                 case HttpStatusCode.MultipleChoices:
                     return requestMethod == HttpMethod.Post;
                 case HttpStatusCode.SeeOther:
-                    return requestMethod != HttpMethod.Head;
+                    return requestMethod != HttpMethod.Get && requestMethod != HttpMethod.Head;
                 default:
                     return false;
             }
