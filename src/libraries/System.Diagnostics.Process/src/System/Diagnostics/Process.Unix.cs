@@ -41,8 +41,6 @@ namespace System.Diagnostics
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -50,8 +48,6 @@ namespace System.Diagnostics
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
