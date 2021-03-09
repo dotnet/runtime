@@ -130,10 +130,6 @@ struct SuspendStatistics
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // And there are some "failure" cases that should never or almost never occur.
 
-    // number of times we have a collision between e.g. Debugger suspension & GC suspension.
-    // In these cases, everyone yields to the GC but at some cost.
-    int cntCollideRetry;
-
     // number of times the OS or Host was unable to ::SuspendThread a thread for us.  This count should be
     // approximately 0.
     int cntFailedSuspends;

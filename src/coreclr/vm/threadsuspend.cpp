@@ -6075,9 +6075,8 @@ void SuspendStatistics::DisplayAndUpdate()
            cntWaitTimeouts - g_LastSuspendStatistics.cntWaitTimeouts, cntWaitTimeouts,
            cntHijackTrap - g_LastSuspendStatistics.cntHijackTrap, cntHijackTrap);
 
-    fprintf(logFile, "Redirected EIP Failures %d (%d), Collided GC/Debugger %d (%d)\n",
-           cntFailedRedirections - g_LastSuspendStatistics.cntFailedRedirections, cntFailedRedirections,
-           cntCollideRetry - g_LastSuspendStatistics.cntCollideRetry, cntCollideRetry);
+    fprintf(logFile, "Redirected EIP Failures %d (%d)\n",
+           cntFailedRedirections - g_LastSuspendStatistics.cntFailedRedirections, cntFailedRedirections);
 
     fprintf(logFile, "Suspend: All %d (%d). NonGC: %d (%d). InBGC: %d (%d). NonGCInBGC: %d (%d)\n\n",
             cntSuspends - g_LastSuspendStatistics.cntSuspends, cntSuspends,
