@@ -8328,7 +8328,7 @@ GenTree* Compiler::optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statem
 //
 void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
 {
-    assert(comma != nullptr);
+    assert(comma != nullptr && comma->OperIs(GT_COMMA));
     assert(stmt != nullptr);
     assert(comma->gtGetOp1()->OperIsBoundsCheck());
 
