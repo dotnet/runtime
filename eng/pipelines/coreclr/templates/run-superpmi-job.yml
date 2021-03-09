@@ -76,7 +76,7 @@ jobs:
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: MergedMchFileLocation
-        value: '$(Build.SourcesDirectory)\artifacts\spmi_collection'
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'python3'
@@ -87,7 +87,7 @@ jobs:
       - name: MchFilesLocation
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: MergedMchFileLocation
-        value: '$(Build.SourcesDirectory)/artifacts/spmi_collection'
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
     - ${{ if eq(parameters.collectionName, 'libraries') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
