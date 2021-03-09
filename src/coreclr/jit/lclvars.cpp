@@ -4042,7 +4042,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         /* Record if the variable has a single def or not */
 
-        if (!varDsc->lvDisqualify) // If this variable is already disqualified we can skip this
+        if (!varDsc->lvDisqualify) // If this variable is already disqualified, we can skip this
         {
             if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
@@ -4078,16 +4078,15 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             }
         }
 
-        if (!varDsc->lvDisqualifyForEhWriteThru)
+        if (!varDsc->lvDisqualifyForEhWriteThru) // If this EH var already disqualified, we can skip this
         {
-            if (tree->gtFlags & GTF_VAR_DEF)
+            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
                 bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
-                if ((varDsc->lvEhWriteThruCandidate == true) || (needsExplicitZeroInit == true) ||
-                    (tree->gtFlags & GTF_COLON_COND) || (tree->gtFlags & GTF_VAR_USEASG))
+                if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
                 {
                     varDsc->lvEhWriteThruCandidate     = false;
                     varDsc->lvDisqualifyForEhWriteThru = true;
