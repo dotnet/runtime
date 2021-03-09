@@ -96,8 +96,10 @@ if (CLR_CMAKE_HOST_UNIX)
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
-
-  append("-Wno-missing-prototypes  -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  append("-Wno-missing-prototypes -Wno-pointer-arith -Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  if(TARGET_ARCH STREQUAL "arm64")
+    append("-Wno-missing-declarations" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+  endif()
   add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/pal pal)
 
   include_directories("../../coreclr/pal/inc/rt/cpp")
