@@ -439,8 +439,8 @@ CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
 #endif // DEBUG
 
-// Overall master enable for Guarded Devirtualization. Currently not enabled by default.
-CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 0)
+// Overall master enable for Guarded Devirtualization.
+CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualization"), 1)
 
 #if defined(DEBUG)
 // Various policies for GuardedDevirtualization
@@ -453,9 +453,10 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 
 // Profile instrumentation options
-CONFIG_INTEGER(JitMinimalProfiling, W("JitMinimalProfiling"), 0)
-CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 0)
-CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 0)
+CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
+CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
+CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
+CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
 
 // Control when Virtual Calls are expanded
 CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
