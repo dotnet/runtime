@@ -16,7 +16,7 @@ using namespace std;
 CordbCode::CordbCode(Connection* conn, CordbFunction* func) : CordbBaseMono(conn)
 {
     this->m_pFunction = func;
-    m_nSize = -1;
+    m_nSize = 0;
 }
 
 HRESULT CordbCode::IsIL(BOOL* pbIL)
@@ -39,7 +39,7 @@ HRESULT CordbCode::GetAddress(CORDB_ADDRESS* pStart)
 
 ULONG32 CordbCode::GetSize()
 {
-    if (m_nSize != -1)
+    if (m_nSize != 0)
         return m_nSize;
 
     MdbgProtBuffer localbuf;
