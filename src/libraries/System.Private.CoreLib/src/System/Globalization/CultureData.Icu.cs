@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -222,7 +221,6 @@ namespace System.Globalization
             return null;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(!GlobalizationMode.UseNls);

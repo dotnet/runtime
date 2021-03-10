@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -86,7 +85,6 @@ namespace System.Globalization
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NlsIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(GlobalizationMode.UseNls);
