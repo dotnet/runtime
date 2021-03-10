@@ -5048,8 +5048,10 @@ immediate_unroll_end (ImmediateUnrollCtx *ictx, LLVMBasicBlockRef *continuation)
 
 typedef struct {
 	EmitContext *ctx;
+	LLVMTypeRef intermediate_type;
 	LLVMTypeRef return_type;
 	gboolean needs_fake_scalar_op;
+	llvm_ovr_tag_t ovr_tag;
 } ScalarOpFromVectorOpCtx;
 
 static inline gboolean
@@ -5072,21 +5074,23 @@ scalar_op_from_vector_op (EmitContext *ctx, LLVMTypeRef return_type, MonoInst *i
 {
 	ScalarOpFromVectorOpCtx ret = { 0 };
 	ret.ctx = ctx;
+	ret.intermediate_type = return_type;
 	ret.return_type = return_type;
 	ret.needs_fake_scalar_op = check_needs_fake_scalar_op (inst_c1_type (ins));
+	ret.ovr_tag = ovr_tag_from_llvm_type (return_type);
+	if (!ret.needs_fake_scalar_op) {
+		ret.ovr_tag = ovr_tag_force_scalar (ret.ovr_tag);
+		ret.intermediate_type = ovr_tag_to_llvm_type (ret.ovr_tag);
+	}
 	return ret;
 }
 
-static llvm_ovr_tag_t
+static void
 scalar_op_from_vector_op_process_args (ScalarOpFromVectorOpCtx *sctx, LLVMValueRef *args, int num_args)
 {
-	llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (sctx->return_type);
-	if (!sctx->needs_fake_scalar_op) {
-		ovr_tag = ovr_tag_force_scalar (ovr_tag);
+	if (!sctx->needs_fake_scalar_op)
 		for (int i = 0; i < num_args; ++i)
 			args [i] = scalar_from_vector (sctx->ctx, args [i]);
-	}
-	return ovr_tag;
 }
 
 static LLVMValueRef
@@ -10445,18 +10449,25 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (intrin_result_t);
 			int max_index = element_bits;
 			ScalarOpFromVectorOpCtx sctx = scalar_op_from_vector_op (ctx, intrin_result_t, ins);
+			intrin_result_t = scalar ? sctx.intermediate_type : intrin_result_t;
+			ovr_tag = scalar ? sctx.ovr_tag : ovr_tag;
 			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, rhs, intrin_result_t, "arm64_sqshlu");
 			int i = 0;
 			while (immediate_unroll_next (&ictx, &i)) {
 				int shift_const = i;
 				LLVMValueRef args [2] = { lhs, create_shift_vector (ctx, lhs, const_int32 (shift_const)) };
 				if (scalar)
-					ovr_tag = scalar_op_from_vector_op_process_args (&sctx, args, 2);
+					scalar_op_from_vector_op_process_args (&sctx, args, 2);
 				LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SQSHLU, ovr_tag, args, "");
 				immediate_unroll_commit (&ictx, shift_const, result);
 			}
-			immediate_unroll_default (&ictx);
-			immediate_unroll_commit_default (&ictx, lhs);
+			{
+				immediate_unroll_default (&ictx);
+				LLVMValueRef srcarg = lhs;
+				if (scalar)
+					scalar_op_from_vector_op_process_args (&sctx, &srcarg, 1);
+				immediate_unroll_commit_default (&ictx, srcarg);
+			}
 			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
 			if (scalar)
 				result = scalar_op_from_vector_op_process_result (&sctx, result);
@@ -10922,8 +10933,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 */
 			ScalarOpFromVectorOpCtx sctx = scalar_op_from_vector_op (ctx, ret_t, ins);
 			LLVMValueRef args [3] = { lhs, rhs, arg3 };
-			llvm_ovr_tag_t ovr_tag = scalar_op_from_vector_op_process_args (&sctx, args, num_args);
-			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			scalar_op_from_vector_op_process_args (&sctx, args, num_args);
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, sctx.ovr_tag, args, "");
 			result = scalar_op_from_vector_op_process_result (&sctx, result);
 			values [ins->dreg] = result;
 			break;
