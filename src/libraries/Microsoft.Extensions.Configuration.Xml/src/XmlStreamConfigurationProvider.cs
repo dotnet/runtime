@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
                             currentPath.Push(element);
 
-                            ProcessAttributes(reader, element);
+                            ReadAttributes(reader, element);
 
                             // If current element is self-closing
                             if (reader.IsEmptyElement)
@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 SR.Format(SR.Msg_LineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
         }
 
-        private static void ProcessAttributes(XmlReader reader, XmlConfigurationElement element)
+        private static void ReadAttributes(XmlReader reader, XmlConfigurationElement element)
         {
             if (reader.AttributeCount > 0)
             {
