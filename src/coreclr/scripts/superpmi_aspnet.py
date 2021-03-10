@@ -163,29 +163,6 @@ def build_and_run(coreclr_args):
         run_command(
             ["git", "clone", "--quiet", "--depth", "1", "https://github.com/aspnet/benchmarks"], temp_location, _exit_on_fail=True)
 
-        configName = "json"
-        scenario = "json"
-        configYml = configName + ".benchmarks.yml"
-        configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
-
-        # Run the scenario(s), overlaying the core runtime bits, installing SPMI, and having it write to the runtime dir.
-        # and ask crank to send back the runtime directory
-        #
-        # crank --config {configFile}
-        #       --profile {machine}
-        #       --scenario {scenario}
-        #       --application.framework net6.0
-        #       --application.channel edge
-        #       --description SPMI
-        #       --application.environmentVariables COMPlus_JitName=libsuperpmi-shim-collector.so
-        #       --application.environmentVariables SuperPMIShimLogPath=.
-        #       --application.environmentVariables SuperPMIShimPath=./libclrjit.so
-        #       --application.options.fetch true
-        #       --application.options.outputFiles {build}/{superpmi-shim-collector}
-        #       --application.options.outputFiles {build}/{jit}
-        #       --application.options.outputFiles {build}/{coreclr}
-        #       --application.options.outputFiles {build}/{SPC}
-
         jitname = determine_native_name(coreclr_args, "clrjit")
         coreclrname = determine_native_name(coreclr_args, "coreclr")
         spminame = determine_native_name(coreclr_args, "superpmi-shim-collector")
@@ -196,27 +173,44 @@ def build_and_run(coreclr_args):
         coreclr = path.join(core_root, coreclrname)
         corelib = path.join(core_root, corelibname)
         spmilib = path.join(core_root, spminame)
-
+        crank_app = path.join(temp_location, "crank")
+        mcs_path = determine_mcs_tool_path(coreclr_args)
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        crank_arguments = ["--config", configFile,
-                           "--profile", benchmark_machine,
-                           "--scenario", scenario,
-                           "--application.framework", "net6.0",
-                           "--application.channel", "edge",
-                           "--application.environmentVariables", "COMPlus_JitName=" + spminame,
-                           "--application.environmentVariables", "SuperPMIShimLogPath=.",
-                           "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                           "--application.options.fetch", "true",
-                           "--application.options.outputFiles", spmilib,
-                           "--application.options.outputFiles", jitlib,
-                           "--application.options.outputFiles", coreclr,
-                           "--application.options.outputFiles", corelib]
+        #configname_scenario_list = [("json", "json")]
+        #runtime_options_list = [(), ("TieredCompilation=0"), ("TieredPgo=1"), ("TieredPgo=1", "TC_QuickJitForLoops=1")]
 
-        crank_app = path.join(temp_location, "crank")
+        configname_scenario_list = [("json", "json"), ("plaintext", "mvc"), ("database", "fortunes_ef"), ("proxy", "proxy-yarp")]
+        runtime_options_list = [(), ("TieredCompilation=0"), ("TieredPGO=1", "TC_QuickJitForLoops=1")]
 
-        run_command(
-            [crank_app] + crank_arguments, temp_location, _exit_on_fail=True)
+        mch_file = path.join(coreclr_args.output_mch_path, "aspnet.mch")
+
+        for (configName, scenario) in configname_scenario_list:
+            configYml = configName + ".benchmarks.yml"
+            configFile = path.join(temp_location, "benchmarks", "scenarios", configYml)
+
+            crank_arguments = ["--config", configFile,
+                               "--profile", benchmark_machine,
+                               "--scenario", scenario,
+                               "--application.framework", "net6.0",
+                               "--application.channel", "edge",
+                               "--application.environmentVariables", "COMPlus_JitName=" + spminame,
+                               "--application.environmentVariables", "SuperPMIShimLogPath=.",
+                               "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
+                               "--application.options.fetch", "true",
+                               "--application.options.outputFiles", spmilib,
+                               "--application.options.outputFiles", jitlib,
+                               "--application.options.outputFiles", coreclr,
+                               "--application.options.outputFiles", corelib]
+
+            runtime_arguments = []
+            for runtime_options in runtime_options_list:
+                for runtime_option in runtime_options:
+                    runtime_arguments.append("--application.environmentVariables")
+                    runtime_arguments.append("COMPlus_" + runtime_option)
+ 
+                run_command(
+                    [crank_app] + crank_arguments + runtime_arguments, temp_location, _exit_on_fail=True)
 
         crankZipFiles = [os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip")]
 
@@ -227,18 +221,16 @@ def build_and_run(coreclr_args):
                     for zippedFileName in listOfFileNames:
                         if zippedFileName.endswith('.mc'):
                             zipObject.extract(zippedFileName, temp_location)
+                            print("MC summary for " + zippedFileName)
+                            command = [mcs_path, "-jitflags", zippedFileName]
+                            run_command(command, temp_location)
 
-        mcs_path = determine_mcs_tool_path(coreclr_args)
-        mch_file = path.join(coreclr_args.output_mch_path, "aspnet-" + configName + "-" + scenario + ".mch")
-        command = [mcs_path, "-merge", mch_file, "\"*.mc\"", "-recursive", "-dedup", "-thin"]
-        return_code = run_and_log(command)
-        if return_code != 0:
-            logging.error("mcs -merge Failed with code %s", return_code)
+
+        command = [mcs_path, "-merge", mch_file, "*.mc", "-recursive", "-dedup", "-thin"]
+        run_command(command, temp_location)
 
         command = [mcs_path, "-toc", mch_file]
-        return_code = run_and_log(command)
-        if return_code != 0:
-            logging.error("mcs -toc Failed with code %s", return_code)
+        run_command(command, temp_location)
 
 def main(main_args):
     """ Main entry point
