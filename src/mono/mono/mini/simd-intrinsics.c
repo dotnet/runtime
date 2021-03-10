@@ -1201,7 +1201,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyDoublingByScalarSaturateHigh, OP_XOP_OVR_BYSCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
 	{SN_MultiplyDoublingBySelectedScalarSaturateHigh},
 	{SN_MultiplyDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
-	{SN_MultiplyDoublingSaturateHighScalar, OP_ARM64_SQDMULH_SCALAR},
+	{SN_MultiplyDoublingSaturateHighScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQDMULH},
 	{SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh},
 	{SN_MultiplyDoublingWideningAndAddSaturateScalar, OP_ARM64_SQDMLAL_SCALAR},
 	{SN_MultiplyDoublingWideningAndSubtractSaturateScalar, OP_ARM64_SQDMLSL_SCALAR},
@@ -1232,11 +1232,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyExtendedBySelectedScalar},
 	{SN_MultiplyExtendedScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMULX},
 	{SN_MultiplyExtendedScalarBySelectedScalar},
-	{SN_MultiplyRoundedDoublingByScalarSaturateHigh, OP_ARM64_SQRDMULH_BYSCALAR},
-	{SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh, OP_ARM64_SQRDMULH_SEL},
+	{SN_MultiplyRoundedDoublingByScalarSaturateHigh, OP_XOP_OVR_BYSCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRDMULH},
+	{SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh},
 	{SN_MultiplyRoundedDoublingSaturateHigh, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRDMULH},
-	{SN_MultiplyRoundedDoublingSaturateHighScalar, OP_ARM64_SQRDMULH_SCALAR},
-	{SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh, OP_ARM64_SQRDMULH_SCALAR_SEL},
+	{SN_MultiplyRoundedDoublingSaturateHighScalar, OP_XOP_OVR_SCALAR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRDMULH},
+	{SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh},
 	{SN_MultiplyScalar, OP_XBINOP_SCALAR, OP_FMUL},
 	{SN_MultiplyScalarBySelectedScalar, OP_ARM64_FMUL_SEL},
 	{SN_MultiplySubtract, OP_ARM64_MLS},
@@ -1567,6 +1567,8 @@ emit_arm64_intrinsics (
 			ret->inst_c1 = etype->type;
 			return ret;
 		}
+		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
+		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:
 		case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh:
 		case SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar:
 		case SN_MultiplyExtendedBySelectedScalar:
@@ -1583,7 +1585,9 @@ emit_arm64_intrinsics (
 			int opcode = 0;
 			int c0 = 0;
 			switch (id) {
-			case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh: opcode = OP_ARM64_SQDMULH_SCALAR; break;
+			case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh: opcode = OP_XOP_OVR_BYSCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_SQRDMULH; break;
+			case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh: opcode = OP_XOP_OVR_SCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_SQRDMULH; break;
+			case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh: opcode = OP_XOP_OVR_SCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_SQDMULH; break;
 			case SN_MultiplyDoublingWideningSaturateScalarBySelectedScalar: opcode = OP_ARM64_SQDMULL_SCALAR; break;
 			case SN_MultiplyExtendedBySelectedScalar: opcode = OP_XOP_OVR_BYSCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_FMULX; break;
 			case SN_MultiplyExtendedScalarBySelectedScalar: opcode = OP_XOP_OVR_SCALAR_X_X_X; c0 = INTRINS_AARCH64_ADV_SIMD_FMULX; break;
@@ -1607,6 +1611,7 @@ emit_arm64_intrinsics (
 			MonoInst *scalar = emit_simd_ins (cfg, ret_klass, OP_ARM64_SELECT_SCALAR, args [1]->dreg, args [2]->dreg);
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, scalar->dreg);
 			ret->inst_c0 = c0;
+			ret->inst_c1 = arg0_type;
 			return ret;
 		}
 		case SN_FusedMultiplyAddBySelectedScalar:
