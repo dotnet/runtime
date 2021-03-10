@@ -9,7 +9,7 @@ namespace System.Text.Unicode
 {
     internal static class UnicodeTestHelpers
     {
-        private static Lazy<StrongBox<AllowedBmpCodePointsBitmap>> _lazyBitmap = new Lazy<StrongBox<AllowedBmpCodePointsBitmap>>(InitializeLazyBitmap());
+        private static Lazy<StrongBox<AllowedBmpCodePointsBitmap>> _lazyBitmap = new Lazy<StrongBox<AllowedBmpCodePointsBitmap>>(InitializeLazyBitmap);
 
         /// <summary>
         /// Returns a value stating whether a character is defined per the checked-in version

@@ -26,7 +26,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange - we'll use BoundedMemory in this test to guard against
             // out-of-bounds accesses on the byte map instance.
-            var boundedMem = BoundedMemory.Allocate<AsciiByteMap>(1);
+            using var boundedMem = BoundedMemory.Allocate<AsciiByteMap>(1);
             boundedMem.Span.Clear();
             ref var byteMap = ref boundedMem.Span[0];
 
@@ -62,7 +62,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange - we'll use BoundedMemory in this test to guard against
             // out-of-bounds accesses on the bitmap instance.
-            var boundedMem = BoundedMemory.Allocate<AsciiByteMap>(1);
+            using var boundedMem = BoundedMemory.Allocate<AsciiByteMap>(1);
             ref var byteMap = ref boundedMem.Span[0];
 
             Assert.False(byteMap.TryLookup(new Rune(128), out _)); // start of non-ASCII

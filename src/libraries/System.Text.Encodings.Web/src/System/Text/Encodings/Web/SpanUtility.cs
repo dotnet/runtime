@@ -239,10 +239,11 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AreValidIndexAndLength(int spanRealLength, int requestedOffset, int requestedLength)
         {
+            // Logic here is copied from Span<T>.Slice.
             if (IntPtr.Size == 4)
             {
                 if ((uint)requestedOffset > (uint)spanRealLength) { return false; }
-                if ((uint)(spanRealLength - requestedLength) > (uint)requestedOffset) { return false; }
+                if ((uint)requestedLength > (uint)(spanRealLength - requestedOffset)) { return false; }
             }
             else
             {

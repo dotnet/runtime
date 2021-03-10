@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Compile Include="..\src\Polyfills\System.Text.Rune.netstandard20.cs" Link="Polyfills\System.Text.Rune.netstandard20.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\ThrowHelper.cs" Link="System\Text\Encodings\Web\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />

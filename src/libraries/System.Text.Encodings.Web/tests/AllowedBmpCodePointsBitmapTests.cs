@@ -27,7 +27,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange - we'll use BoundedMemory in this test to guard against
             // out-of-bounds accesses on the bitmap instance.
-            var boundedMem = BoundedMemory.Allocate<AllowedBmpCodePointsBitmap>(1);
+            using var boundedMem = BoundedMemory.Allocate<AllowedBmpCodePointsBitmap>(1);
             boundedMem.Span.Clear();
             ref var bitmap = ref boundedMem.Span[0];
 
@@ -112,7 +112,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange - we'll use BoundedMemory in this test to guard against
             // out-of-bounds accesses on the bitmap instance.
-            var boundedMem = BoundedMemory.Allocate<AllowedBmpCodePointsBitmap>(1);
+            using var boundedMem = BoundedMemory.Allocate<AllowedBmpCodePointsBitmap>(1);
             ref var bitmap = ref boundedMem.Span[0];
 
             Assert.False(bitmap.IsCodePointAllowed(0x10000)); // start of supplementary plane
