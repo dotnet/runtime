@@ -9,9 +9,9 @@ PALEXPORT void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, co
 
 PALEXPORT int32_t GlobalizationNative_GetICUVersion(void);
 
-#if defined(STATIC_ICU)
+PALEXPORT int32_t GlobalizationNative_LoadICUData(const char* path);
 
-PALEXPORT int32_t GlobalizationNative_LoadICUData(char* path);
+#if defined(STATIC_ICU)
 
 PALEXPORT const char* GlobalizationNative_GetICUDTName(const char* culture);
 

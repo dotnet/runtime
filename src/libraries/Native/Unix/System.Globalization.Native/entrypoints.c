@@ -49,6 +49,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_IsPredefinedLocale)
     DllImportEntry(GlobalizationNative_LastIndexOf)
     DllImportEntry(GlobalizationNative_LoadICU)
+    DllImportEntry(GlobalizationNative_LoadICUData)
     DllImportEntry(GlobalizationNative_NormalizeString)
     DllImportEntry(GlobalizationNative_StartsWith)
     DllImportEntry(GlobalizationNative_ToAscii)

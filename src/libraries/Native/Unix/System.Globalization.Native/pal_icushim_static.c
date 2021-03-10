@@ -89,7 +89,7 @@ static int32_t load_icu_data(void* pData)
     }
 }
 
-int32_t GlobalizationNative_LoadICUData(char* path)
+int32_t GlobalizationNative_LoadICUData(const char* path)
 {
     int32_t ret = -1;
     char* icu_data;
@@ -127,7 +127,12 @@ int32_t GlobalizationNative_LoadICUData(char* path)
 
     fclose (fp);
 
-    return load_icu_data (icu_data);
+    if (load_icu_data (icu_data) == 0) {
+        fprintf (stderr, "ICU BAD EXIT %d.", ret);
+        return ret;
+    }
+
+    return GlobalizationNative_LoadICU ();
 }
 
 const char* GlobalizationNative_GetICUDTName(const char* culture)

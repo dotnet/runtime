@@ -24,6 +24,8 @@ static char *bundle_path;
 #define MONO_ENTER_GC_UNSAFE
 #define MONO_EXIT_GC_UNSAFE
 
+#define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
+
 const char *
 get_bundle_path (void)
 {
@@ -237,16 +239,6 @@ mono_ios_runtime_init (void)
     setenv ("MONO_LOG_MASK", "all", TRUE);
 #endif
 
-#if !INVARIANT_GLOBALIZATION
-    int32_t ret = load_icu_data ();
-
-    if (ret == 0) {
-        os_log_info (OS_LOG_DEFAULT, "ICU BAD EXIT %d.", ret);
-        exit (ret);
-        return;
-    }
-#endif
-
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
     const char *managed_argv [128];
@@ -261,8 +253,34 @@ mono_ios_runtime_init (void)
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
+    char icu_dat_path[1024];
+    int res;
+
+    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
+    assert (res > 0);
+
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    monovm_initialize(0, NULL, NULL);
+#if !INVARIANT_GLOBALIZATION
+    const char* appctx_keys[3];
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+    appctx_keys[2] = "ICU_DAT_FILE_PATH";
+
+    const char* appctx_values[3];
+    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
+    appctx_values[1] = bundle;
+    appctx_values[2] = icu_dat_path;
+    monovm_initialize(3, appctx_keys, appctx_values);
+#else
+    const char* appctx_keys[2];
+    appctx_keys[0] = "RUNTIME_IDENTIFIER";
+    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
+
+    const char* appctx_values[2];
+    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
+    appctx_values[1] = bundle;
+    monovm_initialize(2, appctx_keys, appctx_values);
+#endif
 
 #if FORCE_INTERPRETER
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");
@@ -300,7 +318,7 @@ mono_ios_runtime_init (void)
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
+    res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 
