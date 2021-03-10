@@ -43,8 +43,6 @@ namespace System.Text.Unicode
         // inputLength in chars, outputBytesRemaining in bytes.
         public static OperationStatus TranscodeToUtf8(char* pInputBuffer, int inputLength, byte* pOutputBuffer, int outputBytesRemaining, out char* pInputBufferRemaining, out byte* pOutputBufferRemaining)
         {
-            //const int CharsPerDWord = sizeof(uint) / sizeof(char);
-
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
             Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
@@ -58,11 +56,11 @@ namespace System.Text.Unicode
             OperationStatus opStatus = OperationStatus.Done;
             while (!input.IsEmpty)
             {
-                opStatus = Rune.DecodeFromUtf16(input, out Rune rune, out int bytesConsumedJustNow);
+                opStatus = Rune.DecodeFromUtf16(input, out Rune rune, out int charsConsumedJustNow);
                 if (opStatus != OperationStatus.Done) { break; }
-                if (!rune.TryEncodeToUtf8(output, out int charsWrittenJustNow)) { opStatus = OperationStatus.DestinationTooSmall; break; }
-                input = input.Slice(bytesConsumedJustNow);
-                output = output.Slice(charsWrittenJustNow);
+                if (!rune.TryEncodeToUtf8(output, out int bytesWrittenJustNow)) { opStatus = OperationStatus.DestinationTooSmall; break; }
+                input = input.Slice(charsConsumedJustNow);
+                output = output.Slice(bytesWrittenJustNow);
             }
 
             pInputBufferRemaining = pInputBuffer + inputLength - input.Length;
