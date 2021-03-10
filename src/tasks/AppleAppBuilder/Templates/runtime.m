@@ -246,6 +246,7 @@ mono_ios_runtime_init (void)
         return;
     }
 #endif
+
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
     const char *managed_argv [128];

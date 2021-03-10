@@ -44,8 +44,7 @@ internal class Xcode
         bool forceInterpreter,
         bool invariantGlobalization,
         bool stripDebugSymbols,
-        string? nativeMainSource = null,
-        bool forceInvariant = true)
+        string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib" };
