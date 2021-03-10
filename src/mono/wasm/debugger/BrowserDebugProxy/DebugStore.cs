@@ -420,10 +420,22 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TypeInfo(AssemblyInfo assembly, TypeDefinition type)
         {
             this.assembly = assembly;
+            var metadataReader = assembly.asmMetadataReader;
             this.type = type;
             methods = new List<MethodInfo>();
-            Name = assembly.asmMetadataReader.GetString(type.Name);
-            var namespaceName = assembly.asmMetadataReader.GetString(type.Namespace);
+            Name = metadataReader.GetString(type.Name);
+            var namespaceName = "";
+            if (type.IsNested)
+            {
+                var declaringType = metadataReader.GetTypeDefinition(type.GetDeclaringType());
+                Name = metadataReader.GetString(declaringType.Name) + "/" + Name;
+                namespaceName = metadataReader.GetString(declaringType.Namespace);
+            }
+            else
+            {
+                namespaceName = metadataReader.GetString(type.Namespace);
+            }
+
             if (namespaceName.Length > 0)
                 namespaceName += ".";
             FullName = namespaceName + Name;
@@ -759,7 +771,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (uncompressedSize != 0)
                 {
-                    return new DeflateStream(stream, CompressionMode.Decompress))
+                    return new DeflateStream(stream, CompressionMode.Decompress);
                 }
             }
 
