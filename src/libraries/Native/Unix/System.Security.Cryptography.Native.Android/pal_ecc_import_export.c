@@ -6,6 +6,7 @@
 #include "pal_eckey.h"
 #include "pal_jni.h"
 #include "pal_utilities.h"
+#include "pal_misc.h"
 
 
 #define INIT_LOCALS(name, ...) \

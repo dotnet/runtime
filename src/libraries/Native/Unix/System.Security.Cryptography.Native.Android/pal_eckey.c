@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_eckey.h"
+#include "pal_misc.h"
 
 #include <assert.h>
 

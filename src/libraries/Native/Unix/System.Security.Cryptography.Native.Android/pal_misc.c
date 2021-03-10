@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_misc.h"
+#include "pal_jni.h"
 
 int32_t CryptoNative_EnsureOpenSslInitialized()
 {
@@ -30,5 +31,5 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobject privateKey)
 {
     jobject keyPair = (*env)->NewObject(g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
-    return CheckJNIExceptions(env) ? FAIL : ToGRef(keyPair);
+    return CheckJNIExceptions(env) ? FAIL : ToGRef(env, keyPair);
 }
