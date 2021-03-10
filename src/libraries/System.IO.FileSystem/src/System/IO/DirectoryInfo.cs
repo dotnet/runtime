@@ -74,20 +74,15 @@ namespace System.IO
 
             string newPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
-            ReadOnlySpan<char> trimmedNewPath = Path.TrimEndingDirectorySeparator(newPath.AsSpan());
-            ReadOnlySpan<char> trimmedCurrentPath = Path.TrimEndingDirectorySeparator(FullPath.AsSpan());
-
             // We want to make sure the requested directory is actually under the subdirectory.
-            if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)
-                // Allow the exact same path, but prevent allowing "..\FooBar" through when the directory is "Foo"
-                && ((trimmedNewPath.Length == trimmedCurrentPath.Length) || PathInternal.IsDirectorySeparator(newPath[trimmedCurrentPath.Length])))
-            {
-                FileSystem.CreateDirectory(newPath);
-                return new DirectoryInfo(newPath);
-            }
+            // Allow the exact same path, but prevent allowing "..\FooBar" through when the directory is "Foo"
+            string newPathWithTrailingSeparator = PathInternal.EnsureTrailingSeparator(newPath);
+            string currentPathWithTrailingSeparator = PathInternal.EnsureTrailingSeparator(FullPath);
+            if (!newPathWithTrailingSeparator.StartsWith(currentPathWithTrailingSeparator, PathInternal.StringComparison))
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, newPath, FullPath), nameof(path));
 
-            // We weren't nested
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, FullPath), nameof(path));
+            FileSystem.CreateDirectory(newPath);
+            return new DirectoryInfo(newPath);
         }
 
         public void Create()
