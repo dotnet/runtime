@@ -9,6 +9,9 @@
       Required public items/properties:
       - $(WasmMainJSPath)
       - @(WasmAssembliesToBundle)    - list of assemblies to package as the wasm app
+          - %(_InternalForceInterpret) metadata   - if true, then skips this assembly from the AOT step.
+                                                    Error for this to be set with AOTMode=LLVMOnly
+
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
@@ -80,10 +83,11 @@
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
     </ItemGroup>
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_WasmAssemblies->Distinct())">
+      <_AotInputAssemblies Include="@(_WasmAssemblies)" Condition="'%(_WasmAssemblies._InternalForceInterpret)' != 'true'">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <_AOT_InternalForceInterpretAssemblies Include="@(_WasmAssemblies->WithMetadataValue('_InternalForceInterpret', 'true'))" />
 
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
 
@@ -96,6 +100,10 @@
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnly</AOTMode>
     </PropertyGroup>
 
+    <Error Condition="'$(AOTMode)' == 'llvmonly' and @(_AOT_InternalForceInterpretAssemblies->Count()) > 0"
+           Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
+
+    <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
     <MonoAOTCompiler
       CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
       OutputDir="$(_WasmIntermediateOutputPath)"
@@ -113,6 +121,11 @@
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssemblies" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
+
+    <ItemGroup>
+      <!-- Add back the interpreter-only assemblies -->
+      <_WasmAssemblies Include="@(_AOT_InternalForceInterpretAssemblies)" />
+    </ItemGroup>
   </Target>
 
   <!-- '$(ArchiveTests)' != 'true' is to skip on CI for now -->
@@ -122,7 +135,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmStrippedAssemblies Include="@(_WasmAssemblies->'$(_WasmStrippedAssembliesPath)\%(FileName)%(Extension)')" OriginalPath="%(_WasmAssemblies.Identity)" />
+      <_WasmStrippedAssemblies
+              Condition="'%(_WasmAssemblies._InternalForceInterpret)' != 'true'"
+              Include="@(_WasmAssemblies->'$(_WasmStrippedAssembliesPath)%(FileName)%(Extension)')"
+              OriginalPath="%(_WasmAssemblies.Identity)" />
+      <_WasmInterpOnlyAssembly Include="@(_WasmAssemblies->WithMetadataValue('_InternalForceInterpret', 'true'))" />
     </ItemGroup>
 
     <!-- Run mono-cil-strip on the assemblies -->
@@ -132,7 +149,7 @@
 
     <ItemGroup>
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
-      <_WasmAssemblies Include="@(_WasmStrippedAssemblies)" />
+      <_WasmAssemblies Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
     </ItemGroup>
   </Target>
 
@@ -153,6 +170,7 @@
   <Target Name="_BeforeWasmBuildApp">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+    <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
@@ -173,7 +191,7 @@
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
     </PropertyGroup>
     <ItemGroup>
-        <_WasmAssemblies Include="@(WasmAssembliesToBundle)" />
+      <_WasmAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
   </Target>
 
@@ -283,10 +301,11 @@
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
 
      <_BitcodeFile Include="%(_WasmAssemblies.LlvmBitcodeFile)" />
+     <_AOTAssemblies Include="@(_WasmAssemblies)" Condition="'%(_WasmAssemblies._InternalForceInterpret)' != 'true'" />
    </ItemGroup>
 
-   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_WasmAssemblies->Count())"
-     Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblies->Count())" />
+   <Error Condition="'$(RunAOTCompilation)' == 'true' and @(_BitcodeFile->Count()) != @(_AOTAssemblies->Count())"
+          Text="Bug: Number of aot assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_AOTAssemblies->Count())" />
 
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
@@ -378,7 +397,13 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
   <Target Name="_AfterWasmBuildApp">
     <ItemGroup>
-      <WasmAssembliesFinal Include="@(_WasmAssemblies)" />
+      <WasmAssembliesFinal Include="@(_WasmAssemblies)" LlvmBitCodeFile="" />
     </ItemGroup>
+
+    <!-- $(WasmResolveAssembliesBeforeBuild) can add more assemblies, so no point checking the count in that case -->
+    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssembliesFinal->Distinct()->Count()) != @(WasmAssembliesToBundle->Distinct()->Count())"
+      Text="Bug: The wasm build started with @(WasmAssembliesToBundle->Count()) assemblies, but completed with @(WasmAssembliesFinal->Count()).
+      WasmAssembliesToBundle: @(WasmAssembliesToBundle)
+      WasmAssembliesFinal: @(WasmAssembliesFinal)" />
   </Target>
 </Project>
