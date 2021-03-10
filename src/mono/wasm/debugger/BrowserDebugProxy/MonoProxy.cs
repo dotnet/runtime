@@ -680,6 +680,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
+            if (urlSymbolServerList.Count == 0)
+                return null;
             if (asm.TriedToLoadSymbolsOnDemand)
                 return null;
             asm.TriedToLoadSymbolsOnDemand = true;

@@ -359,24 +359,25 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceLocation GetLocationByIl(int pos)
         {
             SequencePoint? prev = null;
-            foreach (SequencePoint sp in DebugInformation.GetSequencePoints())
-            {
-                if (sp.Offset > pos)
+            if (!DebugInformation.SequencePointsBlob.IsNil) {
+                foreach (SequencePoint sp in DebugInformation.GetSequencePoints())
                 {
-                    //get the earlier line number if the offset is in a hidden sequence point and has a earlier line number available
-                    // if is doesn't continue and get the next line number that is not in a hidden sequence point
-                    if (sp.IsHidden && prev == null)
-                        continue;
-                    break;
+                    if (sp.Offset > pos)
+                    {
+                        //get the earlier line number if the offset is in a hidden sequence point and has a earlier line number available
+                        // if is doesn't continue and get the next line number that is not in a hidden sequence point
+                        if (sp.IsHidden && prev == null)
+                            continue;
+                        break;
+                    }
+
+                    if (!sp.IsHidden)
+                        prev = sp;
                 }
 
-                if (!sp.IsHidden)
-                    prev = sp;
+                if (prev.HasValue)
+                    return new SourceLocation(this, prev.Value);
             }
-
-            if (prev.HasValue)
-                return new SourceLocation(this, prev.Value);
-
             return null;
         }
 
@@ -422,7 +423,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.type = type;
             methods = new List<MethodInfo>();
             Name = assembly.asmMetadataReader.GetString(type.Name);
-            FullName = assembly.asmMetadataReader.GetString(type.Namespace) + "." + Name;
+            var namespaceName = assembly.asmMetadataReader.GetString(type.Namespace);
+            if (namespaceName.Length > 0)
+                namespaceName += ".";
+            FullName = namespaceName + Name;
         }
 
         public string Name { get; }
@@ -501,7 +505,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var document = asmMetadataReader.GetDocument(dh);
             }
 
-            ProcessSourceLink();
+            if (pdbMetadataReader != null)
+                ProcessSourceLink();
 
             foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
             {
@@ -543,7 +548,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(EntityHandle.ModuleDefinition)
                      let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
                      where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.SourceLink
-                     select pdbMetadataReader.GetBlobBytes(cdi.Value)).Single();
+                     select pdbMetadataReader.GetBlobBytes(cdi.Value)).SingleOrDefault();
 
             if (sourceLinkDebugInfo != null)
             {
@@ -963,10 +968,13 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (MethodInfo method in doc.Methods)
             {
-                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                if (!method.DebugInformation.SequencePointsBlob.IsNil)
                 {
-                    if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
-                        res.Add(new SourceLocation(method, sequencePoint));
+                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                    {
+                        if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
+                            res.Add(new SourceLocation(method, sequencePoint));
+                    }
                 }
             }
             return res;
