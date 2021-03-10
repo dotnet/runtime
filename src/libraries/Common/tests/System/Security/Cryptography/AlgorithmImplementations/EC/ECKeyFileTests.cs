@@ -30,6 +30,8 @@ namespace System.Security.Cryptography.Tests
         // allowed explicit in ECDH or ECDSA but not the other.
         public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
 
+        public static bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
+
         private static bool IsCurveSupported(Oid oid)
         {
             return EcDiffieHellman.Tests.ECDiffieHellmanFactory.IsCurveValid(oid);

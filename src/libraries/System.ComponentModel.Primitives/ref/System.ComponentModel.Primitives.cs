@@ -192,6 +192,7 @@ namespace System.ComponentModel
     {
         System.ComponentModel.ComponentCollection Components { get; }
         void Add(System.ComponentModel.IComponent? component);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")]
         void Add(System.ComponentModel.IComponent? component, string? name);
         void Remove(System.ComponentModel.IComponent? component);
     }
@@ -233,7 +234,7 @@ namespace System.ComponentModel
         System.ComponentModel.IComponent Component { get; }
         System.ComponentModel.IContainer? Container { get; }
         bool DesignMode { get; }
-        string? Name { get; set; }
+        string? Name { get; [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered to validate the name.")] set; }
     }
     public partial interface ISupportInitialize
     {

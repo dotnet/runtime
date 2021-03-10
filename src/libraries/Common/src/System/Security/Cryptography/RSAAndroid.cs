@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
 
             internal RSAAndroid(SafeRsaHandle key)
             {
-                _key = new Lazy<SafeRsaHandle>(key);
+                _key = new Lazy<SafeRsaHandle>(key.DuplicateHandle());
                 SetKeySizeFromHandle(key);
             }
 

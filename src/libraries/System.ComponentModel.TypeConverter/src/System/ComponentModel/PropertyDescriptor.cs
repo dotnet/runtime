@@ -57,6 +57,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual TypeConverter Converter
         {
+            [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
             get
             {
                 // Always grab the attribute collection first here, because if the metadata version
@@ -212,15 +213,19 @@ namespace System.ComponentModel
             base.FillAttributes(attributeList);
         }
 
+        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public PropertyDescriptorCollection GetChildProperties() => GetChildProperties(null, null);
 
+        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public PropertyDescriptorCollection GetChildProperties(Attribute[] filter) => GetChildProperties(null, filter);
 
+        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
         public PropertyDescriptorCollection GetChildProperties(object instance) => GetChildProperties(instance, null);
 
         /// <summary>
         /// Retrieves the properties
         /// </summary>
+        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
             if (instance == null)
@@ -233,10 +238,10 @@ namespace System.ComponentModel
             }
         }
 
-
         /// <summary>
         /// Gets an editor of the specified type.
         /// </summary>
+        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual object GetEditor(Type editorBaseType)
         {
             object editor = null;

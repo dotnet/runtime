@@ -55,6 +55,7 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
+                    AttributeTargets.Interface |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
@@ -85,6 +86,7 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
+                    AttributeTargets.Interface |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
