@@ -661,7 +661,7 @@ namespace System.Diagnostics.Tracing
         /// the ETW provider name.
         /// </summary>
         protected EventSource()
-            : this(EventSourceSettings.EtwManifestEventFormat)
+            : this(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
 
@@ -677,7 +677,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         // [Obsolete("Use the EventSource(EventSourceSettings) overload")]
         protected EventSource(bool throwOnEventWriteErrors)
-            : this(EventSourceSettings.EtwManifestEventFormat | (throwOnEventWriteErrors ? EventSourceSettings.ThrowOnEventWriteErrors : 0))
+            : this(EventSourceSettings.EtwSelfDescribingEventFormat | (throwOnEventWriteErrors ? EventSourceSettings.ThrowOnEventWriteErrors : 0))
         { }
 
         /// <summary>
@@ -1516,7 +1516,7 @@ namespace System.Diagnostics.Tracing
         // FrameworkEventSource is on the startup path for the framework, so we have this internal overload that it can use
         // to prevent the working set hit from looking at the custom attributes on the type to get the Guid.
         internal EventSource(Guid eventSourceGuid, string eventSourceName)
-            : this(eventSourceGuid, eventSourceName, EventSourceSettings.EtwManifestEventFormat)
+            : this(eventSourceGuid, eventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         { }
 
         // Used by the internal FrameworkEventSource constructor and the TraceLogging-style event source constructor
