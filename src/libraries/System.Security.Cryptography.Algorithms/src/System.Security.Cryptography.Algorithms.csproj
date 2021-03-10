@@ -474,8 +474,7 @@
     <Compile Include="Internal\Cryptography\DesImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslCipher.cs" />
-    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
-    <Compile Condition="'$(TargetsBrowser)' != 'true'" Include="Internal\Cryptography\Pbkdf2Implementation.Unix.cs" />
+    <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.Unix.cs" />
     <Compile Include="Internal\Cryptography\TripleDesImplementation.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAppleCrypto)' == 'true'">
@@ -601,6 +600,7 @@
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
+    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
@@ -638,6 +638,8 @@
              Link="Common\System\Security\Cryptography\ECAndroid.ImportExport.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs"
+             Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanAndroidPublicKey.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaAndroid.cs"
@@ -647,10 +649,10 @@
     <Compile Include="Internal\Cryptography\RC2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
-    <Compile Include="System\Security\Cryptography\ECDiffieHellmanAndroid.Derive.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\ECDsa.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
+    <Compile Include="Internal\Cryptography\Pbkdf2Implementation.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\HashProvider.cs"

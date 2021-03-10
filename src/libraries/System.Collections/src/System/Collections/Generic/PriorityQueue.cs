@@ -8,11 +8,14 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Generic
 {
     /// <summary>
-    /// Represents a data structure in which each element has an associated priority
-    /// that determines the order in which the pair is dequeued.
+    ///  Represents a min priority queue.
     /// </summary>
-    /// <typeparam name="TElement">The type of the element.</typeparam>
-    /// <typeparam name="TPriority">The type of the priority.</typeparam>
+    /// <typeparam name="TElement">Specifies the type of elements in the queue.</typeparam>
+    /// <typeparam name="TPriority">Specifies the type of priority associated with enqueued elements.</typeparam>
+    /// <remarks>
+    ///  Implements an array-backed quaternary min-heap. Each element is enqueued with an associated priority
+    ///  that determines the dequeue order: elements with the lowest priority get dequeued first.
+    /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(PriorityQueueDebugView<,>))]
     public class PriorityQueue<TElement, TPriority>
@@ -61,7 +64,7 @@ namespace System.Collections.Generic
 #endif
 
         /// <summary>
-        /// Creates an empty priority queue.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class.
         /// </summary>
         public PriorityQueue()
         {
@@ -70,16 +73,26 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Creates an empty priority queue with the specified initial capacity for its underlying array.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class
+        ///  with the specified initial capacity.
         /// </summary>
+        /// <param name="initialCapacity">Initial capacity to allocate in the underlying heap array.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///  The specified <paramref name="initialCapacity"/> was negative.
+        /// </exception>
         public PriorityQueue(int initialCapacity)
             : this(initialCapacity, comparer: null)
         {
         }
 
         /// <summary>
-        /// Creates an empty priority queue with the specified priority comparer.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class
+        ///  with the specified custom priority comparer.
         /// </summary>
+        /// <param name="comparer">
+        ///  Custom comparer dictating the ordering of elements.
+        ///  Uses <see cref="Comparer{T}.Default" /> if the argument is <see langword="null"/>.
+        /// </param>
         public PriorityQueue(IComparer<TPriority>? comparer)
         {
             _nodes = Array.Empty<(TElement, TPriority)>();
@@ -87,9 +100,17 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Creates an empty priority queue with the specified priority comparer and
-        /// the specified initial capacity for its underlying array.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class
+        ///  with the specified initial capacity and custom priority comparer.
         /// </summary>
+        /// <param name="initialCapacity">Initial capacity to allocate in the underlying heap array.</param>
+        /// <param name="comparer">
+        ///  Custom comparer dictating the ordering of elements.
+        ///  Uses <see cref="Comparer{T}.Default" /> if the argument is <see langword="null"/>.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///  The specified <paramref name="initialCapacity"/> was negative.
+        /// </exception>
         public PriorityQueue(int initialCapacity, IComparer<TPriority>? comparer)
         {
             if (initialCapacity < 0)
@@ -103,17 +124,39 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Creates a priority queue populated with the specified elements and priorities.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class
+        ///  that is populated with the specified elements and priorities.
         /// </summary>
+        /// <param name="items">The pairs of elements and priorities with which to populate the queue.</param>
+        /// <exception cref="ArgumentNullException">
+        ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
+        /// </exception>
+        /// <remarks>
+        ///  Constructs the heap using a heapify operation,
+        ///  which is generally faster than enqueuing individual elements sequentially.
+        /// </remarks>
         public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items)
             : this(items, comparer: null)
         {
         }
 
         /// <summary>
-        /// Creates a priority queue populated with the specified elements and priorities,
-        /// and with the specified priority comparer.
+        ///  Initializes a new instance of the <see cref="PriorityQueue{TElement, TPriority}"/> class
+        ///  that is populated with the specified elements and priorities,
+        ///  and with the specified custom priority comparer.
         /// </summary>
+        /// <param name="items">The pairs of elements and priorities with which to populate the queue.</param>
+        /// <param name="comparer">
+        ///  Custom comparer dictating the ordering of elements.
+        ///  Uses <see cref="Comparer{T}.Default" /> if the argument is <see langword="null"/>.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
+        /// </exception>
+        /// <remarks>
+        ///  Constructs the heap using a heapify operation,
+        ///  which is generally faster than enqueuing individual elements sequentially.
+        /// </remarks>
         public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items, IComparer<TPriority>? comparer)
         {
             if (items is null)
@@ -131,23 +174,29 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Gets the current amount of items in the priority queue.
+        ///  Gets the number of elements contained in the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public int Count => _size;
 
         /// <summary>
-        /// Gets the priority comparer of the priority queue.
+        ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;
 
         /// <summary>
-        /// Gets a collection that enumerates the elements of the queue.
+        ///  Gets a collection that enumerates the elements of the queue in an unordered manner.
         /// </summary>
+        /// <remarks>
+        ///  The enumeration does not order items by priority, since that would require N * log(N) time and N space.
+        ///  Items are instead enumerated following the internal array heap layout.
+        /// </remarks>
         public UnorderedItemsCollection UnorderedItems => _unorderedItems ??= new UnorderedItemsCollection(this);
 
         /// <summary>
-        /// Enqueues the specified element and associates it with the specified priority.
+        ///  Adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
+        /// <param name="element">The element to add to the <see cref="PriorityQueue{TElement, TPriority}"/>.</param>
+        /// <param name="priority">The priority with which to associate the new element.</param>
         public void Enqueue(TElement element, TPriority priority)
         {
             // Virtually add the node at the end of the underlying array.
@@ -173,9 +222,10 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Gets the element associated with the minimal priority.
+        ///  Returns the minimal element from the <see cref="PriorityQueue{TElement, TPriority}"/> without removing it.
         /// </summary>
-        /// <exception cref="InvalidOperationException">The queue is empty.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="PriorityQueue{TElement, TPriority}"/> is empty.</exception>
+        /// <returns>The minimal element of the <see cref="PriorityQueue{TElement, TPriority}"/>.</returns>
         public TElement Peek()
         {
             if (_size == 0)
@@ -187,9 +237,10 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Dequeues the element associated with the minimal priority.
+        ///  Removes and returns the minimal element from the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">The queue is empty.</exception>
+        /// <returns>The minimal element of the <see cref="PriorityQueue{TElement, TPriority}"/>.</returns>
         public TElement Dequeue()
         {
             if (_size == 0)
@@ -203,10 +254,15 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Dequeues the element associated with the minimal priority
+        ///  Removes the minimal element from the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        ///  and copies it to the <paramref name="element"/> parameter,
+        ///  and its associated priority to the <paramref name="priority"/> parameter.
         /// </summary>
+        /// <param name="element">The removed element.</param>
+        /// <param name="priority">The priority associated with the removed element.</param>
         /// <returns>
-        /// <see langword="true"/> if the priority queue is non-empty; <see langword="false"/> otherwise.
+        ///  <see langword="true"/> if the element is successfully removed;
+        ///  <see langword="false"/> if the <see cref="PriorityQueue{TElement, TPriority}"/> is empty.
         /// </returns>
         public bool TryDequeue([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
@@ -223,10 +279,16 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Gets the element associated with the minimal priority.
+        ///  Returns a value that indicates whether there is a minimal element in the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        ///  and if one is present, copies it to the <paramref name="element"/> parameter,
+        ///  and its associated priority to the <paramref name="priority"/> parameter.
+        ///  The element is not removed from the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
+        /// <param name="element">The minimal element in the queue.</param>
+        /// <param name="priority">The priority associated with the minimal element.</param>
         /// <returns>
-        /// <see langword="true"/> if the priority queue is non-empty; <see langword="false"/> otherwise.
+        ///  <see langword="true"/> if there is a minimal element;
+        ///  <see langword="false"/> if the <see cref="PriorityQueue{TElement, TPriority}"/> is empty.
         /// </returns>
         public bool TryPeek([MaybeNullWhen(false)] out TElement element, [MaybeNullWhen(false)] out TPriority priority)
         {
@@ -242,8 +304,17 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Combined enqueue/dequeue operation, generally more efficient than sequential Enqueue/Dequeue calls.
+        ///  Adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        ///  and immediately removes the minimal element, returning the result.
         /// </summary>
+        /// <param name="element">The element to add to the <see cref="PriorityQueue{TElement, TPriority}"/>.</param>
+        /// <param name="priority">The priority with which to associate the new element.</param>
+        /// <returns>The minimal element removed after the enqueue operation.</returns>
+        /// <remarks>
+        ///  Implements an insert-then-extract heap operation that is generally more efficient
+        ///  than sequencing Enqueue and Dequeue operations: in the worst case scenario only one
+        ///  sift-down operation is required.
+        /// </remarks>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
             if (_size != 0)
@@ -274,8 +345,12 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Enqueues a collection of element/priority pairs.
+        ///  Enqueues a sequence of element/priority pairs to the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
+        /// <param name="items">The pairs of elements and priorities to add to the queue.</param>
+        /// <exception cref="ArgumentNullException">
+        ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
+        /// </exception>
         public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items)
         {
             if (items is null)
@@ -308,8 +383,14 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Enqueues a collection of elements, each associated with the specified priority.
+        ///  Enqueues a sequence of elements pairs to the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        ///  all associated with the specified priority.
         /// </summary>
+        /// <param name="elements">The elements to add to the queue.</param>
+        /// <param name="priority">The priority to associate with the new elements.</param>
+        /// <exception cref="ArgumentNullException">
+        ///  The specified <paramref name="elements"/> argument was <see langword="null"/>.
+        /// </exception>
         public void EnqueueRange(IEnumerable<TElement> elements, TPriority priority)
         {
             if (elements is null)
@@ -353,7 +434,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Removes all items from the priority queue.
+        ///  Removes all items from the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public void Clear()
         {
@@ -367,9 +448,14 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Ensures that the priority queue has the specified capacity
-        /// and resizes its underlying array if necessary.
+        ///  Ensures that the <see cref="PriorityQueue{TElement, TPriority}"/> can hold up to
+        ///  <paramref name="capacity"/> items without further expansion of its backing storage.
         /// </summary>
+        /// <param name="capacity">The minimum capacity to be used.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///  The specified <paramref name="capacity"/> is negative.
+        /// </exception>
+        /// <returns>The current capacity of the <see cref="PriorityQueue{TElement, TPriority}"/>.</returns>
         public int EnsureCapacity(int capacity)
         {
             if (capacity < 0)
@@ -387,9 +473,13 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Sets the capacity to the actual number of items in the priority queue,
-        /// if that is less than 90 percent of current capacity.
+        ///  Sets the capacity to the actual number of items in the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        ///  if that is less than 90 percent of current capacity.
         /// </summary>
+        /// <remarks>
+        ///  This method can be used to minimize a collection's memory overhead
+        ///  if no new elements will be added to the collection.
+        /// </remarks>
         public void TrimExcess()
         {
             int threshold = (int)(_nodes.Length * 0.9);
@@ -677,7 +767,7 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// Represents the contents of a <see cref="PriorityQueue{TElement, TPriority}"/> without ordering.
+        ///  Enumerates the contents of a <see cref="PriorityQueue{TElement, TPriority}"/>, without any ordering guarantees.
         /// </summary>
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(PriorityQueueDebugView<,>))]
@@ -729,7 +819,8 @@ namespace System.Collections.Generic
             }
 
             /// <summary>
-            /// Enumerates the element and priority pairs of a <see cref="PriorityQueue{TElement, TPriority}"/>.
+            ///  Enumerates the element and priority pairs of a <see cref="PriorityQueue{TElement, TPriority}"/>,
+            ///  without any ordering guarantees.
             /// </summary>
             public struct Enumerator : IEnumerator<(TElement Element, TPriority Priority)>
             {
