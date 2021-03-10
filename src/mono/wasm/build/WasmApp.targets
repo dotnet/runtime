@@ -181,9 +181,10 @@
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+
+      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
       <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'cross', $(PackageRID), 'mono-aot-cross$(_ExeExt)'))</MonoAotCrossCompilerPath>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::EnsureTrailingSlash($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
-      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
 
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
