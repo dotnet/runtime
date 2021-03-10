@@ -331,9 +331,6 @@
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
     </ItemGroup>
-
-    <!-- If a bundle wouldn't be generated, then copy the files to app dir -->
-    <Copy SourceFiles="@(WasmNativeAsset)" DestinationFolder="$(WasmAppDir)" Condition="'$(WasmGenerateAppBundle)' != 'true'" />
   </Target>
 
   <Target Name="_GenerateDriverGenC" Condition="'$(RunAOTCompilation)' != 'true' and '$(WasmProfilers)' != ''">
