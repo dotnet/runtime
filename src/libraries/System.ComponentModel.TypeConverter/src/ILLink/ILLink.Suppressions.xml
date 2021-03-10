@@ -5,24 +5,6 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.PropertyDescriptor.GetTypeFromName(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.PropertyTabAttribute.get_TabClasses</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectedTypeData.GetTypeFromName(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.ComNativeDescriptorProxy.#ctor</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -41,12 +23,6 @@
       <argument>ILLink</argument>
       <argument>IL2057</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.PropertyDescriptor.GetTypeFromName(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.PropertyTabAttribute.get_TabClasses</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -59,30 +35,6 @@
       <argument>ILLink</argument>
       <argument>IL2057</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.GetIntrinsicTypeEditor(System.Collections.Hashtable,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.GetTypeFromName(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectedTypeData.GetEditorAttribute(System.ComponentModel.AttributeCollection,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectedTypeData.GetTypeFromName(System.String)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2057</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ToolboxItemAttribute.get_ToolboxItemType</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -90,12 +42,6 @@
       <argument>IL2057</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.CreateDesigner(System.ComponentModel.IComponent,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2059</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.GetEditorTable(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -201,12 +147,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.GetIntrinsicTypeEditor(System.Collections.Hashtable,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2080</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ReflectEventDescriptor.FillMethods</property>
@@ -252,12 +192,6 @@
       <argument>IL2026</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetDefaultProperty</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetEditor(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

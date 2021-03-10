@@ -287,6 +287,7 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.TypeConverter GetConverter() { throw null; }
         public virtual System.ComponentModel.EventDescriptor GetDefaultEvent() { throw null; }
         public virtual System.ComponentModel.PropertyDescriptor GetDefaultProperty() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
         public virtual System.ComponentModel.EventDescriptorCollection GetEvents() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
@@ -565,6 +566,7 @@ namespace System.ComponentModel
         System.ComponentModel.TypeConverter GetConverter();
         System.ComponentModel.EventDescriptor GetDefaultEvent();
         System.ComponentModel.PropertyDescriptor GetDefaultProperty();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object GetEditor(System.Type editorBaseType);
         System.ComponentModel.EventDescriptorCollection GetEvents();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
@@ -1051,7 +1053,7 @@ namespace System.ComponentModel
         public System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The PropertyDescriptor's PropertyType cannot be statically discovered. The Type of instance cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetChildProperties(object instance, System.Attribute[] filter) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual object GetEditor(System.Type editorBaseType) { throw null; }
         public override int GetHashCode() { throw null; }
         protected override object GetInvocationTarget(System.Type type, object instance) { throw null; }
@@ -1117,8 +1119,8 @@ namespace System.ComponentModel
     public partial class PropertyTabAttribute : System.Attribute
     {
         public PropertyTabAttribute() { }
-        public PropertyTabAttribute(string tabClassName) { }
-        public PropertyTabAttribute(string tabClassName, System.ComponentModel.PropertyTabScope tabScope) { }
+        public PropertyTabAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName) { }
+        public PropertyTabAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string tabClassName, System.ComponentModel.PropertyTabScope tabScope) { }
         public PropertyTabAttribute(System.Type tabClass) { }
         public PropertyTabAttribute(System.Type tabClass, System.ComponentModel.PropertyTabScope tabScope) { }
         public System.Type[] TabClasses { get { throw null; } }
@@ -1127,6 +1129,7 @@ namespace System.ComponentModel
         public bool Equals(System.ComponentModel.PropertyTabAttribute other) { throw null; }
         public override bool Equals(object other) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Types referenced by tabClassNames may be trimmed.")]
         protected void InitializeArrays(string[] tabClassNames, System.ComponentModel.PropertyTabScope[] tabScopes) { }
         protected void InitializeArrays(System.Type[] tabClasses, System.ComponentModel.PropertyTabScope[] tabScopes) { }
     }
@@ -1140,9 +1143,10 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
     {
-        public ProvidePropertyAttribute(string propertyName, string receiverTypeName) { }
-        public ProvidePropertyAttribute(string propertyName, System.Type receiverType) { }
+        public ProvidePropertyAttribute(string propertyName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string receiverTypeName) { }
+        public ProvidePropertyAttribute(string propertyName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type receiverType) { }
         public string PropertyName { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string ReceiverTypeName { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -1368,6 +1372,7 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.ComponentModel.TypeDescriptionProvider AddAttributes(System.Type type, params System.Attribute[] attributes) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
         public static void AddEditorTable(System.Type editorBaseType, System.Collections.Hashtable table) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static void AddProvider(System.ComponentModel.TypeDescriptionProvider provider, object instance) { }
@@ -1423,11 +1428,12 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty(object component, bool noCustomTypeDesc) { throw null; }
         public static System.ComponentModel.PropertyDescriptor GetDefaultProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, System.Type editorBaseType) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed. The Type of component cannot be statically discovered.")]
         public static object GetEditor(object component, System.Type editorBaseType, bool noCustomTypeDesc) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         public static object GetEditor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, System.Type editorBaseType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptorCollection GetEvents(object component) { throw null; }
