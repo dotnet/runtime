@@ -564,7 +564,7 @@ mono_lldb_save_trampoline_info (MonoTrampInfo *info)
 	udata.code = info->code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_mem_manager_get_ambient (), find_code_region, &udata);
 	if (!udata.found)
 		/* Can happen with AOT */
 		return;
@@ -612,7 +612,7 @@ mono_lldb_save_specific_trampoline_info (gpointer arg1, MonoTrampolineType tramp
 	udata.code = code;
 	mono_global_codeman_foreach (find_code_region, &udata);
 	if (!udata.found)
-		mono_mem_manager_code_foreach (mono_domain_ambient_memory_manager (mono_get_root_domain ()), find_code_region, &udata);
+		mono_mem_manager_code_foreach (mono_mem_manager_get_ambient (), find_code_region, &udata);
 	g_assert (udata.found);
 
 	region_id = register_codegen_region (udata.region_start, udata.region_size, FALSE);

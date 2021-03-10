@@ -26,19 +26,21 @@ jmethodID g_randNextBytesMethod;
 
 // java/security/MessageDigest
 jclass    g_mdClass;
-jmethodID g_mdGetInstanceMethod;
-jmethodID g_mdDigestMethod;
-jmethodID g_mdDigestCurrentMethodId;
-jmethodID g_mdResetMethod;
-jmethodID g_mdUpdateMethod;
+jmethodID g_mdGetInstance;
+jmethodID g_mdClone;
+jmethodID g_mdDigest;
+jmethodID g_mdDigestWithInputBytes;
+jmethodID g_mdReset;
+jmethodID g_mdUpdate;
 
 // javax/crypto/Mac
-jclass    g_macClass;
-jmethodID g_macGetInstanceMethod;
-jmethodID g_macDoFinalMethod;
-jmethodID g_macUpdateMethod;
-jmethodID g_macInitMethod;
-jmethodID g_macResetMethod;
+jclass    g_MacClass;
+jmethodID g_MacGetInstance;
+jmethodID g_MacClone;
+jmethodID g_MacDoFinal;
+jmethodID g_MacInit;
+jmethodID g_MacReset;
+jmethodID g_MacUpdate;
 
 // javax/crypto/spec/SecretKeySpec
 jclass    g_sksClass;
@@ -112,34 +114,24 @@ jmethodID g_SignatureInitVerify;
 jmethodID g_SignatureUpdate;
 jmethodID g_SignatureSign;
 jmethodID g_SignatureVerify;
+
 // java/security/cert/CertificateFactory
 jclass    g_CertFactoryClass;
 jmethodID g_CertFactoryGetInstance;
 jmethodID g_CertFactoryGenerateCertificate;
 jmethodID g_CertFactoryGenerateCertificates;
-jmethodID g_CertFactoryGenerateCertPath;
+jmethodID g_CertFactoryGenerateCertPathFromList;
+jmethodID g_CertFactoryGenerateCertPathFromStream;
 jmethodID g_CertFactoryGenerateCRL;
+
+// java/security/cert/CertPath
+jclass    g_CertPathClass;
+jmethodID g_CertPathGetEncoded;
 
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
 jmethodID g_X509CertGetEncoded;
-jmethodID g_X509CertGetIssuerX500Principal;
-jmethodID g_X509CertGetNotAfter;
-jmethodID g_X509CertGetNotBefore;
 jmethodID g_X509CertGetPublicKey;
-jmethodID g_X509CertGetSerialNumber;
-jmethodID g_X509CertGetSigAlgOID;
-jmethodID g_X509CertGetSubjectX500Principal;
-jmethodID g_X509CertGetVersion;
-
-// java/security/cert/X509Certificate implements java/security/cert/X509Extension
-jmethodID g_X509CertGetCriticalExtensionOIDs;
-jmethodID g_X509CertGetExtensionValue;
-jmethodID g_X509CertGetNonCriticalExtensionOIDs;
-
-// java/security/cert/X509CRL
-jclass    g_X509CRLClass;
-jmethodID g_X509CRLGetNextUpdate;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -166,6 +158,19 @@ jmethodID g_KeyFactoryGetInstanceMethod;
 jmethodID g_KeyFactoryGenPrivateMethod;
 jmethodID g_KeyFactoryGenPublicMethod;
 jmethodID g_KeyFactoryGetKeySpecMethod;
+
+// java/security/spec/DSAPublicKeySpec
+jclass    g_DSAPublicKeySpecClass;
+jmethodID g_DSAPublicKeySpecCtor;
+jmethodID g_DSAPublicKeySpecGetY;
+jmethodID g_DSAPublicKeySpecGetP;
+jmethodID g_DSAPublicKeySpecGetQ;
+jmethodID g_DSAPublicKeySpecGetG;
+
+// java/security/spec/DSAPrivateKeySpec
+jclass    g_DSAPrivateKeySpecClass;
+jmethodID g_DSAPrivateKeySpecCtor;
+jmethodID g_DSAPrivateKeySpecGetX;
 
 // java/security/spec/ECParameterSpec
 jclass    g_ECParameterSpecClass;
@@ -210,6 +215,7 @@ jmethodID g_ECPrivateKeySpecCtor;
 
 // java/security/interfaces/ECPublicKey
 jclass    g_ECPublicKeyClass;
+jmethodID g_ECPublicKeyGetParams;
 jmethodID g_ECPublicKeyGetW;
 
 // java/security/spec/ECPublicKeySpec
@@ -234,6 +240,11 @@ jmethodID g_X509EncodedKeySpecCtor;
 jclass    g_DestroyableClass;
 jmethodID g_destroy;
 
+// java/util/ArrayList
+jclass    g_ArrayListClass;
+jmethodID g_ArrayListCtor;
+jmethodID g_ArrayListAdd;
+
 // java/util/Collection
 jclass    g_CollectionClass;
 jmethodID g_CollectionIterator;
@@ -251,9 +262,6 @@ jmethodID g_IteratorNext;
 // java/util/Set
 jclass    g_SetClass;
 jmethodID g_SetIterator;
-
-// com/android/org/conscrypt/NativeCrypto
-jclass    g_NativeCryptoClass;
 
 // javax/net/ssl/SSLEngine
 jclass    g_SSLEngine;
@@ -456,18 +464,20 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_randNextBytesMethod =     GetMethod(env, false, g_randClass, "nextBytes", "([B)V");
 
     g_mdClass =                 GetClassGRef(env, "java/security/MessageDigest");
-    g_mdGetInstanceMethod =     GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
-    g_mdResetMethod =           GetMethod(env, false, g_mdClass, "reset", "()V");
-    g_mdDigestMethod =          GetMethod(env, false, g_mdClass, "digest", "([B)[B");
-    g_mdDigestCurrentMethodId = GetMethod(env, false, g_mdClass, "digest", "()[B");
-    g_mdUpdateMethod =          GetMethod(env, false, g_mdClass, "update", "([B)V");
+    g_mdGetInstance =           GetMethod(env, true,  g_mdClass, "getInstance", "(Ljava/lang/String;)Ljava/security/MessageDigest;");
+    g_mdClone =                 GetMethod(env, false, g_mdClass, "clone", "()Ljava/lang/Object;");
+    g_mdDigest =                GetMethod(env, false, g_mdClass, "digest", "()[B");
+    g_mdDigestWithInputBytes =  GetMethod(env, false, g_mdClass, "digest", "([B)[B");
+    g_mdReset =                 GetMethod(env, false, g_mdClass, "reset", "()V");
+    g_mdUpdate =                GetMethod(env, false, g_mdClass, "update", "([B)V");
 
-    g_macClass =                GetClassGRef(env, "javax/crypto/Mac");
-    g_macGetInstanceMethod =    GetMethod(env, true,  g_macClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Mac;");
-    g_macDoFinalMethod =        GetMethod(env, false, g_macClass, "doFinal", "()[B");
-    g_macUpdateMethod =         GetMethod(env, false, g_macClass, "update", "([B)V");
-    g_macInitMethod =           GetMethod(env, false, g_macClass, "init", "(Ljava/security/Key;)V");
-    g_macResetMethod =          GetMethod(env, false, g_macClass, "reset", "()V");
+    g_MacClass =          GetClassGRef(env, "javax/crypto/Mac");
+    g_MacGetInstance =    GetMethod(env, true,  g_MacClass, "getInstance", "(Ljava/lang/String;)Ljavax/crypto/Mac;");
+    g_MacClone =          GetMethod(env, false, g_MacClass, "clone", "()Ljava/lang/Object;");
+    g_MacDoFinal =        GetMethod(env, false, g_MacClass, "doFinal", "()[B");
+    g_MacUpdate =         GetMethod(env, false, g_MacClass, "update", "([B)V");
+    g_MacInit =           GetMethod(env, false, g_MacClass, "init", "(Ljava/security/Key;)V");
+    g_MacReset =          GetMethod(env, false, g_MacClass, "reset", "()V");
 
     g_sksClass =                GetClassGRef(env, "javax/crypto/spec/SecretKeySpec");
     g_sksCtor =                 GetMethod(env, false, g_sksClass, "<init>", "([BLjava/lang/String;)V");
@@ -505,30 +515,20 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_sslCtxGetDefaultMethod =          GetMethod(env, true,  g_sslCtxClass, "getDefault", "()Ljavax/net/ssl/SSLContext;");
     g_sslCtxGetDefaultSslParamsMethod = GetMethod(env, false, g_sslCtxClass, "getDefaultSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
 
-    g_CertFactoryClass =                GetClassGRef(env, "java/security/cert/CertificateFactory");
-    g_CertFactoryGetInstance =          GetMethod(env, true, g_CertFactoryClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertificateFactory;");
-    g_CertFactoryGenerateCertificate =  GetMethod(env, false, g_CertFactoryClass, "generateCertificate", "(Ljava/io/InputStream;)Ljava/security/cert/Certificate;");
-    g_CertFactoryGenerateCertificates = GetMethod(env, false, g_CertFactoryClass, "generateCertificates", "(Ljava/io/InputStream;)Ljava/util/Collection;");
-    g_CertFactoryGenerateCertPath =     GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/io/InputStream;Ljava/lang/String;)Ljava/security/cert/CertPath;");
-    g_CertFactoryGenerateCRL =          GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
+    g_CertFactoryClass =                        GetClassGRef(env, "java/security/cert/CertificateFactory");
+    g_CertFactoryGetInstance =                  GetMethod(env, true, g_CertFactoryClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertificateFactory;");
+    g_CertFactoryGenerateCertificate =          GetMethod(env, false, g_CertFactoryClass, "generateCertificate", "(Ljava/io/InputStream;)Ljava/security/cert/Certificate;");
+    g_CertFactoryGenerateCertificates =         GetMethod(env, false, g_CertFactoryClass, "generateCertificates", "(Ljava/io/InputStream;)Ljava/util/Collection;");
+    g_CertFactoryGenerateCertPathFromList =     GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/util/List;)Ljava/security/cert/CertPath;");
+    g_CertFactoryGenerateCertPathFromStream =   GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/io/InputStream;Ljava/lang/String;)Ljava/security/cert/CertPath;");
+    g_CertFactoryGenerateCRL =                  GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
+
+    g_CertPathClass =       GetClassGRef(env, "java/security/cert/CertPath");
+    g_CertPathGetEncoded =  GetMethod(env, false, g_CertPathClass, "getEncoded", "(Ljava/lang/String;)[B");
 
     g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
     g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
-    g_X509CertGetIssuerX500Principal =      GetMethod(env, false, g_X509CertClass, "getIssuerX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
-    g_X509CertGetNotAfter =                 GetMethod(env, false, g_X509CertClass, "getNotAfter", "()Ljava/util/Date;");
-    g_X509CertGetNotBefore =                GetMethod(env, false, g_X509CertClass, "getNotBefore", "()Ljava/util/Date;");
     g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
-    g_X509CertGetSerialNumber =             GetMethod(env, false, g_X509CertClass, "getSerialNumber", "()Ljava/math/BigInteger;");
-    g_X509CertGetSigAlgOID =                GetMethod(env, false, g_X509CertClass, "getSigAlgOID", "()Ljava/lang/String;");
-    g_X509CertGetSubjectX500Principal =     GetMethod(env, false, g_X509CertClass, "getSubjectX500Principal", "()Ljavax/security/auth/x500/X500Principal;");
-    g_X509CertGetVersion =                  GetMethod(env, false, g_X509CertClass, "getVersion", "()I");
-
-    g_X509CertGetCriticalExtensionOIDs =    GetMethod(env, false, g_X509CertClass, "getCriticalExtensionOIDs", "()Ljava/util/Set;");
-    g_X509CertGetExtensionValue =           GetMethod(env, false, g_X509CertClass, "getExtensionValue", "(Ljava/lang/String;)[B");
-    g_X509CertGetNonCriticalExtensionOIDs = GetMethod(env, false, g_X509CertClass, "getNonCriticalExtensionOIDs", "()Ljava/util/Set;");
-
-    g_X509CRLClass          = GetClassGRef(env, "java/security/cert/X509CRL");
-    g_X509CRLGetNextUpdate  = GetMethod(env, false, g_X509CRLClass, "getNextUpdate", "()Ljava/util/Date;");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -577,6 +577,17 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyFactoryGenPublicMethod =      GetMethod(env, false, g_KeyFactoryClass, "generatePublic", "(Ljava/security/spec/KeySpec;)Ljava/security/PublicKey;");
     g_KeyFactoryGetKeySpecMethod =     GetMethod(env, false, g_KeyFactoryClass, "getKeySpec", "(Ljava/security/Key;Ljava/lang/Class;)Ljava/security/spec/KeySpec;");
 
+    g_DSAPublicKeySpecClass =              GetClassGRef(env, "java/security/spec/DSAPublicKeySpec");
+    g_DSAPublicKeySpecCtor =               GetMethod(env, false, g_DSAPublicKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
+    g_DSAPublicKeySpecGetY =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getY", "()Ljava/math/BigInteger;");
+    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;"); 
+    g_DSAPublicKeySpecGetQ =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getQ", "()Ljava/math/BigInteger;");
+    g_DSAPublicKeySpecGetG =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getG", "()Ljava/math/BigInteger;");
+
+    g_DSAPrivateKeySpecClass =             GetClassGRef(env, "java/security/spec/DSAPrivateKeySpec");
+    g_DSAPrivateKeySpecGetX =              GetMethod(env, false, g_DSAPrivateKeySpecClass, "getX", "()Ljava/math/BigInteger;");
+    g_DSAPrivateKeySpecCtor =              GetMethod(env, false, g_DSAPrivateKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
+
     g_ECGenParameterSpecClass =        GetClassGRef(env, "java/security/spec/ECGenParameterSpec");
     g_ECGenParameterSpecCtor =         GetMethod(env, false, g_ECGenParameterSpecClass, "<init>", "(Ljava/lang/String;)V");
 
@@ -611,6 +622,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ECPrivateKeySpecCtor =           GetMethod(env, false, g_ECPrivateKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/security/spec/ECParameterSpec;)V");
 
     g_ECPublicKeyClass =               GetClassGRef(env, "java/security/interfaces/ECPublicKey");
+    g_ECPublicKeyGetParams =           GetMethod(env, false, g_ECPublicKeyClass, "getParams", "()Ljava/security/spec/ECParameterSpec;");
     g_ECPublicKeyGetW =                GetMethod(env, false, g_ECPublicKeyClass, "getW", "()Ljava/security/spec/ECPoint;");
 
     g_ECPublicKeySpecClass =           GetClassGRef(env, "java/security/spec/ECPublicKeySpec");
@@ -631,6 +643,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DestroyableClass =               GetClassGRef(env, "javax/security/auth/Destroyable");
     g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
 
+    g_ArrayListClass =  GetClassGRef(env, "java/util/ArrayList");
+    g_ArrayListCtor =   GetMethod(env, false, g_ArrayListClass, "<init>", "(I)V");
+    g_ArrayListAdd =    GetMethod(env, false, g_ArrayListClass, "add", "(Ljava/lang/Object;)Z");
+
     g_CollectionClass =     GetClassGRef(env, "java/util/Collection");
     g_CollectionIterator =  GetMethod(env, false, g_CollectionClass, "iterator", "()Ljava/util/Iterator;");
     g_CollectionSize =      GetMethod(env, false, g_CollectionClass, "size", "()I");
@@ -644,8 +660,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_SetClass =    GetClassGRef(env, "java/util/Set");
     g_SetIterator = GetMethod(env, false, g_SetClass, "iterator", "()Ljava/util/Iterator;");
-
-    g_NativeCryptoClass =              GetClassGRef(env, "com/android/org/conscrypt/NativeCrypto");
 
     g_SSLEngine =                         GetClassGRef(env, "javax/net/ssl/SSLEngine");
     g_SSLEngineSetUseClientModeMethod =   GetMethod(env, false, g_SSLEngine, "setUseClientMode", "(Z)V");

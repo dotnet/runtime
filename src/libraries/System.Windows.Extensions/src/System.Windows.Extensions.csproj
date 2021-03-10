@@ -52,7 +52,7 @@
     <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\ref\System.Drawing.Common.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />

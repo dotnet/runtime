@@ -233,6 +233,7 @@ superpmi_common_parser.add_argument("--sequential", action="store_true", help="R
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
@@ -271,7 +272,6 @@ replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
-replay_common_parser.add_argument("--jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1346,7 +1346,7 @@ def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
             shutil.copy2(item, repro_location)
 
         logging.info("")
-        logging.info("Repro .mc files created for failures:")
+        logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
         for item in repro_files:
             logging.info(item)
 
@@ -2944,6 +2944,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
 
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
+
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")
             sys.exit(1)
@@ -2976,11 +2981,6 @@ def setup_args(args):
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
-
-        coreclr_args.verify(args,
-                            "jitoption",
-                            lambda unused: True,
-                            "Unable to set jitoption")
 
     if coreclr_args.mode == "collect":
 

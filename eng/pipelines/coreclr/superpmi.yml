@@ -6,7 +6,6 @@ trigger:
   batch: false
   branches:
     include:
-    - master
     - main
   paths:
     include:
@@ -21,7 +20,6 @@ schedules:
   displayName: Sun at 9:00 AM (UTC-8:00)
   branches:
     include:
-    - master
     - main
   always: true
 

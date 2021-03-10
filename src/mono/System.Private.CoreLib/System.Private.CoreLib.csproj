@@ -254,7 +254,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLock.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.Mono.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">

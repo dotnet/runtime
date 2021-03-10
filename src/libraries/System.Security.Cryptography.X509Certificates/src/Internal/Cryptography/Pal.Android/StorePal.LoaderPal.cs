@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -13,29 +14,38 @@ namespace Internal.Cryptography.Pal
     {
         private sealed class AndroidCertLoader : ILoaderPal
         {
-            private readonly SafeX509Handle[] _certs;
+            private ICertificatePal[]? _certs;
 
-            public AndroidCertLoader(SafeX509Handle[] certs)
+            public AndroidCertLoader(SafeX509Handle[] certHandles)
+            {
+                _certs = new ICertificatePal[certHandles.Length];
+                for (int i = 0; i < certHandles.Length; i++)
+                {
+                    SafeX509Handle handle = certHandles[i];
+                    Debug.Assert(!handle.IsInvalid);
+                    _certs[i] = AndroidCertificatePal.FromHandle(handle.DangerousGetHandle());
+                }
+            }
+
+            public AndroidCertLoader(ICertificatePal[] certs)
             {
                 _certs = certs;
             }
 
             public void Dispose()
             {
-                foreach (var cert in _certs)
-                    cert.Dispose();
+                if (_certs != null)
+                    _certs.DisposeAll();
             }
 
             public void MoveTo(X509Certificate2Collection collection)
             {
-                for (int i = 0; i < _certs.Length; i++)
-                {
-                    SafeX509Handle handle = _certs[i];
-                    System.Diagnostics.Debug.Assert(!handle.IsInvalid);
+                ICertificatePal[]? certs = Interlocked.Exchange(ref _certs, null);
+                Debug.Assert(certs != null);
 
-                    ICertificatePal certPal = AndroidCertificatePal.FromHandle(handle.DangerousGetHandle());
-                    X509Certificate2 cert = new X509Certificate2(certPal);
-                    collection.Add(cert);
+                foreach (ICertificatePal cert in certs)
+                {
+                    collection.Add(new X509Certificate2(cert));
                 }
             }
         }

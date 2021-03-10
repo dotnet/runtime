@@ -428,9 +428,24 @@ namespace Internal.CommandLine
             return GetParameters(ActiveCommand);
         }
 
+        private static int ConsoleWindowWidth()
+        {
+            // Console.WindowWidth will throw an exception if the output is redirected in some cases
+            // This try/catch routine is probably excessive, but it will definitely cover all the cases
+            try
+            {
+                if (!Console.IsOutputRedirected)
+                    return Console.WindowWidth;
+            }
+            catch
+            {
+            }
+            return 100;
+        }
+
         public string GetHelpText()
         {
-            return GetHelpText(Console.WindowWidth - 2);
+            return GetHelpText(ConsoleWindowWidth() - 2);
         }
 
         public string GetHelpText(int maxWidth)

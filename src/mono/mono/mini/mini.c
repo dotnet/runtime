@@ -3802,7 +3802,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot && !(flags & JIT_FLAG_DISCARD_RESULTS)) {
 		MonoDomain *domain = mono_get_root_domain ();
 		mono_domain_lock (domain);
-		mono_jit_info_table_add (domain, cfg->jit_info);
+		mono_jit_info_table_add (cfg->jit_info);
 		mono_domain_unlock (domain);
 
 		if (cfg->method->dynamic) {
@@ -4051,10 +4051,12 @@ mono_jit_compile_method_inner (MonoMethod *method, int opt, MonoError *error)
 		discarded_jit_time += jit_time;
 	}
 	if (code == NULL) {
+		MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)cfg->jit_mm;
+
 		/* The lookup + insert is atomic since this is done inside the domain lock */
-		mono_domain_jit_code_hash_lock (target_domain);
-		mono_internal_hash_table_insert (&target_domain->jit_code_hash, cfg->jit_info->d.method, cfg->jit_info);
-		mono_domain_jit_code_hash_unlock (target_domain);
+		jit_code_hash_lock (jit_mm);
+		mono_internal_hash_table_insert (&jit_mm->jit_code_hash, cfg->jit_info->d.method, cfg->jit_info);
+		jit_code_hash_unlock (jit_mm);
 
 		code = cfg->native_code;
 

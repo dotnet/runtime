@@ -337,7 +337,6 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.FileVersionInfo" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />

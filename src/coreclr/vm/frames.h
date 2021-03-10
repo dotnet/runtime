@@ -859,6 +859,36 @@ public:
     virtual void ExceptionUnwind();
 #endif
 
+    virtual void GcScanRoots(promote_func* fn, ScanContext* sc)
+    {
+        WRAPPER_NO_CONTRACT;
+#if defined(FEATURE_CONSERVATIVE_GC) && !defined(DACCESS_COMPILE)
+        if (sc->promotion && g_pConfig->GetGCConservative())
+        {
+
+#ifdef TARGET_AMD64
+            Object** firstIntReg = (Object**)&this->GetContext()->Rax;
+            Object** lastIntReg  = (Object**)&this->GetContext()->R15;
+#elif defined(TARGET_X86)
+            Object** firstIntReg = (Object**)&this->GetContext()->Edi;
+            Object** lastIntReg  = (Object**)&this->GetContext()->Ebp;
+#elif defined(TARGET_ARM)
+            Object** firstIntReg = (Object**)&this->GetContext()->R0;
+            Object** lastIntReg  = (Object**)&this->GetContext()->R12;
+#elif defined(TARGET_ARM64)
+            Object** firstIntReg = (Object**)&this->GetContext()->X0;
+            Object** lastIntReg  = (Object**)&this->GetContext()->X28;
+#else
+            _ASSERTE(!"nyi for platform");
+#endif
+            for (Object** ppObj = firstIntReg; ppObj <= lastIntReg; ppObj++)
+            {
+                fn(ppObj, sc, GC_CALL_INTERIOR | GC_CALL_PINNED);
+            }
+        }
+#endif
+    }
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(RedirectedThreadFrame)
 };

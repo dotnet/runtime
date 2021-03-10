@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ForestTrustRelationshipCollision this[int index]
         {
-            get => (ForestTrustRelationshipCollision)InnerList[index];
+            get => (ForestTrustRelationshipCollision)InnerList[index]!;
         }
 
         public bool Contains(ForestTrustRelationshipCollision collision)

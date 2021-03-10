@@ -2,7 +2,6 @@ trigger:
   batch: true
   branches:
     include:
-      - master
       - main
       - release/*.*
   paths:

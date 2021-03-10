@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel
@@ -17,6 +17,7 @@ namespace System.ComponentModel
         /// </summary>
         private class ReflectedTypeData
         {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             private readonly Type _type;
             private AttributeCollection _attributes;
             private EventDescriptorCollection _events;
@@ -26,7 +27,7 @@ namespace System.ComponentModel
             private Type[] _editorTypes;
             private int _editorCount;
 
-            internal ReflectedTypeData(Type type)
+            internal ReflectedTypeData([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
             {
                 _type = type;
             }
@@ -169,6 +170,7 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
+            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object instance)
             {
                 TypeConverterAttribute typeAttr = null;
@@ -225,6 +227,7 @@ namespace System.ComponentModel
             /// Return the default event. The default event is determined by the
             /// presence of a DefaultEventAttribute on the class.
             /// </summary>
+            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             internal EventDescriptor GetDefaultEvent(object instance)
             {
                 AttributeCollection attributes;
@@ -257,6 +260,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Return the default property.
             /// </summary>
+            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             internal PropertyDescriptor GetDefaultProperty(object instance)
             {
                 AttributeCollection attributes;
@@ -289,6 +293,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the editor for the given base type.
             /// </summary>
+            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
             internal object GetEditor(object instance, Type editorBaseType)
             {
                 EditorAttribute typeAttr;

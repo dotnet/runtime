@@ -601,7 +601,7 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
 	MonoAssemblyByNameRequest byname_req;
-	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 	g_free (lookup_name);
 	if (!assembly) {

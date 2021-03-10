@@ -6,7 +6,6 @@ trigger: none
 pr:
   branches:
     include:
-    - master
     - main
     - release/*.*
 
