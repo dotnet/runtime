@@ -247,10 +247,10 @@ namespace DebuggerTests
                 method_to_stop);
 
             await SendCommandAndCheck(null, "Debugger.resume",
-            null,
-            bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
-            bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
-            method_to_stop);
+                null,
+                bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["lineNumber"].Value<int>(),
+                bps[bp_stop_expected2 ? 0 : 1].Value["locations"][0]["columnNumber"].Value<int>(),
+                method_to_stop);
         }
 
     }

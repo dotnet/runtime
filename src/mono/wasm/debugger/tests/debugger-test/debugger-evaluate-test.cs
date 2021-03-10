@@ -32,7 +32,6 @@ namespace DebuggerTests
 
         public static void EvaluateLocals()
         {
-            System.Console.WriteLine("to aqui");
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
             var f_s = new EvaluateTestsStructWithProperties();
