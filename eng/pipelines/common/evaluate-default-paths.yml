@@ -95,7 +95,7 @@ jobs:
       - src/coreclr/pal/*
       - src/coreclr/vm/*
       exclude:
-      - *
+      - '*'
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
