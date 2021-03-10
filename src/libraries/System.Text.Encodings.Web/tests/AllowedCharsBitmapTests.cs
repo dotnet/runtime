@@ -119,7 +119,7 @@ namespace System.Text.Encodings.Web.Tests
                 }
                 else
                 {
-                    Assert.Equal(UnicodeHelpers.IsCharacterDefined((char)i), bitmap.IsCharacterAllowed((char)i));
+                    Assert.Equal(UnicodeTestHelpers.IsCharacterDefined((char)i), bitmap.IsCharacterAllowed((char)i));
                 }
             }
         }
