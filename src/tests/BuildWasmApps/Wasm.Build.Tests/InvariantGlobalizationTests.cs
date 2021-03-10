@@ -23,12 +23,23 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
+        public void AOT_InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
+            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id);
+
+        // TODO: What else should we use to verify a relinked build?
+        [Theory]
+        [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        public void RelinkingWithoutAOT(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
+            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id,
+                                            extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
+                                            dotnetWasmFromRuntimePack: false);
+
+        private void TestInvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization,
+                                                        RunHost host, string id, string extraProperties="", bool dotnetWasmFromRuntimePack=true)
         {
             string projectName = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
-            string? extraProperties = null;
             if (invariantGlobalization != null)
-                extraProperties = $"<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
+                extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
@@ -48,6 +59,7 @@ namespace Wasm.Build.Tests
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                         id: id,
+                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,

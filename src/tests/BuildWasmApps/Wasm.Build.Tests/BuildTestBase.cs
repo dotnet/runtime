@@ -244,7 +244,7 @@ namespace Wasm.Build.Tests
               </PropertyGroup>
             </Project>";
 
-        protected BuildArgs GetBuildArgsWith(BuildArgs buildArgs, string? extraProperties=null, string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs GetBuildArgsWith(BuildArgs buildArgs, string? extraProperties=null, string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n";
@@ -295,7 +295,7 @@ namespace Wasm.Build.Tests
 
             try
             {
-                AssertBuild(sb.ToString());
+                AssertBuild(sb.ToString(), id);
                 if (useCache)
                 {
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
@@ -403,9 +403,9 @@ namespace Wasm.Build.Tests
                 Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected void AssertBuild(string args)
+        protected void AssertBuild(string args, string label="build")
         {
-            (int exitCode, _) = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: "build");
+            (int exitCode, _) = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: label);
             Assert.True(0 == exitCode, $"Build process exited with non-zero exit code: {exitCode}");
         }
 
@@ -469,8 +469,8 @@ namespace Wasm.Build.Tests
             process.StartInfo = processStartInfo;
             process.EnableRaisingEvents = true;
 
-            process.ErrorDataReceived += (sender, e) => LogData("[stderr]", e.Data);
-            process.OutputDataReceived += (sender, e) => LogData("[stdout]", e.Data);
+            process.ErrorDataReceived += (sender, e) => LogData($"[{label}-stderr]", e.Data);
+            process.OutputDataReceived += (sender, e) => LogData($"[{label}]", e.Data);
             // AutoResetEvent resetEvent = new (false);
             // process.Exited += (_, _) => { Console.WriteLine ($"- exited called"); resetEvent.Set(); };
 
