@@ -4,17 +4,17 @@
 Module [ 'channel' ] = {
     _impl: class {
         // Index constants for the communication buffer.
-        STATE_IDX = 0;
-        MSG_SIZE_IDX = 1;
-        COMM_LAST_IDX = this.MSG_SIZE_IDX;
+        get STATE_IDX() { return 0; }
+        get MSG_SIZE_IDX() { return 1; }
+        get COMM_LAST_IDX() { return this.MSG_SIZE_IDX; }
 
         // Communication states.
-        STATE_IDLE = 0;
-        STATE_REQ = 1;
-        STATE_RESP = 2;
-        STATE_REQ_P = 3; // Request has multiple parts
-        STATE_RESP_P = 4; // Response has multiple parts
-        STATE_AWAIT = 5; // Awaiting the next part
+        get STATE_IDLE() { return 0; }
+        get STATE_REQ() { return 1; }
+        get STATE_RESP() { return 2; }
+        get STATE_REQ_P() { return 3; } // Request has multiple parts
+        get STATE_RESP_P() { return 4; } // Response has multiple parts
+        get STATE_AWAIT() { return 5; } // Awaiting the next part
 
         constructor(msg_char_len) {
             this.msg_char_len = msg_char_len;
