@@ -18,10 +18,7 @@
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" Condition="'$(BuildAllOOBPackages)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
-    <ProjectReference Include="$(PkgDir)runtime.native.System.IO.Ports\runtime.native.System.IO.Ports.proj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Ports\pkg\System.IO.Ports.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 1 to help automerge -->
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Drawing.Common\pkg\System.Drawing.Common.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 2 to help automerge --> 
     <!-- This is merge marker 3 to help automerge --> 
     <!-- This is merge marker 4 to help automerge --> 
