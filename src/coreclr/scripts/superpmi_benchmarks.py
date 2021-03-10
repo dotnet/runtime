@@ -160,7 +160,7 @@ def build_and_run(coreclr_args, output_mch_name):
     # Disable ReadyToRun so we always JIT R2R methods and collect them
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
                          f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
-                         "--envVars COMPlus_ZapDisable:1 --envVars COMPlus_ReadyToRun:0" \
+                         " COMPlus_ZapDisable:1 COMPlus_ReadyToRun:0" \
                          "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
     # Generate the execution script in Temp location
