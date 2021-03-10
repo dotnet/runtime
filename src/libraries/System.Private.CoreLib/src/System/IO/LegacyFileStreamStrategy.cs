@@ -144,7 +144,7 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw Error.GetFileNotOpen();
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
 
                 return ReadSpan(buffer);
@@ -224,7 +224,7 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw Error.GetFileNotOpen();
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
 
                 WriteSpan(buffer);
@@ -345,9 +345,9 @@ namespace System.IO
         private void PrepareForReading()
         {
             if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (_readLength == 0 && !CanRead)
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             AssertBufferInvariants();
         }
@@ -480,14 +480,14 @@ namespace System.IO
         private void PrepareForWriting()
         {
             if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             // Make sure we're good to write.  We only need to do this if there's nothing already
             // in our write buffer, since if there is something in the buffer, we've already done
             // this checking and flushing.
             if (_writePos == 0)
             {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
+                if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 FlushReadBuffer();
                 Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
             }

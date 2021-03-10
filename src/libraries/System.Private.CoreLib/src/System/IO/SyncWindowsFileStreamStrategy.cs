@@ -67,7 +67,7 @@ namespace System.IO
         {
             if (_fileHandle.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             WriteSpan(buffer);
@@ -99,7 +99,7 @@ namespace System.IO
         {
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
@@ -134,7 +134,7 @@ namespace System.IO
         {
             if (!CanWrite)
             {
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");

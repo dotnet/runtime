@@ -116,7 +116,7 @@ namespace System.Resources
 #endif
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
 

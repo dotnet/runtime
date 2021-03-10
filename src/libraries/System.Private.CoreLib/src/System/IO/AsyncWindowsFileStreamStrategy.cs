@@ -133,7 +133,7 @@ namespace System.IO
         {
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
@@ -216,7 +216,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -261,7 +261,7 @@ namespace System.IO
         {
             if (!CanWrite)
             {
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
@@ -328,7 +328,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -362,11 +362,11 @@ namespace System.IO
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // Bail early for cancellation if cancellation has been requested

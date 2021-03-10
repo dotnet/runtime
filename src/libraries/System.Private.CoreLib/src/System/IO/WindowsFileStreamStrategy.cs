@@ -160,8 +160,8 @@ namespace System.IO
         {
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (!CanSeek) throw Error.GetSeekNotSupported();
+            if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
             // Verify that internal position is in sync with the handle
             VerifyOSHandlePosition();

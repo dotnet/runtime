@@ -348,7 +348,7 @@ namespace System.IO
             // buffer, depending on number of bytes user asked for and buffer size.
             if (n == 0)
             {
-                if (!CanRead) throw Error.GetReadNotSupported();
+                if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 if (_writePos > 0) FlushWriteBuffer();
                 if (!CanSeek || (destination.Length >= _bufferLength))
                 {
@@ -449,8 +449,8 @@ namespace System.IO
         {
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (!CanSeek) throw Error.GetSeekNotSupported();
+            if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
@@ -561,7 +561,7 @@ namespace System.IO
             if (_writePos == 0)
             {
                 // Ensure we can write to the stream, and ready buffer for writing.
-                if (!CanWrite) throw Error.GetWriteNotSupported();
+                if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 if (_readPos < _readLength) FlushReadBuffer();
                 _readPos = 0;
                 _readLength = 0;
@@ -655,7 +655,7 @@ namespace System.IO
         private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
-            if (!CanRead) throw Error.GetReadNotSupported();
+            if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
@@ -838,7 +838,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -871,7 +871,7 @@ namespace System.IO
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
             Debug.Assert(!_isPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+            if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             bool writeDataStoredInBuffer = false;
             if (!_isPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
@@ -1040,7 +1040,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -1103,11 +1103,11 @@ namespace System.IO
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // Bail early for cancellation if cancellation has been requested

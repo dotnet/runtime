@@ -38,6 +38,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -218,15 +219,10 @@ namespace System
             throw GetArgumentException(resource, argument);
         }
 
-        private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument)
-        {
-            return new ArgumentNullException(GetArgumentName(argument));
-        }
-
         [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
-            throw GetArgumentNullException(argument);
+            throw new ArgumentNullException(GetArgumentName(argument));
         }
 
         [DoesNotReturn]
@@ -257,6 +253,12 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowEndOfFileException()
+        {
+            throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
         }
 
         [DoesNotReturn]
@@ -745,6 +747,8 @@ namespace System
                     return "buffer";
                 case ExceptionArgument.offset:
                     return "offset";
+                case ExceptionArgument.stream:
+                    return "stream";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1005,6 +1009,7 @@ namespace System
         suffix,
         buffer,
         offset,
+        stream
     }
 
     //

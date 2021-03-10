@@ -73,7 +73,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             if (handle.IsClosed)
-                throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
         }
@@ -180,7 +180,7 @@ namespace System.IO
 
             if (_strategy.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             _strategy.Lock(position, length);
@@ -196,7 +196,7 @@ namespace System.IO
 
             if (_strategy.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             _strategy.Unlock(position, length);
@@ -210,7 +210,7 @@ namespace System.IO
             }
             if (_strategy.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             return _strategy.FlushAsync(cancellationToken);
@@ -233,7 +233,7 @@ namespace System.IO
                 return Task.FromCanceled<int>(cancellationToken);
 
             if (_strategy.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
         }
@@ -247,7 +247,7 @@ namespace System.IO
 
             if (_strategy.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             return _strategy.ReadAsync(buffer, cancellationToken);
@@ -270,7 +270,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
 
             if (_strategy.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
         }
@@ -284,7 +284,7 @@ namespace System.IO
 
             if (_strategy.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
 
             return _strategy.WriteAsync(buffer, cancellationToken);
@@ -305,7 +305,7 @@ namespace System.IO
         /// </summary>
         public virtual void Flush(bool flushToDisk)
         {
-            if (_strategy.IsClosed) throw Error.GetFileNotOpen();
+            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             _strategy.Flush(flushToDisk);
         }
@@ -324,7 +324,7 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
             if (_strategy.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
         }
 
         /// <summary>Sets the length of this stream to the given value.</summary>
@@ -332,13 +332,13 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (_strategy.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (!CanSeek)
-                throw Error.GetSeekNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
             if (!CanWrite)
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             _strategy.SetLength(value);
         }
@@ -356,8 +356,8 @@ namespace System.IO
         {
             get
             {
-                if (_strategy.IsClosed) throw Error.GetFileNotOpen();
-                if (!CanSeek) throw Error.GetSeekNotSupported();
+                if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
                 return _strategy.Length;
             }
         }
@@ -368,17 +368,17 @@ namespace System.IO
             get
             {
                 if (_strategy.IsClosed)
-                    throw Error.GetFileNotOpen();
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
                 if (!CanSeek)
-                    throw Error.GetSeekNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
                 return _strategy.Position;
             }
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
                 _strategy.Seek(value, SeekOrigin.Begin);
             }
@@ -411,8 +411,8 @@ namespace System.IO
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
@@ -428,8 +428,8 @@ namespace System.IO
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_strategy.IsClosed) throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-            if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }

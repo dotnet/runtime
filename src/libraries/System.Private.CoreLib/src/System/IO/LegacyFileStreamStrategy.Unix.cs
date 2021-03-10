@@ -395,7 +395,7 @@ namespace System.IO
 
             if (!CanRead) // match Windows behavior; this gets thrown synchronously
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // Serialize operations using the semaphore.
@@ -559,11 +559,11 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             if (!CanWrite) // match Windows behavior; this gets thrown synchronously
             {
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
             // Serialize operations using the semaphore.
@@ -637,11 +637,11 @@ namespace System.IO
             }
             if (_fileHandle.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
             if (!CanSeek)
             {
-                throw Error.GetSeekNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
             }
 
             VerifyOSHandlePosition();

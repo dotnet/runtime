@@ -74,7 +74,7 @@ namespace System.IO
         public BufferedStream(Stream stream, int bufferSize)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
 
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(bufferSize)));
@@ -86,7 +86,7 @@ namespace System.IO
             // & writes are greater than or equal to buffer size.
 
             if (!_stream.CanRead && !_stream.CanWrite)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         internal BufferedStream(Stream stream, int bufferSize, bool actLikeFileStream) : this(stream, bufferSize)
@@ -1380,7 +1380,7 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             EnsureNotClosed();
             EnsureCanSeek();
