@@ -2103,7 +2103,6 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 {
 	gpointer data;
 	gboolean temporary;
-	MonoDomain *domain = mono_get_root_domain ();
 
 	error_init (error);
 
@@ -2286,10 +2285,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */
-			g_assert (domain->special_static_fields);
-			mono_domain_lock (domain);
-			addr = g_hash_table_lookup (domain->special_static_fields, field);
-			mono_domain_unlock (domain);
+			addr = mono_special_static_field_get_offset (field, error);
 			g_assert (addr);
 			return (guint8*)addr + 1;
 		}

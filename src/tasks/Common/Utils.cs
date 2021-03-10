@@ -46,6 +46,8 @@ internal class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
+        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", MessageImportance.Low);
+
         if (envVars != null)
         {
             if (envVars.Count > 0)

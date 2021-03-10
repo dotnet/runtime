@@ -1015,8 +1015,12 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method      = CastHandle(method);
     key.context     = CastHandle(context);
 
-    AssertCodeMsg(InitClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", key.method);
-    AssertCodeMsg(InitClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key.method);
+    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
+    {
+        // We could try additional inlines with stress modes, just reject them.
+        return CORINFO_INITCLASS_DONT_INLINE;
+    }
+
     CorInfoInitClassResult result = (CorInfoInitClassResult)InitClass->Get(key);
 
     DEBUG_REP(dmpInitClass(key, result));
@@ -3554,6 +3558,9 @@ void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
+    AssertCodeMsg(GetStaticFieldCurrentClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", CastHandle(field));
+    AssertCodeMsg(GetStaticFieldCurrentClass->GetIndex(CastHandle(field)) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", CastHandle(field));
+
     Agnostic_GetStaticFieldCurrentClass value = GetStaticFieldCurrentClass->Get(CastHandle(field));
 
     if (pIsSpeculative != nullptr)
@@ -4098,6 +4105,7 @@ void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
     else
         value.B = 0;
     GetGSCookie->Add((DWORD)0, value);
+    DEBUG_REC(dmpGetGSCookie(0, value));
 }
 void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 {
@@ -4105,6 +4113,21 @@ void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 }
 void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
+    if (GetGSCookie == nullptr)
+    {
+        // fake the result because for the codegen it is just a constant.
+        if (pCookieVal != nullptr)
+        {
+            *pCookieVal = (GSCookie)0x06000000;
+        }
+        if (ppCookieVal != nullptr)
+        {
+            *ppCookieVal = (GSCookie*)0x06000001;
+        }
+        return;
+    }
+
+    AssertCodeMsg(GetGSCookie->GetIndex(0) != -1, EXCEPTIONCODE_MC, "Didn't find GetGSCookie");
     DLDL value;
 
     value = GetGSCookie->Get((DWORD)0);

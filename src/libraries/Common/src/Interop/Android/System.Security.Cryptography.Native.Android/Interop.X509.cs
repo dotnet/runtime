@@ -10,23 +10,33 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        private const int INSUFFICIENT_BUFFER = -1;
+        private const int SUCCESS = 1;
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509Decode")]
         internal static extern SafeX509Handle X509Decode(ref byte buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509Encode")]
-        private static extern int X509Encode(SafeX509Handle x, [Out] byte[]? buf, int len);
+        private static extern int X509Encode(SafeX509Handle x, [Out] byte[]? buf, ref int len);
         internal static byte[] X509Encode(SafeX509Handle x)
         {
-            return GetDynamicBuffer((ptr, buf, i) => X509Encode(ptr, buf, i), x);
+            int len = 0;
+            int ret = X509Encode(x, null, ref len);
+            if (ret != INSUFFICIENT_BUFFER)
+                throw new CryptographicException();
+
+            byte[] encoded = new byte[len];
+            ret = X509Encode(x, encoded, ref len);
+            if (ret != SUCCESS)
+                throw new CryptographicException();
+
+            return encoded;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
         private static extern int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
         {
-            const int INSUFFICIENT_BUFFER = -1;
-            const int SUCCESS = 1;
-
             ref byte buf = ref MemoryMarshal.GetReference(data);
             int size = 0;
             int ret = X509DecodeCollection(ref buf, data.Length, null, ref size);
@@ -48,6 +58,23 @@ internal static partial class Interop
             }
 
             return handles;
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509ExportPkcs7")]
+        private static extern int X509ExportPkcs7(IntPtr[] certs, int certsLen, [Out] byte[]? buf, ref int len);
+        internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
+        {
+            int len = 0;
+            int ret = X509ExportPkcs7(certHandles, certHandles.Length, null, ref len);
+            if (ret != INSUFFICIENT_BUFFER)
+                throw new CryptographicException();
+
+            byte[] encoded = new byte[len];
+            ret = X509ExportPkcs7(certHandles, certHandles.Length, encoded, ref len);
+            if (ret != SUCCESS)
+                throw new CryptographicException();
+
+            return encoded;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509GetContentType")]

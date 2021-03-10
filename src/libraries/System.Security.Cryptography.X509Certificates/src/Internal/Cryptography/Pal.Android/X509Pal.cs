@@ -38,7 +38,23 @@ namespace Internal.Cryptography.Pal
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
                 ICertificatePal? certificatePal)
             {
-                throw new NotImplementedException(nameof(DecodePublicKey));
+                switch (oid.Value)
+                {
+                    case Oids.Dsa:
+                        throw new NotImplementedException($"{nameof(DecodePublicKey)} (DSA)");
+                    case Oids.Rsa:
+                        if (certificatePal != null)
+                        {
+                            var handle = new SafeRsaHandle(GetPublicKey(certificatePal, Interop.AndroidCrypto.PAL_KeyAlgorithm.RSA));
+                            return new RSAImplementation.RSAAndroid(handle);
+                        }
+                        else
+                        {
+                            return DecodeRsaPublicKey(encodedKeyValue);
+                        }
+                    default:
+                        throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+                }
             }
 
             public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
@@ -77,7 +93,7 @@ namespace Internal.Cryptography.Pal
                 }
 
                 // Throw on unknown type to match Unix and Windows
-                throw new CryptographicException();
+                throw new CryptographicException(SR.Cryptography_UnknownCertContentType);
             }
 
             public X509ContentType GetCertContentType(string fileName)
@@ -85,14 +101,34 @@ namespace Internal.Cryptography.Pal
                 return GetCertContentType(File.ReadAllBytes(fileName));
             }
 
-            private SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
+            private static SafeEcKeyHandle DecodeECPublicKey(ICertificatePal pal)
+            {
+                return new SafeEcKeyHandle(GetPublicKey(pal, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC));
+            }
+
+            private static IntPtr GetPublicKey(ICertificatePal pal, Interop.AndroidCrypto.PAL_KeyAlgorithm algorithm)
             {
                 AndroidCertificatePal certPal = (AndroidCertificatePal)pal;
-                IntPtr ptr = Interop.AndroidCrypto.X509GetPublicKey(certPal.SafeHandle, Interop.AndroidCrypto.PAL_KeyAlgorithm.EC);
+                IntPtr ptr = Interop.AndroidCrypto.X509GetPublicKey(certPal.SafeHandle, algorithm);
                 if (ptr == IntPtr.Zero)
                     throw new CryptographicException();
 
-                return new SafeEcKeyHandle(ptr);
+                return ptr;
+            }
+
+            private static RSA DecodeRsaPublicKey(byte[] encodedKeyValue)
+            {
+                RSA rsa = RSA.Create();
+                try
+                {
+                    rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
+                    return rsa;
+                }
+                catch (Exception)
+                {
+                    rsa.Dispose();
+                    throw;
+                }
             }
         }
     }

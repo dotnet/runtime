@@ -13,8 +13,8 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     internal struct Component
     {
-        public string Name;
-        public string Value;
+        public string? Name;
+        public string? Value;
     }
 
     internal enum Capability : int
@@ -101,7 +101,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static string GetDnsNameFromDN(string distinguishedName)
         {
             int result = 0;
-            string dnsName = null;
+            string? dnsName = null;
             IntPtr results = IntPtr.Zero;
 
             Debug.Assert(distinguishedName != null);
@@ -183,13 +183,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(result);
             }
 
-            return dnsName;
+            return dnsName!;
         }
 
         internal static string GetDNFromDnsName(string dnsName)
         {
             int result = 0;
-            string dn = null;
+            string? dn = null;
             IntPtr results = IntPtr.Zero;
 
             Debug.Assert(dnsName != null);
@@ -251,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(result);
             }
 
-            return dn;
+            return dn!;
         }
 
         //
@@ -262,7 +262,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static string GetDnsHostNameFromNTDSA(DirectoryContext context, string dn)
         {
-            string dcName = null;
+            string? dcName = null;
             int index = dn.IndexOf(',');
             if (index == -1)
             {
@@ -275,7 +275,7 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 // the "dnsHostName" attribute contains the dns name of the computer
-                dcName = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.DnsHostName);
+                dcName = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.DnsHostName)!;
             }
             finally
             {
@@ -286,7 +286,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string GetAdamDnsHostNameFromNTDSA(DirectoryContext context, string dn)
         {
-            string dnsHostName = null;
+            string? dnsHostName = null;
             int ldapPort = -1;
             string ntdsaDn = dn;
             string serverDn = GetPartialDN(dn, 1);
@@ -314,16 +314,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 foreach (SearchResult res in resCol)
                 {
-                    string objectCategoryValue = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory);
+                    string objectCategoryValue = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory)!;
                     if ((objectCategoryValue.Length >= ntdsdsa.Length) && (Utils.Compare(objectCategoryValue, 0, ntdsdsa.Length, ntdsdsa, 0, ntdsdsa.Length) == 0))
                     {
                         // ntdsa object
-                        ldapPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP);
+                        ldapPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!;
                     }
                     else
                     {
                         // server object
-                        dnsHostName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName);
+                        dnsHostName = (string?)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName);
                     }
                 }
             }
@@ -343,7 +343,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string GetAdamHostNameAndPortsFromNTDSA(DirectoryContext context, string dn)
         {
-            string dnsHostName = null;
+            string? dnsHostName = null;
             int ldapPort = -1;
             int sslPort = -1;
             string ntdsaDn = dn;
@@ -373,17 +373,17 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 foreach (SearchResult res in resCol)
                 {
-                    string objectCategoryValue = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory);
+                    string objectCategoryValue = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory)!;
                     if ((objectCategoryValue.Length >= ntdsdsa.Length) && (Utils.Compare(objectCategoryValue, 0, ntdsdsa.Length, ntdsdsa, 0, ntdsdsa.Length) == 0))
                     {
                         // ntdsa object
-                        ldapPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP);
-                        sslPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortSSL);
+                        ldapPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!;
+                        sslPort = (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortSSL)!;
                     }
                     else
                     {
                         // server object
-                        dnsHostName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName);
+                        dnsHostName = (string?)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName);
                     }
                 }
             }
@@ -463,13 +463,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 dnComponents[i].Name = subComponents[0].Trim();
-                if (dnComponents[i].Name.Length == 0)
+                if (dnComponents[i].Name!.Length == 0)
                 {
                     throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                 }
 
                 dnComponents[i].Value = subComponents[1].Trim();
-                if (dnComponents[i].Value.Length == 0)
+                if (dnComponents[i].Value!.Length == 0)
                 {
                     throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                 }
@@ -499,13 +499,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 dnComponents[i].Name = subComponents[0].Trim();
-                if (dnComponents[i].Name.Length == 0)
+                if (dnComponents[i].Name!.Length == 0)
                 {
                     return false;
                 }
 
                 dnComponents[i].Value = subComponents[1].Trim();
-                if (dnComponents[i].Value.Length == 0)
+                if (dnComponents[i].Value!.Length == 0)
                 {
                     return false;
                 }
@@ -571,18 +571,18 @@ namespace System.DirectoryServices.ActiveDirectory
             results = new string[resultList.Count];
             for (int i = 0; i < resultList.Count; i++)
             {
-                results[i] = (string)resultList[i];
+                results[i] = (string)resultList[i]!;
             }
 
             return results;
         }
 
-        internal static DirectoryContext GetNewDirectoryContext(string name, DirectoryContextType contextType, DirectoryContext context)
+        internal static DirectoryContext GetNewDirectoryContext(string? name, DirectoryContextType contextType, DirectoryContext? context)
         {
             return new DirectoryContext(contextType, name, context);
         }
 
-        internal static void GetDomainAndUsername(DirectoryContext context, out string username, out string domain)
+        internal static void GetDomainAndUsername(DirectoryContext context, out string? username, out string? domain)
         {
             if ((context.UserName != null) && (context.UserName.Length > 0))
             {
@@ -611,8 +611,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr authIdentity;
             int result = 0;
 
-            string username;
-            string domain;
+            string? username;
+            string? domain;
 
             // split the username from the context into username and domain (if possible)
             GetDomainAndUsername(context, out username, out domain);
@@ -654,7 +654,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static IntPtr GetDSHandle(string domainControllerName, string domainName, IntPtr authIdentity, LoadLibrarySafeHandle libHandle)
+        internal static IntPtr GetDSHandle(string? domainControllerName, string? domainName, IntPtr authIdentity, LoadLibrarySafeHandle libHandle)
         {
             int result = 0;
             IntPtr handle;
@@ -764,7 +764,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             ADSearcher searcher = new ADSearcher(partitionsEntry, filter, propertiesToLoad, SearchScope.OneLevel, false /*not paged search*/, false /*no cached results*/);
 
-            SearchResult res = null;
+            SearchResult? res = null;
 
             try
             {
@@ -781,7 +781,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromCOMException(context, e);
             }
 
-            _ = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+            _ = (string?)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
             return res.GetDirectoryEntry();
         }
 
@@ -794,7 +794,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             Debug.Assert(component.Length == 1);
 
-            string transportName = component[0].Value;
+            string? transportName = component[0].Value;
 
             if (string.Equals(transportName, "IP", StringComparison.OrdinalIgnoreCase))
                 return ActiveDirectoryTransportType.Rpc;
@@ -822,9 +822,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static string GetServerNameFromInvocationID(string serverObjectDN, Guid invocationID, DirectoryServer server)
+        internal static string? GetServerNameFromInvocationID(string? serverObjectDN, Guid invocationID, DirectoryServer server)
         {
-            string originatingServerName = null;
+            string? originatingServerName = null;
 
             if (serverObjectDN == null)
             {
@@ -835,7 +835,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // get the string representation of the invocationID
                 byte[] byteGuid = invocationID.ToByteArray();
                 IntPtr ptr = (IntPtr)0;
-                string stringGuid = null;
+                string? stringGuid = null;
 
                 // encode the byte arry into binary string representation
                 int hr = UnsafeNativeMethods.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
@@ -864,7 +864,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                            SearchScope.Subtree,
                                                            false, /* don't need paged search */
                                                            false /* don't need to cache result */);
-                SearchResult srchResult = null;
+                SearchResult? srchResult = null;
 
                 try
                 {
@@ -872,7 +872,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (srchResult != null)
                     {
                         DirectoryEntry srvEntry = srchResult.GetDirectoryEntry().Parent;
-                        originatingServerName = (string)PropertyManager.GetPropertyValue(server.Context, srvEntry, PropertyManager.DnsHostName);
+                        originatingServerName = (string?)PropertyManager.GetPropertyValue(server.Context, srvEntry, PropertyManager.DnsHostName);
                     }
                 }
                 catch (COMException e)
@@ -886,7 +886,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    originatingServerName = (string)PropertyManager.GetPropertyValue(de.Parent, PropertyManager.DnsHostName);
+                    originatingServerName = (string?)PropertyManager.GetPropertyValue(de.Parent, PropertyManager.DnsHostName);
                 }
                 catch (COMException e)
                 {
@@ -898,7 +898,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (server is AdamInstance)
                 {
                     // we might need to add the port number
-                    int portnumber = (int)PropertyManager.GetPropertyValue(server.Context, de, PropertyManager.MsDSPortLDAP);
+                    int portnumber = (int)PropertyManager.GetPropertyValue(server.Context, de, PropertyManager.MsDSPortLDAP)!;
 
                     if (portnumber != 389)
                         originatingServerName = originatingServerName + ":" + portnumber;
@@ -923,8 +923,8 @@ namespace System.DirectoryServices.ActiveDirectory
             if ((context.UserName == null) && (context.Password == null))
                 return false;
 
-            string userName;
-            string domainName;
+            string? userName;
+            string? domainName;
 
             Utils.GetDomainAndUsername(context, out userName, out domainName);
 
@@ -981,9 +981,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static string GetPolicyServerName(DirectoryContext context, bool isForest, bool needPdc, string source)
+        internal static string GetPolicyServerName(DirectoryContext context, bool isForest, bool needPdc, string? source)
         {
-            string serverName = null;
+            string? serverName = null;
             PrivateLocatorFlags flag = PrivateLocatorFlags.DirectoryServicesRequired;
 
             // passes in either domain or forest name, just find the dc
@@ -1011,11 +1011,11 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             // need first to decide whether this is a server in the root domain or not
                             DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                            string namingContext = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.DefaultNamingContext);
-                            string rootNamingContext = (string)PropertyManager.GetPropertyValue(context, de, PropertyManager.RootDomainNamingContext);
+                            string? namingContext = (string?)PropertyManager.GetPropertyValue(context, de, PropertyManager.DefaultNamingContext);
+                            string? rootNamingContext = (string?)PropertyManager.GetPropertyValue(context, de, PropertyManager.RootDomainNamingContext);
                             if (Compare(namingContext, rootNamingContext) == 0)
                             {
-                                serverName = context.Name;
+                                serverName = context.Name!;
                             }
                             else
                             {
@@ -1031,7 +1031,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    serverName = context.Name;
+                    serverName = context.Name!;
                 }
             }
 
@@ -1073,7 +1073,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // (It always searches for one object matching the searching criteria and returns the values for the specified properties using
         //  range retrieval)
         //
-        internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string filter, ArrayList propertiesToLoad, SearchScope searchScope)
+        internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string? filter, ArrayList propertiesToLoad, SearchScope searchScope)
         {
             return GetValuesWithRangeRetrieval(searchRootEntry, filter, propertiesToLoad, new ArrayList(), searchScope);
         }
@@ -1083,10 +1083,10 @@ namespace System.DirectoryServices.ActiveDirectory
         // (It always searches for one object matching the searching criteria and returns the values for the specified properties using
         //  range retrieval)
         //
-        internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string filter, ArrayList propertiesWithRangeRetrieval, ArrayList propertiesWithoutRangeRetrieval, SearchScope searchScope)
+        internal static Hashtable GetValuesWithRangeRetrieval(DirectoryEntry searchRootEntry, string? filter, ArrayList propertiesWithRangeRetrieval, ArrayList propertiesWithoutRangeRetrieval, SearchScope searchScope)
         {
             ADSearcher searcher = new ADSearcher(searchRootEntry, filter, Array.Empty<string>(), searchScope, false /* paged search */, false /* cache results */);
-            SearchResult res = null;
+            SearchResult? res = null;
             int rangeStart = 0;
             Hashtable results = new Hashtable();
             Hashtable propertyNamesWithRangeInfo = new Hashtable();
@@ -1143,7 +1143,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         int index = propertyNameWithRangeInfo.IndexOf(';');
 
-                        string propertyName = null;
+                        string? propertyName = null;
                         if (index != -1)
                         {
                             propertyName = propertyNameWithRangeInfo.Substring(0, index);
@@ -1159,7 +1159,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             continue;
                         }
 
-                        ArrayList values = (ArrayList)results[propertyName];
+                        ArrayList values = (ArrayList)results[propertyName]!;
                         values.AddRange(res.Properties[propertyNameWithRangeInfo]);
 
                         if (propertyNamesWithRangeInfo.Contains(propertyName))
@@ -1169,7 +1169,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // it in the next round.
                             //
 
-                            string propertyToLoad = (string)propertyNamesWithRangeInfo[propertyName];
+                            string propertyToLoad = (string)propertyNamesWithRangeInfo[propertyName]!;
 
                             if ((propertyNameWithRangeInfo.Length >= propertyToLoad.Length) && (Utils.Compare(propertyToLoad, 0, propertyToLoad.Length, propertyNameWithRangeInfo, 0, propertyToLoad.Length) != 0))
                             {
@@ -1192,7 +1192,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return results;
         }
 
-        internal static ArrayList GetReplicaList(DirectoryContext context, string partitionName, string siteName, bool isDefaultNC, bool isADAM, bool isGC)
+        internal static ArrayList GetReplicaList(DirectoryContext context, string? partitionName, string? siteName, bool isDefaultNC, bool isADAM, bool isGC)
         {
             ArrayList ntdsaNames = new ArrayList();
             ArrayList dnsNames = new ArrayList();
@@ -1218,7 +1218,7 @@ namespace System.DirectoryServices.ActiveDirectory
             StringBuilder roServerFilter = new StringBuilder(10);
 
             bool useReplicaInfo = false;
-            string configurationNamingContext = null;
+            string? configurationNamingContext = null;
 
             try
             {
@@ -1248,8 +1248,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (useReplicaInfo)
             {
-                DirectoryEntry partitionsEntry = null;
-                DirectoryEntry fsmoPartitionsEntry = null;
+                DirectoryEntry? partitionsEntry = null;
+                DirectoryEntry? fsmoPartitionsEntry = null;
 
                 try
                 {
@@ -1257,14 +1257,14 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the partitions entry on the naming master
                     //
                     partitionsEntry = DirectoryEntryManager.GetDirectoryEntry(context, "CN=Partitions," + configurationNamingContext);
-                    string fsmoRoleOwnerName = null;
+                    string? fsmoRoleOwnerName = null;
                     if (isADAM)
                     {
-                        fsmoRoleOwnerName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner));
+                        fsmoRoleOwnerName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner)!);
                     }
                     else
                     {
-                        fsmoRoleOwnerName = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner));
+                        fsmoRoleOwnerName = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, partitionsEntry, PropertyManager.FsmoRoleOwner)!);
                     }
 
                     DirectoryContext fsmoContext = Utils.GetNewDirectoryContext(fsmoRoleOwnerName, DirectoryContextType.DirectoryServer, context);
@@ -1272,12 +1272,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     // get the properties using range retrieval
                     // (since msDS-NC-Replica-Locations and msDS-NC-RO-Replica-Locations are multi-valued)
-                    string filter = "(&(" + PropertyManager.ObjectCategory + "=crossRef)(" + PropertyManager.NCName + "=" + Utils.GetEscapedFilterValue(partitionName) + "))";
+                    string filter = "(&(" + PropertyManager.ObjectCategory + "=crossRef)(" + PropertyManager.NCName + "=" + Utils.GetEscapedFilterValue(partitionName!) + "))";
                     ArrayList propertyNames = new ArrayList();
                     propertyNames.Add(PropertyManager.MsDSNCReplicaLocations);
                     propertyNames.Add(PropertyManager.MsDSNCROReplicaLocations);
 
-                    Hashtable values = null;
+                    Hashtable? values = null;
                     try
                     {
                         values = Utils.GetValuesWithRangeRetrieval(fsmoPartitionsEntry, filter, propertyNames, SearchScope.OneLevel);
@@ -1293,8 +1293,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // extract the property values
-                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLowerInvariant()];
-                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLowerInvariant()];
+                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLowerInvariant()]!;
+                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLowerInvariant()]!;
                     Debug.Assert(replicaLocations != null);
 
                     if (replicaLocations.Count == 0)
@@ -1350,8 +1350,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            string searchRootDN = null;
-            DirectoryEntry searchRootEntry = null;
+            string? searchRootDN = null;
+            DirectoryEntry? searchRootEntry = null;
             try
             {
                 // check whether we can narrow down our search within a specific site
@@ -1366,7 +1366,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 searchRootEntry = DirectoryEntryManager.GetDirectoryEntry(context, searchRootDN);
 
                 // set up searcher object
-                string filter2 = null;
+                string? filter2 = null;
                 if (ntdsaFilter.ToString().Length == 0)
                 {
                     // either this is the case when we want all the servers (partitionName = null or partitionName is Configuration/Schema)
@@ -1447,7 +1447,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 ADSearcher searcher2 = new ADSearcher(searchRootEntry, filter2, Array.Empty<string>(), SearchScope.Subtree);
-                SearchResultCollection resCol = null;
+                SearchResultCollection? resCol = null;
                 bool needToContinueRangeRetrieval = false;
                 ArrayList ntdsaNamesForRangeRetrieval = new ArrayList();
                 int rangeStart = 0;
@@ -1473,13 +1473,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         foreach (SearchResult res in resCol)
                         {
-                            string objectCategory = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory);
+                            string objectCategory = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.ObjectCategory)!;
                             if ((objectCategory.Length >= objectCategoryValue.Length) && (Utils.Compare(objectCategory, 0, objectCategoryValue.Length, objectCategoryValue, 0, objectCategoryValue.Length) == 0))
                             {
                                 //
                                 // ntdsa objects (return only those servers which have the partition fully instantiated)
                                 //
-                                string ntdsaName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+                                string ntdsaName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName)!;
                                 if (useReplicaInfo)
                                 {
                                     if ((objectCategory.Length >= roObjectCategoryValue.Length) && (Utils.Compare(objectCategory, 0, roObjectCategoryValue.Length, roObjectCategoryValue, 0, roObjectCategoryValue.Length) == 0))
@@ -1490,7 +1490,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         ntdsaNames.Add(ntdsaName);
                                         if (isADAM)
                                         {
-                                            serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP));
+                                            serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!);
                                         }
                                         continue;
                                     }
@@ -1498,7 +1498,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                     // Here we need to check if we retrieved all the msDS-HasInstantiatedNCs values
                                     // if not we need to continue with the range retrieval (in parallel for the various ntdsa objects)
 
-                                    string propertyName = null;
+                                    string? propertyName = null;
                                     if (!res.Properties.Contains(propertyWithRangeInfo))
                                     {
                                         // find the property name with the range info
@@ -1529,7 +1529,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                     {
                                         Debug.Assert(dnString.Length > 10, "ConfigurationSet::GetReplicaList - dnWithBinary is not in the expected format.");
 
-                                        if (((dnString.Length - 13) >= partitionName.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
+                                        if (((dnString.Length - 13) >= partitionName!.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
                                         {
                                             // found the entry that corresponds to this partition so even if we didn't get all the values of the
                                             // multivalues attribute we can stop here.
@@ -1541,7 +1541,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
                                                 {
-                                                    serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP));
+                                                    serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!);
                                                 }
                                                 break;
                                             }
@@ -1563,7 +1563,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                     ntdsaNames.Add(ntdsaName);
                                     if (isADAM)
                                     {
-                                        serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP));
+                                        serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!);
                                     }
                                 }
                             }
@@ -1573,8 +1573,8 @@ namespace System.DirectoryServices.ActiveDirectory
                                 // when we try to retrieve this info for a valid DC/GC
                                 if (res.Properties.Contains(PropertyManager.DnsHostName))
                                 {
-                                    serverNames.Add("CN=NTDS Settings," + (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName),
-                                                (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName));
+                                    serverNames.Add("CN=NTDS Settings," + (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName)!,
+                                                (string?)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DnsHostName));
                                 }
                             }
                         }
@@ -1635,10 +1635,10 @@ namespace System.DirectoryServices.ActiveDirectory
                             {
                                 foreach (SearchResult res in resCol2)
                                 {
-                                    string ntdsaName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName);
+                                    string ntdsaName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.DistinguishedName)!;
                                     // Here we need to check if we retrieved all the msDS-HasInstantiatedNCs values
                                     // if not we need to continue with the range retrieval (in parallel for the various ntdsa objects)
-                                    string propertyName = null;
+                                    string? propertyName = null;
                                     if (!res.Properties.Contains(propertyWithRangeInfo2))
                                     {
                                         // find the property name with the range info
@@ -1669,7 +1669,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                     {
                                         Debug.Assert(dnString.Length > 10, "ConfigurationSet::GetReplicaList - dnWithBinary is not in the expected format.");
 
-                                        if (((dnString.Length - 13) >= partitionName.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
+                                        if (((dnString.Length - 13) >= partitionName!.Length) && (Utils.Compare(dnString, 13, partitionName.Length, partitionName, 0, partitionName.Length) == 0))
                                         {
                                             foundPartitionEntry = true;
 
@@ -1678,7 +1678,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
                                                 {
-                                                    serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP));
+                                                    serverPorts.Add(ntdsaName, (int)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.MsDSPortLDAP)!);
                                                 }
                                                 break;
                                             }
@@ -1726,7 +1726,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // convert the ntdsa object names to server:port
             foreach (string ntdsaName in ntdsaNames)
             {
-                string hostName = (string)serverNames[ntdsaName];
+                string? hostName = (string?)serverNames[ntdsaName];
 
                 if (hostName == null)
                 {
@@ -1752,7 +1752,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isADAM)
                 {
-                    dnsNames.Add(hostName + ":" + (int)serverPorts[ntdsaName]);
+                    dnsNames.Add(hostName + ":" + (int)serverPorts[ntdsaName]!);
                 }
                 else
                 {
@@ -1838,7 +1838,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return pathCracker.GetEscapedElement(0, originalPath);
         }
 
-        internal static int Compare(string s1, string s2, uint compareFlags)
+        internal static int Compare(string? s1, string? s2, uint compareFlags)
         {
             // This code block was specifically written for handling string comparison
             // involving null strings. The unmanged API "NativeMethods.CompareString"
@@ -1885,7 +1885,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return (result - 2); // to give the semantics of <0, ==0, >0
         }
 
-        internal static int Compare(string s1, string s2)
+        internal static int Compare(string? s1, string? s2)
         {
             return Compare(s1, s2, DEFAULT_CMP_FLAGS);
         }
@@ -1921,7 +1921,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //       DC1                DC1                 null
         //       IPv4:Port          IPv4                Port
         //       [IPv6]:Port        IPv6                Port
-        internal static string SplitServerNameAndPortNumber(string serverName, out string portNumber)
+        internal static string SplitServerNameAndPortNumber(string serverName, out string? portNumber)
         {
             portNumber = null;
 
@@ -1975,7 +1975,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return serverName;
         }
 
-        private static string s_NTAuthorityString;
+        private static string? s_NTAuthorityString;
 
         internal static string GetNtAuthorityString()
         {
@@ -2135,7 +2135,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // Retrieve the user's SID from the user info
-                TOKEN_USER tokenUser = (TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(TOKEN_USER));
+                TOKEN_USER tokenUser = (TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(TOKEN_USER))!;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.pSid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(UnsafeNativeMethods.IsValidSid(pUserSid));
@@ -2199,7 +2199,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
                 POLICY_ACCOUNT_DOMAIN_INFO info = (POLICY_ACCOUNT_DOMAIN_INFO)
-                                    Marshal.PtrToStructure(pBuffer, typeof(POLICY_ACCOUNT_DOMAIN_INFO));
+                                    Marshal.PtrToStructure(pBuffer, typeof(POLICY_ACCOUNT_DOMAIN_INFO))!;
 
                 Debug.Assert(UnsafeNativeMethods.IsValidSid(info.domainSid));
 
@@ -2229,7 +2229,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static bool IsMachineDC(string computerName)
+        internal static bool IsMachineDC(string? computerName)
         {
             IntPtr dsRoleInfoPtr = IntPtr.Zero;
             int err = -1;
@@ -2250,7 +2250,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 DSROLE_PRIMARY_DOMAIN_INFO_BASIC dsRolePrimaryDomainInfo =
-                    (DSROLE_PRIMARY_DOMAIN_INFO_BASIC)Marshal.PtrToStructure(dsRoleInfoPtr, typeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
+                    (DSROLE_PRIMARY_DOMAIN_INFO_BASIC)Marshal.PtrToStructure(dsRoleInfoPtr, typeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC))!;
 
                 return (dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RoleBackupDomainController ||
                              dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RolePrimaryDomainController);
@@ -2270,7 +2270,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr pIdentAuth = UnsafeNativeMethods.GetSidIdentifierAuthority(pSid);
 
             SID_IDENTIFIER_AUTHORITY identAuth =
-                (SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(SID_IDENTIFIER_AUTHORITY));
+                (SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(SID_IDENTIFIER_AUTHORITY))!;
 
             IntPtr pRid = UnsafeNativeMethods.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);

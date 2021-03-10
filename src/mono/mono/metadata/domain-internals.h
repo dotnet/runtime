@@ -239,17 +239,10 @@ struct _MonoJitInfo {
 
 #define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
 
-typedef struct {
-	gpointer *static_data; /* Used to free the static data without going through the MonoAppContext object itself. */
-	MonoGCHandle gc_handle;
-} ContextStaticData;
-
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
 	gint32 context_id;
-	gpointer *static_data;
-	ContextStaticData *data;
 };
 
 typedef struct _MonoThunkFreeList {
@@ -274,7 +267,6 @@ struct _MonoDomain {
 	 */
 #define MONO_DOMAIN_FIRST_OBJECT domain
 	MonoAppDomain      *domain;
-	MonoAppContext     *default_context;
 	MonoException      *out_of_memory_ex;
 	MonoException      *null_reference_ex;
 	MonoException      *stack_overflow_ex;
@@ -285,15 +277,7 @@ struct _MonoDomain {
 	/* new MonoType [0] */
 	MonoArray          *empty_types;
 	MonoString         *empty_string;
-	/* 
-	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
-	 * not object references.
-	 */
-#define MONO_DOMAIN_FIRST_GC_TRACKED env
-	MonoGHashTable     *env;
-	MonoGHashTable     *ldstr_table;
-#define MONO_DOMAIN_LAST_GC_TRACKED ldstr_table
-	guint32            state;
+#define MONO_DOMAIN_LAST_OBJECT empty_string
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
 	/*
@@ -304,55 +288,10 @@ struct _MonoDomain {
 	 * list.
 	 */
 	GSList             *domain_assemblies;
-	MonoAssembly       *entry_assembly;
 	char               *friendly_name;
-	/* Protected by 'jit_code_hash_lock' */
-	MonoInternalHashTable jit_code_hash;
-	mono_mutex_t    jit_code_hash_lock;
-	int		    num_jit_info_table_duplicates;
-	MonoJitInfoTable * 
-	  volatile          jit_info_table;
-	/*
-	 * Contains information about AOT loaded code.
-	 * Only used in the root domain.
-	 */
-	MonoJitInfoTable *
-	  volatile          aot_modules;
-	GSList		   *jit_info_free_queue;
-	/* Used when loading assemblies */
-	gchar **search_path;
-	gchar *private_bin_path;
-	
-	/* Used by remoting proxies */
-	MonoMethod         *create_proxy_for_type_method;
-	MonoMethod         *private_invoke_method;
-	/* Used to store offsets of thread and context static fields */
-	GHashTable         *special_static_fields;
-	/* 
-	 * This must be a GHashTable, since these objects can't be finalized
-	 * if the hashtable contains a GC visible reference to them.
-	 */
-	GHashTable         *finalizable_objects_hash; // TODO: this needs to be moved for unloadability with non-sgen gc
 
-	/* Protects the three hashes above */
-	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
 	MonoCoopMutex  assemblies_lock;
-
-	/* Contains the compiled runtime invoke wrapper used by finalizers */
-	gpointer            finalize_runtime_invoke;
-
-	/* Cache function pointers for architectures  */
-	/* that require wrappers */
-	GHashTable *ftnptrs_hash; // TODO: need to move?
-
-	/* Maps MonoMethod* to weak links to DynamicMethod objects */
-	GHashTable *method_to_dyn_method;
-
-	/* <ThrowUnobservedTaskExceptions /> support */
-	gboolean throw_unobserved_task_exceptions;
-
-	guint32 execution_context_field_offset;
 };
 
 typedef struct  {
@@ -378,9 +317,6 @@ mono_domain_assemblies_unlock (MonoDomain *domain)
 	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
 }
 
-#define mono_domain_jit_code_hash_lock(domain) mono_locks_os_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
-#define mono_domain_jit_code_hash_unlock(domain) mono_locks_os_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
-
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 
 void mono_domain_lock (MonoDomain *domain);
@@ -401,6 +337,9 @@ mono_cleanup (void);
 void
 mono_close_exe_image (void);
 
+void
+mono_jit_info_tables_init (void);
+
 int
 mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes);
 
@@ -409,16 +348,16 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 					MonoJitInfoFlags flags, int num_clauses, int num_holes);
 
 MonoJitInfoTable *
-mono_jit_info_table_new (MonoDomain *domain);
+mono_jit_info_table_new (void);
 
 void
 mono_jit_info_table_free (MonoJitInfoTable *table);
 
 void
-mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_add    (MonoJitInfo *ji);
 
 void
-mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji);
+mono_jit_info_table_remove (MonoJitInfo *ji);
 
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);
@@ -501,9 +440,6 @@ void mono_enable_debug_domain_unload (gboolean enable);
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);
 
-void
-mono_context_init_checked (MonoDomain *domain, MonoError *error);
-
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error);
 
@@ -525,11 +461,11 @@ mono_domain_memory_manager (MonoDomain *domain)
 	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
-static inline MonoMemoryManager *
-mono_domain_ambient_memory_manager (MonoDomain *domain)
+static inline MonoMemoryManager*
+mono_mem_manager_get_ambient (void)
 {
-	// FIXME: All callers of mono_domain_ambient_memory_manager should get a MemoryManager from their callers or context
-	return mono_domain_memory_manager (domain);
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return mono_domain_memory_manager (mono_get_root_domain ());
 }
 
 G_END_DECLS

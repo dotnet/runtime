@@ -2129,7 +2129,6 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 		mono_error_assert_ok (error);
 		if (*dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
-			MonoDomain *domain = mono_domain_get ();
 			int methods_len = g_slist_length (*dynamic_methods);
 			MonoArray *old_methods = mono_ex->dynamic_methods;
 			int old_methods_len = 0;
@@ -2147,11 +2146,7 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			int index = old_methods_len;
 
 			for (GSList *l = *dynamic_methods; l; l = l->next) {
-				g_assert (domain->method_to_dyn_method);
-
-				mono_domain_lock (domain);
-				MonoGCHandle dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
-				mono_domain_unlock (domain);
+				MonoGCHandle dis_link = mono_method_to_dyn_method ((MonoMethod*)l->data);
 
 				if (dis_link) {
 					MonoObject *o = mono_gchandle_get_target_internal (dis_link);

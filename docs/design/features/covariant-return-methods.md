@@ -1,6 +1,6 @@
 # Covariant Return Methods
 
-Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/records.md) C# language features posed for C# 9.0.
+Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/records.md) C# language features posed for C# 9.0.
 
 This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1. Example: using a more derived return type.
 

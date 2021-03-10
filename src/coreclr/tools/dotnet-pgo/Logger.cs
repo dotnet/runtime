@@ -10,6 +10,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
     class Logger
     {
         private bool _hideMessages;
+        private bool _hideDetailedMessages;
 
         public void PrintWarning(string warning)
         {
@@ -32,9 +33,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _hideMessages = true;
         }
 
+        public void HideDetailedMessages()
+        {
+            _hideDetailedMessages = true;
+        }
+
         public void PrintMessage(string message)
         {
             if (!_hideMessages)
+                Console.WriteLine(message);
+        }
+
+        public void PrintDetailedMessage(string message)
+        {
+            if (!_hideDetailedMessages)
                 Console.WriteLine(message);
         }
 

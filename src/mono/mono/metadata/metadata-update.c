@@ -203,7 +203,7 @@ mono_metadata_update_ee_init (MonoError *error)
 
 static
 void
-mono_metadata_update_invoke_hook (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation)
+mono_metadata_update_invoke_hook (MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	if (mono_get_runtime_callbacks ()->metadata_update_published)
 		mono_get_runtime_callbacks ()->metadata_update_published (alc, generation);
@@ -248,7 +248,8 @@ metadata_update_set_has_updates (void)
 }
 
 uint32_t
-mono_metadata_update_prepare (MonoDomain *domain) {
+mono_metadata_update_prepare (void)
+{
 	mono_lazy_initialize (&metadata_update_lazy_init, initialize);
 	/*
 	 * TODO: assert that the updater isn't depending on current metadata, else publishing might block.
@@ -263,7 +264,8 @@ mono_metadata_update_prepare (MonoDomain *domain) {
 }
 
 gboolean
-mono_metadata_update_available (void) {
+mono_metadata_update_available (void)
+{
 	return update_published < update_alloc_frontier;
 }
 
@@ -304,10 +306,11 @@ mono_metadata_wait_for_update (uint32_t timeout_ms)
 }
 
 void
-mono_metadata_update_publish (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation) {
+mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
+{
 	g_assert (update_published < generation && generation <= update_alloc_frontier);
 	/* TODO: wait for all threads that are using old metadata to update. */
-	mono_metadata_update_invoke_hook (domain, alc, generation);
+	mono_metadata_update_invoke_hook (alc, generation);
 	update_published = update_alloc_frontier;
 	mono_memory_write_barrier ();
 	publish_unlock ();
@@ -872,7 +875,7 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
  * LOCKING: Takes the publish_lock
  */
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
+mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
 {
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
@@ -891,7 +894,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 		mono_dump_mem (dil_bytes, dil_length);
 	}
 
-	uint32_t generation = mono_metadata_update_prepare (domain);
+	uint32_t generation = mono_metadata_update_prepare ();
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: 0x%08x", image_base->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string size: 0x%08x", image_base->heap_us.size);
@@ -954,7 +957,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	mono_error_assert_ok (error);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
-	mono_metadata_update_publish (domain, alc, generation);
+	mono_metadata_update_publish (alc, generation);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
