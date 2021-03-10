@@ -24,5 +24,7 @@ namespace System.IO
         internal abstract void Flush(bool flushToDisk);
 
         internal abstract void DisposeInternal(bool disposing);
+
+        internal virtual void OnBufferAllocated(byte[] buffer) { }
     }
 }

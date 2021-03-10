@@ -104,10 +104,9 @@ namespace System.IO
             }
         }
 
-        // called by BufferedStream
-        internal void OnBufferAllocated(byte[] buffer)
+        // called by BufferedFileStreamStrategy
+        internal override void OnBufferAllocated(byte[] buffer)
         {
-            Debug.Assert(buffer != null);
             Debug.Assert(_preallocatedOverlapped == null);
 
             _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, buffer);
