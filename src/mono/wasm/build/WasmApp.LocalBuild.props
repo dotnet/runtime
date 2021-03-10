@@ -41,7 +41,7 @@
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.browser-wasm'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
-    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir)', WasmAppBuilder'))</WasmAppBuilderDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir)', 'WasmAppBuilder'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmBuildTasks'))</WasmBuildTasksDir>
   </PropertyGroup>
 
