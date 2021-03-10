@@ -10565,8 +10565,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
 			LLVMValueRef address = lhs;
-			if (!replicate)
-				address = convert (ctx, address, LLVMPointerType (ret_t, 0));
+			LLVMTypeRef address_t = LLVMPointerType (ret_t, 0);
+			if (replicate) {
+				LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+				address_t = LLVMPointerType (elem_t, 0);
+			}
+			address = convert (ctx, address, address_t);
 			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1", FALSE, alignment);
 			if (replicate) {
 				unsigned int elems = LLVMGetVectorSize (ret_t);
