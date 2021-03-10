@@ -198,7 +198,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_eval_member_access({scopeId}, {JsonConvert.SerializeObject(var_ids)}, '', '{expr}')");
         }
 
-        public static MonoCommands SetBreakpoint(string assemblyName, uint methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
+        public static MonoCommands SetBreakpoint(string assemblyName, int methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
 
         public static MonoCommands RemoveBreakpoint(int breakpointId) => new MonoCommands($"MONO.mono_wasm_remove_breakpoint({breakpointId})");
 
