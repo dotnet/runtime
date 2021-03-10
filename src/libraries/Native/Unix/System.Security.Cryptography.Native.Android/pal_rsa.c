@@ -226,7 +226,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
         (*env)->DeleteLocalRef(env, fromBytes);
         (*env)->DeleteLocalRef(env, decryptedBytes);
         (*env)->DeleteLocalRef(env, algName);
-        return RSA_FAIL;
+        return FAIL;
     }
 
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
