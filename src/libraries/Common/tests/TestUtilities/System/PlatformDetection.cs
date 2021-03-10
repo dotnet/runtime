@@ -137,7 +137,7 @@ namespace System
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
-        public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
+        public static bool SupportsAlpn => (IsWindows && !IsWindows7 && !IsNetFramework) ||
             (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 

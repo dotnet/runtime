@@ -69,6 +69,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
@@ -83,6 +84,7 @@ jobs:
       - windows_x86
       - Linux_arm64
       - Linux_musl_x64
+      - windows_arm64
       jobParameters:
         testGroup: perf
 
@@ -131,6 +133,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
 
   # run mono interpreter perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -148,6 +151,7 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
 
   # run mono wasm microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -165,9 +169,10 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
 
 
-  # run coreclr microbenchmarks perf job
+  # run coreclr perftiger microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -177,7 +182,6 @@ jobs:
       - Linux_x64
       - windows_x64
       - windows_x86
-      - Linux_arm64
       - Linux_musl_x64
       jobParameters:
         testGroup: perf
@@ -185,6 +189,56 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+
+  # run coreclr perfowl microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_x64
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfowl'
+
+# run coreclr Linux arm64 microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfa64'
+
+# run coreclr Windows arm64 microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfsurf'
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -202,6 +256,7 @@ jobs:
         projectFile: crossgen_perf.proj
         runKind: crossgen_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perftiger'
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -219,4 +274,5 @@ jobs:
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         additionalSetupParameters: '--latestdotnet'
+        logicalmachine: 'perftiger'
 

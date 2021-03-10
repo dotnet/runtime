@@ -131,7 +131,7 @@ public class AppleAppBuilderTask : Task
     public override bool Execute()
     {
         Utils.Logger = Log;
-        bool isDevice = Arch.Equals("arm64", StringComparison.InvariantCultureIgnoreCase) && TargetOS != TargetNames.MacCatalyst;
+        bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
         {
