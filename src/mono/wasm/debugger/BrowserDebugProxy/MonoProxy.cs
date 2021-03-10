@@ -508,6 +508,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
+        private async Task<bool> EvaluateCondition(SessionId sessionId, ExecutionContext context, JObject mono_frame, Breakpoint bp, CancellationToken token)
+        {
+            if (string.IsNullOrEmpty(bp?.Condition) || mono_frame == null)
+                return true;
+
+            string condition = bp.Condition;
+
+            if (bp.ConditionAlreadyEvaluatedWithError)
+                return false;
+            try {
+                var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame["frame_id"].Value<int>(), logger);
+
+                JObject retValue = await resolver.Resolve(condition, token);
+                if (retValue == null)
+                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
+                if (retValue?["value"]?.Type == JTokenType.Boolean ||
+                    retValue?["value"]?.Type == JTokenType.Integer ||
+                    retValue?["value"]?.Type == JTokenType.Float) {
+                    if (retValue?["value"]?.Value<bool>() == true)
+                        return true;
+                }
+                else if (retValue?["value"]?.Type != JTokenType.Null)
+                    return true;
+            }
+            catch (Exception e)
+            {
+                Log("info", $"Unable evaluate conditional breakpoint: {e} condition:{condition}");
+                bp.ConditionAlreadyEvaluatedWithError = true;
+                return false;
+            }
+            return false;
+        }
+
         private async Task<bool> OnPause(SessionId sessionId, JObject args, CancellationToken token)
         {
             //FIXME we should send release objects every now and then? Or intercept those we inject and deal in the runtime
@@ -655,6 +688,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         context.CallStack = frames;
 
+                    }
+                    if (!await EvaluateCondition(sessionId, context, the_mono_frames?.First(), bp, token))
+                    {
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
                     }
                 }
                 else if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
@@ -921,7 +959,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<Result> GetScopeProperties(MessageId msg_id, int scope_id, CancellationToken token)
+        internal async Task<Result> GetScopeProperties(SessionId msg_id, int scope_id, CancellationToken token)
         {
             try
             {
@@ -957,9 +995,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, CancellationToken token)
+        private async Task<Breakpoint> SetMonoBreakpoint(SessionId sessionId, string reqId, SourceLocation location, string condition, CancellationToken token)
         {
-            var bp = new Breakpoint(reqId, location, BreakpointState.Pending);
+            var bp = new Breakpoint(reqId, location, condition, BreakpointState.Pending);
             string asm_name = bp.Location.CliLocation.Method.Assembly.Name;
             uint method_token = bp.Location.CliLocation.Method.Token;
             int il_offset = bp.Location.CliLocation.Offset;
@@ -1092,7 +1130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();
-                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, token);
+                Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
                 // don't add it to the list of locations for this id
