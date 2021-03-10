@@ -55,6 +55,10 @@ var MonoSupportLib = {
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+		mono_wasm_crypto: {
+			channel: null,
+			worker: null
+		},
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
@@ -1699,6 +1703,19 @@ var MonoSupportLib = {
 			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
+		_initialize_workers: function () {
+			var chan = Module.channel.create();
+			var worker = new Worker ("crypto_worker.js");
+			worker.postMessage ({
+				salutation:"Message from main",
+				comm_buf: chan.get_comm_buffer(),
+				msg_buf: chan.get_msg_buffer(),
+				msg_char_len: chan.get_msg_len()
+			});
+			MONO.mono_wasm_crypto.channel = chan;
+			MONO.mono_wasm_crypto.worker = worker;
+		},
+
 		_finalize_startup: function (args, ctx) {
 			var loaded_files_with_debug_info = [];
 
@@ -1736,6 +1753,10 @@ var MonoSupportLib = {
 				tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 			} catch {}
 			MONO.mono_wasm_setenv ("TZ", tz || "UTC");
+
+			// Now that the runtime has been loaded, spin off any web workers needed
+			// for ancillary operations.
+			MONO._initialize_workers ();
 			MONO.mono_wasm_runtime_ready ();
 			args.loaded_cb ();
 		},
