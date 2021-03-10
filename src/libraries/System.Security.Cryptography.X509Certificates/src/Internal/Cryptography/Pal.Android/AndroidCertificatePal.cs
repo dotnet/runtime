@@ -400,9 +400,6 @@ namespace Internal.Cryptography.Pal
             }
 
             DSAParameters dsaParameters = privateKey.ExportParameters(true);
-            using (PinAndClear.Track(dsaParameters.G!))
-            using (PinAndClear.Track(dsaParameters.P!))
-            using (PinAndClear.Track(dsaParameters.Q!))
             using (PinAndClear.Track(dsaParameters.X!))
             using (typedKey = new DSAImplementation.DSAAndroid())
             {
