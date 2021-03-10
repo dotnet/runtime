@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <!-- ActiveIssue Apple Silicon No usable version of libssl was found
+        https://github.com/dotnet/runtime/issues/49083 -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
