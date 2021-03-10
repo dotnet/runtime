@@ -177,13 +177,21 @@ def build_and_run(coreclr_args):
         mcs_path = determine_mcs_tool_path(coreclr_args)
         benchmark_machine = determine_benchmark_machine(coreclr_args)
 
-        #configname_scenario_list = [("json", "json")]
-        #runtime_options_list = [(), ("TieredCompilation=0"), ("TieredPgo=1"), ("TieredPgo=1", "TC_QuickJitForLoops=1")]
-
-        configname_scenario_list = [("json", "json"), ("plaintext", "mvc"), ("database", "fortunes_ef"), ("proxy", "proxy-yarp")]
-        runtime_options_list = [(), ("TieredCompilation=0"), ("TieredPGO=1", "TC_QuickJitForLoops=1")]
-
         mch_file = path.join(coreclr_args.output_mch_path, "aspnet.mch")
+
+        # todo: add grpc/signalr, perhaps
+
+        configname_scenario_list = [("platform", "plaintext"),
+                                    ("json", "json"),
+                                    ("plaintext", "mvc"),
+                                    ("database", "fortunes_dapper"),
+                                    ("database", "fortunes_ef_mvc_https"),
+                                    ("proxy", "proxy-yarp"),
+                                    ("staticfiles", "static")]
+
+        # note tricks to get empty and one element tuples
+
+        runtime_options_list = [tuple(), ("TieredCompilation=0", ), ("TieredPGO=1", "TC_QuickJitForLoops=1"), ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0")]
 
         for (configName, scenario) in configname_scenario_list:
             configYml = configName + ".benchmarks.yml"
@@ -203,8 +211,8 @@ def build_and_run(coreclr_args):
                                "--application.options.outputFiles", coreclr,
                                "--application.options.outputFiles", corelib]
 
-            runtime_arguments = []
             for runtime_options in runtime_options_list:
+                runtime_arguments = []
                 for runtime_option in runtime_options:
                     runtime_arguments.append("--application.environmentVariables")
                     runtime_arguments.append("COMPlus_" + runtime_option)
