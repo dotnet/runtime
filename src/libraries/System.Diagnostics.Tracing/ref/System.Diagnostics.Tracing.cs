@@ -163,8 +163,8 @@ namespace System.Diagnostics.Tracing
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~EventSource() { }
-        public static string? GenerateManifest(System.Type eventSourceType, string? assemblyPathToIncludeInManifest) { throw null; }
-        public static string? GenerateManifest(System.Type eventSourceType, string? assemblyPathToIncludeInManifest, System.Diagnostics.Tracing.EventManifestOptions flags) { throw null; }
+        public static string? GenerateManifest([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type eventSourceType, string? assemblyPathToIncludeInManifest) { throw null; }
+        public static string? GenerateManifest([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type eventSourceType, string? assemblyPathToIncludeInManifest, System.Diagnostics.Tracing.EventManifestOptions flags) { throw null; }
         public static System.Guid GetGuid(System.Type eventSourceType) { throw null; }
         public static string GetName(System.Type eventSourceType) { throw null; }
         public static System.Collections.Generic.IEnumerable<System.Diagnostics.Tracing.EventSource> GetSources() { throw null; }
@@ -207,13 +207,13 @@ namespace System.Diagnostics.Tracing
         [System.CLSCompliantAttribute(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, System.Guid* relatedActivityId, int eventDataCount, System.Diagnostics.Tracing.EventSource.EventData* data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-        public void Write<T>(string? eventName, System.Diagnostics.Tracing.EventSourceOptions options, T data) { }
+        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, System.Diagnostics.Tracing.EventSourceOptions options, T data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-        public void Write<T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref System.Guid activityId, ref System.Guid relatedActivityId, ref T data) { }
+        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref System.Guid activityId, ref System.Guid relatedActivityId, ref T data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-        public void Write<T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
+        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-        public void Write<T>(string? eventName, T data) { }
+        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, T data) { }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         protected internal partial struct EventData
         {
