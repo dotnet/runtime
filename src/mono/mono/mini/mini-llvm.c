@@ -370,6 +370,12 @@ ovr_tag_smaller_vector (llvm_ovr_tag_t tag)
 }
 
 static inline llvm_ovr_tag_t
+ovr_tag_smaller_elements (llvm_ovr_tag_t tag)
+{
+	return ((tag & ~INTRIN_vectormask) >> 1) | (tag & INTRIN_vectormask);
+}
+
+static inline llvm_ovr_tag_t
 ovr_tag_corresponding_integer (llvm_ovr_tag_t tag)
 {
 	return ((tag & ~INTRIN_vectormask) >> 2) | (tag & INTRIN_vectormask);
@@ -4913,11 +4919,12 @@ extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
 }
 
 static LLVMValueRef
-keep_lowest_element (EmitContext *ctx, LLVMValueRef vec)
+keep_lowest_element (EmitContext *ctx, LLVMTypeRef dst_t, LLVMValueRef vec)
 {
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	LLVMTypeRef t = LLVMTypeOf (vec);
-	unsigned int elems = LLVMGetVectorSize (t);
+	g_assert (LLVMGetElementType (dst_t) == LLVMGetElementType (t));
+	unsigned int elems = LLVMGetVectorSize (dst_t);
 	mask [0] = 0;
 	for (unsigned int i = 1; i < elems; ++i)
 		mask [i] = elems + i;
@@ -5097,7 +5104,7 @@ static LLVMValueRef
 scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValueRef result)
 {
 	if (sctx->needs_fake_scalar_op)
-		return keep_lowest_element (sctx->ctx, result);
+		return keep_lowest_element (sctx->ctx, LLVMTypeOf (result), result);
 	return vector_from_scalar_ty (sctx->ctx, sctx->return_type, result);
 }
 
@@ -9914,7 +9921,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				unsigned int argelems = LLVMGetVectorSize (arg_t);
 				LLVMValueRef arg = undef_upper_elements (ctx, LLVMVectorType (argelem_t, argelems * 2), lhs);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, &arg, "arm64_xnarrow_scalar");
-				result = keep_lowest_element (ctx, result);
+				result = keep_lowest_element (ctx, LLVMTypeOf (result), result);
 			}
 			values [ins->dreg] = result;
 			break;
@@ -10091,9 +10098,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				mularg = rhs;
 				selected_scalar = arg3;
 			}
-			LLVMTypeRef mularg_t = LLVMTypeOf (mularg);
-			llvm_ovr_tag_t multag = ovr_tag_from_llvm_type (mularg_t);
+			llvm_ovr_tag_t multag = ovr_tag_smaller_elements (ovr_tag_from_llvm_type (ret_t));
 			llvm_ovr_tag_t iidtag = ovr_tag_force_scalar (ovr_tag_from_llvm_type (ret_t));
+			LLVMTypeRef mularg_t = ovr_tag_to_llvm_type (multag);
 			if (multag & INTRIN_int32) {
 				/* The (i32, i32) -> i64 variant of aarch64_neon_sqdmull has
 				 * a unique, non-overloaded name.
@@ -10132,7 +10139,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (scalar_acc_result)
 				result = vector_from_scalar_ty (ctx, ret_t, result);
 			else
-				result = keep_lowest_element (ctx, result);
+				result = keep_lowest_element (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10436,7 +10443,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (high)
 				result = concatenate_vectors (ctx, lhs, result);
 			if (scalar)
-				result = keep_lowest_element (ctx, result);
+				result = keep_lowest_element (ctx, LLVMTypeOf (result), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10937,10 +10944,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, sctx.ovr_tag, args, "");
 			result = scalar_op_from_vector_op_process_result (&sctx, result);
 			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_ZERO_UPPER: {
-			values [ins->dreg] = keep_lowest_element (ctx, lhs);
 			break;
 		}
 #endif
