@@ -26,3 +26,9 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
 
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
+
+jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobject privateKey)
+{
+    jobject keyPair = (*env)->NewObject(g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
+    return CheckJNIExceptions(env) ? FAIL : ToGRef(keyPair);
+}

@@ -26,8 +26,7 @@ EC_KEY* AndroidCryptoNative_NewEcKeyFromPublicKey(JNIEnv *env, jobject /*ECPubli
         return NULL;
 
     jobject curveParameters = (*env)->CallObjectMethod(env, publicKey, g_ECPublicKeyGetParams);
-    jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, NULL);
-    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), ToGRef(env, keyPair));
+    return AndroidCryptoNative_NewEcKey(ToGRef(env, curveParameters), AndroidCryptoNative_CreateKeyPair(env, publicKey, NULL));
 }
 
 #pragma clang diagnostic push
