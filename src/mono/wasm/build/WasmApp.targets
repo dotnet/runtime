@@ -128,7 +128,7 @@
     <!-- Run mono-cil-strip on the assemblies -->
     <!-- TODO: replace this with a linker task -->
     <MakeDir Directories="$(_WasmStrippedAssembliesPath)" />
-    <Exec Command="mono-cil-strip -q %(_WasmStrippedAssemblies.OriginalPath) %(_WasmStrippedAssemblies.Identity)" />
+    <Exec Command='mono-cil-strip -q "%(_WasmStrippedAssemblies.OriginalPath)" "%(_WasmStrippedAssemblies.Identity)"' />
 
     <ItemGroup>
       <_WasmAssemblies Remove="@(_WasmAssemblies)" />
@@ -247,7 +247,7 @@
      OutputPath="$(_WasmIntermediateOutputPath)pinvoke-table.h" />
 
    <!-- ICall table generation -->
-   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command="$(MonoAotCrossCompilerPath) --print-icall-table > $(_WasmIntermediateOutputPath)/runtime-icall-table.h" />
+   <Exec Condition="'$(WasmLinkIcalls)' == 'true'" Command='"$(MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmIntermediateOutputPath)runtime-icall-table.h"' />
    <IcallTableGenerator Condition="'$(WasmLinkIcalls)' == 'true'"
      RuntimeIcallTableFile="$(_WasmIntermediateOutputPath)runtime-icall-table.h"
      Assemblies="@(_WasmAssemblies)"
@@ -289,9 +289,16 @@
      Text="Bug: Number of assemblies doesn't match the number of generated bitcode files. BitcodeFiles: @(_BitcodeFile->Count()) vs Assemblies: @(_WasmAssemblies->Count())" />
 
    <PropertyGroup>
-     <_WasmIncludeDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/include</_WasmIncludeDir>
-     <_WasmSrcDir>$(MicrosoftNetCoreAppRuntimePackRidDir)native/src</_WasmSrcDir>
-     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 -I$(_WasmIntermediateOutputPath) -I$(_WasmIncludeDir)/mono-2.0 -I$(_WasmIncludeDir)/wasm</EmccCFlags>
+     <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
+
+     <!--
+          For path c:\foo\bar\ quoting would make it "c:\foo\bar\"
+          .. which escapes the closing quote. So, instead make it
+            c:\foo\bar\ -> "c:\foo\bar\."
+     -->
+     <EmccCFlags Condition="$(_WasmIntermediateOutputPath.EndsWith('\')) ">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)."</EmccCFlags>
+     <EmccCFlags Condition="!$(_WasmIntermediateOutputPath.EndsWith('\'))">$(EmccCFlags) "-I$(_WasmIntermediateOutputPath)"</EmccCFlags>
+
      <EmccLDFlags>$(EmccFlags) -s TOTAL_MEMORY=536870912</EmccLDFlags>
      <_WasmOptCommand>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'bin', 'wasm-opt$(_ExeExt)'))</_WasmOptCommand>
    </PropertyGroup>
