@@ -111,7 +111,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 flags |= AssemblyFlags.WindowsRuntime;
             }
 
-            var referenceHandle = _metadataBuilder.AddAssemblyReference(assemblyName, name.Version, cultureName, publicTokenBlob, flags, default(BlobHandle));
+            Version version = name.Version;
+            if (version == null)
+                version = new Version(0, 0);
+
+            var referenceHandle = _metadataBuilder.AddAssemblyReference(assemblyName, version, cultureName, publicTokenBlob, flags, default(BlobHandle));
             _assemblyRefs.Add(assemblyDesc, referenceHandle);
             return referenceHandle;
         }

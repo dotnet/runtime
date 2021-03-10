@@ -6,22 +6,13 @@
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
     <IsRuntimeAssembly>false</IsRuntimeAssembly>
-    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeProjectReferencesInPackage</TargetsForTfmSpecificBuildOutput>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\tests\TestStructs\System.TestStructs.ilproj" Pack="true" PrivateAssets="All" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
     <PackageReference Include="xunit.extensibility.core" Version="$(XUnitVersion)" />
   </ItemGroup>
-
-  <!-- Remove when NuGet exposes this as an official feature, tracking issue: https://github.com/NuGet/Home/issues/3891 -->
-  <Target Name="IncludeProjectReferencesInPackage" DependsOnTargets="BuildOnlySettings;ResolveReferences">
-    <ItemGroup>
-      <BuildOutputInPackage Include="@(ReferencePath->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Pack', 'true'))" />
-    </ItemGroup>
-  </Target>
 
 </Project>

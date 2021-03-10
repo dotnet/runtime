@@ -36,6 +36,11 @@ namespace ILCompiler.IBC
                 {
                     if (token == 0)
                         return new TypeSystemEntityOrUnknown(0);
+                    if ((token & 0xFF000000) == 0)
+                    {
+                        // token type is 0, therefore it can't be a type
+                        return new TypeSystemEntityOrUnknown((int)token);
+                    }
                     return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
                 }
                 catch
@@ -45,31 +50,10 @@ namespace ILCompiler.IBC
             }
         }
 
-        /// <summary>
-        /// Parse an MIBC file for the methods that are interesting.
-        /// The version bubble must be specified and will describe the restrict the set of methods parsed to those relevant to the compilation
-        /// The onlyDefinedInAssembly parameter is used to restrict the set of types parsed to include only those which are defined in a specific module. Specify null to allow definitions from all modules.
-        /// This limited parsing is not necessarily an exact set of prevention, so detailed algorithms that work at the individual method level are still necessary, but this allows avoiding excessive parsing.
-        ///
-        /// The format of the Mibc file is that of a .NET dll, with a global method named "AssemblyDictionary". Inside of that file are a series of references that are broken up by which assemblies define the individual methods.
-        /// These references are encoded as IL code that represents the details.
-        /// The format of these IL instruction is as follows.
-        ///
-        /// ldstr mibcGroupName
-        /// ldtoken mibcGroupMethod
-        /// pop
-        /// {Repeat the above pattern N times, once per Mibc group}
-        ///
-        /// See comment above ReadMIbcGroup for details of the group format
-        ///
-        /// The mibcGroupName is in the following format "Assembly_{definingAssemblyName};{OtherAssemblyName};{OtherAssemblyName};...; (OtherAssemblyName is ; delimited)
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public static ProfileData ParseMIbcFile(CompilerTypeSystemContext tsc, string filename, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
+        public static PEReader OpenMibcAsPEReader(string filename)
         {
             byte[] peData = null;
-            PEReader unprotectedPeReader = null;
+            PEReader peReader = null;
 
             {
                 FileStream fsMibcFile = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false);
@@ -83,7 +67,7 @@ namespace ILCompiler.IBC
                     if (firstByte == 0x4d && secondByte == 0x5a)
                     {
                         // Uncompressed Mibc format, starts with 'MZ' prefix like all other PE files
-                        unprotectedPeReader = new PEReader(fsMibcFile, PEStreamOptions.Default);
+                        peReader = new PEReader(fsMibcFile, PEStreamOptions.Default);
                         disposeOnException = false;
                     }
                     else
@@ -112,47 +96,74 @@ namespace ILCompiler.IBC
 
             if (peData != null)
             {
-                unprotectedPeReader = new PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(peData));
+                peReader = new PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(peData));
             }
 
-            using (var peReader = unprotectedPeReader)
+            return peReader;
+        }
+
+        /// <summary>
+        /// Parse an MIBC file for the methods that are interesting.
+        /// The version bubble must be specified and will describe the restrict the set of methods parsed to those relevant to the compilation
+        /// The onlyDefinedInAssembly parameter is used to restrict the set of types parsed to include only those which are defined in a specific module. Specify null to allow definitions from all modules.
+        /// This limited parsing is not necessarily an exact set of prevention, so detailed algorithms that work at the individual method level are still necessary, but this allows avoiding excessive parsing.
+        ///
+        /// The format of the Mibc file is that of a .NET dll, with a global method named "AssemblyDictionary". Inside of that file are a series of references that are broken up by which assemblies define the individual methods.
+        /// These references are encoded as IL code that represents the details.
+        /// The format of these IL instruction is as follows.
+        ///
+        /// ldstr mibcGroupName
+        /// ldtoken mibcGroupMethod
+        /// pop
+        /// {Repeat the above pattern N times, once per Mibc group}
+        ///
+        /// See comment above ReadMIbcGroup for details of the group format
+        ///
+        /// The mibcGroupName is in the following format "Assembly_{definingAssemblyName};{OtherAssemblyName};{OtherAssemblyName};...; (OtherAssemblyName is ; delimited)
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
+        {
+            var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
+
+            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+            IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
+
+            EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
+            byte[] ilBytes = ilBody.GetILBytes();
+            int currentOffset = 0;
+
+            string mibcGroupName = "";
+            while (currentOffset < ilBytes.Length)
             {
-                var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
-
-                var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
-                IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
-
-                EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
-                byte[] ilBytes = ilBody.GetILBytes();
-                int currentOffset = 0;
-
-                string mibcGroupName = "";
-                while (currentOffset < ilBytes.Length)
+                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
+                if (opcode == ILOpcode.prefix1)
+                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
+                switch (opcode)
                 {
-                    ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                    if (opcode == ILOpcode.prefix1)
-                        opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                    switch (opcode)
-                    {
-                        case ILOpcode.ldstr:
-                            if (mibcGroupName == "")
-                            {
-                                UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                                mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
-                            }
+                    case ILOpcode.ldstr:
+                        Debug.Assert(mibcGroupName == "");
+                        if (mibcGroupName == "")
+                        {
+                            UInt32 userStringToken = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
+                            mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
+                        }
+                        break;
+
+                    case ILOpcode.ldtoken:
+                        if (String.IsNullOrEmpty(mibcGroupName))
                             break;
 
-                        case ILOpcode.ldtoken:
-                            if (String.IsNullOrEmpty(mibcGroupName))
-                                break;
+                        string[] assembliesByName = mibcGroupName.Split(';');
 
-                            string[] assembliesByName = mibcGroupName.Split(';');
+                        bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
 
-                            bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
+                        if (!hasMatchingDefinition)
+                            break;
 
-                            if (!hasMatchingDefinition)
-                                break;
-
+                        if (assemblyNamesInVersionBubble != null)
+                        {
                             bool areAllEntriesInVersionBubble = true;
                             foreach (string s in assembliesByName)
                             {
@@ -168,21 +179,21 @@ namespace ILCompiler.IBC
 
                             if (!areAllEntriesInVersionBubble)
                                 break;
+                        }
 
-                            uint token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
-                            loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
-                            break;
-                        case ILOpcode.pop:
-                            mibcGroupName = "";
-                            break;
-                    }
-
-                    // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                    currentOffset += opcode.GetSize();
+                        uint token = BinaryPrimitives.ReadUInt32LittleEndian(ilBytes.AsSpan(currentOffset + 1));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
+                        break;
+                    case ILOpcode.pop:
+                        mibcGroupName = "";
+                        break;
                 }
 
-                return new IBCProfileData(false, loadedMethodProfileData);
+                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
+                currentOffset += opcode.GetSize();
             }
+
+            return new IBCProfileData(false, loadedMethodProfileData);
         }
 
         enum MibcGroupParseState

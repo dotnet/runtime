@@ -80,8 +80,11 @@ static gboolean finalizer_thread_exited;
 static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
+#ifndef HOST_WASM
 static RuntimeInvokeFunction finalize_runtime_invoke;
-/* 
+#endif
+
+/*
  * This must be a GHashTable, since these objects can't be finalized
  * if the hashtable contains a GC visible reference to them.
  */
