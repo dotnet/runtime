@@ -33,7 +33,7 @@ namespace System.IO
 
         public override long Position
         {
-            get => _bufferedStream.GetPositionWithoutFlushing();
+            get => _bufferedStream.Position;
             set => _bufferedStream.Position = value;
         }
 
@@ -105,6 +105,9 @@ namespace System.IO
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _bufferedStream.CopyToAsync(destination, bufferSize, cancellationToken);
+
+        public override void CopyTo(Stream destination, int bufferSize)
+            => _bufferedStream.CopyTo(destination, bufferSize);
 
         public override ValueTask DisposeAsync()
             => _bufferedStream.DisposeAsync();

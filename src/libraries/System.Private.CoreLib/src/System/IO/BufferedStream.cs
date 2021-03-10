@@ -97,9 +97,7 @@ namespace System.IO
         private void EnsureNotClosed()
         {
             if (_stream == null)
-                Throw();
-
-            static void Throw() => throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureCanSeek()
@@ -107,9 +105,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanSeek)
-                Throw();
-
-            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         private void EnsureCanRead()
@@ -117,9 +113,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanRead)
-                Throw();
-
-            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
         }
 
         private void EnsureCanWrite()
@@ -127,9 +121,7 @@ namespace System.IO
             Debug.Assert(_stream != null);
 
             if (!_stream.CanWrite)
-                Throw();
-
-            static void Throw() => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
         }
 
         private void EnsureShadowBufferAllocated()
@@ -224,7 +216,6 @@ namespace System.IO
             }
         }
 
-        // this method exists to keep old FileStream behaviour and don't perform a Flush when getting Length
         internal long GetLengthWithoutFlushing()
         {
             Debug.Assert(_actLikeFileStream);
@@ -233,6 +224,9 @@ namespace System.IO
 
             long len = _stream!.Length;
 
+            // If we're writing near the end of the file, we must include our
+            // internal buffer in our Length calculation.  Don't flush because
+            // we use the length of the file in our async write method.
             if (_writePos > 0 && _stream!.Position + _writePos > len)
                 len = _writePos + _stream!.Position;
 
@@ -252,7 +246,7 @@ namespace System.IO
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
                 EnsureNotClosed();
                 EnsureCanSeek();
@@ -264,17 +258,6 @@ namespace System.IO
                 _readLen = 0;
                 _stream!.Seek(value, SeekOrigin.Begin);
             }
-        }
-
-        // this method exists to keep old FileStream behaviour and don't perform a Flush when getting Position
-        internal long GetPositionWithoutFlushing()
-        {
-            Debug.Assert(_actLikeFileStream);
-
-            EnsureNotClosed();
-            EnsureCanSeek();
-
-            return (_stream!.Position - _readLen) + _readPos + _writePos;
         }
 
         internal void DisposeInternal(bool disposing) => Dispose(disposing);
@@ -309,6 +292,9 @@ namespace System.IO
 
                 // Call base.Dispose(bool) to cleanup async IO resources
                 base.Dispose(disposing);
+
+                // ensure that all positions are set to 0
+                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
             }
         }
 
@@ -339,12 +325,16 @@ namespace System.IO
                 {
                     _buffer = null;
                 }
+
+                // ensure that all positions are set to 0
+                Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
             }
         }
 
         public override void Flush() => Flush(true);
 
-        internal void Flush(bool performActualFlush)
+        // flushUnderlyingStream can be set to false by BufferedFileStreamStrategy.Flush(bool flushToDisk)
+        internal void Flush(bool flushUnderlyingStream)
         {
             EnsureNotClosed();
 
@@ -356,7 +346,7 @@ namespace System.IO
                 // so to avoid getting exception here, we just ensure that we can Write before doing it
                 if (_stream!.CanWrite)
                 {
-                    FlushWrite(performActualFlush);
+                    FlushWrite(flushUnderlyingStream);
                     Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                     return;
                 }
@@ -376,7 +366,7 @@ namespace System.IO
                 // User streams may have opted to throw from Flush if CanWrite is false (although the abstract Stream does not do so).
                 // However, if we do not forward the Flush to the underlying stream, we may have problems when chaining several streams.
                 // Let us make a best effort attempt:
-                if (performActualFlush && _stream.CanWrite)
+                if (flushUnderlyingStream && _stream.CanWrite)
                     _stream.Flush();
 
                 // If the Stream was seekable, then we should have called FlushRead which resets _readPos & _readLen.
@@ -385,7 +375,7 @@ namespace System.IO
             }
 
             // We had no data in the buffer, but we still need to tell the underlying stream to flush.
-            if (performActualFlush && _stream!.CanWrite)
+            if (flushUnderlyingStream && _stream!.CanWrite)
                 _stream.Flush();
 
             _writePos = _readPos = _readLen = 0;
@@ -487,11 +477,12 @@ namespace System.IO
             // However, since the user did not call a method that is intuitively expected to seek, a better message is in order.
             // Ideally, we would throw an InvalidOperation here, but for backward compat we have to stick with NotSupported.
             if (!_stream.CanSeek)
-                Throw();
+                ThrowNotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed();
 
             FlushRead();
 
-            static void Throw() => throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
+            static void ThrowNotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed()
+                => throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
         }
 
         private void FlushWrite(bool performActualFlush)

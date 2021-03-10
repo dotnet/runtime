@@ -19,21 +19,13 @@ namespace System.IO
         protected const int ERROR_IO_PENDING = 997;
 
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
-
-        /// <summary>Whether the file is opened for reading, writing, or both.</summary>
-        private readonly FileAccess _access;
-
-        /// <summary>The path to the opened file.</summary>
-        protected readonly string? _path;
+        protected readonly string? _path; // The path to the opened file.
+        private readonly FileAccess _access; // What file was opened for.
+        private readonly bool _canSeek; // Whether can seek (file) or not (pipe).
+        private readonly bool _isPipe; // Whether to disable async buffering code.
 
         protected long _filePosition;
-
-        private readonly bool _canSeek;
-        private readonly bool _isPipe;      // Whether to disable async buffering code.
-
-        /// <summary>Whether the file stream's handle has been exposed.</summary>
-        protected bool _exposedHandle;
-
+        protected bool _exposedHandle; // Whether the file stream's handle has been exposed.
         private long _appendStart; // When appending, prevent overwriting file.
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)

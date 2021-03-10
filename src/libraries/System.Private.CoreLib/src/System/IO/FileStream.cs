@@ -403,6 +403,8 @@ namespace System.IO
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 
+        public override void CopyTo(Stream destination, int bufferSize) => _strategy.CopyTo(destination, bufferSize);
+
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _strategy.CopyToAsync(destination, bufferSize, cancellationToken);
 

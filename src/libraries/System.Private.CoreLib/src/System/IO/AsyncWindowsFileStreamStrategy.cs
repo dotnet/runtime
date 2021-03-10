@@ -27,7 +27,8 @@ namespace System.IO
 
         public override ValueTask DisposeAsync()
         {
-            // the order matters, let the base class Dispose handle first
+            // the base class must dispose ThreadPoolBinding and FileHandle
+            // before _preallocatedOverlapped is disposed
             ValueTask result = base.DisposeAsync();
             Debug.Assert(result.IsCompleted, "the method must be sync, as it performs no flushing");
 
@@ -38,7 +39,8 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            // the order matters, let the base class Dispose handle first
+            // the base class must dispose ThreadPoolBinding and FileHandle
+            // before _preallocatedOverlapped is disposed
             base.Dispose(disposing);
 
             _preallocatedOverlapped?.Dispose();
@@ -389,9 +391,9 @@ namespace System.IO
 
             try
             {
-#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
-                await FileStreamHelpers.AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken);
-#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
+                await FileStreamHelpers
+                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .ConfigureAwait(false);
             }
             finally
             {

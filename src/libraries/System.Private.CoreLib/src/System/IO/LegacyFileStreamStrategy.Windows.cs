@@ -1153,9 +1153,9 @@ namespace System.IO
 
             try
             {
-#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
-                await FileStreamHelpers.AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken);
-#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
+                await FileStreamHelpers
+                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .ConfigureAwait(false);
             }
             finally
             {

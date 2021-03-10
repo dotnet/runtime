@@ -308,6 +308,24 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnseekableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnreadableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException_UnwritableStream()
+        {
+            throw new NotSupportedException(SR.NotSupported_UnwritableStream);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
         {
             throw new UnauthorizedAccessException(GetResourceString(resource));
@@ -317,6 +335,18 @@ namespace System
         internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
         {
             throw new ObjectDisposedException(objectName, GetResourceString(resource));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_StreamClosed(string? objectName)
+        {
+            throw new ObjectDisposedException(objectName, SR.ObjectDisposed_StreamClosed);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowObjectDisposedException_FileClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
         }
 
         [DoesNotReturn]

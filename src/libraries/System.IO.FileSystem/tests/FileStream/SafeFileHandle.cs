@@ -38,6 +38,19 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void DisposingBufferedStreamThatWrapsAFileStreamWhichHasBennClosedViaSafeFileHandleCloseDoesNotThrow()
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                var bufferedStream = new BufferedStream(fs, 100);
+
+                fs.SafeFileHandle.Dispose();
+
+                bufferedStream.Dispose(); // must not throw
+            }
+        }
+
+        [Fact]
         public void AccessFlushesFileClosesHandle()
         {
             string fileName = GetTestFilePath();
