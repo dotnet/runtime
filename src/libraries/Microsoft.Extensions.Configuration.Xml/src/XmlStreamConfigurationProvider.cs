@@ -67,14 +67,12 @@ namespace Microsoft.Extensions.Configuration.Xml
                                 if (parent.ChildrenBySiblingName != null)
                                 {
                                     // check if this element has appeared before, elements are considered siblings if their SiblingName properties match
-                                    if (parent.ChildrenBySiblingName.TryGetValue(element.SiblingName, out var siblings))
+                                    if (!parent.ChildrenBySiblingName.TryGetValue(element.SiblingName, out var siblings))
                                     {
-                                        siblings.Add(element);
+                                        siblings = new List<XmlConfigurationElement>();
+                                        parent.ChildrenBySiblingName.Add(element.SiblingName, siblings);
                                     }
-                                    else
-                                    {
-                                        parent.ChildrenBySiblingName.Add(element.SiblingName, new List<XmlConfigurationElement> { element });
-                                    }
+                                    siblings.Add(element);
                                 }
                                 else
                                 {
