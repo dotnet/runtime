@@ -70,6 +70,7 @@ namespace System.Xml.Xsl
         // SxS Note: The way the trace file names are created (hardcoded) is NOT SxS safe. However the files are
         // created only for internal tracing purposes. In addition XmlILTrace class is not compiled into retail
         // builds. As a result it is fine to suppress the FxCop SxS warning.
+        [RequiresUnreferencedCode("This method will use the XmlILVisitor which will use types that cannot be statically analyzed.")]
         public XmlILCommand? Generate(QilExpression query, TypeBuilder? typeBldr)
         {
             _qil = query;

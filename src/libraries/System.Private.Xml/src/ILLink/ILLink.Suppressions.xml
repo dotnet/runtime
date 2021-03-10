@@ -143,12 +143,6 @@
       <argument>ILLink</argument>
       <argument>IL2070</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.EarlyBoundInfo.#ctor(System.String,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Xsl.XslCompiledTransform.Load(System.Type)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -345,15 +339,15 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2080</argument>
+      <argument>IL2067</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunction.Bind</property>
+      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunction.#ctor(System.String,System.String,System.Int32,System.Type,System.Reflection.BindingFlags)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2080</argument>
+      <argument>IL2067</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunction.CanBind</property>
+      <property name="Target">M:System.Xml.Xsl.Runtime.XmlExtensionFunctionTable.Bind(System.String,System.String,System.Int32,System.Type,System.Reflection.BindingFlags)</property>
     </attribute>
   </assembly>
 </linker>
