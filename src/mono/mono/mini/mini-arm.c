@@ -5903,6 +5903,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_r4_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
 			break;
 		case OP_RCONV_TO_I4:
+		case OP_RCONV_TO_I:
 			code = emit_r4_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
 			break;
 		case OP_RCONV_TO_U4:
