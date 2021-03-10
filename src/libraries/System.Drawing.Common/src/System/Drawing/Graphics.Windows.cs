@@ -943,7 +943,7 @@ namespace System.Drawing
                 int error = Marshal.GetLastWin32Error();
                 if (error == SafeNativeMethods.ERROR_ACCESS_DENIED || error == SafeNativeMethods.ERROR_PROC_NOT_FOUND ||
                         // Here, we'll check to see if we are in a terminal services session...
-                        (((UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) & 0x00000001) != 0) && (error == 0)))
+                        (((Interop.User32.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) & 0x00000001) != 0) && (error == 0)))
                 {
                     return;
                 }
