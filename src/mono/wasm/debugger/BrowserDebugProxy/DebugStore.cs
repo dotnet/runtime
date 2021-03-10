@@ -759,20 +759,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (uncompressedSize != 0)
                 {
-                    var decompressed = new MemoryStream(uncompressedSize);
-
-                    using (var deflater = new DeflateStream(stream, CompressionMode.Decompress))
-                    {
-                        deflater.CopyTo(decompressed);
-                    }
-
-                    if (decompressed.Length != uncompressedSize)
-                    {
-                        throw new InvalidDataException();
-                    }
-
-                    stream = decompressed;
-                    return stream;
+                    return new DeflateStream(stream, CompressionMode.Decompress))
                 }
             }
 
