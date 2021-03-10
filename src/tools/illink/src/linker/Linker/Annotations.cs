@@ -137,6 +137,11 @@ namespace Mono.Linker
 			MemberActions.PrimarySubstitutionInfo.SetMethodAction (method, action);
 		}
 
+		public void SetStubValue (MethodDefinition method, object value)
+		{
+			MemberActions.PrimarySubstitutionInfo.SetMethodStubValue (method, value);
+		}
+
 		public bool HasSubstitutedInit (FieldDefinition field)
 		{
 			return MemberActions.HasSubstitutedInit (field);

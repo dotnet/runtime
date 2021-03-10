@@ -25,6 +25,7 @@ namespace Mono.Linker
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve) { throw null; }
 
 		public void SetAction (MethodDefinition method, MethodAction action) { throw null; }
+		public void SetStubValue (MethodDefinition method, object value) { throw null; }
 
 		public AssemblyAction GetAction (AssemblyDefinition assembly) { throw null; }
 		public void SetAction (AssemblyDefinition assembly, AssemblyAction action) { throw null; }
