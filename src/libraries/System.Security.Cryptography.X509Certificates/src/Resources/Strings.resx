@@ -448,4 +448,7 @@
   <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
     <value>The certificate content type could not be determined.</value>
   </data>
+  <data name="Cryptography_VerificationFlagNotSupported" xml:space="preserve">
+    <value>The verification flag '{0}' is not supported on this platform.</value>
+  </data>
 </root>

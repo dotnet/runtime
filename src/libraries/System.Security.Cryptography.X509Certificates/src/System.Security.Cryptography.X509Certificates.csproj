@@ -422,6 +422,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Chain.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

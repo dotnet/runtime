@@ -106,6 +106,11 @@ jmethodID g_keyPairGenInitializeWithParamsMethod;
 jmethodID g_keyPairGenInitializeMethod;
 jmethodID g_keyPairGenGenKeyPairMethod;
 
+// java/security/KeyStore
+jclass    g_KeyStoreClass;
+jmethodID g_KeyStoreGetInstance;
+jmethodID g_KeyStoreLoad;
+
 // java/security/Signature
 jclass    g_SignatureClass;
 jmethodID g_SignatureGetInstance;
@@ -127,11 +132,58 @@ jmethodID g_CertFactoryGenerateCRL;
 // java/security/cert/CertPath
 jclass    g_CertPathClass;
 jmethodID g_CertPathGetEncoded;
+jmethodID g_CertPathGetCertificates;
+
+// java/security/cert/CertPathBuilder
+jclass    g_CertPathBuilderClass;
+jmethodID g_CertPathBuilderGetInstance;
+jmethodID g_CertPathBuilderBuild;
+
+// java/security/cert/CertPathValidator
+jclass    g_CertPathValidatorClass;
+jmethodID g_CertPathValidatorGetInstance;
+jmethodID g_CertPathValidatorValidate;
+jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+
+// java/security/cert/CertStore
+jclass    g_CertStoreClass;
+jmethodID g_CertStoreGetInstance;
+
+// java/security/cert/CollectionCertStoreParameters
+jclass    g_CollectionCertStoreParametersClass;
+jmethodID g_CollectionCertStoreParametersCtor;
+
+// java/security/cert/PKIXBuilderParameters
+jclass    g_PKIXBuilderParametersClass;
+jmethodID g_PKIXBuilderParametersCtor;
+jmethodID g_PKIXBuilderParametersAddCertStore;
+jmethodID g_PKIXBuilderParametersAddCertPathChecker;
+jmethodID g_PKIXBuilderParametersSetDate;
+jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
+jmethodID g_PKIXBuilderParametersSetTrustAnchors;
+
+// java/security/cert/PKIXCertPathBuilderResult
+jclass    g_PKIXCertPathBuilderResultClass;
+jmethodID g_PKIXCertPathBuilderResultGetCertPath;
+jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
+
+// java/security/cert/PKIXRevocationChecker - only in API level 24+
+jclass    g_PKIXRevocationCheckerClass;
+jmethodID g_PKIXRevocationCheckerSetOptions;
+
+// java/security/cert/TrustAnchor
+jclass    g_TrustAnchorClass;
+jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
 jmethodID g_X509CertGetEncoded;
 jmethodID g_X509CertGetPublicKey;
+
+// java/security/cert/X509CertSelector
+jclass    g_X509CertSelectorClass;
+jmethodID g_X509CertSelectorCtor;
+jmethodID g_X509CertSelectorSetCertificate;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -242,7 +294,8 @@ jmethodID g_destroy;
 
 // java/util/ArrayList
 jclass    g_ArrayListClass;
-jmethodID g_ArrayListCtor;
+jmethodID g_ArrayListCtorWithCapacity;
+jmethodID g_ArrayListCtorWithCollection;
 jmethodID g_ArrayListAdd;
 
 // java/util/Collection
@@ -252,6 +305,7 @@ jmethodID g_CollectionSize;
 
 // java/util/Date
 jclass    g_DateClass;
+jmethodID g_DateCtor;
 jmethodID g_DateGetTime;
 
 // java/util/Iterator
@@ -369,6 +423,21 @@ bool CheckJNIExceptions(JNIEnv* env)
         return true;
     }
     return false;
+}
+
+bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException)
+{
+    if (!(*env)->ExceptionCheck(env))
+        return false;
+
+    if (printException)
+    {
+        (*env)->ExceptionDescribe(env);
+    }
+
+    *ex = (*env)->ExceptionOccurred(env);
+    (*env)->ExceptionClear(env);
+    return true;
 }
 
 void AssertOnJNIExceptions(JNIEnv* env)
@@ -523,12 +592,53 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertFactoryGenerateCertPathFromStream =   GetMethod(env, false, g_CertFactoryClass, "generateCertPath", "(Ljava/io/InputStream;Ljava/lang/String;)Ljava/security/cert/CertPath;");
     g_CertFactoryGenerateCRL =                  GetMethod(env, false, g_CertFactoryClass, "generateCRL", "(Ljava/io/InputStream;)Ljava/security/cert/CRL;");
 
-    g_CertPathClass =       GetClassGRef(env, "java/security/cert/CertPath");
-    g_CertPathGetEncoded =  GetMethod(env, false, g_CertPathClass, "getEncoded", "(Ljava/lang/String;)[B");
+    g_CertPathClass =           GetClassGRef(env, "java/security/cert/CertPath");
+    g_CertPathGetEncoded =      GetMethod(env, false, g_CertPathClass, "getEncoded", "(Ljava/lang/String;)[B");
+    g_CertPathGetCertificates = GetMethod(env, false, g_CertPathClass, "getCertificates", "()Ljava/util/List;");
 
-    g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
-    g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
-    g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
+    g_CertPathBuilderClass =        GetClassGRef(env, "java/security/cert/CertPathBuilder");
+    g_CertPathBuilderGetInstance =  GetMethod(env, true, g_CertPathBuilderClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertPathBuilder;");
+    g_CertPathBuilderBuild =        GetMethod(env, false, g_CertPathBuilderClass, "build", "(Ljava/security/cert/CertPathParameters;)Ljava/security/cert/CertPathBuilderResult;");
+
+    g_CertPathValidatorClass =                  GetClassGRef(env, "java/security/cert/CertPathValidator");
+    g_CertPathValidatorGetInstance =            GetMethod(env, true, g_CertPathValidatorClass, "getInstance", "(Ljava/lang/String;)Ljava/security/cert/CertPathValidator;");
+    g_CertPathValidatorValidate =               GetMethod(env, false, g_CertPathValidatorClass, "validate", "(Ljava/security/cert/CertPath;Ljava/security/cert/CertPathParameters;)Ljava/security/cert/CertPathValidatorResult;");
+    g_CertPathValidatorGetRevocationChecker =   GetOptionalMethod(env, false, g_CertPathValidatorClass, "getRevocationChecker", "()Ljava/security/cert/CertPathChecker;");
+
+    g_CertStoreClass =          GetClassGRef(env, "java/security/cert/CertStore");
+    g_CertStoreGetInstance =    GetMethod(env, true, g_CertStoreClass, "getInstance", "(Ljava/lang/String;Ljava/security/cert/CertStoreParameters;)Ljava/security/cert/CertStore;");
+
+    g_CollectionCertStoreParametersClass =  GetClassGRef(env, "java/security/cert/CollectionCertStoreParameters");
+    g_CollectionCertStoreParametersCtor =   GetMethod(env, false, g_CollectionCertStoreParametersClass, "<init>", "(Ljava/util/Collection;)V");
+
+    g_PKIXBuilderParametersClass =                  GetClassGRef(env, "java/security/cert/PKIXBuilderParameters");
+    g_PKIXBuilderParametersCtor =                   GetMethod(env, false, g_PKIXBuilderParametersClass, "<init>", "(Ljava/security/KeyStore;Ljava/security/cert/CertSelector;)V");
+    g_PKIXBuilderParametersAddCertStore =           GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertStore", "(Ljava/security/cert/CertStore;)V");
+    g_PKIXBuilderParametersAddCertPathChecker =     GetMethod(env, false, g_PKIXBuilderParametersClass, "addCertPathChecker", "(Ljava/security/cert/PKIXCertPathChecker;)V");
+    g_PKIXBuilderParametersSetDate =                GetMethod(env, false, g_PKIXBuilderParametersClass, "setDate", "(Ljava/util/Date;)V");
+    g_PKIXBuilderParametersSetRevocationEnabled =   GetMethod(env, false, g_PKIXBuilderParametersClass, "setRevocationEnabled", "(Z)V");
+    g_PKIXBuilderParametersSetTrustAnchors =        GetMethod(env, false, g_PKIXBuilderParametersClass, "setTrustAnchors", "(Ljava/util/Set;)V");
+
+    g_PKIXCertPathBuilderResultClass =          GetClassGRef(env, "java/security/cert/PKIXCertPathBuilderResult");
+    g_PKIXCertPathBuilderResultGetCertPath =    GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getCertPath", "()Ljava/security/cert/CertPath;");
+    g_PKIXCertPathBuilderResultGetTrustAnchor = GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getTrustAnchor", "()Ljava/security/cert/TrustAnchor;");
+
+    if (g_CertPathValidatorGetRevocationChecker != NULL)
+    {
+        g_PKIXRevocationCheckerClass =      GetClassGRef(env, "java/security/cert/PKIXRevocationChecker");
+        g_PKIXRevocationCheckerSetOptions = GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
+    }
+
+    g_TrustAnchorClass =            GetClassGRef(env, "java/security/cert/TrustAnchor");
+    g_TrustAnchorGetTrustedCert =   GetMethod(env, false, g_TrustAnchorClass, "getTrustedCert", "()Ljava/security/cert/X509Certificate;");
+
+    g_X509CertClass =           GetClassGRef(env, "java/security/cert/X509Certificate");
+    g_X509CertGetEncoded =      GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
+    g_X509CertGetPublicKey =    GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
+
+    g_X509CertSelectorClass =           GetClassGRef(env, "java/security/cert/X509CertSelector");
+    g_X509CertSelectorCtor =            GetMethod(env, false, g_X509CertSelectorClass, "<init>", "()V");
+    g_X509CertSelectorSetCertificate =  GetMethod(env, false, g_X509CertSelectorClass, "setCertificate", "(Ljava/security/cert/X509Certificate;)V");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -546,6 +656,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_keyPairGenInitializeMethod =           GetMethod(env, false, g_keyPairGenClass, "initialize", "(I)V");
     g_keyPairGenInitializeWithParamsMethod = GetMethod(env, false, g_keyPairGenClass, "initialize", "(Ljava/security/spec/AlgorithmParameterSpec;)V");
     g_keyPairGenGenKeyPairMethod =           GetMethod(env, false, g_keyPairGenClass, "genKeyPair", "()Ljava/security/KeyPair;");
+
+    g_KeyStoreClass =       GetClassGRef(env, "java/security/KeyStore");
+    g_KeyStoreGetInstance = GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
+    g_KeyStoreLoad =        GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
 
     g_SignatureClass =                 GetClassGRef(env, "java/security/Signature");
     g_SignatureGetInstance =           GetMethod(env, true, g_SignatureClass, "getInstance", "(Ljava/lang/String;)Ljava/security/Signature;");
@@ -580,7 +694,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DSAPublicKeySpecClass =              GetClassGRef(env, "java/security/spec/DSAPublicKeySpec");
     g_DSAPublicKeySpecCtor =               GetMethod(env, false, g_DSAPublicKeySpecClass, "<init>", "(Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;)V");
     g_DSAPublicKeySpecGetY =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getY", "()Ljava/math/BigInteger;");
-    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;"); 
+    g_DSAPublicKeySpecGetP =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getP", "()Ljava/math/BigInteger;");
     g_DSAPublicKeySpecGetQ =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getQ", "()Ljava/math/BigInteger;");
     g_DSAPublicKeySpecGetG =               GetMethod(env, false, g_DSAPublicKeySpecClass, "getG", "()Ljava/math/BigInteger;");
 
@@ -643,15 +757,17 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DestroyableClass =               GetClassGRef(env, "javax/security/auth/Destroyable");
     g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
 
-    g_ArrayListClass =  GetClassGRef(env, "java/util/ArrayList");
-    g_ArrayListCtor =   GetMethod(env, false, g_ArrayListClass, "<init>", "(I)V");
-    g_ArrayListAdd =    GetMethod(env, false, g_ArrayListClass, "add", "(Ljava/lang/Object;)Z");
+    g_ArrayListClass =              GetClassGRef(env, "java/util/ArrayList");
+    g_ArrayListCtorWithCapacity =   GetMethod(env, false, g_ArrayListClass, "<init>", "(I)V");
+    g_ArrayListCtorWithCollection = GetMethod(env, false, g_ArrayListClass, "<init>", "(Ljava/util/Collection;)V");
+    g_ArrayListAdd =                GetMethod(env, false, g_ArrayListClass, "add", "(Ljava/lang/Object;)Z");
 
     g_CollectionClass =     GetClassGRef(env, "java/util/Collection");
     g_CollectionIterator =  GetMethod(env, false, g_CollectionClass, "iterator", "()Ljava/util/Iterator;");
     g_CollectionSize =      GetMethod(env, false, g_CollectionClass, "size", "()I");
 
     g_DateClass =   GetClassGRef(env, "java/util/Date");
+    g_DateCtor =    GetMethod(env, false, g_DateClass, "<init>", "(J)V");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
 
     g_IteratorClass =   GetClassGRef(env, "java/util/Iterator");

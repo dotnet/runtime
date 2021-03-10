@@ -169,7 +169,7 @@ int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs
     // ArrayList<Certificate> certList = new ArrayList<Certificate>();
     // foreach (Certificate cert in certs)
     //     certList.add(cert);
-    loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor, certsLen);
+    loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, certsLen);
     for (int i = 0; i < certsLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, certs[i]);

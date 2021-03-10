@@ -106,11 +106,58 @@ extern jmethodID g_CertFactoryGenerateCRL;
 // java/security/cert/CertPath
 extern jclass    g_CertPathClass;
 extern jmethodID g_CertPathGetEncoded;
+extern jmethodID g_CertPathGetCertificates;
+
+// java/security/cert/CertPathBuilder
+extern jclass    g_CertPathBuilderClass;
+extern jmethodID g_CertPathBuilderGetInstance;
+extern jmethodID g_CertPathBuilderBuild;
+
+// java/security/cert/CertPathValidator
+extern jclass    g_CertPathValidatorClass;
+extern jmethodID g_CertPathValidatorGetInstance;
+extern jmethodID g_CertPathValidatorValidate;
+extern jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
+
+// java/security/cert/CertStore
+extern jclass    g_CertStoreClass;
+extern jmethodID g_CertStoreGetInstance;
+
+// java/security/cert/CollectionCertStoreParameters
+extern jclass    g_CollectionCertStoreParametersClass;
+extern jmethodID g_CollectionCertStoreParametersCtor;
+
+// java/security/cert/PKIXBuilderParameters
+extern jclass    g_PKIXBuilderParametersClass;
+extern jmethodID g_PKIXBuilderParametersCtor;
+extern jmethodID g_PKIXBuilderParametersAddCertStore;
+extern jmethodID g_PKIXBuilderParametersAddCertPathChecker;
+extern jmethodID g_PKIXBuilderParametersSetDate;
+extern jmethodID g_PKIXBuilderParametersSetRevocationEnabled;
+extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
+
+// java/security/cert/PKIXCertPathBuilderResult
+extern jclass    g_PKIXCertPathBuilderResultClass;
+extern jmethodID g_PKIXCertPathBuilderResultGetCertPath;
+extern jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
+
+// java/security/cert/PKIXRevocationChecker - only in API level 24+
+extern jclass    g_PKIXRevocationCheckerClass;
+extern jmethodID g_PKIXRevocationCheckerSetOptions;
+
+// java/security/cert/TrustAnchor
+extern jclass    g_TrustAnchorClass;
+extern jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
 extern jclass    g_X509CertClass;
 extern jmethodID g_X509CertGetEncoded;
 extern jmethodID g_X509CertGetPublicKey;
+
+// java/security/cert/X509CertSelector
+extern jclass    g_X509CertSelectorClass;
+extern jmethodID g_X509CertSelectorCtor;
+extern jmethodID g_X509CertSelectorSetCertificate;
 
 // java/security/interfaces/RSAKey
 extern jclass    g_RSAKeyClass;
@@ -132,6 +179,11 @@ extern jmethodID g_keyPairGenGetInstanceMethod;
 extern jmethodID g_keyPairGenInitializeMethod;
 extern jmethodID g_keyPairGenInitializeWithParamsMethod;
 extern jmethodID g_keyPairGenGenKeyPairMethod;
+
+// java/security/KeyStore
+extern jclass    g_KeyStoreClass;
+extern jmethodID g_KeyStoreGetInstance;
+extern jmethodID g_KeyStoreLoad;
 
 // java/security/Signature
 extern jclass    g_SignatureClass;
@@ -249,9 +301,10 @@ extern jmethodID g_X509EncodedKeySpecCtor;
 extern jclass    g_DestroyableClass;
 extern jmethodID g_destroy;
 
-// java/util/Collection
+// java/util/ArrayList
 extern jclass    g_ArrayListClass;
-extern jmethodID g_ArrayListCtor;
+extern jmethodID g_ArrayListCtorWithCapacity;
+extern jmethodID g_ArrayListCtorWithCollection;
 extern jmethodID g_ArrayListAdd;
 
 // java/util/Collection
@@ -261,6 +314,7 @@ extern jmethodID g_CollectionSize;
 
 // java/util/Date
 extern jclass    g_DateClass;
+extern jmethodID g_DateCtor;
 extern jmethodID g_DateGetTime;
 
 // java/util/Iterator
@@ -342,6 +396,10 @@ void ReleaseGRef(JNIEnv *env, jobject gref);
 void ReleaseLRef(JNIEnv *env, jobject lref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
 bool CheckJNIExceptions(JNIEnv* env);
+
+// Get any pending JNI exception. Returns true if there was an exception, false otherwise.
+bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException);
+
 void AssertOnJNIExceptions(JNIEnv* env);
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
