@@ -4921,13 +4921,14 @@ extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
 static LLVMValueRef
 keep_lowest_element (EmitContext *ctx, LLVMTypeRef dst_t, LLVMValueRef vec)
 {
-	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	LLVMTypeRef t = LLVMTypeOf (vec);
 	g_assert (LLVMGetElementType (dst_t) == LLVMGetElementType (t));
 	unsigned int elems = LLVMGetVectorSize (dst_t);
+	unsigned int src_elems = LLVMGetVectorSize (t);
+	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	mask [0] = 0;
 	for (unsigned int i = 1; i < elems; ++i)
-		mask [i] = elems + i;
+		mask [i] = src_elems;
 	return LLVMBuildShuffleVector (ctx->builder, vec, LLVMConstNull (t), create_const_vector_i32 (mask, elems), "keep_lowest");
 }
 
@@ -4949,27 +4950,9 @@ scalar_from_vector (EmitContext *ctx, LLVMValueRef xs)
 }
 
 static LLVMValueRef
-vector_zero_from_scalar (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
+vector_from_scalar (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
 {
-	return LLVMBuildInsertElement (ctx->builder, LLVMConstNull (type), x, const_int32 (0), "s2vz");
-}
-
-static LLVMValueRef
-vector_from_scalar_ty (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
-{
-	return LLVMBuildInsertElement (ctx->builder, LLVMGetUndef (type), x, const_int32 (0), "s2v");
-}
-
-static LLVMValueRef
-vector_from_scalar (EmitContext *ctx, LLVMValueRef type_donor, LLVMValueRef x)
-{
-	return vector_from_scalar_ty (ctx, LLVMTypeOf (type_donor), x);
-}
-
-static LLVMValueRef
-undef_upper_elements (EmitContext *ctx, LLVMTypeRef type, LLVMValueRef x)
-{
-	return vector_from_scalar_ty (ctx, type, scalar_from_vector (ctx, x));
+	return LLVMBuildInsertElement (ctx->builder, LLVMConstNull (type), x, const_int32 (0), "s2v");
 }
 
 typedef struct {
@@ -5105,7 +5088,7 @@ scalar_op_from_vector_op_process_result (ScalarOpFromVectorOpCtx *sctx, LLVMValu
 {
 	if (sctx->needs_fake_scalar_op)
 		return keep_lowest_element (sctx->ctx, LLVMTypeOf (result), result);
-	return vector_from_scalar_ty (sctx->ctx, sctx->return_type, result);
+	return vector_from_scalar (sctx->ctx, sctx->return_type, result);
 }
 
 static void
@@ -7500,7 +7483,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			if (scalar)
-				result = vector_from_scalar (ctx, lhs, result);
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -9677,7 +9660,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					args [i] = scalar_from_vector (ctx, args [i]);
 			LLVMValueRef result = LLVMBuildFCmp (builder, pred, args [0], args [1], "xcompare_fp");
 			if (scalar)
-				result = vector_from_scalar_ty (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (reti_t)), result);
+				result = vector_from_scalar (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (reti_t)), result);
 			result = LLVMBuildSExt (builder, result, reti_t, "");
 			result = LLVMBuildBitCast (builder, result, ret_t, "");
 			values [ins->dreg] = result;
@@ -9695,7 +9678,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					args [i] = scalar_from_vector (ctx, args [i]);
 			LLVMValueRef result = LLVMBuildICmp (builder, pred, args [0], args [1], "xcompare");
 			if (scalar)
-				result = vector_from_scalar_ty (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (ret_t)), result);
+				result = vector_from_scalar (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (ret_t)), result);
 			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
 			break;
 		}
@@ -9819,7 +9802,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			else
 				result = LLVMBuildSIToFP (builder, result, cvt_t, "arm64_scvtf");
 			if (scalar)
-				result = vector_from_scalar_ty (ctx, ret_t, result);
+				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -9845,7 +9828,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			else
 				result = LLVMBuildFPToSI (builder, result, cvt_t, "arm64_fcvtzs");
 			if (scalar)
-				result = vector_from_scalar_ty (ctx, ret_t, result);
+				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -9854,7 +9837,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef elem_t = LLVMTypeOf (result);
 			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
 			LLVMTypeRef t = LLVMVectorType (elem_t, 64 / elem_bits);
-			result = vector_from_scalar_ty (ctx, t, result);
+			result = vector_from_scalar (ctx, t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -9914,12 +9897,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (elem_t == i4_t) {
 				LLVMValueRef arg = scalar_from_vector (ctx, lhs);
 				result = call_intrins (ctx, scalar_iid, &arg, "arm64_xnarrow_scalar");
-				result = vector_from_scalar_ty (ctx, ret_t, result);
+				result = vector_from_scalar (ctx, ret_t, result);
 			} else {
 				LLVMTypeRef arg_t = LLVMTypeOf (lhs);
 				LLVMTypeRef argelem_t = LLVMGetElementType (arg_t);
 				unsigned int argelems = LLVMGetVectorSize (arg_t);
-				LLVMValueRef arg = undef_upper_elements (ctx, LLVMVectorType (argelem_t, argelems * 2), lhs);
+				LLVMValueRef arg = keep_lowest_element (ctx, LLVMVectorType (argelem_t, argelems * 2), lhs);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, &arg, "arm64_xnarrow_scalar");
 				result = keep_lowest_element (ctx, LLVMTypeOf (result), result);
 			}
@@ -10008,7 +9991,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 			LLVMValueRef result = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_FMA, ovr_tag, args, "arm64_fma");
 			if (scalar)
-				result = vector_from_scalar (ctx, lhs, result);
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10122,8 +10105,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				mularg = scalar_from_vector (ctx, mularg);
 				selected_scalar = scalar_from_vector (ctx, selected_scalar);
 			} else {
-				mularg = undef_upper_elements (ctx, mularg_t, mularg);
-				selected_scalar = undef_upper_elements (ctx, mularg_t, selected_scalar);
+				mularg = keep_lowest_element (ctx, mularg_t, mularg);
+				selected_scalar = keep_lowest_element (ctx, mularg_t, selected_scalar);
 			}
 			LLVMValueRef mulargs [] = { mularg, selected_scalar };
 			LLVMValueRef result = call_overloaded_intrins (ctx, mulid, multag, mulargs, "arm64_sqdmull_scalar");
@@ -10137,7 +10120,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				scalar_acc_result = TRUE;
 			}
 			if (scalar_acc_result)
-				result = vector_from_scalar_ty (ctx, ret_t, result);
+				result = vector_from_scalar (ctx, ret_t, result);
 			else
 				result = keep_lowest_element (ctx, ret_t, result);
 			values [ins->dreg] = result;
@@ -10147,7 +10130,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef mul2 = LLVMBuildExtractElement (builder, rhs, arg3, "");
 			LLVMValueRef mul1 = scalar_from_vector (ctx, lhs);
 			LLVMValueRef result = LLVMBuildFMul (builder, mul1, mul2, "arm64_fmul_sel");
-			result = vector_from_scalar (ctx, lhs, result);
+			result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10266,7 +10249,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			else
 				result = LLVMBuildNeg (builder, result, "arm64_xneg");
 			if (scalar)
-				result = vector_from_scalar (ctx, lhs, result);
+				result = vector_from_scalar (ctx, LLVMTypeOf (lhs), result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10422,7 +10405,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (scalar) {
 				unsigned int elems = LLVMGetVectorSize (shift_arg_t);
 				LLVMValueRef lo = scalar_from_vector (ctx, shift_arg);
-				shift_arg = vector_from_scalar_ty (ctx, LLVMVectorType (shift_arg_elem_t, elems * 2), lo);
+				shift_arg = vector_from_scalar (ctx, LLVMVectorType (shift_arg_elem_t, elems * 2), lo);
 			}
 			int max_index = range_max - range_min + 1;
 			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, max_index, shift_amount, intrin_result_t, "arm64_xnshift");
@@ -10751,7 +10734,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				// @llvm.aarch64.neon.saddv.i32.v8i16 ought to return an i16, but doesn't in LLVM 9.
 				result = LLVMBuildTrunc (builder, result, elem_t, "");
 			}
-			result = vector_from_scalar_ty (ctx, ret_t, result);
+			result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10768,7 +10751,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				// @llvm.aarch64.neon.saddlv.i32.v16i8 ought to return an i16, but doesn't in LLVM 9.
 				result = LLVMBuildTrunc (builder, result, i2_t, "");
 			}
-			result = vector_from_scalar_ty (ctx, ret_t, result);
+			result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10887,7 +10870,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			result = LLVMBuildBitCast (builder, result, result_t, "");
 			if (scalar)
-				result = vector_from_scalar_ty (ctx, ret_t, result);
+				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
