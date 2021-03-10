@@ -154,11 +154,7 @@ namespace Internal.Cryptography.Pal
 
                 byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
 
-                if (!writer.TryEncode(rented, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new InvalidOperationException();
-                }
+                int written = writer.Encode(rented);
 
                 DSA dsa = DSA.Create();
                 IDisposable? toDispose = dsa;
