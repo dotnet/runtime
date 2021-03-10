@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -144,8 +145,18 @@ namespace Internal.Cryptography.Pal
 
                 if (useCustomRootTrust)
                 {
+                    // Android does not support an empty set of trust anchors
+                    if (customTrustCerts.Count == 0)
+                    {
+                        throw new PlatformNotSupportedException(SR.Cryptography_EmptyCustomTrustNotSupported);
+                    }
+
                     IntPtr[] customTrustArray = customTrustCerts.ToArray();
-                    Interop.AndroidCrypto.X509ChainSetCustomTrustStore(_chainContext, customTrustArray, customTrustArray.Length);
+                    int res = Interop.AndroidCrypto.X509ChainSetCustomTrustStore(_chainContext, customTrustArray, customTrustArray.Length);
+                    if (res != 1)
+                    {
+                        throw new CryptographicException();
+                    }
                 }
             }
 
@@ -159,21 +170,56 @@ namespace Internal.Cryptography.Pal
                 Debug.Assert(_chainContext != null);
 
                 long timeInMsFromUnixEpoch = new DateTimeOffset(verificationTime).ToUnixTimeMilliseconds();
-                _isValid = Interop.AndroidCrypto.X509ChainEvaluate(_chainContext, timeInMsFromUnixEpoch);
+                _isValid = Interop.AndroidCrypto.X509ChainBuild(_chainContext, timeInMsFromUnixEpoch);
                 if (!_isValid)
                 {
+                    // Android always validates time, signature, and trusted root.
+                    // There is no way bypass that validation and build a path.
                     ChainElements = Array.Empty<X509ChainElement>();
-                    var status = new X509ChainStatus()
+
+                    Interop.AndroidCrypto.ValidationError[] errors = Interop.AndroidCrypto.X509ChainGetErrors(_chainContext);
+                    var chainStatus = new X509ChainStatus[errors.Length];
+                    for (int i = 0; i < errors.Length; i++)
                     {
-                        Status = X509ChainStatusFlags.PartialChain
-                    };
-                    ChainStatus = new X509ChainStatus[] { status };
+                        Interop.AndroidCrypto.ValidationError error = errors[i];
+                        chainStatus[i] = ValidationErrorToChainStatus(error);
+                        Marshal.FreeHGlobal(error.Message);
+                    }
+
+                    ChainStatus = chainStatus;
                     return;
                 }
 
-                (X509Certificate2, List<X509ChainStatus>)[] results = GetValidationResults(_chainContext, applicationPolicy, certificatePolicy, revocationMode, revocationFlag);
+                if (revocationMode != X509RevocationMode.NoCheck && !Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
+                {
+                    if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_ChainSettingNotSupported, $"{nameof(X509RevocationFlag)}.{nameof(X509RevocationFlag.EndCertificateOnly)}"));
+                    }
+                }
 
-                if (!IsPolicyMatch(results, applicationPolicy, certificatePolicy))
+                int res = Interop.AndroidCrypto.X509ChainValidate(_chainContext, revocationMode, revocationFlag);
+                if (res != 1)
+                    throw new CryptographicException();
+
+                X509Certificate2[] certs = Interop.AndroidCrypto.X509ChainGetCertificates(_chainContext);
+                List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
+                List<X509ChainStatus>[] statuses = new List<X509ChainStatus>[certs.Length];
+                Dictionary<int, List<X509ChainStatus>> errorsByIndex = GetStatusByIndex(_chainContext);
+                foreach (int index in errorsByIndex.Keys)
+                {
+                    if (index == -1)
+                    {
+                        // Error is not tied to a specific index
+                        overallStatus.AddRange(errorsByIndex[index]);
+                    }
+                    else
+                    {
+                        statuses[index] = errorsByIndex[index];
+                    }
+                }
+
+                if (!IsPolicyMatch(certs, applicationPolicy, certificatePolicy))
                 {
                     X509ChainStatus policyFailStatus = new X509ChainStatus
                     {
@@ -181,57 +227,70 @@ namespace Internal.Cryptography.Pal
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
 
-                    for (int i = 0; i < results.Length; i++)
+                    for (int i = 0; i < statuses.Length; i++)
                     {
-                        results[i].Item2.Add(policyFailStatus);
+                        if (statuses[i] == null)
+                        {
+                            statuses[i] = new List<X509ChainStatus>();
+                        }
+
+                        statuses[i].Add(policyFailStatus);
                     }
+
+                    overallStatus.Add(policyFailStatus);
                 }
 
-                X509ChainElement[] elements = new X509ChainElement[results.Length];
-                for (int i = 0; i < results.Length; i++)
+                X509ChainElement[] elements = new X509ChainElement[certs.Length];
+                for (int i = 0; i < certs.Length; i++)
                 {
-                    X509Certificate2 cert = results[i].Item1;
-                    elements[i] = new X509ChainElement(cert, results[i].Item2.ToArray(), string.Empty);
+                    X509ChainStatus[] elementStatus = statuses[i] == null ? Array.Empty<X509ChainStatus>() : statuses[i].ToArray();
+                    elements[i] = new X509ChainElement(certs[i], elementStatus, string.Empty);
                 }
 
                 ChainElements = elements;
+                ChainStatus = overallStatus.ToArray();
             }
 
-            private static (X509Certificate2, List<X509ChainStatus>)[] GetValidationResults(
-                SafeX509ChainContextHandle ctx,
-                OidCollection applicationPolicy,
-                OidCollection certificatePolicy,
-                X509RevocationMode revocationMode,
-                X509RevocationFlag revocationFlag)
+            private static Dictionary<int, List<X509ChainStatus>> GetStatusByIndex(SafeX509ChainContextHandle ctx)
             {
-                IntPtr[] certPtrs = Interop.AndroidCrypto.X509ChainGetCertificates(ctx);
-                var results = new (X509Certificate2, List<X509ChainStatus>)[certPtrs.Length];
-                for (int i = 0; i < results.Length; i++)
+                var statusByIndex = new Dictionary<int, List<X509ChainStatus>>();
+                Interop.AndroidCrypto.ValidationError[] errors = Interop.AndroidCrypto.X509ChainGetErrors(ctx);
+                for (int i = 0; i < errors.Length; i++)
                 {
-                    results[i].Item1 = new X509Certificate2(certPtrs[i]);
-                    results[i].Item2 = new List<X509ChainStatus>();
-                }
+                    Interop.AndroidCrypto.ValidationError error = errors[i];
+                    X509ChainStatus chainStatus = ValidationErrorToChainStatus(error);
+                    Marshal.FreeHGlobal(error.Message);
 
-                int success = Interop.AndroidCrypto.X509ChainValidate(ctx, revocationMode, revocationFlag);
-                if (success != 1)
-                {
-                    // TODO: [AndroidCrypto] Get actual validation errors
-                    X509ChainStatus status = new X509ChainStatus
+                    if (!statusByIndex.ContainsKey(error.Index))
                     {
-                        Status = X509ChainStatusFlags.PartialChain,
-                    };
-
-                    for (int i = 0; i < results.Length; i++)
-                    {
-                        results[i].Item2.Add(status);
+                        statusByIndex.Add(error.Index, new List<X509ChainStatus>());
                     }
+
+                    statusByIndex[error.Index].Add(chainStatus);
                 }
 
-                return results;
+                return statusByIndex;
+            }
+
+            private static X509ChainStatus ValidationErrorToChainStatus(Interop.AndroidCrypto.ValidationError error)
+            {
+                X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)error.Status;
+                if (statusFlags == X509ChainStatusFlags.NoError)
+                {
+                    // Android returns NoError as the error status when it cannot determine the status
+                    // We just map that to partial chain.
+                    statusFlags = X509ChainStatusFlags.PartialChain;
+                }
+
+                return new X509ChainStatus
+                {
+                    Status = statusFlags,
+                    StatusInformation = Marshal.PtrToStringUni(error.Message)
+                };
             }
 
             private static bool IsPolicyMatch(
-                (X509Certificate2, List<X509ChainStatus>)[] results,
+                X509Certificate2[] certs,
                 OidCollection? applicationPolicy,
                 OidCollection? certificatePolicy)
             {
@@ -241,12 +300,7 @@ namespace Internal.Cryptography.Pal
                 if (!hasApplicationPolicy && !hasCertificatePolicy)
                     return true;
 
-                List<X509Certificate2> certsToRead = new List<X509Certificate2>(results.Length);
-                for (int i = 0; i < results.Length; i++)
-                {
-                    certsToRead.Add(results[i].Item1);
-                }
-
+                List<X509Certificate2> certsToRead = new List<X509Certificate2>(certs);
                 CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
                 if (hasCertificatePolicy && !policyChain.MatchesCertificatePolicies(certificatePolicy!))
                 {

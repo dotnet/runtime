@@ -14,6 +14,11 @@ jmethodID g_ByteArrayInputStreamReset;
 jclass    g_Enum;
 jmethodID g_EnumOrdinal;
 
+// java/lang/Throwable
+jclass    g_ThrowableClass;
+jmethodID g_ThrowableGetCause;
+jmethodID g_ThrowableGetMessage;
+
 // java/security/Key
 jclass    g_KeyClass;
 jmethodID g_KeyGetAlgorithm;
@@ -145,6 +150,11 @@ jmethodID g_CertPathValidatorGetInstance;
 jmethodID g_CertPathValidatorValidate;
 jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
 
+// java/security/cert/CertPathValidatorException
+jclass    g_CertPathValidatorExceptionClass;
+jmethodID g_CertPathValidatorExceptionGetIndex;
+jmethodID g_CertPathValidatorExceptionGetReason; // only in API level 24+
+
 // java/security/cert/CertStore
 jclass    g_CertStoreClass;
 jmethodID g_CertStoreGetInstance;
@@ -173,6 +183,7 @@ jmethodID g_PKIXRevocationCheckerSetOptions;
 
 // java/security/cert/TrustAnchor
 jclass    g_TrustAnchorClass;
+jclass    g_TrustAnchorCtor;
 jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
@@ -294,6 +305,7 @@ jmethodID g_destroy;
 
 // java/util/ArrayList
 jclass    g_ArrayListClass;
+jmethodID g_ArrayListCtor;
 jmethodID g_ArrayListCtorWithCapacity;
 jmethodID g_ArrayListCtorWithCollection;
 jmethodID g_ArrayListAdd;
@@ -307,6 +319,11 @@ jmethodID g_CollectionSize;
 jclass    g_DateClass;
 jmethodID g_DateCtor;
 jmethodID g_DateGetTime;
+
+// java/util/HashSet
+jclass    g_HashSetClass;
+jmethodID g_HashSetCtorWithCapacity;
+jmethodID g_HashSetAdd;
 
 // java/util/Iterator
 jclass    g_IteratorClass;
@@ -524,6 +541,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_Enum =                    GetClassGRef(env, "java/lang/Enum");
     g_EnumOrdinal =             GetMethod(env, false, g_Enum, "ordinal", "()I");
 
+    g_ThrowableClass =      GetClassGRef(env, "java/lang/Throwable");
+    g_ThrowableGetCause =   GetMethod(env, false, g_ThrowableClass, "getCause", "()Ljava/lang/Throwable;");
+    g_ThrowableGetMessage = GetMethod(env, false, g_ThrowableClass, "getMessage", "()Ljava/lang/String;");
+
     g_KeyClass =        GetClassGRef(env, "java/security/Key");
     g_KeyGetAlgorithm = GetMethod(env, false, g_KeyClass, "getAlgorithm", "()Ljava/lang/String;");
     g_KeyGetEncoded =   GetMethod(env, false, g_KeyClass, "getEncoded", "()[B");
@@ -605,6 +626,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertPathValidatorValidate =               GetMethod(env, false, g_CertPathValidatorClass, "validate", "(Ljava/security/cert/CertPath;Ljava/security/cert/CertPathParameters;)Ljava/security/cert/CertPathValidatorResult;");
     g_CertPathValidatorGetRevocationChecker =   GetOptionalMethod(env, false, g_CertPathValidatorClass, "getRevocationChecker", "()Ljava/security/cert/CertPathChecker;");
 
+    g_CertPathValidatorExceptionClass =     GetClassGRef(env, "java/security/cert/CertPathValidatorException");
+    g_CertPathValidatorExceptionGetIndex =  GetMethod(env, false, g_CertPathValidatorExceptionClass, "getIndex", "()I");
+    g_CertPathValidatorExceptionGetReason = GetOptionalMethod(env, false, g_CertPathValidatorExceptionClass, "getReason", "()Ljava/security/cert/CertPathValidatorException$Reason;");
+
     g_CertStoreClass =          GetClassGRef(env, "java/security/cert/CertStore");
     g_CertStoreGetInstance =    GetMethod(env, true, g_CertStoreClass, "getInstance", "(Ljava/lang/String;Ljava/security/cert/CertStoreParameters;)Ljava/security/cert/CertStore;");
 
@@ -630,6 +655,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     }
 
     g_TrustAnchorClass =            GetClassGRef(env, "java/security/cert/TrustAnchor");
+    g_TrustAnchorCtor =             GetMethod(env, false, g_TrustAnchorClass, "<init>", "(Ljava/security/cert/X509Certificate;[B)V");
     g_TrustAnchorGetTrustedCert =   GetMethod(env, false, g_TrustAnchorClass, "getTrustedCert", "()Ljava/security/cert/X509Certificate;");
 
     g_X509CertClass =           GetClassGRef(env, "java/security/cert/X509Certificate");
@@ -758,6 +784,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_destroy =                        GetMethod(env, false, g_DestroyableClass, "destroy", "()V");
 
     g_ArrayListClass =              GetClassGRef(env, "java/util/ArrayList");
+    g_ArrayListCtor =               GetMethod(env, false, g_ArrayListClass, "<init>", "()V");
     g_ArrayListCtorWithCapacity =   GetMethod(env, false, g_ArrayListClass, "<init>", "(I)V");
     g_ArrayListCtorWithCollection = GetMethod(env, false, g_ArrayListClass, "<init>", "(Ljava/util/Collection;)V");
     g_ArrayListAdd =                GetMethod(env, false, g_ArrayListClass, "add", "(Ljava/lang/Object;)Z");
@@ -769,6 +796,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DateClass =   GetClassGRef(env, "java/util/Date");
     g_DateCtor =    GetMethod(env, false, g_DateClass, "<init>", "(J)V");
     g_DateGetTime = GetMethod(env, false, g_DateClass, "getTime", "()J");
+
+    g_HashSetClass =            GetClassGRef(env, "java/util/HashSet");
+    g_HashSetCtorWithCapacity = GetMethod(env, false, g_HashSetClass, "<init>", "(I)V");
+    g_HashSetAdd =              GetMethod(env, false, g_HashSetClass, "add", "(Ljava/lang/Object;)Z");
 
     g_IteratorClass =   GetClassGRef(env, "java/util/Iterator");
     g_IteratorHasNext = GetMethod(env, false, g_IteratorClass, "hasNext", "()Z");

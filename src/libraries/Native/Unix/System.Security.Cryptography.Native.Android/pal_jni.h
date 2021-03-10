@@ -23,6 +23,11 @@ extern jmethodID g_ByteArrayInputStreamReset;
 extern jclass    g_Enum;
 extern jmethodID g_EnumOrdinal;
 
+// java/lang/Throwable
+extern jclass    g_ThrowableClass;
+extern jmethodID g_ThrowableGetCause;
+extern jmethodID g_ThrowableGetMessage;
+
 // java/security/Key
 extern jclass    g_KeyClass;
 extern jmethodID g_KeyGetAlgorithm;
@@ -119,6 +124,11 @@ extern jmethodID g_CertPathValidatorGetInstance;
 extern jmethodID g_CertPathValidatorValidate;
 extern jmethodID g_CertPathValidatorGetRevocationChecker; // only in API level 24+
 
+// java/security/cert/CertPathValidatorException
+extern jclass    g_CertPathValidatorExceptionClass;
+extern jmethodID g_CertPathValidatorExceptionGetIndex;
+extern jmethodID g_CertPathValidatorExceptionGetReason;
+
 // java/security/cert/CertStore
 extern jclass    g_CertStoreClass;
 extern jmethodID g_CertStoreGetInstance;
@@ -147,6 +157,7 @@ extern jmethodID g_PKIXRevocationCheckerSetOptions;
 
 // java/security/cert/TrustAnchor
 extern jclass    g_TrustAnchorClass;
+extern jclass    g_TrustAnchorCtor;
 extern jmethodID g_TrustAnchorGetTrustedCert;
 
 // java/security/cert/X509Certificate
@@ -303,6 +314,7 @@ extern jmethodID g_destroy;
 
 // java/util/ArrayList
 extern jclass    g_ArrayListClass;
+extern jmethodID g_ArrayListCtor;
 extern jmethodID g_ArrayListCtorWithCapacity;
 extern jmethodID g_ArrayListCtorWithCollection;
 extern jmethodID g_ArrayListAdd;
@@ -316,6 +328,11 @@ extern jmethodID g_CollectionSize;
 extern jclass    g_DateClass;
 extern jmethodID g_DateCtor;
 extern jmethodID g_DateGetTime;
+
+// java/util/HashSet
+extern jclass    g_HashSetClass;
+extern jmethodID g_HashSetCtorWithCapacity;
+extern jmethodID g_HashSetAdd;
 
 // java/util/Iterator
 extern jclass    g_IteratorClass;

@@ -448,6 +448,12 @@
   <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
     <value>The certificate content type could not be determined.</value>
   </data>
+  <data name="Cryptography_ChainSettingNotSupported" xml:space="preserve">
+    <value>The certificate chain setting '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_EmptyCustomTrustNotSupported" xml:space="preserve">
+    <value>An empty custom trust store is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_VerificationFlagNotSupported" xml:space="preserve">
     <value>The verification flag '{0}' is not supported on this platform.</value>
   </data>

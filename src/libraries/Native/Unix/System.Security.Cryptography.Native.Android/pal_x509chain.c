@@ -26,6 +26,46 @@ struct X509ChainContext_t
     jobject /*PKIXBuilderParameters*/ params;
     jobject /*CertPath*/ certPath;
     jobject /*TrustAnchor*/ trustAnchor;
+
+    jobject /*ArrayList<Throwable>*/ errorList;
+};
+
+enum
+{
+    PAL_X509ChainNoError = 0,
+    PAL_X509ChainNotTimeValid = 0x00000001,
+    PAL_X509ChainNotTimeNested = 0x00000002,
+    PAL_X509ChainRevoked = 0x00000004,
+    PAL_X509ChainNotSignatureValid = 0x00000008,
+    PAL_X509ChainNotValidForUsage = 0x00000010,
+    PAL_X509ChainUntrustedRoot = 0x00000020,
+    PAL_X509ChainRevocationStatusUnknown = 0x00000040,
+    PAL_X509ChainCyclic = 0x00000080,
+    PAL_X509ChainInvalidExtension = 0x00000100,
+    PAL_X509ChainInvalidPolicyConstraints = 0x00000200,
+    PAL_X509ChainInvalidBasicConstraints = 0x00000400,
+    PAL_X509ChainInvalidNameConstraints = 0x00000800,
+    PAL_X509ChainHasNotSupportedNameConstraint = 0x00001000,
+    PAL_X509ChainHasNotDefinedNameConstraint = 0x00002000,
+    PAL_X509ChainHasNotPermittedNameConstraint = 0x00004000,
+    PAL_X509ChainHasExcludedNameConstraint = 0x00008000,
+    PAL_X509ChainPartialChain = 0x00010000,
+    PAL_X509ChainCtlNotTimeValid = 0x00020000,
+    PAL_X509ChainCtlNotSignatureValid = 0x00040000,
+    PAL_X509ChainCtlNotValidForUsage = 0x00080000,
+    PAL_X509ChainOfflineRevocation = 0x01000000,
+    PAL_X509ChainNoIssuanceChainPolicy = 0x02000000,
+    PAL_X509ChainExplicitDistrust = 0x04000000,
+    PAL_X509ChainHasNotSupportedCriticalExtension = 0x08000000,
+    PAL_X509ChainHasWeakSignature = 0x00100000,
+};
+typedef uint32_t PAL_X509ChainStatusFlags;
+
+struct ValidationError_t
+{
+    uint16_t* message;
+    int index;
+    PAL_X509ChainStatusFlags chainStatus;
 };
 
 X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certificate*/ cert,
@@ -86,6 +126,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     ret = malloc(sizeof(X509ChainContext));
     memset(ret, 0, sizeof(X509ChainContext));
     ret->params = AddGRef(env, loc[params]);
+    ret->errorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
 
 cleanup:
     RELEASE_LOCALS(loc, env)
@@ -101,10 +142,11 @@ void AndroidCryptoNative_X509ChainDestroyContext(X509ChainContext* ctx)
     ReleaseGRef(env, ctx->params);
     ReleaseGRef(env, ctx->certPath);
     ReleaseGRef(env, ctx->trustAnchor);
+    ReleaseGRef(env, ctx->errorList);
     free(ctx);
 }
 
-int32_t AndroidCryptoNative_X509ChainEvaluate(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch)
+int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch)
 {
     assert(ctx != NULL);
     JNIEnv* env = GetJNIEnv();
@@ -133,7 +175,7 @@ int32_t AndroidCryptoNative_X509ChainEvaluate(X509ChainContext* ctx, int64_t tim
     loc[result] = (*env)->CallObjectMethod(env, loc[builder], g_CertPathBuilderBuild, params);
     if (TryGetJNIException(env, &loc[ex], true /*printException*/))
     {
-        // TODO: [AndroidCrypto] Get/propagate the exception message to managed
+        (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
         goto cleanup;
     }
 
@@ -212,17 +254,115 @@ cleanup:
     return ret;
 }
 
+int32_t AndroidCryptoNative_X509ChainGetErrorCount(X509ChainContext* ctx)
+{
+    assert(ctx != NULL);
+    JNIEnv* env = GetJNIEnv();
+    int32_t count = (*env)->CallIntMethod(env, ctx->errorList, g_CollectionSize);
+    return count;
+}
+
+static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(jobject reason)
+{
+    // TODO: [AndroidCrypto] Convert reason to chain status
+    return PAL_X509ChainNoError;
+}
+
+static void PopulateValidationError(JNIEnv* env, jobject error, ValidationError* out)
+{
+    int index = -1;
+    PAL_X509ChainStatusFlags chainStatus = PAL_X509ChainNoError;
+    if ((*env)->IsInstanceOf(env, error, g_CertPathValidatorExceptionClass))
+    {
+        index = (*env)->CallIntMethod(env, error, g_CertPathValidatorExceptionGetIndex);
+
+        // Get the reason (if the API is available) and convert it to a chain status flag
+        if (g_CertPathValidatorExceptionGetReason != NULL)
+        {
+            jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
+            chainStatus = ChainStatusFromValidatorExceptionReason(reason);
+            (*env)->DeleteLocalRef(env, reason);
+        }
+    }
+
+    jobject message = (*env)->CallObjectMethod(env, error, g_ThrowableGetMessage);
+    jsize messageLen = (*env)->GetStringLength(env, message);
+
+    // +1 for null terminator
+    uint16_t* messagePtr = malloc(sizeof(uint16_t) * (size_t)(messageLen + 1));
+    messagePtr[messageLen] = '\0';
+    (*env)->GetStringRegion(env, message, 0, messageLen, (jchar*)messagePtr);
+
+    out->message = messagePtr;
+    out->index = index;
+    out->chainStatus = chainStatus;
+
+    (*env)->DeleteLocalRef(env, message);
+}
+
+int32_t AndroidCryptoNative_X509ChainGetErrors(X509ChainContext* ctx,
+                                                ValidationError* errors,
+                                                int32_t errorsLen)
+{
+    assert(ctx != NULL);
+    JNIEnv* env = GetJNIEnv();
+
+    int32_t ret = FAIL;
+
+    // int i = 0;
+    // Iterator<Throwable> iter = errorList.iterator();
+    // while (iter.hasNext()) {
+    //     Throwable error = iter.next();
+    //     << populate errors[i] >>
+    //     i++;
+    // }
+    int32_t i = 0;
+    jobject iter = (*env)->CallObjectMethod(env, ctx->errorList, g_CollectionIterator);
+    jboolean hasNext = (*env)->CallBooleanMethod(env, iter, g_IteratorHasNext);
+    while (hasNext)
+    {
+        jobject error = (*env)->CallObjectMethod(env, iter, g_IteratorNext);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+        PopulateValidationError(env, error, &errors[i]);
+        i++;
+
+        hasNext = (*env)->CallBooleanMethod(env, iter, g_IteratorHasNext);
+        (*env)->DeleteLocalRef(env, error);
+    }
+
+    ret = SUCCESS;
+
+cleanup:
+    (*env)->DeleteLocalRef(env, iter);
+    return ret;
+}
+
 int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
                                                          jobject* /*X509Certificate*/ customTrustStore,
                                                          int32_t customTrustStoreLen)
 {
-    // HashSet<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
+    assert(ctx != NULL);
+    JNIEnv* env = GetJNIEnv();
+
+    // HashSet<TrustAnchor> anchors = new HashSet<TrustAnchor>(customTrustStoreLen);
     // for (Certificate cert : customTrustStore) {
     //     TrustAnchor anchor = new TrustAnchor(cert, null);
-    //     trustAnchors.Add(anchor);
+    //     anchors.Add(anchor);
     // }
-    // params.setTrustAnchors(trustAnchors);
-    return FAIL;
+    jobject anchors = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, customTrustStoreLen);
+    for (int i = 0; i < customTrustStoreLen; ++i)
+    {
+        jobject anchor = (*env)->NewObject(env, g_TrustAnchorClass, g_TrustAnchorCtor, customTrustStore[i], NULL);
+        (*env)->CallBooleanMethod(env, anchors, g_HashSetAdd, anchor);
+        (*env)->DeleteLocalRef(env, anchor);
+    }
+
+    // params.setTrustAnchors(anchors);
+    (*env)->CallVoidMethod(env, ctx->params, g_PKIXBuilderParametersSetTrustAnchors, anchors);
+
+    (*env)->DeleteLocalRef(env, anchors);
+    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
 bool AndroidCryptoNative_X509ChainSupportsRevocationOptions(void)
@@ -313,10 +453,7 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     loc[result] = (*env)->CallObjectMethod(env, loc[validator], g_CertPathValidatorValidate, certPath, params);
     if (TryGetJNIException(env, &loc[ex], true /*printException*/))
     {
-        // TODO: [AndroidCrypto] Get/propagate the exception message to managed
-        // Exception should be CertPathValidatorException, which has:
-        //   - getIndex() : index failed cert
-        //   - getReason() - added in 24+ : reason for failure
+        (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
         goto cleanup;
     }
 

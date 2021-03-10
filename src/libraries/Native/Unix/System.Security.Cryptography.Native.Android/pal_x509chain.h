@@ -6,6 +6,7 @@
 #include "pal_jni.h"
 
 typedef struct X509ChainContext_t X509ChainContext;
+typedef struct ValidationError_t ValidationError;
 
 /*
 Create a context for building a certificate chain
@@ -24,7 +25,7 @@ Build a certificate path
 
 Always validates time and trust root.
 */
-PALEXPORT int32_t AndroidCryptoNative_X509ChainEvaluate(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch);
+PALEXPORT int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeInMsFromUnixEpoch);
 
 /*
 Return the number of certificates in the path
@@ -39,6 +40,20 @@ Returns 1 on success, 0 otherwise
 PALEXPORT int32_t AndroidCryptoNative_X509ChainGetCertificates(X509ChainContext* ctx,
                                                                jobject* /*X509Certificate[]*/ certs,
                                                                int32_t certsLen);
+
+/*
+Return the number of errors encountered when building and validating the certificate path
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509ChainGetErrorCount(X509ChainContext* ctx);
+
+/*
+Get the errors
+
+Returns 1 on success, 0 otherwise
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509ChainGetErrors(X509ChainContext* ctx,
+                                                         ValidationError* errors,
+                                                         int32_t errorsLen);
 
 /*
 Set the custom trust store
