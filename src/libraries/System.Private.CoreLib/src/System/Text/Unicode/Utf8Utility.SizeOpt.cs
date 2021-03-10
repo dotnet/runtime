@@ -93,8 +93,9 @@ namespace System.Text.Unicode
                 if (Rune.DecodeFromUtf8(input, out Rune rune, out int bytesConsumed) != OperationStatus.Done)
                     break;
                 input = input.Slice(bytesConsumed);
-                utf16CodeUnitCountAdjustment += 1 - rune.Utf16SequenceLength;
-                scalarCountAdjustment += 1-bytesConsumed;
+                utf16CodeUnitCountAdjustment += rune.Utf16SequenceLength - bytesConsumed;
+                scalarCountAdjustment += 1 - rune.Utf16SequenceLength;
+                totalBytesConsumed += bytesConsumed;
             }
 
             return pInputBuffer + totalBytesConsumed;
