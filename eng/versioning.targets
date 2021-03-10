@@ -41,10 +41,6 @@
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
-  <!-- Enables warnings for iOS targeted builds -->
-  <ItemGroup Condition="'$(TargetsiOS)' == 'true' and '$(IsTestProject)' != 'true'">
-    <SupportedPlatform Include="ios"/>
-  </ItemGroup>
   <!-- Enables warnings for tvOS targeted builds -->
   <ItemGroup Condition="'$(TargetstvOS)' == 'true' and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="tvos"/>
