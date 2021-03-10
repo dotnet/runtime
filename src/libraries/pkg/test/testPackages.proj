@@ -72,12 +72,12 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
-  <UsingTask TaskName="GetCompatibilePackageTargetFrameworks" AssemblyFile="$(NuGetPackageRoot)\microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\net5.0\Microsoft.DotNet.PackageValidation.dll"/>
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(NuGetPackageRoot)microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\netcoreapp3.1\Microsoft.DotNet.PackageValidation.dll"/>
 
   <Target Name="GetSupportedPackages">
-    <GetCompatibilePackageTargetFrameworks PackagePaths="@(TestPackages)">
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackages)">
       <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />     
-    </GetCompatibilePackageTargetFrameworks>
+    </GetCompatiblePackageTargetFrameworks>
 
     <ItemGroup>
       <SupportedPackage>
