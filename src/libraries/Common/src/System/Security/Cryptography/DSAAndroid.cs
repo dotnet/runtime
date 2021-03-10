@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
 
             internal DSAAndroid(SafeDsaHandle key)
             {
-                SetKey(key);
+                SetKey(key.DuplicateHandle());
             }
 
             public override int KeySize
