@@ -3590,6 +3590,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             {
                 printf(", size = %d", structSize);
             }
+            printf(", field hnd is %#x", dspPtr(fldHnd));
             printf("\n");
         }
 #endif
@@ -3737,8 +3738,9 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
             {
                 const char* modName;
                 const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
-                       varTypeName(fieldType));
+                printf("    VNForHandle(%s) is " FMT_VN, fldName, fldHndVN);
+                printf(", fieldType is %s", varTypeName(fieldType));
+                printf(", field hnd is %#x\n", dspPtr(fldHnd));
             }
 #endif
             ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
@@ -3755,8 +3757,9 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
                 }
                 const char* modName;
                 const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
-                       varTypeName(fieldType));
+                printf("    VNForHandle(%s) is " FMT_VN, fldName, fldHndVN);
+                printf(", fieldType is %s", varTypeName(fieldType));
+                printf(", field hnd is %#x\n", dspPtr(fldHnd));
             }
 #endif
             elemAfter = VNApplySelectorsAssignTypeCoerce(elem, indType, block);

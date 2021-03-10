@@ -11201,7 +11201,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
         }
         else
         {
-            printf("%s", eeGetFieldName(fldHnd));
+            printf("%s, %#x", eeGetFieldName(fldHnd), dspPtr(fldHnd));
         }
         pfsn = pfsn->m_next;
         if (pfsn != nullptr)
