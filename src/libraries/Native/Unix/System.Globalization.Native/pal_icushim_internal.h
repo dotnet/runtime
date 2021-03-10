@@ -62,128 +62,128 @@ U_CAPI int32_t ucal_getWindowsTimeZoneID(const UChar *	id, int32_t	len, UChar * 
 #if !defined(STATIC_ICU)
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(u_getVersion, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(u_strlen, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(u_strncpy, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(u_tolower, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(u_toupper, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_add, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_get, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_getAttribute, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_getKeywordValuesForLocale, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_getTimeZoneDisplayName, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_open, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucal_set, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_getOffset, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_getRules, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_getVersion, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_next, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_previous, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_open, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_openElements, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_openRules, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_open, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_setCalendar, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udat_toPattern, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udatpg_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udatpg_getBestPattern, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(udatpg_open, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(uenum_close, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uenum_count, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uenum_next, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uidna_close, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getBaseName, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getCharacterOrientation, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getCountry, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getDefault, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getDisplayCountry, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getDisplayLanguage, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getDisplayName, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getISO3Country, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getISO3Language, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getKeywordValue, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getLanguage, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getLCID, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getName, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_getParent, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uloc_setKeywordValue, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ulocdata_getCLDRVersion, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ulocdata_getMeasurementSystem, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_getNFCInstance, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_getNFDInstance, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_getNFKCInstance, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_getNFKDInstance, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_isNormalized, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unorm2_normalize, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(unum_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(unum_getAttribute, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(unum_getSymbol, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(unum_open, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(unum_toPattern, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ures_close, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ures_getByKey, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ures_getSize, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ures_getStringByIndex, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ures_open, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_first, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_last, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_setPattern, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(usearch_setText, libicui18n, TRUE)
+    PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_getVersion, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_strlen, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_strncpy, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_tolower, libicuuc, true) \
+    PER_FUNCTION_BLOCK(u_toupper, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ucal_add, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_get, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getAttribute, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getKeywordValuesForLocale, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getTimeZoneDisplayName, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_set, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_closeElements, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_getOffset, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_getRules, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_getSortKey, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_getStrength, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_getVersion, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_next, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_previous, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_openElements, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_openRules, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_getSymbols, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_setCalendar, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udat_toPattern, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udatpg_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udatpg_getBestPattern, libicui18n, true) \
+    PER_FUNCTION_BLOCK(udatpg_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(uenum_close, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uenum_count, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uenum_next, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uidna_close, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uidna_nameToASCII, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uidna_nameToUnicode, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uidna_openUTS46, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_canonicalize, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_countAvailable, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getAvailable, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getBaseName, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getCharacterOrientation, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getCountry, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getDefault, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getDisplayCountry, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getDisplayLanguage, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getDisplayName, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getISO3Country, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getISO3Language, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getKeywordValue, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getLanguage, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getLCID, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getName, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_getParent, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uloc_setKeywordValue, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ulocdata_getCLDRVersion, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ulocdata_getMeasurementSystem, libicui18n, true) \
+    PER_FUNCTION_BLOCK(unorm2_getNFCInstance, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unorm2_getNFDInstance, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unorm2_getNFKCInstance, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unorm2_getNFKDInstance, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unorm2_isNormalized, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unorm2_normalize, libicuuc, true) \
+    PER_FUNCTION_BLOCK(unum_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(unum_getAttribute, libicui18n, true) \
+    PER_FUNCTION_BLOCK(unum_getSymbol, libicui18n, true) \
+    PER_FUNCTION_BLOCK(unum_open, libicui18n, true) \
+    PER_FUNCTION_BLOCK(unum_toPattern, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ures_close, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ures_getByKey, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ures_getSize, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ures_getStringByIndex, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ures_open, libicuuc, true) \
+    PER_FUNCTION_BLOCK(usearch_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_first, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_getMatchedLength, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_last, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_openFromCollator, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_setPattern, libicui18n, true) \
+    PER_FUNCTION_BLOCK(usearch_setText, libicui18n, true)
 
 #if HAVE_SET_MAX_VARIABLE
 #define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, TRUE)
+    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, true)
 #else
 
 #define FOR_ALL_SET_VARIABLE_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n, TRUE)
+    PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n, true)
 #endif
 
 #if defined(TARGET_WINDOWS)
 #define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_close, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_open, libicuuc, TRUE)
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicuuc, true) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uldn_close, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicuuc, true) \
+    PER_FUNCTION_BLOCK(uldn_open, libicuuc, true)
 #else
     // Unix ICU is dynamically resolved at runtime and these APIs in old versions
     // of ICU were in libicui18n
 #define FOR_ALL_OS_CONDITIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_close, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n, TRUE) \
-    PER_FUNCTION_BLOCK(uldn_open, libicui18n, TRUE)
+    PER_FUNCTION_BLOCK(ucurr_forLocale, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucurr_getName, libicui18n, true) \
+    PER_FUNCTION_BLOCK(uldn_close, libicui18n, true) \
+    PER_FUNCTION_BLOCK(uldn_keyValueDisplayName, libicui18n, true) \
+    PER_FUNCTION_BLOCK(uldn_open, libicui18n, true)
 #endif
 
 // The following are the list of the ICU APIs which are optional. If these APIs exist in the ICU version we load at runtime, then we'll use it.
 // Otherwise, we'll just not provide the functionality to users which needed these APIs.
 #define FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, FALSE) \
-    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, FALSE)
+    PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, false) \
+    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false)
 
 #define FOR_ALL_ICU_FUNCTIONS \
     FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
