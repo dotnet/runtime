@@ -15,8 +15,9 @@ namespace System
         }
     }
 
-    [Serializable]
-    public class ValueChangedEventArgs<T> : EventArgs
+
+    [Serializeable]
+    public class EventArgs<T> : EventArgs
     {
         public T OldValue { get; }
 
@@ -29,5 +30,5 @@ namespace System
         }
     }
 
-    public delegate void OnValueChanged(object sender, ValueChangedEventArgs e);
+    public delegate void EventHandler<T>(object sender, EventArgs<T> e);
 }
