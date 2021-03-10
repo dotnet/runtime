@@ -7970,6 +7970,11 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
         return;
     }
 
+    if (!varTypeIsIntegral(t2->TypeGet()) || !varTypeIsIntegral(t3->TypeGet()))
+    {
+        return;
+    }
+
     /* Find the condition for the first block */
 
     Statement* s1 = b1->lastStmt();
