@@ -58,7 +58,7 @@ namespace System.IO
             // If, however, we've already bound this file handle to our completion port,
             // don't try to bind it again because it will fail.  A handle can only be
             // bound to a single completion port at a time.
-            if (!(handle.IsAsync ?? false))
+            if (handle.IsAsync != true)
             {
                 try
                 {
@@ -148,7 +148,7 @@ namespace System.IO
                 // Make sure we are reading from the position that we think we are
                 VerifyOSHandlePosition();
 
-                if (_filePosition + destination.Length > len)
+                if (destination.Length > len - _filePosition)
                 {
                     if (_filePosition <= len)
                     {

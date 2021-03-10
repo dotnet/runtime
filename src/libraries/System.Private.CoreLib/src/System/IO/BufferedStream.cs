@@ -258,7 +258,7 @@ namespace System.IO
                 EnsureCanSeek();
 
                 if (_writePos > 0)
-                    FlushWrite(true);
+                    FlushWrite(performActualFlush: true);
 
                 _readPos = 0;
                 _readLen = 0;

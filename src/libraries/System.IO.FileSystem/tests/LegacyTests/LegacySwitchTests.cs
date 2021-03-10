@@ -15,10 +15,10 @@ namespace System.IO.Tests
 
             using (FileStream fileStream = File.Create(filePath))
             {
-                Stream strategy = fileStream
+                object strategy = fileStream
                     .GetType()
                     .GetField("_strategy", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .GetValue(fileStream) as Stream;
+                    .GetValue(fileStream);
 
                 Assert.DoesNotContain(strategy.GetType().FullName, "Legacy");
             }
