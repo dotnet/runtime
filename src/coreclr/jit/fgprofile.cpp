@@ -1511,7 +1511,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     else
     {
         JITDUMP("Using block profiling, because %s\n",
-                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : classicNgen ? "classic Ngen" : "OSR");
+                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : prejit ? "prejitting" : "OSR");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
