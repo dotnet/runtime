@@ -260,27 +260,22 @@ mono_ios_runtime_init (void)
     assert (res > 0);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-#if !INVARIANT_GLOBALIZATION
-    const char* appctx_keys[3];
-    appctx_keys[0] = "RUNTIME_IDENTIFIER";
-    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
-    appctx_keys[2] = "ICU_DAT_FILE_PATH";
+    const char *appctx_keys[] = {
+        "RUNTIME_IDENTIFIER", 
+    #ifndef INVARIANT_GLOBALIZATION
+        "ICU_DAT_FILE_PATH",
+    #endif
+        "APP_CONTEXT_BASE_DIRECTORY"
+    };
+    const char *appctx_values [] = {
+        APPLE_RUNTIME_IDENTIFIER,
+    #ifndef INVARIANT_GLOBALIZATION
+        icu_dat_path,
+    #endif
+        bundle
+    };
 
-    const char* appctx_values[3];
-    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
-    appctx_values[1] = bundle;
-    appctx_values[2] = icu_dat_path;
-    monovm_initialize(3, appctx_keys, appctx_values);
-#else
-    const char* appctx_keys[2];
-    appctx_keys[0] = "RUNTIME_IDENTIFIER";
-    appctx_keys[1] = "APP_CONTEXT_BASE_DIRECTORY";
-
-    const char* appctx_values[2];
-    appctx_values[0] = APPLE_RUNTIME_IDENTIFIER;
-    appctx_values[1] = bundle;
-    monovm_initialize(2, appctx_keys, appctx_values);
-#endif
+    monovm_initialize(sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
 #if FORCE_INTERPRETER
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");

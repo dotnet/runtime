@@ -10,16 +10,10 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
-        private static extern int LoadICUDirect();
+        internal static extern int LoadICU();
 
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData")]
-        private static extern int LoadICUData(string? path);
-
-        internal static int LoadICU()
-        {
-            object? datPath = AppContext.GetData("ICU_DAT_FILE_PATH");
-            return (datPath != null) ? LoadICUData(datPath.ToString()) : LoadICUDirect();
-        }
+        internal static extern int LoadICUData(string? path);
 
         internal static void InitICUFunctions(IntPtr icuuc, IntPtr icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {
