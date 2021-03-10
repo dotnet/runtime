@@ -301,4 +301,9 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_setPattern(...) usearch_setPattern_ptr(__VA_ARGS__)
 #define usearch_setText(...) usearch_setText_ptr(__VA_ARGS__)
 
+#else // !defined(STATIC_ICU)
+
+#define ucal_getWindowsTimeZoneID_ptr ucal_getWindowsTimeZoneID
+#define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
+
 #endif // !defined(STATIC_ICU)
