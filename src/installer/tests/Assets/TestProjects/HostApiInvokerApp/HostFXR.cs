@@ -27,7 +27,8 @@ namespace HostApiInvokerApp
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_sdk_info
             {
-                internal UIntPtr size;
+                internal nuint size;
+
                 internal string version;
                 internal string path;
             }
@@ -35,7 +36,8 @@ namespace HostApiInvokerApp
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_framework_info
             {
-                internal UIntPtr size;
+                internal nuint size;
+
                 internal string name;
                 internal string version;
                 internal string path;
@@ -44,15 +46,15 @@ namespace HostApiInvokerApp
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
             internal struct hostfxr_dotnet_environment_info
             {
-                internal UIntPtr size;
+                internal nuint size;
 
                 internal string hostfxr_version;
                 internal string hostfxr_commit_hash;
 
-                internal int sdk_count;
+                internal nuint sdk_count;
                 internal IntPtr sdks;
 
-                internal int framework_count;
+                internal nuint framework_count;
                 internal IntPtr frameworks;
             }
 
@@ -212,27 +214,24 @@ namespace HostApiInvokerApp
 
                 int env_info_size = Marshal.SizeOf(environment_info);
 
-                if ((IntPtr.Size == 4 && (env_info_size != (uint)environment_info.size)) ||
-                    ((ulong)env_info_size != (ulong)environment_info.size))
+                if ((nuint)env_info_size != environment_info.size)
                     throw new Exception($"Size field value of hostfxr_dotnet_environment_info struct is {environment_info.size} but {env_info_size} was expected.");
 
-                for (int i = 0; i < environment_info.sdk_count; i++)
+                for (int i = 0; i < (int)environment_info.sdk_count; i++)
                 {
                     IntPtr pSdkInfo = new IntPtr(environment_info.sdks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_sdk_info>()));
                     sdks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_sdk_info>(pSdkInfo));
 
-                    if (((IntPtr.Size == 4) && (Marshal.SizeOf(sdks[i]) != (uint)sdks[i].size)) ||
-                        ((ulong)Marshal.SizeOf(sdks[i]) != (ulong)sdks[i].size))
+                    if ((nuint)Marshal.SizeOf(sdks[i]) != sdks[i].size)
                         throw new Exception($"Size field value of hostfxr_dotnet_environment_sdk_info struct is {sdks[i].size} but {Marshal.SizeOf(sdks[i])} was expected.");
                 }
 
-                for (int i = 0; i < environment_info.framework_count; i++)
+                for (int i = 0; i < (int)environment_info.framework_count; i++)
                 {
                     IntPtr pFrameworkInfo = new IntPtr(environment_info.frameworks.ToInt64() + (i * Marshal.SizeOf<hostfxr.hostfxr_dotnet_environment_framework_info>()));
                     frameworks.Add(Marshal.PtrToStructure<hostfxr.hostfxr_dotnet_environment_framework_info>(pFrameworkInfo));
 
-                    if (((IntPtr.Size == 4) && (Marshal.SizeOf(frameworks[i]) != (uint)frameworks[i].size)) ||
-                        ((ulong)Marshal.SizeOf(frameworks[i]) != (ulong)frameworks[i].size))
+                    if ((nuint)Marshal.SizeOf(frameworks[i]) != frameworks[i].size)
                         throw new Exception($"Size field value of hostfxr_dotnet_environment_framework_info struct is {frameworks[i].size} but {Marshal.SizeOf(frameworks[i])} was expected.");
                 }
 
