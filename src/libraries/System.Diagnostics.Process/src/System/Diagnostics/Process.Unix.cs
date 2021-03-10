@@ -58,6 +58,11 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             EnsureState(State.HaveId);
 
             // Check if we know the process has exited. This avoids us targetting another
