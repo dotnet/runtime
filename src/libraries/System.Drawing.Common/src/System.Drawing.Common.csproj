@@ -115,7 +115,6 @@
     <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
-    <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Brush.cs" />
     <Compile Include="System\Drawing\Font.cs" />
@@ -220,6 +219,7 @@
     <Compile Include="System\Drawing\SystemIcons.Windows.cs" />
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
+    <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DpiHelper.cs" />
     <Compile Include="misc\ExternDll.cs" />
