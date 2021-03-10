@@ -16,7 +16,7 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
-#include "mini-llvm.h"
+#include "llvm-intrinsics-types.h"
 
 #ifdef HAVE_UNWIND_H
 #include <unwind.h>

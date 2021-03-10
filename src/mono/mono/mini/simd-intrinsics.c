@@ -9,6 +9,7 @@
 #include "mini.h"
 #include "mini-runtime.h"
 #include "ir-emit.h"
+#include "llvm-intrinsics-types.h"
 #ifdef ENABLE_LLVM
 #include "mini-llvm.h"
 #include "mini-llvm-cpp.h"
