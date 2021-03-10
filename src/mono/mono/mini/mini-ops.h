@@ -1565,6 +1565,8 @@ MINI_OP(OP_XOP_OVR_SCALAR_X_X_X, "xop_ovr_scalar_x_x_x", XREG, XREG, XREG)
 MINI_OP3(OP_XOP_OVR_SCALAR_X_X_X_X, "xop_ovr_scalar_x_x_x_x", XREG, XREG, XREG, XREG)
 MINI_OP(OP_XOP_OVR_BYSCALAR_X_X_X, "xop_ovr_byscalar_x_x_x", XREG, XREG, XREG)
 
+MINI_OP(OP_XCONCAT, "xconcat", XREG, XREG, XREG)
+
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
 /* The index is assumed to be in range */

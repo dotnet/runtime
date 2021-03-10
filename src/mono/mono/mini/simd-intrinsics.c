@@ -257,6 +257,15 @@ emit_xcompare (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst 
 	return ins;
 }
 
+static gboolean
+is_intrinsics_vector_type (MonoType *vector_type)
+{
+	if (vector_type->type != MONO_TYPE_GENERICINST) return FALSE;
+	MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
+	const char *name = m_class_get_name (klass);
+	return !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1");
+}
+
 static MonoType*
 get_vector_t_elem_type (MonoType *vector_type)
 {
@@ -487,6 +496,28 @@ static guint16 sri_vector_methods [] = {
 	SN_CreateScalarUnsafe,
 };
 
+static gboolean
+is_elementwise_create_overload (MonoMethodSignature *fsig, MonoType *ret_type)
+{
+	uint16_t param_count = fsig->param_count;
+	if (param_count < 1) return FALSE;
+	MonoType *type = fsig->params [0];
+	gboolean is_vector_primitive = MONO_TYPE_IS_PRIMITIVE (type) && (type->type >= MONO_TYPE_I1 && type->type <= MONO_TYPE_R8);
+	if (!is_vector_primitive) return FALSE;
+	if (!mono_metadata_type_equal (ret_type, type)) return FALSE;
+	for (uint16_t i = 1; i < param_count; ++i)
+		if (!mono_metadata_type_equal (type, fsig->params [i])) return FALSE;
+	return TRUE;
+}
+
+static gboolean
+is_create_from_half_vectors_overload (MonoMethodSignature *fsig)
+{
+	if (fsig->param_count != 2) return FALSE;
+	if (!is_intrinsics_vector_type (fsig->params [0])) return FALSE;
+	return mono_metadata_type_equal (fsig->params [0], fsig->params [1]);
+}
+
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -519,8 +550,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
 			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
-		else
+		else if (is_create_from_half_vectors_overload (fsig))
+			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
+		else if (is_elementwise_create_overload (fsig, etype))
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
+		break;
 	}
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);

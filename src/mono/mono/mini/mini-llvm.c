@@ -7550,6 +7550,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildBitCast (builder, lhs, t, "");
 			break;
 		}
+		case OP_XCONCAT: {
+			values [ins->dreg] = concatenate_vectors (ctx, lhs, rhs);
+			break;
+		}
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
