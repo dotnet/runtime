@@ -391,7 +391,8 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 
                         // We should never see cases other than these in the IR,
                         // as the check node does not produce a value.
-                        assert(((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check)) ||
+                        assert(((comma != nullptr) && comma->OperIs(GT_COMMA) &&
+                                (comma->gtGetOp1() == check || comma->TypeIs(TYP_VOID))) ||
                                (check == compCurStmt->GetRootNode()));
 
                         // Still, we guard here so that release builds do not try to optimize trees we don't understand.
