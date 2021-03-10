@@ -2667,6 +2667,9 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ThrowHelper/NonVoidThrowHelper/**">
+            <Issue>https://github.com/dotnet/runtime/issues/48819</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool/**">
             <Issue>https://github.com/dotnet/runtime/issues/41193</Issue>
         </ExcludeList>
