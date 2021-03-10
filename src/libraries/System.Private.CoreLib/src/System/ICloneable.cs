@@ -7,4 +7,9 @@ namespace System
     {
         object Clone();
     }
+
+    public interface ICloneable<T>
+    {
+        T Clone();
+    }
 }
