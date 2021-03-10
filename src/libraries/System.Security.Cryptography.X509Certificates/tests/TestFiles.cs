@@ -33,11 +33,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         internal static readonly string Pkcs7SinglePemFile = Path.Combine(TestDataFolder, "singlecert.p7c");
 
         // PKCS#12
-        private static readonly string PfxSuffix = PlatformSupport.IsRC2Supported ? string.Empty : ".noRC2";
+        private static readonly string PfxSuffix = PlatformSupport.IsRC2Supported ? ".pfx" : ".noRC2.pfx";
 
-        internal static readonly string ChainPfxFile = Path.Combine(TestDataFolder, $"test{PfxSuffix}.pfx");
-        internal static readonly string DummyTcpServerPfxFile = Path.Combine(TestDataFolder, $"DummyTcpServer{PfxSuffix}.pfx");
-        internal static readonly string PfxFileName = $"My{PfxSuffix}.pfx";
+        internal static readonly string ChainPfxFile = Path.Combine(TestDataFolder, "test" + PfxSuffix);
+        internal static readonly string DummyTcpServerPfxFile = Path.Combine(TestDataFolder, "DummyTcpServer" + PfxSuffix);
+        internal static readonly string PfxFileName = "My" + PfxSuffix;
         internal static readonly string PfxFile = Path.Combine(TestDataFolder, PfxFileName);
     }
 }
