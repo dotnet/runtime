@@ -19,7 +19,9 @@
 
 #define _SAFECRT_IMPL
 
+#ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
+#endif
 
 #include "pal/palinternal.h"
 #include <string.h>
