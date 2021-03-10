@@ -133,6 +133,7 @@ namespace System.Composition.Hosting.Core.Tests
         [InlineData(typeof(Lazy<int, IDictionary<string, string>>))]
         [InlineData(typeof(Lazy<int, PrivateConstructor>))]
         [InlineData(typeof(Lazy<int, NoParameterlessConstructor>))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void GetExport_InvalidMetadata_ThrowsComposititionFailedException(Type type)
         {
             using (CompositionHost host = CompositionHost.CreateCompositionHost(new ExportDescriptorProvider[0]))
