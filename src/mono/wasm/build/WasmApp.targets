@@ -22,6 +22,8 @@
       - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
       - $(WasmDebugLevel)
+      - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
+                                    Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `LLVMOnly`
@@ -176,6 +178,7 @@
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
       <MonoAotCrossCompilerPath Condition="'$(MonoAotCrossCompilerPath)' == ''">$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'cross', $(PackageRID), 'mono-aot-cross$(_ExeExt)'))</MonoAotCrossCompilerPath>
@@ -309,6 +312,7 @@
 
    <PropertyGroup>
      <EmccCFlags>$(EmccFlags) -DCORE_BINDINGS -DGEN_PINVOKE=1 "-I$(_WasmIncludeDir)/mono-2.0" "-I$(_WasmIncludeDir)/wasm"</EmccCFlags>
+     <EmccCFlags Condition="'$(WasmNativeDebugSymbols)' == 'true'">$(EmccCFlags) -g</EmccCFlags>
 
      <!--
           For path c:\foo\bar\ quoting would make it "c:\foo\bar\"
