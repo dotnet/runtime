@@ -16,7 +16,7 @@
       },
     "MacCatalyst": {
       "#import": [
-        "Unix"
+        "iOS"
         ]
       },
     "iOS": {

@@ -11,7 +11,7 @@
 # Script to orchestrate SuperPMI collections, replays, asm diffs, and SuperPMI
 # data management. Note that some of the options provided by this script are
 # also provided in our SuperPMI collect test. The test can be found here:
-# https://github.com/dotnet/runtime/blob/master/src/tests/JIT/superpmi/superpmicollect.cs.
+# https://github.com/dotnet/runtime/blob/main/src/tests/JIT/superpmi/superpmicollect.cs.
 #
 ################################################################################
 ################################################################################
@@ -233,6 +233,7 @@ superpmi_common_parser.add_argument("--sequential", action="store_true", help="R
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
@@ -251,6 +252,7 @@ collect_parser.add_argument("-output_mch_path", help="Location to place the fina
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
 collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets COMPlus_ZapDisable=1 and COMPlus_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
+collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets COMPlus_TieredCompilation=1 when doing collections.")
 
 # Allow for continuing a collection in progress
 collect_parser.add_argument("-temp_dir", help="Specify an existing temporary directory to use. Useful if continuing an ongoing collection process, or forcing a temporary directory to a particular hard drive. Optional; default is to create a temporary directory in the usual TEMP location.")
@@ -325,6 +327,28 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 # Helper functions
 ################################################################################
 
+
+def download_progress_hook(count, block_size, total_size):
+    """ A hook for urlretrieve to report download progress
+
+    Args:
+        count (int)               : current block index
+        block_size (int)          : size of a block
+        total_size (int)          : total size of a payload
+    """
+    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.flush()
+
+def download_with_progress(uri, target_location):
+    """ Do an URI download, with logging.
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+    """
+    logging.info("Download: %s -> %s", uri, target_location)
+    urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+    sys.stdout.write("\n") # Add newline after progress hook
 
 def is_zero_length_file(fpath):
     """ Determine if a file system path refers to an existing file that is zero length
@@ -487,7 +511,7 @@ def run_and_log(command, log_level=logging.DEBUG):
     logging.debug("Invoking: %s", " ".join(command))
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout_output, _ = proc.communicate()
-    for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
+    for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
         logging.log(log_level, line)
     return proc.returncode
 
@@ -829,7 +853,9 @@ class SuperPMICollect:
 
             complus_env = {}
             complus_env["EnableExtraSuperPmiQueries"] = "1"
-            complus_env["TieredCompilation"] = "0"
+
+            if not self.coreclr_args.tiered_compilation:
+                complus_env["TieredCompilation"] = "0"
 
             if self.coreclr_args.use_zapdisable:
                 complus_env["ZapDisable"] = "1"
@@ -880,7 +906,7 @@ class SuperPMICollect:
                 command = [self.collection_command, ] + self.collection_args
                 proc = subprocess.Popen(command, env=collection_command_env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 stdout_output, _ = proc.communicate()
-                for line in stdout_output.decode('utf-8').splitlines():  # There won't be any stderr output since it was piped to stdout
+                for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
             ################################################################################################ end of "self.collection_command is not None"
 
@@ -1320,7 +1346,7 @@ def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
             shutil.copy2(item, repro_location)
 
         logging.info("")
-        logging.info("Repro .mc files created for failures:")
+        logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
         for item in repro_files:
             logging.info(item)
 
@@ -1413,6 +1439,10 @@ class SuperPMIReplay:
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+            if self.coreclr_args.jitoption:
+               for o in self.coreclr_args.jitoption:
+                  repro_flags += "-jitoption", o
 
             common_flags += repro_flags
 
@@ -1535,9 +1565,7 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitRequired": "1",
-            "COMPlus_JitDisasmWithGC": "1",
-            "COMPlus_TieredCompilation": "0" }
+            "COMPlus_JitDisasmWithGC": "1" }
 
         if self.coreclr_args.gcinfo:
             asm_complus_vars.update({
@@ -1858,8 +1886,7 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location)
+        download_with_progress(coredistools_uri, coredistools_location)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1895,8 +1922,7 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location)
+                download_with_progress(pmi_uri, pmi_location)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2348,9 +2374,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(temp_location, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    download_with_progress(url, download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
                         raise httperror
@@ -2379,9 +2403,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(target_dir, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path)
+                    download_with_progress(url, download_path)
                     local_files.append(download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
@@ -2642,8 +2664,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `master` using:
-             git merge-base `git_hash` master
+        2. Determine the baseline: where does this hash meet `main` using:
+             git merge-base `git_hash` main
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2698,7 +2720,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "master" ]
+            command = [ "git", "merge-base", current_hash, "main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
@@ -2849,7 +2871,7 @@ def setup_args(args):
         if os.path.isfile(log_file):
             logging.critical("Warning: deleting existing log file %s", log_file)
             os.remove(log_file)
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, encoding='utf8')
         file_handler.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
@@ -2921,6 +2943,11 @@ def setup_args(args):
                             "spmi_log_file",
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")
@@ -3057,6 +3084,11 @@ def setup_args(args):
                             "use_zapdisable",
                             lambda unused: True,
                             "Unable to set use_zapdisable")
+
+        coreclr_args.verify(args,
+                            "tiered_compilation",
+                            lambda unused: True,
+                            "Unable to set tiered_compilation")
 
         if (args.collection_command is None) and (args.pmi is False) and (args.crossgen is False) and (args.crossgen2 is False):
             print("Either a collection command or `--pmi` or `--crossgen` or `--crossgen2` must be specified")
@@ -3350,11 +3382,6 @@ def main(args):
         print("Please install python 3.7 or greater")
 
         return 1
-
-    # Force tiered compilation off. It will affect both collection and replay.
-    # REVIEW: Is this true for replay? We specifically set this when doing collections. Can we remove this line?
-    #         Or move it more close to the location that requires it, and output to the console that we're setting this?
-    os.environ["COMPlus_TieredCompilation"] = "0"
 
     # Parse the arguments.
 

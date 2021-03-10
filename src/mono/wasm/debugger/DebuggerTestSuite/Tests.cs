@@ -718,7 +718,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 22);
+                }, "dto_props", num_fields: 20);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -1005,6 +1005,30 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method_async('[debugger-test] UserBreak:BreakOnDebuggerBreakCommand'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 56, 4,
                 "BreakOnDebuggerBreakCommand");
+        }
+
+        [Fact]
+        public async Task BreakpointInAssemblyUsingTypeFromAnotherAssembly_BothDynamicallyLoaded()
+        {
+            int line = 7;
+            await SetBreakpoint(".*/library-dependency-debugger-test1.cs$", line, 0, use_regex: true);
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.dll"),
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test2.pdb"));
+            await LoadAssemblyDynamically(
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.dll"),
+                    Path.Combine(DebuggerTestAppPath, "library-dependency-debugger-test1.pdb"));
+
+            var source_location = "dotnet://library-dependency-debugger-test1.dll/library-dependency-debugger-test1.cs";
+            Assert.Contains(source_location, scripts.Values);
+
+            var pause_location = await EvaluateAndCheck(
+               "window.setTimeout(function () { invoke_static_method('[library-dependency-debugger-test1] TestDependency:IntAdd', 5, 10); }, 1);",
+               source_location, line, 8,
+               "IntAdd");
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            CheckNumber(locals, "a", 5);
+            CheckNumber(locals, "b", 10);
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }

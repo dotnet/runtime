@@ -21,15 +21,15 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class DomainControllerInfo
     {
-        public string DomainControllerName;
-        public string DomainControllerAddress;
+        public string DomainControllerName = null!;
+        public string? DomainControllerAddress;
         public int DomainControllerAddressType;
         public Guid DomainGuid;
-        public string DomainName;
-        public string DnsForestName;
+        public string? DomainName;
+        public string? DnsForestName;
         public int Flags;
-        public string DcSiteName;
-        public string ClientSiteName;
+        public string? DcSiteName;
+        public string? ClientSiteName;
     }
 
     /*typedef struct {
@@ -51,13 +51,13 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class DsDomainControllerInfo2
     {
-        public string netBiosName;
-        public string dnsHostName;
-        public string siteName;
-        public string siteObjectName;
-        public string computerObjectName;
-        public string serverObjectName;
-        public string ntdsaObjectName;
+        public string? netBiosName;
+        public string? dnsHostName;
+        public string? siteName;
+        public string? siteObjectName;
+        public string? computerObjectName;
+        public string? serverObjectName;
+        public string? ntdsaObjectName;
         public bool isPdc;
         public bool dsEnabled;
         public bool isGC;
@@ -87,13 +87,13 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class DsDomainControllerInfo3
     {
-        public string netBiosName;
-        public string dnsHostName;
-        public string siteName;
-        public string siteObjectName;
-        public string computerObjectName;
-        public string serverObjectName;
-        public string ntdsaObjectName;
+        public string? netBiosName;
+        public string? dnsHostName;
+        public string? siteName;
+        public string? siteObjectName;
+        public string? computerObjectName;
+        public string? serverObjectName;
+        public string? ntdsaObjectName;
         public bool isPdc;
         public bool dsEnabled;
         public bool isGC;
@@ -124,8 +124,8 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class DsNameResultItem
     {
         public int status;
-        public string domain;
-        public string name;
+        public string? domain;
+        public string? name;
     }
 
     /*typedef struct _DnsRecord {
@@ -181,20 +181,20 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class DnsRecord
     {
         public IntPtr next;
-        public string name;
+        public string? name;
         public short type;
         public short dataLength;
         public int flags;
         public int ttl;
         public int reserved;
-        public DnsSrvData data;
+        public DnsSrvData data = null!;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class PartialDnsRecord
     {
         public IntPtr next;
-        public string name;
+        public string? name;
         public short type;
         public short dataLength;
         public int flags;
@@ -213,7 +213,7 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class DnsSrvData
     {
-        public string targetName;
+        public string targetName = null!;
         public short priority;
         public short weight;
         public short port;
@@ -248,7 +248,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public int buildNumber;
         public int platformId;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-        public string csdVersion = null;
+        public string? csdVersion = null;
         public short servicePackMajor;
         public short servicePackMinor;
         public short suiteMask;
@@ -275,7 +275,7 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class NegotiateCallerNameRequest
     {
         public int messageType;
-        public LUID logonId;
+        public LUID? logonId;
     }
 
     /*typedef struct _NEGOTIATE_CALLER_NAME_RESPONSE {
@@ -286,7 +286,7 @@ namespace System.DirectoryServices.ActiveDirectory
     internal sealed class NegotiateCallerNameResponse
     {
         public int messageType;
-        public string callerName;
+        public string? callerName;
     }
 
     internal sealed class NativeMethods
@@ -322,10 +322,10 @@ namespace System.DirectoryServices.ActiveDirectory
                 );*/
         [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcNameW", CharSet = CharSet.Unicode)]
         internal static extern int DsGetDcName(
-            [In] string computerName,
-            [In] string domainName,
+            [In] string? computerName,
+            [In] string? domainName,
             [In] IntPtr domainGuid,
-            [In] string siteName,
+            [In] string? siteName,
             [In] int flags,
             [Out] out IntPtr domainControllerInfo);
 
@@ -340,11 +340,11 @@ namespace System.DirectoryServices.ActiveDirectory
                          );*/
         [DllImport("Netapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "DsGetDcOpenW", CharSet = CharSet.Unicode)]
         internal static extern int DsGetDcOpen(
-            [In] string dnsName,
+            [In] string? dnsName,
             [In] int optionFlags,
-            [In] string siteName,
+            [In] string? siteName,
             [In] IntPtr domainGuid,
-            [In] string dnsForestName,
+            [In] string? dnsForestName,
             [In] int dcFlags,
             [Out] out IntPtr retGetDcContext);
 
@@ -383,9 +383,9 @@ namespace System.DirectoryServices.ActiveDirectory
             );*/
 
         internal delegate int DsMakePasswordCredentials(
-      [MarshalAs(UnmanagedType.LPWStr)] string user,
-      [MarshalAs(UnmanagedType.LPWStr)] string domain,
-      [MarshalAs(UnmanagedType.LPWStr)] string password,
+      [MarshalAs(UnmanagedType.LPWStr)] string? user,
+      [MarshalAs(UnmanagedType.LPWStr)] string? domain,
+      [MarshalAs(UnmanagedType.LPWStr)] string? password,
       [Out] out IntPtr authIdentity);
 
         /*VOID DsFreePasswordCredentials(
@@ -401,8 +401,8 @@ namespace System.DirectoryServices.ActiveDirectory
             HANDLE* phDS
             );*/
         internal delegate int DsBindWithCred(
-            [MarshalAs(UnmanagedType.LPWStr)] string domainController,
-            [MarshalAs(UnmanagedType.LPWStr)] string dnsDomainName,
+            [MarshalAs(UnmanagedType.LPWStr)] string? domainController,
+            [MarshalAs(UnmanagedType.LPWStr)] string? dnsDomainName,
             [In] IntPtr authIdentity,
             [Out] out IntPtr handle);
 

@@ -518,10 +518,12 @@ namespace System.Text.Json.Serialization.Tests
             // Any test payload is fine.
             string json = @"""Some string""";
 
-            RunTest<Type>();
-            RunTest<SerializationInfo>();
+            RunTest<Type>(json);
+            RunTest<SerializationInfo>(json);
+            RunTest<IntPtr>(json);
+            RunTest<UIntPtr>(json);
 
-            void RunTest<T>()
+            void RunTest<T>(string json)
             {
                 string fullName = typeof(T).FullName;
 
@@ -538,10 +540,13 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains("$.Prop", exAsStr);
 
                 // NSE is not thrown because the serializer handles null.
-                Assert.Null(JsonSerializer.Deserialize<T>("null"));
+                if (!typeof(T).IsValueType)
+                {
+                    Assert.Null(JsonSerializer.Deserialize<T>("null"));
 
-                ClassWithType<T> obj = JsonSerializer.Deserialize<ClassWithType<T>>(@"{""Prop"":null}");
-                Assert.Null(obj.Prop);
+                    ClassWithType<T> obj = JsonSerializer.Deserialize<ClassWithType<T>>(@"{""Prop"":null}");
+                    Assert.Null(obj.Prop);
+                }
             }
         }
 
@@ -550,18 +555,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             RunTest<Type>(typeof(int));
             RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
+            RunTest<IntPtr>((IntPtr)123);
+            RunTest<UIntPtr>((UIntPtr)123);
 
             void RunTest<T>(T value)
             {
-                string fullName = typeof(T).FullName;
+                Type type = typeof(T);
+                string fullName = type.FullName;
 
                 NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(value));
                 string exAsStr = ex.ToString();
                 Assert.Contains(fullName, exAsStr);
                 Assert.Contains("$", exAsStr);
-
-                string serialized = JsonSerializer.Serialize((T)(object)null);
-                Assert.Equal("null", serialized);
 
                 ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
 
@@ -570,12 +575,18 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(fullName, exAsStr);
                 Assert.Contains("$.Prop", exAsStr);
 
-                obj.Prop = (T)(object)null;
-                serialized = JsonSerializer.Serialize(obj);
-                Assert.Equal(@"{""Prop"":null}", serialized);
+                if (!type.IsValueType)
+                {
+                    string serialized = JsonSerializer.Serialize((T)(object)null);
+                    Assert.Equal("null", serialized);
 
-                serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-                Assert.Equal(@"{}", serialized);
+                    obj.Prop = (T)(object)null;
+                    serialized = JsonSerializer.Serialize(obj);
+                    Assert.Equal(@"{""Prop"":null}", serialized);
+
+                    serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
+                    Assert.Equal(@"{}", serialized);
+                }
             }
         }
 

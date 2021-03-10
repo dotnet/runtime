@@ -22,26 +22,13 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
-            if (comparer == null)
-            {
-                // It's relatively common to see code (especially in tests and testing frameworks) that ends up
-                // using Enumerable.SequenceEqual to compare two byte arrays.  Using ReadOnlySpan.SequenceEqual
-                // is significantly faster than accessing each byte via the array's IList<byte> interface
-                // implementation.  So, we special-case byte[] here.  It would be nice to be able to delegate
-                // to ReadOnlySpan.SequenceEqual for all TSource[] arrays where TSource is a value type and
-                // implements IEquatable<TSource>, but there's no good way without reflection to convince
-                // the C# compiler to let us delegate, as ReadOnlySpan.SequenceEqual requires an IEquatable<T>
-                // constraint on its type parameter, and Enumerable.SequenceEqual lacks one on its type parameter.
-                if (typeof(TSource) == typeof(byte) && first is byte[] firstArr && second is byte[] secondArr)
-                {
-                    return ((ReadOnlySpan<byte>)firstArr).SequenceEqual(secondArr);
-                }
-
-                comparer = EqualityComparer<TSource>.Default;
-            }
-
             if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)
             {
+                if (first is TSource[] firstArray && second is TSource[] secondArray)
+                {
+                    return ((ReadOnlySpan<TSource>)firstArray).SequenceEqual(secondArray, comparer);
+                }
+
                 if (firstCol.Count != secondCol.Count)
                 {
                     return false;
@@ -49,6 +36,8 @@ namespace System.Linq
 
                 if (firstCol is IList<TSource> firstList && secondCol is IList<TSource> secondList)
                 {
+                    comparer ??= EqualityComparer<TSource>.Default;
+
                     int count = firstCol.Count;
                     for (int i = 0; i < count; i++)
                     {
@@ -65,6 +54,8 @@ namespace System.Linq
             using (IEnumerator<TSource> e1 = first.GetEnumerator())
             using (IEnumerator<TSource> e2 = second.GetEnumerator())
             {
+                comparer ??= EqualityComparer<TSource>.Default;
+
                 while (e1.MoveNext())
                 {
                     if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))

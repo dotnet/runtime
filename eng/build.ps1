@@ -111,7 +111,7 @@ function Get-Help() {
   Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
   Write-Host ""
   Write-Host ""
-  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 if ($help) {

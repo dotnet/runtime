@@ -490,10 +490,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         unsigned lclNum               = comp->lvaGrabTemp(true DEBUGARG("Lowering is creating a new local variable"));
         comp->lvaTable[lclNum].lvType = rhs->TypeGet();
 
-        GenTreeLclVar* store = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, rhs->TypeGet(), lclNum);
-        store->gtOp1         = rhs;
-        store->gtFlags       = (rhs->gtFlags & GTF_COMMON_MASK);
-        store->gtFlags |= GTF_VAR_DEF;
+        GenTreeLclVar* store = comp->gtNewStoreLclVar(lclNum, rhs);
 
         switchBBRange.InsertAfter(node, store);
         switchBBRange.Remove(node);
@@ -1155,7 +1152,11 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
+#if !defined(TARGET_64BIT) || defined(OSX_ARM64_ABI)
                     assert(info->GetByteSize() == 12);
+#else  // TARGET_64BIT && !OSX_ARM64_ABI
+                    assert(info->GetByteSize() == 16);
+#endif // FEATURE_SIMD && FEATURE_PUT_STRUCT_ARG_STK
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -2063,24 +2064,14 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
             comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->GetLclNum()].lvDoNotEnregister;
             GenTree* value                              = comp->gtNewLclvNode(lclNum, tmpTyp);
 
-            // TODO-1stClassStructs: This can be simplified with 1st class structs work.
             if (tmpTyp == TYP_STRUCT)
             {
                 comp->lvaSetStruct(tmpLclNum, comp->lvaGetStruct(lclNum), false);
-                GenTree* loc = new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_STRUCT, tmpLclNum);
-                loc->gtType  = TYP_BYREF;
-                GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
-                    GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, loc, value, comp->typGetBlkLayout(callerArgDsc->lvExactSize));
-                storeBlk->gtFlags |= GTF_ASG;
-                BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeBlk));
-                LowerNode(storeBlk);
             }
-            else
-            {
-                GenTree* assignExpr = comp->gtNewTempAssign(tmpLclNum, value);
-                ContainCheckRange(value, assignExpr);
-                BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, assignExpr));
-            }
+            GenTreeLclVar* storeLclVar = comp->gtNewStoreLclVar(tmpLclNum, value);
+            ContainCheckRange(value, storeLclVar);
+            BlockRange().InsertBefore(insertTempBefore, LIR::SeqTree(comp, storeLclVar));
+            LowerNode(storeLclVar);
         }
 
         lcl->SetLclNum(tmpLclNum);

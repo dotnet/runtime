@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
@@ -145,7 +145,7 @@
     <Compile Include="$(CommonPath)Interop\Linux\Interop.LinuxNetDeviceFlags.cs" Link="Common\Interop\Linux\Interop.LinuxNetDeviceFlags.cs" />
   </ItemGroup>
   <!-- OSX -->
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
     <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
@@ -164,7 +164,7 @@
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" Link="Common\Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" Link="Common\Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.OSX.cs" />
     <!-- OSX Common -->
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs" Link="Common\Interop\OSX\Interop.CoreFoundation.cs" />

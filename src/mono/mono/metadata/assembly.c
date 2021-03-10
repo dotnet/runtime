@@ -1080,7 +1080,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (!is_default && !is_satellite) {
-		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname);
+		reference = mono_assembly_loaded_internal (mono_alc_get_default (), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the default ALC: '%s'.", aname->name);
 			goto leave;
@@ -1088,7 +1088,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (bundles != NULL && !is_satellite) {
-		reference = search_bundle_for_assembly (mono_domain_default_alc (mono_alc_domain (alc)), aname);
+		reference = search_bundle_for_assembly (mono_alc_get_default (), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
 			goto leave;
@@ -1120,7 +1120,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (is_default || !is_satellite) {
-		reference = invoke_assembly_preload_hook (mono_domain_default_alc (mono_alc_domain (alc)), aname, assemblies_path);
+		reference = invoke_assembly_preload_hook (mono_alc_get_default (), aname, assemblies_path);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the filesystem probing logic: '%s'.", aname->name);
 			goto leave;
@@ -1397,7 +1397,7 @@ mono_assembly_invoke_load_hook_internal (MonoAssemblyLoadContext *alc, MonoAssem
 void
 mono_assembly_invoke_load_hook (MonoAssembly *ass)
 {
-	mono_assembly_invoke_load_hook_internal (mono_domain_default_alc (mono_domain_get ()), ass);
+	mono_assembly_invoke_load_hook_internal (mono_alc_get_default (), ass);
 }
 
 static void
@@ -1934,7 +1934,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req,
 	                               MONO_ASMCTX_DEFAULT,
-	                               mono_domain_default_alc (mono_domain_get ()));
+	                               mono_alc_get_default ());
 	res = mono_assembly_request_open (filename, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2080,8 +2080,9 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 }
 
 static void
-free_item (gpointer val, gpointer user_data)
+free_assembly_name_item (gpointer val, gpointer user_data)
 {
+	mono_assembly_name_free_internal ((MonoAssemblyName *)val);
 	g_free (val);
 }
 
@@ -2105,7 +2106,6 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	ERROR_DECL (error);
 	int i;
 	MonoCustomAttrInfo* attrs;
-	GSList *list;
 
 	if (ass->friend_assembly_names_inited)
 		return;
@@ -2126,7 +2126,9 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	}
 	mono_assemblies_unlock ();
 
-	list = NULL;
+	GSList *visible_list = NULL;
+	GSList *ignores_list = NULL;
+
 	/* 
 	 * We build the list outside the assemblies lock, the worse that can happen
 	 * is that we'll need to free the allocated list.
@@ -2138,7 +2140,16 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		uint32_t data_length;
 		gchar *data_with_terminator;
 		/* Do some sanity checking */
-		if (!attr->ctor || attr->ctor->klass != mono_class_try_get_internals_visible_class ())
+		if (!attr->ctor)
+			continue;
+		gboolean has_visible = FALSE;
+		gboolean has_ignores = FALSE;
+		has_visible = attr->ctor->klass == mono_class_try_get_internals_visible_class ();
+		/* IgnoresAccessChecksToAttribute is dynamically generated, so it's not necessarily in CoreLib */
+		/* FIXME: should we only check for it in dynamic modules? */
+		has_ignores = (!strcmp ("IgnoresAccessChecksToAttribute", m_class_get_name (attr->ctor->klass)) &&
+			       !strcmp ("System.Runtime.CompilerServices", m_class_get_name_space (attr->ctor->klass)));
+		if (!has_visible && !has_ignores)
 			continue;
 		if (attr->data_size < 4)
 			continue;
@@ -2152,7 +2163,10 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
 		if (mono_assembly_name_parse_full (data_with_terminator, aname, TRUE, NULL, NULL)) {
-			list = g_slist_prepend (list, aname);
+			if (has_visible)
+				visible_list = g_slist_prepend (visible_list, aname);
+			if (has_ignores)
+				ignores_list = g_slist_prepend (ignores_list, aname);
 		} else {
 			g_free (aname);
 		}
@@ -2163,11 +2177,14 @@ mono_assembly_load_friends (MonoAssembly* ass)
 	mono_assemblies_lock ();
 	if (ass->friend_assembly_names_inited) {
 		mono_assemblies_unlock ();
-		g_slist_foreach (list, free_item, NULL);
-		g_slist_free (list);
+		g_slist_foreach (visible_list, free_assembly_name_item, NULL);
+		g_slist_free (visible_list);
+		g_slist_foreach (ignores_list, free_assembly_name_item, NULL);
+		g_slist_free (ignores_list);
 		return;
 	}
-	ass->friend_assembly_names = list;
+	ass->friend_assembly_names = visible_list;
+	ass->ignores_checks_assembly_names = ignores_list;
 
 	/* Because of the double checked locking pattern above */
 	mono_memory_barrier ();
@@ -2248,7 +2265,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_open (filename, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2288,7 +2305,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2481,7 +2498,7 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -3036,7 +3053,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	result = mono_assembly_load_with_partial_name_internal (name, mono_domain_default_alc (mono_domain_get ()), status);
+	result = mono_assembly_load_with_partial_name_internal (name, mono_alc_get_default (), status);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -3097,7 +3114,7 @@ mono_assembly_load_corlib (MonoImageOpenStatus *status)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 
 	if (corlib) {
 		/* g_print ("corlib already loaded\n"); */
@@ -3161,8 +3178,7 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 MonoAssembly*
 mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameRequest *req, MonoImageOpenStatus *status)
 {
-	MonoDomain *domain = mono_alc_domain (req->request.alc);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in (domain %p, alc %p)", aname->name, domain, (gpointer)req->request.alc);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in alc %p", aname->name, (gpointer)req->request.alc);
 	MonoAssembly *result;
 	if (status)
 		*status = MONO_IMAGE_OK;
@@ -3214,8 +3230,8 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req,
-				       MONO_ASMCTX_DEFAULT,
-				       mono_domain_default_alc (mono_domain_get ()));
+										  MONO_ASMCTX_DEFAULT,
+										  mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
 	res = mono_assembly_request_byname (aname, &req, status);
@@ -3239,7 +3255,7 @@ MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
 	MonoAssemblyByNameRequest req;
-	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
 	return mono_assembly_request_byname (aname, &req, status);
@@ -3259,7 +3275,7 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	if (refonly)
 		return NULL;
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	return mono_assembly_loaded_internal (alc, aname);
 }
 
@@ -3290,7 +3306,7 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 {
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
-	res = mono_assembly_loaded_internal (mono_domain_default_alc (mono_domain_get ()), aname);
+	res = mono_assembly_loaded_internal (mono_alc_get_default (), aname);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
@@ -3318,7 +3334,6 @@ mono_assembly_release_gc_roots (MonoAssembly *assembly)
 gboolean
 mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 {
-	GSList *tmp;
 	g_return_val_if_fail (assembly != NULL, FALSE);
 
 	if (assembly == REFERENCE_MISSING)
@@ -3343,12 +3358,10 @@ mono_assembly_close_except_image_pools (MonoAssembly *assembly)
 	if (!mono_image_close_except_pools (assembly->image))
 		assembly->image = NULL;
 
-	for (tmp = assembly->friend_assembly_names; tmp; tmp = tmp->next) {
-		MonoAssemblyName *fname = (MonoAssemblyName *)tmp->data;
-		mono_assembly_name_free_internal (fname);
-		g_free (fname);
-	}
+	g_slist_foreach (assembly->friend_assembly_names, free_assembly_name_item, NULL);
+	g_slist_foreach (assembly->ignores_checks_assembly_names, free_assembly_name_item, NULL);
 	g_slist_free (assembly->friend_assembly_names);
+	g_slist_free (assembly->ignores_checks_assembly_names);
 	g_free (assembly->basedir);
 
 	MONO_PROFILER_RAISE (assembly_unloaded, (assembly));

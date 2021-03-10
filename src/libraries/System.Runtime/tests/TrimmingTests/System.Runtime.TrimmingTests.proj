@@ -4,7 +4,7 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
-      <SkipOnTestRuntimes>osx-x64;linux-x64</SkipOnTestRuntimes>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
@@ -18,6 +18,11 @@
       as a workaround while the linker bug is fixed. This bug has been logged in the
       linker repo here: https://github.com/mono/linker/issues/1285 -->
       <AdditionalArgs>/p:DebugType=Embedded</AdditionalArgs>
+      <!-- Justification: The implementation of StackFrame for Mono doesn't use
+       StackFrameHelper to get line information which is what is being annotated
+       and tested with this test. Issue https://github.com/dotnet/runtime/issues/48849 is
+       tracking investigation on why this test is failing if not skipped. -->
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker

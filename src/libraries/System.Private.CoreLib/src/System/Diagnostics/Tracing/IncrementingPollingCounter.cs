@@ -8,6 +8,7 @@ using System;
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
 #else
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
@@ -69,6 +70,11 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The DynamicDependency will preserve the properties of IncrementingCounterPayload")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(IncrementingCounterPayload))]
+#endif
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             UpdateMetric();

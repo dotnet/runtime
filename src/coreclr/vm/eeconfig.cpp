@@ -584,6 +584,13 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
 
+    {
+        NewArrayHolder<WCHAR> wszModifiableAssemblies;
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
+        if (wszModifiableAssemblies)
+            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+    }
+
     iRequireZaps        = RequireZapsType(GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
     if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)
         iRequireZaps = REQUIRE_ZAPS_NONE;

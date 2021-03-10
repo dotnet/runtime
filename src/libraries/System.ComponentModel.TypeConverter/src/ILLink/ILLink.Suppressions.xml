@@ -147,18 +147,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectGetEvents(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2070</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectGetProperties(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2072</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.LicenseManager.ValidateInternalRecursive(System.ComponentModel.LicenseContext,System.Type,System.Object,System.Boolean,System.ComponentModel.License@,System.String@)</property>
@@ -174,36 +162,6 @@
       <argument>IL2072</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.ComNativeDescriptorProxy.#ctor</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2072</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.TypeDescriptor.CreateDesigner(System.ComponentModel.IComponent,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.AttributeCollection.GetDefaultAttribute(System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ComponentResourceManager.ApplyResources(System.Object,System.String,System.Globalization.CultureInfo)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.EnumConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.EnumConverter.GetStandardValues(System.ComponentModel.ITypeDescriptorContext)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -249,12 +207,6 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
-      <argument>IL2075</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectGetExtendedProperties(System.ComponentModel.IExtenderProvider)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
       <argument>IL2080</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ReflectEventDescriptor.FillMethods</property>
@@ -269,25 +221,7 @@
       <argument>ILLink</argument>
       <argument>IL2080</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.ReflectPropertyDescriptor.get_GetMethodValue</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2080</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ReflectPropertyDescriptor.get_SetMethodValue</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2087</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.BindingList`1.AddNewCore</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2090</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.BindingList`1.get_ItemTypeHasDefaultConstructor</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
@@ -300,6 +234,48 @@
       <argument>IL2026</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.Design.DesigntimeLicenseContextSerializer.Serialize(System.IO.Stream,System.String,System.ComponentModel.Design.DesigntimeLicenseContext)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetConverter</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetDefaultEvent</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetDefaultProperty</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetEditor(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2062</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.ReflectTypeDescriptionProvider.ReflectedTypeData.GetAttributes</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.NullableConverter.#ctor(System.Type)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.ComponentModel.ReflectPropertyDescriptor.FillAttributes(System.Collections.IList)</property>
     </attribute>
   </assembly>
 </linker>

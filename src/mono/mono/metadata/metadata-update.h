@@ -30,10 +30,10 @@ gboolean
 mono_metadata_wait_for_update (uint32_t timeout_ms);
 
 uint32_t
-mono_metadata_update_prepare (MonoDomain *domain);
+mono_metadata_update_prepare (void);
 
 void
-mono_metadata_update_publish (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
+mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation);
 
 void
 mono_metadata_update_cancel (uint32_t generation);

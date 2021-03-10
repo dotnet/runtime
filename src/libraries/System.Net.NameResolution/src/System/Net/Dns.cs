@@ -31,8 +31,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -167,11 +166,11 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(s => {
-                    IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
+            return RunAsync(static s => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
-            }, address);
+            }, address, CancellationToken.None);
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
@@ -419,8 +418,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             return result;
         }
@@ -459,13 +457,10 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-            {
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
-                // Do the forward lookup to get the IPs for that host name
-                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
-            }
+            // Do the forward lookup to get the IPs for that host name
+            stopwatch = NameResolutionTelemetry.Log.BeforeResolution(name);
 
             object result;
             try
@@ -492,8 +487,7 @@ namespace System.Net
                 throw;
             }
 
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -547,6 +541,8 @@ namespace System.Net
             {
                 if (NameResolutionPal.SupportsGetAddrInfoAsync)
                 {
+#pragma warning disable CS0162 // Unreachable code detected -- SupportsGetAddrInfoAsync is a constant on *nix.
+
                     // If the OS supports it and 'hostName' is not an IP Address, resolve the name asynchronously
                     // instead of calling the synchronous version in the ThreadPool.
                     // If it fails, we will fall back to ThreadPool as well.
@@ -571,6 +567,7 @@ namespace System.Net
                     {
                         return t;
                     }
+#pragma warning restore CS0162
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)hostName : new KeyValuePair<string, AddressFamily>(hostName, family);
@@ -578,25 +575,25 @@ namespace System.Net
 
             if (justAddresses)
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
             else
             {
-                return RunAsync(s => s switch
+                return RunAsync(static s => s switch
                 {
                     string h => GetHostEntryCore(h, AddressFamily.Unspecified),
                     KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
                     KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
                     _ => null
-                }, asyncState);
+                }, asyncState, cancellationToken);
             }
         }
 
@@ -631,9 +628,6 @@ namespace System.Net
             }
         }
 
-        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
-            Task.Factory.StartNew(func!, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry
             {
@@ -654,13 +648,76 @@ namespace System.Net
             }
         }
 
-
         private static bool LogFailure(ValueStopwatch stopwatch)
         {
-            if (NameResolutionTelemetry.Log.IsEnabled())
-                NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
-
+            NameResolutionTelemetry.Log.AfterResolution(stopwatch, successful: false);
             return false;
+        }
+
+        /// <summary>Mapping from key to current task in flight for that key.</summary>
+        private static readonly Dictionary<object, Task> s_tasks = new Dictionary<object, Task>();
+
+        /// <summary>Queue the function to be invoked asynchronously.</summary>
+        /// <remarks>
+        /// Since this is doing synchronous work on a thread pool thread, we want to limit how many threads end up being
+        /// blocked.  We could employ a semaphore to limit overall usage, but a common case is that DNS requests are made
+        /// for only a handful of endpoints, and a reasonable compromise is to ensure that requests for a given host are
+        /// serialized.  Once the data for that host is cached locally by the OS, the subsequent requests should all complete
+        /// very quickly, and if the head-of-line request is taking a long time due to the connection to the server, we won't
+        /// block lots of threads all getting data for that one host.  We also still want to issue the request to the OS, rather
+        /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
+        /// by the OS to enable round robin is still perceived.
+        /// </remarks>
+        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object key, CancellationToken cancellationToken)
+        {
+            Task<TResult>? task = null;
+
+            lock (s_tasks)
+            {
+                // Get the previous task for this key, if there is one.
+                s_tasks.TryGetValue(key, out Task? prevTask);
+                prevTask ??= Task.CompletedTask;
+
+                // Invoke the function in a queued work item when the previous task completes. Note that some callers expect the
+                // returned task to have the key as the task's AsyncState.
+                task = prevTask.ContinueWith(delegate
+                {
+                    Debug.Assert(!Monitor.IsEntered(s_tasks));
+                    try
+                    {
+                        return func(key);
+                    }
+                    finally
+                    {
+                        // When the work is done, remove this key/task pair from the dictionary if this is still the current task.
+                        // Because the work item is created and stored into both the local and the dictionary while the lock is
+                        // held, and since we take the same lock here, inside this lock it's guaranteed to see the changes
+                        // made by the call site.
+                        lock (s_tasks)
+                        {
+                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task!));
+                        }
+                    }
+                }, key, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+
+                // If it's possible the task may end up getting canceled, it won't have a chance to remove itself from
+                // the dictionary if it is canceled, so use a separate continuation to do so.
+                if (cancellationToken.CanBeCanceled)
+                {
+                    task.ContinueWith((task, key) =>
+                    {
+                        lock (s_tasks)
+                        {
+                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task));
+                        }
+                    }, key, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+
+                // Finally, store the task into the dictionary as the current task for this key.
+                s_tasks[key] = task;
+            }
+
+            return task;
         }
     }
 }

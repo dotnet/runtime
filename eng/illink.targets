@@ -14,21 +14,9 @@
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
-                      Version="$(MicrosoftNETILLinkTasksVersion)"
-                      PrivateAssets="all"
-                      IsImplicitlyDefined="true"
-                      ExcludeAssets="build"
-                      GeneratePathProperty="true" />
-  </ItemGroup>
-
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkDirectory Condition="'$(ILLinkDirectory)' == ''">$(MSBuildProjectDirectory)\ILLink\</ILLinkDirectory>
-    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NET_ILLink_Tasks)', 'tools'))</ILLinkTasksDir>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)net5.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)net472/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -122,7 +110,7 @@
 
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksPath)" />
+  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
           Condition="'$(ILLinkTrimXml)' == '' and '@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
@@ -227,17 +215,17 @@
        Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly"
   -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="SetCommonILLinkArgs">
     <PropertyGroup>
-      <!-- default action for core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
-      <!-- default action for non-core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- default action for assemblies with IsTrimmable attribute -->
+      <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
+      <!-- default action for assemblies without IsTrimmable attribute -->
+      <ILLinkArgs>$(ILLinkArgs) --action skip</ILLinkArgs>
       <!-- trim the target assembly -->
-      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>

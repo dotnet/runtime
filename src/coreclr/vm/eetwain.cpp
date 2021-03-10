@@ -157,9 +157,9 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
  *  computation of PrologOffs/EpilogOffs.
  *  Returns the size of the header (number of bytes decoded).
  */
-static size_t   DecodeGCHdrInfo(GCInfoToken gcInfoToken,
-                                unsigned    curOffset,
-                                hdrInfo   * infoPtr)
+size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
+                       unsigned    curOffset,
+                       hdrInfo   * infoPtr)
 {
     CONTRACTL {
         NOTHROW;
@@ -5891,6 +5891,12 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
     hdrInfo info;
 
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
+
+    if (info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+    {
+        // Hijacking of UnmanagedCallersOnly method is not allowed
+        return false;
+    }
 
     *returnKind = info.returnKind;
     return true;

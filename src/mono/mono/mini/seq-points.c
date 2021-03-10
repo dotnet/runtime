@@ -255,9 +255,8 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	cfg->seq_points = NULL;
 }
 
-/* LOCKING: Acquires the domain lock */
 MonoSeqPointInfo*
-mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
+mono_get_seq_points (MonoMethod *method)
 {
 	ERROR_DECL (error);
 	MonoSeqPointInfo *seq_points;
@@ -291,11 +290,11 @@ mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
  *   Find the first sequence point after NATIVE_OFFSET.
  */
 gboolean
-mono_find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
+mono_find_next_seq_point_for_native_offset (MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = mono_get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
@@ -313,11 +312,11 @@ mono_find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *meth
  *   Find the first sequence point before NATIVE_OFFSET.
  */
 gboolean
-mono_find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
+mono_find_prev_seq_point_for_native_offset (MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = mono_get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
@@ -336,11 +335,11 @@ mono_find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *meth
  * should be the location of a sequence point.
  */
 gboolean
-mono_find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point)
+mono_find_seq_point (MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = mono_get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;

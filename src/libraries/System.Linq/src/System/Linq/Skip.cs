@@ -121,36 +121,9 @@ namespace System.Linq
 
             return count <= 0 ?
                 source.Skip(0) :
-                SkipLastIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> SkipLastIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert(count > 0);
-
-            var queue = new Queue<TSource>();
-
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                while (e.MoveNext())
-                {
-                    if (queue.Count == count)
-                    {
-                        do
-                        {
-                            yield return queue.Dequeue();
-                            queue.Enqueue(e.Current);
-                        }
-                        while (e.MoveNext());
-                        break;
-                    }
-                    else
-                    {
-                        queue.Enqueue(e.Current);
-                    }
-                }
-            }
+                TakeRangeFromEndIterator(source,
+                    isStartIndexFromEnd: false, startIndex: 0,
+                    isEndIndexFromEnd: true, endIndex: count);
         }
     }
 }

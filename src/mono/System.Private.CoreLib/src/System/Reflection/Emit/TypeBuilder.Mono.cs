@@ -1106,7 +1106,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type,
                                                 BindingFlags bindingAttr)
         {
@@ -1114,7 +1114,7 @@ namespace System.Reflection.Emit
             return created!.GetMember(name, type, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             check_created();
