@@ -109,7 +109,20 @@ namespace System.IO.Tests
                     // Put data in FS write buffer and update position from FSR
                     fs.WriteByte(0);
                     fsr.Position = 0;
-                    Assert.Throws<IOException>(() => fs.Position);
+
+                    if (useAsync
+                        // Async I/O behaviors differ due to kernel-based implementation on Windows
+                        && OperatingSystem.IsWindows()
+                        // ReadAsync which in this case (single byte written to buffer) calls FlushAsync is now 100% async
+                        // so it does not complete synchronously anymore
+                        && PlatformDetection.IsLegacyFileStreamEnabled) 
+                    {
+                        Assert.Throws<IOException>(() => FSAssert.CompletesSynchronously(fs.ReadAsync(new byte[1], 0, 1)));
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<IOException>(() => fs.ReadAsync(new byte[1], 0, 1));
+                    }
 
                     fs.WriteByte(0);
                     fsr.Position++;
