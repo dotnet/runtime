@@ -10266,7 +10266,7 @@ public:
         {
             // Create a CompAllocator that labels sub-structure with CMK_FieldSeqStore, and use that for allocation.
             CompAllocator ialloc(getAllocator(CMK_FieldSeqStore));
-            compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(ialloc);
+            compRoot->m_fieldSeqStore = new (ialloc) FieldSeqStore(compRoot, ialloc);
         }
         return compRoot->m_fieldSeqStore;
     }

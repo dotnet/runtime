@@ -266,6 +266,8 @@ struct FieldSeqNode
         return tail;
     }
 
+    bool CheckFldBelongsToCls(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd) const;
+
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)
     {
@@ -284,6 +286,7 @@ class FieldSeqStore
 {
     typedef JitHashTable<FieldSeqNode, /*KeyFuncs*/ FieldSeqNode, FieldSeqNode*> FieldSeqNodeCanonMap;
 
+    Compiler*             m_compiler;
     CompAllocator         m_alloc;
     FieldSeqNodeCanonMap* m_canonMap;
 
@@ -294,7 +297,7 @@ class FieldSeqStore
     static int ConstantIndexPseudoFieldStruct;
 
 public:
-    FieldSeqStore(CompAllocator alloc);
+    FieldSeqStore(Compiler* comp, CompAllocator alloc);
 
     // Returns the (canonical in the store) singleton field sequence for the given handle.
     FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE fieldHnd);
@@ -3433,10 +3436,7 @@ public:
         return m_fieldSeq;
     }
 
-    void SetFieldSeq(FieldSeqNode* fieldSeq)
-    {
-        m_fieldSeq = fieldSeq;
-    }
+    void SetFieldSeq(FieldSeqNode* fieldSeq);
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;

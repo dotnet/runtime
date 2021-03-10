@@ -863,7 +863,14 @@ private:
             addr->ChangeOper(GT_LCL_FLD_ADDR);
             addr->AsLclFld()->SetLclNum(val.LclNum());
             addr->AsLclFld()->SetLclOffs(val.Offset());
-            addr->AsLclFld()->SetFieldSeq(val.FieldSeq());
+            if (varTypeIsStruct(varDsc) && val.FieldSeq()->CheckFldBelongsToCls(m_compiler, varDsc->GetStructHnd()))
+            {
+                addr->AsLclFld()->SetFieldSeq(val.FieldSeq());
+            }
+            else
+            {
+                addr->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            }
         }
         else
         {
@@ -1032,6 +1039,10 @@ private:
             indir->ChangeOper(GT_LCL_FLD);
             indir->AsLclFld()->SetLclNum(val.LclNum());
             indir->AsLclFld()->SetLclOffs(val.Offset());
+            if (fieldSeq != nullptr && !fieldSeq->CheckFldBelongsToCls(m_compiler, varDsc->GetStructHnd()))
+            {
+                fieldSeq = nullptr;
+            }
             indir->AsLclFld()->SetFieldSeq(fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq);
 
             // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be

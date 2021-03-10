@@ -18758,7 +18758,8 @@ void GenTree::LabelIndex(Compiler* comp, bool isConst)
 FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr);
 
 // FieldSeqStore methods.
-FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
+FieldSeqStore::FieldSeqStore(Compiler* comp, CompAllocator alloc)
+    : m_compiler(comp), m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
 {
 }
 
@@ -18809,6 +18810,8 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         // We should never add a duplicate FieldSeqNode
         assert(a != b);
 
+        bool lastA = (a->m_next == nullptr);
+
         FieldSeqNode* tmp = Append(a->m_next, b);
         FieldSeqNode  fsn(a->m_fieldHnd, tmp);
         FieldSeqNode* res = nullptr;
@@ -18818,6 +18821,12 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
         }
         else
         {
+            if (lastA && !a->IsPseudoField())
+            {
+                CORINFO_CLASS_HANDLE nextStructHnd;
+                m_compiler->info.compCompHnd->getFieldType(a->m_fieldHnd, &nextStructHnd);
+                tmp->CheckFldBelongsToCls(m_compiler, nextStructHnd);
+            }
             res  = m_alloc.allocate<FieldSeqNode>(1);
             *res = fsn;
             m_canonMap->Set(fsn, res);
@@ -18848,6 +18857,36 @@ bool FieldSeqNode::IsConstantIndexFieldSeq()
 bool FieldSeqNode::IsPseudoField() const
 {
     return m_fieldHnd == FieldSeqStore::FirstElemPseudoField || m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
+}
+
+//------------------------------------------------------------------------
+// CheckFldBelongsToCls: Check that the field sequences belongs to the class.
+//
+// Arguments:
+//    comp - a compiler instance;
+//    clsHnd - the class handle.
+//
+// Return Value:
+//    True if the field sequence describe a correct field accesses of the class.
+//
+bool FieldSeqNode::CheckFldBelongsToCls(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd) const
+{
+    if (this == FieldSeqStore::NotAField())
+    {
+        return false;
+    }
+    if (clsHnd == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+    CORINFO_CLASS_HANDLE realClsHnd = comp->info.compCompHnd->getFieldClass(m_fieldHnd);
+    if (realClsHnd != clsHnd)
+    {
+        return false;
+    }
+
+    // The rest of FieldSeq should be already checked when it was created.
+    return true;
 }
 
 #ifdef FEATURE_SIMD
@@ -19652,6 +19691,19 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
     {
         return 0;
     }
+}
+
+void GenTreeLclFld::SetFieldSeq(FieldSeqNode* fieldSeq)
+{
+#if defined(DEBUG)
+    if (fieldSeq != FieldSeqStore::NotAField())
+    {
+        Compiler*        comp   = JitTls::GetCompiler();
+        const LclVarDsc* varDsc = comp->lvaGetDesc(GetLclNum());
+        assert(fieldSeq->CheckFldBelongsToCls(comp, varDsc->GetStructHnd()));
+    }
+#endif // DEBUG
+    m_fieldSeq = fieldSeq;
 }
 
 #ifdef TARGET_ARM
