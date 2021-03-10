@@ -1487,35 +1487,54 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 
     // Choose instrumentation technology.
     //
+    // We enable edge profiling by default, except when:
+    // * disabled by option
+    // * we are prejitting via classic ngen
+    // * we are jitting osr methods
+    //
     // Currently, OSR is incompatible with edge profiling. So if OSR is enabled,
     // always do block profiling.
     //
     // Note this incompatibility only exists for methods that actually have
     // patchpoints, but we won't know that until we import.
     //
-    const bool methodMayHavePatchpoints =
-        (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if ((JitConfig.JitEdgeProfiling() > 0) && !methodMayHavePatchpoints)
+#ifdef FEATURE_READYTORUN_COMPILER
+    const bool r2r = opts.IsReadyToRun();
+#else
+    const bool r2r = false;
+#endif
+    const bool prejit      = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool classicNgen = prejit && !r2r;
+    const bool osr = (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !classicNgen && !osr;
+
+    if (useEdgeProfiles)
     {
         fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this);
     }
     else
     {
-        if (JitConfig.JitEdgeProfiling() > 0)
-        {
-            JITDUMP("OSR and edge profiling not yet compatible; using block profiling\n");
-        }
+        JITDUMP("Using block profiling, because %s\n",
+                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : classicNgen ? "classic Ngen" : "OSR");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
-    if (JitConfig.JitClassProfiling() > 0)
+    // Enable class profiling by default, when jitting.
+    // Todo: we may also want this on by default for prejitting.
+    //
+    const bool useClassProfiles = (JitConfig.JitClassProfiling() > 0) && !prejit;
+    if (useClassProfiles)
     {
         fgClassInstrumentor = new (this, CMK_Pgo) ClassProbeInstrumentor(this);
     }
     else
     {
+        JITDUMP("Not doing class profiling, because %s\n",
+                (JitConfig.JitClassProfiling() > 0) ? "class profiles disabled" : "prejit");
+
         fgClassInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
@@ -1575,13 +1594,29 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
 
-    // Optionally, if there were no class probes and only one count probe,
+    // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
-    if ((JitConfig.JitMinimalProfiling() > 0) && (fgCountInstrumentor->SchemaCount() == 1) &&
-        (fgClassInstrumentor->SchemaCount() == 0))
+    // We leave instrumentation in place when prejitting as the sample hits in the method
+    // may be used to determine if the method should be prejitted or not.
+    //
+    // For jitting, no information is conveyed by the count in a single=block method.
+    //
+    bool minimalProbeMode = false;
+
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
-        JITDUMP("Not instrumenting method: only one counter, and no class probes\n");
+        minimalProbeMode = (JitConfig.JitMinimalPrejitProfiling() > 0);
+    }
+    else
+    {
+        minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
+    }
+
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgClassInstrumentor->SchemaCount() == 0))
+    {
+        JITDUMP(
+            "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 

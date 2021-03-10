@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <IsTestProject>true</IsTestProject>
+    <BundleXunitRunner>true</BundleXunitRunner>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <TestFramework>xunit</TestFramework>
+    <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
+
+    <!-- don't run any wasm build steps -->
+    <WasmBuildAppAfterThisTarget />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <_PreCommand>WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build</_PreCommand>
+    <_PreCommand>$(_PreCommand) DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1</_PreCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_PreCommand>$(_PreCommand) TEST_LOG_PATH=%24{XHARNESS_OUT}/logs</_PreCommand>
+    <_PreCommand>$(_PreCommand) HARNESS_RUNNER=%24{HARNESS_RUNNER}</_PreCommand>
+
+    <RunScriptCommand>$(_PreCommand) dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="WasmBuildAppTest.cs" />
+
+    <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

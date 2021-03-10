@@ -9097,8 +9097,8 @@ DONE:
         {
             // If this assert fires it means that canTailCall was set to false without setting a reason!
             assert(szCanTailCallFailReason != nullptr);
-            JITDUMP("\nRejecting %splicit tail call for  [%06u]\n", isExplicitTailCall ? "ex" : "im", dspTreeID(call),
-                    szCanTailCallFailReason);
+            JITDUMP("\nRejecting %splicit tail call for [%06u], reason: '%s'\n", isExplicitTailCall ? "ex" : "im",
+                    dspTreeID(call), szCanTailCallFailReason);
             info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, isExplicitTailCall, TAILCALL_FAIL,
                                                      szCanTailCallFailReason);
         }
@@ -11075,9 +11075,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         condTrue = gtNewIconNode(0, TYP_REF);
     }
 
-#define USE_QMARK_TREES
-
-#ifdef USE_QMARK_TREES
     GenTree* qmarkMT;
     //
     // Generate first QMARK - COLON tree
@@ -11090,6 +11087,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
     qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp);
+
+    if (isCastClass && impIsClassExact(pResolvedToken->hClass) && condTrue->OperIs(GT_CALL))
+    {
+        // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
+        condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+    }
 
     GenTree* qmarkNull;
     //
@@ -11119,7 +11122,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     JITDUMP("Marked V%02u as a single def temp\n", tmp);
     lvaSetClass(tmp, pResolvedToken->hClass);
     return gtNewLclvNode(tmp, TYP_REF);
-#endif
 }
 
 #ifndef DEBUG
