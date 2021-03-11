@@ -26,14 +26,9 @@
 # prone to failure; however, copying into the Core_Root directory may create
 # naming conflicts.
 #
-# If you are running tests on a different target than the host that built, the
-# native tests components must be copied from:
-# artifacts/obj/<OS>.<Arch>.<BuildType>/tests to the target. If the location is not
-# standard please pass the -test_native_bin_location flag to the script.
-#
 # Use the instructions here:
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/windows-test-instructions.md
-#    https://github.com/dotnet/runtime/blob/master/docs/workflow/testing/coreclr/unix-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/windows-test-instructions.md
+#    https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/unix-test-instructions.md
 #
 ################################################################################
 ################################################################################
@@ -44,26 +39,15 @@ import fnmatch
 import json
 import math
 import os
-import platform
 import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import re
 import string
-import zipfile
-
 import xml.etree.ElementTree
 
 from collections import defaultdict
-from sys import platform as _platform
-
-# Version specific imports
-if sys.version_info.major < 3:
-    import urllib
-else:
-    import urllib.request
 
 # Import coreclr_arguments.py from src\coreclr\scripts
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "coreclr", "scripts"))
@@ -89,12 +73,7 @@ Note that for linux targets the native components to the tests are still built
 by the product build. This requires all native components to be either copied
 into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
-naming conflicts.
-
-If you are running tests on a different target than the host that built, the
-native tests components must be copied from:
-artifacts/obj/<OS>.<Arch>.<BuildType>/tests to the target. If the location is not
-standard please pass the -test_native_bin_location flag to the script.""")
+naming conflicts.""")
 
 parser = argparse.ArgumentParser(description=description)
 
@@ -103,17 +82,11 @@ parser.add_argument("-arch", dest="arch", nargs='?', default="x64")
 parser.add_argument("-build_type", dest="build_type", nargs='?', default="Debug")
 parser.add_argument("-test_location", dest="test_location", nargs="?", default=None)
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
-parser.add_argument("-product_location", dest="product_location", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
 parser.add_argument("-crossgen_altjit", dest="crossgen_altjit", default=None)
 
 # Optional arguments which change execution.
-
-# Rid is used only for restoring packages. This is a unspecified and undocumented
-# environment variable that needs to be passed to build.proj. Do not use this
-# unless you are attempting to target package restoration for another host/arch/os
-parser.add_argument("-rid", dest="rid", nargs="?", default=None)
 
 parser.add_argument("--il_link", dest="il_link", action="store_true", default=False)
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
@@ -130,9 +103,6 @@ parser.add_argument("--analyze_results_only", dest="analyze_results_only", actio
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
-
-# Only used on Unix
-parser.add_argument("-test_native_bin_location", dest="test_native_bin_location", nargs='?', default=None)
 
 ################################################################################
 # Globals
@@ -387,7 +357,7 @@ else
     echo \"CORE_ROOT set to ${CORE_ROOT}\"
 fi
 
-""" % (self.unique_name, self.core_root)
+""" % (self.unique_name, self.args.core_root)
 
         line_sep = os.linesep
 
@@ -943,52 +913,6 @@ def run_tests(args,
         print("Setting __TestEnv=%s" % test_env_script_path)
         os.environ["__TestEnv"] = test_env_script_path
 
-    #=====================================================================================================================================================
-    #
-    # This is a workaround needed to unblock our CI (in particular, Linux/arm and Linux/arm64 jobs) from the following failures appearing almost in every
-    # pull request (but hard to reproduce locally)
-    #
-    #   System.IO.FileLoadException: Could not load file or assembly 'Exceptions.Finalization.XUnitWrapper, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.
-    #   An operation is not legal in the current state. (Exception from HRESULT: 0x80131509 (COR_E_INVALIDOPERATION))
-    #
-    # COR_E_INVALIDOPERATION comes from System.InvalidOperationException that is thrown during AssemblyLoadContext.ResolveUsingResolvingEvent
-    # when multiple threads attempt to modify an instance of Dictionary (managedAssemblyCache) during Xunit.DependencyContextAssemblyCache.LoadManagedDll call.
-    #
-    # In order to mitigate the failure we built our own xunit.console.dll with ConcurrentDictionary used for managedAssemblyCache and use this instead of
-    # the one pulled from NuGet. The exact code that got built can be found at the following fork of Xunit
-    #  * https://github.com/echesakovMSFT/xunit/tree/UseConcurrentDictionaryInDependencyContextAssemblyCache
-    #
-    # The assembly was built using Microsoft Visual Studio v15.9.0-pre.4.0 Developer Command Prompt using the following commands
-    #  1) git clone https://github.com/echesakovMSFT/xunit.git --branch UseConcurrentDictionaryInDependencyContextAssemblyCache --single-branch
-    #  2) cd xunit
-    #  3) git submodule update --init
-    #  4) powershell .\build.ps1 -target packages -buildAssemblyVersion 2.4.1 -buildSemanticVersion 2.4.1-coreclr
-    #
-    # Then file "xunit\src\xunit.console\bin\Release\netcoreapp2.0\xunit.console.dll" was archived and uploaded to the clrjit blob storage.
-    #
-    # Ideally, this code should be removed when we find a more robust way of running Xunit tests.
-    #
-    # References:
-    #  * https://github.com/dotnet/runtime/issues/11232
-    #  * https://github.com/dotnet/runtime/issues/11320
-    #  * https://github.com/xunit/xunit/issues/1842
-    #  * https://github.com/xunit/xunit/pull/1846
-    #
-    #=====================================================================================================================================================
-
-    print("Download and overwrite xunit.console.dll in Core_Root")
-
-    urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
-    zipfilename = os.path.join(tempfile.gettempdir(), "xunit.console.dll.zip")
-    url = r"https://clrjit.blob.core.windows.net/xunit-console/xunit.console.dll-v2.4.1.zip"
-    urlretrieve(url, zipfilename)
-
-    with zipfile.ZipFile(zipfilename,"r") as ziparch:
-        ziparch.extractall(os.path.join(args.core_root, "xunit"))
-
-    os.remove(zipfilename)
-    assert not os.path.isfile(zipfilename)
-
     return call_msbuild(args)
 
 def setup_args(args):
@@ -1109,50 +1033,16 @@ def setup_args(args):
                               "Error setting limited_core_dumps")
 
     coreclr_setup_args.verify(args,
-                              "test_native_bin_location",
-                              lambda arg: True,
-                              "Error setting test_native_bin_location")
-
-    coreclr_setup_args.verify(args,
                               "run_in_context",
                               lambda arg: True,
                               "Error setting run_in_context")
-
-    is_same_os = False
-    is_same_arch = False
-    is_same_build_type = False
-
-    # We will write out build information into the test directory. This is used
-    # by run.py to determine whether we need to rebuild the test wrappers.
-    if os.path.isfile(os.path.join(coreclr_setup_args.test_location, "build_info.json")):
-        with open(os.path.join(coreclr_setup_args.test_location, "build_info.json")) as file_handle:
-            build_info = json.load(file_handle)
-        is_same_os = build_info["build_os"] == coreclr_setup_args.host_os
-        is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
-        is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
-
-    if coreclr_setup_args.host_os != "windows" and not (is_same_os and is_same_arch and is_same_build_type):
-        test_native_bin_location = None
-        if args.test_native_bin_location is None:
-            test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
-        else:
-            test_native_bin_location = args.test_native_bin_location
-
-        coreclr_setup_args.verify(test_native_bin_location,
-                                  "test_native_bin_location",
-                                  lambda test_native_bin_location: os.path.isdir(test_native_bin_location),
-                                  "Error setting test_native_bin_location")
-    else:
-        setattr(coreclr_setup_args, "test_native_bin_location", None)
 
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
     print("runtime_repo_location    : %s" % coreclr_setup_args.runtime_repo_location)
-    print("product_location         : %s" % coreclr_setup_args.product_location)
     print("core_root                : %s" % coreclr_setup_args.core_root)
     print("test_location            : %s" % coreclr_setup_args.test_location)
-    print("test_native_bin_location : %s" % coreclr_setup_args.test_native_bin_location)
 
     coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))

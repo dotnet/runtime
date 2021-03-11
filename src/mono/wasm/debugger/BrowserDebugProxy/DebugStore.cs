@@ -27,6 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string File { get; private set; }
         public int Line { get; private set; }
         public int Column { get; private set; }
+        public string Condition { get; private set; }
         public MethodInfo Method { get; private set; }
 
         private JObject request;
@@ -51,6 +52,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Id = id;
             this.request = request;
+            Condition = request?["condition"]?.Value<string>();
         }
 
         public static BreakpointRequest Parse(string id, JObject args)
@@ -98,6 +100,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return store.AllSources().FirstOrDefault(source => TryResolve(source)) != null;
         }
+
     }
 
     internal class VarInfo
@@ -391,7 +394,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string Url { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
-        public AssemblyInfo(IAssemblyResolver resolver, string url, byte[] assembly, byte[] pdb)
+        public AssemblyInfo(CustomResolver resolver, string url, byte[] assembly, byte[] pdb)
         {
             this.id = Interlocked.Increment(ref next_id);
 
@@ -438,7 +441,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 this.image = ModuleDefinition.ReadModule(new MemoryStream(assembly), rp);
             }
-
+            if (this.image != null)
+                resolver.RegisterAssembly(this.image.Assembly);
             Populate();
         }
 
@@ -728,18 +732,26 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
+    internal class CustomResolver : DefaultAssemblyResolver
+    {
+        public new void RegisterAssembly(AssemblyDefinition assembly)
+        {
+            base.RegisterAssembly(assembly);
+        }
+    }
+
     internal class DebugStore
     {
         private List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly HttpClient client;
         private readonly ILogger logger;
-        private readonly IAssemblyResolver resolver;
+        private readonly CustomResolver resolver;
 
         public DebugStore(ILogger logger, HttpClient client)
         {
             this.client = client;
             this.logger = logger;
-            this.resolver = new DefaultAssemblyResolver();
+            this.resolver = new CustomResolver();
         }
 
         public DebugStore(ILogger logger) : this(logger, new HttpClient())

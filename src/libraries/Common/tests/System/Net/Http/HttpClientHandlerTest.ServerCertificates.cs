@@ -30,6 +30,11 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
+        // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
+        protected bool AllowAllHttp2Certificates { get; set; } = true;
+        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllHttp2Certificates: AllowAllHttp2Certificates);
+        protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
+
         [Fact]
         public void Ctor_ExpectedDefaultValues()
         {
@@ -85,71 +90,6 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Throws<InvalidOperationException>(() => handler.ServerCertificateCustomValidationCallback = null);
                 Assert.Throws<InvalidOperationException>(() => handler.CheckCertificateRevocationList = false);
-            }
-        }
-
-        [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
-        {
-            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
-            {
-                // Issue https://github.com/dotnet/runtime/issues/25268
-                return;
-            }
-
-            var options = new LoopbackProxyServer.Options
-                { AuthenticationSchemes = AuthenticationSchemes.Basic,
-                  ConnectionCloseAfter407 = true
-                };
-            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                handler.Proxy = new WebProxy(proxyServer.Uri)
-                {
-                    Credentials = new NetworkCredential("user", "password")
-                };
-
-                const string content = "This is a test";
-
-                using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.PostAsync(
-                        Configuration.Http.SecureRemoteEchoServer,
-                        new StringContent(content)))
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    TestHelper.VerifyResponseBody(
-                        responseContent,
-                        response.Content.Headers.ContentMD5,
-                        false,
-                        content);
-                }
-            }
-        }
-
-        [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
-        {
-            var options = new LoopbackProxyServer.Options
-                { AuthenticationSchemes = AuthenticationSchemes.Basic,
-                  ConnectionCloseAfter407 = true
-                };
-            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
-            {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                handler.Proxy = new WebProxy(proxyServer.Uri);
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                using (HttpClient client = CreateHttpClient(handler))
-                using (HttpResponseMessage response = await client.PostAsync(
-                    Configuration.Http.SecureRemoteEchoServer,
-                    new StringContent("This is a test")))
-                {
-                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
-                }
             }
         }
 
@@ -451,15 +391,19 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString) =>
+            RemoteExecutor.Invoke(async (useVersionString, allowAllHttp2CertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
 
-                using (HttpClient client = CreateHttpClient(useVersionString))
+                HttpClientHandler handler = CreateHttpClientHandler(
+                    Version.Parse(useVersionString),
+                    allowAllHttp2Certificates: bool.Parse(allowAllHttp2CertificatesString));
+
+                using (HttpClient client = CreateHttpClient(handler, useVersionString))
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                 }
-            }, UseVersion.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllHttp2Certificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

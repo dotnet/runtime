@@ -772,13 +772,11 @@ threading/ResetEvent/test2/paltest_resetevent_test2
 threading/ResetEvent/test3/paltest_resetevent_test3
 threading/ResetEvent/test4/paltest_resetevent_test4
 threading/ResumeThread/test1/paltest_resumethread_test1
-threading/SwitchToThread/test1/paltest_switchtothread_test1
 threading/SetErrorMode/test1/paltest_seterrormode_test1
 threading/SetEvent/test1/paltest_setevent_test1
 threading/SetEvent/test2/paltest_setevent_test2
 threading/SetEvent/test3/paltest_setevent_test3
 threading/SetEvent/test4/paltest_setevent_test4
-threading/SetThreadDescription/test1/paltest_setthreaddescription_test1
 threading/SignalObjectAndWait/paltest_signalobjectandwaittest
 threading/Sleep/test1/paltest_sleep_test1
 threading/Sleep/test2/paltest_sleep_test2

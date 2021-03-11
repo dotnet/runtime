@@ -61,14 +61,13 @@ while idx < args_len:
         dump_dir = sys.argv[idx]
         idx += 1
 
-found_dumps = False
+dump_names = []
 if dump_dir != '':
     for filename in os.listdir(dump_dir):
         if filename.endswith('.dmp') or 'core.' in filename:
-            found_dumps = True
-            break
+            dump_names.append(filename)
 
-if not found_dumps:
+if len(dump_names) == 0:
     print("Did not find dumps, skipping dump docs generation.")
     exit(0)
 
@@ -103,6 +102,21 @@ with open(source_file, 'r') as f:
 output_file = out_dir + dir_separator + 'how-to-debug-dump.md'
 with open(output_file, 'w+') as output:
     print('writing output file: ' + output_file)
-    write_file = output.write(replace_string)
+
+    lines = replace_string.split(os.linesep)
+    lin_dump_dir= workitem + "/workitems/" + workitem + "/"
+    win_dump_dir= workitem + "\\workitems\\" + workitem + "\\"
+    for line in lines:
+        # write dump debugging commands for each dump found.
+        if "<lin-path-to-dump>" in line:
+            for dump_name in dump_names:
+                output.write(line.replace("<lin-path-to-dump>", unix_user_folder + lin_dump_dir + dump_name))
+                output.write(os.linesep)
+        elif "<win-path-to-dump>" in line:
+            for dump_name in dump_names:
+                output.write(line.replace("<win-path-to-dump>", windows_user_folder + win_dump_dir + dump_name))
+                output.write(os.linesep)
+        else:
+            output.write(line + os.linesep)
 
 print('done writing debug dump information')

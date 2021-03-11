@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -52,6 +53,7 @@ namespace System.Net.Mail
             throw new PlatformNotSupportedException();
         }
 
+        [DisallowNull]
         public string? Host
         {
             get => throw new PlatformNotSupportedException();

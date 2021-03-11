@@ -11,7 +11,7 @@
 # Script to orchestrate SuperPMI collections, replays, asm diffs, and SuperPMI
 # data management. Note that some of the options provided by this script are
 # also provided in our SuperPMI collect test. The test can be found here:
-# https://github.com/dotnet/runtime/blob/master/src/tests/JIT/superpmi/superpmicollect.cs.
+# https://github.com/dotnet/runtime/blob/main/src/tests/JIT/superpmi/superpmicollect.cs.
 #
 ################################################################################
 ################################################################################
@@ -233,6 +233,7 @@ superpmi_common_parser.add_argument("--sequential", action="store_true", help="R
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
+superpmi_common_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
 # subparser for collect
 collect_parser = subparsers.add_parser("collect", description=collect_description, parents=[core_root_parser, target_parser, superpmi_common_parser])
@@ -337,6 +338,17 @@ def download_progress_hook(count, block_size, total_size):
     """
     sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
     sys.stdout.flush()
+
+def download_with_progress(uri, target_location):
+    """ Do an URI download, with logging.
+
+    Args:
+        uri (string)              : URI to download
+        target_location (string)  : local path to put the downloaded object
+    """
+    logging.info("Download: %s -> %s", uri, target_location)
+    urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+    sys.stdout.write("\n") # Add newline after progress hook
 
 def is_zero_length_file(fpath):
     """ Determine if a file system path refers to an existing file that is zero length
@@ -1334,7 +1346,7 @@ def save_repro_mc_files(temp_location, coreclr_args, repro_base_command_line):
             shutil.copy2(item, repro_location)
 
         logging.info("")
-        logging.info("Repro .mc files created for failures:")
+        logging.info("Repro {} .mc file(s) created for failures:".format(len(repro_files)))
         for item in repro_files:
             logging.info(item)
 
@@ -1427,6 +1439,10 @@ class SuperPMIReplay:
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+            if self.coreclr_args.jitoption:
+               for o in self.coreclr_args.jitoption:
+                  repro_flags += "-jitoption", o
 
             common_flags += repro_flags
 
@@ -1549,7 +1565,6 @@ class SuperPMIReplayAsmDiffs:
             "COMPlus_JitDiffableDasm": "1",
             "COMPlus_JitEnableNoWayAssert": "1",
             "COMPlus_JitNoForceFallback": "1",
-            "COMPlus_JitRequired": "1",
             "COMPlus_JitDisasmWithGC": "1" }
 
         if self.coreclr_args.gcinfo:
@@ -1871,8 +1886,7 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        logging.info("Download: %s -> %s", coredistools_uri, coredistools_location)
-        urllib.request.urlretrieve(coredistools_uri, coredistools_location, reporthook=download_progress_hook)
+        download_with_progress(coredistools_uri, coredistools_location)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -1908,8 +1922,7 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                logging.info("Download: %s -> %s", pmi_uri, pmi_location)
-                urllib.request.urlretrieve(pmi_uri, pmi_location, reporthook=download_progress_hook)
+                download_with_progress(pmi_uri, pmi_location)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2361,9 +2374,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(temp_location, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
+                    download_with_progress(url, download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
                         raise httperror
@@ -2392,9 +2403,7 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
                 download_path = os.path.join(target_dir, item_name)
 
                 try:
-                    if verbose:
-                        logging.info("Download: %s -> %s", url, download_path)
-                    urllib.request.urlretrieve(url, download_path, reporthook=download_progress_hook)
+                    download_with_progress(url, download_path)
                     local_files.append(download_path)
                 except urllib.error.HTTPError as httperror:
                     if (httperror == 404) and fail_if_not_found:
@@ -2655,8 +2664,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `master` using:
-             git merge-base `git_hash` master
+        2. Determine the baseline: where does this hash meet `main` using:
+             git merge-base `git_hash` main
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -2711,7 +2720,7 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "master" ]
+            command = [ "git", "merge-base", current_hash, "main" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
@@ -2934,6 +2943,11 @@ def setup_args(args):
                             "spmi_log_file",
                             lambda unused: True,
                             "Unable to set spmi_log_file.")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
 
         if coreclr_args.spmi_log_file is not None and not coreclr_args.sequential:
             print("-spmi_log_file requires --sequential")

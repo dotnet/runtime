@@ -17,6 +17,7 @@
 #include "methodcontextreader.h"
 #include "mclist.h"
 #include "methodstatsemitter.h"
+#include "spmiutil.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 
@@ -29,43 +30,27 @@ const char* const g_AsmDiffsSummaryFormatString = "Loaded %d  Jitted %d  FailedC
 
 //#define SuperPMI_ChewMemory 0x7FFFFFFF //Amount of address space to consume on startup
 
-SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture;
-
 void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 {
-    // Set the default
-
-#ifdef TARGET_AMD64
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
-#elif defined(TARGET_X86)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
-#elif defined(TARGET_ARM)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
-#elif defined(TARGET_ARM64)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
-#else
-#error Unsupported architecture
-#endif
-
     // Allow overriding the default.
 
     if (targetArchitecture != nullptr)
     {
         if ((0 == _stricmp(targetArchitecture, "x64")) || (0 == _stricmp(targetArchitecture, "amd64")))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_AMD64);
         }
         else if (0 == _stricmp(targetArchitecture, "x86"))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_X86);
         }
         else if ((0 == _stricmp(targetArchitecture, "arm")) || (0 == _stricmp(targetArchitecture, "arm32")))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM);
         }
         else if (0 == _stricmp(targetArchitecture, "arm64"))
         {
-            SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
         else
         {

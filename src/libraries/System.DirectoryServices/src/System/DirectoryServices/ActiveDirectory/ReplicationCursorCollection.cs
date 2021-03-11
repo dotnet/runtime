@@ -15,7 +15,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _server = server;
         }
 
-        public ReplicationCursor this[int index] => (ReplicationCursor)InnerList[index];
+        public ReplicationCursor this[int index] => (ReplicationCursor)InnerList[index]!;
 
         public bool Contains(ReplicationCursor cursor)
         {

@@ -907,25 +907,38 @@ namespace System.IO.Compression
                 }
             }
 
-            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 // Validate inputs
                 Debug.Assert(buffer != _arrayPoolBuffer);
                 _deflateStream.EnsureNotDisposed();
                 if (count <= 0)
                 {
-                    return;
+                    return Task.CompletedTask;
                 }
                 else if (count > buffer.Length - offset)
                 {
                     // The buffer stream is either malicious or poorly implemented and returned a number of
                     // bytes larger than the buffer supplied to it.
-                    throw new InvalidDataException(SR.GenericInvalidData);
+                    return Task.FromException(new InvalidDataException(SR.GenericInvalidData));
                 }
 
-                Debug.Assert(_deflateStream._inflater != null);
-                // Feed the data from base stream into the decompression engine.
-                _deflateStream._inflater.SetInput(buffer, offset, count);
+                return WriteAsyncCore(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+            }
+
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                _deflateStream.EnsureNotDisposed();
+
+                return WriteAsyncCore(buffer, cancellationToken);
+            }
+
+            private async ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            {
+                Debug.Assert(_deflateStream._inflater is not null);
+
+                // Feed the data from base stream into decompression engine.
+                _deflateStream._inflater.SetInput(buffer);
 
                 // While there's more decompressed data available, forward it to the buffer stream.
                 while (!_deflateStream._inflater.Finished())

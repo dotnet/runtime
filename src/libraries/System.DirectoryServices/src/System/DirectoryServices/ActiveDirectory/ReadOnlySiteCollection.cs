@@ -13,24 +13,24 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             for (int i = 0; i < sites.Count; i++)
             {
-                Add((ActiveDirectorySite)sites[i]);
+                Add((ActiveDirectorySite)sites[i]!);
             }
         }
 
-        public ActiveDirectorySite this[int index] => (ActiveDirectorySite)InnerList[index];
+        public ActiveDirectorySite this[int index] => (ActiveDirectorySite)InnerList[index]!;
 
         public bool Contains(ActiveDirectorySite site)
         {
             if (site == null)
                 throw new ArgumentNullException(nameof(site));
 
-            string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySite tmp = (ActiveDirectorySite)InnerList[i];
+                ActiveDirectorySite tmp = (ActiveDirectorySite)InnerList[i]!;
 
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {
@@ -45,13 +45,13 @@ namespace System.DirectoryServices.ActiveDirectory
             if (site == null)
                 throw new ArgumentNullException(nameof(site));
 
-            string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
+            string? dn = (string?)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                ActiveDirectorySite tmp = (ActiveDirectorySite)InnerList[i];
+                ActiveDirectorySite tmp = (ActiveDirectorySite)InnerList[i]!;
 
-                string tmpDn = (string)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
+                string? tmpDn = (string?)PropertyManager.GetPropertyValue(tmp.context, tmp.cachedEntry, PropertyManager.DistinguishedName);
 
                 if (Utils.Compare(tmpDn, dn) == 0)
                 {

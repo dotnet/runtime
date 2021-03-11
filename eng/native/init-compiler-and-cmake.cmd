@@ -50,7 +50,7 @@ if "%VisualStudioVersion%"=="16.0" (
 :MissingVersion
 :: Can't find appropriate VS install
 echo Error: Visual Studio 2019 required
-echo        Please see https://github.com/dotnet/runtime/tree/master/docs/workflow/building/libraries for build instructions.
+echo        Please see https://github.com/dotnet/runtime/tree/main/docs/workflow/building/libraries for build instructions.
 exit /b 1
 
 :VS2019
@@ -73,7 +73,7 @@ goto FindDIASDK
 if exist "%VSINSTALLDIR%DIA SDK" goto CheckRepoRoot
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md ^
 Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
 may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

@@ -26,7 +26,6 @@
 
 #include <math.h>
 
-#include "number-ms.h"
 #include "utils/mono-compiler.h"
 #include "utils/mono-math.h"
 #include "icalls.h"
