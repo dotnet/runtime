@@ -89,7 +89,6 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(XmlReader stylesheet)
         {
             Reset();
@@ -98,7 +97,6 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(XmlReader stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
@@ -107,7 +105,6 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(IXPathNavigable stylesheet)
         {
             Reset();
@@ -116,14 +113,12 @@ namespace System.Xml.Xsl
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(IXPathNavigable stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
             LoadInternal(stylesheet, settings, stylesheetResolver);
         }
 
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(string stylesheetUri)
         {
             Reset();
@@ -134,7 +129,6 @@ namespace System.Xml.Xsl
             LoadInternal(stylesheetUri, XsltSettings.Default, CreateDefaultResolver());
         }
 
-        [RequiresUnreferencedCode("This method requires a call to LoadInternal which might use types that cannot be statically analyzed.")]
         public void Load(string stylesheetUri, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
@@ -145,7 +139,6 @@ namespace System.Xml.Xsl
             LoadInternal(stylesheetUri, settings, stylesheetResolver);
         }
 
-        [RequiresUnreferencedCode("This method calles CompileQilToMsil method which might use types that cannot be statically analyzed.")]
         private CompilerErrorCollection LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             if (stylesheet == null)
@@ -191,7 +184,6 @@ namespace System.Xml.Xsl
             return null;
         }
 
-        [RequiresUnreferencedCode("This method calls XmlILGenerator.Generate which might require types that cannot be statically analyzed.")]
         private void CompileQilToMsil(XsltSettings settings)
         {
             _command = new XmlILGenerator().Generate(_qil!, /*typeBuilder:*/null)!;
@@ -202,7 +194,7 @@ namespace System.Xml.Xsl
         //------------------------------------------------
         // Load compiled stylesheet from a Type
         //------------------------------------------------
-        [RequiresUnreferencedCode("This method uses the types that are grabbed from the compileStylesheet which cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("This method will get fields and types from the assembly of the passed in compiledStylesheet and call their constructors which cannot be statically analyzed")]
         public void Load(Type compiledStylesheet)
         {
             Reset();
@@ -246,7 +238,7 @@ namespace System.Xml.Xsl
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
         }
 
-        [RequiresUnreferencedCode("This method uses the constructors of the passed in earlyBoundTypes which cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("This method will call into constructors of the earlyBoundTypes array which cannot be statically analized.")]
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[]? earlyBoundTypes)
         {
             Reset();
