@@ -550,6 +550,8 @@ namespace ILCompiler
                     {
                         if (dependency is DeferredTillPhaseNode deferredPhaseNode)
                         {
+                            if (Logger.IsVerbose)
+                                _logger.Writer.WriteLine($"Moved to phase {_nodeFactory.CompilationCurrentPhase}");
                             deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
                             return;
                         }
@@ -597,6 +599,8 @@ namespace ILCompiler
                 };
 
                 // Use only main thread to compile if parallelism is 1. This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Processing {obj.Count} dependencies");
                 if (_parallelism == 1)
                 {
                     foreach (var dependency in obj)
