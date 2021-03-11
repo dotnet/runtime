@@ -204,7 +204,7 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     PAL_X509ContentType ret = PAL_X509Unknown;
     INIT_LOCALS(loc, bytes, stream, certType, certFactory, pkcs7Type, certPath, cert)
 
-    // This functin checks:
+    // This function checks:
     // - PKCS7 DER/PEM
     // - X509 DER/PEM
     // The generateCertificate method used for the X509 DER/PEM check will succeed for some
