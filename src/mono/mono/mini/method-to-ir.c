@@ -9844,10 +9844,18 @@ field_access_end:
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (sp [0]->type == STACK_I8 || (TARGET_SIZEOF_VOID_P == 8 && sp [0]->type == STACK_PTR)) {
+			if (sp [0]->type == STACK_I8 && TARGET_SIZEOF_VOID_P == 4) {
 				MONO_INST_NEW (cfg, ins, OP_LCONV_TO_OVF_U4);
 				ins->sreg1 = sp [0]->dreg;
 				ins->type = STACK_I4;
+				ins->dreg = alloc_ireg (cfg);
+				MONO_ADD_INS (cfg->cbb, ins);
+				*sp = mono_decompose_opcode (cfg, ins);
+			}
+			if (sp [0]->type == STACK_I4 && TARGET_SIZEOF_VOID_P == 8) {
+				MONO_INST_NEW (cfg, ins, OP_ICONV_TO_I8);
+				ins->sreg1 = sp [0]->dreg;
+				ins->type = STACK_I8;
 				ins->dreg = alloc_ireg (cfg);
 				MONO_ADD_INS (cfg->cbb, ins);
 				*sp = mono_decompose_opcode (cfg, ins);
