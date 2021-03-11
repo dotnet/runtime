@@ -203,8 +203,8 @@ DumpWriter::WriteDump()
         // Only write the regions that are backed by memory
         if (memoryRegion.IsBackedByMemory())
         {
-            uint64_t size = memoryRegion.Size();
             uint64_t address = memoryRegion.StartAddress();
+            size_t size = memoryRegion.Size();
             total += size;
 
             while (size > 0)
