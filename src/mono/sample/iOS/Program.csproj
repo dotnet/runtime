@@ -33,7 +33,7 @@
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
-      <IosSimulator Condition="'$(OriginalTargetOS)' == 'iOS-sim'">iPhone 11</IosSimulator>
+      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
       <RunAOTCompilation Condition="'$(IosSimulator)' == '' or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
     </PropertyGroup>
