@@ -4,8 +4,8 @@ parameters:
   buildConfig: ''
   creator: ''
   helixQueues: ''
-  osGroup: ''
-  osSubGroup: ''
+  osGroup: '${{ parameters.osGroup }}'
+  osSubGroup: '${{ parameters.osSubgroup }}'
   targetRid: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
@@ -15,19 +15,13 @@ parameters:
   shouldContinueOnError: false
   scenarios: ''
 
-  variables:
-    - name: osGroup
-      value: ${{ parameters.osGroup }}
-    - name: osSubgroup
-      value: ${{ parameters.osSubgroup }}
+  osOverride: '/p:TargetOS=${{ parameters.osGroup }}'
+  ${{ if and(eq(parameters.osGroup, 'tvOS'),eq(parameters.osSubGroup, '_sim')) }}:
     - name: osOverride
-      value: '/p:TargetOS=${{ parameters.osGroup }}'
-    - ${{ if and(eq(parameters.osGroup, 'tvOS'),eq(parameters.osSubGroup, '_sim')) }}:
-      - name: osOverride
-        value: '/p:TargetOS=tvOS-sim'
-    - ${{ if and(eq(parameters.osGroup, 'iOS'),eq(parameters.osSubGroup, '_sim')) }}:
-      - name: osOverride
-        value: '/p:TargetOS=iOS-sim'
+      value: '/p:TargetOS=tvOS-sim'
+  ${{ if and(eq(parameters.osGroup, 'iOS'),eq(parameters.osSubGroup, '_sim')) }}:
+    - name: osOverride
+      value: '/p:TargetOS=iOS-sim'
 
 steps:
   - script: $(_msbuildCommand)
