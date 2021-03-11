@@ -58,6 +58,7 @@ namespace Mono.Linker.Steps
 		readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 		UnreachableBlocksOptimizer _unreachableBlocksOptimizer;
 		MarkStepContext _markContext;
+		readonly HashSet<TypeDefinition> _entireTypesMarked;
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
@@ -184,6 +185,7 @@ namespace Mono.Linker.Steps
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
+			_entireTypesMarked = new HashSet<TypeDefinition> (); ;
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -290,28 +292,28 @@ namespace Mono.Linker.Steps
 
 		internal void MarkEntireType (TypeDefinition type, bool includeBaseTypes, bool includeInterfaceTypes, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
-			MarkEntireTypeInternal (type, includeBaseTypes, includeInterfaceTypes, reason, sourceLocationMember, new HashSet<TypeDefinition> ());
+			MarkEntireTypeInternal (type, includeBaseTypes, includeInterfaceTypes, reason, sourceLocationMember);
 		}
 
-		private void MarkEntireTypeInternal (TypeDefinition type, bool includeBaseTypes, bool includeInterfaceTypes, in DependencyInfo reason, IMemberDefinition sourceLocationMember, HashSet<TypeDefinition> typesAlreadyVisited)
+		private void MarkEntireTypeInternal (TypeDefinition type, bool includeBaseTypes, bool includeInterfaceTypes, in DependencyInfo reason, IMemberDefinition sourceLocationMember)
 		{
 #if DEBUG
 			if (!_entireTypeReasons.Contains (reason.Kind))
 				throw new InternalErrorException ($"Unsupported type dependency '{reason.Kind}'.");
 #endif
 
-			if (!typesAlreadyVisited.Add (type))
+			if (!_entireTypesMarked.Add (type))
 				return;
 
 			if (type.HasNestedTypes) {
 				foreach (TypeDefinition nested in type.NestedTypes)
-					MarkEntireTypeInternal (nested, includeBaseTypes, includeInterfaceTypes, new DependencyInfo (DependencyKind.NestedType, type), type, typesAlreadyVisited);
+					MarkEntireTypeInternal (nested, includeBaseTypes, includeInterfaceTypes, new DependencyInfo (DependencyKind.NestedType, type), type);
 			}
 
 			Annotations.Mark (type, reason);
 			var baseTypeDefinition = type.BaseType?.Resolve ();
 			if (includeBaseTypes && baseTypeDefinition != null) {
-				MarkEntireTypeInternal (baseTypeDefinition, includeBaseTypes: true, includeInterfaceTypes, new DependencyInfo (DependencyKind.BaseType, type), type, typesAlreadyVisited);
+				MarkEntireTypeInternal (baseTypeDefinition, includeBaseTypes: true, includeInterfaceTypes, new DependencyInfo (DependencyKind.BaseType, type), type);
 			}
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), type);
 			MarkTypeSpecialCustomAttributes (type);
@@ -320,7 +322,7 @@ namespace Mono.Linker.Steps
 				foreach (InterfaceImplementation iface in type.Interfaces) {
 					var interfaceTypeDefinition = iface.InterfaceType.Resolve ();
 					if (includeInterfaceTypes && interfaceTypeDefinition != null)
-						MarkEntireTypeInternal (interfaceTypeDefinition, includeBaseTypes, includeInterfaceTypes: true, new DependencyInfo (reason.Kind, type), type, typesAlreadyVisited);
+						MarkEntireTypeInternal (interfaceTypeDefinition, includeBaseTypes, includeInterfaceTypes: true, new DependencyInfo (reason.Kind, type), type);
 
 					MarkInterfaceImplementation (iface, type);
 				}
