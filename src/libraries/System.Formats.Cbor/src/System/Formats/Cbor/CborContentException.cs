@@ -5,9 +5,7 @@ using System.Runtime.Serialization;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>
-    ///   The exception that is thrown when a CBOR encoding is invalid.
-    /// </summary>
+    /// <summary>The exception that's thrown when CBOR data is invalid.</summary>
     [Serializable]
     public class CborContentException : Exception
     {

@@ -5,30 +5,26 @@ using System.Buffers.Binary;
 
 namespace System.Formats.Cbor
 {
+    /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
-        // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-
-        /// <summary>
-        ///   Writes an value as a signed integer encoding (major types 0,1)
-        /// </summary>
+        /// <summary>Writes a value as a signed integer encoding (major types 0,1)</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
+        // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteInt32(int value) => WriteInt64(value);
 
-        /// <summary>
-        ///   Writes the provided value as a signed integer encoding (major types 0,1)
-        /// </summary>
+        /// <summary>Writes the provided value as a signed integer encoding (major types 0,1)</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
         public void WriteInt64(long value)
         {
             if (value < 0)
@@ -44,27 +40,23 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
-        /// <summary>
-        ///   Writes anvalue as an unsigned integer encoding (major type 0).
-        /// </summary>
+        /// <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
         [CLSCompliant(false)]
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
-        /// <summary>
-        ///   Writes an value as an unsigned integer encoding (major type 0).
-        /// </summary>
+        /// <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
         [CLSCompliant(false)]
         public void WriteUInt64(ulong value)
         {
@@ -72,19 +64,15 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
-        /// <summary>
-        ///   Writes the provided value as a CBOR negative integer representation (major type 1).
-        /// </summary>
+        /// <summary>Writes the provided value as a CBOR negative integer representation (major type 1).</summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
-        /// <remarks>
-        ///   This method supports encoding integers between -18446744073709551616 and -1.
-        ///   Useful for handling values that do not fit in the <see cref="long"/> type.
-        /// </remarks>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <remarks>This method supports encoding integers between -18446744073709551616 and -1.
+        /// Useful for handling values that do not fit in the <see cref="long" /> type.</remarks>
         [CLSCompliant(false)]
         public void WriteCborNegativeIntegerRepresentation(ulong value)
         {

@@ -5,14 +5,12 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
+    /// <summary>A stateful, forward-only reader for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborReader
     {
-        /// <summary>
-        ///   Read the next CBOR token, without advancing the reader.
-        /// </summary>
-        /// <exception cref="CborContentException">
-        ///   The underlying data is not a well-formed CBOR encoding.
-        /// </exception>
+        /// <summary>Reads the next CBOR token, without advancing the reader.</summary>
+        /// <returns>An object that represents the current CBOR reader state.</returns>
+        /// <exception cref="System.Formats.Cbor.CborContentException">The underlying data is not a well-formed CBOR encoding.</exception>
         public CborReaderState PeekState()
         {
             if (_cachedState == CborReaderState.Undefined)

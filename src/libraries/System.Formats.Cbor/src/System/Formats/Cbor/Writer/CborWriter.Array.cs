@@ -5,29 +5,19 @@ using System.Diagnostics;
 
 namespace System.Formats.Cbor
 {
+    /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
+        /// <summary>Writes the start of a definite or indefinite-length array (major type 4).</summary>
+        /// <param name="definiteLength">The length of the definite-length array, or <see langword="null" /> for an indefinite-length array.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="definiteLength" /> parameter cannot be negative.</exception>
+        /// <exception cref="System.InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
+        /// -or-
+        /// The major type of the encoded value is not permitted in the parent data item.
+        /// -or-
+        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <remarks>In canonical conformance modes, the writer will reject indefinite-length writes unless the <see cref="System.Formats.Cbor.CborWriter.ConvertIndefiniteLengthEncodings" /> flag is enabled.</remarks>
         // Implements major type 4 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-
-        /// <summary>
-        ///   Writes the start of an array (major type 4).
-        /// </summary>
-        /// <param name="definiteLength">
-        ///   Writes a definite-length array if inhabited,
-        ///   or an indefinite-length array if <see langword="null" />.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   The <paramref name="definiteLength"/> parameter cannot be negative.
-        /// </exception>
-        /// <exception cref="InvalidOperationException">
-        ///   Writing a new value exceeds the definite length of the parent data item. -or-
-        ///   The major type of the encoded value is not permitted in the parent data item. -or-
-        ///   The written data is not accepted under the current conformance mode.
-        /// </exception>
-        /// <remarks>
-        ///   In canonical conformance modes, the writer will reject indefinite-length writes unless
-        ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-        /// </remarks>
         public void WriteStartArray(int? definiteLength)
         {
             if (definiteLength is null)
@@ -40,13 +30,10 @@ namespace System.Formats.Cbor
             }
         }
 
-        /// <summary>
-        ///   Writes the end of an array (major type 4).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   The written data is not accepted under the current conformance mode. -or-
-        ///   The definite-length array anticipates more data items.
-        /// </exception>
+        /// <summary>Writes the end of an array (major type 4).</summary>
+        /// <exception cref="System.InvalidOperationException">The written data is not accepted under the current conformance mode.
+        /// -or-
+        /// The definite-length array anticipates more data items.</exception>
         public void WriteEndArray()
         {
             PopDataItem(CborMajorType.Array);
