@@ -237,11 +237,10 @@ namespace System.IO
             {
                 _stream = null;
                 _buffer = null;
+                _writePos = 0; // WriteByte hot path relies on this
 
                 // Call base.Dispose(bool) to cleanup async IO resources
                 base.Dispose(disposing);
-
-                Debug.Assert(_writePos == 0, "Everything must have been already flushed");
             }
         }
 
@@ -265,8 +264,7 @@ namespace System.IO
             {
                 _stream = null;
                 _buffer = null;
-
-                Debug.Assert(_writePos == 0, "Everything must have been already flushed");
+                _writePos = 0;
             }
         }
 
@@ -407,12 +405,9 @@ namespace System.IO
             // However, since the user did not call a method that is intuitively expected to seek, a better message is in order.
             // Ideally, we would throw an InvalidOperation here, but for backward compat we have to stick with NotSupported.
             if (!_stream.CanSeek)
-                ThrowNotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed();
+                throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
 
             FlushRead();
-
-            static void ThrowNotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed()
-                => throw new NotSupportedException(SR.NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed);
         }
 
         private void FlushWrite()

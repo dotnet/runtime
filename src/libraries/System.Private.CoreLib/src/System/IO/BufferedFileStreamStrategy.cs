@@ -118,7 +118,7 @@ namespace System.IO
                 // when users have a race condition in their code (i.e. they call
                 // FileStream.Close when calling another method on FileStream like Read).
 
-                Debug.Assert(_writePos == 0, "Everything must have been already flushed");
+                _writePos = 0; // WriteByte hot path relies on this
             }
         }
 
@@ -167,7 +167,7 @@ namespace System.IO
                 // Call base.Dispose(bool) to cleanup async IO resources
                 base.Dispose(disposing);
 
-                Debug.Assert(_writePos == 0, "Everything must have been already flushed");
+                _writePos = 0;
             }
         }
 
