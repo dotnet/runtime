@@ -1,8 +1,4 @@
 # Autodetect text files
 * text=auto
 
-# Declare files that will always have LF line endings on checkout.
-*.cs text eol=lf
-*.csproj text eol=lf
-*.sln text eol=lf
-*.xml text eol=lf
+*.cs diff=csharp
