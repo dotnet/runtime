@@ -2341,7 +2341,7 @@ namespace System.Tests
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData("Pacific Standard Time", "America/Los_Angeles")]
         [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
         [InlineData("GMT Standard Time", "Europe/London")]
