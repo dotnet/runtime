@@ -556,7 +556,7 @@ namespace ILCompiler
                             // Create only 1 CorInfoImpl per thread.
                             // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
                             CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
-                            corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
+                            corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
                         }
                     }
                     catch (TypeSystemException ex)
