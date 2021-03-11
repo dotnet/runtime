@@ -9616,6 +9616,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			gboolean getLowerElement = FALSE;
 			switch (ins->opcode) {
 			default:
@@ -9630,6 +9631,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (getLowerElement)
 				arg0 = LLVMBuildExtractElement (ctx->builder, arg0, const_int32 (0), "");
 			LLVMValueRef result = call_intrins (ctx, id, &arg0, "");
+			if (getLowerElement)
+				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
 			break;
 		}
