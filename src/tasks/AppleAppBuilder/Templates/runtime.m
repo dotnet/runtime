@@ -205,23 +205,6 @@ register_dllmap (void)
 //%DllMap%
 }
 
-int32_t GlobalizationNative_LoadICUData(char *path);
-
-static int32_t load_icu_data ()
-{
-    char path [1024];
-    int res;
-
-    const char *dname = "icudt.dat";
-    const char *bundle = get_bundle_path ();
-
-    os_log_info (OS_LOG_DEFAULT, "Loading ICU data file '%s'.", dname);
-    res = snprintf (path, sizeof (path) - 1, "%s/%s", bundle, dname);
-    assert (res > 0);
-
-    return GlobalizationNative_LoadICUData(path);
-}
-
 #if FORCE_INTERPRETER || FORCE_AOT || (!TARGET_OS_SIMULATOR && !TARGET_OS_MACCATALYST)
 void mono_jit_set_aot_mode (MonoAotMode mode);
 void register_aot_modules (void);
@@ -253,29 +236,29 @@ mono_ios_runtime_init (void)
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
-    char icu_dat_path[1024];
+    char icu_dat_path [1024];
     int res;
 
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
     assert (res > 0);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    const char *appctx_keys[] = {
+    const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER", 
-    #ifndef INVARIANT_GLOBALIZATION
+#ifndef INVARIANT_GLOBALIZATION
         "ICU_DAT_FILE_PATH",
-    #endif
+#endif
         "APP_CONTEXT_BASE_DIRECTORY"
     };
     const char *appctx_values [] = {
         APPLE_RUNTIME_IDENTIFIER,
-    #ifndef INVARIANT_GLOBALIZATION
+#ifndef INVARIANT_GLOBALIZATION
         icu_dat_path,
-    #endif
+#endif
         bundle
     };
 
-    monovm_initialize(sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
+    monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
 #if FORCE_INTERPRETER
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");

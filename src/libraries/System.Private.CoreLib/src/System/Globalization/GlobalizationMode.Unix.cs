@@ -22,7 +22,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    int loaded = LoadICUCore();
+                    int loaded = LoadICU();
                     if (loaded == 0 && !OperatingSystem.IsBrowser())
                     {
                         // This can't go into resources, because a resource lookup requires globalization, which requires ICU

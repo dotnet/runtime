@@ -12,9 +12,6 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
         internal static extern int LoadICU();
 
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData")]
-        internal static extern int LoadICUData(string? path);
-
         internal static void InitICUFunctions(IntPtr icuuc, IntPtr icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {
             Debug.Assert(icuuc != IntPtr.Zero);

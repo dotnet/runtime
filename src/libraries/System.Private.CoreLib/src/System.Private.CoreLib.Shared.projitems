@@ -1084,6 +1084,9 @@
     <Compile Include="$(CommonPath)Interop\Interop.ICU.cs">
       <Link>Common\Interop\Interop.ICU.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.ICU.iOS.cs" Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+      <Link>Common\Interop\Interop.ICU.iOS.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Idna.cs">
       <Link>Common\Interop\Interop.Idna.cs</Link>
     </Compile>

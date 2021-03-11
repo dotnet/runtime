@@ -94,45 +94,45 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
     int32_t ret = -1;
     char* icu_data;
 
-    FILE *fp = fopen (path, "rb");
+    FILE *fp = fopen(path, "rb");
     if (fp == NULL) {
-        fprintf (stderr,  "Unable to load ICU dat file '%s'.", path);
+        fprintf(stderr,  "Unable to load ICU dat file '%s'.", path);
         return ret;
     }
 
-    if (fseek (fp, 0L, SEEK_END) != 0) {
-        fprintf (stderr, "Unable to determine size of the dat file");
+    if (fseek(fp, 0L, SEEK_END) != 0) {
+        fprintf(stderr, "Unable to determine size of the dat file");
         return ret;
     }
 
-    long bufsize = ftell (fp);
+    long bufsize = ftell(fp);
 
     if (bufsize == -1) {
-        fprintf (stderr, "Unable to determine size of the ICU dat file.");
+        fprintf(stderr, "Unable to determine size of the ICU dat file.");
         return ret;
     }
 
-    icu_data = malloc (sizeof (char) * (bufsize + 1));
+    icu_data = malloc(sizeof(char) * (bufsize + 1));
 
-    if (fseek (fp, 0L, SEEK_SET) != 0) {
-        fprintf (stderr, "Unable to seek ICU dat file.");
+    if (fseek(fp, 0L, SEEK_SET) != 0) {
+        fprintf(stderr, "Unable to seek ICU dat file.");
         return ret;
     }
 
-    fread (icu_data, sizeof (char), bufsize, fp);
-    if (ferror ( fp ) != 0 ) {
-        fprintf (stderr, "Unable to read ICU dat file");
+    fread(icu_data, sizeof(char), bufsize, fp);
+    if (ferror( fp ) != 0 ) {
+        fprintf(stderr, "Unable to read ICU dat file");
         return ret;
     }
 
-    fclose (fp);
+    fclose(fp);
 
-    if (load_icu_data (icu_data) == 0) {
-        fprintf (stderr, "ICU BAD EXIT %d.", ret);
+    if (load_icu_data(icu_data) == 0) {
+        fprintf(stderr, "ICU BAD EXIT %d.", ret);
         return ret;
     }
 
-    return GlobalizationNative_LoadICU ();
+    return GlobalizationNative_LoadICU();
 }
 
 const char* GlobalizationNative_GetICUDTName(const char* culture)
