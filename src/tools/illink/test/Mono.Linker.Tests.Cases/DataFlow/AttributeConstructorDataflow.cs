@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			AllOnSelf.Test ();
 		}
 
 		[Kept]
@@ -67,6 +68,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void KeptMethod () { }
 			static void Method () { }
+		}
+
+		[Kept]
+		class AllOnSelf
+		{
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void Test ()
+			{
+				var t = typeof (KeepAllOnSelf);
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (Attribute))]
+			class KeepsAllAttribute : Attribute
+			{
+				[Kept]
+				public KeepsAllAttribute (
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+					Type type)
+				{
+				}
+			}
+
+			[KeepsAll (typeof (KeepAllOnSelf))]
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsAllAttribute))]
+			[KeptMember (".ctor()")]
+			class KeepAllOnSelf
+			{
+				[Kept]
+				public void Method () { }
+
+				[Kept]
+				public int Field;
+			}
 		}
 	}
 }
