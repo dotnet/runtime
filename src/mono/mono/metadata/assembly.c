@@ -3741,7 +3741,7 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 	if (ass->jit_optimizer_disabled_inited)
 		return ass->jit_optimizer_disabled;
 
-	MonoClass *klass =mono_class_try_get_debuggable_attribute_class ();
+	MonoClass *klass = mono_class_try_get_debuggable_attribute_class ();
 
 	if (!klass) {
 		/* Linked away */
@@ -3752,7 +3752,7 @@ mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
 	}
 
 	gboolean disable_opts = FALSE;
-	MonoCustomAttrInfo* attrs =mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error */
 	if (attrs) {
 		for (int i = 0; i < attrs->num_attrs; ++i) {
