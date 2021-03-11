@@ -52,7 +52,7 @@ namespace Wasm.Build.Tests
                 public class TestClass {
                     public static int Main()
                     {
-                        var culture = new CultureInfo(""en-ES"", false);
+                        var culture = new CultureInfo(""es-ES"", false);
                         // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
                         Console.WriteLine($""{culture.LCID == 0x1000} - {culture.NativeName}"");
                         return 42;
