@@ -1409,7 +1409,7 @@ namespace System.Net.Http
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
             if (newStream != stream)
             {
-                // If a plaintext filter created a new stream, we can't trust that the socket is still applicable, so rely on it.
+                // If a plaintext filter created a new stream, we can't trust that the socket is still applicable.
                 socket = null;
             }
             return new HttpConnection(this, socket, newStream, transportContext);
