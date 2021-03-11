@@ -95,6 +95,18 @@ mono_metadata_update_enabled (int *modifiable_assemblies_out)
 	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
 }
 
+static gboolean
+assembly_update_supported (MonoAssembly *assm)
+{
+	int modifiable = 0;
+	if (!mono_metadata_update_enabled (&modifiable))
+		return FALSE;
+	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
+	    mono_assembly_is_jit_optimizer_disabled (assm))
+		return TRUE;
+	return FALSE;
+}
+
 /**
  * mono_metadata_update_no_inline:
  * \param caller: the calling method
@@ -934,6 +946,11 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
 		return;
+
+	if (!assembly_update_supported (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+		return;
+	}
 
 	const char *basename = image_base->filename;
 	/* FIXME:
