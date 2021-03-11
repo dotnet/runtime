@@ -110,6 +110,28 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.LastOrDefault());
         }
 
+        [Fact]
+        public void IListTManyElementsLastHasDefault()
+        {
+            int?[] source = { -10, 2, 4, 3, 0, 2, null };
+            int? expected = null;
+
+            Assert.IsAssignableFrom<IList<int?>>(source);
+
+            Assert.Equal(expected, source.LastOrDefault(5));
+        }
+
+        [Fact]
+        public void IListTManyElementsLastIsHasDefault()
+        {
+            int?[] source = { -10, 2, 4, 3, 0, 2, null, 19 };
+            int? expected = 19;
+
+            Assert.IsAssignableFrom<IList<int?>>(source);
+
+            Assert.Equal(expected, source.LastOrDefault(5));
+        }
+
         private static IEnumerable<T> EmptySource<T>()
         {
             yield break;
@@ -176,6 +198,16 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void OneElementIListTruePredicateDefault()
+        {
+            int[] source = { 4 };
+            Func<int, bool> predicate = IsEven;
+            int expected = 4;
+
+            Assert.Equal(expected, source.LastOrDefault(predicate, 5));
+        }
+
+        [Fact]
         public void ManyElementsIListPredicateFalseForAll()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
@@ -183,6 +215,16 @@ namespace System.Linq.Tests
             int expected = default(int);
 
             Assert.Equal(expected, source.LastOrDefault(predicate));
+        }
+
+        [Fact]
+        public void ManyElementsIListPredicateFalseForAllDefault()
+        {
+            int[] source = { 9, 5, 1, 3, 17, 21 };
+            Func<int, bool> predicate = IsEven;
+            int expected = 5;
+
+            Assert.Equal(expected, source.LastOrDefault(predicate, 5));
         }
 
         [Fact]

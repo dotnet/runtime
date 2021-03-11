@@ -47,7 +47,21 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void OneElementTruePredicateDefault()
+        {
+            int[] source = { 4 };
+            Assert.Equal(4, source.AsQueryable().FirstOrDefault(i => i % 2 == 0, 5));
+        }
+
+        [Fact]
         public void OneElementFalsePredicate()
+        {
+            int[] source = { 3 };
+            Assert.Equal(0, source.AsQueryable().FirstOrDefault(i => i % 2 == 0));
+        }
+
+        [Fact]
+        public void OneElementFalsePredicateDefault()
         {
             int[] source = { 3 };
             Assert.Equal(5, source.AsQueryable().FirstOrDefault(i => i % 2 == 0, 5));
@@ -61,22 +75,37 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void ManyElementsPredicateFalseForAllDefault()
+        {
+            int[] source = { 9, 5, 1, 3, 17, 21 };
+            Assert.Equal(2, source.AsQueryable().FirstOrDefault(i => i % 2 == 0), 2);
+        }
+
+        [Fact]
         public void PredicateTrueForSome()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 17, 13, 8 };
             Assert.Equal(10, source.AsQueryable().FirstOrDefault(i => i % 2 == 0));
+        }
+        [Fact]
+        public void PredicateTrueForSomeDefault()
+        {
+            int[] source = { 3, 7, 10, 7, 9, 2, 11, 17, 13, 8 };
+            Assert.Equal(10, source.AsQueryable().FirstOrDefault(i => i % 2 == 0, 5));
         }
 
         [Fact]
         public void NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault());
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault(5));
         }
 
         [Fact]
         public void NullSourcePredicateUsed()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault(i => i != 2));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => ((IQueryable<int>)null).FirstOrDefault(i => i != 2, 5));
         }
 
         [Fact]
@@ -84,6 +113,7 @@ namespace System.Linq.Tests
         {
             Expression<Func<int, bool>> predicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().FirstOrDefault(predicate));
+            AssertExtensions.Throws<ArgumentNullException>("predicate", () => Enumerable.Range(0, 3).AsQueryable().FirstOrDefault(predicate, 5));
         }
 
         [Fact]

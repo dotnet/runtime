@@ -30,6 +30,13 @@ namespace System.Linq.Tests.LegacyTests
         }
 
         [Fact]
+        public void OneElementFalsePredicate()
+        {
+            int[] source = { 3 };
+            Assert.Equal(5, source.AsQueryable().LastOrDefault(i => i % 2 == 0, 5));
+        }
+
+        [Fact]
         public void ManyElementsLastIsDefault()
         {
             int?[] source = { -10, 2, 4, 3, 0, 2, null };
