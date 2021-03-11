@@ -49,6 +49,7 @@
 #define DS_IPC_SOCKET_ERROR SOCKET_ERROR
 #define DS_IPC_SOCKET_ERROR_WOULDBLOCK WSAEWOULDBLOCK
 #define DS_IPC_SOCKET_ERROR_TIMEDOUT WSAETIMEDOUT
+#define DS_IPC_ERROR_INTERRUPT WSAEINTR
 typedef ADDRINFOA ds_ipc_addrinfo_t;
 typedef WSAPOLLFD ds_ipc_pollfd_t;
 typedef int ds_ipc_mode_t;
@@ -57,6 +58,7 @@ typedef int ds_ipc_mode_t;
 #define DS_IPC_SOCKET_ERROR -1
 #define DS_IPC_SOCKET_ERROR_WOULDBLOCK EINPROGRESS
 #define DS_IPC_SOCKET_ERROR_TIMEDOUT ETIMEDOUT
+#define DS_IPC_ERROR_INTERRUPT EINTR
 typedef struct addrinfo ds_ipc_addrinfo_t;
 typedef struct pollfd ds_ipc_pollfd_t;
 typedef mode_t ds_ipc_mode_t;
@@ -264,6 +266,21 @@ ipc_get_last_socket_error (ds_ipc_socket_t s)
 	return result_getsockopt == 0 ? opt_value : result_getsockopt;
 }
 
+#ifndef EP_NO_RT_DEPENDENCY
+static
+inline
+bool
+ipc_retry_syscall (int result)
+{
+	return result == -1 && ipc_get_last_error () == DS_IPC_ERROR_INTERRUPT && !ep_rt_process_shutdown ();
+}
+#else
+ipc_retry_syscall (int result)
+{
+	return result == -1 && ipc_get_last_error () == DS_IPC_ERROR_INTERRUPT;
+}
+#endif
+
 static
 inline
 ds_ipc_mode_t
@@ -359,7 +376,9 @@ ipc_socket_close (ds_ipc_socket_t s)
 #ifdef HOST_WIN32
 	result_close = closesocket (s);
 #else
-	result_close = close (s);
+	do {
+		result_close = close (s);
+	while (ipc_retry_syscall (result_close));
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result_close;
@@ -373,7 +392,9 @@ ipc_socket_set_permission (ds_ipc_socket_t s)
 #if defined(DS_IPC_PAL_AF_UNIX) && !defined(__APPLE__)
 	int result_fchmod;
 	DS_ENTER_BLOCKING_PAL_SECTION;
-	result_fchmod = fchmod (s, S_IRUSR | S_IWUSR);
+	do {
+		result_fchmod = fchmod (s, S_IRUSR | S_IWUSR);
+	} while (ipc_retry_syscall (result_fchmod));
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result_fchmod;
 #else
@@ -415,7 +436,32 @@ ipc_poll_fds (
 #ifdef HOST_WIN32
 	result_poll = WSAPoll (fds, (ULONG)nfds, (INT)timeout);
 #else
-	result_poll = poll (fds, nfds, (int)timeout);
+#ifndef EP_NO_RT_DEPENDENCY
+	int64_t start;
+	int64_t stop;
+	bool retry_poll = false;
+	do {
+		if (timeout != EP_INFINITE_WAIT)
+			start = ep_rt_perf_counter_query ();
+
+		result_poll = poll (fds, nfds, (int)timeout);
+		retry_poll = ipc_retry_syscall (result_poll);
+
+		if (retry_poll && timeout != EP_INFINITE_WAIT) {
+			stop = ep_rt_perf_counter_query ();
+			uint32_t waited_ms = (uint32_t)(((stop - start) * 1000) / ep_rt_perf_frequency_query ());
+			timeout = (waited_ms < timeout) ? timeout - waited_ms : 0;
+		}
+
+		if (retry_poll && timeout == 0)
+			result_poll = 0; // Return time out.
+
+	} while (retry_poll && timeout != 0);
+#else
+	do {
+		result_poll = poll (fds, nfds, (int)timeout);
+	} while (ipc_retry_syscall (result_poll));
+#endif
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result_poll;
@@ -460,7 +506,9 @@ ipc_socket_accept (
 {
 	ds_ipc_socket_t client_socket;
 	DS_ENTER_BLOCKING_PAL_SECTION;
-	client_socket = accept (s, address, address_len);
+	do {
+		client_socket = accept (s, address, address_len);
+	} while (ipc_retry_syscall (client_socket));
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return client_socket;
 }
@@ -487,7 +535,9 @@ ipc_socket_connect (
 #endif
 
 	DS_ENTER_BLOCKING_PAL_SECTION;
-	result_connect = connect (s, address, address_len);
+	do {
+		result_connect = connect (s, address, address_len);
+	} while (ipc_retry_syscall (result_connect));
 	DS_EXIT_BLOCKING_PAL_SECTION;
 
 #if defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
@@ -548,6 +598,8 @@ ipc_socket_recv (
 			buffer_cursor,
 			bytes_to_read - total_bytes_read,
 			0);
+		if (ipc_retry_syscall (current_bytes_read))
+			continue;
 		continue_recv = current_bytes_read > 0;
 		if (!continue_recv)
 			break;
@@ -580,6 +632,8 @@ ipc_socket_send (
 			buffer_cursor,
 			bytes_to_write - total_bytes_written,
 			0);
+		if (ipc_retry_syscall (current_bytes_written))
+			continue;
 		continue_send = current_bytes_written != DS_IPC_SOCKET_ERROR;
 		if (!continue_send)
 			break;
