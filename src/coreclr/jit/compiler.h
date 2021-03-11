@@ -5584,7 +5584,7 @@ protected:
     void        fgIncorporateEdgeCounts();
 
 public:
-    bool                                   fgProfileData_ILSizeMismatch;
+    const char*                            fgPgoFailReason;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;

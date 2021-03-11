@@ -1722,6 +1722,11 @@ class SuperPMIReplayAsmDiffs:
         altjit_asm_diffs_flags = target_flags
         altjit_replay_flags = target_flags
 
+        option_flags = []
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                option_flags += "-jitoption", o
+
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
                 "-jitoption", "force", "AltJit=*",
@@ -1771,6 +1776,7 @@ class SuperPMIReplayAsmDiffs:
                         "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
                     ]
                     flags += altjit_asm_diffs_flags
+                    flags += option_flags
 
                     if not self.coreclr_args.sequential:
                         flags += [ "-p" ]
@@ -1859,7 +1865,7 @@ class SuperPMIReplayAsmDiffs:
                         # as the LoadLibrary path will be relative to the current directory.
                         with ChangeDir(self.coreclr_args.core_root):
 
-                            async def create_one_artifact(jit_path: str, location: str) -> str:
+                            async def create_one_artifact(jit_path: str, location: str, flags: list[str]) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
                                 item_path = os.path.join(location, "{}{}".format(item, extension))
                                 with open(item_path, 'w') as file_handle:
@@ -1872,8 +1878,8 @@ class SuperPMIReplayAsmDiffs:
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
-                            base_txt = await create_one_artifact(self.base_jit_path, base_location)
-                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location)
+                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + option_flags)
+                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags)
 
                             if base_txt != diff_txt:
                                 jit_differences_queue.put_nowait(item)

@@ -2207,9 +2207,9 @@ void CodeGen::genGenerateMachineCode()
                    compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
-        if (compiler->fgProfileData_ILSizeMismatch)
+        if (compiler->fgPgoFailReason != nullptr)
         {
-            printf("; discarded IBC profile data due to mismatch in ILSize\n");
+            printf("; %s\n", compiler->fgPgoFailReason);
         }
 
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))

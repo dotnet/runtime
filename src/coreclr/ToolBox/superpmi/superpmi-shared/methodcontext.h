@@ -43,6 +43,15 @@ const char* toString(CorInfoType cit);
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
 
+// Special "jit flags" for noting some method context features
+
+enum EXTRA_JIT_FLAGS
+{
+    HAS_PGO = 63,
+    HAS_EDGE_PROFILE = 62,
+    HAS_CLASS_PROFILE = 61
+};
+
 class MethodContext
 {
 public:
@@ -81,6 +90,8 @@ public:
 
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
+
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile);
 
     void recGlobalContext(const MethodContext& other);
 

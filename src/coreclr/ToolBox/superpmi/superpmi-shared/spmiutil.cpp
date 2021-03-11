@@ -159,7 +159,7 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
     const size_t folderPathLength   = wcslen(folderPath);
     const size_t fileNameLength     = wcslen(fileName);
     const size_t extensionLength    = wcslen(extension);
-    const size_t maxPathLength      = MAX_PATH - 50; // subtract 50 because excel doesn't like paths longer then 230.
+    const size_t maxPathLength      = 50;
     const size_t randomStringLength = 8;
 
     size_t fullPathLength   = folderPathLength + 1 + extensionLength;
