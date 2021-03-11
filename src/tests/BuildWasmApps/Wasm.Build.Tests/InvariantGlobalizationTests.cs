@@ -46,12 +46,15 @@ namespace Wasm.Build.Tests
 
             string programText = @"
                 using System;
+                using System.Globalization;
                 using System.Threading.Tasks;
 
                 public class TestClass {
                     public static int Main()
                     {
-                        Console.WriteLine(""Hello, World!"");
+                        var culture = new CultureInfo(""en-ES"", false);
+                        // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
+                        Console.WriteLine($""{culture.LCID == 0x1000} - {culture.NativeName}"");
                         return 42;
                     }
                 }";
@@ -62,8 +65,11 @@ namespace Wasm.Build.Tests
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
 
+            string expectedOutputString = invariantGlobalization == true
+                                            ? "False - en (ES)"
+                                            : "True - Invariant Language (Invariant Country)";
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
-                                test: output => Assert.Contains("Hello, World!", output), host: host, id: id);
+                                test: output => Assert.Contains(expectedOutputString, output), host: host, id: id);
         }
     }
 }
