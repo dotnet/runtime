@@ -62,6 +62,58 @@ typedef struct _DeltaInfo {
 } DeltaInfo;
 
 
+#define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
+
+/**
+ * mono_metadata_update_enable:
+ * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
+ *
+ * Returns \c TRUE if metadata updates are enabled at runtime.  False otherwise.
+ *
+ * If \p modifiable_assemblies_out is not \c NULL, it's set on return.
+ *
+ * The result depends on the value of the DOTNET_MODIFIABLE_ASSEMBLIES
+ * environment variable.  "debug" means debuggable assemblies are modifiable,
+ * all other values are ignored and metadata updates are disabled.
+ */
+gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out)
+{
+	static gboolean inited = FALSE;
+	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+
+	if (!inited) {
+		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+		if (!g_strcasecmp (val, "debug"))
+			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		g_free (val);
+		inited = TRUE;
+	}
+	if (modifiable_assemblies_out)
+		*modifiable_assemblies_out = modifiable;
+	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+}
+
+/**
+ * mono_metadata_update_no_inline:
+ * \param caller: the calling method
+ * \param callee: the method being called
+ *
+ * Returns \c TRUE if \p callee should not be inlined into \p caller.
+ *
+ * If metadata updates are enabled either for the caller or callee's module,
+ * the callee should not be inlined.
+ *
+ */
+gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+	if (!mono_metadata_update_enabled (NULL))
+		return FALSE;
+	/* FIXME: check the debugger bits on the MonoAssembly of the caller and callee */
+	return TRUE;
+}
+
 static void
 mono_metadata_update_ee_init (MonoError *error);
 
