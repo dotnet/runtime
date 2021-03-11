@@ -630,8 +630,9 @@ namespace System.ComponentModel
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public partial class InstallerTypeAttribute : System.Attribute
     {
-        public InstallerTypeAttribute(string typeName) { }
-        public InstallerTypeAttribute(System.Type installerType) { }
+        public InstallerTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName) { }
+        public InstallerTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type installerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public virtual System.Type InstallerType { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -706,9 +707,9 @@ namespace System.ComponentModel
         public static System.ComponentModel.LicenseContext CurrentContext { get { throw null; } set { } }
         public static System.ComponentModel.LicenseUsageMode UsageMode { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
+        public static object CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static object CreateWithContext(System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
+        public static object CreateWithContext([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.ComponentModel.LicenseContext creationContext, object[] args) { throw null; }
         public static bool IsLicensed(System.Type type) { throw null; }
         public static bool IsValid(System.Type type) { throw null; }
         public static bool IsValid(System.Type type, object instance, out System.ComponentModel.License license) { throw null; }
@@ -727,8 +728,9 @@ namespace System.ComponentModel
     {
         public static readonly System.ComponentModel.LicenseProviderAttribute Default;
         public LicenseProviderAttribute() { }
-        public LicenseProviderAttribute(string typeName) { }
-        public LicenseProviderAttribute(System.Type type) { }
+        public LicenseProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName) { }
+        public LicenseProviderAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type type) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type LicenseProvider { get { throw null; } }
         public override object TypeId { get { throw null; } }
         public override bool Equals(object value) { throw null; }
@@ -1240,9 +1242,11 @@ namespace System.ComponentModel
         public static readonly System.ComponentModel.ToolboxItemAttribute Default;
         public static readonly System.ComponentModel.ToolboxItemAttribute None;
         public ToolboxItemAttribute(bool defaultType) { }
-        public ToolboxItemAttribute(string toolboxItemTypeName) { }
-        public ToolboxItemAttribute(System.Type toolboxItemType) { }
+        public ToolboxItemAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName) { }
+        public ToolboxItemAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type toolboxItemType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type ToolboxItemType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public string ToolboxItemTypeName { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -1362,8 +1366,8 @@ namespace System.ComponentModel
     {
         internal TypeDescriptor() { }
         [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
-        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
+        public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] set { } }
+        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }
@@ -1929,9 +1933,12 @@ namespace System.ComponentModel.Design
         System.Reflection.Assembly GetAssembly(System.Reflection.AssemblyName name);
         System.Reflection.Assembly GetAssembly(System.Reflection.AssemblyName name, bool throwOnError);
         string GetPathOfAssembly(System.Reflection.AssemblyName name);
-        System.Type GetType(string name);
-        System.Type GetType(string name, bool throwOnError);
-        System.Type GetType(string name, bool throwOnError, bool ignoreCase);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        System.Type GetType([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError, bool ignoreCase);
         void ReferenceAssembly(System.Reflection.AssemblyName name);
     }
     public partial class MenuCommand
