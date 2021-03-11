@@ -6681,6 +6681,58 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     buff += t;
     len -= t;
 
+    // Fingerprint the root method PGO data (if any) and append it to the ID info.
+    //
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(pInfo->ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData);
+
+        size_t minOffset = (size_t) ~0;
+        size_t maxOffset = 0;
+        uint32_t totalCount = 0;
+
+        if (SUCCEEDED(pgoHR))
+        {
+            // Locate the range of the counter data.
+            //
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                {
+                    if (schema[i].Offset < minOffset)
+                    {
+                        minOffset = schema[i].Offset;
+                    }
+
+                    if (schema[i].Offset > maxOffset)
+                    {
+                        maxOffset = schema[i].Offset;
+                    }
+
+                    totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                }
+            }
+
+            // Hash the counter values.
+            //
+            if (minOffset < maxOffset)
+            {
+                char pgoHash[MD5_HASH_BUFFER_SIZE];
+                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset + sizeof(int) - minOffset), pgoHash,
+                                    MD5_HASH_BUFFER_SIZE);
+
+                t = sprintf_s(buff, len, " Pgo Counters %u, Count %u, Hash: %s", schemaCount, totalCount, pgoHash);
+                buff += t;
+                len -= t;
+            }
+        }
+    }
+
     return (int)(buff - obuff);
 }
 
