@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostOptions> configure)
         {
-            return hostBuilder.ConfigureHostOptions((context, options) => configure(options));
+            return hostBuilder.ConfigureHostOptions(options => configure(options));
         }
 
         /// <summary>
