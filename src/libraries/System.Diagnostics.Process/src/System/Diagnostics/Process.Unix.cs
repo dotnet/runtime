@@ -202,14 +202,8 @@ namespace System.Diagnostics
 
             if (exited && milliseconds == Timeout.Infinite) // if we have a hard timeout, we cannot wait for the streams
             {
-                if (_output != null)
-                {
-                    _output.WaitUntilEOF();
-                }
-                if (_error != null)
-                {
-                    _error.WaitUntilEOF();
-                }
+                _output?.EOF.GetAwaiter().GetResult();
+                _error?.EOF.GetAwaiter().GetResult();
             }
 
             return exited;

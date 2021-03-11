@@ -27,6 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string File { get; private set; }
         public int Line { get; private set; }
         public int Column { get; private set; }
+        public string Condition { get; private set; }
         public MethodInfo Method { get; private set; }
 
         private JObject request;
@@ -51,6 +52,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Id = id;
             this.request = request;
+            Condition = request?["condition"]?.Value<string>();
         }
 
         public static BreakpointRequest Parse(string id, JObject args)
@@ -98,6 +100,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return store.AllSources().FirstOrDefault(source => TryResolve(source)) != null;
         }
+
     }
 
     internal class VarInfo

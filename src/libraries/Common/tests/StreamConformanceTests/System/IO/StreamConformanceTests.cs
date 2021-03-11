@@ -558,9 +558,12 @@ namespace System.IO.Tests
             }
             else
             {
-                var cts = new CancellationTokenSource();
-                await Task.WhenAny(incomplete, Task.Delay(500, cts.Token)); // give second task a chance to complete
-                cts.Cancel();
+                try
+                {
+                    await incomplete.WaitAsync(TimeSpan.FromMilliseconds(500)); // give second task a chance to complete
+                }
+                catch (TimeoutException) { }
+
                 await (incomplete.IsCompleted ? Task.WhenAll(completed, incomplete) : completed);
             }
         }

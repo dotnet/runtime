@@ -2456,6 +2456,9 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 //    This method only computes the arg table and arg entries for the call (the fgArgInfo),
 //    and makes no modification of the args themselves.
 //
+//    The IR for the call args can change for calls with non-standard arguments: some non-standard
+//    arguments add new call argument IR nodes.
+//
 void Compiler::fgInitArgInfo(GenTreeCall* call)
 {
     GenTreeCall::Use* args;
@@ -6777,6 +6780,9 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //    This function is target specific and each target will make the fastTailCall
 //    decision differently. See the notes below.
 //
+//    This function calls fgInitArgInfo() to initialize the arg info table, which
+//    is used to analyze the argument. This function can alter the call arguments
+//    by adding argument IR nodes for non-standard arguments.
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
@@ -8004,7 +8010,10 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     bool virtualCall = call->IsVirtual();
 
@@ -8015,11 +8024,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("This is a VSD\n");
 #if FEATURE_FASTTAILCALL
-        // fgInitArgInfo has been called from fgCanFastTailCall and it added the stub address
-        // to the arg list. Remove it now.
-        call->gtCallArgs = call->gtCallArgs->GetNext();
-        // We changed args so recompute info.
-        call->fgArgInfo = nullptr;
+        call->ResetArgInfo();
 #endif
 
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
@@ -8634,7 +8639,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     // First move the 'this' pointer (if any) onto the regular arg list. We do this because
     // we are going to prepend special arguments onto the argument list (for non-x86 platforms),
@@ -9136,7 +9144,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             //     ret temp
 
             // Force re-evaluating the argInfo as the return argument has changed.
-            call->fgArgInfo = nullptr;
+            call->ResetArgInfo();
 
             // Create a new temp.
             unsigned tmpNum =
