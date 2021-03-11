@@ -70,7 +70,7 @@ namespace System.Text.Encodings.Web
                 Debug.Assert(definedCharsBitmapAsLittleEndian.Length == thisAllowedCharactersBitmap.Length * sizeof(uint));
 
 #if NETCOREAPP
-                if (BitConverter.IsLittleEndian)
+                if (Vector.IsHardwareAccelerated && BitConverter.IsLittleEndian)
                 {
                     while (!definedCharsBitmapAsLittleEndian.IsEmpty)
                     {
@@ -83,7 +83,7 @@ namespace System.Text.Encodings.Web
                 }
 #endif
 
-                // Not Core, or not little-endian.
+                // Not Core, or not little-endian, or not SIMD-optimized.
                 for (int i = 0; i < thisAllowedCharactersBitmap.Length; i++)
                 {
                     thisAllowedCharactersBitmap[i] &= BinaryPrimitives.ReadUInt32LittleEndian(definedCharsBitmapAsLittleEndian.Slice(i * sizeof(uint)));

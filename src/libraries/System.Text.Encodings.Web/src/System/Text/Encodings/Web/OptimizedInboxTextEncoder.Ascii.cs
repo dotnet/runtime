@@ -12,7 +12,7 @@ namespace System.Text.Encodings.Web
         /// <summary>
         /// A bitmap which represents allowed ASCII code points.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
         private unsafe partial struct AllowedAsciiCodePoints
         {
             [FieldOffset(0)] // if we're compiling SIMD-enabled, check the .Simd.cs file for the vector field at this offset
