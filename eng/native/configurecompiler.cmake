@@ -332,6 +332,7 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-variable)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
+  add_compile_options(-Wno-tautological-compare)
 
   check_cxx_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
   if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
@@ -345,7 +346,6 @@ if (CLR_CMAKE_HOST_UNIX)
     # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
     # after hitting just about 20 errors.
     add_compile_options(-ferror-limit=4096)
-    add_compile_options(-Wno-tautological-compare)
 
     # Disabled warnings
     add_compile_options(-Wno-unused-private-field)
