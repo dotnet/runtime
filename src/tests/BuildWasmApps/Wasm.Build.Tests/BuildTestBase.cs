@@ -93,10 +93,12 @@ namespace Wasm.Build.Tests
             string? harnessVar = Environment.GetEnvironmentVariable(XHarnessRunnerCommandEnvVar);
             if (string.IsNullOrEmpty(harnessVar))
             {
-                throw new Exception($"{XHarnessRunnerCommandEnvVar} not set");
+                s_xharnessRunnerCommand = "xharness";
             }
-
-            s_xharnessRunnerCommand = harnessVar;
+            else
+            {
+                s_xharnessRunnerCommand = $"exec {harnessVar}";
+            }
         }
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -183,7 +185,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(testLogPath);
 
             StringBuilder args = new();
-            args.Append($"exec {s_xharnessRunnerCommand}");
+            args.Append(s_xharnessRunnerCommand);
             args.Append($" {testCommand}");
             args.Append($" --app=.");
             args.Append($" --output-directory={testLogPath}");
