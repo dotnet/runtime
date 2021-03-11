@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Security.Policy;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -27,8 +28,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestMultipleGenericParametersOnMethod ();
 			TestMethodGenericParametersViaInheritance ();
 
-			TestMakeGenericType ();
-			TestMakeGenericMethod ();
+			MakeGenericType.Test ();
+			MakeGenericMethod.Test ();
 
 			TestNewConstraintSatisfiesParameterlessConstructor<object> ();
 
@@ -740,131 +741,256 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		static void TestMakeGenericType ()
+		class MakeGenericType
 		{
-			TestMakeGenericTypeNullType ();
-			TestMakeGenericTypeUnknownInput (null);
-			TestMakeGenericTypeNoArguments ();
+			public static void Test ()
+			{
+				TestNullType ();
+				TestUnknownInput (null);
+				TestNoArguments ();
 
-			TestMakeGenericWithRequirements ();
-			TestMakeGenericWithRequirementsFromParam (null);
-			TestMakeGenericWithRequirementsFromGenericParam<TestType> ();
+				TestWithRequirements ();
+				TestWithRequirementsFromParam (null);
+				TestWithRequirementsFromGenericParam<TestType> ();
 
-			TestMakeGenericWithNoRequirements ();
-			TestMakeGenericWithNoRequirementsFromParam (null);
+				TestWithNoRequirements ();
+				TestWithNoRequirementsFromParam (null);
 
-			TestMakeGenericWithMultipleArgumentsWithRequirements ();
+				TestWithMultipleArgumentsWithRequirements ();
+
+				TestWithNewConstraint ();
+			}
+
+			// This is OK since we know it's null, so MakeGenericType is effectively a no-op (will throw)
+			// so no validation necessary.
+			[RecognizedReflectionAccessPattern]
+			static void TestNullType ()
+			{
+				Type nullType = null;
+				nullType.MakeGenericType (typeof (TestType));
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestUnknownInput (Type inputType)
+			{
+				inputType.MakeGenericType (typeof (TestType));
+			}
+
+			[RecognizedReflectionAccessPattern]
+			static void TestNoArguments ()
+			{
+				typeof (TypeMakeGenericNoArguments).MakeGenericType ();
+			}
+
+			class TypeMakeGenericNoArguments
+			{
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithRequirements ()
+			{
+				// Currently this is not analyzable since we don't track array elements.
+				// Would be really nice to support this kind of code in the future though.
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TestType));
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithRequirementsFromParam (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+			{
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithRequirementsFromGenericParam<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+			{
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
+			}
+
+			class GenericWithPublicFieldsArgument<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+			{
+			}
+
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirements ()
+			{
+				typeof (GenericWithNoRequirements<>).MakeGenericType (typeof (TestType));
+			}
+
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsFromParam (Type type)
+			{
+				typeof (GenericWithNoRequirements<>).MakeGenericType (type);
+			}
+
+			class GenericWithNoRequirements<T>
+			{
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithMultipleArgumentsWithRequirements ()
+			{
+				typeof (GenericWithMultipleArgumentsWithRequirements<,>).MakeGenericType (typeof (TestType), typeof (TestType));
+			}
+
+			class GenericWithMultipleArgumentsWithRequirements<
+				TOne,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TTwo>
+			{
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) },
+				messageCode: "IL2055")]
+			static void TestWithNewConstraint ()
+			{
+				typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
+			}
+
+			class GenericWithNewConstraint<T> where T : new()
+			{
+			}
 		}
 
-		// This is OK since we know it's null, so MakeGenericType is effectively a no-op (will throw)
-		// so no validation necessary.
-		[RecognizedReflectionAccessPattern]
-		static void TestMakeGenericTypeNullType ()
+		class MakeGenericMethod
 		{
-			Type nullType = null;
-			nullType.MakeGenericType (typeof (TestType));
-		}
+			public static void Test ()
+			{
+				TestNullMethod ();
+				TestUnknownInput (null);
+				TestWithNoArguments ();
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) }, messageCode: "IL2055")]
-		static void TestMakeGenericTypeUnknownInput (Type inputType)
-		{
-			inputType.MakeGenericType (typeof (TestType));
-		}
+				TestWithRequirements ();
+				TestWithRequirementsFromParam (null);
+				TestWithRequirementsFromGenericParam<TestType> ();
+				TestWithRequirementsViaRuntimeMethod ();
 
-		[RecognizedReflectionAccessPattern]
-		static void TestMakeGenericTypeNoArguments ()
-		{
-			typeof (TypeMakeGenericNoArguments).MakeGenericType ();
-		}
+				TestWithNoRequirements ();
+				TestWithNoRequirementsFromParam (null);
+				TestWithNoRequirementsViaRuntimeMethod ();
 
-		class TypeMakeGenericNoArguments
-		{
-		}
+				TestWithMultipleArgumentsWithRequirements ();
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) }, messageCode: "IL2055")]
-		static void TestMakeGenericWithRequirements ()
-		{
-			// Currently this is not analyzable since we don't track array elements.
-			// Would be really nice to support this kind of code in the future though.
-			typeof (TypeMakeGenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TestType));
-		}
+				TestWithNewConstraint ();
+			}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) }, messageCode: "IL2055")]
-		static void TestMakeGenericWithRequirementsFromParam (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
-		{
-			typeof (TypeMakeGenericWithPublicFieldsArgument<>).MakeGenericType (type);
-		}
+			[RecognizedReflectionAccessPattern]
+			static void TestNullMethod ()
+			{
+				MethodInfo mi = null;
+				mi.MakeGenericMethod (typeof (TestType));
+			}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) }, messageCode: "IL2055")]
-		static void TestMakeGenericWithRequirementsFromGenericParam<
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-		{
-			typeof (TypeMakeGenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
-		}
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestUnknownInput (MethodInfo mi)
+			{
+				mi.MakeGenericMethod (typeof (TestType));
+			}
 
-		class TypeMakeGenericWithPublicFieldsArgument<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
-		{
-		}
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoArguments ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic)
+					.MakeGenericMethod ();
+			}
 
-		[RecognizedReflectionAccessPattern]
-		static void TestMakeGenericWithNoRequirements ()
-		{
-			typeof (TypeMakeGenericWithNoRequirements<>).MakeGenericType (typeof (TestType));
-		}
+			static void NonGenericMethod ()
+			{
+			}
 
-		[RecognizedReflectionAccessPattern]
-		static void TestMakeGenericWithNoRequirementsFromParam (Type type)
-		{
-			typeof (TypeMakeGenericWithNoRequirements<>).MakeGenericType (type);
-		}
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithRequirements ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (typeof (TestType));
+			}
 
-		class TypeMakeGenericWithNoRequirements<T>
-		{
-		}
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithRequirementsFromParam (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (type);
+			}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.MakeGenericType), new Type[] { typeof (Type[]) }, messageCode: "IL2055")]
-		static void TestMakeGenericWithMultipleArgumentsWithRequirements ()
-		{
-			typeof (TypeMakeGenericWithMultipleArgumentsWithRequirements<,>).MakeGenericType (typeof (TestType), typeof (TestType));
-		}
+			static void TestWithRequirementsFromGenericParam<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithRequirements), BindingFlags.Static)
+					.MakeGenericMethod (typeof (T));
+			}
 
-		class TypeMakeGenericWithMultipleArgumentsWithRequirements<
-			TOne,
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TTwo>
-		{
-		}
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithRequirementsViaRuntimeMethod ()
+			{
+				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithRequirements), Type.EmptyTypes)
+					.MakeGenericMethod (typeof (TestType));
+			}
 
-		static void TestMakeGenericMethod ()
-		{
-			TestMakeGenericMethodWithRequirements ();
-			TestMakeGenericMethodWithNoRequirements ();
-		}
+			public static void GenericWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
+			{
+			}
 
-		[UnrecognizedReflectionAccessPattern (typeof (System.Reflection.MethodInfo), nameof (System.Reflection.MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) }, messageCode: "IL2060")]
-		static void TestMakeGenericMethodWithRequirements ()
-		{
-			typeof (GenericParameterDataFlow).GetMethod (nameof (MethodMakeGenericWithRequirements), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod (typeof (TestType));
-		}
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirements ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
+					.MakeGenericMethod (typeof (TestType));
+			}
 
-		static void MethodMakeGenericWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-		{
-		}
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsFromParam (Type type)
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNoRequirements), BindingFlags.Static)
+					.MakeGenericMethod (type);
+			}
 
-		[UnrecognizedReflectionAccessPattern (typeof (System.Reflection.MethodInfo), nameof (System.Reflection.MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) }, messageCode: "IL2060")]
-		static void TestMakeGenericMethodWithNoRequirements ()
-		{
-			typeof (GenericParameterDataFlow).GetMethod (nameof (MethodMakeGenericWithNoRequirements), BindingFlags.Static | BindingFlags.NonPublic)
-				.MakeGenericMethod (typeof (TestType));
-		}
+			[RecognizedReflectionAccessPattern]
+			static void TestWithNoRequirementsViaRuntimeMethod ()
+			{
+				typeof (MakeGenericMethod).GetRuntimeMethod (nameof (GenericWithNoRequirements), Type.EmptyTypes)
+					.MakeGenericMethod (typeof (TestType));
+			}
 
-		static void MethodMakeGenericWithNoRequirements<T> ()
-		{
-		}
+			public static void GenericWithNoRequirements<T> ()
+			{
+			}
 
-		public class TestType
-		{
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithMultipleArgumentsWithRequirements ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithMultipleArgumentsWithRequirements), BindingFlags.Static | BindingFlags.NonPublic)
+					.MakeGenericMethod (typeof (TestType), typeof (TestType));
+			}
+
+			static void GenericWithMultipleArgumentsWithRequirements<
+				TOne,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TTwo> ()
+			{
+			}
+
+			[UnrecognizedReflectionAccessPattern (typeof (MethodInfo), nameof (MethodInfo.MakeGenericMethod), new Type[] { typeof (Type[]) },
+				messageCode: "IL2060")]
+			static void TestWithNewConstraint ()
+			{
+				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+					.MakeGenericMethod (typeof (TestType));
+			}
+
+			static void GenericWithNewConstraint<T> () where T : new()
+			{
+				var t = new T ();
+			}
 		}
 
 		[RecognizedReflectionAccessPattern]
@@ -874,6 +1000,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		static void RequiresParameterlessConstructor<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> ()
+		{
+		}
+
+		public class TestType
 		{
 		}
 	}

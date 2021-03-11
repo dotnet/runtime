@@ -2,6 +2,11 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="zh-Hans" original="../Strings.resx">
     <body>
+      <trans-unit id="IL2060">
+        <source>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</source>
+        <target state="new">Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="IL2067">
         <source>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
         <target state="new">'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</target>
@@ -125,6 +130,11 @@
       <trans-unit id="IL2091">
         <source>'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</source>
         <target state="new">'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="IL2103">
+        <source>Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</source>
+        <target state="new">Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</target>
         <note />
       </trans-unit>
     </body>

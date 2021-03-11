@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Mono.Resources {
+namespace Mono.Linker.Resources {
     using System;
     
     
@@ -61,7 +61,16 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{1}&apos;. The parameter &apos;{2}&apos; of method &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to Call to &apos;{0}&apos; can not be statically analyzed. It&apos;s not possible to guarantee the availability of requirements of the generic method..
+        /// </summary>
+        internal static string IL2060 {
+            get {
+                return ResourceManager.GetString("IL2060", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy {4} in call to &apos;{1}&apos;. The parameter &apos;{2}&apos; of method &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2067 {
             get {
@@ -70,7 +79,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy {3} requirements. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2068 {
             get {
@@ -79,7 +88,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; field does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to value stored in field &apos;{0}&apos; does not satisfy {3} requirements. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2069 {
             get {
@@ -88,7 +97,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{0}&apos;. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy {3} in call to &apos;{0}&apos;. The parameter &apos;{1}&apos; of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2070 {
             get {
@@ -97,7 +106,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in &apos;{1}&apos;. The parameter &apos;{2}&apos; of method &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy {4} in &apos;{1}&apos;. The parameter &apos;{2}&apos; of method &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2071 {
             get {
@@ -106,7 +115,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{1}&apos;. The return value of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy {3} in call to &apos;{1}&apos;. The return value of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2072 {
             get {
@@ -115,7 +124,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy {2} requirements. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2073 {
             get {
@@ -124,7 +133,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; field does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to value stored in field &apos;{0}&apos; does not satisfy {2} requirements. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2074 {
             get {
@@ -133,7 +142,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{0}&apos;. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy {2} in call to &apos;{0}&apos;. The return value of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2075 {
             get {
@@ -142,7 +151,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in &apos;{1}&apos;. The return value of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy {3} in &apos;{1}&apos;. The return value of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2076 {
             get {
@@ -151,7 +160,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{1}&apos;. The field &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy {3} in call to &apos;{1}&apos;. The field &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2077 {
             get {
@@ -160,7 +169,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy {2} requirements. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2078 {
             get {
@@ -169,7 +178,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; field does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to value stored in field &apos;{0}&apos; does not satisfy {2} requirements. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2079 {
             get {
@@ -178,7 +187,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{0}&apos;. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy {2} in call to &apos;{0}&apos;. The field &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2080 {
             get {
@@ -187,7 +196,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in &apos;{1}&apos;. The field &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy {3} in &apos;{1}&apos;. The field &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2081 {
             get {
@@ -196,7 +205,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{1}&apos;. The implicit &apos;this&apos; argument of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy {3} in call to &apos;{1}&apos;. The implicit &apos;this&apos; argument of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2082 {
             get {
@@ -205,7 +214,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy {2} requirements. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2083 {
             get {
@@ -214,7 +223,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; field does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to value stored in field &apos;{0}&apos; does not satisfy {2} requirements. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2084 {
             get {
@@ -223,7 +232,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{0}&apos;. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy {2} in call to &apos;{0}&apos;. The implicit &apos;this&apos; argument of method &apos;{1}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2085 {
             get {
@@ -232,7 +241,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in &apos;{1}&apos;. The implicit &apos;this&apos; argument of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy {3} in &apos;{1}&apos;. The implicit &apos;this&apos; argument of method &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2086 {
             get {
@@ -241,7 +250,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{1}&apos;. The generic parameter &apos;{2}&apos; of &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; argument does not satisfy {4} in call to &apos;{1}&apos;. The generic parameter &apos;{2}&apos; of &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2087 {
             get {
@@ -250,7 +259,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; method return value does not satisfy {3} requirements. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2088 {
             get {
@@ -259,7 +268,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; field does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; requirements. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to value stored in field &apos;{0}&apos; does not satisfy {3} requirements. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2089 {
             get {
@@ -268,7 +277,7 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in call to &apos;{0}&apos;. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;this&apos; argument does not satisfy {3} in call to &apos;{0}&apos;. The generic parameter &apos;{1}&apos; of &apos;{2}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2090 {
             get {
@@ -277,11 +286,20 @@ namespace Mono.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy &apos;DynamicallyAccessedMembersAttribute&apos; in &apos;{1}&apos;. The generic parameter &apos;{2}&apos; of &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
+        ///   Looks up a localized string similar to &apos;{0}&apos; generic argument does not satisfy {4} in &apos;{1}&apos;. The generic parameter &apos;{2}&apos; of &apos;{3}&apos; does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to..
         /// </summary>
         internal static string IL2091 {
             get {
                 return ResourceManager.GetString("IL2091", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value passed to the &apos;{0}&apos; parameter of method &apos;{1}&apos; cannot be statically determined as a property accessor..
+        /// </summary>
+        internal static string IL2103 {
+            get {
+                return ResourceManager.GetString("IL2103", resourceCulture);
             }
         }
     }
