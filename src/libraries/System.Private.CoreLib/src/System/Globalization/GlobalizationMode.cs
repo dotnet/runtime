@@ -14,6 +14,9 @@ namespace System.Globalization
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
 
+        internal static bool PredefinedCulturesOnly { get; } =
+            GetSwitchValue("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
+
         private static bool GetSwitchValue(string switchName, string envVariable)
         {
             if (!AppContext.TryGetSwitch(switchName, out bool ret))

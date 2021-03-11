@@ -502,7 +502,7 @@ def do_pmi_diffs():
 
     # Clone jitutils
 
-    command = 'git clone -b master --single-branch %s %s' % (Jitutils_url, jitutilsPath)
+    command = 'git clone -b main --single-branch %s %s' % (Jitutils_url, jitutilsPath)
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:

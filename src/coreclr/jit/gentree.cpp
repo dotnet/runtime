@@ -6264,6 +6264,15 @@ GenTree* Compiler::gtNewOneConNode(var_types type)
     return one;
 }
 
+GenTreeLclVar* Compiler::gtNewStoreLclVar(unsigned dstLclNum, GenTree* src)
+{
+    GenTreeLclVar* store = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, src->TypeGet(), dstLclNum);
+    store->gtOp1         = src;
+    store->gtFlags       = (src->gtFlags & GTF_COMMON_MASK);
+    store->gtFlags |= GTF_VAR_DEF | GTF_ASG;
+    return store;
+}
+
 #ifdef FEATURE_SIMD
 //---------------------------------------------------------------------
 // gtNewSIMDVectorZero: create a GT_SIMD node for Vector<T>.Zero

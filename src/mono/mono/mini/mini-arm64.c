@@ -4335,6 +4335,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_fcvtzu_sx (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_I8:
+		case OP_RCONV_TO_I:
 			arm_fcvtzs_sx (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_U8:

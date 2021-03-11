@@ -4274,7 +4274,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (in_offset == bb->end)
 			bb = bb->next;
 
-		if (bb->dead) {
+		if (bb->dead || td->cbb->dead) {
 			int op_size = mono_opcode_size (td->ip, end);
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
 
@@ -7202,6 +7202,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				memcpy (td->stack, exit_bb->stack_state, exit_bb->stack_height * sizeof(td->stack [0]));
 			td->sp = td->stack + exit_bb->stack_height;
 		}
+		// If exit_bb is not reached by any other bb in this method, just mark it as dead so the
+		// method that does the inlining no longer generates code for the following IL opcodes.
+		if (exit_bb->in_count == 0)
+			exit_bb->dead = TRUE;
 	}
 
 	if (sym_seq_points) {
