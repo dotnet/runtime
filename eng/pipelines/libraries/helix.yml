@@ -22,7 +22,6 @@ steps:
             /p:TargetArchitecture=${{ parameters.archType }}
             /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
-            ${{ osOverride }}
             /p:MonoForceInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
