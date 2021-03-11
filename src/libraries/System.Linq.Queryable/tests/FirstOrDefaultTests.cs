@@ -17,6 +17,15 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void EmptyDefault()
+        {
+            int[] source = { };
+            int defaultValue = 5;
+
+            Assert.Equal(defaultValue, source.AsQueryable().FirstOrDefault(defaultValue));
+        }
+
+        [Fact]
         public void ManyElementsFirstIsDefault()
         {
             int?[] source = { null, -10, 2, 4, 3, 0, 2 };
@@ -35,6 +44,13 @@ namespace System.Linq.Tests
         {
             int[] source = { 4 };
             Assert.Equal(4, source.AsQueryable().FirstOrDefault(i => i % 2 == 0));
+        }
+
+        [Fact]
+        public void OneElementFalsePredicate()
+        {
+            int[] source = { 3 };
+            Assert.Equal(5, source.AsQueryable().FirstOrDefault(i => i % 2 == 0, 5));
         }
 
         [Fact]
