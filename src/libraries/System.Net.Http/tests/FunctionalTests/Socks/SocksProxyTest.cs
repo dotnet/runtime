@@ -56,7 +56,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                     {
                         client.DefaultRequestVersion = UseVersion;
                         handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
-                        handler.ServerCertificateCustomValidationCallback = (_1, _2, _3, _4) => true;
+                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
                         string response = await client.GetStringAsync($"https://{cert.GetNameInfo(X509NameType.SimpleName, false)}:{url.Port}/");
                         Assert.Equal("Echo", response);
