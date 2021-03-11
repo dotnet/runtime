@@ -40,7 +40,7 @@ Module [ 'channel' ] = {
 
         send_msg(msg) {
             if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
-                throw "OWNER: Invalid sync communication channel state.";
+                throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
             }
             this._send_request(msg);
             return this._read_response();
@@ -48,7 +48,7 @@ Module [ 'channel' ] = {
 
         shutdown() {
             if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
-                throw "OWNER: Invalid sync communication channel state.";
+                throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
             }
 
             // Notify webworker
