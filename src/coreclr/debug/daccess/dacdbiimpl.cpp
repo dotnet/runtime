@@ -6519,17 +6519,20 @@ HRESULT DacHeapWalker::NextSegment()
 
     do
     {
-        mCurrSeg++;
-        while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
+        do
         {
-            mCurrSeg = 0;
-            mCurrHeap++;
-
-            if (mCurrHeap >= mHeapCount)
+            mCurrSeg++;
+            while (mCurrSeg >= mHeaps[mCurrHeap].SegmentCount)
             {
-                return S_FALSE;
+                mCurrSeg = 0;
+                mCurrHeap++;
+
+                if (mCurrHeap >= mHeapCount)
+                {
+                    return S_FALSE;
+                }
             }
-        }
+        } while (mHeaps[mCurrHeap].Segments[mCurrSeg].Start >= mHeaps[mCurrHeap].Segments[mCurrSeg].End);
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
@@ -6636,6 +6639,12 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
     mCurrHeap = 0;
     mCurrSeg = 0;
 
+    HRESULT hr = S_OK;
+
+    // it's possible the first segment is empty
+    if (mCurrObj >= mHeaps[0].Segments[0].End)
+        hr = MoveToNextObject();
+
     if (!mCache.ReadMT(mCurrObj, &mCurrMT))
         return E_FAIL;
 
@@ -6643,9 +6652,9 @@ HRESULT DacHeapWalker::Reset(CORDB_ADDRESS start, CORDB_ADDRESS end)
         return E_FAIL;
 
     if (mCurrObj < mStart || mCurrObj > mEnd)
-        MoveToNextObject();
+        hr = MoveToNextObject();
 
-    return S_OK;
+    return hr;
 }
 
 HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext)
