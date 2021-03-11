@@ -262,8 +262,12 @@
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
+     <!-- these can't conditional until we've solved the linking issue
      <_WasmRuntimePackNativeLibs Include="libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
      <_WasmRuntimePackNativeLibs Include="libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+     -->
+     <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
+     <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
      <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
 
      <_WasmObjects Include="$(_WasmIntermediateOutputPath)driver.o"/>
