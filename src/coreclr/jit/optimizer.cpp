@@ -7859,11 +7859,11 @@ void Compiler::optOptimizeBoolsBbjCond(BasicBlock* b1, BasicBlock* b2, bool* cha
     BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
     if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
     {
-        edge1->setEdgeWeights(edgeSumMin, edgeSumMax);
+        edge1->setEdgeWeights(edgeSumMin, edgeSumMax, b1->bbJumpDest);
     }
     else
     {
-        edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT);
+        edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, b1->bbJumpDest);
     }
 
     /* Get rid of the second block (which is a BBJ_COND) */
@@ -8166,8 +8166,8 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", c2->OperIsLeaf() ? "" : "non-leaf ",
-               b1->bbNum, b2->bbNum);
+        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n", c2->OperIsLeaf() ? "" : "non-leaf ",
+               b1->bbNum, b2->bbNum, b3->bbNum);
         gtDispStmt(s1);
         printf("\n");
     }
