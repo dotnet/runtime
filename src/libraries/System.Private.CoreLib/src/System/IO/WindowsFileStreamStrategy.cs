@@ -95,6 +95,8 @@ namespace System.IO
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
+        internal sealed override bool IsPipe => _isPipe;
+
         internal sealed override SafeFileHandle SafeFileHandle
         {
             get

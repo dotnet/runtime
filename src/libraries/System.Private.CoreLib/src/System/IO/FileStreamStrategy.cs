@@ -17,6 +17,8 @@ namespace System.IO
 
         internal abstract bool IsClosed { get; }
 
+        internal virtual bool IsPipe => false;
+
         internal abstract void Lock(long position, long length);
 
         internal abstract void Unlock(long position, long length);
