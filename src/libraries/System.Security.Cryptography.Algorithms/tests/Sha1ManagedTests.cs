@@ -6,6 +6,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     /// <summary>
     /// Sha1Managed has a copy of the same implementation as SHA1
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
     public class Sha1ManagedTests : Sha1Tests
     {
         protected override HashAlgorithm Create()

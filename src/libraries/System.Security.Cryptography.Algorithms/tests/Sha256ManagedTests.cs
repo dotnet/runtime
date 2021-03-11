@@ -6,6 +6,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
     /// <summary>
     /// Sha256Managed has a copy of the same implementation as SHA256
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
     public class Sha256ManagedTests : Sha256Tests
     {
         protected override HashAlgorithm Create()

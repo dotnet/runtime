@@ -61,6 +61,9 @@ namespace System
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
+        public static bool IsPlatformCryptoSupported => !IsBrowser || IsBrowserDomSupported;
+        public static bool IsNotPlatformCryptoSupported => !IsPlatformCryptoSupported;
+
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported

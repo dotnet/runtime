@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsPlatformCryptoSupported))]
     public class Sha256Tests : HashAlgorithmTest
     {
         protected override HashAlgorithm Create()
