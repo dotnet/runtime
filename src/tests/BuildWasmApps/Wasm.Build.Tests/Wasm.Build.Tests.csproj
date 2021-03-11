@@ -8,6 +8,7 @@
     <TestFramework>xunit</TestFramework>
     <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
 
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />

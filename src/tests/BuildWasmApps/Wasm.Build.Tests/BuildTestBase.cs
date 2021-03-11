@@ -120,8 +120,10 @@ namespace Wasm.Build.Tests
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot)
             => new IEnumerable<object?>[]
                 {
+#if TEST_DEBUG_CONFIG_ALSO
                     // list of each member data - for Debug+@aot
                     new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
+#endif
 
                     // list of each member data - for Release+@aot
                     new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
@@ -412,7 +414,7 @@ namespace Wasm.Build.Tests
         // protected string GetObjDir(string targetFramework=s_targetFramework, string? baseDir=null, string config="Debug")
             // => Path.Combine(baseDir ?? _projectDir, "obj", config, targetFramework, "browser-wasm", "wasm");
 
-        protected string GetBinDir(string targetFramework=s_targetFramework, string? baseDir=null, string config="Debug")
+        protected string GetBinDir(string config, string targetFramework=s_targetFramework, string? baseDir=null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
