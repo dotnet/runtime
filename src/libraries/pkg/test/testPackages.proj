@@ -17,7 +17,7 @@
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
     <TestPackages Remove="@(SymbolsPackages)" />
     <!-- we don't build alpine or older OSX versions -->
-    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
+    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64;freebsd-x64" />
 
     <!-- no targeting pack was ever shipped for net463 -->
     <TargetFrameworksToExclude Include="net463" />
