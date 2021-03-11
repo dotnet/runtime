@@ -185,20 +185,30 @@ namespace ILCompiler
         {
             private readonly NodeFactory _factory;
             private readonly RootAdder _rootAdder;
+            private readonly DeferredTillPhaseNode _deferredPhaseNode = new DeferredTillPhaseNode(1);
 
             public RootingServiceProvider(NodeFactory factory, RootAdder rootAdder)
             {
                 _factory = factory;
                 _rootAdder = rootAdder;
+                _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
-            public void AddCompilationRoot(MethodDesc method, string reason)
+            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
                     IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
-                    _rootAdder(methodEntryPoint, reason);
+
+                    if (rootMinimalDependencies)
+                    {
+                        _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
+                    }
+                    else
+                    {
+                        _rootAdder(methodEntryPoint, reason);
+                    }
                 }
             }
         }
@@ -536,6 +546,15 @@ namespace ILCompiler
                 Action<DependencyNodeCore<NodeFactory>> compileOneMethod = (DependencyNodeCore<NodeFactory> dependency) =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
+                    if (methodCodeNodeNeedingCode == null)
+                    {
+                        if (dependency is DeferredTillPhaseNode deferredPhaseNode)
+                        {
+                            deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
+                            return;
+                        }
+                    }
+
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
 
                     if (Logger.IsVerbose)
