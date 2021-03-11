@@ -13,6 +13,7 @@
 #ifdef ENABLE_METADATA_UPDATE
 
 #include <glib.h>
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
 #include "mono/metadata/object-internals.h"
@@ -110,8 +111,9 @@ mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
 {
 	if (!mono_metadata_update_enabled (NULL))
 		return FALSE;
-	/* FIXME: check the debugger bits on the MonoAssembly of the caller and callee */
-	return TRUE;
+	MonoAssembly *caller_assm = m_class_get_image(caller->klass)->assembly;
+	MonoAssembly *callee_assm = m_class_get_image(callee->klass)->assembly;
+	return mono_assembly_is_jit_optimizer_disabled (caller_assm) || mono_assembly_is_jit_optimizer_disabled (callee_assm);
 }
 
 static void
