@@ -1366,8 +1366,8 @@ namespace System.ComponentModel
     {
         internal TypeDescriptor() { }
         [System.ObsoleteAttribute("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] set { } }
-        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")] get { throw null; } }
+        public static System.ComponentModel.IComNativeDescriptorHandler ComNativeDescriptorHandler { get { throw null; } set { } }
+        public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler Refreshed { add { } remove { } }

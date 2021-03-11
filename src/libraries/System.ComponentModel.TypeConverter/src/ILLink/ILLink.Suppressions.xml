@@ -109,11 +109,5 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.ReflectPropertyDescriptor.FillAttributes(System.Collections.IList)</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.TypeDescriptor.NodeFor(System.Object,System.Boolean)</property>
-    </attribute>
   </assembly>
 </linker>

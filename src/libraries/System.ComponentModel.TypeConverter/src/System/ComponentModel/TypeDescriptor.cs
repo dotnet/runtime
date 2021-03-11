@@ -10,11 +10,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Threading;
 
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Justification = "All usages of TypeDescriptorComObject are marked with RequiresUnreferencedCode.",
-    Scope = "type",
-    Target = "T:System.ComponentModel.TypeDescriptor.TypeDescriptorComObject")]
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -2383,7 +2378,6 @@ namespace System.ComponentModel
         public static Type ComObjectType
         {
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            [RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")]
             get => typeof(TypeDescriptorComObject);
         }
 
@@ -2429,7 +2423,6 @@ namespace System.ComponentModel
         [Obsolete("This property has been deprecated. Use a type description provider to supply type information for COM types instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IComNativeDescriptorHandler ComNativeDescriptorHandler
         {
-            [RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")]
             get
             {
                 TypeDescriptionNode typeDescriptionNode = NodeFor(ComObjectType);
@@ -2442,7 +2435,6 @@ namespace System.ComponentModel
                 while (typeDescriptionNode != null && comNativeDescriptionProvider == null);
                 return comNativeDescriptionProvider?.Handler;
             }
-            [RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")]
             set
             {
                 TypeDescriptionNode typeDescriptionNode = NodeFor(ComObjectType);
@@ -2458,7 +2450,6 @@ namespace System.ComponentModel
                 ((ComNativeDescriptionProvider)typeDescriptionNode.Provider).Handler = value;
             }
         }
-
 
         /// <summary>
         /// The RemoveAssociation method removes an association with an object.
@@ -2935,11 +2926,11 @@ namespace System.ComponentModel
         {
             private readonly TypeDescriptionProvider _comNativeDescriptor;
 
-            [RequiresUnreferencedCode("System.Windows.Forms assembly might not be available")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                Justification = "The trimmer can't find the ComNativeDescriptor type because System.Windows.Forms isn't available.")]
             public ComNativeDescriptorProxy()
             {
-                Assembly assembly = Assembly.Load("System.Windows.Forms");
-                Type realComNativeDescriptor = assembly.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor", throwOnError: true);
+                Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true);
                 _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor);
             }
 
