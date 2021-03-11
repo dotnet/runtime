@@ -107,7 +107,6 @@ namespace System
 
         private static unsafe string? GetAlternativeId(string id)
         {
-            char* buffer = stackalloc char[100];
             if (!GlobalizationMode.Invariant && !GlobalizationMode.UseNls)
             {
                 foreach (char c in id)
@@ -120,6 +119,7 @@ namespace System
                     }
                 }
 
+                char* buffer = stackalloc char[100];
                 int length = Interop.Globalization.IanaIdToWindowsId(id, buffer, 100);
                 if (length > 0)
                 {

@@ -166,7 +166,6 @@ namespace System
 
         private static unsafe string? GetAlternativeId(string id)
         {
-            char* buffer = stackalloc char[100];
             if (!GlobalizationMode.Invariant)
             {
                 if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
@@ -183,6 +182,8 @@ namespace System
                         return null;
                     }
                 }
+
+                char* buffer = stackalloc char[100];
                 int length = Interop.Globalization.WindowsIdToIanaId(id, buffer, 100);
                 if (length > 0)
                 {
