@@ -135,6 +135,18 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Adds a delegate for configuring the host settings. This can be called multiple times and
+        /// the results will be additive.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configure">The delegate for configuring the <see cref="HostOptions"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostOptions> configure)
+        {
+            return hostBuilder.ConfigureHostOptions((context, options) => configure(options));
+        }
+
+        /// <summary>
         /// Listens for Ctrl+C or SIGTERM and calls <see cref="IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
         /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
         /// </summary>
