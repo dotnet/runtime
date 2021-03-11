@@ -6,7 +6,7 @@ trigger:
   batch: false
   branches:
     include:
-    - master
+    - main
   paths:
     include:
     - src/coreclr/inc/jiteeversionguid.h
@@ -20,7 +20,7 @@ schedules:
   displayName: Sun at 9:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -152,7 +152,6 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

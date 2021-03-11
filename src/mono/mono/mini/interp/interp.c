@@ -450,7 +450,7 @@ mono_interp_error_cleanup (MonoError* error)
 }
 
 static InterpMethod*
-lookup_imethod (MonoDomain *domain, MonoMethod *method)
+lookup_imethod (MonoMethod *method)
 {
 	InterpMethod *imethod;
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
@@ -463,7 +463,7 @@ lookup_imethod (MonoDomain *domain, MonoMethod *method)
 }
 
 InterpMethod*
-mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error)
+mono_interp_get_imethod (MonoMethod *method, MonoError *error)
 {
 	InterpMethod *imethod;
 	MonoMethodSignature *sig;
@@ -482,7 +482,6 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 
 	imethod = (InterpMethod*)m_method_alloc0 (method, sizeof (InterpMethod));
 	imethod->method = method;
-	imethod->domain = domain;
 	imethod->param_count = sig->param_count;
 	imethod->hasthis = sig->hasthis;
 	imethod->vararg = sig->call_convention == MONO_CALL_VARARG;
@@ -577,13 +576,12 @@ static InterpMethod*
 get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 {
 	MonoMethod *m = imethod->method;
-	MonoDomain *domain = imethod->domain;
 	InterpMethod *ret = NULL;
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ERROR_DECL (error);
-			ret = mono_interp_get_imethod (domain, mono_marshal_get_synchronized_wrapper (m), error);
+			ret = mono_interp_get_imethod (mono_marshal_get_synchronized_wrapper (m), error);
 			mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 		} else {
 			ret = imethod;
@@ -625,7 +623,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	}
 
 	ERROR_DECL (error);
-	InterpMethod *virtual_imethod = mono_interp_get_imethod (domain, virtual_method, error);
+	InterpMethod *virtual_imethod = mono_interp_get_imethod (virtual_method, error);
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 	return virtual_imethod;
 }
@@ -1024,7 +1022,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	} while (0)
 
 static MonoObject*
-ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackval *values, MonoError *error)
+ves_array_create (MonoClass *klass, int param_count, stackval *values, MonoError *error)
 {
 	int rank = m_class_get_rank (klass);
 	uintptr_t *lengths = g_newa (uintptr_t, rank * 2);
@@ -1590,7 +1588,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 		del->interp_method = (InterpMethod *)del->method_ptr;
 	} else if (del->method) {
 		/* Delegate created dynamically */
-		del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+		del->interp_method = mono_interp_get_imethod (del->method, error);
 	} else {
 		/* Created from JITted code */
 		g_assert_not_reached ();
@@ -1615,7 +1613,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 			 * FIXME We should do this later, when we also know the delegate on which the
 			 * target method is called.
 			 */
-			del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (method, NULL), error);
+			del->interp_method = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (method, NULL), error);
 			mono_error_assert_ok (error);
 		}
 	}
@@ -1822,8 +1820,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	if (exc)
 		*exc = NULL;
 
-	MonoDomain *domain = mono_domain_get ();
-
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
 	MonoMethod *invoke_wrapper = mono_marshal_get_runtime_invoke_full (target_method, FALSE, TRUE);
@@ -1838,7 +1834,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	sp [2].data.p = exc;
 	sp [3].data.p = target_method;
 
-	InterpMethod *imethod = mono_interp_get_imethod (domain, invoke_wrapper, error);
+	InterpMethod *imethod = mono_interp_get_imethod (invoke_wrapper, error);
 	mono_error_assert_ok (error);
 
 	InterpFrame frame = {0};
@@ -2683,13 +2679,12 @@ no_llvmonly_interp_method_pointer (void)
 static MonoFtnDesc*
 interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
 	gpointer addr, entry_func, entry_wrapper;
 	MonoMethodSignature *sig;
 	MonoMethod *wrapper;
 	InterpMethod *imethod;
 
-	imethod = mono_interp_get_imethod (domain, method, error);
+	imethod = mono_interp_get_imethod (method, error);
 	return_val_if_nok (error, NULL);
 
 	if (unbox) {
@@ -2740,9 +2735,9 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	gpointer entry_arg = imethod;
 	if (unbox)
 		entry_arg = (gpointer)(((gsize)entry_arg) | 1);
-	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (mono_domain_get (), entry_func, entry_arg);
+	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (method, entry_func, entry_arg);
 
-	addr = mini_llvmonly_create_ftndesc (mono_domain_get (), entry_wrapper, entry_ftndesc);
+	addr = mini_llvmonly_create_ftndesc (method, entry_wrapper, entry_ftndesc);
 
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
@@ -2771,8 +2766,7 @@ static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 	gpointer addr, entry_func, entry_wrapper = NULL;
-	MonoDomain *domain = mono_domain_get ();
-	InterpMethod *imethod = mono_interp_get_imethod (domain, method, error);
+	InterpMethod *imethod = mono_interp_get_imethod (method, error);
 
 	if (imethod->jit_entry)
 		return imethod->jit_entry;
@@ -2917,7 +2911,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 }
 
 static void
-interp_free_method (MonoDomain *domain, MonoMethod *method)
+interp_free_method (MonoMethod *method)
 {
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 
@@ -2995,7 +2989,7 @@ mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature*
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 
-	InterpMethod *cmethod = mono_interp_get_imethod (imethod->domain, m, error);
+	InterpMethod *cmethod = mono_interp_get_imethod (m, error);
 	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 
 	return cmethod;
@@ -3173,7 +3167,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	}
 
 #ifdef ENABLE_EXPERIMENT_TIERED
-	mini_tiered_inc (frame->imethod->domain, frame->imethod->method, &frame->imethod->tiered_counter, 0);
+	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
 #endif
 	//g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
 
@@ -3324,14 +3318,14 @@ main_loop:
 				if (is_multicast) {
 					error_init_reuse (error);
 					MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
-					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
+					del_imethod = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (invoke, del), error);
 					del->interp_invoke_impl = del_imethod;
 					mono_error_assert_ok (error);
 				} else if (!del->interp_method) {
 					// Not created from interpreted code
 					error_init_reuse (error);
 					g_assert (del->method);
-					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+					del_imethod = mono_interp_get_imethod (del->method, error);
 					del->interp_method = del_imethod;
 					del->interp_invoke_impl = del_imethod;
 					mono_error_assert_ok (error);
@@ -3339,7 +3333,7 @@ main_loop:
 					del_imethod = (InterpMethod*)del->interp_method;
 					if (del_imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 						error_init_reuse (error);
-						del_imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
+						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
 						mono_error_assert_ok (error);
 						del->interp_invoke_impl = del_imethod;
 					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target) {
@@ -3385,7 +3379,7 @@ main_loop:
 
 			cmethod = LOCAL_VAR (ip [2], InterpMethod*);
 			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				cmethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
+				cmethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
 				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			}
 
@@ -3642,7 +3636,7 @@ call:
 #ifdef ENABLE_EXPERIMENT_TIERED
 #define BACK_BRANCH_PROFILE(offset) do { \
 		if (offset < 0) \
-			mini_tiered_inc (frame->imethod->domain, frame->imethod->method, &frame->imethod->tiered_counter, 0); \
+			mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0); \
 	} while (0);
 #else
 #define BACK_BRANCH_PROFILE(offset)
@@ -4716,7 +4710,7 @@ call:
 
 			newobj_class = (MonoClass*) frame->imethod->data_items [token];
 
-			LOCAL_VAR (ip [1], MonoObject*) = ves_array_create (frame->imethod->domain, newobj_class, param_count, (stackval*)(locals + ip [1]), error);
+			LOCAL_VAR (ip [1], MonoObject*) = ves_array_create (newobj_class, param_count, (stackval*)(locals + ip [1]), error);
 			if (!is_ok (error))
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 			ip += 4;
@@ -6380,7 +6374,7 @@ call:
 		}
 		MINT_IN_CASE(MINT_LDFTN_DYNAMIC) {
 			error_init_reuse (error);
-			InterpMethod *m = mono_interp_get_imethod (mono_domain_get (), LOCAL_VAR (ip [2], MonoMethod*), error);
+			InterpMethod *m = mono_interp_get_imethod (LOCAL_VAR (ip [2], MonoMethod*), error);
 			mono_error_assert_ok (error);
 			LOCAL_VAR (ip [1], gpointer) = m;
 			ip += 3;
@@ -6535,7 +6529,7 @@ call:
 				/* Not created from interpreted code */
 				error_init_reuse (error);
 				g_assert (del->method);
-				del->interp_method = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+				del->interp_method = mono_interp_get_imethod (del->method, error);
 				mono_error_assert_ok (error);
 			}
 			g_assert (del->interp_method);
@@ -6952,7 +6946,6 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 		return FALSE;
 
 	MonoMethod *method = iframe->imethod->method;
-	frame->domain = iframe->imethod->domain;
 	frame->interp_frame = iframe;
 	frame->method = method;
 	frame->actual_method = method;
@@ -6979,7 +6972,7 @@ interp_find_jit_info (MonoMethod *method)
 {
 	InterpMethod* imethod;
 
-	imethod = lookup_imethod (mono_get_root_domain (), method);
+	imethod = lookup_imethod (method);
 	if (imethod)
 		return imethod->jinfo;
 	else
@@ -7173,7 +7166,6 @@ imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 static void
 interp_print_method_counts (void)
 {
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 
 	jit_mm_lock (jit_mm);
@@ -7206,13 +7198,13 @@ invalidate_transform (gpointer imethod_)
 }
 
 static void
-copy_imethod_for_frame (MonoDomain *domain, InterpFrame *frame)
+copy_imethod_for_frame (InterpFrame *frame)
 {
-	InterpMethod *copy = (InterpMethod *) mono_domain_alloc0 (domain, sizeof (InterpMethod));
+	InterpMethod *copy = (InterpMethod *) m_method_alloc0 (frame->imethod->method, sizeof (InterpMethod));
 	memcpy (copy, frame->imethod, sizeof (InterpMethod));
 	copy->next_jit_code_hash = NULL; /* we don't want that in our copy */
 	frame->imethod = copy;
-	/* Note: The copy will be around until the domain is unloading. Ideally we
+	/* Note: The copy will be around until the method is unloaded. Ideally we
 	 * would reclaim its memory when the corresponding InterpFrame is popped.
 	 */
 }
@@ -7230,7 +7222,7 @@ metadata_update_backup_frames (MonoDomain *domain, MonoThreadInfo *info, InterpF
 {
 	while (frame) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, copy imethod for method=%s", info, mono_method_full_name (frame->imethod->method, 1));
-		copy_imethod_for_frame (domain, frame);
+		copy_imethod_for_frame (frame);
 		frame = frame->parent;
 	}
 }
@@ -7274,13 +7266,13 @@ metadata_update_prepare_to_invalidate (MonoDomain *domain)
 
 
 static void
-interp_invalidate_transformed (MonoDomain *domain)
+interp_invalidate_transformed (void)
 {
 	gboolean need_stw_restart = FALSE;
 #ifdef ENABLE_METADATA_UPDATE
 	need_stw_restart = TRUE;
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
-	metadata_update_prepare_to_invalidate (domain);
+	metadata_update_prepare_to_invalidate (mono_get_root_domain ());
 #endif
 
 	// FIXME: Enumerate all memory managers

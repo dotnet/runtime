@@ -3999,8 +3999,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				LLVMValueRef tramp_var = (LLVMValueRef)g_hash_table_lookup (ctx->jit_callees, call->method);
 				if (!tramp_var) {
 					target =
-						mono_create_jit_trampoline (mono_domain_get (),
-													call->method, error);
+						mono_create_jit_trampoline (call->method, error);
 					if (!is_ok (error)) {
 						set_failure (ctx, mono_error_get_message (error));
 						mono_error_cleanup (error);
@@ -5228,7 +5227,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					/* The return type is an LLVM aggregate type, so a bare bitcast cannot be used to do this conversion. */
 					int width = mono_type_size (sig->ret, NULL);
 					int elems = width / TARGET_SIZEOF_VOID_P;
-					LLVMValueRef val = LLVMBuildBitCast (builder, values [ins->sreg1], LLVMVectorType (IntPtrType (), elems), "");
+					/* The return value might not be set if there is a throw */
+					LLVMValueRef val = lhs ? LLVMBuildBitCast (builder, lhs, LLVMVectorType (IntPtrType (), elems), "") : LLVMConstNull (LLVMVectorType (IntPtrType (), elems));
 					for (int i = 0; i < elems; ++i) {
 						LLVMValueRef element = LLVMBuildExtractElement (builder, val, const_int32 (i), "");
 						retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");

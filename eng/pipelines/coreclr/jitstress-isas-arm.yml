@@ -5,7 +5,7 @@ schedules:
   displayName: Sat at 11:00 AM (UTC-8:00)
   branches:
     include:
-    - master
+    - main
   always: true
 
 jobs:
@@ -16,6 +16,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_arm64
+    - OSX_arm64
     - windows_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
@@ -37,6 +38,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_arm64
+    - OSX_arm64
     - windows_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

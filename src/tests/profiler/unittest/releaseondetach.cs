@@ -13,35 +13,13 @@ namespace Profiler.Tests
 
     class ReleaseOnShutdown
     {
-        static readonly Guid ReleaseOnShutdownGuid = new Guid("B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E");
+        private static readonly Guid ReleaseOnShutdownGuid = new Guid("B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E");
 
-        static volatile bool _profilerDone = false;
+        private static ManualResetEvent _profilerDone; 
 
         [DllImport("Profiler")]
-        private static extern void PassBoolToProfiler(IntPtr boolPtr);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void WasteTime()
-        {
-            // Give time for the profiler to detach
-            Console.WriteLine("Waiting for profiler to detach...");
-            bool profilerSetFlag = false;
-            for (int i = 0; i < 100_000; ++i)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(1));
-                if (_profilerDone)
-                {
-                    profilerSetFlag = true;
-                    break;
-                }
-            }
-
-            if (!profilerSetFlag)
-            {
-                Console.WriteLine("Warning: test will fail because the profiler never had its destructor called.");
-            }
-        }
-
+        private static extern void PassCallbackToProfiler(ProfilerCallback callback);
+        
         public unsafe static int RunTest(string[] args)
         {
             string profilerName;
@@ -61,18 +39,14 @@ namespace Profiler.Tests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
+            _profilerDone = new ManualResetEvent(false);
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 
-            // This warning is that the pointer to the volatile bool won't be treated as volatile,
-            // but that's ok. The loop aboive in WastTime is what needs to read it as volatile.
-            // The native part just sets it.
-            #pragma warning disable CS0420
-            fixed (bool *boolPtr = &_profilerDone)
+            PassCallbackToProfiler(() => _profilerDone.Set());
+            if (!_profilerDone.WaitOne(TimeSpan.FromMinutes(5)))
             {
-                PassBoolToProfiler(new IntPtr(boolPtr));
-
-                WasteTime();
+                Console.WriteLine("Profiler did not set the callback, test will fail.");
             }
 
             return 100;

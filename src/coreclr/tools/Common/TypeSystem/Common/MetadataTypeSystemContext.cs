@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -44,6 +45,8 @@ namespace Internal.TypeSystem
             "TypedReference",
             "ByReference`1",
         };
+
+        public static IEnumerable<string> WellKnownTypeNames => s_wellKnownTypeNames;
 
         private MetadataType[] _wellKnownTypes;
 

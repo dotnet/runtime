@@ -220,12 +220,12 @@
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="SetCommonILLinkArgs">
     <PropertyGroup>
-      <!-- default action for core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
-      <!-- default action for non-core assemblies -->
-      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- default action for assemblies with IsTrimmable attribute -->
+      <ILLinkArgs>$(ILLinkArgs) --trim-mode skip</ILLinkArgs>
+      <!-- default action for assemblies without IsTrimmable attribute -->
+      <ILLinkArgs>$(ILLinkArgs) --action skip</ILLinkArgs>
       <!-- trim the target assembly -->
-      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
+      <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- pass the non-embedded root xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkTrimXmlLibraryBuild)' != ''">$(ILLinkArgs) -x "$(ILLinkTrimXmlLibraryBuild)"</ILLinkArgs>

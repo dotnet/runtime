@@ -15,7 +15,7 @@ using Internal.Win32.SafeHandles;
 // A minimal version of RegistryKey that supports just what CoreLib needs.
 //
 // Internal.Win32 namespace avoids confusion with the public standalone Microsoft.Win32.Registry implementation
-// that lives in https://github.com/dotnet/runtime/tree/master/src/libraries/Microsoft.Win32.Registry
+// that lives in https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.Win32.Registry
 //
 namespace Internal.Win32
 {

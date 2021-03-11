@@ -6841,7 +6841,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  */
 
 SeqPointInfo *
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	SeqPointInfo *info;
 	MonoJitInfo *ji;

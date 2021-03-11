@@ -85,7 +85,7 @@ stub_metadata_update_init (MonoError *error)
 }
 
 static void
-stub_invalidate_transformed (MonoDomain *domain)
+stub_invalidate_transformed (void)
 {
 }
 
@@ -147,7 +147,7 @@ stub_create_method_pointer_llvmonly (MonoMethod *method, gboolean compile, MonoE
 }
 
 static void
-stub_free_method (MonoDomain *domain, MonoMethod *method)
+stub_free_method (MonoMethod *method)
 {
 	g_assert_not_reached ();
 }

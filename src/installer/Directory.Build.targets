@@ -1,5 +1,10 @@
 <Project>
 
+  <PropertyGroup>
+    <InstallerName Condition="'$(PgoInstrument)' != ''">$(InstallerName)-pgo</InstallerName>
+    <ArchiveName Condition="'$(PgoInstrument)' != ''">$(ArchiveName)-pgo</ArchiveName>
+  </PropertyGroup>
+
   <!--
     Import stubs for compatibility with packaging tools, if not building a pkgproj. Ordinarily,
     listing this before the ../Directory.Build.targets import would be sufficient, but the packaging

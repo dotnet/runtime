@@ -17,7 +17,7 @@ jobs:
       runtimeFlavorDisplayName: 'CoreCLR'
     ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
       runtimeFlavorDisplayName: 'Mono'
-    
+
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
@@ -26,7 +26,7 @@ jobs:
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
-      # warnings and errors into our build timelines that make it hard to track down 
+      # warnings and errors into our build timelines that make it hard to track down
       # real errors in the build
       - name: skipComponentGovernanceDetection
         value: true
@@ -90,7 +90,7 @@ jobs:
           value: Mono
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
-      
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 

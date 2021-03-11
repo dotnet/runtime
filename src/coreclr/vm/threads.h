@@ -4304,25 +4304,7 @@ public:
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
-private:
-    BOOL m_fCompletionPortDrained;
 public:
-    void MarkCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockExchange ((LONG*)&m_fCompletionPortDrained, TRUE);
-    }
-    void UnmarkCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockExchange ((LONG*)&m_fCompletionPortDrained, FALSE);
-    }
-    BOOL IsCompletionPortDrained()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_fCompletionPortDrained;
-    }
-
     static BOOL CheckThreadStackSize(SIZE_T *SizeToCommitOrReserve,
                                       BOOL   isSizeToReserve  // When TRUE, the previous argument is the stack size to reserve.
                                                               // Otherwise, it is the size to commit.

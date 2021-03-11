@@ -55,67 +55,83 @@ namespace System.Linq
             {
                 return startIndex >= endIndex
                     ? Empty<TSource>()
-                    : source.Skip(startIndex).Take(endIndex - startIndex);
+                    : TakeRangeIterator(source, startIndex, endIndex);
             }
 
-            return TakeIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
+            return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
         }
 
-        private static IEnumerable<TSource> TakeIterator<TSource>(
-            IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
+        private static IEnumerable<TSource> TakeRangeFromEndIterator<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
         {
             Debug.Assert(source != null);
+            Debug.Assert(isStartIndexFromEnd || isEndIndexFromEnd);
             Debug.Assert(isStartIndexFromEnd
                 ? startIndex > 0 && (!isEndIndexFromEnd || startIndex > endIndex)
                 : startIndex >= 0 && (isEndIndexFromEnd || startIndex < endIndex));
-            Debug.Assert(endIndex >= 0);
 
-            using IEnumerator<TSource> e = source.GetEnumerator();
+            // Attempt to extract the count of the source enumerator,
+            // in order to convert fromEnd indices to regular indices.
+            // Enumerable counts can change over time, so it is very
+            // important that this check happens at enumeration time;
+            // do not move it outside of the iterator method.
+            if (source.TryGetNonEnumeratedCount(out int count))
+            {
+                startIndex = CalculateStartIndex(isStartIndexFromEnd, startIndex, count);
+                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
+
+                if (startIndex < endIndex)
+                {
+                    foreach (TSource element in TakeRangeIterator(source, startIndex, endIndex))
+                    {
+                        yield return element;
+                    }
+                }
+
+                yield break;
+            }
+
+            Queue<TSource> queue;
+
             if (isStartIndexFromEnd)
             {
-                if (!e.MoveNext())
+                // TakeLast compat: enumerator should be disposed before yielding the first element.
+                using (IEnumerator<TSource> e = source.GetEnumerator())
                 {
-                    yield break;
-                }
-
-                int index = 0;
-                Queue<TSource> queue = new();
-                queue.Enqueue(e.Current);
-
-                while (e.MoveNext())
-                {
-                    checked
+                    if (!e.MoveNext())
                     {
-                        index++;
+                        yield break;
                     }
 
-                    if (queue.Count == startIndex)
-                    {
-                        queue.Dequeue();
-                    }
-
+                    queue = new Queue<TSource>();
                     queue.Enqueue(e.Current);
+                    count = 1;
+
+                    while (e.MoveNext())
+                    {
+                        if (count < startIndex)
+                        {
+                            queue.Enqueue(e.Current);
+                            ++count;
+                        }
+                        else
+                        {
+                            do
+                            {
+                                queue.Dequeue();
+                                queue.Enqueue(e.Current);
+                                checked { ++count; }
+                            } while (e.MoveNext());
+                            break;
+                        }
+                    }
+
+                    Debug.Assert(queue.Count == Math.Min(count, startIndex));
                 }
 
-                int count = checked(index + 1);
-                Debug.Assert(queue.Count == Math.Min(count, startIndex));
-
-                startIndex = count - startIndex;
-                if (startIndex < 0)
-                {
-                    startIndex = 0;
-                }
-
-                if (isEndIndexFromEnd)
-                {
-                    endIndex = count - endIndex;
-                }
-                else if (endIndex > count)
-                {
-                    endIndex = count;
-                }
-
+                startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
+                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
                 Debug.Assert(endIndex - startIndex <= queue.Count);
+
                 for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
                 {
                     yield return queue.Dequeue();
@@ -123,53 +139,45 @@ namespace System.Linq
             }
             else
             {
-                int index = 0;
-                while (index <= startIndex)
-                {
-                    if (!e.MoveNext())
-                    {
-                        yield break;
-                    }
+                Debug.Assert(!isStartIndexFromEnd && isEndIndexFromEnd);
 
-                    checked
-                    {
-                        index++;
-                    }
+                // SkipLast compat: the enumerator should be disposed at the end of the enumeration.
+                using IEnumerator<TSource> e = source.GetEnumerator();
+
+                count = 0;
+                while (count < startIndex && e.MoveNext())
+                {
+                    ++count;
                 }
 
-                if (isEndIndexFromEnd)
+                if (count == startIndex)
                 {
-                    if (endIndex > 0)
+                    queue = new Queue<TSource>();
+                    while (e.MoveNext())
                     {
-                        Queue<TSource> queue = new();
-                        do
+                        if (queue.Count == endIndex)
                         {
-                            if (queue.Count == endIndex)
+                            do
                             {
+                                queue.Enqueue(e.Current);
                                 yield return queue.Dequeue();
-                            }
+                            } while (e.MoveNext());
 
-                            queue.Enqueue(e.Current);
-                        } while (e.MoveNext());
-                    }
-                    else
-                    {
-                        do
+                            break;
+                        }
+                        else
                         {
-                            yield return e.Current;
-                        } while (e.MoveNext());
-                    }
-                }
-                else
-                {
-                    Debug.Assert(index < endIndex);
-                    yield return e.Current;
-                    while (checked(++index) < endIndex && e.MoveNext())
-                    {
-                        yield return e.Current;
+                            queue.Enqueue(e.Current);
+                        }
                     }
                 }
             }
+
+            static int CalculateStartIndex(bool isStartIndexFromEnd, int startIndex, int count) =>
+                Math.Max(0, isStartIndexFromEnd ? count - startIndex : startIndex);
+
+            static int CalculateEndIndex(bool isEndIndexFromEnd, int endIndex, int count) =>
+                Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
@@ -243,50 +251,9 @@ namespace System.Linq
 
             return count <= 0 ?
                 Empty<TSource>() :
-                TakeLastIterator(source, count);
-        }
-
-        private static IEnumerable<TSource> TakeLastIterator<TSource>(IEnumerable<TSource> source, int count)
-        {
-            Debug.Assert(source != null);
-            Debug.Assert(count > 0);
-
-            Queue<TSource> queue;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    yield break;
-                }
-
-                queue = new Queue<TSource>();
-                queue.Enqueue(e.Current);
-
-                while (e.MoveNext())
-                {
-                    if (queue.Count < count)
-                    {
-                        queue.Enqueue(e.Current);
-                    }
-                    else
-                    {
-                        do
-                        {
-                            queue.Dequeue();
-                            queue.Enqueue(e.Current);
-                        }
-                        while (e.MoveNext());
-                        break;
-                    }
-                }
-            }
-
-            Debug.Assert(queue.Count <= count);
-            do
-            {
-                yield return queue.Dequeue();
-            }
-            while (queue.Count > 0);
+                TakeRangeFromEndIterator(source,
+                    isStartIndexFromEnd: true, startIndex: count,
+                    isEndIndexFromEnd: true, endIndex: 0);
         }
     }
 }

@@ -99,7 +99,6 @@ typedef enum {
 
 /* 
  * Structure representing a method transformed for the interpreter 
- * This is domain specific
  */
 typedef struct InterpMethod InterpMethod;
 struct InterpMethod {
@@ -125,7 +124,6 @@ struct InterpMethod {
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
-	MonoDomain *domain;
 
 	// This doesn't include the size of stack locals
 	guint32 total_locals_size;
@@ -263,7 +261,7 @@ void
 mono_interp_transform_init (void);
 
 InterpMethod *
-mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error);
+mono_interp_get_imethod (MonoMethod *method, MonoError *error);
 
 void
 mono_interp_print_code (InterpMethod *imethod);

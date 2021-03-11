@@ -16,7 +16,7 @@
     <MacOSBundleIdentifierName>com.microsoft.dotnet.Microsoft.NETCore.App.$(ProductVersion).osx.$(TargetArchitecture)</MacOSBundleIdentifierName>
     <MacOSBundleResourcesPath>osx_resources</MacOSBundleResourcesPath>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
