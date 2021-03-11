@@ -873,7 +873,7 @@ namespace System.Diagnostics
             Array.Sort(keys, StringComparer.OrdinalIgnoreCase);
 
             // Join the null-terminated "key=val\0" strings
-            var result = new StringBuilder();
+            var result = new StringBuilder(8 * keys.Length);
             foreach (string key in keys)
             {
                 result.Append(key).Append('=').Append(sd[key]).Append('\0');
