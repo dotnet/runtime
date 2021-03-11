@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -192,8 +193,7 @@ namespace System.Net.Http
                     addressLength = hostLength + 1;
                 }
 
-                buffer[addressLength + 4] = (byte)(port >> 8);
-                buffer[addressLength + 5] = (byte)port;
+                BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(addressLength + 4), (ushort)port);
 
                 await WriteAsync(stream, buffer.AsMemory(0, addressLength + 6), async).ConfigureAwait(false);
 
@@ -240,8 +240,7 @@ namespace System.Net.Http
                 buffer[0] = ProtocolVersion4;
                 buffer[1] = CMD_CONNECT;
 
-                buffer[2] = (byte)(port >> 8);
-                buffer[3] = (byte)port;
+                BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(2), (ushort)port);
 
                 IPAddress? ipv4Address = null;
                 if (IPAddress.TryParse(host, out var hostIP))
