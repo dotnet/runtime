@@ -20,6 +20,7 @@ MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
 NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
+SYSTEM_CRYPTO_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/AnyOS/System.Security.Cryptography.Native.Browser
 ENABLE_ES6?=false
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
 ENABLE_METADATA_UPDATE?=false
@@ -60,6 +61,7 @@ MONO_LIBS = \
 	$(MONO_BIN_DIR)/libmono-profiler-aot.a \
 	${NATIVE_BIN_DIR}/libSystem.Native.a \
 	${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a \
+	${NATIVE_BIN_DIR}/libSystem.Security.Cryptography.Native.Browser.a \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
@@ -71,7 +73,7 @@ ifeq ($(ENABLE_METADATA_UPDATE),true)
     EMCC_FLAGS+=-DENABLE_METADATA_UPDATE=1
 endif
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
+EMCC_DEBUG_FLAGS =-g4 -Os -s ASSERTIONS=1 -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz --llvm-opts 2
 
 ifeq ($(NOSTRIP),)
@@ -101,8 +103,8 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js runtime/library_channel.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) | $(NATIVE_BIN_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --post-js runtime/library_channel.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
+$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js runtime/library_channel.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js $(2) | $(NATIVE_BIN_DIR)
+	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --post-js runtime/library_channel.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js --js-library $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
@@ -144,7 +146,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN_DIR)/include/wasm

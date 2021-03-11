@@ -23,7 +23,7 @@ var ChannelWorker = {
         }
 
         async await_request(async_call) {
-            console.log("await_request()");
+            // console.log("await_request()");
 
             for (;;) {
                 // Wait for signal to perform operation
@@ -31,10 +31,16 @@ var ChannelWorker = {
 
                 // Read in request
                 var req = this._read_request();
-                console.log("Request: " + req);
+                // console.log("Request: " + req);
 
-                // Perform async action based on request
-                var resp = await async_call(req);
+                var resp = null;
+                try {
+                    // Perform async action based on request
+                    resp = await async_call(req);
+                }
+                catch (err) {
+                    resp = JSON.stringify(err);
+                }
 
                 // Send response
                 this._send_response(resp);
@@ -117,32 +123,37 @@ var ChannelWorker = {
     }
 };
 
-//
-// [TODO] Handle crypto calls that uses Promises below.
-//
+async function sha_hash(type, data) {
+    var sha_type = "";
+    switch(type) {
+        case 0: sha_type = "SHA-1"; break;
+        case 1: sha_type = "SHA-256"; break;
+        case 2: sha_type = "SHA-384"; break;
+        case 3: sha_type = "SHA-512"; break;
+        default:
+            throw "CRYPTO: Unknown SHA: " + type;
+    }
+
+    var digest = await crypto.subtle.digest(sha_type, data);
+    return Array.from(new Uint8Array(digest));
+}
 
 // Operation to perform.
 async function async_call(msg) {
-    var keyPair = await self.crypto.subtle.generateKey(
-        {
-            name: "RSA-OAEP",
-            modulusLength: 2048,
-            publicExponent: new Uint8Array([1, 0, 1]),
-            hash: "SHA-256",
-        },
-        true,
-        ["encrypt", "decrypt"]
-    );
+    const req = JSON.parse(msg);
 
-    return msg.split("").reverse().join("");
+    if (req.func === "sha") {
+        var digestArr = await sha_hash(req.type, new Uint8Array(req.data));
+        return JSON.stringify(digestArr);
+    } else {
+        throw "CRYPTO: Unknown request: " + req.func;
+    }
 }
 
 var s_channel;
 
 // Initialize WebWorker
 onmessage = function (p) {
-    console.log(p.data.salutation);
     s_channel = ChannelWorker.create(p.data.comm_buf, p.data.msg_buf, p.data.msg_char_len);
-
     s_channel.await_request(async_call);
 }

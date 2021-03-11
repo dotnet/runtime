@@ -124,7 +124,6 @@ Module [ 'channel' ] = {
         _read_from_msg(begin, end) {
             return String.fromCharCode.apply(null, this.msg.slice(begin, end));
         }
-
     },
 
     create: function (msg_char_len) {
