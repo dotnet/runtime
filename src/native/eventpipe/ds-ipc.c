@@ -172,7 +172,7 @@ ipc_stream_factory_build_and_add_port (
 	}
 #else
 	if (default_port && builder->type == DS_PORT_TYPE_LISTEN) {
-		DS_LOG_INFO_0 ("ipc_stream_factory_build_and_add_port - Ignoring default LISTEN port");
+		DS_LOG_DEBUG_0 ("ipc_stream_factory_build_and_add_port - Ignoring default LISTEN port");
 		return true;
 	}
 #endif
