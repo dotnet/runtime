@@ -8,6 +8,7 @@ var ChannelWorker = {
         get MSG_SIZE_IDX() { return 1; }
 
         // Communication states.
+        get STATE_SHUTDOWN() { return -1; } // Shutdown
         get STATE_IDLE() { return 0; }
         get STATE_REQ() { return 1; }
         get STATE_RESP() { return 2; }
@@ -32,6 +33,8 @@ var ChannelWorker = {
                 // Read in request
                 var req = this._read_request();
                 // console.log("Request: " + req);
+                if (req === this.STATE_SHUTDOWN)
+                    break;
 
                 var resp = null;
                 try {
@@ -39,6 +42,7 @@ var ChannelWorker = {
                     resp = await async_call(req);
                 }
                 catch (err) {
+                    console.log("Request error: " + err);
                     resp = JSON.stringify(err);
                 }
 
@@ -60,6 +64,10 @@ var ChannelWorker = {
                 // The request is complete.
                 if (state === this.STATE_REQ)
                     break;
+
+                // Shutdown the worker.
+                if (state === this.STATE_SHUTDOWN)
+                    return this.STATE_SHUTDOWN;
 
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
@@ -134,6 +142,14 @@ async function sha_hash(type, data) {
             throw "CRYPTO: Unknown SHA: " + type;
     }
 
+    // [TODO] The 'crypto' API is not available within the current
+    // v8 test harness. The following were tried:
+    //      self
+    //      document
+    //      this
+    //      globalThis
+    //
+    // The below works in the browser scenario.
     var digest = await crypto.subtle.digest(sha_type, data);
     return Array.from(new Uint8Array(digest));
 }
@@ -154,6 +170,10 @@ var s_channel;
 
 // Initialize WebWorker
 onmessage = function (p) {
-    s_channel = ChannelWorker.create(p.data.comm_buf, p.data.msg_buf, p.data.msg_char_len);
+    var data = p;
+    if (p.data !== undefined) {
+        data = p.data;
+    }
+    s_channel = ChannelWorker.create(data.comm_buf, data.msg_buf, data.msg_char_len);
     s_channel.await_request(async_call);
 }

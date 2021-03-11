@@ -12,7 +12,7 @@ var CryptoWebWorkerLib = {
             var response = MONO.mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
             var digest = JSON.parse(response);
             if (digest.length !== output_len) {
-                throw "SHA HASH: Unexpected output length";
+                throw "SHA HASH: Unexpected output length: " + digest.length + ", expected: " + output_len;
             }
 
             Module.HEAPU8.set(digest, output_buffer);

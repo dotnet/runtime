@@ -104,7 +104,7 @@ $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
 $(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js runtime/library_channel.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js $(2) | $(NATIVE_BIN_DIR)
-	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --post-js runtime/library_channel.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js --js-library $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
+	$(EMCC) $(EMCC_FLAGS) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --pre-js runtime/library_channel.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js --js-library $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi

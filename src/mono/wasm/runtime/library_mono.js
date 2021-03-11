@@ -48,7 +48,7 @@
  */
 
 var MonoSupportLib = {
-	$MONO__postset: 'MONO.export_functions (Module);',
+	$MONO__postset: 'MONO.export_functions (Module); MONO._initialize_workers ();',
 	$MONO: {
 		pump_count: 0,
 		timeout_queue: [],
@@ -1707,13 +1707,20 @@ var MonoSupportLib = {
 			var chan = Module.channel.create();
 			var worker = new Worker ("crypto_worker.js");
 			worker.postMessage ({
-				salutation:"Message from main",
 				comm_buf: chan.get_comm_buffer(),
 				msg_buf: chan.get_msg_buffer(),
 				msg_char_len: chan.get_msg_len()
 			});
 			MONO.mono_wasm_crypto.channel = chan;
 			MONO.mono_wasm_crypto.worker = worker;
+		},
+
+		_shutdown_workers: function () {
+			console.debug ("MONO_WASM: WebWorkers shutdown");
+			var chan = MONO.mono_wasm_crypto.channel;
+			if (chan !== null) {
+				chan.shutdown ();
+			}
 		},
 
 		_finalize_startup: function (args, ctx) {
@@ -1753,12 +1760,11 @@ var MonoSupportLib = {
 				tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 			} catch {}
 			MONO.mono_wasm_setenv ("TZ", tz || "UTC");
-
-			// Now that the runtime has been loaded, spin off any web workers needed
-			// for ancillary operations.
-			MONO._initialize_workers ();
 			MONO.mono_wasm_runtime_ready ();
 			args.loaded_cb ();
+
+			// [TODO] Shutdown workers when run under test environment
+			// MONO._shutdown_workers();
 		},
 
 		_load_assets_and_runtime: function (args) {
