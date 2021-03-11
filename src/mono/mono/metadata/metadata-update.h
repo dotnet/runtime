@@ -57,6 +57,21 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image);
 MonoImage *
 mono_table_info_get_base_image (const MonoTableInfo *t);
 
+#else /* ENABLE_METADATA_UPDATE */
+
+static inline gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out)
+{
+        if (modifiable_assemblies_out)
+                *modifiable_assemblies_out = 0;
+        return FALSE;
+}
+
+static inline gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+        return FALSE;
+}
 
 #endif /* ENABLE_METADATA_UPDATE */
 
