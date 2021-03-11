@@ -12,7 +12,7 @@ else
 	TARGET_OS=linux
 endif
 
-MONO_ENV_OPTIONS ?=--interp=-inline
+MONO_ENV_OPTIONS = --interp
 
 publish:
 	$(DOTNET) publish -c $(CONFIG) -r $(TARGET_OS)-$(MONO_ARCH)
@@ -20,6 +20,7 @@ publish:
 run: publish
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS="$(MONO_ENV_OPTIONS)" \
+	DOTNET_MODIFIABLE_ASSEMBLIES=debug \
 	$(TOP)artifacts/bin/ConsoleDelta/$(MONO_ARCH)/$(CONFIG)/$(TARGET_OS)-$(MONO_ARCH)/publish/ConsoleDelta
 
 clean:
