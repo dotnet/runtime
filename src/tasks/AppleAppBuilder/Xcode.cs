@@ -122,21 +122,21 @@ internal class Xcode
         var defines = new StringBuilder();
         if (forceInterpreter)
         {
-            defines.Append("add_definitions(-DFORCE_INTERPRETER=1)");
+            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (forceAOT)
         {
-            defines.Append("add_definitions(-DFORCE_AOT=1)");
+            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
 
         if (invariantGlobalization)
         {
-            defines.Append("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+            defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
         }
 
         if (EnableRuntimeLogging)
         {
-            defines.Append("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+            defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
