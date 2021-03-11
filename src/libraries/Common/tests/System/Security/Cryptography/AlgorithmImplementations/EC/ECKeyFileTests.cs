@@ -33,8 +33,9 @@ namespace System.Security.Cryptography.Tests
         public static bool SupportsC2pnb163v1 { get; } = IsCurveSupported(EccTestData.C2pnb163v1Key1.Curve.Oid);
 
         // Some platforms support explicitly specifying these curves, but do not support specifying them by name.
-        public static bool SupportsSect163k1Explicit { get; } = SupportsSect163k1 || SupportsExplicitCurves;
-        public static bool SupportsC2pnb163v1Explicit { get; } = SupportsC2pnb163v1 || SupportsExplicitCurves;
+        public static bool ExplicitNamedSameSupport { get; } = !PlatformDetection.IsAndroid;
+        public static bool SupportsSect163k1Explicit { get; } = SupportsSect163k1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
+        public static bool SupportsC2pnb163v1Explicit { get; } = SupportsC2pnb163v1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
 
         private static bool IsCurveSupported(Oid oid)
         {
