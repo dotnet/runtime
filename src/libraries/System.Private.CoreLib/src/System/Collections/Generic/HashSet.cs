@@ -47,7 +47,6 @@ namespace System.Collections.Generic
         private int _freeCount;
         private int _version;
         private IEqualityComparer<T>? _comparer;
-        private SerializationInfo? _siInfo; // temporary variable needed during deserialization
 
         #region Constructors
 
@@ -137,7 +136,7 @@ namespace System.Collections.Generic
             // deserialized and we have a reasonable estimate that GetHashCode is not going to
             // fail.  For the time being, we'll just cache this.  The graph is not valid until
             // OnDeserialization has been called.
-            _siInfo = info;
+            HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
@@ -411,7 +410,8 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            if (_siInfo == null)
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
+            if (siInfo == null)
             {
                 // It might be necessary to call OnDeserialization from a container if the
                 // container object also implements OnDeserialization. We can return immediately
@@ -419,8 +419,8 @@ namespace System.Collections.Generic
                 return;
             }
 
-            int capacity = _siInfo.GetInt32(CapacityName);
-            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
+            int capacity = siInfo.GetInt32(CapacityName);
+            _comparer = (IEqualityComparer<T>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
             _freeList = -1;
             _freeCount = 0;
 
@@ -432,7 +432,7 @@ namespace System.Collections.Generic
                 _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
 #endif
 
-                T[]? array = (T[]?)_siInfo.GetValue(ElementsName, typeof(T[]));
+                T[]? array = (T[]?)siInfo.GetValue(ElementsName, typeof(T[]));
                 if (array == null)
                 {
                     ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
@@ -449,8 +449,8 @@ namespace System.Collections.Generic
                 _buckets = null;
             }
 
-            _version = _siInfo.GetInt32(VersionName);
-            _siInfo = null;
+            _version = siInfo.GetInt32(VersionName);
+            HashHelpers.SerializationInfoTable.Remove(this);
         }
 
         #endregion
