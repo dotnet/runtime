@@ -129,6 +129,9 @@ extern jclass    g_CertPathValidatorExceptionClass;
 extern jmethodID g_CertPathValidatorExceptionGetIndex;
 extern jmethodID g_CertPathValidatorExceptionGetReason;
 
+// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+extern jclass    g_CertPathExceptionBasicReasonClass;
+
 // java/security/cert/CertStore
 extern jclass    g_CertStoreClass;
 extern jmethodID g_CertStoreGetInstance;
@@ -150,6 +153,9 @@ extern jmethodID g_PKIXBuilderParametersSetTrustAnchors;
 extern jclass    g_PKIXCertPathBuilderResultClass;
 extern jmethodID g_PKIXCertPathBuilderResultGetCertPath;
 extern jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
+
+// java/security/cert/PKIXReason - only in API level 24+
+extern jclass    g_PKIXReasonClass;
 
 // java/security/cert/PKIXRevocationChecker - only in API level 24+
 extern jclass    g_PKIXRevocationCheckerClass;

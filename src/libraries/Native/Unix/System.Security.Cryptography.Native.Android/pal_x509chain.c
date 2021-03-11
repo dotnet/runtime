@@ -143,7 +143,7 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     loc[builder] =
         (*env)->CallStaticObjectMethod(env, g_CertPathBuilderClass, g_CertPathBuilderGetInstance, loc[builderType]);
     loc[result] = (*env)->CallObjectMethod(env, loc[builder], g_CertPathBuilderBuild, params);
-    if (TryGetJNIException(env, &loc[ex], true /*printException*/))
+    if (TryGetJNIException(env, &loc[ex], false /*printException*/))
     {
         (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
         goto cleanup;
@@ -232,10 +232,75 @@ int32_t AndroidCryptoNative_X509ChainGetErrorCount(X509ChainContext* ctx)
     return count;
 }
 
-static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(jobject reason)
+enum
 {
-    // TODO: [AndroidCrypto] Convert reason to chain status
-    return PAL_X509ChainNoError;
+    PKIXREASON_NAME_CHAINING,
+    PKIXREASON_INVALID_KEY_USAGE,
+    PKIXREASON_INVALID_POLICY,
+    PKIXREASON_NO_TRUST_ANCHOR,
+    PKIXREASON_UNRECOGNIZED_CRIT_EXT,
+    PKIXREASON_NOT_CA_CERT,
+    PKIXREASON_PATH_TOO_LONG,
+    PKIXREASON_INVALID_NAME,
+};
+
+enum
+{
+    BASICREASON_UNSPECIFIED,
+    BASICREASON_EXPIRED,
+    BASICREASON_NOT_YET_VALID,
+    BASICREASON_REVOKED,
+    BASICREASON_UNDETERMINED_REVOCATION_STATUS,
+    BASICREASON_INVALID_SIGNATURE,
+    BASICREASON_ALGORITHM_CONSTRAINED,
+};
+
+static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(JNIEnv* env, jobject reason)
+{
+    int value = (*env)->CallIntMethod(env, reason, g_EnumOrdinal);
+    if (g_CertPathExceptionBasicReasonClass != NULL && (*env)->IsInstanceOf(env, reason, g_CertPathExceptionBasicReasonClass))
+    {
+        switch (value)
+        {
+            case BASICREASON_UNSPECIFIED:
+                return PAL_X509ChainPartialChain;
+            case BASICREASON_EXPIRED:
+            case BASICREASON_NOT_YET_VALID:
+                return PAL_X509ChainNotTimeValid;
+            case BASICREASON_REVOKED:
+                return PAL_X509ChainRevoked;
+            case BASICREASON_UNDETERMINED_REVOCATION_STATUS:
+                return PAL_X509ChainRevocationStatusUnknown;
+            case BASICREASON_INVALID_SIGNATURE:
+                return PAL_X509ChainCtlNotSignatureValid;
+            case BASICREASON_ALGORITHM_CONSTRAINED:
+                return PAL_X509ChainPartialChain;
+        }
+    }
+    else if (g_PKIXReasonClass != NULL && (*env)->IsInstanceOf(env, reason, g_PKIXReasonClass))
+    {
+        switch (value)
+        {
+            case PKIXREASON_NAME_CHAINING:
+                return PAL_X509ChainPartialChain;
+            case PKIXREASON_INVALID_KEY_USAGE:
+                return PAL_X509ChainNotValidForUsage;
+            case PKIXREASON_INVALID_POLICY:
+                return PAL_X509ChainInvalidPolicyConstraints;
+            case PKIXREASON_NO_TRUST_ANCHOR:
+                return PAL_X509ChainPartialChain;
+            case PKIXREASON_UNRECOGNIZED_CRIT_EXT:
+                return PAL_X509ChainHasNotSupportedCriticalExtension;
+            case PKIXREASON_NOT_CA_CERT:
+                return PAL_X509ChainUntrustedRoot;
+            case PKIXREASON_PATH_TOO_LONG:
+                return PAL_X509ChainInvalidBasicConstraints;
+            case PKIXREASON_INVALID_NAME:
+                return PAL_X509ChainInvalidNameConstraints;
+        }
+    }
+
+    return PAL_X509ChainPartialChain;
 }
 
 static void PopulateValidationError(JNIEnv* env, jobject error, ValidationError* out)
@@ -250,7 +315,7 @@ static void PopulateValidationError(JNIEnv* env, jobject error, ValidationError*
         if (g_CertPathValidatorExceptionGetReason != NULL)
         {
             jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
-            chainStatus = ChainStatusFromValidatorExceptionReason(reason);
+            chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
             (*env)->DeleteLocalRef(env, reason);
         }
     }
@@ -393,15 +458,9 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
         if (AndroidCryptoNative_X509ChainSupportsRevocationOptions())
         {
             // TODO: [AndroidCrypto] Deal with revocation options
-            goto cleanup;
         }
         else
         {
-            if (revocationFlag == X509RevocationFlag_EndCertificateOnly)
-            {
-                goto cleanup;
-            }
-
             // Security.setProperty("oscp.enable", isOnline);
         }
     }
@@ -420,11 +479,12 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     loc[validatorType] = JSTRING("PKIX");
     loc[validator] = (*env)->CallStaticObjectMethod(
         env, g_CertPathValidatorClass, g_CertPathValidatorGetInstance, loc[validatorType]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
     loc[result] = (*env)->CallObjectMethod(env, loc[validator], g_CertPathValidatorValidate, certPath, params);
-    if (TryGetJNIException(env, &loc[ex], true /*printException*/))
+    if (TryGetJNIException(env, &loc[ex], false /*printException*/))
     {
         (*env)->CallBooleanMethod(env, ctx->errorList, g_ArrayListAdd, loc[ex]);
-        goto cleanup;
     }
 
     ret = SUCCESS;

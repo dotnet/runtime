@@ -155,6 +155,9 @@ jclass    g_CertPathValidatorExceptionClass;
 jmethodID g_CertPathValidatorExceptionGetIndex;
 jmethodID g_CertPathValidatorExceptionGetReason; // only in API level 24+
 
+// java/security/cert/CertPathValidatorException$BasicReason - only in API level 24+
+jclass    g_CertPathExceptionBasicReasonClass;
+
 // java/security/cert/CertStore
 jclass    g_CertStoreClass;
 jmethodID g_CertStoreGetInstance;
@@ -176,6 +179,9 @@ jmethodID g_PKIXBuilderParametersSetTrustAnchors;
 jclass    g_PKIXCertPathBuilderResultClass;
 jmethodID g_PKIXCertPathBuilderResultGetCertPath;
 jmethodID g_PKIXCertPathBuilderResultGetTrustAnchor;
+
+// java/security/cert/PKIXReason - only in API level 24+
+jclass    g_PKIXReasonClass;
 
 // java/security/cert/PKIXRevocationChecker - only in API level 24+
 jclass    g_PKIXRevocationCheckerClass;
@@ -420,14 +426,38 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
         (*env)->DeleteLocalRef(env, lref);
 }
 
+static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
+{
+    *out = NULL;
+    LOG_DEBUG("Finding %s class", name);
+    jclass klass = (*env)->FindClass (env, name);
+    if (klass == NULL)
+        return false;
+
+    *out = ToGRef(env, klass);
+    return true;
+}
+
 jclass GetClassGRef(JNIEnv *env, const char* name)
 {
-    LOG_DEBUG("Finding %s class", name);
-    jclass klass = ToGRef(env, (*env)->FindClass (env, name));
-    if (!klass) {
+    jclass klass = NULL;
+    if (!TryGetClassGRef(env, name, &klass))
+    {
         LOG_ERROR("class %s was not found", name);
-        assert(klass);
     }
+
+    assert(klass);
+    return klass;
+}
+
+static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
+{
+    jclass klass = NULL;
+    if (!TryGetClassGRef(env, name, &klass))
+    {
+        LOG_ERROR("optional class %s was not found", name);
+    }
+
     return klass;
 }
 
@@ -630,6 +660,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertPathValidatorExceptionGetIndex =  GetMethod(env, false, g_CertPathValidatorExceptionClass, "getIndex", "()I");
     g_CertPathValidatorExceptionGetReason = GetOptionalMethod(env, false, g_CertPathValidatorExceptionClass, "getReason", "()Ljava/security/cert/CertPathValidatorException$Reason;");
 
+    g_CertPathExceptionBasicReasonClass =   GetOptionalClassGRef(env, "java/security/cert/CertPathValidatorException$BasicReason");
+
     g_CertStoreClass =          GetClassGRef(env, "java/security/cert/CertStore");
     g_CertStoreGetInstance =    GetMethod(env, true, g_CertStoreClass, "getInstance", "(Ljava/lang/String;Ljava/security/cert/CertStoreParameters;)Ljava/security/cert/CertStore;");
 
@@ -647,6 +679,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_PKIXCertPathBuilderResultClass =          GetClassGRef(env, "java/security/cert/PKIXCertPathBuilderResult");
     g_PKIXCertPathBuilderResultGetCertPath =    GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getCertPath", "()Ljava/security/cert/CertPath;");
     g_PKIXCertPathBuilderResultGetTrustAnchor = GetMethod(env, false, g_PKIXCertPathBuilderResultClass, "getTrustAnchor", "()Ljava/security/cert/TrustAnchor;");
+
+    g_PKIXReasonClass =   GetOptionalClassGRef(env, "java/security/cert/PKIXReason");
 
     if (g_CertPathValidatorGetRevocationChecker != NULL)
     {

@@ -78,22 +78,23 @@ namespace Internal.Cryptography.Pal
 
                 if (!_isValid)
                 {
-                    if ((flags & X509VerificationFlags.IgnoreNotTimeValid) == X509VerificationFlags.IgnoreNotTimeValid)
+                    // There is no way to bypass time, trusted root, name, or policy constraint
+                    // validation on Android. It will not build any chain without these all
+                    // being valid.
+                    X509VerificationFlags[] unsupportedFlags = new X509VerificationFlags[]
                     {
-                        // There is no way to bypass time validation on Android.
-                        // It will not build any chain without a valid time.
-                        exception = new PlatformNotSupportedException(
-                            SR.Format(SR.Cryptography_VerificationFlagNotSupported, X509VerificationFlags.IgnoreNotTimeValid));
-                        return default(bool?);
-                    }
-
-                    if ((flags & X509VerificationFlags.AllowUnknownCertificateAuthority) == X509VerificationFlags.AllowUnknownCertificateAuthority)
+                        X509VerificationFlags.IgnoreNotTimeValid,
+                        X509VerificationFlags.AllowUnknownCertificateAuthority,
+                        X509VerificationFlags.IgnoreInvalidName,
+                        X509VerificationFlags.IgnoreInvalidPolicy,
+                    };
+                    foreach (X509VerificationFlags unsupported in unsupportedFlags)
                     {
-                        // There is no way to allow an untrusted root on Android.
-                        // It will not build any chain without a trusted root.
-                        exception = new PlatformNotSupportedException(
-                            SR.Format(SR.Cryptography_VerificationFlagNotSupported, X509VerificationFlags.AllowUnknownCertificateAuthority));
-                        return default(bool?);
+                        if ((flags & unsupported) == unsupported)
+                        {
+                            exception = new PlatformNotSupportedException(SR.Format(SR.Chain_VerificationFlagNotSupported, unsupported));
+                            return default(bool?);
+                        }
                     }
 
                     return false;
@@ -148,7 +149,7 @@ namespace Internal.Cryptography.Pal
                     // Android does not support an empty set of trust anchors
                     if (customTrustCerts.Count == 0)
                     {
-                        throw new PlatformNotSupportedException(SR.Cryptography_EmptyCustomTrustNotSupported);
+                        throw new PlatformNotSupportedException(SR.Chain_EmptyCustomTrustNotSupported);
                     }
 
                     IntPtr[] customTrustArray = customTrustCerts.ToArray();
@@ -173,7 +174,7 @@ namespace Internal.Cryptography.Pal
                 _isValid = Interop.AndroidCrypto.X509ChainBuild(_chainContext, timeInMsFromUnixEpoch);
                 if (!_isValid)
                 {
-                    // Android always validates time, signature, and trusted root.
+                    // Android always validates name, time, signature, and trusted root.
                     // There is no way bypass that validation and build a path.
                     ChainElements = Array.Empty<X509ChainElement>();
 
@@ -190,11 +191,35 @@ namespace Internal.Cryptography.Pal
                     return;
                 }
 
-                if (revocationMode != X509RevocationMode.NoCheck && !Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
+                if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
+                    // TODO: [AndroidCrypto] Handle revocation modes/flags
+                    if (revocationFlag == X509RevocationFlag.EntireChain)
                     {
-                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_ChainSettingNotSupported, $"{nameof(X509RevocationFlag)}.{nameof(X509RevocationFlag.EndCertificateOnly)}"));
+                        throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationFlag.{revocationFlag})");
+                    }
+
+                    if (Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
+                    {
+                        // Defaults to online when revocation options are available
+                        if (revocationMode == X509RevocationMode.Offline)
+                        {
+                            throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationMode.{revocationMode})");
+                        }
+                    }
+                    else
+                    {
+                        if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
+                        {
+                            // No way to specfiy end certificate only if revocation options are not available
+                            throw new PlatformNotSupportedException(SR.Format(SR.Chain_SettingNotSupported, $"{nameof(X509RevocationFlag)}.{nameof(X509RevocationFlag.EndCertificateOnly)}"));
+                        }
+
+                        // Defaults to offline when revocation options are not available
+                        if (revocationMode == X509RevocationMode.Online)
+                        {
+                            throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationMode.{revocationMode})");
+                        }
                     }
                 }
 
@@ -205,17 +230,38 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2[] certs = Interop.AndroidCrypto.X509ChainGetCertificates(_chainContext);
                 List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
                 List<X509ChainStatus>[] statuses = new List<X509ChainStatus>[certs.Length];
+
+                int firstErrorIndex = -1;
                 Dictionary<int, List<X509ChainStatus>> errorsByIndex = GetStatusByIndex(_chainContext);
                 foreach (int index in errorsByIndex.Keys)
                 {
-                    if (index == -1)
-                    {
-                        // Error is not tied to a specific index
-                        overallStatus.AddRange(errorsByIndex[index]);
-                    }
-                    else
+                    overallStatus.AddRange(errorsByIndex[index]);
+
+                    // -1 indicates that error is not tied to a specific index
+                    if (index != -1)
                     {
                         statuses[index] = errorsByIndex[index];
+                        firstErrorIndex = Math.Max(index, firstErrorIndex);
+                    }
+                }
+
+                // Android will stop checking after the first error it hits, so we explicitly
+                // assign PartialChain to everything from the first error to the end certificate
+                if (firstErrorIndex > 0)
+                {
+                    X509ChainStatus partialChainStatus = new X509ChainStatus
+                    {
+                        Status = X509ChainStatusFlags.PartialChain,
+                        StatusInformation = SR.Chain_PartialChain,
+                    };
+                    for (int i = firstErrorIndex - 1; i >= 0; i--)
+                    {
+                        if (statuses[i] == null)
+                        {
+                            statuses[i] = new List<X509ChainStatus>();
+                        }
+
+                        statuses[i].Add(partialChainStatus);
                     }
                 }
 
