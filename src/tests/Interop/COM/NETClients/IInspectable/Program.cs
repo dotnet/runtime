@@ -17,7 +17,7 @@ namespace NetClient
         static void Validate_IInspectable()
         {
             var server = (InspectableTesting)new InspectableTestingClass();
-            Assert.Throws<PlatformNotSupportedException>(() => _ = (IInspectableTesting2)server);
+            Assert.Throws<PlatformNotSupportedException>(() => _ = (IInspectableTesting)server);
         }
 
         static int Main(string[] doNotUse)

@@ -46,7 +46,6 @@ class DECLSPEC_UUID("CE137261-6F19-44F5-A449-EF963B3F987E") InspectableTesting;
 #define IID_IDefaultInterfaceTesting __uuidof(IDefaultInterfaceTesting)
 #define IID_IDefaultInterfaceTesting2 __uuidof(IDefaultInterfaceTesting2)
 #define IID_IInspectableTesting __uuidof(IInspectableTesting)
-#define IID_IInspectableTesting2 __uuidof(IInspectableTesting2)
 
 // Class used for COM activation when using CoreShim
 struct CoreShimComActivation

@@ -488,14 +488,8 @@ IDefaultInterfaceTesting2 : IUnknown
 };
 
 struct __declspec(uuid("3021236a-2a9e-4a29-bf14-533842c55262"))
-IInspectableTesting : IUnknown
+IInspectableTesting : IInspectable
 {
-};
-
-struct __declspec(uuid("e9e1ccf9-8e93-4850-ac1c-a71692cb68c5"))
-IInspectableTesting2 : IInspectable
-{
-    virtual HRESULT STDMETHODCALLTYPE Add(_In_ int i, _In_ int j, _Out_ _Ret_ int* retVal) = 0;
 };
 
 #pragma pack(pop)
