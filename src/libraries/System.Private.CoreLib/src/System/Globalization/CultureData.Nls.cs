@@ -85,6 +85,12 @@ namespace System.Globalization
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
         }
 
+        internal static bool NlsIsEnsurePredefinedLocaleName(string name)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
+        }
+
         private string? NlsGetTimeFormatString()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
