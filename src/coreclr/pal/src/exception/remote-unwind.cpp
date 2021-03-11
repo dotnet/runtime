@@ -47,9 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pal/debug.h"
 #include "pal_endian.h"
 #include "pal.h"
-#ifndef DBI_COMPONENT_MONO
 #define __STDC_FORMAT_MACROS
-#endif
 #include <inttypes.h>
 #include <dlfcn.h>
 
