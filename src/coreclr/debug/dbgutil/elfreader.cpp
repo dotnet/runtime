@@ -5,9 +5,7 @@
 #include <clrdata.h>
 #include <cor.h>
 #include <cordebug.h>
-#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
-#endif
 #include <inttypes.h>
 #include "elfreader.h"
 
