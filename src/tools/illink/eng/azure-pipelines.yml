@@ -141,7 +141,7 @@ stages:
       steps:
       - checkout: self
         submodules: true
-      - script: ./lint.sh --check
+      - script: ./lint.sh --check --verbosity diagnostic
 
 # Post-Build Arcade logic
 - ${{ if eq(variables.officialBuild, 'true') }}:
