@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string certSubject = @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
             string certSubjectObsolete = @"E=pkit@microsoft.com, C=US, S=WA, L=Redmond, O=Microsoft, OU=ITG, CN=Microsoft Corporate Root Authority";
 
-            using (X509Certificate cert = new X509Certificate(Path.Combine("TestData", "microsoft.cer")))
+            using (X509Certificate cert = new X509Certificate(TestFiles.MicrosoftRootCertFile))
             {
                 Assert.Equal(certSubject, cert.Subject);
                 Assert.Equal(certSubject, cert.Issuer);
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             DateTime notBefore = new DateTime(1999, 7, 12, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
             DateTime notAfter = new DateTime(2009, 7, 9, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
 
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.cer")))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.TestCertFile))
             {
                 Assert.Equal(certName, cert2.IssuerName.Name);
                 Assert.Equal(certName, cert2.SubjectName.Name);
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromPfxFile()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "DummyTcpServer.pfx")))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.DummyTcpServerPfxFile))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -274,7 +274,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromPfxWithPassword()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), "test"))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -286,7 +286,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Span<char> pw = stackalloc char[] { 't', 'e', 's', 't' };
 
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), pw))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.ChainPfxFile, pw))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -296,13 +296,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Certificate2FromPkcs7DerFile()
         {
-            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestFiles.Pkcs7SingleDerFile));
         }
 
         [Fact]
         public static void X509Certificate2FromPkcs7PemFile()
         {
-            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestFiles.Pkcs7SinglePemFile));
         }
 
         [Fact]

@@ -147,7 +147,7 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.CngKeyBlobFormat GenericPublicBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat OpaqueTransportBlob { get { throw null; } }
         public static System.Security.Cryptography.CngKeyBlobFormat Pkcs8PrivateBlob { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.CngKeyBlobFormat? other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.CngKeyBlobFormat? left, System.Security.Cryptography.CngKeyBlobFormat? right) { throw null; }

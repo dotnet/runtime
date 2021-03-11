@@ -45,11 +45,11 @@
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
   </ItemGroup>
   <PropertyGroup>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21123.3</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>6.0.0-preview3.21158.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpVersion>3.9.0-5.final</MicrosoftCodeAnalysisCSharpVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21155.1</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetApiCompatVersion>6.0.0-beta.21160.7</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>6.0.0-beta.21155.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21155.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>6.0.0-beta.21155.1</MicrosoftDotNetGenAPIVersion>

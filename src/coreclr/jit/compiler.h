@@ -2694,6 +2694,8 @@ public:
 
     GenTree* gtNewOneConNode(var_types type);
 
+    GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
+
 #ifdef FEATURE_SIMD
     GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
 #endif

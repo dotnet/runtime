@@ -1208,9 +1208,7 @@ namespace System
         //   Tue, 03 Jan 2017 08:08:05 GMT
         private static bool TryFormatR(DateTime dateTime, TimeSpan offset, Span<char> destination, out int charsWritten)
         {
-            // Writing the check in this fashion elides all bounds checks on 'destination'
-            // for the remainder of the method.
-            if (28 >= (uint)destination.Length)
+            if (destination.Length <= 28)
             {
                 charsWritten = 0;
                 return false;

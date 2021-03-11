@@ -220,6 +220,15 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
+    if (CheckJNIExceptions(env))
+    {
+        (*env)->DeleteLocalRef(env, cipher);
+        (*env)->DeleteLocalRef(env, fromBytes);
+        (*env)->DeleteLocalRef(env, decryptedBytes);
+        (*env)->DeleteLocalRef(env, algName);
+        return FAIL;
+    }
+
     jsize decryptedBytesLen = (*env)->GetArrayLength(env, decryptedBytes);
     (*env)->GetByteArrayRegion(env, decryptedBytes, 0, decryptedBytesLen, (jbyte*) to);
 

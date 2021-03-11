@@ -34,7 +34,6 @@ namespace DebuggerTests
         {
             TestEvaluate f = new TestEvaluate();
             f.run(100, 200, "9000", "test", 45);
-
             var f_s = new EvaluateTestsStructWithProperties();
             f_s.InstanceMethod(100, 200, "test", f_s);
             f_s.GenericInstanceMethod<int>(100, 200, "test", f_s);
