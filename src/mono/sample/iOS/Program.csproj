@@ -3,9 +3,8 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <OriginalTargetOS>$(TargetOS)</OriginalTargetOS>
     <TargetOS>iOS</TargetOS>
-    <TargetOS Condition="'$(OriginalTargetOS)' == 'iOS-sim'">iOS-sim</TargetOS>
+    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOS-sim</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
