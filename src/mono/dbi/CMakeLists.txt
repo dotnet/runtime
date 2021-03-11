@@ -100,7 +100,7 @@ if (CLR_CMAKE_HOST_UNIX)
   if(TARGET_ARCH STREQUAL "arm64")
     append("-Wno-missing-declarations" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   else()
-    append("-Wno-macro-redefined" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+    append("-Wno-macro-redefined")
   endif()
   add_subdirectory(${PROJECT_SOURCE_DIR}/../../coreclr/pal pal)
 
