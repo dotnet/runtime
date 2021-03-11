@@ -806,14 +806,12 @@ namespace System.Net
         /// </summary>
         private string FormatAddressV6(IPAddress address, int port)
         {
-            StringBuilder sb = new StringBuilder(43); // based on max size of IPv6 address + port + seperators
-            string addressString = address.ToString();
-            sb.Append("|2|");
-            sb.Append(addressString);
-            sb.Append('|');
-            sb.Append(port.ToString(NumberFormatInfo.InvariantInfo));
-            sb.Append('|');
-            return sb.ToString();
+            return
+                "|2|" +
+                address.ToString() +
+                "|" +
+                port.ToString(NumberFormatInfo.InvariantInfo) +
+                "|";
         }
 
         internal long ContentLength
@@ -1121,15 +1119,9 @@ namespace System.Net
         /// </summary>
         private string FormatFtpCommand(string command, string? parameter)
         {
-            StringBuilder stringBuilder = new StringBuilder(command.Length + ((parameter != null) ? parameter.Length : 0) + 3 /*size of ' ' \r\n*/);
-            stringBuilder.Append(command);
-            if (!string.IsNullOrEmpty(parameter))
-            {
-                stringBuilder.Append(' ');
-                stringBuilder.Append(parameter);
-            }
-            stringBuilder.Append("\r\n");
-            return stringBuilder.ToString();
+            return string.IsNullOrEmpty(parameter) ?
+                command + "\r\n" :
+                command + " " + parameter + "\r\n";
         }
 
         /// <summary>
