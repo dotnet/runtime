@@ -224,6 +224,7 @@ namespace Mono.Linker.Dataflow
 			TypeDelegator_Ctor,
 			Array_Empty,
 			TypeInfo_AsType,
+			MethodBase_GetMethodFromHandle,
 
 			// Anything above this marker will require the method to be run through
 			// the reflection body scanner.
@@ -282,6 +283,13 @@ namespace Mono.Linker.Dataflow
 				// System.Type.GetTypeHandle (Type type)
 				"get_TypeHandle" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_get_TypeHandle,
 
+				// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
+				// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
+				"GetMethodFromHandle" when calledMethod.IsDeclaredOnType ("System.Reflection", "MethodBase")
+					&& calledMethod.HasParameterOfType (0, "System", "RuntimeMethodHandle")
+					&& (calledMethod.Parameters.Count == 1 || calledMethod.Parameters.Count == 2)
+					=> IntrinsicId.MethodBase_GetMethodFromHandle,
+
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System", "Type") => IntrinsicId.Type_MakeGenericType,
 
@@ -322,9 +330,10 @@ namespace Mono.Linker.Dataflow
 					=> IntrinsicId.Expression_Field,
 
 				// static System.Linq.Expressions.Expression.Property (Expression, Type, String)
+				// static System.Linq.Expressions.Expression.Property (Expression, MethodInfo)
 				"Property" when calledMethod.IsDeclaredOnType ("System.Linq.Expressions", "Expression")
-					&& calledMethod.HasParameterOfType (1, "System", "Type")
-					&& calledMethod.Parameters.Count == 3
+					&& ((calledMethod.HasParameterOfType (1, "System", "Type") && calledMethod.Parameters.Count == 3)
+					|| (calledMethod.HasParameterOfType (1, "System.Reflection", "MethodInfo") && calledMethod.Parameters.Count == 2))
 					=> IntrinsicId.Expression_Property,
 
 				// static System.Linq.Expressions.Expression.New (Type)
@@ -652,12 +661,27 @@ namespace Mono.Linker.Dataflow
 					}
 					break;
 
+				// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle)
+				// System.Reflection.MethodBase.GetMethodFromHandle (RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
+				case IntrinsicId.MethodBase_GetMethodFromHandle: {
+						// Infrastructure piece to support "ldtoken method -> GetMethodFromHandle"
+						if (methodParams[0] is RuntimeMethodHandleValue methodHandle)
+							methodReturnValue = new SystemReflectionMethodBaseValue (methodHandle.MethodRepresented);
+					}
+					break;
+
+				//
+				// System.Type
+				//
+				// Type MakeGenericType (params Type[] typeArguments)
+				//
 				case IntrinsicId.Type_MakeGenericType: {
 						reflectionContext.AnalyzingPattern ();
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue typeValue) {
 								foreach (var genericParameter in typeValue.TypeRepresented.GenericParameters) {
-									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None) {
+									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
+										genericParameter.HasDefaultConstructorConstraint) {
 										// There is a generic parameter which has some requirements on the input types.
 										// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
 										reflectionContext.RecordUnrecognizedPattern (
@@ -723,7 +747,7 @@ namespace Mono.Linker.Dataflow
 											reflectionContext.RecordHandledPattern ();
 											break;
 										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-											MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+											ProcessGetMethodByName (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags, ref methodReturnValue);
 											reflectionContext.RecordHandledPattern ();
 											break;
 										case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
@@ -782,6 +806,39 @@ namespace Mono.Linker.Dataflow
 				//
 				// System.Linq.Expressions.Expression
 				// 
+				// static Property (Expression, MethodInfo)
+				//
+				case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection", "MethodInfo"): {
+						reflectionContext.AnalyzingPattern ();
+
+						foreach (var value in methodParams[1].UniqueValues ()) {
+							if (value is SystemReflectionMethodBaseValue methodBaseValue) {
+								// We have one of the accessors for the property. The Expression.Property will in this case search
+								// for the matching PropertyInfo and store that. So to be perfectly correct we need to mark the
+								// respective PropertyInfo as "accessed via reflection".
+								var propertyDefinition = methodBaseValue.MethodRepresented.GetProperty ();
+								if (propertyDefinition != null) {
+									MarkProperty (ref reflectionContext, propertyDefinition);
+									continue;
+								}
+							} else if (value == NullValue.Instance) {
+								reflectionContext.RecordHandledPattern ();
+								continue;
+							}
+
+							// In all other cases we may not even know which type this is about, so there's nothing we can do
+							// report it as a warning.
+							reflectionContext.RecordUnrecognizedPattern (
+								2103, string.Format (Resources.Strings.IL2103,
+									DiagnosticUtilities.GetParameterNameForErrorMessage (calledMethod.Parameters[1]),
+									DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+						}
+					}
+					break;
+
+				//
+				// System.Linq.Expressions.Expression
+				// 
 				// static Field (Expression, Type, String)
 				// static Property (Expression, Type, String)
 				//
@@ -796,8 +853,6 @@ namespace Mono.Linker.Dataflow
 								foreach (var stringParam in methodParams[2].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
 										BindingFlags bindingFlags = methodParams[0].Kind == ValueNodeKind.Null ? BindingFlags.Static : BindingFlags.Default;
-										// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
-										// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
 										if (fieldOrPropertyInstrinsic == IntrinsicId.Expression_Property) {
 											MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: p => p.Name == stringValue.Contents, bindingFlags);
 										} else {
@@ -993,10 +1048,12 @@ namespace Mono.Linker.Dataflow
 							if (value is SystemTypeValue systemTypeValue) {
 								foreach (var stringParam in methodParams[1].UniqueValues ()) {
 									if (stringParam is KnownStringValue stringValue) {
-										if (BindingFlagsAreUnsupported (bindingFlags))
+										if (BindingFlagsAreUnsupported (bindingFlags)) {
 											RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods, value, calledMethodDefinition);
-										else
-											MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.Name == stringValue.Contents, bindingFlags);
+										} else {
+											ProcessGetMethodByName (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags, ref methodReturnValue);
+										}
+
 										reflectionContext.RecordHandledPattern ();
 									} else {
 										// Otherwise fall back to the bitfield requirements
@@ -1463,9 +1520,34 @@ namespace Mono.Linker.Dataflow
 				case IntrinsicId.MethodInfo_MakeGenericMethod: {
 						reflectionContext.AnalyzingPattern ();
 
-						// We don't track MethodInfo values, so we can't determine if the MakeGenericMethod is problematic or not.
-						// Since some of the generic parameters may have annotations, all calls are potentially dangerous.
-						reflectionContext.RecordUnrecognizedPattern (2060, $"Call to `{calledMethod.GetDisplayName ()}` can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.");
+						foreach (var methodValue in methodParams[0].UniqueValues ()) {
+							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
+								foreach (var genericParameter in methodBaseValue.MethodRepresented.GenericParameters) {
+									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
+										genericParameter.HasDefaultConstructorConstraint) {
+										// There is a generic parameter which has some requirements on input types.
+										// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
+										reflectionContext.RecordUnrecognizedPattern (
+											2060, string.Format (Resources.Strings.IL2060,
+												DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+									}
+								}
+
+								// We haven't found any generic parameters with annotations, so there's nothing to validate
+								reflectionContext.RecordHandledPattern ();
+							} else if (methodValue == NullValue.Instance) {
+								reflectionContext.RecordHandledPattern ();
+							} else {
+								// There is a generic parameter which has some requirements on input types.
+								// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
+								reflectionContext.RecordUnrecognizedPattern (
+									2060, string.Format (Resources.Strings.IL2060,
+										DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethod)));
+							}
+						}
+
+						// MakeGenericMethod doesn't change the identity of the MethodBase we're tracking so propagate to the return value
+						methodReturnValue = methodParams[0];
 					}
 					break;
 
@@ -1581,6 +1663,28 @@ namespace Mono.Linker.Dataflow
 					reflectionContext.RecordUnrecognizedPattern (2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[0].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.");
 				}
 			}
+		}
+
+		void ProcessGetMethodByName (
+			ref ReflectionPatternContext reflectionContext,
+			TypeDefinition typeDefinition,
+			string methodName,
+			BindingFlags? bindingFlags,
+			ref ValueNode methodReturnValue)
+		{
+			bool foundAny = false;
+			foreach (var method in typeDefinition.GetMethodsOnTypeHierarchy (m => m.Name == methodName, bindingFlags)) {
+				MarkMethod (ref reflectionContext, method);
+				methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemReflectionMethodBaseValue (method));
+				foundAny = true;
+			}
+
+			// If there were no methods found the API will return null at runtime, so we should
+			// track the null as a return value as well.
+			// This also prevents warnings in such case, since if we don't set the return value it will be
+			// "unknown" and consumers may warn.
+			if (!foundAny)
+				methodReturnValue = MergePointValue.MergeValues (methodReturnValue, NullValue.Instance);
 		}
 
 		void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberTypes requiredMemberTypes, ValueNode value, IMetadataTokenProvider targetContext)

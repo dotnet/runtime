@@ -30,6 +30,9 @@ namespace Mono.Linker.Dataflow
 		MethodParameter,                // symbolic placeholder
 		MethodReturn,                   // symbolic placeholder
 
+		RuntimeMethodHandle,            // known value - MethodRepresented
+		SystemReflectionMethodBase,     // known value - MethodRepresented
+
 		RuntimeTypeHandleForGenericParameter, // symbolic placeholder for generic parameter
 		SystemTypeForGenericParameter,        // symbolic placeholder for generic parameter
 
@@ -77,7 +80,7 @@ namespace Mono.Linker.Dataflow
 		/// applied so that each 'unique value' can be considered on its own without regard to the structure that led to
 		/// it.
 		/// </summary>
-		public UniqueValueCollection UniqueValues {
+		public UniqueValueCollection UniqueValuesInternal {
 			get {
 				return new UniqueValueCollection (this);
 			}
@@ -377,6 +380,8 @@ namespace Mono.Linker.Dataflow
 			case ValueNodeKind.MethodReturn:
 			case ValueNodeKind.SystemTypeForGenericParameter:
 			case ValueNodeKind.RuntimeTypeHandleForGenericParameter:
+			case ValueNodeKind.SystemReflectionMethodBase:
+			case ValueNodeKind.RuntimeMethodHandle:
 			case ValueNodeKind.LoadField:
 				break;
 
@@ -415,7 +420,7 @@ namespace Mono.Linker.Dataflow
 			if (node == null)
 				return new ValueNode.UniqueValueCollection (UnknownValue.Instance);
 
-			return node.UniqueValues;
+			return node.UniqueValuesInternal;
 		}
 
 		public static int? AsConstInt (this ValueNode node)
@@ -541,7 +546,7 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
-	/// This is a known System.Type value.  TypeRepresented is the 'value' of the System.Type..
+	/// This is a known System.Type value.  TypeRepresented is the 'value' of the System.Type.
 	/// </summary>
 	class SystemTypeValue : LeafValueNode
 	{
@@ -677,6 +682,74 @@ namespace Mono.Linker.Dataflow
 		protected override string NodeToString ()
 		{
 			return ValueNodeDump.ValueNodeToString (this, GenericParameter);
+		}
+	}
+
+	/// <summary>
+	/// This is the System.RuntimeMethodHandle equivalent to a <see cref="SystemReflectionMethodBaseValue"/> node.
+	/// </summary>
+	class RuntimeMethodHandleValue : LeafValueNode
+	{
+		public RuntimeMethodHandleValue (MethodDefinition methodRepresented)
+		{
+			Kind = ValueNodeKind.RuntimeMethodHandle;
+			MethodRepresented = methodRepresented;
+		}
+
+		public MethodDefinition MethodRepresented { get; }
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			return Equals (this.MethodRepresented, ((RuntimeMethodHandleValue) other).MethodRepresented);
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashCode.Combine (Kind, MethodRepresented);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, MethodRepresented);
+		}
+	}
+
+	/// <summary>
+	/// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
+	/// </summary>
+	class SystemReflectionMethodBaseValue : LeafValueNode
+	{
+		public SystemReflectionMethodBaseValue (MethodDefinition methodRepresented)
+		{
+			Kind = ValueNodeKind.SystemReflectionMethodBase;
+			MethodRepresented = methodRepresented;
+		}
+
+		public MethodDefinition MethodRepresented { get; private set; }
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			return Equals (this.MethodRepresented, ((SystemReflectionMethodBaseValue) other).MethodRepresented);
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashCode.Combine (Kind, MethodRepresented);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, MethodRepresented);
 		}
 	}
 
@@ -912,7 +985,7 @@ namespace Mono.Linker.Dataflow
 		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
 		{
 			foreach (ValueNode value in Values) {
-				foreach (ValueNode uniqueValue in value.UniqueValues) {
+				foreach (ValueNode uniqueValue in value.UniqueValuesInternal) {
 					yield return uniqueValue;
 				}
 			}
@@ -983,7 +1056,7 @@ namespace Mono.Linker.Dataflow
 		{
 			HashSet<string> names = null;
 
-			foreach (ValueNode nameStringValue in NameString.UniqueValues) {
+			foreach (ValueNode nameStringValue in NameString.UniqueValuesInternal) {
 				if (nameStringValue.Kind == ValueNodeKind.KnownString) {
 					if (names == null) {
 						names = new HashSet<string> ();
@@ -997,7 +1070,7 @@ namespace Mono.Linker.Dataflow
 			bool foundAtLeastOne = false;
 
 			if (names != null) {
-				foreach (ValueNode assemblyValue in AssemblyIdentity.UniqueValues) {
+				foreach (ValueNode assemblyValue in AssemblyIdentity.UniqueValuesInternal) {
 					if (assemblyValue.Kind == ValueNodeKind.KnownString) {
 						string assemblyName = ((KnownStringValue) assemblyValue).Contents;
 
@@ -1154,7 +1227,7 @@ namespace Mono.Linker.Dataflow
 
 		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
 		{
-			foreach (var sizeConst in Size.UniqueValues)
+			foreach (var sizeConst in Size.UniqueValuesInternal)
 				yield return new ArrayValue (sizeConst);
 		}
 

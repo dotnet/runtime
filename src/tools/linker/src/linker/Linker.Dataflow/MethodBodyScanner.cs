@@ -715,6 +715,13 @@ namespace Mono.Linker.Dataflow
 					currentStack.Push (slot);
 					return;
 				}
+			} else if (operation.Operand is MethodReference methodReference) {
+				var resolvedMethod = methodReference.Resolve ();
+				if (resolvedMethod != null) {
+					StackSlot slot = new StackSlot (new RuntimeMethodHandleValue (resolvedMethod));
+					currentStack.Push (slot);
+					return;
+				}
 			}
 
 			PushUnknown (currentStack);
