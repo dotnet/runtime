@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void AOT_InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
-            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id);
+            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id, dotnetWasmFromRuntimePack: !buildArgs.AOT);
 
         // TODO: What else should we use to verify a relinked build?
         [Theory]
