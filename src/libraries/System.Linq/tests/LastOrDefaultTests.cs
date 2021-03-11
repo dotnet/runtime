@@ -39,6 +39,15 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.RunOnce().LastOrDefault());
         }
 
+        private static void TestEmptyIListDefault<T>(T defaultValue)
+        {
+            T[] source = { };
+
+            Assert.IsAssignableFrom<IList<T>>(source);
+
+            Assert.Equal(defaultValue, source.RunOnce().LastOrDefault(defaultValue));
+        }
+
         [Fact]
         public void EmptyIListT()
         {
@@ -46,6 +55,14 @@ namespace System.Linq.Tests
             TestEmptyIList<string>();
             TestEmptyIList<DateTime>();
             TestEmptyIList<LastOrDefaultTests>();
+        }
+
+        [Fact]
+        public void EmptyIList()
+        {
+            TestEmptyIListDefault(5); // int
+            TestEmptyIListDefault("Hello"); // string
+            TestEmptyIListDefault(DateTime.UnixEpoch);
         }
 
         [Fact]

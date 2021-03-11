@@ -39,6 +39,15 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.RunOnce().FirstOrDefault());
         }
 
+        private static void TestEmptyIListDefault<T>(T defaultValue)
+        {
+            T[] source = { };
+
+            Assert.IsAssignableFrom<IList<T>>(source);
+
+            Assert.Equal(defaultValue, source.RunOnce().FirstOrDefault(defaultValue));
+        }
+
         [Fact]
         public void EmptyIListT()
         {
@@ -46,6 +55,14 @@ namespace System.Linq.Tests
             TestEmptyIList<string>();
             TestEmptyIList<DateTime>();
             TestEmptyIList<FirstOrDefaultTests>();
+        }
+
+        [Fact]
+        public void EmptyIListDefault()
+        {
+            TestEmptyIListDefault(5); // int
+            TestEmptyIListDefault("Hello"); // string
+            TestEmptyIListDefault(DateTime.UnixEpoch); //DateTime
         }
 
         [Fact]
@@ -57,6 +74,17 @@ namespace System.Linq.Tests
             Assert.IsAssignableFrom<IList<int>>(source);
 
             Assert.Equal(expected, source.FirstOrDefault());
+        }
+
+        [Fact]
+        public void IListOneElementDefault()
+        {
+            int[] source = { 5 };
+            int expected = 5;
+
+            Assert.IsAssignableFrom<IList<int>>(source);
+
+            Assert.Equal(expected, source.FirstOrDefault(3));
         }
 
         [Fact]
@@ -94,6 +122,20 @@ namespace System.Linq.Tests
             Assert.Null(source as IList<T>);
 
             Assert.Equal(expected, source.RunOnce().FirstOrDefault());
+        }
+
+        private static void TestEmptyNotIListDefault<T>(T defaultValue)
+        {
+            static IEnumerable<T1> EmptySource<T1>()
+            {
+                yield break;
+            }
+
+            var source = EmptySource<T>();
+
+            Assert.Null(source as IList<T>);
+
+            Assert.Equal(defaultValue, source.RunOnce().FirstOrDefault(defaultValue));
         }
 
         [Fact]

@@ -37,12 +37,30 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void EmptyIListDefault()
+        {
+            int?[] source = { };
+            int expected = 5;
+
+            Assert.Equal(expected, source.SingleOrDefault(5));
+        }
+
+        [Fact]
         public void SingleElementIList()
         {
             int[] source = { 4 };
             int expected = 4;
 
             Assert.Equal(expected, source.SingleOrDefault());
+        }
+
+        [Fact]
+        public void SingleElementIListDefault()
+        {
+            int[] source = { 4 };
+            int expected = 4;
+
+            Assert.Equal(expected, source.SingleOrDefault(5));
         }
 
         [Fact]
