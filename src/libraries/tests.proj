@@ -207,6 +207,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlConvert\System.Xml.RW.XmlConvert.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\ReflectionOnly\System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
+
+    <!-- MarkTypeForDynamicallyAccessedMembers stack overflow https://github.com/mono/linker/issues/1881 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations/tests/System.ComponentModel.Annotations.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
