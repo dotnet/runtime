@@ -407,7 +407,7 @@ namespace System.Net.Security.Tests
 
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                await Task.WhenAll(t1, t2).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(t1, t2).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);

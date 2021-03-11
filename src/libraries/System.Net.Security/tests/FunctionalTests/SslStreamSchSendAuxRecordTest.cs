@@ -108,7 +108,7 @@ namespace System.Net.Security.Tests
                     return Task.FromResult<string>(null);
                 });
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(tasks).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 if (serverAuxRecordDetectedInconclusive || clientAuxRecordDetectedInconclusive)
                 {

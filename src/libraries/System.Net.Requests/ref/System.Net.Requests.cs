@@ -122,6 +122,7 @@ namespace System.Net
         public override long ContentLength { get { throw null; } set { } }
         public long ContentOffset { get { throw null; } set { } }
         public override string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public override System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static new System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public bool EnableSsl { get { throw null; } set { } }
@@ -131,6 +132,7 @@ namespace System.Net
         public override bool PreAuthenticate { get { throw null; } set { } }
         public override System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         public int ReadWriteTimeout { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? RenameTo { get { throw null; } set { } }
         public override System.Uri RequestUri { get { throw null; } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
@@ -344,6 +346,7 @@ namespace System.Net
         public virtual string? ConnectionGroupName { get { throw null; } set { } }
         public virtual long ContentLength { get { throw null; } set { } }
         public virtual string? ContentType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public virtual System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public static System.Net.Cache.RequestCachePolicy? DefaultCachePolicy { get { throw null; } set { } }
         public static System.Net.IWebProxy? DefaultWebProxy { get { throw null; } set { } }
