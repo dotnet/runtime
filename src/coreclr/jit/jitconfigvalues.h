@@ -231,6 +231,8 @@ CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dum
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
+CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))                       // LSRA heuristics ordering
+
 
 #endif // defined(DEBUG)
 

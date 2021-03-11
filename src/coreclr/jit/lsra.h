@@ -13,6 +13,7 @@ class Interval;
 class RefPosition;
 class LinearScan;
 class RegRecord;
+class RegisterSelection;
 
 template <class T>
 class ArrayStack;
@@ -32,6 +33,7 @@ const unsigned int RegisterTypeCount    = 2;
 * Register types
 *****************************************************************************/
 typedef var_types RegisterType;
+
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
 
@@ -1122,8 +1124,8 @@ private:
      * Register management
      ****************************************************************************/
     RegisterType getRegisterType(Interval* currentInterval, RefPosition* refPosition);
-
     regNumber allocateReg(Interval* current, RefPosition* refPosition);
+    regNumber    allocateReg(Interval* current, RefPosition* refPosition, int unused);
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1204,6 +1206,189 @@ private:
             return false;
         }
     };
+
+
+public:
+    class RegisterSelection;
+
+    // Each register will receive a score which takes into account the scoring criteria below.
+    // These were selected on the assumption that they will have an impact on the "goodness"
+    // of a register selection, and have been tuned to a certain extent by observing the impact
+    // of the ordering on asmDiffs.  However, there is much more room for tuning,
+    // and perhaps additional criteria.
+    //
+    enum RegisterScore
+    {
+        FREE = 0x10000, // It is not currently assigned to an *active* interval
+
+        // These are the original criteria for comparing registers that are free.
+        CONST_AVAILABLE = 0x8000, // It is a constant value that is already in an acceptable register.
+        THIS_ASSIGNED   = 0x4000, // It is in the interval's preference set and it is already assigned to this interval.
+
+        COVERS         = 0x2000, // It is in the interval's preference set and it covers the current range.
+        OWN_PREFERENCE = 0x1000, // It is in the preference set of this interval.
+        COVERS_RELATED = 0x0800, // It is in the preference set of the related interval and covers its entire lifetime.
+        RELATED_PREFERENCE = 0x0400, // It is in the preference set of the related interval.
+        CALLER_CALLEE      = 0x0200, // It is in the right "set" for the interval (caller or callee-save).
+        UNASSIGNED         = 0x0100, // It is not currently assigned to any (active or inactive) interval
+        COVERS_FULL        = 0x0080, // It covers the full range of the interval from current position to the end.
+        BEST_FIT           = 0x0040, // The available range is the closest match to the full range of the interval.
+        IS_PREV_REG        = 0x0020, // This register was previously assigned to the interval.
+        REG_ORDER          = 0x0010, // Tie-breaker
+
+        // These are the original criteria for comparing registers that are in use.
+        SPILL_COST   = 0x0008, // It has the lowest cost of all the candidates.
+        FAR_NEXT_REF = 0x0004, // It has a farther next reference than the best candidate thus far.
+        PREV_REG_OPT = 0x0002, // The previous RefPosition of its current assigned interval is RegOptional.
+
+        // TODO-CQ: Consider using REG_ORDER as a tie-breaker even for busy registers.
+        REG_NUM = 0x0001, // It has a lower register number.
+    };
+
+    typedef void (LinearScan::RegisterSelection::*HeuristicFn)();
+    typedef JitHashTable<RegisterScore, JitSmallPrimitiveKeyFuncs<RegisterScore>, HeuristicFn> ScoreMappingTable;
+
+    #define REGSELECT_HEURISTIC_COUNT 17
+
+
+    class RegisterSelection
+    {
+public:
+        RegisterSelection(LinearScan* linearScan);
+
+private:
+        RegisterScore DefaultOrder[REGSELECT_HEURISTIC_COUNT] =
+            {FREE,           CONST_AVAILABLE, THIS_ASSIGNED,      COVERS,
+             OWN_PREFERENCE, COVERS_RELATED,  RELATED_PREFERENCE, CALLER_CALLEE,
+             UNASSIGNED,     COVERS_FULL,     BEST_FIT,           IS_PREV_REG,
+             REG_ORDER,      SPILL_COST,      FAR_NEXT_REF,       PREV_REG_OPT,
+             REG_NUM};
+
+        RegisterScore RegSelectionOrder[REGSELECT_HEURISTIC_COUNT] = {0};
+
+        //TODO: Add document for each field
+        ScoreMappingTable*      mappingTable = nullptr;
+
+        int         score = 0;
+
+        Interval*    currentInterval = nullptr;
+        RefPosition* refPosition     = nullptr;
+
+
+        RegisterType regType         = RegisterType::TYP_UNKNOWN;
+        LsraLocation currentLocation = MinLocation;
+        RefPosition* nextRefPos      = nullptr;
+
+
+        regMaskTP    candidates;
+        regMaskTP    preferences     = RBM_NONE;
+
+        Interval*    relatedInterval    = nullptr;
+
+        regMaskTP    relatedPreferences = RBM_NONE;
+        LsraLocation rangeEndLocation;
+        LsraLocation relatedLastLocation; // TODO:kpathak - need to see why this is not used after refactor?
+        bool         preferCalleeSave    = false;
+        RefPosition* rangeEndRefPosition; 
+        RefPosition* lastRefPosition;
+        regMaskTP    callerCalleePrefs   = RBM_NONE;
+        LsraLocation lastLocation;
+        RegRecord*   prevRegRec          = nullptr;
+
+        regMaskTP prevRegBit = RBM_NONE;
+
+        // These are used in the post-selection updates, and must be set for any selection.
+        regMaskTP freeCandidates;
+        regMaskTP matchingConstants;
+        regMaskTP unassignedSet;
+        regMaskTP foundRegBit;
+
+
+        // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
+        // as they all require similar computation.
+        regMaskTP coversSet;
+        regMaskTP preferenceSet;
+        regMaskTP coversRelatedSet;
+        regMaskTP coversFullSet;
+        bool      coversSetsCalculated = false;
+        bool      found            = false;
+        bool      skipAllocation   = false;
+        regNumber foundReg         = REG_NA;
+
+        
+        
+        // If the selected register is already assigned to the current internal
+        FORCEINLINE bool isAlreadyAssigned()
+        {
+            assert(found && isSingleRegister(candidates));
+            return (prevRegBit & preferences) == foundRegBit;
+        }
+
+        bool             applySelection(int selectionScore, regMaskTP selectionCandidates);
+        bool             applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        FORCEINLINE void calculateSets();
+
+        FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
+        FORCEINLINE void tryFree();
+        FORCEINLINE void tryConstAvailable();
+        FORCEINLINE void tryThisAssigned();
+        FORCEINLINE void tryCovers();
+        FORCEINLINE void tryOwnPreference();
+        FORCEINLINE void tryCoversRelated();
+        FORCEINLINE void tryRelatedPreference();
+        FORCEINLINE void tryCallerCallee();
+        FORCEINLINE void tryUnassigned();
+        FORCEINLINE void tryCoversFull();
+        FORCEINLINE void tryBestFit();
+        FORCEINLINE void tryIsPrevReg();
+        FORCEINLINE void tryRegOrder();
+        FORCEINLINE void trySpillCost();
+        FORCEINLINE void tryFarNextRef();
+        FORCEINLINE void tryPrevRegOpt();
+        FORCEINLINE void tryRegNum();
+
+    public:
+        LinearScan* linearScan = nullptr;
+
+        //TODO: Add a note that this is not a perfect method and it changes state of currentInterval or refPosition. In future, need
+        // to improve it.
+        regMaskTP select(Interval*     currentInterval,
+                    RefPosition*  refPosition/*,
+                    RegisterScore heuristics[],
+                    int           heuristicsCount*/);
+
+        //TODO: Mark all methods as inline
+
+        // If the register is from unassigned set such that it was not already
+        // assigned to the current interval
+        FORCEINLINE bool foundUnassignedReg()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            bool isUnassignedReg = ((foundRegBit & unassignedSet) != RBM_NONE);
+            return isUnassignedReg && !isAlreadyAssigned();
+        }
+
+        // Did register selector decide to spill this interval
+        FORCEINLINE bool isSpilling()
+        {
+            return (foundRegBit & freeCandidates) == RBM_NONE;
+        }
+
+        // Is the value one of the constant that is already in a register
+        FORCEINLINE bool isMatchingConstant()
+        {
+            assert(found && isSingleRegister(foundRegBit));
+            return (matchingConstants & foundRegBit) != RBM_NONE;
+        }
+
+        // Did we apply CONST_AVAILABLE heuristics
+        FORCEINLINE bool isConstAvailable()
+        {
+            return (score & CONST_AVAILABLE) != 0;
+        }
+    };
+
+    RegisterSelection* regSelector;
 
     /*****************************************************************************
      * For Resolution phase
@@ -1591,35 +1776,14 @@ private:
         regMaskTP regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
-    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
 
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
-    LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
-    {
-        LsraLocation loc = nextFixedRef[regNum];
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            loc = Min(loc, nextFixedRef[regNum + 1]);
-        }
-#endif
-        return loc;
-    }
+
 
     LsraLocation nextIntervalRef[REG_COUNT];
-    LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
-    {
-        LsraLocation loc = nextIntervalRef[regNum];
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            loc = Min(loc, nextIntervalRef[regNum + 1]);
-        }
-#endif
-        return loc;
-    }
+
     float spillCost[REG_COUNT];
 
     regMaskTP regsBusyUntilKill;
@@ -1793,6 +1957,42 @@ private:
     int BuildPutArgSplit(GenTreePutArgSplit* tree);
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
+
+public:
+    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
+    LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
+    {
+        LsraLocation loc = nextFixedRef[regNum];
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            loc = Min(loc, nextFixedRef[regNum + 1]);
+        }
+#endif
+        return loc;
+    }
+
+    LsraLocation getNextIntervalRef(regNumber regNum, var_types regType)
+    {
+        LsraLocation loc = nextIntervalRef[regNum];
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            loc = Min(loc, nextIntervalRef[regNum + 1]);
+        }
+#endif
+        return loc;
+    }
+
+    template <typename RSH>
+    bool RegSelectionHeuristics(RSH(&x) [])
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            rsh[i]();
+        }
+        return false;
+    }
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2354,6 +2554,77 @@ public:
     void dump();
 #endif // DEBUG
 };
+
+
+//
+//class RegSel
+//{
+//public:
+//    virtual bool applyHeuristics();
+//};
+//
+//template <typename X>
+//class RegSelectionHeuristic : RegSel
+//{
+//public:
+//    RegSelectionHeuristic(X x)
+//    {
+//        action = X;
+//    }
+//
+//protected:
+//    X action;
+//};
+//
+//template <typename X>
+//class FreeRegHeurisitic : RegSelectionHeuristic<X>
+//{
+//public:
+//    FreeRegHeurisitic(X x)
+//        : base(x)
+//    {
+//
+//    }
+//
+//    bool applyHeuristics()
+//    {
+//        return action()
+//    }
+//};
+
+//
+//class RegSelection
+//{
+//public:
+//
+//    template <typename X>
+//    RegSelectionHeuristic<X> append(X heuristic)
+//    {
+//        FreeRegHeurisitic free(heuristic);
+//
+//
+//        regHeuristics.insert(free);
+//    }
+//
+//    bool execute()
+//    {
+//        for (RegSel* current : *regHeuristics)
+//        {
+//            bool found = current->applyHeuristics();
+//        }
+//        /*for (int i = 0; i < 10; i++)
+//        {
+//            found = regHeuristics[i].applyHeuristics();
+//        }*/
+//        return false;
+//    }
+//
+//private:
+//    jitstd::vector<RegSel*>* regHeuristics;
+//};
+
+
+
 
 #ifdef DEBUG
 void dumpRegMask(regMaskTP regs);
