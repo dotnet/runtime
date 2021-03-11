@@ -76,6 +76,17 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.LastOrDefault());
         }
 
+        [Fact]
+        public void IListTOneElementDefault()
+        {
+            int[] source = { 5 };
+            int expected = 5;
+
+            Assert.IsAssignableFrom<IList<int>>(source);
+
+            Assert.Equal(expected, source.LastOrDefault(4));
+        }
+
 
         [Fact]
         public void IListTManyElementsLastIsDefault()
