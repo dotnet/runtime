@@ -4,8 +4,8 @@ parameters:
   buildConfig: ''
   creator: ''
   helixQueues: ''
-  osGroup: '${{ parameters.osGroup }}'
-  osSubGroup: '${{ parameters.osSubgroup }}'
+  osGroup: ''
+  osSubGroup: ''
   targetRid: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
@@ -15,14 +15,6 @@ parameters:
   shouldContinueOnError: false
   scenarios: ''
 
-  osOverride: '/p:TargetOS=${{ parameters.osGroup }}'
-  ${{ if and(eq(parameters.osGroup, 'tvOS'),eq(parameters.osSubGroup, '_sim')) }}:
-    - name: osOverride
-      value: '/p:TargetOS=tvOS-sim'
-  ${{ if and(eq(parameters.osGroup, 'iOS'),eq(parameters.osSubGroup, '_sim')) }}:
-    - name: osOverride
-      value: '/p:TargetOS=iOS-sim'
-
 steps:
   - script: $(_msbuildCommand)
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
@@ -30,7 +22,8 @@ steps:
             /p:TargetArchitecture=${{ parameters.archType }}
             /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
-            ${{ osOverride }}
+            /p:TargetOS=${{ parameters.osGroup }}
+            /p:osSubGroup=${{ parameters.osSubGroup }}
             /p:MonoForceInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}

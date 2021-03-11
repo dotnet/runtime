@@ -15,6 +15,11 @@
 
 <Project DefaultTargets="RunInParallelForEachScenario">
 
+  <!-- Override Target OS for iOS/tvOS simulators -->
+  <PropertyGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS') and '$(osSubGroup)' == '_sim'">
+    <TargetOS>$(TargetOS)-sim</TargetOS>
+  </PropertyGroup>
+
   <!-- Helix auto-magically imports local *.props files. We're not going to import the Helix Sdk,
        so we need to import those files manually so we can reference the properties defined there.
   -->
