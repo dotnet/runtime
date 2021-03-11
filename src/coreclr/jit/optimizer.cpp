@@ -7940,14 +7940,12 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
     }
 
     /* Does b1 jump to b3? */
-    /* Given the following sequence of blocks :
+    /* One example: Given the following sequence of blocks :
             B1: brtrue(!t1, B3)
             B2: return(t2)
             B3: return(false)
-            B4:
         we will try to fold it to :
             B1: return(t1|t2)
-            B4:
     */
     if (b1->bbJumpDest != b2->bbNext) /*b1->bbJumpDest->bbNum == n1+2*/
     {
@@ -8059,21 +8057,26 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
         return;
     }
 
-    if (t1->gtOper == GT_EQ)
-    {
-        /* t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
-            So we will branch to BX if (c1&c2)!=0 */
+    ssize_t it3val = t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
 
+    if (t1->gtOper == GT_EQ && it3val == 0)
+    {
+        /* t1:c1==0 t2:c2!=0 t3:c3==0 ==> Return true if (c1&c2)!=0 */
         foldOp = GT_AND;
         cmpOp  = GT_NE;
     }
-    else
+    else if (t1->gtOper == GT_NE && it3val == 0)
     {
-        /* t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
-            So we will branch to BX if (c1|c2)==0 */
-
+        /* t1:c1!=0 t2:c2==0 t3:c3==0 ==> Return true if (c1|c2)==0 */
         foldOp = GT_OR;
         cmpOp  = GT_EQ;
+    }
+    else
+    {
+        /* Both cases requires NOT operation for operand. Do Not fold.
+             t1:c1==0 t2:c2!=0 t3:c3==1 ==> true if (c1&!c2)==0
+             t1:c1!=0 t2:c2==0 t3:c3==1 ==> true if (!c1&c2)==0 */
+        return;
     }
 
     // Anding requires both values to be 0 or 1
@@ -8122,7 +8125,6 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
     //
     cmpOp1->gtRequestSetFlags();
 #endif
-
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
 
     fgRemoveRefPred(b1->bbJumpDest, b1);
@@ -8154,14 +8156,11 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
 
     ehUpdateForDeletedBlock(b3);
 
-    ///* Update bbRefs and bbPreds */
-
-    //fgReplacePred(b2->bbNext, b2, b1);            // TODO-Julie: b2 is null, so this does not work.
-
     *change = true;
 
     //// Update loop table
-    //fgUpdateLoopsAfterCompacting(b1, b2);         // TODO-Julie: b2 is null, so this does not work.
+    fgUpdateLoopsAfterCompacting(b1, b2);
+    fgUpdateLoopsAfterCompacting(b1, b3);
 
 #ifdef DEBUG
     if (verbose)
@@ -8226,7 +8225,7 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
 
 /******************************************************************************
  * Function used by folding of boolean conditionals
- * Given a GT_JTRUE node, checks that it is a boolean comparison of the form
+ * Given a GT_JTRUE or GT_RETURN node, checks that it is a boolean comparison of the form
  *    "if (boolVal ==/!=  0/1)". This is translated into a GT_EQ node with "op1"
  *    being a boolean lclVar and "op2" the const 0/1.
  * On success, the comparand (ie. boolVal) is returned.   Else NULL.
