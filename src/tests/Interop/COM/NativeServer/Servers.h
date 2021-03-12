@@ -48,6 +48,7 @@ class DECLSPEC_UUID("4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811") TrackMyLifetimeTesti
 #define IID_IDefaultInterfaceTesting __uuidof(IDefaultInterfaceTesting)
 #define IID_IDefaultInterfaceTesting2 __uuidof(IDefaultInterfaceTesting2)
 #define IID_IInspectableTesting __uuidof(IInspectableTesting)
+#define IID_IInspectableTesting2 __uuidof(IInspectableTesting2)
 #define IID_ITrackMyLifetimeTesting __uuidof(ITrackMyLifetimeTesting)
 
 // Class used for COM activation when using CoreShim
