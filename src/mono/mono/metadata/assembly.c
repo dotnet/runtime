@@ -95,6 +95,8 @@ static const MonoBundledAssembly **bundles;
 static const MonoBundledSatelliteAssembly **satellite_bundles;
 
 /* Class lazy loading functions */
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
+
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute")
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload);
@@ -3719,4 +3721,78 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];
+}
+
+/**
+ * mono_assembly_is_jit_optimizer_disabled:
+ *
+ * \param assm the assembly
+ *
+ * Returns TRUE if the System.Diagnostics.DebuggableAttribute has the
+ *  DebuggingModes.DisableOptimizations bit set.
+ *
+ */
+gboolean
+mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
+{
+	ERROR_DECL (error);
+
+	g_assert (ass);
+	if (ass->jit_optimizer_disabled_inited)
+		return ass->jit_optimizer_disabled;
+
+	MonoClass *klass = mono_class_try_get_debuggable_attribute_class ();
+
+	if (!klass) {
+		/* Linked away */
+		ass->jit_optimizer_disabled = FALSE;
+		mono_memory_barrier ();
+		ass->jit_optimizer_disabled_inited = TRUE;
+		return FALSE;
+	}
+
+	gboolean disable_opts = FALSE;
+	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_cleanup (error); /* FIXME don't swallow the error */
+	if (attrs) {
+		for (int i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			const gchar *p;
+			MonoMethodSignature *sig;
+
+			if (!attr->ctor || attr->ctor->klass != klass)
+				continue;
+			/* Decode the attribute. See reflection.c */
+			p = (const char*)attr->data;
+			g_assert (read16 (p) == 0x0001);
+			p += 2;
+
+			// FIXME: Support named parameters
+			sig = mono_method_signature_internal (attr->ctor);
+			MonoClass *param_class;
+			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_BOOLEAN && sig->params [1]->type == MONO_TYPE_BOOLEAN) {
+
+				/* Two boolean arguments */
+				p ++;
+				disable_opts = *p;
+			} else if (sig->param_count == 1 &&
+				   sig->params[0]->type == MONO_TYPE_VALUETYPE &&
+				   (param_class = mono_class_from_mono_type_internal (sig->params[0])) != NULL &&
+				   m_class_is_enumtype (param_class) &&
+				   !strcmp (m_class_get_name (param_class), "DebuggingModes")) {
+				/* System.Diagnostics.DebuggableAttribute+DebuggingModes */
+				int32_t flags = read32 (p);
+				p += 4;
+				disable_opts = (flags & 0x0100) != 0;
+			}
+		}
+		mono_custom_attrs_free (attrs);
+	}
+
+	ass->jit_optimizer_disabled = disable_opts;
+	mono_memory_barrier ();
+	ass->jit_optimizer_disabled_inited = TRUE;
+
+	return disable_opts;
+
 }
