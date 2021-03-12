@@ -1449,7 +1449,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
-                    await WaitUntilOutputEOF().ConfigureAwait(false);
+                    await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
                     return;
                 }
 
@@ -1477,23 +1477,23 @@ namespace System.Diagnostics
                 }
 
                 // Wait until output streams have been drained
-                await WaitUntilOutputEOF().ConfigureAwait(false);
+                await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
             }
 
-            async ValueTask WaitUntilOutputEOF()
+            async Task WaitUntilOutputEOF(CancellationToken cancellationToken)
             {
-                if (_output != null)
+                if (_output is not null)
                 {
-                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _output.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (_error != null)
+                if (_error is not null)
                 {
-                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }

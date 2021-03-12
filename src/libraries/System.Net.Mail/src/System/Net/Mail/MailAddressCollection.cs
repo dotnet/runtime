@@ -60,24 +60,7 @@ namespace System.Net.Mail
             }
         }
 
-        public override string ToString()
-        {
-            bool first = true;
-            StringBuilder builder = new StringBuilder();
-
-            foreach (MailAddress address in this)
-            {
-                if (!first)
-                {
-                    builder.Append(", ");
-                }
-
-                builder.Append(address.ToString());
-                first = false;
-            }
-
-            return builder.ToString();
-        }
+        public override string ToString() => string.Join(", ", this);
 
         internal string Encode(int charsConsumed, bool allowUnicode)
         {

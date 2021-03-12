@@ -6,6 +6,7 @@
 #include "pal_eckey.h"
 #include "pal_jni.h"
 #include "pal_utilities.h"
+#include "pal_misc.h"
 
 
 #define INIT_LOCALS(name, ...) \
@@ -322,7 +323,7 @@ static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
         loc[privateKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[privKeySpec]);
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
-    keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, loc[publicKey], loc[privateKey]);
+    keyPair = AndroidCryptoNative_CreateKeyPair(env, loc[publicKey], loc[privateKey]);
 
     goto cleanup;
 
@@ -337,7 +338,7 @@ error:
 cleanup:
     RELEASE_LOCALS_ENV(bn, ReleaseGRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return ToGRef(env, keyPair);
+    return keyPair;
 }
 
 int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,

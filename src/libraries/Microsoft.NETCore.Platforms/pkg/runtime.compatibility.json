@@ -2530,6 +2530,38 @@
     "any",
     "base"
   ],
+  "fedora.35": [
+    "fedora.35",
+    "fedora",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.35-arm64": [
+    "fedora.35-arm64",
+    "fedora.35",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.35-x64": [
+    "fedora.35-x64",
+    "fedora.35",
+    "fedora-x64",
+    "fedora",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "freebsd": [
     "freebsd",
     "unix",

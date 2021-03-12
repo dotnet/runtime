@@ -436,6 +436,8 @@ int32_t ucal_getLimit(const UCalendar * cal, UCalendarDateFields field, UCalenda
 int32_t ucal_getTimeZoneDisplayName(const UCalendar * cal, UCalendarDisplayNameType type, const char * locale, UChar * result, int32_t resultLength, UErrorCode * status);
 UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UCalendarType type, UErrorCode * status);
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
+int32_t ucal_getTimeZoneIDForWindowsID(const UChar * winid, int32_t	len, const char * region, UChar * id, int32_t idCapacity, UErrorCode * status);
+int32_t ucal_getWindowsTimeZoneID(const UChar *	id, int32_t	len, UChar * winid, int32_t	winidCapacity, UErrorCode * status);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
 int32_t ucol_getOffset(const UCollationElements *elems);
