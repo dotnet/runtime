@@ -3,6 +3,7 @@
 
 namespace System.Runtime.CompilerServices
 {
+    [Obsolete("DisablePrivateReflectionAttribute has no effect in .NET Core and .NET 5.0+ applications.")]
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class DisablePrivateReflectionAttribute : Attribute
     {
