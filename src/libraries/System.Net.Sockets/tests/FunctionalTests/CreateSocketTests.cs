@@ -245,16 +245,11 @@ namespace System.Net.Sockets.Tests
             s.Close();
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public void Ctor_SafeHandle_FromPipeHandle_Ctor_Dispose_Success(bool ownsHandle)
+        [Fact]
+        public void Ctor_SafeHandle_Invalid_ThrowsException()
         {
-            (int fd1, int fd2) = pipe2();
-            close(fd2);
-
-            using var _ = new SafeSocketHandle(new IntPtr(fd1), ownsHandle);
+            AssertExtensions.Throws<ArgumentNullException>("handle", () => new Socket(null));
+            AssertExtensions.Throws<ArgumentException>("handle", () => new Socket(new SafeSocketHandle((IntPtr)(-1), false)));
         }
 
         [Theory]
