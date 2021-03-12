@@ -402,7 +402,7 @@ namespace Internal.JitInterface
                     var ilOpcode = reader.ReadILOpcode();
                     if (ilOpcode == ILOpcode.throw_)
                         return true;
-                    if (ilOpcode.IsBranch())
+                    if (ilOpcode.IsBranch() || ilOpcode == ILOpcode.switch_)
                         return false;
                     reader.Skip(ilOpcode);
                 }
