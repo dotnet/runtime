@@ -116,6 +116,10 @@ jclass    g_KeyStoreClass;
 jmethodID g_KeyStoreGetInstance;
 jmethodID g_KeyStoreLoad;
 
+// java/security/Security
+jclass    g_Security;
+jmethodID g_SecuritySetProperty;
+
 // java/security/Signature
 jclass    g_SignatureClass;
 jmethodID g_SignatureGetInstance;
@@ -186,6 +190,13 @@ jclass    g_PKIXReasonClass;
 // java/security/cert/PKIXRevocationChecker - only in API level 24+
 jclass    g_PKIXRevocationCheckerClass;
 jmethodID g_PKIXRevocationCheckerSetOptions;
+
+// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+jclass    g_PKIXRevocationCheckerOptionClass;
+jfieldID  g_PKIXRevocationCheckerOptionNoFallback;
+jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
+jfieldID  g_PKIXRevocationCheckerOptionPreferCrls;
+jfieldID  g_PKIXRevocationCheckerOptionSoftFail;
 
 // java/security/cert/TrustAnchor
 jclass    g_TrustAnchorClass;
@@ -335,6 +346,10 @@ jmethodID g_HashSetAdd;
 jclass    g_IteratorClass;
 jmethodID g_IteratorHasNext;
 jmethodID g_IteratorNext;
+
+// java/util/List
+jclass    g_ListClass;
+jmethodID g_ListGet;
 
 // java/util/Set
 jclass    g_SetClass;
@@ -684,8 +699,14 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     if (g_CertPathValidatorGetRevocationChecker != NULL)
     {
-        g_PKIXRevocationCheckerClass =      GetClassGRef(env, "java/security/cert/PKIXRevocationChecker");
-        g_PKIXRevocationCheckerSetOptions = GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
+        g_PKIXRevocationCheckerClass =                  GetClassGRef(env, "java/security/cert/PKIXRevocationChecker");
+        g_PKIXRevocationCheckerSetOptions =             GetMethod(env, false, g_PKIXRevocationCheckerClass, "setOptions", "(Ljava/util/Set;)V");
+
+        g_PKIXRevocationCheckerOptionClass =            GetClassGRef(env, "java/security/cert/PKIXRevocationChecker$Option");
+        g_PKIXRevocationCheckerOptionNoFallback =       GetField(env, true, g_PKIXRevocationCheckerOptionClass, "NO_FALLBACK", "Ljava/security/cert/PKIXRevocationChecker$Option;");
+        g_PKIXRevocationCheckerOptionOnlyEndEntity =    GetField(env, true, g_PKIXRevocationCheckerOptionClass, "ONLY_END_ENTITY", "Ljava/security/cert/PKIXRevocationChecker$Option;");
+        g_PKIXRevocationCheckerOptionPreferCrls =       GetField(env, true, g_PKIXRevocationCheckerOptionClass, "PREFER_CRLS", "Ljava/security/cert/PKIXRevocationChecker$Option;");
+        g_PKIXRevocationCheckerOptionSoftFail =         GetField(env, true, g_PKIXRevocationCheckerOptionClass, "SOFT_FAIL", "Ljava/security/cert/PKIXRevocationChecker$Option;");
     }
 
     g_TrustAnchorClass =            GetClassGRef(env, "java/security/cert/TrustAnchor");
@@ -838,6 +859,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_IteratorClass =   GetClassGRef(env, "java/util/Iterator");
     g_IteratorHasNext = GetMethod(env, false, g_IteratorClass, "hasNext", "()Z");
     g_IteratorNext =    GetMethod(env, false, g_IteratorClass, "next", "()Ljava/lang/Object;");
+
+    g_ListClass =   GetClassGRef(env, "java/util/List");
+    g_ListGet =     GetMethod(env, false, g_ListClass, "get", "(I)Ljava/lang/Object;");
 
     g_SetClass =    GetClassGRef(env, "java/util/Set");
     g_SetIterator = GetMethod(env, false, g_SetClass, "iterator", "()Ljava/util/Iterator;");

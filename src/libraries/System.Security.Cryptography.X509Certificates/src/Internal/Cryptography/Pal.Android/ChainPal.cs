@@ -193,21 +193,12 @@ namespace Internal.Cryptography.Pal
 
                 if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    // TODO: [AndroidCrypto] Handle revocation modes/flags
                     if (revocationFlag == X509RevocationFlag.EntireChain)
                     {
                         throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationFlag.{revocationFlag})");
                     }
 
-                    if (Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
-                    {
-                        // Defaults to online when revocation options are available
-                        if (revocationMode == X509RevocationMode.Offline)
-                        {
-                            throw new NotImplementedException($"{nameof(Evaluate)} (X509RevocationMode.{revocationMode})");
-                        }
-                    }
-                    else
+                    if (!Interop.AndroidCrypto.X509ChainSupportsRevocationOptions())
                     {
                         if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
                         {

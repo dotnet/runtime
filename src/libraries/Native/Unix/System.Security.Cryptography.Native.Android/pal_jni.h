@@ -161,6 +161,13 @@ extern jclass    g_PKIXReasonClass;
 extern jclass    g_PKIXRevocationCheckerClass;
 extern jmethodID g_PKIXRevocationCheckerSetOptions;
 
+// java/security/cert/PKIXRevocationChecker$Option - only in API level 24+
+extern jclass    g_PKIXRevocationCheckerOptionClass;
+extern jfieldID  g_PKIXRevocationCheckerOptionNoFallback;
+extern jfieldID  g_PKIXRevocationCheckerOptionOnlyEndEntity;
+extern jfieldID  g_PKIXRevocationCheckerOptionPreferCrls;
+extern jfieldID  g_PKIXRevocationCheckerOptionSoftFail;
+
 // java/security/cert/TrustAnchor
 extern jclass    g_TrustAnchorClass;
 extern jclass    g_TrustAnchorCtor;
@@ -201,6 +208,10 @@ extern jmethodID g_keyPairGenGenKeyPairMethod;
 extern jclass    g_KeyStoreClass;
 extern jmethodID g_KeyStoreGetInstance;
 extern jmethodID g_KeyStoreLoad;
+
+// java/security/Security
+extern jclass    g_Security;
+extern jmethodID g_SecuritySetProperty;
 
 // java/security/Signature
 extern jclass    g_SignatureClass;
@@ -344,6 +355,10 @@ extern jmethodID g_HashSetAdd;
 extern jclass    g_IteratorClass;
 extern jmethodID g_IteratorHasNext;
 extern jmethodID g_IteratorNext;
+
+// java/util/List
+extern jclass    g_ListClass;
+extern jmethodID g_ListGet;
 
 // java/util/Set
 extern jclass    g_SetClass;
