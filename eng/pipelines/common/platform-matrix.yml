@@ -394,8 +394,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
-      osSubGroup: _sim
+      osGroup: tvOS-sim
       archType: x64
       targetRid: tvos-sim-x64
       platform: tvOS_sim_x64
@@ -416,8 +415,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
-      osSubGroup: _sim
+      osGroup: tvOS-sim
       archType: arm64
       targetRid: tvos-sim-arm64
       platform: tvOS_sim_arm64
@@ -480,8 +478,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOS-sim
       archType: x64
       targetRid: ios-sim-x64
       platform: iOS_sim_x64
@@ -502,8 +499,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOS-sim
       archType: x86
       targetRid: ios-sim-x86
       platform: iOS_sim_x86
@@ -525,8 +521,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOS-sim
       archType: arm64
       targetRid: ios-sim-arm64
       platform: iOS_sim_arm64
