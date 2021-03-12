@@ -19,8 +19,8 @@ namespace System.Text.Unicode
             Debug.Assert(outputCharsRemaining >= 0, "Destination length must not be negative.");
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
-            ReadOnlySpan<byte> input = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
-            Span<char> output = new Span<char>(pOutputBuffer, outputCharsRemaining);
+            var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
+            var output = new Span<char>(pOutputBuffer, outputCharsRemaining);
 
             OperationStatus opStatus = OperationStatus.Done;
             while (!input.IsEmpty)
@@ -50,8 +50,8 @@ namespace System.Text.Unicode
             Debug.Assert(pOutputBuffer != null || outputBytesRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
 
-            ReadOnlySpan<char> input = new ReadOnlySpan<char>(pInputBuffer, inputLength);
-            Span<byte> output = new Span<byte>(pOutputBuffer, outputBytesRemaining);
+            var input = new ReadOnlySpan<char>(pInputBuffer, inputLength);
+            var output = new Span<byte>(pOutputBuffer, outputBytesRemaining);
 
             OperationStatus opStatus = OperationStatus.Done;
             while (!input.IsEmpty)
@@ -88,7 +88,6 @@ namespace System.Text.Unicode
 
             var input = new ReadOnlySpan<byte>(pInputBuffer, inputLength);
             int cumulativeUtf16CodeUnitCount = 0;
-            int cumulativeBytesConsumed = 0;
             int cumulativeScalarValueCount = 0;
             while (!input.IsEmpty)
             {
@@ -96,13 +95,12 @@ namespace System.Text.Unicode
                     break;
                 input = input.Slice(bytesConsumed);
                 cumulativeUtf16CodeUnitCount += rune.Utf16SequenceLength;
-                cumulativeBytesConsumed += bytesConsumed;
                 cumulativeScalarValueCount++;
             }
 
+            int cumulativeBytesConsumed = inputLength - input.Length;
             utf16CodeUnitCountAdjustment = cumulativeUtf16CodeUnitCount - cumulativeBytesConsumed;
             scalarCountAdjustment = cumulativeScalarValueCount - cumulativeUtf16CodeUnitCount;
-
             return pInputBuffer + cumulativeBytesConsumed;
         }
     }

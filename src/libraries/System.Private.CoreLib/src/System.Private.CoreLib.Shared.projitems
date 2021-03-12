@@ -1168,12 +1168,12 @@
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(OptimizeForSize)' != true">
+  <ItemGroup Condition="'$(OptimizeForSize)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.SpeedOpt.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.SpeedOpt.Transcoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.SpeedOpt.Validation.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OptimizeForSize)' == true">
+  <ItemGroup Condition="'$(OptimizeForSize)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.SizeOpt.cs" />
   </ItemGroup>
   <ItemGroup>
