@@ -705,7 +705,7 @@ namespace System.Net.Http.Headers
             (_headerStore ??= new Dictionary<HeaderDescriptor, object>()).Add(descriptor, value);
         }
 
-        private bool TryGetHeaderValue(HeaderDescriptor descriptor, [NotNullWhen(true)] out object? value)
+        internal bool TryGetHeaderValue(HeaderDescriptor descriptor, [NotNullWhen(true)] out object? value)
         {
             if (_headerStore == null)
             {

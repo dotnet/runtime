@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Net.Http.Headers
 {
@@ -67,33 +67,61 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                // 'Content-Length' can only hold one value. So either we get 'null' back or a boxed long value.
-                object? storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
-
-                // Only try to calculate the length if the user didn't set the value explicitly using the setter.
-                if (!_contentLengthSet && (storedValue == null))
+                // This could use GetParsedValues; however, for responses we typically access ContentLength
+                // only once or twice: once as part of the handler, and potentially once as part of the
+                // consumer, e.g. HttpClient.GetStringAsync.  In such cases, we're better off just parsing
+                // the raw response content-length twice and not storing anything back, as today storing it
+                // back incurs multiple allocations, on top of which if the response headers are enumerated,
+                // we then need to format the boxed length back into a string.  Given typical usage patterns,
+                // it's better to just parse each time and pay the few additional nanoseconds to re-parse.
+                if (TryGetHeaderValue(KnownHeaders.ContentLength.Descriptor, out object? storedValue))
                 {
-                    // If we don't have a value for Content-Length in the store, try to let the content calculate
-                    // it's length. If the content object is able to calculate the length, we'll store it in the
-                    // store.
+                    // storedValue could be a raw string, a boxed long, or a HeaderStoreItemInfo containing
+                    // one of those (RawValue as a string, or ParsedValue as a boxed long).
+                    if (storedValue is string storedValueString)
+                    {
+                        if (long.TryParse(storedValueString, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, out long result))
+                        {
+                            return result;
+                        }
+                    }
+                    else if (storedValue is long contentLengthFromBox)
+                    {
+                        return contentLengthFromBox;
+                    }
+                    else
+                    {
+                        Debug.Assert(storedValue is HeaderStoreItemInfo, $"Expected {nameof(HeaderStoreItemInfo)}, got {storedValue}");
+                        var hsii = (HeaderStoreItemInfo)storedValue;
+                        if (hsii.RawValue != null)
+                        {
+                            if (long.TryParse((string)hsii.RawValue, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, null, out long result))
+                            {
+                                return result;
+                            }
+                        }
+                        else if (hsii.ParsedValue != null)
+                        {
+                            return (long)hsii.ParsedValue;
+                        }
+                    }
+                }
+                else if (!_contentLengthSet)
+                {
+                    // If we don't have a value for Content-Length in the store, try to let the content calculate its
+                    // length. If the content object is able to calculate the length, we'll store it in the store.
+                    // Only try to calculate the length if the user didn't set the value explicitly using the setter.
                     long? calculatedLength = _parent.GetComputedOrBufferLength();
 
                     if (calculatedLength != null)
                     {
-                        SetParsedValue(KnownHeaders.ContentLength.Descriptor, (object)calculatedLength.Value);
+                        SetParsedValue(KnownHeaders.ContentLength.Descriptor, calculatedLength.GetValueOrDefault());
                     }
 
                     return calculatedLength;
                 }
 
-                if (storedValue == null)
-                {
-                    return null;
-                }
-                else
-                {
-                    return (long)storedValue;
-                }
+                return null;
             }
             set
             {

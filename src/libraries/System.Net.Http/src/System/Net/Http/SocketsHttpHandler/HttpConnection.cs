@@ -604,9 +604,10 @@ namespace System.Net.Http
                 {
                     // If we sent an Expect: 100-continue header, and didn't receive a 100-continue. Handle the final response accordingly.
                     // Note that the developer may have added an Expect: 100-continue header even if there is no Content.
+                    long? requestContentLength;
                     if ((int)response.StatusCode >= 300 &&
                         request.Content != null &&
-                        (request.Content.Headers.ContentLength == null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold) &&
+                        ((requestContentLength = request.Content.Headers.ContentLength) == null || requestContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold) &&
                         !AuthenticationHelper.IsSessionAuthenticationChallenge(response))
                     {
                         // For error final status codes, try to avoid sending the payload if its size is unknown or if it's known to be "big".
@@ -659,6 +660,7 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
+                long? responseContentLength;
                 if (ReferenceEquals(normalizedMethod, HttpMethod.Head) || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
@@ -678,9 +680,9 @@ namespace System.Net.Http
                 {
                     responseStream = new RawConnectionStream(this);
                 }
-                else if (response.Content.Headers.ContentLength != null)
+                else if ((responseContentLength = response.Content.Headers.ContentLength) != null)
                 {
-                    long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
+                    long contentLength = responseContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
                     {
                         responseStream = EmptyReadStream.Instance;
