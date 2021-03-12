@@ -56,16 +56,6 @@ Testing COM object lifetime control methods.
             return 100;
         }
 
-        private static void ForceGC()
-        {
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
-
         private static void RunTests()
         {
             new NumericTests().Run();

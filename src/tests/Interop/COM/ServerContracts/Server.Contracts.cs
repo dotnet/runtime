@@ -331,6 +331,14 @@ namespace Server.Contract
     internal interface IInspectableTesting
     {
     }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("57f396a1-58a0-425f-8807-9f938a534984")]
+    internal interface ITrackMyLifetimeTesting
+    {
+        IntPtr GetAllocationCountCallback();
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features

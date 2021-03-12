@@ -492,4 +492,10 @@ IInspectableTesting : IInspectable
 {
 };
 
+struct __declspec(uuid("57f396a1-58a0-425f-8807-9f938a534984"))
+ITrackMyLifetimeTesting : IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE GetAllocationCountCallback(_Outptr_ void** fptr) = 0;
+};
+
 #pragma pack(pop)
