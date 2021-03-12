@@ -1,30 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal class MsQuicApi : IDisposable
+    internal unsafe sealed class MsQuicApi
     {
-        private bool _disposed;
+        private static MsQuicApi? _api;
 
-        private readonly IntPtr _registrationContext;
+        public SafeMsQuicRegistrationHandle Registration { get; }
 
+        // This is workaround for a bug in ILTrimmer.
+        // Withough these DynamicDependency attributes, .ctor() will be removed from the safe handles.
+        // Remove once fixed: https://github.com/mono/linker/issues/1660
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicListenerHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConnectionHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicStreamHandle))]
         private unsafe MsQuicApi()
         {
-            MsQuicNativeMethods.NativeApi* registration;
+            MsQuicNativeMethods.NativeApi* vtable;
+            uint status;
 
             try
             {
-                uint status = Interop.MsQuic.MsQuicOpen(out registration);
+                status = Interop.MsQuic.MsQuicOpen(out vtable);
                 if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
                     throw new NotSupportedException(SR.net_quic_notsupported);
@@ -35,141 +39,138 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 throw new NotSupportedException(SR.net_quic_notsupported);
             }
 
-            MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
+            SetParamDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetParamDelegate>(
+                    vtable->SetParam);
+
+            GetParamDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
+                    vtable->GetParam);
+
+            SetCallbackHandlerDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetCallbackHandlerDelegate>(
+                    vtable->SetCallbackHandler);
 
             RegistrationOpenDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.RegistrationOpenDelegate>(
-                    nativeRegistration.RegistrationOpen);
+                    vtable->RegistrationOpen);
             RegistrationCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.RegistrationCloseDelegate>(
-                    nativeRegistration.RegistrationClose);
+                    vtable->RegistrationClose);
 
-            SecConfigCreateDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SecConfigCreateDelegate>(
-                    nativeRegistration.SecConfigCreate);
-            SecConfigDeleteDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SecConfigDeleteDelegate>(
-                    nativeRegistration.SecConfigDelete);
-            SessionOpenDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SessionOpenDelegate>(
-                    nativeRegistration.SessionOpen);
-            SessionCloseDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SessionCloseDelegate>(
-                    nativeRegistration.SessionClose);
-            SessionShutdownDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SessionShutdownDelegate>(
-                    nativeRegistration.SessionShutdown);
+            ConfigurationOpenDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationOpenDelegate>(
+                    vtable->ConfigurationOpen);
+            ConfigurationCloseDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationCloseDelegate>(
+                    vtable->ConfigurationClose);
+            ConfigurationLoadCredentialDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConfigurationLoadCredentialDelegate>(
+                    vtable->ConfigurationLoadCredential);
 
             ListenerOpenDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerOpenDelegate>(
-                    nativeRegistration.ListenerOpen);
+                    vtable->ListenerOpen);
             ListenerCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerCloseDelegate>(
-                    nativeRegistration.ListenerClose);
+                    vtable->ListenerClose);
             ListenerStartDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerStartDelegate>(
-                    nativeRegistration.ListenerStart);
+                    vtable->ListenerStart);
             ListenerStopDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ListenerStopDelegate>(
-                    nativeRegistration.ListenerStop);
+                    vtable->ListenerStop);
 
             ConnectionOpenDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionOpenDelegate>(
-                    nativeRegistration.ConnectionOpen);
+                    vtable->ConnectionOpen);
             ConnectionCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionCloseDelegate>(
-                    nativeRegistration.ConnectionClose);
+                    vtable->ConnectionClose);
+            ConnectionSetConfigurationDelegate =
+                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionSetConfigurationDelegate>(
+                    vtable->ConnectionSetConfiguration);
             ConnectionShutdownDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionShutdownDelegate>(
-                    nativeRegistration.ConnectionShutdown);
+                    vtable->ConnectionShutdown);
             ConnectionStartDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.ConnectionStartDelegate>(
-                    nativeRegistration.ConnectionStart);
+                    vtable->ConnectionStart);
 
             StreamOpenDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamOpenDelegate>(
-                    nativeRegistration.StreamOpen);
+                    vtable->StreamOpen);
             StreamCloseDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamCloseDelegate>(
-                    nativeRegistration.StreamClose);
+                    vtable->StreamClose);
             StreamStartDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamStartDelegate>(
-                    nativeRegistration.StreamStart);
+                    vtable->StreamStart);
             StreamShutdownDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamShutdownDelegate>(
-                    nativeRegistration.StreamShutdown);
+                    vtable->StreamShutdown);
             StreamSendDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamSendDelegate>(
-                    nativeRegistration.StreamSend);
+                    vtable->StreamSend);
             StreamReceiveCompleteDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveCompleteDelegate>(
-                    nativeRegistration.StreamReceiveComplete);
+                    vtable->StreamReceiveComplete);
             StreamReceiveSetEnabledDelegate =
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveSetEnabledDelegate>(
-                    nativeRegistration.StreamReceiveSetEnabled);
-            SetContextDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetContextDelegate>(
-                    nativeRegistration.SetContext);
-            GetContextDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetContextDelegate>(
-                    nativeRegistration.GetContext);
-            SetCallbackHandlerDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetCallbackHandlerDelegate>(
-                    nativeRegistration.SetCallbackHandler);
+                    vtable->StreamReceiveSetEnabled);
 
-            SetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.SetParamDelegate>(
-                    nativeRegistration.SetParam);
-            GetParamDelegate =
-                Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.GetParamDelegate>(
-                    nativeRegistration.GetParam);
+            byte* appName = stackalloc byte[5];
+            appName[0] = (byte)'.';
+            appName[1] = (byte)'N';
+            appName[2] = (byte)'E';
+            appName[3] = (byte)'T';
+            appName[4] = 0;
 
-            var registrationConfig = new MsQuicNativeMethods.RegistrationConfig
+            var cfg = new RegistrationConfig
             {
-                AppName = "SystemNetQuic",
-                ExecutionProfile = QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
+                AppName = appName,
+                ExecutionProfile = (uint)QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
             };
 
-            RegistrationOpenDelegate(ref registrationConfig, out IntPtr ctx);
-            _registrationContext = ctx;
+            status = RegistrationOpenDelegate(ref cfg, out SafeMsQuicRegistrationHandle handle);
+            QuicExceptionHelpers.ThrowIfFailed(status, "RegistrationOpen failed.");
+
+            Registration = handle;
         }
 
-        internal static MsQuicApi Api { get; } = null!;
+        internal static MsQuicApi Api => _api ??= new MsQuicApi();
 
-        internal static bool IsQuicSupported { get; }
+        internal static bool IsQuicSupported => true;
 
-        static MsQuicApi()
-        {
-            // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
-            // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
+        //static MsQuicApi()
+        //{
+        //    // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
+        //    // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
 
-            // TODO:
-            // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
-            // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
-            //   error code mapping when creating exceptions.
+        //    // TODO:
+        //    // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
+        //    // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
+        //    //   error code mapping when creating exceptions.
 
-            // TODO: try to initialize TLS 1.3 in SslStream.
+        //    // TODO: try to initialize TLS 1.3 in SslStream.
 
-            try
-            {
-                Api = new MsQuicApi();
-                IsQuicSupported = true;
-            }
-            catch (NotSupportedException)
-            {
-                IsQuicSupported = false;
-            }
-        }
+        //    try
+        //    {
+        //        Api = new MsQuicApi();
+        //        IsQuicSupported = true;
+        //    }
+        //    catch (NotSupportedException)
+        //    {
+        //        IsQuicSupported = false;
+        //    }
+        //}
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
 
-        internal MsQuicNativeMethods.SecConfigCreateDelegate SecConfigCreateDelegate { get; }
-        internal MsQuicNativeMethods.SecConfigDeleteDelegate SecConfigDeleteDelegate { get; }
-
-        internal MsQuicNativeMethods.SessionOpenDelegate SessionOpenDelegate { get; }
-        internal MsQuicNativeMethods.SessionCloseDelegate SessionCloseDelegate { get; }
-        internal MsQuicNativeMethods.SessionShutdownDelegate SessionShutdownDelegate { get; }
+        internal MsQuicNativeMethods.ConfigurationOpenDelegate ConfigurationOpenDelegate { get; }
+        internal MsQuicNativeMethods.ConfigurationCloseDelegate ConfigurationCloseDelegate { get; }
+        internal MsQuicNativeMethods.ConfigurationLoadCredentialDelegate ConfigurationLoadCredentialDelegate { get; }
 
         internal MsQuicNativeMethods.ListenerOpenDelegate ListenerOpenDelegate { get; }
         internal MsQuicNativeMethods.ListenerCloseDelegate ListenerCloseDelegate { get; }
@@ -178,6 +179,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal MsQuicNativeMethods.ConnectionOpenDelegate ConnectionOpenDelegate { get; }
         internal MsQuicNativeMethods.ConnectionCloseDelegate ConnectionCloseDelegate { get; }
+        internal MsQuicNativeMethods.ConnectionSetConfigurationDelegate ConnectionSetConfigurationDelegate { get; }
         internal MsQuicNativeMethods.ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
         internal MsQuicNativeMethods.ConnectionStartDelegate ConnectionStartDelegate { get; }
 
@@ -189,229 +191,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal MsQuicNativeMethods.StreamReceiveCompleteDelegate StreamReceiveCompleteDelegate { get; }
         internal MsQuicNativeMethods.StreamReceiveSetEnabledDelegate StreamReceiveSetEnabledDelegate { get; }
 
-        internal MsQuicNativeMethods.SetContextDelegate SetContextDelegate { get; }
-        internal MsQuicNativeMethods.GetContextDelegate GetContextDelegate { get; }
         internal MsQuicNativeMethods.SetCallbackHandlerDelegate SetCallbackHandlerDelegate { get; }
 
         internal MsQuicNativeMethods.SetParamDelegate SetParamDelegate { get; }
         internal MsQuicNativeMethods.GetParamDelegate GetParamDelegate { get; }
-
-        internal unsafe uint UnsafeSetParam(
-            IntPtr Handle,
-            uint Level,
-            uint Param,
-            MsQuicNativeMethods.QuicBuffer Buffer)
-        {
-            return SetParamDelegate(
-                Handle,
-                Level,
-                Param,
-                Buffer.Length,
-                Buffer.Buffer);
-        }
-
-        internal unsafe uint UnsafeGetParam(
-            IntPtr Handle,
-            uint Level,
-            uint Param,
-            ref MsQuicNativeMethods.QuicBuffer Buffer)
-        {
-            uint bufferLength = Buffer.Length;
-            byte* buf = Buffer.Buffer;
-            return GetParamDelegate(
-                Handle,
-                Level,
-                Param,
-                &bufferLength,
-                buf);
-        }
-
-        public async ValueTask<MsQuicSecurityConfig?> CreateSecurityConfig(X509Certificate certificate, string? certFilePath, string? privateKeyFilePath)
-        {
-            MsQuicSecurityConfig? secConfig = null;
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
-            uint createConfigStatus;
-            IntPtr unmanagedAddr = IntPtr.Zero;
-            MsQuicNativeMethods.CertFileParams fileParams = default;
-
-            try
-            {
-                if (certFilePath != null && privateKeyFilePath != null)
-                {
-                    fileParams = new MsQuicNativeMethods.CertFileParams
-                    {
-                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath),
-                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath)
-                    };
-
-                    unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
-                    Marshal.StructureToPtr(fileParams, unmanagedAddr, fDeleteOld: false);
-
-                    createConfigStatus = SecConfigCreateDelegate(
-                        _registrationContext,
-                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
-                        unmanagedAddr,
-                        null,
-                        IntPtr.Zero,
-                        SecCfgCreateCallbackHandler);
-                }
-                else if (certificate != null)
-                {
-                    createConfigStatus = SecConfigCreateDelegate(
-                        _registrationContext,
-                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
-                        certificate.Handle,
-                        null,
-                        IntPtr.Zero,
-                        SecCfgCreateCallbackHandler);
-                }
-                else
-                {
-                    // If no certificate is provided, provide a null one.
-                    createConfigStatus = SecConfigCreateDelegate(
-                        _registrationContext,
-                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
-                        IntPtr.Zero,
-                        null,
-                        IntPtr.Zero,
-                        SecCfgCreateCallbackHandler);
-                }
-
-                QuicExceptionHelpers.ThrowIfFailed(
-                    createConfigStatus,
-                    "Could not create security configuration.");
-
-                void SecCfgCreateCallbackHandler(
-                    IntPtr context,
-                    uint status,
-                    IntPtr securityConfig)
-                {
-                    secConfig = new MsQuicSecurityConfig(this, securityConfig);
-                    secConfigCreateStatus = status;
-                    tcs.SetResult();
-                }
-
-                await tcs.Task.ConfigureAwait(false);
-
-                QuicExceptionHelpers.ThrowIfFailed(
-                    secConfigCreateStatus,
-                    "Could not create security configuration.");
-            }
-            finally
-            {
-                if (fileParams.CertificateFilePath != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(fileParams.CertificateFilePath);
-                }
-
-                if (fileParams.PrivateKeyFilePath != IntPtr.Zero)
-                {
-                    Marshal.FreeCoTaskMem(fileParams.PrivateKeyFilePath);
-                }
-
-                if (unmanagedAddr != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(unmanagedAddr);
-                }
-            }
-
-            return secConfig;
-        }
-
-        public unsafe IntPtr SessionOpen(List<SslApplicationProtocol> alpnProtocols)
-        {
-            if (alpnProtocols.Count == 1)
-            {
-                return SessionOpen(alpnProtocols[0]);
-            }
-
-            var memoryHandles = ArrayPool<MemoryHandle>.Shared.Rent(alpnProtocols.Count);
-            var quicBuffers = ArrayPool<MsQuicNativeMethods.QuicBuffer>.Shared.Rent(alpnProtocols.Count);
-
-            try
-            {
-                for (int i = 0; i < alpnProtocols.Count; ++i)
-                {
-                    ReadOnlyMemory<byte> alpnProtocol = alpnProtocols[i].Protocol;
-                    MemoryHandle h = alpnProtocol.Pin();
-
-                    memoryHandles[i] = h;
-                    quicBuffers[i].Buffer = (byte*)h.Pointer;
-                    quicBuffers[i].Length = (uint)alpnProtocol.Length;
-                }
-
-                IntPtr session;
-
-                fixed (MsQuicNativeMethods.QuicBuffer* pQuicBuffers = quicBuffers)
-                {
-                    session = SessionOpen(pQuicBuffers, (uint)alpnProtocols.Count);
-                }
-
-                ArrayPool<MsQuicNativeMethods.QuicBuffer>.Shared.Return(quicBuffers);
-                ArrayPool<MemoryHandle>.Shared.Return(memoryHandles);
-
-                return session;
-            }
-            finally
-            {
-                foreach (MemoryHandle handle in memoryHandles)
-                {
-                    handle.Dispose();
-                }
-            }
-        }
-
-        private unsafe IntPtr SessionOpen(SslApplicationProtocol alpnProtocol)
-        {
-            ReadOnlyMemory<byte> memory = alpnProtocol.Protocol;
-            using MemoryHandle h = memory.Pin();
-
-            var quicBuffer = new MsQuicNativeMethods.QuicBuffer()
-            {
-                Buffer = (byte*)h.Pointer,
-                Length = (uint)memory.Length
-            };
-
-            return SessionOpen(&quicBuffer, 1);
-        }
-
-        private unsafe IntPtr SessionOpen(MsQuicNativeMethods.QuicBuffer *alpnBuffers, uint bufferCount)
-        {
-            IntPtr sessionPtr = IntPtr.Zero;
-            uint status = SessionOpenDelegate(
-                _registrationContext,
-                alpnBuffers,
-                bufferCount,
-                IntPtr.Zero,
-                ref sessionPtr);
-
-            QuicExceptionHelpers.ThrowIfFailed(status, "Could not open session.");
-
-            return sessionPtr;
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~MsQuicApi()
-        {
-            Dispose(disposing: false);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            RegistrationCloseDelegate?.Invoke(_registrationContext);
-
-            _disposed = true;
-        }
     }
 }

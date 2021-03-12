@@ -5,14 +5,13 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(MsQuicTests), nameof(MsQuicTests.IsMsQuicSupported))]
+    [ConditionalClass(typeof(MsQuicTests), nameof(IsMsQuicSupported))]
     public class MsQuicTests : MsQuicTestBase
     {
         public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;

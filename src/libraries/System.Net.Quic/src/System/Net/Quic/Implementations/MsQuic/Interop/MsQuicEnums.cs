@@ -11,18 +11,24 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         QUIC_EXECUTION_PROFILE_TYPE_REAL_TIME
     }
 
-    /// <summary>
-    /// Flags to pass when creating a security config.
-    /// </summary>
-    [Flags]
-    internal enum QUIC_SEC_CONFIG_FLAG : uint
+    internal enum QUIC_CREDENTIAL_TYPE : uint
     {
-        CERT_HASH = 0x00000001,
-        CERT_HASH_STORE = 0x00000002,
-        CERT_CONTEXT = 0x00000004,
-        CERT_FILE = 0x00000008,
-        ENABL_OCSP = 0x00000010,
-        CERT_NULL = 0xF0000000 // TODO: only valid for stub TLS.
+        NONE,
+        HASH,
+        HASH_STORE,
+        CONTEXT,
+        FILE,
+        STUB_NULL = 0xF0000000 // pass as server cert to stubtls implementation
+    }
+
+    [Flags]
+    internal enum QUIC_CREDENTIAL_FLAGS : uint
+    {
+        NONE = 0,
+        CLIENT = 1, // lack of client flag indicates server.
+        LOAD_ASYNCHRONOUS = 2,
+        NO_CERTIFICATE_VALIDATION = 4,
+        ENABLE_OCSP = 8
     }
 
     [Flags]
@@ -73,15 +79,16 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         NONE = 0,
         ALLOW_0_RTT = 0x00000001,
-        FIN = 0x00000002,
-        DGRAM_PRIORITY = 0x00000004
+        START = 0x00000002,
+        FIN = 0x00000004,
+        DGRAM_PRIORITY = 0x00000008
     }
 
     internal enum QUIC_PARAM_LEVEL : uint
     {
         GLOBAL,
         REGISTRATION,
-        SESSION,
+        CONFIGURATION,
         LISTENER,
         CONNECTION,
         TLS,
@@ -90,9 +97,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
     internal enum QUIC_PARAM_GLOBAL : uint
     {
-        RETRY_MEMORY_PERCENT = 0,
-        SUPPORTED_VERSIONS = 1,
-        LOAD_BALANCING_MODE = 2,
+        RETRY_MEMORY_PERCENT,
+        SUPPORTED_VERSIONS,
+        LOAD_BALANCING_MODE,
+        PERF_COUNTERS,
+        SETTINGS
     }
 
     internal enum QUIC_PARAM_REGISTRATION : uint
@@ -121,30 +130,23 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
     internal enum QUIC_PARAM_CONN : uint
     {
-        QUIC_VERSION = 0,
-        LOCAL_ADDRESS = 1,
-        REMOTE_ADDRESS = 2,
-        IDLE_TIMEOUT = 3,
-        PEER_BIDI_STREAM_COUNT = 4,
-        PEER_UNIDI_STREAM_COUNT = 5,
-        LOCAL_BIDI_STREAM_COUNT = 6,
-        LOCAL_UNIDI_STREAM_COUNT = 7,
-        CLOSE_REASON_PHRASE = 8,
-        STATISTICS = 9,
-        STATISTICS_PLAT = 10,
-        CERT_VALIDATION_FLAGS = 11,
-        KEEP_ALIVE = 12,
-        DISCONNECT_TIMEOUT = 13,
-        SEC_CONFIG = 14,
-        SEND_BUFFERING = 15,
-        SEND_PACING = 16,
-        SHARE_UDP_BINDING = 17,
-        IDEAL_PROCESSOR = 18,
-        MAX_STREAM_IDS = 19,
-        STREAM_SCHEDULING_SCHEME = 20,
-        DATAGRAM_RECEIVE_ENABLED = 21,
-        DATAGRAM_SEND_ENABLED = 22,
-        DISABLE_1RTT_ENCRYPTION = 23
+        QUIC_VERSION,
+        LOCAL_ADDRESS,
+        REMOTE_ADDRESS,
+        IDEAL_PROCESSOR,
+        SETTINGS,
+        STATISTICS,
+        STATISTICS_PLAT,
+        SHARE_UDP_BINDING,
+        LOCAL_BIDI_STREAM_COUNT,
+        LOCAL_UNIDI_STREAM_COUNT,
+        MAX_STREAM_IDS,
+        CLOSE_REASON_PHRASE,
+        STREAM_SCHEDULING_SCHEME,
+        DATAGRAM_RECEIVE_ENABLED,
+        DATAGRAM_SEND_ENABLED,
+        DISABLE_1RTT_ENCRYPTION,
+        RESUMPTION_TICKET
     }
 
     internal enum QUIC_PARAM_STREAM : uint
@@ -189,5 +191,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         SEND_SHUTDOWN_COMPLETE = 6,
         SHUTDOWN_COMPLETE = 7,
         IDEAL_SEND_BUFFER_SIZE = 8,
+    }
+
+    internal enum QUIC_SERVER_RESUMPTION_LEVEL : byte
+    {
+        NO_RESUME,
+        RESUME_ONLY,
+        RESUME_AND_ZERORTT
     }
 }
