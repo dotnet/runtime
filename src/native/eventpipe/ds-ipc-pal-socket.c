@@ -339,13 +339,16 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 	ds_ipc_socket_t new_socket = DS_IPC_INVALID_SOCKET;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, SOCK_STREAM, IPPROTO_TCP);
-	if (new_socket != DS_IPC_INVALID_SOCKET && ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN) {
+	if (new_socket != DS_IPC_INVALID_SOCKET) {
 		int option_value = 1;
-		setsockopt (new_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&option_value, sizeof (option_value));
+		setsockopt (new_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&option_value, sizeof (option_value));
+		if (ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN) {
+			setsockopt (new_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&option_value, sizeof (option_value));
 #ifdef DS_IPC_PAL_AF_INET6
-		if (ipc->is_dual_mode) {
-			option_value = 0;
-			setsockopt (new_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&option_value, sizeof (option_value));
+			if (ipc->is_dual_mode) {
+				option_value = 0;
+				setsockopt (new_socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&option_value, sizeof (option_value));
+			}
 		}
 #endif
 	}
