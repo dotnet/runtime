@@ -6457,7 +6457,7 @@
       "BaselineVersion": "5.0.1",
       "InboxOn": {
         "netcoreapp3.0": "4.0.4.0",
-        "net5.0": "5.0.0.1"
+        "net5.0": "5.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
