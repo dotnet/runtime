@@ -420,3 +420,85 @@ The algorithm is amended as follows:
 **Section** "III.4.2 callvirt" is extended to allow throwing `AmbiguousImplementationException` if the implementation of the interface method resolves at runtime to more than one default interface method. It's also extended to specify throwing `EntryPointNotFoundException` if the default interface implementation is abstract.
 
 **Section** "III.4.18 ldvirtftn" is extended to allow throwing `AmbiguousImplementationException` if the implementation of the interface method resolves at runtime to more than one default interface method. It's also extended to specify throwing `EntryPointNotFoundException` if the default interface implementation is abstract.
+
+## Static Interface Methods
+
+This WIP section is intended to specify ECMA standard changes implied by the static interface methods. For the reference ECMA spec, I have used
+
+https://www.ecma-international.org/publications-and-standards/standards/ecma-335/
+
+(6th edition, June 2012), please let me know if I should look at a different version. It also kind of sucks that we cannot reference the ECMA spec
+dynamically via some hyperlinks - I assume there's no online version of the spec that would support referring to the individual sections and such.
+
+Based on initial audit I believe changes potentially need to be made at least to the following sections:
+
+* Virtual methods (I.8.4.4, page 25)
+* Inheritance and overriding (II.9.9, page 135)
+* Constraints on generic parameters (II.9.11, page 137)
+* Introducing and overriding virtual methods (II.10.3, page 147)
+* Semantics of interfaces (II.12, page 157)
+* Interface implementation examples (II.12.2.1, page 159)
+* Defining, referencing and calling methods (II.15, page 177)
+* constrained. - (prefix) invoke a member on a value of a variable type (III.2.1, page 316)
+* call - call a method (III.3.19, page 342)
+* ldftn - load method pointer (III.3.41, page 366)
+
+We could use the "interface implementation examples" section to outline some positive and negative examples that can be also used as a basis for
+testing.
+
+### I.8.4.4, Virtual Methods
+
+(Add second paragraph)
+
+Static interface methods may be marked as virtual. Valid object types implementing such interfaces shall provide implementations
+for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
+by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
+method.
+
+### II.9.9, Inheritance and Overriding
+
+(Edit first paragraph by adding the word *virtual* to the parenthesized formulation *for **instance** virtual methods*)
+
+Member inheritance is defined in Partition I, in “Member Inheritance”. (Overriding and hiding are also
+defined in that partition, in “Hiding, overriding, and layout”.) This definition is extended, in an obvious
+manner, in the presence of generics. Specifically, in order to determine whether a member hides (for
+static or instance members) or overrides (for instance virtual methods) a member from a base class or interface,
+simply substitute each generic parameter with its generic argument, and compare the resulting member
+signatures. [*Example*: The following illustrates this point:
+
+### II.9.11, Constrains on Generic Parameters
+
+(Change first paragraph)
+
+A generic parameter declared on a generic class or generic method can be *constrained* by one or more
+type (for encoding, see *GenericParamConstraint* table in paragraph II.22.21) and by one or more special
+constraints (paragraph II.10.1.7). Generic parameters can be instantiated only with generic arguments that are
+*assignable-to* (paragraph I.8.7.3) (when boxed) and *implements-all-static-interface-methods-of* (**paragraph
+reference needed**) each of the declared constraints and that satisfy all specified special constraints.
+
+(Change the last paragraph on page 137)
+
+[*Note*: Constraints on a generic parameter only restrict the types that the generic parameter may
+be instantiated with. Verification (see Partition III) requires that a field, property or method that a
+generic parameter is known to provide through meeting a constraint, cannot be directly
+accessed/called via the generic parameter unless it is first boxed (see Partition III) or the **callvirt**,
+**call** or **ldftn** instruction is prefixed with the **constrained.** prefix instruction (see Partition III). *end note*]
+
+### II.10.3 Introducing and overriding virtual methods
+
+For now I don't see any particular formulation in this section that would need amending. We may want to mention virtual static
+interface methods as a somewhat specific case.
+
+### II.12 Semantics of Interfaces
+
+(Add to the end of the 1st paragraph)
+
+Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
+
+### II.12.2 Implementing virtual methods on interfaces
+
+For now I'm stuck in this complex section, I would welcome initial feedback as to whether what I've shared so far makes any sense.
+
+Thanks
+
+Tomas
