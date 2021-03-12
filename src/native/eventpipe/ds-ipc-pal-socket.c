@@ -275,6 +275,9 @@ ipc_retry_syscall (int result)
 	return result == -1 && ipc_get_last_error () == DS_IPC_ERROR_INTERRUPT && !ep_rt_process_shutdown ();
 }
 #else
+static
+inline
+bool
 ipc_retry_syscall (int result)
 {
 	return result == -1 && ipc_get_last_error () == DS_IPC_ERROR_INTERRUPT;
@@ -378,7 +381,7 @@ ipc_socket_close (ds_ipc_socket_t s)
 #else
 	do {
 		result_close = close (s);
-	while (ipc_retry_syscall (result_close));
+	} while (ipc_retry_syscall (result_close));
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result_close;
