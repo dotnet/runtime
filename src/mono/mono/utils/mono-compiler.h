@@ -81,6 +81,18 @@ typedef ptrdiff_t ssize_t;
 /* Used to mark internal functions used by the CoreFX PAL library */
 #define MONO_PAL_API MONO_API
 
+/* Mono components */
+
+/* User to mark internal functions used by dynamically linked runtime components */
+#define MONO_COMPONENT_API MONO_API
+
+#ifdef COMPILING_COMPONENT_DYNAMIC
+#define MONO_COMPONENT_EXPORT_ENTRYPOINT MONO_EXTERN_C MONO_API_EXPORT
+#else
+#define MONO_COMPONENT_EXPORT_ENTRYPOINT /* empty */
+#endif
+
+
 #ifdef __GNUC__
 #define MONO_ALWAYS_INLINE __attribute__ ((__always_inline__))
 #elif defined(_MSC_VER)
