@@ -539,6 +539,13 @@ namespace ILCompiler
             return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
         }
 
+        // Compilation is broken into phases which interact with dependency analysis
+        // Phase 0: All compilations which are driven by our standard heuristics and dependency expansion model
+        // Phase 1: A helper phase which works in tandem with the DeferredTillPhaseNode to gather work to be done in phase 2
+        // Phase 2: A phase where all compilations are not allowed to add dependencies that can trigger further compilations.
+        // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
+        private bool _finishedFirstCompilationRunInPhase2 = false;
+
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
@@ -556,6 +563,8 @@ namespace ILCompiler
                             return;
                         }
                     }
+
+                    Debug.Assert((_nodeFactory.CompilationCurrentPhase == 0) || ((_nodeFactory.CompilationCurrentPhase == 2) && !_finishedFirstCompilationRunInPhase2));
 
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
 
@@ -620,6 +629,11 @@ namespace ILCompiler
             if (_methodILCache.Count > 1000)
             {
                 _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
+            }
+
+            if (_nodeFactory.CompilationCurrentPhase == 2)
+            {
+                _finishedFirstCompilationRunInPhase2 = true;
             }
         }
 
