@@ -681,9 +681,14 @@ namespace Mono.Linker.Dataflow
 							if (value is SystemTypeValue typeValue) {
 								foreach (var genericParameter in typeValue.TypeRepresented.GenericParameters) {
 									if (_context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None ||
-										genericParameter.HasDefaultConstructorConstraint) {
+										(genericParameter.HasDefaultConstructorConstraint && !typeValue.TypeRepresented.IsTypeOf ("System", "Nullable`1"))) {
 										// There is a generic parameter which has some requirements on the input types.
 										// For now we don't support tracking actual array elements, so we can't validate that the requirements are fulfilled.
+
+										// Special case: Nullable<T> where T : struct
+										//  The struct constraint in C# implies new() constraints, but Nullable doesn't make a use of that part.
+										//  There are several places even in the framework where typeof(Nullable<>).MakeGenericType would warn
+										//  without any good reason to do so.
 										reflectionContext.RecordUnrecognizedPattern (
 											2055,
 											$"Call to '{calledMethodDefinition.GetDisplayName ()}' can not be statically analyzed. " +
