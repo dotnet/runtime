@@ -29,7 +29,20 @@ namespace System.IO
             _bufferSize = bufferSize;
         }
 
-        ~BufferedFileStreamStrategy() => DisposeInternal(false);
+        ~BufferedFileStreamStrategy()
+        {
+            try
+            {
+                // the finalizer must at least try to flush the write buffer
+                // so we enforce it by passing always true
+                Dispose(true);
+            }
+            catch (Exception e) when (FileStream.IsIoRelatedException(e))
+            {
+                // On finalization, ignore failures from trying to flush the write buffer,
+                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
+            }
+        }
 
         public override bool CanRead => _strategy.CanRead;
 
@@ -122,25 +135,7 @@ namespace System.IO
             }
         }
 
-        internal override void DisposeInternal(bool disposing)
-        {
-            try
-            {
-                // the finalizer must at least try to flush the write buffer
-                // so we enforce it by passing always true
-                Dispose(true);
-            }
-            catch (Exception e) when (!disposing && FileStream.IsIoRelatedException(e))
-            {
-                // On finalization, ignore failures from trying to flush the write buffer,
-                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-            }
-
-            if (disposing)
-            {
-                GC.SuppressFinalize(this);
-            }
-        }
+        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         protected override void Dispose(bool disposing)
         {
