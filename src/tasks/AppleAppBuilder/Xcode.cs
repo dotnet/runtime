@@ -18,12 +18,16 @@ internal class Xcode
         switch (Target)
         {
             case TargetNames.iOS:
-            case TargetNames.iOSsim:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path");
                 break;
+            case TargetNames.iOSsim:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk iphonesimulator --show-sdk-path");
+                break;
             case TargetNames.tvOS:
-            case TargetNames.tvOSsim:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk appletvos --show-sdk-path");
+                break;
+            case TargetNames.tvOSsim:
+                SysRoot = Utils.RunProcess("xcrun", "--sdk appletvsimulator --show-sdk-path");
                 break;
             default:
                 SysRoot = Utils.RunProcess("xcrun", "--sdk macosx --show-sdk-path");
