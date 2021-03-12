@@ -196,7 +196,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Create list of all early bound objects
-            Scripts.LinkerSafeDictionary scriptClasses = compiler.Scripts.ScriptClasses;
+            Scripts.TrimSafeDictionary scriptClasses = compiler.Scripts.ScriptClasses;
             List<EarlyBoundInfo> ebTypes = new List<EarlyBoundInfo>(scriptClasses.Count);
             foreach (string key in scriptClasses.Keys)
             {
