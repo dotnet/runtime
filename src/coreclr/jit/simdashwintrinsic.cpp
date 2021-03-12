@@ -894,7 +894,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     if (broadcastOp != nullptr)
                     {
-                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
                     }
 
                     switch (baseType)
@@ -926,23 +927,26 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                    nullptr DEBUGARG("Clone op2 for Vector<T>.Multiply"));
 
                                 // op1 = Sse2.ShiftRightLogical128BitLane(op1, 4)
-                                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(4, TYP_INT),
-                                                                 NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+                                op1 =
+                                    gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(4, TYP_INT),
+                                                               NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
 
                                 // op2 = Sse2.ShiftRightLogical128BitLane(op1, 4)
-                                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(4, TYP_INT),
-                                                                 NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
+                                op2 =
+                                    gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(4, TYP_INT),
+                                                               NI_SSE2_ShiftRightLogical128BitLane, baseType, simdSize);
 
                                 // op2 = Sse2.Multiply(op2.AsUInt64(), op1.AsUInt64()).AsInt32()
-                                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, op1, NI_SSE2_Multiply, TYP_ULONG, simdSize);
+                                op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, op1, NI_SSE2_Multiply, TYP_ULONG,
+                                                                 simdSize);
 
                                 // op2 = Sse2.Shuffle(op2, (0, 0, 2, 0))
                                 op2 = gtNewSimdAsHWIntrinsicNode(retType, op2, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
                                                                  NI_SSE2_Shuffle, baseType, simdSize);
 
                                 // op1 = Sse2.Multiply(op1Dup.AsUInt64(), op2Dup.AsUInt64()).AsInt32()
-                                op1 =
-                                    gtNewSimdAsHWIntrinsicNode(retType, op1Dup, op2Dup, NI_SSE2_Multiply, TYP_ULONG, simdSize);
+                                op1 = gtNewSimdAsHWIntrinsicNode(retType, op1Dup, op2Dup, NI_SSE2_Multiply, TYP_ULONG,
+                                                                 simdSize);
 
                                 // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
                                 op1 = gtNewSimdAsHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
@@ -992,7 +996,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     if (broadcastOp != nullptr)
                     {
-                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
                     }
 
                     switch (baseType)
@@ -1080,7 +1085,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     if (broadcastOp != nullptr)
                     {
-                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                        *broadcastOp = gtNewSimdCreateBroadcastNode(simdType, *broadcastOp, baseType, simdSize,
+                                                                    /* isSimdAsHWIntrinsic */ true);
                     }
 
                     switch (baseType)
