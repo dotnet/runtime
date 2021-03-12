@@ -3,5 +3,6 @@
   <PropertyGroup>
     <PackageVersion>5.0.1</PackageVersion>
     <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
+    <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
 </Project>
