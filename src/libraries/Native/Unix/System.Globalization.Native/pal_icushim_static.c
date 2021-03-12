@@ -22,10 +22,19 @@
 static int32_t isLoaded = 0;
 static int32_t isDataSet = 0;
 
+static void log_shim_error(const char* format, ...)
+{
+    va_list args;
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
 static void log_icu_error(const char* name, UErrorCode status)
 {
     const char * statusText = u_errorName(status);
-    fprintf(stderr, "ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
+    log_shim_error("ICU call %s failed with error #%d '%s'.\n", name, status, statusText);
 }
 
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
@@ -96,39 +105,49 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
 
     FILE *fp = fopen(path, "rb");
     if (fp == NULL) {
-        fprintf(stderr,  "Unable to load ICU dat file '%s'.", path);
+        log_shim_error("Unable to load ICU dat file '%s'.", path);
         return ret;
     }
 
     if (fseek(fp, 0L, SEEK_END) != 0) {
-        fprintf(stderr, "Unable to determine size of the dat file");
+        fclose(fp);
+        log_shim_error("Unable to determine size of the dat file");
         return ret;
     }
 
     long bufsize = ftell(fp);
 
     if (bufsize == -1) {
-        fprintf(stderr, "Unable to determine size of the ICU dat file.");
+        fclose(fp);
+        log_shim_error("Unable to determine size of the ICU dat file.");
         return ret;
     }
 
     icu_data = malloc(sizeof(char) * (bufsize + 1));
 
+    if (icu_data == NULL) {
+        fclose(fp);
+        log_shim_error("Unable to allocate enough to read the ICU dat file");
+        return ret;
+    }
+
     if (fseek(fp, 0L, SEEK_SET) != 0) {
-        fprintf(stderr, "Unable to seek ICU dat file.");
+        fclose(fp);
+        log_shim_error("Unable to seek ICU dat file.");
         return ret;
     }
 
     fread(icu_data, sizeof(char), bufsize, fp);
     if (ferror( fp ) != 0 ) {
-        fprintf(stderr, "Unable to read ICU dat file");
+        fclose(fp);
+        log_shim_error("Unable to read ICU dat file");
         return ret;
     }
 
     fclose(fp);
 
     if (load_icu_data(icu_data) == 0) {
-        fprintf(stderr, "ICU BAD EXIT %d.", ret);
+        log_shim_error("ICU BAD EXIT %d.", ret);
         return ret;
     }
 

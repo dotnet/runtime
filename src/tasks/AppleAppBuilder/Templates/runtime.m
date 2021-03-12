@@ -245,17 +245,17 @@ mono_ios_runtime_init (void)
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER", 
+        "APP_CONTEXT_BASE_DIRECTORY",
 #ifndef INVARIANT_GLOBALIZATION
-        "ICU_DAT_FILE_PATH",
+        "ICU_DAT_FILE_PATH"
 #endif
-        "APP_CONTEXT_BASE_DIRECTORY"
     };
     const char *appctx_values [] = {
         APPLE_RUNTIME_IDENTIFIER,
+        bundle,
 #ifndef INVARIANT_GLOBALIZATION
-        icu_dat_path,
+        icu_dat_path
 #endif
-        bundle
     };
 
     monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
