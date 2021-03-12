@@ -37,9 +37,9 @@ the error code. For example:
 
 #### `IL1008`: Could not find constructor on 'type'
 
-#### `IL1009`: Assembly 'assembly' reference 'reference' could not be resolved
+#### `IL1009`: Assembly reference 'name' could not be resolved
 
-- There was en error resolving the reference assembly 'reference'. An exception with more details is printed.
+- There was an error resolving assembly 'name'. Consider adding missing reference to your project or pass `--skip-unresolved` option if you are sure the dependencies don't need to be analyzed.
 
 #### `IL1010`: Assembly 'assembly' cannot be loaded due to failure in processing 'reference' reference
 
@@ -132,6 +132,10 @@ the error code. For example:
 #### `IL1039`: Reference assembly '{assemblyPath}' could not be loaded
 
 - A reference assembly input passed via -reference could not be loaded.
+
+#### `IL1040`: Failed to resolve {name}
+
+Metadata element 'name' cannot be resolved. This usually means there is a version mismatch between dependencies.
 
 ----
 ## Warning Codes

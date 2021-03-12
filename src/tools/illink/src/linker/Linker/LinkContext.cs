@@ -65,7 +65,6 @@ namespace Mono.Linker
 		readonly AssemblyResolver _resolver;
 		readonly TypeNameResolver _typeNameResolver;
 
-		readonly ReaderParameters _readerParameters;
 		ISymbolReaderProvider _symbolReaderProvider;
 		ISymbolWriterProvider _symbolWriterProvider;
 
@@ -148,10 +147,6 @@ namespace Mono.Linker
 			get { return _typeNameResolver; }
 		}
 
-		public ReaderParameters ReaderParameters {
-			get { return _readerParameters; }
-		}
-
 		public ISymbolReaderProvider SymbolReaderProvider {
 			get { return _symbolReaderProvider; }
 			set { _symbolReaderProvider = value; }
@@ -201,9 +196,6 @@ namespace Mono.Linker
 			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
-			_readerParameters = new ReaderParameters {
-				AssemblyResolver = _resolver
-			};
 			_customAttributes = new CustomAttributeSource (this);
 			_cachedWarningMessageContainers = new List<MessageContainer> ();
 
@@ -284,22 +276,18 @@ namespace Mono.Linker
 
 		public AssemblyDefinition TryResolve (string name)
 		{
-			try {
-				return Resolve (new AssemblyNameReference (name, new Version ()));
-			} catch (AssemblyResolutionException) {
-				return null;
-			}
+			return TryResolve (new AssemblyNameReference (name, new Version ()));
+		}
+
+		public AssemblyDefinition TryResolve (AssemblyNameReference name)
+		{
+			return _resolver.Resolve (name, probing: true);
 		}
 
 		public AssemblyDefinition Resolve (IMetadataScope scope)
 		{
 			AssemblyNameReference reference = GetReference (scope);
-			try {
-				AssemblyDefinition assembly = _resolver.Resolve (reference, _readerParameters);
-				return assembly;
-			} catch (Exception e) when (!(e is AssemblyResolutionException)) {
-				throw new AssemblyResolutionException (reference, e);
-			}
+			return _resolver.Resolve (reference);
 		}
 
 		public void RegisterAssembly (AssemblyDefinition assembly)
@@ -350,14 +338,11 @@ namespace Mono.Linker
 				return references;
 
 			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
-				try {
-					AssemblyDefinition definition = Resolve (reference);
-					if (definition != null)
-						references.Add (definition);
-				} catch (Exception e) {
-					throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Assembly '{assembly.FullName}' reference '{reference.FullName}' could not be resolved", 1009), e);
-				}
+				AssemblyDefinition definition = Resolve (reference);
+				if (definition != null)
+					references.Add (definition);
 			}
+
 			return references;
 		}
 
