@@ -1200,8 +1200,9 @@ invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 	if (exc)
 	{
 		const char *class_name = mono_class_full_name (mono_object_class (exc));
-		char *str = mono_string_to_utf8_checked_internal (((MonoException*)exc)->message, error);
-		mono_error_assert_ok (error); /* FIXME report error */
+		ERROR_DECL (local_error);
+		char *str = mono_string_to_utf8_checked_internal (((MonoException*)exc)->message, local_error);
+		mono_error_assert_ok (local_error); /* FIXME report error */
 		char *msg = g_strdup_printf("%s: %s", class_name, str);
 		mono_wasm_add_typed_value ("string", msg, 0);
 		g_free (msg);
