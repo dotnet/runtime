@@ -29,6 +29,7 @@ namespace Wasm.Build.Tests
         protected static readonly string s_emsdkPath;
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
+        private static IEnumerable<IEnumerable<object?>>[]? s_configWithAOT;
 
         protected string? _projectDir;
         protected readonly ITestOutputHelper _testOutput;
@@ -120,16 +121,32 @@ namespace Wasm.Build.Tests
         */
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot)
-            => new IEnumerable<object?>[]
-                {
-#if TEST_DEBUG_CONFIG_ALSO
-                    // list of each member data - for Debug+@aot
-                    new object?[] { new BuildArgs("placeholder", "Debug", aot, "placeholder", string.Empty) }.AsEnumerable(),
-#endif
+        {
+            if (s_configWithAOT == null)
+            {
+                string[]? configs;
 
-                    // list of each member data - for Release+@aot
-                    new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
-                }.AsEnumerable();
+                if (!CommonSettings.TryGetSplitValuesFor("TestConfigsToUse", out configs, allowEmpty: false))
+                    configs = new string[] { "Debug", "Release" };
+
+                var aotList = new List<IEnumerable<object?>>(capacity: configs.Length);
+                var nonaotList = new List<IEnumerable<object?>>(capacity: configs.Length);
+                foreach (var config in configs)
+                {
+                    aotList.Add(WithConfig(config, aot: true));
+                    nonaotList.Add(WithConfig(config, aot: false));
+                }
+
+                s_configWithAOT = new IEnumerable<IEnumerable<object?>>[2];
+                s_configWithAOT[0] = aotList;
+                s_configWithAOT[1] = nonaotList;
+            }
+
+            return s_configWithAOT[aot ? 1 : 0];
+
+            static object?[] WithConfig(string config, bool aot)
+                => new object?[] { new BuildArgs("x", config, aot, "x", string.Empty) };
+        }
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, RunHost host)
             => ConfigWithAOTData(aot).WithRunHosts(host);
