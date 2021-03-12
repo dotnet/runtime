@@ -2567,7 +2567,8 @@ namespace System.Tests
         {
             string source = "encyclop\u00e6dia";
             string target = "encyclopaedia";
-            using (new ThreadCultureChange(PlatformDetection.IsBrowser ?"pl-PL" : "se-SE"))
+
+            using (new ThreadCultureChange("se-SE"))
             {
                 Assert.Equal(expected, string.Equals(source, target, comparison));
                 Assert.Equal(expected, source.AsSpan().Equals(target.AsSpan(), comparison));

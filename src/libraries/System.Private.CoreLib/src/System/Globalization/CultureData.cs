@@ -422,13 +422,16 @@ namespace System.Globalization
             {
                 return CultureData.Invariant;
             }
-            CultureData? retVal = null;
+
             // First check if GetCultureData() can find it (ie: its a real culture)
-            retVal = GetCultureData(cultureName, useUserOverride);
+            CultureData? retVal = GetCultureData(cultureName, useUserOverride);
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 return retVal;
             }
+
+            // Not a specific culture, perhaps it's region-only name
+            // (Remember this isn't a core clr path where that's not supported)
 
             // If it was neutral remember that so that RegionInfo() can throw the right exception
             CultureData? neutral = retVal;
@@ -673,12 +676,6 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.PredefinedCulturesOnly && !GlobalizationMode.Invariant)
-            {
-                if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
-                    return null;
-            }
-
             // Try the hash table first
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
             Dictionary<string, CultureData>? tempHashTable = s_cachedCultures;
@@ -701,6 +698,7 @@ namespace System.Globalization
                     return retVal;
                 }
             }
+
             // Not found in the hash table, need to see if we can build one that works for us
             CultureData? culture = CreateCultureData(cultureName, useUserOverride);
             if (culture == null)

@@ -35,20 +35,10 @@ namespace System.Globalization.Tests
         [Fact]
         public void Parent_ParentChain()
         {
-            if (PlatformDetection.IsNotBrowser)
-            {
-                CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");
-                Assert.Equal("uz-Cyrl", myExpectParentCulture.Parent.Name);
-                Assert.Equal("uz", myExpectParentCulture.Parent.Parent.Name);
-                Assert.Equal("", myExpectParentCulture.Parent.Parent.Parent.Name);
-            }
-            else
-            {
-                CultureInfo myExpectParentCulture = new CultureInfo("zh-Hans-CN");
-                Assert.Equal("zh-Hans", myExpectParentCulture.Parent.Name);
-                Assert.Equal("zh", myExpectParentCulture.Parent.Parent.Name);
-                Assert.Equal("", myExpectParentCulture.Parent.Parent.Parent.Name);
-            }
+            CultureInfo myExpectParentCulture = new CultureInfo("uz-Cyrl-UZ");
+            Assert.Equal("uz-Cyrl", myExpectParentCulture.Parent.Name);
+            Assert.Equal("uz", myExpectParentCulture.Parent.Parent.Name);
+            Assert.Equal("", myExpectParentCulture.Parent.Parent.Parent.Name);
         }
     }
 }

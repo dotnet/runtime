@@ -1544,15 +1544,7 @@ namespace System.Tests
         [Fact]
         public static void ParseExact_EscapedSingleQuotes()
         {
-            DateTimeFormatInfo formatInfo;
-            if (PlatformDetection.IsBrowser)
-            {
-                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("id-ID"));
-            }
-            else
-            {
-                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
-            }
+            var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
             const string format = @"dddd, d' ta\' 'MMMM yyyy";
 
             DateTime expected = new DateTime(1999, 2, 28, 17, 00, 01);
@@ -1736,16 +1728,8 @@ namespace System.Tests
                 hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
                 yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
 
-                CultureInfo culture;
-                if (PlatformDetection.IsBrowser)
-                {
-                    culture = new CultureInfo("pl-PL");
-                }
-                else
-                {
-                    culture = new CultureInfo("mn-MN");
-                }
-                yield return new object[] { today.ToString(culture), culture, today };
+                var mongolianCulture = new CultureInfo("mn-MN");
+                yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
             }
         }
 
