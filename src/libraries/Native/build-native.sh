@@ -145,7 +145,7 @@ elif [[ "$__TargetOS" == tvOS-sim ]]; then
     elif [[ "$__BuildArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvOS architecture $__BuildArch."
+        echo "Error: Unknown tvOS-sim architecture $__BuildArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvOS ]]; then
