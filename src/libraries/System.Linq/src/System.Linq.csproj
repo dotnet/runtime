@@ -80,7 +80,6 @@
     <Compile Include="System\Linq\Select.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
     <Compile Include="System\Linq\SequenceEqual.cs" />
-    <Compile Include="System\Linq\Set.cs" />
     <Compile Include="System\Linq\Single.cs" />
     <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
