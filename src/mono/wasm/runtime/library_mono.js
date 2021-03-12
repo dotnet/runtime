@@ -759,6 +759,15 @@ var MonoSupportLib = {
                 throw new Error(`Could not get a value for ${root}`);
 
             return this._resolve_member_by_name(rootObject, root, parts);
+		},
+
+		mono_wasm_set_variable_value: function (scope, index, name, newValue) {
+			console.debug (">> mono_wasm_set_variable_value " + name + " - " + newValue);
+			if (!this.mono_wasm_set_variable_value_native)
+				this.mono_wasm_set_variable_value_native = Module.cwrap ("mono_wasm_set_variable_value_native", 'number', ['number', 'number', 'string', 'string']);
+
+			var ret = this.mono_wasm_set_variable_value_native(scope, index, name, newValue);
+            return ret;
         },
 
 		/**
@@ -1904,7 +1913,7 @@ var MonoSupportLib = {
 
 			if (invariantMode)
 				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
-			
+
 			// Set globalization mode to PredefinedCulturesOnly
 			this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 		},
@@ -2099,7 +2108,8 @@ var MonoSupportLib = {
 						type: "boolean",
 						value: v,
 						description: v.toString ()
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2111,7 +2121,8 @@ var MonoSupportLib = {
 						type: "symbol",
 						value: v,
 						description: v
-					}
+					},
+					writable:true
 				});
 				break;
 			}
@@ -2122,7 +2133,8 @@ var MonoSupportLib = {
 						type: "number",
 						value: value,
 						description: '' + value
-					}
+					},
+					writable:true
 				});
 				break;
 

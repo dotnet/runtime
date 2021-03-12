@@ -53,6 +53,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_object (int object_id, 
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, MonoClass *klass, const char *name);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_value_native (int scope, int index, const char* name, const char* value);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -857,6 +858,15 @@ typedef struct {
 	gboolean found;
 } FrameDescData;
 
+
+typedef struct {
+	int cur_frame;
+	int target_frame;
+	int pos;
+	const char* new_value;
+	gboolean found;
+} SetVariableValueData;
+
 /*
  * this returns a string formatted like
  *
@@ -1491,6 +1501,96 @@ describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *hea
 }
 
 static gboolean
+decode_value (MonoType *t, guint8 *addr, const char* variableValue)
+{
+	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+		*(guint8*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_CHAR:
+		*(gunichar2*)addr = variableValue[0];
+		break;
+	case MONO_TYPE_I1:
+		*(gint8*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_U1:
+		*(guint8*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_I2:
+		*(gint16*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_U2:
+		*(guint16*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_I4:
+		*(gint32*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_U4:
+		*(guint32*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_I8:
+		*(gint64*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_U8:
+		*(guint64*)addr = atol(variableValue);
+		break;
+	case MONO_TYPE_R4:
+		*(guint32*)addr = atoi(variableValue);
+		break;
+	case MONO_TYPE_R8:
+		*(guint64*)addr = atol(variableValue);
+	}
+	return TRUE;
+}
+
+static gboolean
+set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+{
+	ERROR_DECL (error);
+	SetVariableValueData *data = (SetVariableValueData*)ud;
+	gboolean is_arg = FALSE;
+	MonoType *t;
+	guint8 *val_buf;
+
+	++data->cur_frame;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+		return FALSE;
+	}
+
+	if (data->cur_frame != data->target_frame)
+		return FALSE;
+
+	data->found = TRUE;
+
+	InterpFrame *frame = (InterpFrame*)info->interp_frame;
+	MonoMethod *method = frame->imethod->method;
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+	int pos = data->pos;
+	
+	if (pos < 0) {
+		pos = - pos - 1;
+		is_arg = TRUE;
+		t = sig->params [pos];
+	}
+	else {
+		t = header->locals [pos];
+	}
+
+	guint8 *addr;
+	if (is_arg)
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
+	else
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame, pos);
+	val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
+	decode_value(t, val_buf, data->new_value);
+	mono_de_set_interp_var (t, addr, val_buf);
+	return TRUE;
+}
+
+static gboolean
 describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
 	ERROR_DECL (error);
@@ -1527,6 +1627,22 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 
 	mono_metadata_free_mh (header);
 	return TRUE;
+}
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_set_variable_value_native (int scope, int index, const char* name, const char* value)
+{
+	if (scope < 0)
+		return FALSE;
+
+	SetVariableValueData data;
+	data.target_frame = scope;
+	data.cur_frame = -1;
+	data.pos = index;
+	data.found = FALSE;
+	data.new_value = value;
+
+	mono_walk_stack_with_ctx (set_variable_value_on_frame, NULL, MONO_UNWIND_NONE, &data);
+	return data.found;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
