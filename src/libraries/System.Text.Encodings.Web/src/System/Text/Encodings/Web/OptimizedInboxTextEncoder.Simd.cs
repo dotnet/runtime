@@ -60,8 +60,15 @@ namespace System.Text.Encodings.Web
 
         private unsafe partial struct AllowedAsciiCodePoints
         {
+#if !TARGET_BROWSER
             [FieldOffset(0)]
-            internal Vector128<byte> AsVector;
+            internal Vector128<byte> AsVector; // ensure same offset with field in .Ascii.cs file
+#else
+            // This member shouldn't be accessed from browser-based code paths.
+            // All call sites should be trimmed away, which will also trim this member
+            // and the type hierarchy it links to.
+            internal Vector128<byte> AsVector => throw new PlatformNotSupportedException();
+#endif
         }
     }
 }
