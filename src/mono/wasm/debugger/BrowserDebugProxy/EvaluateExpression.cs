@@ -272,7 +272,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-            CodeAnalysis.TypeInfo typeInfo = semanticModel.GetTypeInfo(expressionTree, cancellationToken: token);
+            CodeAnalysis.TypeInfo TypeInfo = semanticModel.GetTypeInfo(expressionTree, cancellationToken: token);
 
             using (var ms = new MemoryStream())
             {
@@ -296,7 +296,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     null,
                     findVarNMethodCall.argValues.ToArray());
 
-                return JObject.FromObject(ConvertCSharpToJSType(ret, typeInfo.Type));
+                return JObject.FromObject(ConvertCSharpToJSType(ret, TypeInfo.Type));
             }
         }
 
