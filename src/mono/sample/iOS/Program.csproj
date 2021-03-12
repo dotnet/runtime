@@ -17,7 +17,7 @@
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
