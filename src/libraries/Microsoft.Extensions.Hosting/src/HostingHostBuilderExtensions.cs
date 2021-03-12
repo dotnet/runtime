@@ -138,12 +138,12 @@ namespace Microsoft.Extensions.Hosting
         /// Adds a delegate for configuring the host settings. This can be called multiple times and
         /// the results will be additive.
         /// </summary>
-        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
-        /// <param name="configure">The delegate for configuring the <see cref="HostOptions"/>.</param>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
+        /// <param name="configureDelegate">The delegate for the <see cref="HostOptions"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostOptions> configure)
+        public static IHostBuilder ConfigureHostOptions(this IHostBuilder hostBuilder, Action<HostOptions> configureDelegate)
         {
-            return hostBuilder.ConfigureHostOptions(options => configure(options));
+            return hostBuilder.ConfigureServices((context, collection) => collection.Configure(configureDelegate));
         }
 
         /// <summary>
