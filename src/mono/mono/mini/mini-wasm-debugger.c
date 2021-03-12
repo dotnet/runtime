@@ -1272,6 +1272,9 @@ handle_parent:
 				continue;
 			}
 
+			if (p->get->flags & METHOD_ATTRIBUTE_STATIC)
+				continue;
+
 			EM_ASM ({
 				MONO.mono_wasm_add_properties_var ($0, { field_offset: $1, is_own: $2, attr: $3, owner_class: $4 });
 			}, p->name, pnum, is_own, p->attrs, klass_name);

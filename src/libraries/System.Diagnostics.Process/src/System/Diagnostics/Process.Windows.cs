@@ -179,11 +179,11 @@ namespace System.Diagnostics
             finally
             {
                 // If we have a hard timeout, we cannot wait for the streams
-                if (_output != null && milliseconds == Timeout.Infinite)
-                    _output.WaitUntilEOF();
-
-                if (_error != null && milliseconds == Timeout.Infinite)
-                    _error.WaitUntilEOF();
+                if (milliseconds == Timeout.Infinite)
+                {
+                    _output?.EOF.GetAwaiter().GetResult();
+                    _error?.EOF.GetAwaiter().GetResult();
+                }
 
                 handle?.Dispose();
             }

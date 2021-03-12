@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="..\..\libraries\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <BundleDir>$(OutDir)</BundleDir>
+    <RunScriptOutputPath>$(OutDir)\RunTests.sh</RunScriptOutputPath>
+  </PropertyGroup>
+</Project>

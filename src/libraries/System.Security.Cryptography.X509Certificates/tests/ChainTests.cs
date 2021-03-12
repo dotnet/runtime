@@ -206,8 +206,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
+            using (ImportedCollection ic = Cert.Import(TestFiles.ChainPfxFile, TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
             using (var chainHolder = new ChainHolder())
             {
                 X509Certificate2Collection collection = ic.Collection;
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void SystemTrustCertificateWithCustomRootTrust(bool addCertificateToCustomRootTrust)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
@@ -328,7 +328,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BuildChainWithSystemTrustAndCustomTrustCertificates()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
@@ -343,7 +343,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BuildChainWithCustomRootTrustAndInvalidCustomCertificates()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
