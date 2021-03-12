@@ -17,42 +17,42 @@ public class RuntimeconfigParserTask : Task
     /// The path to runtimeconfig.json file.
     /// </summary>
     [Required]
-    public string runtimeConfigFile { get; set; } = ""!;
+    public string RuntimeConfigFile { get; set; } = ""!;
 
     /// <summary>
     /// The path to the output binary file.
     /// </summary>
     [Required]
-    public string outputFile { get; set; } = ""!;
+    public string OutputFile { get; set; } = ""!;
 
     /// <summary>
     /// List of reserved properties.
     /// </summary>
-    public ITaskItem[] reservedProperties { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ReservedProperties { get; set; } = Array.Empty<ITaskItem>();
 
     public override bool Execute()
     {
-        if (string.IsNullOrEmpty(runtimeConfigFile))
+        if (string.IsNullOrEmpty(RuntimeConfigFile))
         {
-            throw new ArgumentException($"'{nameof(runtimeConfigFile)}' is required.", nameof(runtimeConfigFile));
+            throw new ArgumentException($"'{nameof(RuntimeConfigFile)}' is required.", nameof(RuntimeConfigFile));
         }
 
-        if (string.IsNullOrEmpty(outputFile))
+        if (string.IsNullOrEmpty(OutputFile))
         {
-            throw new ArgumentException($"'{nameof(outputFile)}' is required.", nameof(outputFile));
+            throw new ArgumentException($"'{nameof(OutputFile)}' is required.", nameof(OutputFile));
         }
 
-        Dictionary<string, string> configProperties = ConvertInputToDictionary (runtimeConfigFile);
+        Dictionary<string, string> configProperties = ConvertInputToDictionary (RuntimeConfigFile);
 
-        if (reservedProperties.Length != 0)
+        if (ReservedProperties.Length != 0)
         {
-            checkDuplicateProperties (configProperties, reservedProperties);
+            checkDuplicateProperties (configProperties, ReservedProperties);
         }
 
         var blobBuilder = new BlobBuilder();
         ConvertDictionaryToBlob (configProperties, blobBuilder);
 
-        using var stream = File.OpenWrite(outputFile);
+        using var stream = File.OpenWrite(OutputFile);
         blobBuilder.WriteContentTo(stream);
 
         return true;
