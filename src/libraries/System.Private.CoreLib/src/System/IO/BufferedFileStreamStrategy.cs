@@ -310,29 +310,24 @@ namespace System.IO
         {
             AssertBufferArguments(buffer, offset, count);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
             return readResult.IsCompletedSuccessfully
                 ? LastSyncCompletedReadTask(readResult.Result)
                 : readResult.AsTask();
-        }
 
-        private Task<int> LastSyncCompletedReadTask(int val)
-        {
-            Task<int>? t = _lastSyncCompletedReadTask;
-            Debug.Assert(t == null || t.IsCompletedSuccessfully);
+            Task<int> LastSyncCompletedReadTask(int val)
+            {
+                Task<int>? t = _lastSyncCompletedReadTask;
+                Debug.Assert(t == null || t.IsCompletedSuccessfully);
 
-            if (t != null && t.Result == val)
+                if (t != null && t.Result == val)
+                    return t;
+
+                t = Task.FromResult<int>(val);
+                _lastSyncCompletedReadTask = t;
                 return t;
-
-            t = Task.FromResult<int>(val);
-            _lastSyncCompletedReadTask = t;
-            return t;
+            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -348,61 +343,54 @@ namespace System.IO
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen),
                 "We're either reading or writing, but not both.");
 
+            if (_strategy.IsPipe) // pipes have a very limited support for buffering
+            {
+                return ReadFromPipeAsync(buffer, cancellationToken);
+            }
+
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = semaphore.WaitAsync(cancellationToken);
 
-            if (_strategy.IsPipe)
+            if (semaphoreLockTask.IsCompletedSuccessfully // lock has been acquired
+                && _writePos == 0) // there is nothing to flush
             {
-                // pipes have a very limited support for buffering
-                return ReadAsyncPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                // we could not acquire the lock, so we fall to slow path that is going to wait for the lock to be released
-                return ReadAsyncNotPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            int availableToRead = _readLen - _readPos;
-            if (!(availableToRead >= buffer.Length || (_writePos == 0 && buffer.Length >= _bufferSize)))
-            {
-                // there is not enough bytes in the buffer which has already been partially filled
-                return ReadAsyncNotPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            try
-            {
-                // hot path #1: there is enough data in the buffer
-                if (availableToRead >= buffer.Length)
+                bool releaseTheLock = true;
+                try
                 {
-                    _buffer.AsSpan(_readPos, buffer.Length).CopyTo(buffer.Span);
-                    _readPos += buffer.Length;
-                    return new ValueTask<int>(buffer.Length);
-                }
+                    if (_readLen - _readPos >= buffer.Length)
+                    {
+                        // hot path #1: there is enough data in the buffer
+                        _buffer.AsSpan(_readPos, buffer.Length).CopyTo(buffer.Span);
+                        _readPos += buffer.Length;
+                        return new ValueTask<int>(buffer.Length);
+                    }
+                    else if (_readLen == _readPos && buffer.Length >= _bufferSize)
+                    {
+                        // hot path #2: the read buffer is empty and buffering would not be beneficial
+                        return _strategy.ReadAsync(buffer, cancellationToken);
+                    }
 
-                // hot path #2: there is nothing to Flush and buffering would not be beneficial
-                Debug.Assert(_writePos == 0 && buffer.Length >= _bufferSize, "Bug introduced in the conditions above");
-                Debug.Assert(_readLen == _readPos, "The read buffer must now be empty");
-                _readPos = _readLen = 0;
-                return _strategy.ReadAsync(buffer, cancellationToken);
+                    releaseTheLock = false;
+                }
+                finally
+                {
+                    if (releaseTheLock)
+                    {
+                        semaphore.Release();
+                    }
+                    // the code is going to call ReadAsyncSlowPath which is going to release the lock
+                }
             }
-            finally
-            {
-                semaphore.Release();
-            }
+
+            return ReadAsyncSlowPath(semaphoreLockTask, buffer, cancellationToken);
         }
 
-        private async ValueTask<int> ReadAsyncPipe(Task semaphoreLockTask, Memory<byte> destination, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadFromPipeAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
             Debug.Assert(_strategy.IsPipe);
-            Debug.Assert(_asyncActiveSemaphore != null);
 
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 // Pipes are tricky, at least when you have 2 different pipes
@@ -437,17 +425,13 @@ namespace System.IO
             }
         }
 
-        private async ValueTask<int> ReadAsyncNotPipe(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadAsyncSlowPath(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(!_strategy.IsPipe);
 
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
+            await semaphoreLockTask.ConfigureAwait(false);
             try
             {
                 int bytesFromBuffer = 0;
@@ -462,6 +446,7 @@ namespace System.IO
                     if (bytesFromBuffer > 0) // don't try to copy 0 bytes
                     {
                         _buffer.AsSpan(_readPos, bytesFromBuffer).CopyTo(buffer.Span);
+                        _readPos += bytesFromBuffer;
                     }
 
                     if (bytesFromBuffer == buffer.Length)
@@ -648,65 +633,55 @@ namespace System.IO
             Debug.Assert(!_strategy.IsPipe || (_readPos == 0 && _readLen == 0),
                 "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
+            if (_strategy.IsPipe)
+            {
+                // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadFromPipeAsync)
+                return WriteToPipeAsync(buffer, cancellationToken);
+            }
+
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
             Task semaphoreLockTask = semaphore.WaitAsync(cancellationToken);
 
-            if (_strategy.IsPipe)
+            if (semaphoreLockTask.IsCompletedSuccessfully // lock has been acquired
+                && _readPos == _readLen) // there is nothing to flush
             {
-                // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadAsync)
-                return WriteAsyncPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                // we could not acquire the lock, so we fall to slow path that is going to wait for the lock to be released
-                return WriteAsyncNotPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            int spaceLeft = _bufferSize - _writePos;
-            if (!(spaceLeft >= buffer.Length || (_writePos == 0 && buffer.Length >= _bufferSize)))
-            {
-                // there is not enough space in the buffer which has already been partially filled
-                return WriteAsyncNotPipe(semaphoreLockTask, buffer, cancellationToken);
-            }
-
-            try
-            {
-                if (_writePos == 0)
+                bool releaseTheLock = true;
+                try
                 {
-                    ClearReadBufferBeforeWrite();
-                }
+                    // hot path #1 if the write completely fits into the buffer, we can complete synchronously:
+                    if (_bufferSize - _writePos >= buffer.Length)
+                    {
+                        EnsureBufferAllocated();
+                        buffer.Span.CopyTo(_buffer.AsSpan(_writePos));
+                        _writePos += buffer.Length;
+                        return default;
+                    }
+                    else if (_writePos == 0 && buffer.Length >= _bufferSize)
+                    {
+                        // hot path #2: the write buffer is empty and buffering would not be beneficial
+                        return _strategy.WriteAsync(buffer, cancellationToken);
+                    }
 
-                // hot path #1 if the write completely fits into the buffer, we can complete synchronously:
-                if (spaceLeft >= buffer.Length)
+                    releaseTheLock = false;
+                }
+                finally
                 {
-                    EnsureBufferAllocated();
-                    buffer.Span.CopyTo(_buffer.AsSpan(_writePos));
-                    _writePos += buffer.Length;
-
-                    return default;
+                    if (releaseTheLock)
+                    {
+                        semaphore.Release();
+                    }
+                    // the code is going to call ReadAsyncSlowPath which is going to release the lock
                 }
+            }
 
-                // hot path #2: nothing to flush and buffering is not beneficial
-                Debug.Assert(_writePos == 0 && buffer.Length >= _bufferSize, "Bug introduced in the conditions above");
-                return _strategy.WriteAsync(buffer, cancellationToken);
-            }
-            finally
-            {
-                semaphore.Release();
-            }
+            return WriteAsyncSlowPath(semaphoreLockTask, buffer, cancellationToken);
         }
 
-        private async ValueTask WriteAsyncPipe(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private async ValueTask WriteToPipeAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            Debug.Assert(_asyncActiveSemaphore != null);
-            Debug.Assert(!_strategy.IsPipe);
+            Debug.Assert(_strategy.IsPipe);
 
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await _strategy.WriteAsync(source, cancellationToken).ConfigureAwait(false);
@@ -717,16 +692,12 @@ namespace System.IO
             }
         }
 
-        private async ValueTask WriteAsyncNotPipe(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private async ValueTask WriteAsyncSlowPath(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(!_strategy.IsPipe);
 
-            if (!semaphoreLockTask.IsCompletedSuccessfully)
-            {
-                await semaphoreLockTask.ConfigureAwait(false);
-            }
-
+            await semaphoreLockTask.ConfigureAwait(false);
             try
             {
                 if (_writePos == 0)
