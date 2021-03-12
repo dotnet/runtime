@@ -139,7 +139,7 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private readonly IEqualityComparer<TInputOutput>? _comparer; // A comparer used for equality checks/hash-coding.
-            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the distinct set.
+            private HashSet<TInputOutput>? _hashLookup; // The hash lookup, used to produce the distinct set.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount;
 
@@ -177,7 +177,7 @@ namespace System.Linq.Parallel
                 {
                     _outputLoopCount = new Shared<int>(0);
 
-                    _hashLookup = new Set<TInputOutput>(_comparer);
+                    _hashLookup = new HashSet<TInputOutput>(_comparer);
 
                     Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     int rightKeyUnused = default(int);
@@ -265,7 +265,7 @@ namespace System.Linq.Parallel
                 // Build the set out of the left data source, if we haven't already.
                 if (_outputEnumerator == null)
                 {
-                    Set<TInputOutput> rightLookup = new Set<TInputOutput>(_comparer);
+                    HashSet<TInputOutput> rightLookup = new HashSet<TInputOutput>(_comparer);
 
                     Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     int rightKeyUnused = default(int);
