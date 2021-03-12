@@ -78,7 +78,7 @@ namespace System.Linq.Tests
         public void ManyElementsPredicateFalseForAllDefault()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
-            Assert.Equal(2, source.AsQueryable().FirstOrDefault(i => i % 2 == 0), 2);
+            Assert.Equal(2, source.AsQueryable().FirstOrDefault(i => i % 2 == 0, 2));
         }
 
         [Fact]
