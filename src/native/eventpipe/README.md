@@ -24,7 +24,7 @@ which records the configuration about which EventPipeEvents should be enabled, w
 sink should be used, and manages storage for intermediate storage.
 
 A simple workflow looks like this:
-1. Managed code creates an EventSource. The implementation of EventSource automatically creates 
+1. Managed code creates an EventSource. The implementation of EventSource automatically creates
 EventPipeProvider and EventPipeEvent objects that correspond to the EventSource object and the
 individual logging methods on the EventSource. At this point nobody is listening so invoking
 EventPipe WriteEvent() APIs don't record any data.
@@ -37,7 +37,7 @@ and serialize them to an outbound stream.
 
 3. Now when EventSource APIs are called, WriteEvent() serializes a buffer of data and saves it
 in the session's buffer. Asynchronously a session specific thread dequeues it, formats it, and
-writes it out to the IPC stream. 
+writes it out to the IPC stream.
 
 4. dotnet-trace listening at the other end of the IPC stream receives the log messages and
 serializes them to disk. Later the user takes that file to Visual Studio or PerfView to visualize
@@ -51,7 +51,7 @@ CoreCLR runtimes. The code depends solely on the C runtime and a limited set of 
 implementations for basic datatypes, locks, threads, etc. The set of functionality each runtime is
 expected to provide is defined in ep-rt-* files (ep=EventPipe and rt=Runtime). Each runtime then
 needs to compile a separate lib that implements this ABI and link it together. For example CoreCLR's
-implementation is in ../../coreclr/vm/eventing/eventpipe and mono's implementation is in 
+implementation is in ../../coreclr/vm/eventing/eventpipe and mono's implementation is in
 ../../mono/mono/eventpipe. Files starting with ep-* are the runtime neutral portions.
 
 Files starting with ds-* are the runtime neutral implementation of DiagnosticServer. ds-rt-* files
@@ -87,7 +87,7 @@ HASH_MAP_REMOVE  SHash<MapSHashTraits<T1,T2>>                          GHashTabl
 
 Given some method such as ep_rt_thread_session_state_array_init() you can't find it directly in the
 source because it is constructed by macros, however we can still track it down if we need to:
-1. The naming convention is always ep_rt_datatype_func. Extract just the type 
+1. The naming convention is always ep_rt_datatype_func. Extract just the type
    "thread_session_state_array" and do a text search for it in the runtime specific source.
    You should find:
 ```
@@ -110,5 +110,3 @@ init method (where the method name is constructed by the EP_RT_BUILD_TYPE_FUNC_N
 	} \
 ```
 In this case the init() method did nothing other than provide a placeholder for the static contract.
-
- 
