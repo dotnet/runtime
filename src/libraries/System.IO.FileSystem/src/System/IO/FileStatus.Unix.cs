@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    internal struct FileStatus
+    internal partial struct FileStatus
     {
         private const int NanosecondsPerTick = 100;
 
@@ -186,20 +186,6 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.CTime, _fileStatus.CTimeNsec);
         }
 
-        internal void SetCreationTime(string path, DateTimeOffset time)
-        {
-            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
-            // There is no API to update the CreationTime.
-            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
-            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
-            // We update the LastWriteTime (mtime).
-            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
-            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
-            // CreationTime, GetCreationTime will return the value that was previously set (when that value
-            // wasn't in the future).
-            SetLastWriteTime(path, time);
-        }
-
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureStatInitialized(path, continueOnError);
@@ -218,8 +204,6 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
         }
 
-        internal void SetLastWriteTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
-
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
@@ -227,6 +211,8 @@ namespace System.IO
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
+            //only used for access time on OSX, used for both on other unix platforms
+
             // force a refresh so that we have an up-to-date times for values not being overwritten
             _fileStatusInitialized = -1;
             EnsureStatInitialized(path);
