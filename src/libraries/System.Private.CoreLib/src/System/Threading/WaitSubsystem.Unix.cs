@@ -375,7 +375,14 @@ namespace System.Threading
                     throw new ThreadInterruptedException();
                 }
 
-                waitableObjectToSignal.Signal(1);
+                try
+                {
+                    waitableObjectToSignal.Signal(1);
+                }
+                catch (SemaphoreFullException ex)
+                {
+                    throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
+                }
                 waitCalled = true;
                 return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize);
             }
