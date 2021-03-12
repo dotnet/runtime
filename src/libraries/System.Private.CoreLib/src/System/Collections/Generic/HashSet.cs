@@ -1083,7 +1083,7 @@ namespace System.Collections.Generic
         {
             _freeList = -1;
 #if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier(0);
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier(1);
 #endif
             _buckets = HashHelpers.SizeOneIntArray;
             _entries = Array.Empty<Entry>();
