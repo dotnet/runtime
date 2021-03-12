@@ -883,11 +883,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     NamedIntrinsic hwIntrinsic = NI_Illegal;
                     GenTree**      broadcastOp = nullptr;
 
-                    if (varTypeIsFloating(op1->TypeGet()))
+                    if (varTypeIsArithmetic(op1->TypeGet()))
                     {
                         broadcastOp = &op1;
                     }
-                    else if (varTypeIsFloating(op2->TypeGet()))
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
                     {
                         broadcastOp = &op2;
                     }
@@ -985,11 +985,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     NamedIntrinsic hwIntrinsic = NI_Illegal;
                     GenTree**      broadcastOp = nullptr;
 
-                    if (varTypeIsFloating(op1->TypeGet()))
+                    if (varTypeIsArithmetic(op1->TypeGet()))
                     {
                         broadcastOp = &op1;
                     }
-                    else if (varTypeIsFloating(op2->TypeGet()))
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
                     {
                         broadcastOp = &op2;
                     }
@@ -1074,11 +1074,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     NamedIntrinsic hwIntrinsic = NI_Illegal;
                     GenTree**      broadcastOp = nullptr;
 
-                    if (varTypeIsFloating(op1->TypeGet()))
+                    if (varTypeIsArithmetic(op1->TypeGet()))
                     {
                         broadcastOp = &op1;
                     }
-                    else if (varTypeIsFloating(op2->TypeGet()))
+                    else if (varTypeIsArithmetic(op2->TypeGet()))
                     {
                         broadcastOp = &op2;
                     }
