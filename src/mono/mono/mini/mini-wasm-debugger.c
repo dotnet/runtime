@@ -555,7 +555,7 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 	ERROR_DECL (error);
 	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
 	
-	exception_on_runtime_invoke = exc;
+	exception_on_runtime_invoke = (MonoObject*)exc;
 
 	if (pause_on_exc == EXCEPTION_MODE_NONE)
 		return;
