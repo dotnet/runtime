@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
-        // Withough these DynamicDependency attributes, .ctor() will be removed from the safe handles.
+        // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConfigurationHandle))]

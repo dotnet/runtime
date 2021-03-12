@@ -205,13 +205,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override QuicStreamProvider OpenUnidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
+            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
         {
             ThrowIfDisposed();
-            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAG.NONE);
+            return new MsQuicStream(_state.Handle, QUIC_STREAM_OPEN_FLAGS.NONE);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
@@ -271,7 +271,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         private ValueTask ShutdownAsync(
-            QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
+            QUIC_CONNECTION_SHUTDOWN_FLAGS Flags,
             long ErrorCode)
         {
             Debug.Assert(!_state.ShutdownTcs.Task.IsCompleted);
@@ -375,7 +375,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, errorCode);
+            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
         }
 
         private void ThrowIfDisposed()

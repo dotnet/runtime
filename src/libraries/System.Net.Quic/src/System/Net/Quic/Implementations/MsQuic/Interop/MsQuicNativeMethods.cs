@@ -266,7 +266,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal bool ShutdownTimedOut => Data.ShutdownComplete.TimedOut;
             internal ushort BiDirectionalCount => Data.StreamsAvailable.BiDirectionalCount;
             internal ushort UniDirectionalCount => Data.StreamsAvailable.UniDirectionalCount;
-            internal QUIC_STREAM_OPEN_FLAG StreamFlags => (QUIC_STREAM_OPEN_FLAG)Data.StreamStarted.Flags;
+            internal QUIC_STREAM_OPEN_FLAGS StreamFlags => (QUIC_STREAM_OPEN_FLAGS)Data.StreamStarted.Flags;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -526,19 +526,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ushort LoadBalancingMode;             // Global only
             internal byte MaxOperationsPerDrain;
             internal byte BitField;
-        }
-
-        internal enum SettingsBitField : byte
-        {
-            SendBufferingEnabled = 1,
-            PacingEnabled = 1 << 1,
-            MigrationEnabled = 1 << 2,
-            DatagramReceiveEnabled = 1 << 3,
-
-            // single enum field, 2 bits.
-            NoResume = QUIC_SERVER_RESUMPTION_LEVEL.NO_RESUME << 4,
-            ResumeOnly =  QUIC_SERVER_RESUMPTION_LEVEL.RESUME_ONLY << 4,
-            ResumeAndZeroRtt = QUIC_SERVER_RESUMPTION_LEVEL.RESUME_AND_ZERORTT << 4
         }
 
         [Flags]

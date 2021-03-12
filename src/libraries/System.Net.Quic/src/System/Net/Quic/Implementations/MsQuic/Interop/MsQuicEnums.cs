@@ -5,7 +5,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal enum QUIC_EXECUTION_PROFILE : uint
     {
-        QUIC_EXECUTION_PROFILE_LOW_LATENCY,         // Default
+        QUIC_EXECUTION_PROFILE_LOW_LATENCY, // Default
         QUIC_EXECUTION_PROFILE_TYPE_MAX_THROUGHPUT,
         QUIC_EXECUTION_PROFILE_TYPE_SCAVENGER,
         QUIC_EXECUTION_PROFILE_TYPE_REAL_TIME
@@ -18,28 +18,40 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         HASH_STORE,
         CONTEXT,
         FILE,
-        STUB_NULL = 0xF0000000 // pass as server cert to stubtls implementation
+        FILE_PROTECTED,
+        STUB_NULL = 0xF0000000 // Pass as server cert to stubtls implementation
     }
 
     [Flags]
     internal enum QUIC_CREDENTIAL_FLAGS : uint
     {
-        NONE = 0,
-        CLIENT = 1, // lack of client flag indicates server.
-        LOAD_ASYNCHRONOUS = 2,
-        NO_CERTIFICATE_VALIDATION = 4,
-        ENABLE_OCSP = 8
+        NONE = 0x00000000,
+        CLIENT = 0x00000001, // Lack of client flag indicates server.
+        LOAD_ASYNCHRONOUS = 0x00000002,
+        NO_CERTIFICATE_VALIDATION = 0x00000004,
+        ENABLE_OCSP = 0x00000008, // Schannel only currently
+        INDICATE_CERTIFICATE_RECEIVED = 0x00000010,
+        DEFER_CERTIFICATE_VALIDATION = 0x00000020, // Schannel only currently
+        REQUIRE_CLIENT_AUTHENTICATION = 0x00000040, // Schannel only currently
+        USE_TLS_BUILTIN_CERTIFICATE_VALIDATION = 0x00000080
     }
 
     [Flags]
-    internal enum QUIC_CONNECTION_SHUTDOWN_FLAG : uint
+    internal enum QUIC_CONNECTION_SHUTDOWN_FLAGS : uint
     {
         NONE = 0x0,
         SILENT = 0x1
     }
 
+    internal enum QUIC_SERVER_RESUMPTION_LEVEL : uint
+    {
+        NO_RESUME,
+        RESUME_ONLY,
+        RESUME_AND_ZERORTT
+    }
+
     [Flags]
-    internal enum QUIC_STREAM_OPEN_FLAG : uint
+    internal enum QUIC_STREAM_OPEN_FLAGS : uint
     {
         NONE = 0,
         UNIDIRECTIONAL = 0x1,
@@ -47,7 +59,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     }
 
     [Flags]
-    internal enum QUIC_STREAM_START_FLAG : uint
+    internal enum QUIC_STREAM_START_FLAGS : uint
     {
         NONE = 0,
         FAIL_BLOCKED = 0x1,
@@ -56,7 +68,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     }
 
     [Flags]
-    internal enum QUIC_STREAM_SHUTDOWN_FLAG : uint
+    internal enum QUIC_STREAM_SHUTDOWN_FLAGS : uint
     {
         NONE = 0,
         GRACEFUL = 0x1,
@@ -67,7 +79,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     }
 
     [Flags]
-    internal enum QUIC_RECEIVE_FLAG : uint
+    internal enum QUIC_RECEIVE_FLAGS : uint
     {
         NONE = 0,
         ZERO_RTT = 0x1,
@@ -75,7 +87,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     }
 
     [Flags]
-    internal enum QUIC_SEND_FLAG : uint
+    internal enum QUIC_SEND_FLAGS : uint
     {
         NONE = 0,
         ALLOW_0_RTT = 0x00000001,
@@ -191,12 +203,5 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         SEND_SHUTDOWN_COMPLETE = 6,
         SHUTDOWN_COMPLETE = 7,
         IDEAL_SEND_BUFFER_SIZE = 8,
-    }
-
-    internal enum QUIC_SERVER_RESUMPTION_LEVEL : byte
-    {
-        NO_RESUME,
-        RESUME_ONLY,
-        RESUME_AND_ZERORTT
     }
 }
