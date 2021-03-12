@@ -45,7 +45,7 @@ void add_unique_path(
 {
     // Resolve sym links.
     pal::string_t real = path;
-    pal::realpath(&real);
+    // pal::realpath(&real);
 
     if (existing->count(real))
     {
@@ -590,7 +590,7 @@ bool deps_resolver_t::resolve_tpa_list(
     {
         // Workaround for CoreFX not being able to resolve sym links.
         pal::string_t real_asset_path = item.second.resolved_path;
-        pal::realpath(&real_asset_path);
+        //pal::realpath(&real_asset_path);
         output->append(real_asset_path);
         output->push_back(PATH_SEPARATOR);
     }
