@@ -863,7 +863,8 @@ static GENERATE_GET_CLASS_WITH_CACHE (wait_subsystem, "System.Threading", "WaitS
 static void
 abandon_mutexes (MonoInternalThread *internal)
 {
-	ERROR_DECL (error);
+	// TODO: delete me if we decide not to prejit
+/*	ERROR_DECL (error);
 
 	MONO_STATIC_POINTER_INIT (MonoMethod, thread_exiting)
 
@@ -889,7 +890,7 @@ abandon_mutexes (MonoInternalThread *internal)
 
 	mono_error_cleanup (error);
 
-	HANDLE_FUNCTION_RETURN ();
+	HANDLE_FUNCTION_RETURN ();*/
 }
 #endif
 

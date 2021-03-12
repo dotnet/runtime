@@ -81,6 +81,9 @@ namespace System.Threading
 
         ~Thread()
         {
+#if TARGET_UNIX || TARGET_BROWSER
+            WaitSubsystem.OnThreadExiting(this);
+#endif
             FreeInternal();
         }
 
@@ -193,7 +196,7 @@ namespace System.Threading
 
         public void Interrupt()
         {
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER // TODO: https://github.com/dotnet/runtime/issues/49521
             WaitSubsystem.Interrupt(this);
 #endif
             InterruptInternal(this);
@@ -212,7 +215,6 @@ namespace System.Threading
         private void Initialize()
         {
             InitInternal(this);
-
 #if TARGET_UNIX || TARGET_BROWSER
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
 #endif
