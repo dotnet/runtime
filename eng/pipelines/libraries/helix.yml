@@ -5,6 +5,7 @@ parameters:
   creator: ''
   helixQueues: ''
   osGroup: ''
+  osSubGroup: ''
   targetRid: ''
   testRunNamePrefixSuffix: ''
   testScope: 'innerloop' # innerloop | outerloop | all
@@ -21,7 +22,6 @@ steps:
             /p:TargetArchitecture=${{ parameters.archType }}
             /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
             /p:Configuration=${{ parameters.buildConfig }}
-            /p:TargetOS=${{ parameters.osGroup }}
             /p:MonoForceInterpreter=${{ parameters.interpreter }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
@@ -36,3 +36,10 @@ steps:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them
       _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
+      ${{ if ne(parameters.osSubGroup, '_sim') }}:
+        TargetOS: ${{ parameters.osGroup }}
+      ${{ if and(eq(parameters.osGroup, 'tvOS'),eq(parameters.osSubGroup, '_sim')) }}:
+        TargetOS: tvOS-sim
+      ${{ if and(eq(parameters.osGroup, 'iOS'),eq(parameters.osSubGroup, '_sim')) }}:
+        TargetOS: iOS-sim
+
