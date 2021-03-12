@@ -91,6 +91,7 @@
     <PlatformManifestFileEntry Include="libSystem.Net.Security.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -178,6 +179,7 @@
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
+    <PlatformManifestFileEntry Include="crypto_worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
@@ -187,7 +189,9 @@
     <PlatformManifestFileEntry Include="binding_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="library_mono.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="library_channel.js" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="pal_crypto_webworker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />

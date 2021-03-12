@@ -146,7 +146,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js runtime/library_channel.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(SYSTEM_CRYPTO_NATIVE_LIBDIR)/pal_crypto_webworker.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN_DIR)/include/wasm

@@ -291,6 +291,7 @@
      <_WasmRuntimePackNativeLibs Include="libmono-icall-table.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.Native.a"/>
      <_WasmRuntimePackNativeLibs Include="libSystem.IO.Compression.Native.a"/>
+     <_WasmRuntimePackNativeLibs Include="libSystem.Security.Cryptography.Native.Browser.a"/>
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
      <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
      <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
@@ -309,6 +310,8 @@
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)binding_support.js" />
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)dotnet_support.js" />
      <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_random.js" />
+     <_DotnetJSSrcFile Include="$(_WasmSrcDir)pal_crypto_webworker.js" />
+     <_DotnetJSSrcPreFile Include="$(_WasmSrcDir)library_channel.js" />
 
      <_AOTAssemblies Include="@(_WasmAssembliesInternal)" Condition="'%(_WasmAssembliesInternal._InternalForceInterpret)' != 'true'" />
      <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
@@ -335,7 +338,7 @@
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <RunWithEmSdkEnv Command='emcc $(EmccCFlags) "%(_WasmObjectsToBuild.SourcePath)" -c -o "%(_WasmObjectsToBuild.Identity)"' EmSdkPath="$(EMSDK_PATH)" />
-    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
+    <RunWithEmSdkEnv Command="emcc $(EmccLDFlags) @(_DotnetJSSrcFile->'--js-library &quot;%(Identity)&quot;', ' ') @(_DotnetJSSrcPreFile->'--pre-js &quot;%(Identity)&quot;', ' ') @(_BitcodeFile->'&quot;%(Identity)&quot;', ' ') @(_WasmObjects->'&quot;%(Identity)&quot;', ' ') -o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" EmSdkPath="$(EMSDK_PATH)" />
     <RunWithEmSdkEnv Command='"$(_WasmOptCommand)" --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EmSdkPath="$(EMSDK_PATH)" />
 
     <ItemGroup>
