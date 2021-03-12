@@ -931,6 +931,7 @@
         "5.0.0",
         "5.0.1"
       ],
+      "BaselineVersion": "5.0.1",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "5.0.0.0": "5.0.0",
@@ -1059,6 +1060,7 @@
         "5.0.0",
         "5.0.1"
       ],
+      "BaselineVersion": "5.0.1",
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "5.0.0.0": "5.0.0",
@@ -1506,18 +1508,6 @@
         "net45": "4.0.0.0"
       }
     },
-    "runtime.native.System.Data.SqlClient.sni": {
-      "StableVersions": [
-        "4.0.0",
-        "4.3.0",
-        "4.4.0",
-        "4.5.0",
-        "4.6.0",
-        "4.7.0"
-      ],
-      "BaselineVersion": "5.0.0",
-      "InboxOn": {}
-    },
     "runtime.linux-arm.runtime.native.System.IO.Ports": {
       "StableVersions": [
         "4.7.0",
@@ -1539,11 +1529,16 @@
       ],
       "InboxOn": {}
     },
-    "runtime.osx-x64.runtime.native.System.IO.Ports": {
+    "runtime.native.System.Data.SqlClient.sni": {
       "StableVersions": [
-        "4.7.0",
-        "5.0.0"
+        "4.0.0",
+        "4.3.0",
+        "4.4.0",
+        "4.5.0",
+        "4.6.0",
+        "4.7.0"
       ],
+      "BaselineVersion": "5.0.0",
       "InboxOn": {}
     },
     "runtime.native.System.IO.Ports": {
@@ -1553,6 +1548,13 @@
         "5.0.1"
       ],
       "BaselineVersion": "5.0.1",
+      "InboxOn": {}
+    },
+    "runtime.osx-x64.runtime.native.System.IO.Ports": {
+      "StableVersions": [
+        "4.7.0",
+        "5.0.0"
+      ],
       "InboxOn": {}
     },
     "SMDiagnostics": {
