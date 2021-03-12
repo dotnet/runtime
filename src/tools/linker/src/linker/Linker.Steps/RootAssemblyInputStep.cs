@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -20,6 +21,8 @@ namespace Mono.Linker.Steps
 		protected override void Process ()
 		{
 			AssemblyDefinition assembly = LoadAssemblyFile ();
+			if (assembly == null)
+				return;
 
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
 
@@ -88,14 +91,27 @@ namespace Mono.Linker.Steps
 
 		AssemblyDefinition LoadAssemblyFile ()
 		{
-			AssemblyDefinition assembly = Context.Resolver.GetAssembly (fileName, Context.ReaderParameters);
-			AssemblyDefinition loaded = Context.GetLoadedAssembly (assembly.Name.Name);
+			AssemblyDefinition assembly;
 
-			// The same assembly could be already loaded if there are multiple inputs pointing to same file
-			if (loaded != null)
-				return loaded;
+			if (File.Exists (fileName)) {
+				assembly = Context.Resolver.GetAssembly (fileName);
+				AssemblyDefinition loaded = Context.GetLoadedAssembly (assembly.Name.Name);
 
-			Context.Resolver.CacheAssembly (assembly);
+				// The same assembly could be already loaded if there are multiple inputs pointing to same file
+				if (loaded != null)
+					return loaded;
+
+				Context.Resolver.CacheAssembly (assembly);
+				return assembly;
+			}
+
+			//
+			// Quirks mode for netcore to support passing ambiguous assembly name
+			//
+			assembly = Context.TryResolve (fileName);
+			if (assembly == null)
+				Context.LogError ($"Root assembly '{fileName}' could not be found", 1032);
+
 			return assembly;
 		}
 

@@ -169,7 +169,7 @@ namespace Mono.Linker.Steps
 			} else {
 				AssemblyDefinition assembly;
 				try {
-					assembly = GetAssembly (_context, AssemblyNameReference.Parse (assemblyName));
+					assembly = _context.TryResolve (AssemblyNameReference.Parse (assemblyName));
 					if (assembly == null) {
 						_context.LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'", 2030, _xmlDocumentLocation);
 						attributeType = default;
@@ -350,11 +350,6 @@ namespace Mono.Linker.Steps
 			IEnumerable<CustomAttribute> attributes = ProcessAttributes (nav, @event);
 			if (attributes.Any ())
 				_attributeInfo.AddCustomAttributes (@event, attributes);
-		}
-
-		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
-		{
-			return context.Resolve (assemblyName);
 		}
 	}
 }

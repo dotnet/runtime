@@ -635,12 +635,12 @@ namespace ILLink.Tasks.Tests
 		public void TestErrorHandling ()
 		{
 			var task = new MockTask () {
-				RootAssemblyNames = new ITaskItem[] { new TaskItem ("MissingAssembly.dll") }
+				RootAssemblyNames = new ITaskItem[0]
 			};
 			task.BuildEngine = new MockBuildEngine ();
 			Assert.False (task.Execute ());
 			Assert.Contains (task.Messages, message =>
-				message.Line.Contains ("Root assembly 'MissingAssembly.dll' could not be found'"));
+				message.Line.Contains ("No input files were specified"));
 		}
 	}
 }

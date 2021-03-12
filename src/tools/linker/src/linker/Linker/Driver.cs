@@ -33,6 +33,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Xml.XPath;
+using Mono.Cecil;
 using Mono.Linker.Steps;
 
 namespace Mono.Linker
@@ -190,7 +191,7 @@ namespace Mono.Linker
 						return 1;
 
 					case "--skip-unresolved":
-						if (!GetBoolParam (token, l => context.IgnoreUnresolved = context.Resolver.IgnoreUnresolved = l))
+						if (!GetBoolParam (token, l => context.IgnoreUnresolved = l))
 							return -1;
 
 						continue;
@@ -548,7 +549,7 @@ namespace Mono.Linker
 								return -1;
 
 							if (!File.Exists (assemblyFile) && assemblyFile.EndsWith (".dll", StringComparison.InvariantCultureIgnoreCase)) {
-								context.LogError ($"Root assembly '{assemblyFile}' could not be found'", 1032);
+								context.LogError ($"Root assembly '{assemblyFile}' could not be found", 1032);
 								return -1;
 							}
 
@@ -706,6 +707,8 @@ namespace Mono.Linker
 				Debug.Assert (lex.MessageContainer.Code != null);
 				Debug.Assert (lex.MessageContainer.Code.Value != 0);
 				return lex.MessageContainer.Code ?? 1;
+			} catch (ResolutionException e) {
+				context.LogError ($"{e.Message}", 1040);
 			} catch (Exception) {
 				// Unhandled exceptions are usually linker bugs. Ask the user to report it.
 				context.LogError ($"IL Linker has encountered an unexpected error. Please report the issue at https://github.com/mono/linker/issues", 1012);

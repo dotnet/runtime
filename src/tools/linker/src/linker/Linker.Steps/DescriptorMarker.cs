@@ -233,11 +233,6 @@ namespace Mono.Linker.Steps
 				_context.LogWarning ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}' specified in {_xmlDocumentLocation}", 2019, _xmlDocumentLocation);
 		}
 
-		protected override AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName)
-		{
-			return context.Resolve (assemblyName);
-		}
-
 		static bool IsRequired (XPathNavigator nav)
 		{
 			string attribute = GetAttribute (nav, _required);

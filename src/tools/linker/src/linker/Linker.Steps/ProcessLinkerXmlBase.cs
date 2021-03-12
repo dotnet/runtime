@@ -121,7 +121,7 @@ namespace Mono.Linker.Steps
 					foreach (AssemblyDefinition assembly in _context.GetReferencedAssemblies ())
 						ProcessAssembly (assembly, iterator.Current, warnOnUnresolvedTypes: false);
 				} else {
-					AssemblyDefinition assembly = assemblyToProcess ?? GetAssembly (_context, name);
+					AssemblyDefinition assembly = assemblyToProcess ?? _context.TryResolve (name);
 
 					if (assembly == null) {
 						_context.LogWarning ($"Could not resolve assembly '{name.Name}'", 2007, _xmlDocumentLocation);
@@ -440,8 +440,6 @@ namespace Mono.Linker.Steps
 		}
 
 		protected virtual void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object customData, bool fromSignature) { }
-
-		protected abstract AssemblyDefinition GetAssembly (LinkContext context, AssemblyNameReference assemblyName);
 
 		protected virtual AssemblyNameReference GetAssemblyName (XPathNavigator nav)
 		{
