@@ -5,6 +5,7 @@
 #include "pal_utilities.h"
 #include "pal_signature.h"
 #include "pal_bignum.h"
+#include "pal_misc.h"
 
 #define INIT_LOCALS(name, ...) \
     enum { __VA_ARGS__, count_##name }; \
@@ -311,8 +312,7 @@ int32_t AndroidCryptoNative_DsaKeyCreateByExplicitParameters(
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
 
-    jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, loc[publicKey], loc[privateKey]);
-    *outDsa = ToGRef(env, keyPair);
+    *outDsa = AndroidCryptoNative_CreateKeyPair(env, loc[publicKey], loc[privateKey]);
     if (CheckJNIExceptions(env))
     {
         ON_EXCEPTION_PRINT_AND_GOTO(error);

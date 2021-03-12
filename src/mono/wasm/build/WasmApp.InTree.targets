@@ -8,7 +8,7 @@
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
     <ItemGroup>
       <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)</PackageDirectory>
+        <PackageDirectory>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
     <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
@@ -16,7 +16,7 @@
 
   <Target Name="RebuildWasmAppBuilder">
     <ItemGroup>
-      <WasmAppBuildProject Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+      <WasmAppBuildProject Include="$([MSBuild]::NormalizePath($(RepoTasksDir), 'WasmAppBuilder', 'WasmAppBuilder.csproj'))" />
     </ItemGroup>
 
     <MSBuild Projects="@(WasmAppBuildProject)"
@@ -37,9 +37,9 @@
       <!-- Helix properties -->
       <!-- AnyCPU as Platform-->
       <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/$(WasmHelixTestAppRelativeDir)/</HelixArchiveRunOnlyAppsDir>
+      <HelixArchiveRoot>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'helix'))</HelixArchiveRoot>
+      <HelixArchiveRunOnlyRoot>$([MSBuild]::NormalizeDirectory($(HelixArchiveRoot), 'runonly'))</HelixArchiveRunOnlyRoot>
+      <HelixArchiveRunOnlyAppsDir>$([MSBuild]::NormalizeDirectory($(HelixArchiveRunOnlyRoot), $(OSPlatformConfig), $(WasmHelixTestAppRelativeDir)))</HelixArchiveRunOnlyAppsDir>
       <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
     </PropertyGroup>
     <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />

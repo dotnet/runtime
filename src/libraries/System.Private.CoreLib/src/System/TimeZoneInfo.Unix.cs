@@ -164,6 +164,36 @@ namespace System
             }
         }
 
+        private static unsafe string? GetAlternativeId(string id)
+        {
+            if (!GlobalizationMode.Invariant)
+            {
+                if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
+                {
+                    //special case UTC as ICU will convert it to "Etc/GMT" which is incorrect name for UTC.
+                    return "Etc/UTC";
+                }
+                foreach (char c in id)
+                {
+                    // ICU uses some characters as a separator and trim the id at that character.
+                    // while we should fail if the Id contained one of these characters.
+                    if (c == '\\' || c == '\n' || c == '\r')
+                    {
+                        return null;
+                    }
+                }
+
+                char* buffer = stackalloc char[100];
+                int length = Interop.Globalization.WindowsIdToIanaId(id, buffer, 100);
+                if (length > 0)
+                {
+                    return new string(buffer, 0, length);
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Helper function for retrieving the local system time zone.
         /// May throw COMException, TimeZoneNotFoundException, InvalidTimeZoneException.

@@ -2456,6 +2456,9 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 //    This method only computes the arg table and arg entries for the call (the fgArgInfo),
 //    and makes no modification of the args themselves.
 //
+//    The IR for the call args can change for calls with non-standard arguments: some non-standard
+//    arguments add new call argument IR nodes.
+//
 void Compiler::fgInitArgInfo(GenTreeCall* call)
 {
     GenTreeCall::Use* args;
@@ -6777,6 +6780,9 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //    This function is target specific and each target will make the fastTailCall
 //    decision differently. See the notes below.
 //
+//    This function calls fgInitArgInfo() to initialize the arg info table, which
+//    is used to analyze the argument. This function can alter the call arguments
+//    by adding argument IR nodes for non-standard arguments.
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
@@ -8004,7 +8010,10 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     bool virtualCall = call->IsVirtual();
 
@@ -8015,11 +8024,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("This is a VSD\n");
 #if FEATURE_FASTTAILCALL
-        // fgInitArgInfo has been called from fgCanFastTailCall and it added the stub address
-        // to the arg list. Remove it now.
-        call->gtCallArgs = call->gtCallArgs->GetNext();
-        // We changed args so recompute info.
-        call->fgArgInfo = nullptr;
+        call->ResetArgInfo();
 #endif
 
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
@@ -8634,7 +8639,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     // First move the 'this' pointer (if any) onto the regular arg list. We do this because
     // we are going to prepend special arguments onto the argument list (for non-x86 platforms),
@@ -9136,7 +9144,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             //     ret temp
 
             // Force re-evaluating the argInfo as the return argument has changed.
-            call->fgArgInfo = nullptr;
+            call->ResetArgInfo();
 
             // Create a new temp.
             unsigned tmpNum =
@@ -9429,15 +9437,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // BBJ_THROW would result in the tail call being dropped as the epilog is generated
         // only for BBJ_RETURN blocks.
         //
-        // Currently this doesn't work for non-void callees. Some of the code that handles
-        // fgRemoveRestOfBlock expects the tree to have GTF_EXCEPT flag set but call nodes
-        // do not have this flag by default. We could add the flag here but the proper solution
-        // would be to replace the return expression with a local var node during inlining
-        // so the rest of the call tree stays in a separate statement. That statement can then
-        // be removed by fgRemoveRestOfBlock without needing to add GTF_EXCEPT anywhere.
-        //
 
-        if (!call->IsTailCall() && call->TypeGet() == TYP_VOID)
+        if (!call->IsTailCall())
         {
             fgRemoveRestOfBlock = true;
         }
@@ -14916,7 +14917,6 @@ DONE_MORPHING_CHILDREN:
                 if (fgIsCommaThrow(op1, true))
                 {
                     GenTree* throwNode = op1->AsOp()->gtOp1;
-                    noway_assert(throwNode->gtType == TYP_VOID);
 
                     JITDUMP("Removing [%06d] GT_JTRUE as the block now unconditionally throws an exception.\n",
                             dspTreeID(tree));
@@ -14969,7 +14969,6 @@ DONE_MORPHING_CHILDREN:
             }
 
             GenTree* throwNode = op1->AsOp()->gtOp1;
-            noway_assert(throwNode->gtType == TYP_VOID);
 
             if (oper == GT_COMMA)
             {
@@ -17697,6 +17696,11 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Finally remove the nested qmark stmt.
     fgRemoveStmt(block, stmt);
+
+    if (true2Expr->OperIs(GT_CALL) && (true2Expr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+    {
+        fgConvertBBToThrowBB(helperBlock);
+    }
 
 #ifdef DEBUG
     if (verbose)

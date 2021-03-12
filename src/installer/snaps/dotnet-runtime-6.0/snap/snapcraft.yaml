@@ -1,6 +1,6 @@
 name: dotnet-runtime-60
 base: core18
-version: 6.0.0-preview.1.21102.12
+version: 6.0.0-preview.2.21154.6
 summary: Cross-Platform .NET Core Runtime. 
 description: |
   .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
@@ -27,8 +27,8 @@ slots:
 parts:
   dotnet-runtime:
     plugin: dump
-    source: https://download.visualstudio.microsoft.com/download/pr/8f151cb8-5cf0-45e5-b1b0-c16b631b24bd/d12028755ec7abb4f87f16e6fa6e8add/dotnet-runtime-6.0.0-preview.1.21102.12-linux-x64.tar.gz
-    source-checksum: sha512/64114ea881981ed061eb22c97ae8cf5a85209b0a439d6640984e1b423bc934259bcd136484c26f038f19222a9068a5cd687229a8b9b0d0b55efacb0275da082d
+    source: https://download.visualstudio.microsoft.com/download/pr/2c88db43-4d92-433d-b95f-81bc9118a67e/08ec34f28dca0af4e8cf551299aa4367/dotnet-runtime-6.0.0-preview.2.21154.6-linux-x64.tar.gz
+    source-checksum: sha512/88ba8c4fe252fb76e0c40a4dcd2fe3e9c2960f445dd97a8044be9900f3641f18b2687ec10a36545a141a1e6820bb61278d2047cacd93365954a124c92463b17b
     stage-packages:
       - libicu60
       - libssl1.0.0

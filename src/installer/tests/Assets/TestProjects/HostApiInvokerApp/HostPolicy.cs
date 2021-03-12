@@ -15,22 +15,22 @@ namespace HostApiInvokerApp
     {
         internal static class hostpolicy
         {
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void corehost_resolve_component_dependencies_result_fn(
                 string assembly_paths,
                 string native_search_paths,
                 string resource_search_paths);
 
-            [DllImport(nameof(hostpolicy), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostpolicy), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern int corehost_resolve_component_dependencies(
                 string component_main_assembly_path, 
                 corehost_resolve_component_dependencies_result_fn result);
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void corehost_error_writer_fn(
                 string message);
 
-            [DllImport(nameof(hostpolicy), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            [DllImport(nameof(hostpolicy), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
             internal static extern IntPtr corehost_set_error_writer(
                 corehost_error_writer_fn error_writer);
         }

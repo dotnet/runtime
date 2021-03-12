@@ -147,4 +147,8 @@ mono_assembly_get_image_internal (MonoAssembly *assembly);
 void
 mono_set_assemblies_path_direct (char **path);
 
+gboolean
+mono_assembly_is_jit_optimizer_disabled (MonoAssembly *assembly);
+
+
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

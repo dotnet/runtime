@@ -42,6 +42,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_GetSortKey)
     DllImportEntry(GlobalizationNative_GetSortVersion)
     DllImportEntry(GlobalizationNative_GetTimeZoneDisplayName)
+    DllImportEntry(GlobalizationNative_IanaIdToWindowsId)
     DllImportEntry(GlobalizationNative_IndexOf)
     DllImportEntry(GlobalizationNative_InitICUFunctions)
     DllImportEntry(GlobalizationNative_InitOrdinalCasingPage)
@@ -53,6 +54,7 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_StartsWith)
     DllImportEntry(GlobalizationNative_ToAscii)
     DllImportEntry(GlobalizationNative_ToUnicode)
+    DllImportEntry(GlobalizationNative_WindowsIdToIanaId)
 };
 
 EXTERN_C const void* GlobalizationResolveDllImport(const char* name);
