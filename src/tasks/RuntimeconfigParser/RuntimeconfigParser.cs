@@ -10,20 +10,19 @@ using System.Reflection.Metadata;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-
-public class RuntimeconfigParserTask : Task
+public class RuntimeConfigParserTask : Task
 {
     /// <summary>
     /// The path to runtimeconfig.json file.
     /// </summary>
     [Required]
-    public string RuntimeConfigFile { get; set; } = ""!;
+    public string RuntimeConfigFile { get; set; } = "";
 
     /// <summary>
     /// The path to the output binary file.
     /// </summary>
     [Required]
-    public string OutputFile { get; set; } = ""!;
+    public string OutputFile { get; set; } = "";
 
     /// <summary>
     /// List of reserved properties.
@@ -42,15 +41,15 @@ public class RuntimeconfigParserTask : Task
             throw new ArgumentException($"'{nameof(OutputFile)}' is required.", nameof(OutputFile));
         }
 
-        Dictionary<string, string> configProperties = ConvertInputToDictionary (RuntimeConfigFile);
+        Dictionary<string, string> configProperties = ConvertInputToDictionary(RuntimeConfigFile);
 
         if (ReservedProperties.Length != 0)
         {
-            checkDuplicateProperties (configProperties, ReservedProperties);
+            checkDuplicateProperties(configProperties, ReservedProperties);
         }
 
         var blobBuilder = new BlobBuilder();
-        ConvertDictionaryToBlob (configProperties, blobBuilder);
+        ConvertDictionaryToBlob(configProperties, blobBuilder);
 
         using var stream = File.OpenWrite(OutputFile);
         blobBuilder.WriteContentTo(stream);
@@ -74,23 +73,23 @@ public class RuntimeconfigParserTask : Task
 
     /// Just write the dictionary out to a blob as a count followed by
     /// a length-prefixed UTF8 encoding of each key and value
-    private void ConvertDictionaryToBlob (IReadOnlyDictionary<string, string> properties, BlobBuilder b)
+    private void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder b)
     {
         int count = properties.Count;
 
-        b.WriteCompressedInteger (count);
+        b.WriteCompressedInteger(count);
         foreach (var kvp in properties)
         {
-            b.WriteSerializedString (kvp.Key);
-            b.WriteSerializedString (kvp.Value);
+            b.WriteSerializedString(kvp.Key);
+            b.WriteSerializedString(kvp.Value);
         }
     }
 
-    private void checkDuplicateProperties (IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private void checkDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
         foreach (var key in keys)
         {
-            if (properties.ContainsKey (key.ItemSpec))
+            if (properties.ContainsKey(key.ItemSpec))
             {
                 throw new ArgumentException($"Property '{key}' can't be set by the user!");
             }
@@ -98,7 +97,8 @@ public class RuntimeconfigParserTask : Task
     }
 }
 
-public class Root {
+public class Root
+{
     // the configProperties key
     [JsonPropertyName ("configProperties")]
     public Dictionary<string, string> ConfigProperties {get; set;} = new Dictionary<string, string> ();
