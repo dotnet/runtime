@@ -33,7 +33,9 @@ namespace Generators
         //     }
 
         public void Initialize(GeneratorInitializationContext context)
-            => context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+        {
+            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+        }
 
         public void Execute(GeneratorExecutionContext context)
         {
@@ -45,20 +47,24 @@ namespace Generators
             }
 
             Parser? p = new Parser(context.Compilation, context.ReportDiagnostic, context.CancellationToken);
-            EventSourceClass[]? eventSources = p.GetEventSourceClasses(receiver.CandidateClasses);
+            EventSourceClass[]? eventSources = p.GetEventSourceClasses(receiver.CandidateClasses, receiver.CandidateMethods);
+            ITypeSymbol? stringTypeSymbol = p.GetStringTypeSymbol();
 
-            if (eventSources?.Length > 0)
+            if (eventSources?.Length > 0 && stringTypeSymbol is not null)
             {
                 Emitter? e = new Emitter(context);
-                e.Emit(eventSources, context.CancellationToken);
+                e.Emit(eventSources, context.CancellationToken, stringTypeSymbol);
             }
         }
 
         private sealed class SyntaxReceiver : ISyntaxReceiver
         {
             private List<ClassDeclarationSyntax>? _candidateClasses;
+            private Dictionary<ClassDeclarationSyntax, List<MethodDeclarationSyntax>>? _candidateMethods;
 
             public List<ClassDeclarationSyntax>? CandidateClasses => _candidateClasses;
+
+            public Dictionary<ClassDeclarationSyntax, List<MethodDeclarationSyntax>>? CandidateMethods => _candidateMethods;
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
@@ -89,12 +95,29 @@ namespace Generators
                                 // Match add to candidates
                                 _candidateClasses ??= new List<ClassDeclarationSyntax>();
                                 _candidateClasses.Add(classDeclaration);
+
+                                _candidateMethods ??= new Dictionary<ClassDeclarationSyntax, List<MethodDeclarationSyntax>>();
+                                _candidateMethods.Add(classDeclaration, GetEventAnnotatedMethods(classDeclaration));
                                 return;
                             }
                         }
                     }
                 }
             }
+            private List<MethodDeclarationSyntax> GetEventAnnotatedMethods(ClassDeclarationSyntax classDeclaration)
+            {
+                List<MethodDeclarationSyntax> methods = new List<MethodDeclarationSyntax>();
+
+                foreach(SyntaxNode node in classDeclaration.ChildNodes())
+                {
+                    if (node is MethodDeclarationSyntax methodDecl)
+                    {
+                        methods.Add(methodDecl);
+                    }
+                }
+                return methods;
+            }
+
         }
 
         private class EventSourceClass
@@ -103,6 +126,26 @@ namespace Generators
             public string ClassName = string.Empty;
             public string SourceName = string.Empty;
             public Guid Guid = Guid.Empty;
+            public List<EventSourceEvent> Events = new List<EventSourceEvent>();
+            public List<string> DebugStrings = new List<string>(); // TODO: REMOVE ME!!!
+            public Dictionary<string, Dictionary<string, int>> Maps = new Dictionary<string, Dictionary<string,int>>();
+        }
+
+        private class EventSourceEvent
+        {
+            public string Name = string.Empty;
+            public string Id = string.Empty;
+            public string Keywords = string.Empty;
+            public string Level = string.Empty;
+            public List<EventParameter>? Parameters = null;
+        }
+
+        private class EventParameter
+        {
+            public ITypeSymbol? Type;
+            public string TypeString = string.Empty;
+            public string Name = string.Empty;
+
         }
     }
 }

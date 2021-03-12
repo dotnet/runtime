@@ -15,5 +15,6 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Emitter.cs" />
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\EventSourceGenerator.Parser.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\ManifestBuilder.cs" />
   </ItemGroup>
 </Project>

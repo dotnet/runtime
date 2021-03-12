@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -29,7 +30,13 @@ namespace Generators
                 _reportDiagnostic = reportDiagnostic;
             }
 
-            public EventSourceClass[] GetEventSourceClasses(List<ClassDeclarationSyntax> classDeclarations)
+            public ITypeSymbol? GetStringTypeSymbol()
+            {
+                INamedTypeSymbol? stringTypeSymbol = _compilation.GetTypeByMetadataName("System.String");
+                return stringTypeSymbol;
+            }
+
+            public EventSourceClass[] GetEventSourceClasses(List<ClassDeclarationSyntax> classDeclarations, Dictionary<ClassDeclarationSyntax, List<MethodDeclarationSyntax>> methodDeclarations)
             {
                 INamedTypeSymbol? autogenerateAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
                 if (autogenerateAttribute is null)
@@ -44,6 +51,8 @@ namespace Generators
                     // No EventSourceAttribute
                     return Array.Empty<EventSourceClass>();
                 }
+
+                INamedTypeSymbol? eventMethodAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventAttribute");
 
                 List<EventSourceClass>? results = null;
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
@@ -133,13 +142,19 @@ namespace Generators
                                     {
                                         result = GenerateGuidFromName(name.ToUpperInvariant());
                                     }
+                                    List<string> debugStrings = new List<string>();
+                                    Dictionary<string, Dictionary<string, int>> maps = new Dictionary<string, Dictionary<string,int>>();
+                                    List<EventSourceEvent> events = GetMethodMetadataToken(methodDeclarations[classDef], eventMethodAttribute, sm, debugStrings, maps);
 
                                     eventSourceClass = new EventSourceClass
                                     {
                                         Namespace = nspace,
                                         ClassName = className,
                                         SourceName = name,
-                                        Guid = result
+                                        Guid = result,
+                                        Events = events,
+                                        DebugStrings = debugStrings,
+                                        Maps = maps
                                     };
                                     continue;
                                 }
@@ -162,6 +177,184 @@ namespace Generators
                 }
 
                 return results?.ToArray() ?? Array.Empty<EventSourceClass>();
+            }
+
+            private List<EventSourceEvent> GetMethodMetadataToken(List<MethodDeclarationSyntax> methods, INamedTypeSymbol? eventMethodAttribute, SemanticModel sm, List<string> debugStrings, Dictionary<string, Dictionary<string, int>> maps)
+            {
+                List<EventSourceEvent> metadataTokens = new List<EventSourceEvent>();
+
+                if (eventMethodAttribute is null)
+                {
+                    return metadataTokens;
+                }
+
+                foreach (MethodDeclarationSyntax method in methods)
+                {
+                    AttributeSyntax? eventAttribute = null;
+                    string eventName;
+                    string eventId = string.Empty;
+                    string eventLevel = string.Empty;;
+                    string eventKeywords = string.Empty;
+                    string opcode;
+                    string task;
+                    List<EventParameter>? parameters = null;
+
+                    foreach (AttributeListSyntax? mal in method.AttributeLists)
+                    {
+                        foreach (AttributeSyntax? ma in mal.Attributes)
+                        {
+                            if (sm.GetSymbolInfo(ma, _cancellationToken).Symbol is not IMethodSymbol maSymbol)
+                            {
+                                // badly formed attribute definition, or not the right attribute
+                                continue;
+                            }
+                            if (eventMethodAttribute.Equals(maSymbol.ContainingType, SymbolEqualityComparer.Default))
+                            {
+                                eventAttribute = ma;
+                                eventName = method.Identifier.ToString();
+                                debugStrings.Add(eventName);
+                                if (eventAttribute.ArgumentList is not null)
+                                {
+                                    SeparatedSyntaxList<AttributeArgumentSyntax>? args = eventAttribute.ArgumentList?.Arguments;
+                                    if (args is not null)
+                                    {
+                                        foreach (AttributeArgumentSyntax? attribArg in args)
+                                        {
+                                            if (attribArg is null)
+                                            {
+                                                continue;
+                                            }
+
+                                            if (attribArg.NameEquals is null)
+                                            {
+                                                string? value = sm.GetConstantValue(attribArg.Expression, _cancellationToken).ToString();
+                                                eventId = value;
+                                            }
+                                            else
+                                            {
+                                                string? argName = attribArg.NameEquals!.Name.Identifier.ToString();
+                                                string? value = sm.GetConstantValue(attribArg.Expression, _cancellationToken).ToString();
+                                                switch (argName)
+                                                {
+                                                    case "Name":
+                                                        eventName = value;
+                                                        break;
+                                                    case "Level":
+                                                        eventLevel = value;
+                                                        break;
+                                                    case "Keywords":
+                                                        eventKeywords = value;
+                                                        break;
+                                                    case "Opcode":
+                                                        opcode = value;
+                                                        break;
+                                                    case "Task":
+                                                        task = value;
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                foreach (ParameterSyntax param in method.ParameterList.Parameters)
+                                {
+                                    parameters ??= new List<EventParameter>();
+                                    debugStrings.Add(param.Identifier.ToString());
+                                    ISymbol? paramSymbol = sm.GetDeclaredSymbol(param);
+                                    if (paramSymbol is IParameterSymbol yes)
+                                    {
+                                        // For enum, we need to create a mapping for the enum class type.
+                                        if (yes.Type.TypeKind == TypeKind.Enum)
+                                        {
+                                            int recordedFieldCount = 0;
+                                            foreach (ISymbol symbol in yes.Type.GetMembers())
+                                            {
+                                                if (symbol.Kind != SymbolKind.Field)
+                                                {
+                                                    continue;
+                                                }
+                                                
+                                                if (!maps.ContainsKey(yes.Type.ToDisplayString()))
+                                                {
+                                                    maps.Add(yes.Type.ToDisplayString(), new Dictionary<string, int>());
+                                                }
+                                                maps[yes.Type.ToDisplayString()].Add(symbol.Name, recordedFieldCount); 
+                                                debugStrings.Add(symbol.ToDisplayString());
+                                            }
+                                        }
+                                        else
+                                        {
+                                            debugStrings.Add("IsNotEnum");
+                                        }
+
+
+                                        debugStrings.Add(yes.Type.ToDisplayString());
+
+                                            
+                                        parameters.Add(new EventParameter {
+                                            Name = param.Identifier.ToString(),
+                                            TypeString = param.Type!.ToFullString(),
+                                            Type = yes.Type
+                                        });
+                                    }
+                                    else
+                                    {
+                                        debugStrings.Add("paramSymbol null");
+                                    }
+
+
+                                }
+
+                                metadataTokens.Add(new EventSourceEvent {
+                                    Name = eventName,
+                                    Id = eventId,
+                                    Keywords = eventKeywords,
+                                    Level = eventLevel,
+                                    Parameters = parameters
+                                });
+                            }
+                        }
+                    }
+                }
+                return metadataTokens;
+            }
+            public string GetFullMetadataName(ISymbol s) 
+            {
+                if (s == null || IsRootNamespace(s))
+                {
+                    return string.Empty;
+                }
+
+                var sb = new StringBuilder(s.MetadataName);
+                var last = s;
+
+                s = s.ContainingSymbol;
+
+                while (!IsRootNamespace(s))
+                {
+                    if (s is ITypeSymbol && last is ITypeSymbol)
+                    {
+                        sb.Insert(0, '+');
+                    }
+                    else
+                    {
+                        sb.Insert(0, '.');
+                    }
+
+                    sb.Insert(0, s.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));
+                    //sb.Insert(0, s.MetadataName);
+                    s = s.ContainingSymbol;
+                }
+
+                return sb.ToString();
+            }
+
+            private bool IsRootNamespace(ISymbol symbol) 
+            {
+                INamespaceSymbol s = null;
+                return ((s = symbol as INamespaceSymbol) != null) && s.IsGlobalNamespace;
             }
 
             // From System.Private.CoreLib
