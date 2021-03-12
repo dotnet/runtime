@@ -365,7 +365,7 @@ internal static partial class Interop
                 {
                     fixed (byte* fixedBuffer = outBuffer)
                     {
-                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
+                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length - offset);
                     }
                 }
 
