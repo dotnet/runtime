@@ -1091,6 +1091,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     switch (baseType)
                     {
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
                         case TYP_SHORT:
                         case TYP_USHORT:
                         case TYP_INT:
