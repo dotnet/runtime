@@ -315,19 +315,19 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                switch ((QUIC_CONNECTION_EVENT)connectionEvent.Type)
+                switch ((QUIC_CONNECTION_EVENT_TYPE)connectionEvent.Type)
                 {
-                    case QUIC_CONNECTION_EVENT.CONNECTED:
+                    case QUIC_CONNECTION_EVENT_TYPE.CONNECTED:
                         return HandleEventConnected(state, ref connectionEvent);
-                    case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_TRANSPORT:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_TRANSPORT:
                         return HandleEventShutdownInitiatedByTransport(state, ref connectionEvent);
-                    case QUIC_CONNECTION_EVENT.SHUTDOWN_INITIATED_BY_PEER:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_INITIATED_BY_PEER:
                         return HandleEventShutdownInitiatedByPeer(state, ref connectionEvent);
-                    case QUIC_CONNECTION_EVENT.SHUTDOWN_COMPLETE:
+                    case QUIC_CONNECTION_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref connectionEvent);
-                    case QUIC_CONNECTION_EVENT.PEER_STREAM_STARTED:
+                    case QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED:
                         return HandleEventNewStream(state, ref connectionEvent);
-                    case QUIC_CONNECTION_EVENT.STREAMS_AVAILABLE:
+                    case QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE:
                         return HandleEventStreamsAvailable(state, ref connectionEvent);
                     default:
                         return MsQuicStatusCodes.Success;

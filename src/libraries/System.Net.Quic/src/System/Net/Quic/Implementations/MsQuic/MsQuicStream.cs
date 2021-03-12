@@ -338,7 +338,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.ReadState = ReadState.Aborted;
             }
 
-            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECV, errorCode);
+            StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
         }
 
         internal override void AbortWrite(long errorCode)
@@ -483,35 +483,35 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             try
             {
-                switch ((QUIC_STREAM_EVENT)evt.Type)
+                switch ((QUIC_STREAM_EVENT_TYPE)evt.Type)
                 {
                     // Stream has started.
                     // Will only be done for outbound streams (inbound streams have already started)
-                    case QUIC_STREAM_EVENT.START_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.START_COMPLETE:
                         return HandleStartComplete(state);
                     // Received data on the stream
-                    case QUIC_STREAM_EVENT.RECEIVE:
+                    case QUIC_STREAM_EVENT_TYPE.RECEIVE:
                         return HandleEventRecv(state, ref evt);
                     // Send has completed.
                     // Contains a canceled bool to indicate if the send was canceled.
-                    case QUIC_STREAM_EVENT.SEND_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SEND_COMPLETE:
                         return HandleEventSendComplete(state, ref evt);
                     // Peer has told us to shutdown the reading side of the stream.
-                    case QUIC_STREAM_EVENT.PEER_SEND_SHUTDOWN:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_SEND_SHUTDOWN:
                         return HandleEventPeerSendShutdown(state);
                     // Peer has told us to abort the reading side of the stream.
-                    case QUIC_STREAM_EVENT.PEER_SEND_ABORTED:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_SEND_ABORTED:
                         return HandleEventPeerSendAborted(state, ref evt);
                     // Peer has stopped receiving data, don't send anymore.
-                    case QUIC_STREAM_EVENT.PEER_RECEIVE_ABORTED:
+                    case QUIC_STREAM_EVENT_TYPE.PEER_RECEIVE_ABORTED:
                         return HandleEventPeerRecvAborted(state, ref evt);
                     // Occurs when shutdown is completed for the send side.
                     // This only happens for shutdown on sending, not receiving
                     // Receive shutdown can only be abortive.
-                    case QUIC_STREAM_EVENT.SEND_SHUTDOWN_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE:
                         return HandleEventSendShutdownComplete(state, ref evt);
                     // Shutdown for both sending and receiving is completed.
-                    case QUIC_STREAM_EVENT.SHUTDOWN_COMPLETE:
+                    case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state);
                     default:
                         return MsQuicStatusCodes.Success;
