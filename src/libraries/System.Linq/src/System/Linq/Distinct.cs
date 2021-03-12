@@ -20,6 +20,34 @@ namespace System.Linq
             return new DistinctIterator<TSource>(source, comparer);
         }
 
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) => DistinctBy(source, keySelector, null);
+
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            return DistinctByIterator(source, keySelector, comparer);
+        }
+
+        private static IEnumerable<TSource> DistinctByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
+            foreach (TSource element in source)
+            {
+                if (set.Add(keySelector(element)))
+                {
+                    yield return element;
+                }
+            }
+        }
+
         /// <summary>
         /// An iterator that yields the distinct values in an <see cref="IEnumerable{TSource}"/>.
         /// </summary>
