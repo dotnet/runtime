@@ -20,36 +20,11 @@ namespace NetClient
 
             try
             {
-                Console.WriteLine(
-@"=========================
-Testing COM object interop.
-=========================");
                 RunTests();
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Test object interop failure: {e}");
-                return 101;
-            }
-
-            try
-            {
-                Console.WriteLine(
-@"
-=========================
-Testing COM object lifetime control methods.
-=========================");
-                Thread.CurrentThread.DisableComObjectEagerCleanup();
-                RunTests();
-
-                // Force GC to ensure all RCWs have been considered and are ready to be cleaned up.
-                ForceGC();
-                Marshal.CleanupUnusedObjectsInCurrentContext();
-                Assert.IsFalse(Marshal.AreComObjectsAvailableForCleanup());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test lifetime control failure: {e}");
                 return 101;
             }
 
