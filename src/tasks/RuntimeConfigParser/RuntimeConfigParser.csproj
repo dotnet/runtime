@@ -15,7 +15,7 @@
     <PackageReference Include="System.Reflection.Metadata" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RuntimeconfigParser.cs" />
+    <Compile Include="RuntimeConfigParser.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"
