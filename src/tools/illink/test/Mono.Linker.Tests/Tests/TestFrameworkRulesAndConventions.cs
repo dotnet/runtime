@@ -63,8 +63,8 @@ namespace Mono.Linker.Tests.Tests
 			if (type.Name == "<Module>")
 				return true;
 
-			// A static class with a const string field helper. This file is OK.
-			if (type.Name == "PlatformAssemblies")
+			// Helpers - these should few and very simple
+			if (type.Namespace == "Mono.Linker.Tests.Cases.Expectations.Helpers")
 				return true;
 
 			// Simple types like enums are OK and needed for certain attributes

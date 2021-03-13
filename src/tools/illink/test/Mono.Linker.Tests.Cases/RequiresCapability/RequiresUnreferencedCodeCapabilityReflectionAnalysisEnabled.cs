@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
@@ -26,15 +27,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[RecognizedReflectionAccessPattern]
 		static void TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersEnabled ()
 		{
-			RequiresPublicFields (typeof (TypeWithPublicFieldsAccessed));
-		}
-
-		[Kept]
-		static void RequiresPublicFields (
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-			Type type)
-		{
+			typeof (TypeWithPublicFieldsAccessed).RequiresPublicFields ();
 		}
 
 		[Kept]
@@ -124,19 +117,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Type type)
 			{
 				// This should not produce a warning since the method is annotated with RequiresUnreferencedCode
-				RequiresPublicFields (type);
+				type.RequiresPublicFields ();
 
 				// This will still "work" in that it will apply the PublicFields requirement onto the specified type
-				RequiresPublicFields (typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers));
+				typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers).RequiresPublicFields ();
 			}
-
-			[Kept]
-			[RecognizedReflectionAccessPattern]
-			static void RequiresPublicFields (
-				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
-				Type type)
-			{ }
 
 			[Kept]
 			public void PublicInstanceMethod () { }

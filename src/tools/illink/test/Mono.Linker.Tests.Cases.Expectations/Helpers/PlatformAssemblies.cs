@@ -1,4 +1,4 @@
-namespace Mono.Linker.Tests.Cases.Expectations.Metadata
+namespace Mono.Linker.Tests.Cases.Expectations.Helpers
 {
 	public static class PlatformAssemblies
 	{

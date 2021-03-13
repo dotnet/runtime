@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.RequiresCapability.Dependencies;
 
@@ -123,7 +124,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			RequiresUnreferencedCodeMethod ();
 
 			// Normally this would warn due to incompatible annotations, but with the attribute on this method it should be auto-suppressed
-			RequiresPublicFields (GetTypeWithPublicMethods ());
+			GetTypeWithPublicMethods ().RequiresPublicFields ();
 
 			TypeRequiresPublicFields<TPublicMethods>.Method ();
 
@@ -132,10 +133,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeMethod--")]
 		static void RequiresUnreferencedCodeMethod ()
-		{
-		}
-
-		static void RequiresPublicFields ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 		{
 		}
 

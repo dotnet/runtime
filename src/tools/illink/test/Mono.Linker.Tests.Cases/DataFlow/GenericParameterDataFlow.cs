@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Security.Policy;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -71,17 +71,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) },
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) },
 				messageCode: "IL2087", message: new string[] {
 					nameof (T),
 					nameof (TypeRequiresPublicFields <T>),
-					nameof (RequiresPublicMethods)
+					nameof (DataFlowTypeExtensions.RequiresPublicMethods)
 				})]
 			public static void Test ()
 			{
-				RequiresPublicFields (typeof (T));
-				RequiresPublicMethods (typeof (T));
-				RequiresNothing (typeof (T));
+				typeof (T).RequiresPublicFields ();
+				typeof (T).RequiresPublicMethods ();
+				typeof (T).RequiresNone ();
 			}
 
 			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (FieldRequiresPublicMethods),
@@ -127,24 +127,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeRequiresPublicMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 			public static void Test ()
 			{
-				RequiresPublicFields (typeof (T));
-				RequiresPublicMethods (typeof (T));
-				RequiresNothing (typeof (T));
+				typeof (T).RequiresPublicFields ();
+				typeof (T).RequiresPublicMethods ();
+				typeof (T).RequiresNone ();
 			}
 		}
 
 		class TypeRequiresNothing<T>
 		{
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 			public static void Test ()
 			{
-				RequiresPublicFields (typeof (T));
-				RequiresPublicMethods (typeof (T));
-				RequiresNothing (typeof (T));
+				typeof (T).RequiresPublicFields ();
+				typeof (T).RequiresPublicMethods ();
+				typeof (T).RequiresNone ();
 			}
 		}
 
@@ -195,47 +195,47 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RecognizedReflectionAccessPattern]
 			public static void TestMultiple ()
 			{
-				RequiresPublicFields (typeof (TFields));
-				RequiresPublicMethods (typeof (TMethods));
-				RequiresPublicFields (typeof (TBoth));
-				RequiresPublicMethods (typeof (TBoth));
-				RequiresNothing (typeof (TFields));
-				RequiresNothing (typeof (TMethods));
-				RequiresNothing (typeof (TBoth));
-				RequiresNothing (typeof (TNothing));
+				typeof (TFields).RequiresPublicFields ();
+				typeof (TMethods).RequiresPublicMethods ();
+				typeof (TBoth).RequiresPublicFields ();
+				typeof (TBoth).RequiresPublicMethods ();
+				typeof (TFields).RequiresNone ();
+				typeof (TMethods).RequiresNone ();
+				typeof (TBoth).RequiresNone ();
+				typeof (TNothing).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 			public static void TestFields ()
 			{
-				RequiresPublicFields (typeof (TFields));
-				RequiresPublicMethods (typeof (TFields));
-				RequiresNothing (typeof (TFields));
+				typeof (TFields).RequiresPublicFields ();
+				typeof (TFields).RequiresPublicMethods ();
+				typeof (TFields).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 			public static void TestMethods ()
 			{
-				RequiresPublicFields (typeof (TMethods));
-				RequiresPublicMethods (typeof (TMethods));
-				RequiresNothing (typeof (TMethods));
+				typeof (TMethods).RequiresPublicFields ();
+				typeof (TMethods).RequiresPublicMethods ();
+				typeof (TMethods).RequiresNone ();
 			}
 
 			[RecognizedReflectionAccessPattern]
 			public static void TestBoth ()
 			{
-				RequiresPublicFields (typeof (TBoth));
-				RequiresPublicMethods (typeof (TBoth));
-				RequiresNothing (typeof (TBoth));
+				typeof (TBoth).RequiresPublicFields ();
+				typeof (TBoth).RequiresPublicMethods ();
+				typeof (TBoth).RequiresNone ();
 			}
 
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+			[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 			public static void TestNothing ()
 			{
-				RequiresPublicFields (typeof (TNothing));
-				RequiresPublicMethods (typeof (TNothing));
-				RequiresNothing (typeof (TNothing));
+				typeof (TNothing).RequiresPublicFields ();
+				typeof (TNothing).RequiresPublicMethods ();
+				typeof (TNothing).RequiresNone ();
 			}
 		}
 
@@ -252,7 +252,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RecognizedReflectionAccessPattern]
 			public GenericBaseTypeWithRequirements ()
 			{
-				RequiresPublicFields (typeof (T));
+				typeof (T).RequiresPublicFields ();
 			}
 		}
 
@@ -311,16 +311,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				// The message is not ideal since we report the TRoot to come from RootTypeWithRequirements/InnerTypeWIthNoAddedGenerics
 				// while it originates on RootTypeWithRequirements, but it's correct from IL's point of view.
-				[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) },
+				[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) },
 					messageCode: "IL2087", message: new string[] {
 						nameof(TRoot),
 						"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.RootTypeWithRequirements<TRoot>.InnerTypeWithNoAddedGenerics",
 						"type",
-						"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.RequiresPublicMethods(Type)" })]
+						"DataFlowTypeExtensions.RequiresPublicMethods(Type)" })]
 				public static void TestAccess ()
 				{
-					RequiresPublicFields (typeof (TRoot));
-					RequiresPublicMethods (typeof (TRoot));
+					typeof (TRoot).RequiresPublicFields ();
+					typeof (TRoot).RequiresPublicMethods ();
 				}
 			}
 		}
@@ -441,31 +441,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			MethodRequiresNothingPassThrough<TestType> ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodRequiresPublicFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 		{
-			RequiresPublicFields (typeof (T));
-			RequiresPublicMethods (typeof (T));
-			RequiresNothing (typeof (T));
+			typeof (T).RequiresPublicFields ();
+			typeof (T).RequiresPublicMethods ();
+			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodRequiresPublicMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 		{
-			RequiresPublicFields (typeof (T));
-			RequiresPublicMethods (typeof (T));
-			RequiresNothing (typeof (T));
+			typeof (T).RequiresPublicFields ();
+			typeof (T).RequiresPublicMethods ();
+			typeof (T).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodRequiresNothing<T> ()
 		{
-			RequiresPublicFields (typeof (T));
-			RequiresPublicMethods (typeof (T));
-			RequiresNothing (typeof (T));
+			typeof (T).RequiresPublicFields ();
+			typeof (T).RequiresPublicMethods ();
+			typeof (T).RequiresNone ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (MethodRequiresPublicMethods) + "<T>()::T", messageCode: "IL2091")]
@@ -513,31 +513,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> RequiresPublicFields (typeof (T));
+				=> typeof (T).RequiresPublicFields ();
 			[RecognizedReflectionAccessPattern]
 			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> RequiresPublicFields (typeof (T));
+				=> typeof (T).RequiresPublicFields ();
 			[RecognizedReflectionAccessPattern]
 			public virtual void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
-				=> RequiresPublicFields (typeof (T));
+				=> typeof (T).RequiresPublicFields ();
 
 			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
-				=> RequiresPublicMethods (typeof (T));
+				=> typeof (T).RequiresPublicMethods ();
 			[RecognizedReflectionAccessPattern]
 			public void InstanceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
-				=> RequiresPublicMethods (typeof (T));
+				=> typeof (T).RequiresPublicMethods ();
 			[RecognizedReflectionAccessPattern]
 			public virtual void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]T> ()
-				=> RequiresPublicMethods (typeof (T));
+				=> typeof (T).RequiresPublicMethods ();
 
 			[RecognizedReflectionAccessPattern]
 			public static void StaticRequiresMultipleGenericParams<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods> ()
 			{
-				RequiresPublicFields (typeof (TFields));
-				RequiresPublicMethods (typeof (TMethods));
+				typeof (TFields).RequiresPublicFields ();
+				typeof (TMethods).RequiresPublicMethods ();
 			}
 		}
 
@@ -618,25 +618,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RecognizedReflectionAccessPattern]
 			public override void VirtualRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
-				RequiresPublicFields (typeof (T));
+				typeof (T).RequiresPublicFields ();
 			}
 
 			[RecognizedReflectionAccessPattern]
 			public override void VirtualRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
-				RequiresPublicMethods (typeof (T));
+				typeof (T).RequiresPublicMethods ();
 			}
 
 			[RecognizedReflectionAccessPattern]
 			public void InterfaceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
-				RequiresPublicFields (typeof (T));
+				typeof (T).RequiresPublicFields (); ;
 			}
 
 			[RecognizedReflectionAccessPattern]
 			public void InterfaceRequiresPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
 			{
-				RequiresPublicMethods (typeof (T));
+				typeof (T).RequiresPublicMethods ();
 			}
 
 			[UnrecognizedReflectionAccessPattern (typeof (IInterfaceWithGenericMethod), nameof (IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods) + "<T>()::T",
@@ -670,38 +670,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing> ()
 		{
-			RequiresPublicFields (typeof (TFields));
-			RequiresPublicMethods (typeof (TMethods));
-			RequiresPublicFields (typeof (TBoth));
-			RequiresPublicMethods (typeof (TBoth));
-			RequiresNothing (typeof (TFields));
-			RequiresNothing (typeof (TMethods));
-			RequiresNothing (typeof (TBoth));
-			RequiresNothing (typeof (TNothing));
+			typeof (TFields).RequiresPublicFields (); ;
+			typeof (TMethods).RequiresPublicMethods ();
+			typeof (TBoth).RequiresPublicFields (); ;
+			typeof (TBoth).RequiresPublicMethods ();
+			typeof (TFields).RequiresNone ();
+			typeof (TMethods).RequiresNone ();
+			typeof (TBoth).RequiresNone ();
+			typeof (TNothing).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodMultipleWithDifferentRequirements_TestFields<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing> ()
 		{
-			RequiresPublicFields (typeof (TFields));
-			RequiresPublicMethods (typeof (TFields));
-			RequiresNothing (typeof (TFields));
+			typeof (TFields).RequiresPublicFields (); ;
+			typeof (TFields).RequiresPublicMethods ();
+			typeof (TFields).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodMultipleWithDifferentRequirements_TestMethods<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing> ()
 		{
-			RequiresPublicFields (typeof (TMethods));
-			RequiresPublicMethods (typeof (TMethods));
-			RequiresNothing (typeof (TMethods));
+			typeof (TMethods).RequiresPublicFields ();
+			typeof (TMethods).RequiresPublicMethods ();
+			typeof (TMethods).RequiresNone ();
 		}
 
 		static void MethodMultipleWithDifferentRequirements_TestBoth<
@@ -710,38 +710,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing> ()
 		{
-			RequiresPublicFields (typeof (TBoth));
-			RequiresPublicMethods (typeof (TBoth));
-			RequiresNothing (typeof (TBoth));
+			typeof (TBoth).RequiresPublicFields ();
+			typeof (TBoth).RequiresPublicMethods ();
+			typeof (TBoth).RequiresNone ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
-		[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
+		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicMethods), new Type[] { typeof (Type) }, messageCode: "IL2087")]
 		static void MethodMultipleWithDifferentRequirements_TestNothing<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods,
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicMethods)] TBoth,
 			TNothing> ()
 		{
-			RequiresPublicFields (typeof (TNothing));
-			RequiresPublicMethods (typeof (TNothing));
-			RequiresNothing (typeof (TNothing));
+			typeof (TNothing).RequiresPublicFields ();
+			typeof (TNothing).RequiresPublicMethods ();
+			typeof (TNothing).RequiresNone ();
 		}
 
-
-		static void RequiresPublicFields (
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
-		{
-		}
-
-		static void RequiresPublicMethods (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
-		{
-		}
-
-		static void RequiresNothing (Type type)
-		{
-		}
 
 		class MakeGenericType
 		{
