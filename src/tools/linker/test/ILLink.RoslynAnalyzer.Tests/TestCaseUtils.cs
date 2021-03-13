@@ -197,7 +197,12 @@ In diagnostics:
 #else
 			var configDirectoryName = "Release";
 #endif
+
+#if NET6_0
+			const string tfm = "net6.0";
+#else
 			const string tfm = "net5.0";
+#endif
 
 			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
 			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");

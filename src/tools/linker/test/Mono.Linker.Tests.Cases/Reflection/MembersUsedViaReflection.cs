@@ -99,7 +99,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public SimpleGetMembers ()
 			{ }
 
-			[Kept]
 			private SimpleGetMembers (int i)
 			{ }
 
@@ -107,7 +106,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public void PublicMethod ()
 			{ }
 
-			[Kept]
 			private void PrivateMethod ()
 			{ }
 
@@ -117,16 +115,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptEventRemoveMethod]
 			public event EventHandler<EventArgs> PublicEvent;
 
-			[Kept]
-			[KeptBackingField]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
 			private event EventHandler<EventArgs> MarkedDueToPutRefDispPropertyEvent;
 
 			[Kept]
 			public static int _publicField;
 
-			[Kept]
 			private int _privateField;
 
 			[Kept]
@@ -137,27 +130,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				set { _publicField = value; }
 			}
 
-			[Kept]
 			private int PrivateProperty {
-				[Kept]
 				get { return _privateField; }
-				[Kept]
 				set { _privateField = value; }
 			}
 
 			[Kept]
 			public static class PublicNestedType
 			{
-				// Due to annotations in runtime the GetMembers call keeps the following members
-				// See issue https://github.com/dotnet/runtime/issues/36708
-				[Kept]
 				public static int _nestedPublicField;
-				[Kept]
 				public static void NestedPublicMethod ()
 				{ }
 			}
 
-			[Kept]
 			private static class PrivateNestedType { }
 		}
 
