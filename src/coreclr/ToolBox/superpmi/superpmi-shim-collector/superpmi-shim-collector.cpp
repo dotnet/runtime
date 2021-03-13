@@ -155,7 +155,7 @@ extern "C"
 
 extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* host)
 {
-    // crossgen2 doesn't invoke DllMain, so optionally do initialization work here.
+    // crossgen2 doesn't invoke DllMain on Linux/Mac (under PAL), so optionally do initialization work here.
     InitializeShim();
 
     SetDefaultPaths();
