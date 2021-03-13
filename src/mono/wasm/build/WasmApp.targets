@@ -283,6 +283,9 @@
      <EmccFlags Condition="'$(WasmLinkIcalls)' == 'true'">$(EmccFlags) -DLINK_ICALLS=1</EmccFlags>
      <_WasmIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmIncludeDir>
      <_WasmSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmSrcDir>
+
+     <!-- Current WebWorkers are pure JavaScript and therefore have no WASM, but are treated as native assets. -->
+     <_WasmWebWorkerDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir)))</_WasmWebWorkerDir>
    </PropertyGroup>
 
    <ItemGroup>
@@ -345,7 +348,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
-      <WasmNativeAsset Include="$(_WasmSrcDir)crypto_worker.js" />
+      <WasmNativeAsset Include="$(_WasmWebWorkerDir)crypto_worker.js" />
     </ItemGroup>
   </Target>
 
