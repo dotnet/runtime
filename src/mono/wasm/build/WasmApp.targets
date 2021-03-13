@@ -265,6 +265,7 @@
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Security.Cryptography.Native.Browser" />
    </ItemGroup>
    <!--This pinvoke-table.h will be used instead of the one in the runtime pack because of -I$(_WasmIntermediateOutputPath) -->
    <PInvokeTableGenerator
@@ -344,7 +345,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.js" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)crypto_worker.js" />
+      <WasmNativeAsset Include="$(_WasmSrcDir)crypto_worker.js" />
     </ItemGroup>
   </Target>
 
