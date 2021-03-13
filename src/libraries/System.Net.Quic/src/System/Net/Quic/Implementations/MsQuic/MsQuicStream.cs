@@ -100,14 +100,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 uint status = MsQuicApi.Api.StreamOpenDelegate(
                     connection,
-                    (uint)flags,
+                    flags,
                     s_streamDelegate,
                     GCHandle.ToIntPtr(_stateHandle),
                     out _state.Handle);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to open stream to peer.");
 
-                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, (uint)QUIC_STREAM_START_FLAGS.ASYNC);
+                status = MsQuicApi.Api.StreamStartDelegate(_state.Handle, QUIC_STREAM_START_FLAGS.ASYNC);
                 QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
             }
             catch
@@ -366,7 +366,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
-            uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, (uint)flags, errorCode);
+            uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, (ulong)errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
 
@@ -525,10 +525,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static unsafe uint HandleEventRecv(State state, ref StreamEvent evt)
         {
-            StreamEventDataRecv receieveEvent = evt.Data.Recv;
-            for (int i = 0; i < receieveEvent.BufferCount; i++)
+            StreamEventDataReceive receiveEvent = evt.Data.Receive;
+            for (int i = 0; i < receiveEvent.BufferCount; i++)
             {
-                state.ReceiveQuicBuffers.Add(receieveEvent.Buffers[i]);
+                state.ReceiveQuicBuffers.Add(receiveEvent.Buffers[i]);
             }
 
             bool shouldComplete = false;
@@ -543,7 +543,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                state.ReceiveResettableCompletionSource.Complete((uint)receieveEvent.TotalBufferLength);
+                state.ReceiveResettableCompletionSource.Complete((uint)receiveEvent.TotalBufferLength);
             }
 
             return MsQuicStatusCodes.Pending;
@@ -559,7 +559,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 state.SendState = SendState.Aborted;
-                state.SendErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+                state.SendErrorCode = (long)evt.Data.PeerSendAborted.ErrorCode;
             }
 
             if (shouldComplete)
@@ -590,7 +590,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleEventSendShutdownComplete(State state, ref MsQuicNativeMethods.StreamEvent evt)
+        private static uint HandleEventSendShutdownComplete(State state, ref StreamEvent evt)
         {
             bool shouldComplete = false;
             lock (state)
@@ -657,7 +657,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 state.ReadState = ReadState.Aborted;
-                state.ReadErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+                state.ReadErrorCode = (long)evt.Data.PeerSendAborted.ErrorCode;
             }
 
             if (shouldComplete)
@@ -760,7 +760,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle,
                 quicBufferPointer,
                 bufferCount: 1,
-                (uint)flags,
+                flags,
                 IntPtr.Zero);
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
@@ -821,7 +821,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle,
                 quicBufferPointer,
                 count,
-                (uint)flags,
+                flags,
                 IntPtr.Zero);
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
@@ -877,7 +877,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle,
                 quicBufferPointer,
                 length,
-                (uint)flags,
+                flags,
                 IntPtr.Zero);
 
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
@@ -901,7 +901,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // This can fail if the stream isn't started.
         private long GetStreamId()
         {
-            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
+            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.STREAM, (uint)QUIC_PARAM_STREAM.ID);
         }
 
         private void ThrowIfDisposed()

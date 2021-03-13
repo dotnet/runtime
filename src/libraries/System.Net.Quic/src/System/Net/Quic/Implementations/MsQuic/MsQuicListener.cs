@@ -129,7 +129,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             try
             {
                 MsQuicAlpnHelper.Prepare(_applicationProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, ref MemoryMarshal.GetReference(buffers.AsSpan()), (uint)_applicationProtocols.Count, ref address);
+                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)_applicationProtocols.Count, ref address);
             }
             finally
             {
@@ -138,7 +138,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
-            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
+            SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
             _listenEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
         }
 
@@ -158,7 +158,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ListenerEvent evt)
         {
-            if ((QUIC_LISTENER_EVENT)evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
+            if (evt.Type != QUIC_LISTENER_EVENT.NEW_CONNECTION)
             {
                 return MsQuicStatusCodes.InternalError;
             }

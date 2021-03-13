@@ -9,9 +9,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicRegistrationHandle() : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
+        private SafeMsQuicRegistrationHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
+        { }
 
         protected override bool ReleaseHandle()
         {

@@ -119,16 +119,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 Marshal.GetDelegateForFunctionPointer<MsQuicNativeMethods.StreamReceiveSetEnabledDelegate>(
                     vtable->StreamReceiveSetEnabled);
 
-            byte* appName = stackalloc byte[5];
-            appName[0] = (byte)'.';
-            appName[1] = (byte)'N';
-            appName[2] = (byte)'E';
-            appName[3] = (byte)'T';
-            appName[4] = 0;
-
             var cfg = new RegistrationConfig
             {
-                AppName = appName,
+                AppName = ".NET",
                 ExecutionProfile = (uint)QUIC_EXECUTION_PROFILE.QUIC_EXECUTION_PROFILE_LOW_LATENCY
             };
 
@@ -177,11 +170,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal MsQuicNativeMethods.ListenerStartDelegate ListenerStartDelegate { get; }
         internal MsQuicNativeMethods.ListenerStopDelegate ListenerStopDelegate { get; }
 
+        // Mana: missing SendResumptionTicket
         internal MsQuicNativeMethods.ConnectionOpenDelegate ConnectionOpenDelegate { get; }
         internal MsQuicNativeMethods.ConnectionCloseDelegate ConnectionCloseDelegate { get; }
-        internal MsQuicNativeMethods.ConnectionSetConfigurationDelegate ConnectionSetConfigurationDelegate { get; }
         internal MsQuicNativeMethods.ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
         internal MsQuicNativeMethods.ConnectionStartDelegate ConnectionStartDelegate { get; }
+        internal MsQuicNativeMethods.ConnectionSetConfigurationDelegate ConnectionSetConfigurationDelegate { get; }
 
         internal MsQuicNativeMethods.StreamOpenDelegate StreamOpenDelegate { get; }
         internal MsQuicNativeMethods.StreamCloseDelegate StreamCloseDelegate { get; }

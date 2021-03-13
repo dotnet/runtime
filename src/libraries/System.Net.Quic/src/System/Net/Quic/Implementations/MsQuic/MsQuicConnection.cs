@@ -121,7 +121,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 // Connected will already be true for connections accepted from a listener.
 
-                SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
+                SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
                 state.LocalEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
 
                 Debug.Assert(state.Connection != null);
@@ -153,7 +153,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventShutdownInitiatedByPeer(State state, ref ConnectionEvent connectionEvent)
         {
-            state.AbortErrorCode = connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
+            state.AbortErrorCode = (long)connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
             state.AcceptQueue.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
@@ -168,8 +168,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventNewStream(State state, ref ConnectionEvent connectionEvent)
         {
-            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.StreamStarted.Stream);
-            var stream = new MsQuicStream(streamHandle, connectionEvent.StreamFlags);
+            var streamHandle = new SafeMsQuicStreamHandle(connectionEvent.Data.PeerStreamStarted.Stream);
+            var stream = new MsQuicStream(streamHandle, connectionEvent.Data.PeerStreamStarted.Flags);
 
             state.AcceptQueue.Writer.TryWrite(stream);
             return MsQuicStatusCodes.Success;
@@ -216,12 +216,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
         {
-            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
         internal override long GetRemoteAvailableBidirectionalStreamCount()
         {
-            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
@@ -284,7 +284,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
-                    (uint)Flags,
+                    Flags,
                     ErrorCode);
             }
             catch

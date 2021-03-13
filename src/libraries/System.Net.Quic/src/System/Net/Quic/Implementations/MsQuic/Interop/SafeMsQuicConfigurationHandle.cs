@@ -26,6 +26,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return true;
         }
 
+        // Mana: Move the code from here. Inconsistency with other handles.
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             // TODO: lots of ClientAuthenticationOptions are not yet supported by MsQuic.
@@ -58,11 +59,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
-            var settings = new Settings
+            var settings = new QuicSettings
             {
-                IsSetFlags =
-                    (ulong)SettingsFlags.PeerBidiStreamCount
-                    | (ulong)SettingsFlags.PeerUnidiStreamCount,
+                IsSetFlags = QuicSettingsIsSetFlags.PeerBidiStreamCount |
+                             QuicSettingsIsSetFlags.PeerUnidiStreamCount,
                 PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams,
                 PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams
             };
@@ -74,7 +74,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
                 if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
 
-                settings.IsSetFlags |= (ulong)SettingsFlags.IdleTimeoutMs;
+                settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
 
@@ -86,7 +86,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             try
             {
                 MsQuicAlpnHelper.Prepare(alpnProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ConfigurationOpenDelegate(MsQuicApi.Api.Registration, ref MemoryMarshal.GetReference(buffers.AsSpan()), (uint)alpnProtocols.Count, ref settings, (uint)sizeof(Settings), context: IntPtr.Zero, out configurationHandle);
+                status = MsQuicApi.Api.ConfigurationOpenDelegate(MsQuicApi.Api.Registration, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)alpnProtocols.Count, ref settings, (uint)sizeof(QuicSettings), context: IntPtr.Zero, out configurationHandle);
             }
             finally
             {
@@ -102,24 +102,24 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 CredentialConfig config = default;
 
-                config.Flags = (uint)flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
+                config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
                 if (certificate != null)
                 {
 #if true
                     // If using stub TLS.
-                    config.Type = (uint)QUIC_CREDENTIAL_TYPE.STUB_NULL;
+                    config.Type = QUIC_CREDENTIAL_TYPE.STUB_NULL;
 #else
-                    config.Type = (uint)QUIC_CREDENTIAL_TYPE.CONTEXT;
+                    config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
                     config.Certificate = certificate.Handle;
 #endif
                 }
                 else
                 {
-                    config.Type = (uint)QUIC_CREDENTIAL_TYPE.NONE;
+                    config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                 }
 
-                status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, &config);
+                status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
             }
             catch
