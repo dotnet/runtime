@@ -61,8 +61,15 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_ProjectsToBuild Include="$(PerScenarioProjectFile)">
+      <_ProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'BuildWasmApps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+      </_ProjectsToBuild>
+
+      <_ProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' == 'BuildWasmApps'">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);WBT_TestConfigsToUse=Debug;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+      </_ProjectsToBuild>
+      <_ProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' == 'BuildWasmApps'">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);WBT_TestConfigsToUse=Release;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 

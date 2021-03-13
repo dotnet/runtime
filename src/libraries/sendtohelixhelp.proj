@@ -282,8 +282,8 @@
       <_AllWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
       <!-- add multiple work items for Wasm.Build.Tests to split the work load -->
-      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=Debug" />
-      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=Release" />
+      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=$(WBT_TestConfigsToUse)" />
+      <!--<_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=Release" />-->
 
       <!-- add rest of the items -->
       <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' != 'Wasm.Build.Tests'" />
