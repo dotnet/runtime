@@ -128,12 +128,6 @@ mono_w32event_close (gpointer handle)
 	return mono_w32handle_close (handle);
 }
 
-void
-mono_w32event_set (gpointer handle)
-{
-	ves_icall_System_Threading_Events_SetEvent_internal (handle);
-}
-
 static gpointer event_handle_create (MonoW32HandleEvent *event_handle, MonoW32Type type, gboolean manual, gboolean initial)
 {
 	MonoW32Handle *handle_data;
@@ -179,8 +173,8 @@ static gpointer event_create (gboolean manual, gboolean initial)
 	return event_handle_create (&event_handle, MONO_W32TYPE_EVENT, manual, initial);
 }
 
-gboolean
-ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
+void
+mono_w32event_set (gpointer handle)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleEvent *event_handle;
@@ -188,14 +182,14 @@ ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
 		g_warning ("%s: unkown handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return FALSE;
+		return;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_EVENT) {
 		g_warning ("%s: unkown event handle %p", __func__, handle);
 		mono_w32error_set_last (ERROR_INVALID_HANDLE);
 		mono_w32handle_unref (handle_data);
-		return FALSE;
+		return;
 	}
 
 	event_handle = (MonoW32HandleEvent*) handle_data->specific;
@@ -215,5 +209,4 @@ ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle)
 	mono_w32handle_unlock (handle_data);
 
 	mono_w32handle_unref (handle_data);
-	return TRUE;
 }

@@ -25,8 +25,4 @@ mono_w32event_close (gpointer handle);
 void
 mono_w32event_set (gpointer handle);
 
-ICALL_EXPORT
-gboolean
-ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle);
-
 #endif /* _MONO_METADATA_W32EVENT_H_ */
