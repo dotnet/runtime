@@ -300,7 +300,6 @@ upload_parser = subparsers.add_parser("upload", description=upload_description, 
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
 upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
-upload_parser.add_argument("-jit_location", help="Location for the base clrjit. If not passed this will be assumed to be from the Core_Root.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -2608,8 +2607,6 @@ def download_urls(urls, target_dir, verbose=True, fail_if_not_found=True):
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
 
-        TODO: Upload baseline altjits or cross-compile JITs?
-
     Args:
         coreclr_args (CoreclrArguments): parsed args
     """
@@ -2673,24 +2670,6 @@ def upload_mch(coreclr_args):
             logging.info("Uploading: %s (%s) -> %s", file, zip_path, az_blob_storage_superpmi_container_uri + "/" + blob_name)
             upload_blob(zip_path, blob_name)
 
-        # Upload a JIT matching the MCH files just collected.
-        # Consider: rename uploaded JIT to include build_type
-
-        jit_location = coreclr_args.jit_location
-        if jit_location is None:
-            jit_name = determine_jit_name(coreclr_args)
-            jit_location = os.path.join(coreclr_args.core_root, jit_name)
-
-        assert os.path.isfile(jit_location)
-
-        jit_name = os.path.basename(jit_location)
-        jit_blob_name = "{}/{}".format(blob_folder_name, jit_name)
-        logging.info("Uploading: %s -> %s", jit_location, az_blob_storage_superpmi_container_uri + "/" + jit_blob_name)
-        upload_blob(jit_location, jit_blob_name)
-
-        jit_stat_result = os.stat(jit_location)
-        total_bytes_uploaded += jit_stat_result.st_size
-
     logging.info("Uploaded {:n} bytes".format(total_bytes_uploaded))
 
 
@@ -2706,7 +2685,7 @@ def list_collections_command(coreclr_args):
     # Determine if a URL in Azure Storage should be allowed. The URL looks like:
     #   https://clrjit.blob.core.windows.net/superpmi/jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
     # By default, filter to just the current jit-ee-guid, OS, and architecture.
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
+    # Only include MCH files, not MCT (TOC) files.
     def filter_superpmi_collections(path: str):
         path = path.lower()
         return (path.endswith(".mch") or path.endswith(".mch.zip")) and (coreclr_args.all or path.startswith(blob_filter_string))
@@ -2748,7 +2727,7 @@ def list_collections_local_command(coreclr_args):
     # Determine if a file should be allowed. The filenames look like:
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch
     #   c:\gh\runtime\artifacts\spmi\mch\a5eec3a4-4176-43a7-8c2b-a05b551d4f49.windows.x64\corelib.windows.x64.Checked.mch.mct
-    # Only include MCH files, not clrjit.dll or MCT (TOC) files.
+    # Only include MCH files, not MCT (TOC) files.
     def filter_superpmi_collections(path: str):
         return path.lower().endswith(".mch")
 
@@ -3492,11 +3471,6 @@ def setup_args(args):
                             lambda item: item is not None,
                             "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
                             modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
-                            "jit_location",
-                            lambda unused: True,
-                            "Unable to set jit_location.")
 
         coreclr_args.verify(args,
                             "mch_files",
