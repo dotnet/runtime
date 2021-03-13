@@ -2338,9 +2338,9 @@ namespace System.Tests
             // Some of the parsed strings could not include the the date parts which make the parser use today's date in the result.
             // It is possible the clock move to the next day between parsing operations or between calculating the expected value and the parsing.
             // To make the test reliable, we need to check for such case.
-            if (result3.Day != result4.Day) { Assert.True(result4 > result3); result3.AddDays(1); }
-            if (result2.Day != result3.Day) { Assert.True(result3 > result2); result2.AddDays(1); }
-            if (result1.Day != result2.Day) { Assert.True(result2 > result1); result1.AddDays(1); }
+            if (result3.Day != result4.Day) { result3.AddDays(1); Assert.Equal(result3.Day, result4.Day); }
+            if (result2.Day != result3.Day) { result2.AddDays(1); Assert.Equal(result2.Day, result3.Day); }
+            if (result1.Day != result2.Day) { result1.AddDays(1); Assert.Equal(result1.Day, result2.Day); }
 
             Assert.Equal(result1, result2);
             Assert.Equal(result1, result3);
@@ -2358,7 +2358,7 @@ namespace System.Tests
                     result1 = result1.ToUniversalTime();
                 }
 
-                if (expected.Value.Day != result1.Day) { Assert.True(result1 > expected.Value); expected.Value.AddDays(1); }
+                if (expected.Value.Day != result1.Day) { expected.Value.AddDays(1); Assert.Equal(expected.Value.Day, result1.Day); }
 
                 Assert.Equal(expected, result1);
             }
