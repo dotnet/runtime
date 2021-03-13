@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
