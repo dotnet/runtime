@@ -306,141 +306,111 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack=1)]
-        public struct MarshalTypeRecord {
-            public MarshalType MarshalType;
-            public IntPtr TypeHandle;
+        public static string MakeMarshalTypeRecord (Type type) {
+            return $"{{ marshalType: {GetMarshalTypeFromType(type)}, typePtr: {type.TypeHandle.Value} }}";
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack=1)]
-        public struct MarshalSignatureInfo {
-            public int ParameterCount;
-            public MarshalTypeRecord ReturnType;
-            public MarshalTypeRecord FirstParameterType;
-        }
-
-        public static unsafe int MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr, IntPtr resultPtr, int resultSize) {
+        public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodPtr;
             var methodHandle = tmp.handle;
             tmp.ptr = typePtr;
             var typeHandle = tmp.typeHandle;
 
-            var pResult = (MarshalSignatureInfo *)resultPtr;
-
             MethodBase? mb = (typePtr != IntPtr.Zero)
                 ? MethodBase.GetMethodFromHandle(methodHandle, typeHandle)
                 : MethodBase.GetMethodFromHandle(methodHandle);
             if (mb == null)
-                return 1;
+                return null;
 
-            MakeMarshalTypeRecord(
-                (mb as MethodInfo)?.ReturnType ?? typeof(void),
-                out pResult->ReturnType
-            );
+            var result = "{ " +
+                $"result: {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
+                $"typePtr: {typePtr}, methodPtr: {methodPtr}, " +
+                "parameters: [";
 
-            var parms = mb.GetParameters();
-            pResult->ParameterCount = parms.Length;
-            if (pResult->ParameterCount <= 0)
-                return 0;
-
-            var pParameters = &pResult->FirstParameterType;
-            void* pEnd = ((byte*)pResult) + resultSize -
-                (((byte*)&pParameters[1]) - (byte*)pParameters);
-
-            for (int i = 0; i < pResult->ParameterCount; i++)
-            {
-                var ptr = &pParameters[i];
-                if (ptr >= pEnd)
-                    return 2;
-                MakeMarshalTypeRecord(parms[i].ParameterType, out *ptr);
+            int i = 0;
+            foreach (var p in mb.GetParameters()) {
+                if (i > 0)
+                    result += ", ";
+                result += MakeMarshalTypeRecord(p.ParameterType);
+                i++;
             }
 
-            return 0;
+            result += "] }";
+
+            return result;
         }
 
-        // HACK: We need to ensure the strings used as pre/post filters remain rooted,
-        //  so that the GC can't collect them before the JS bindings can get to them
-        // Since these filters should be literals in most cases we don't really need to
-        //  do this, but better safe than sorry
-        private static List<GCHandle> CustomMarshalerFilterRoots = new List<GCHandle>();
-
-        [StructLayout(LayoutKind.Sequential, Pack=1)]
-        public struct CustomMarshalerInfo {
-            public IntPtr InputPreFilter, OutputPostFilter;
-            public int InputPreFilterLength, OutputPostFilterLength;
-            public IntPtr Input, Output;
-        }
-
-        private static unsafe bool GetAndRootStringField (Type type, string name, out IntPtr result, out int resultSize) {
-            var info = type.GetField(
-                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-            );
-            if (info == null) {
-                result = IntPtr.Zero;
-                resultSize = 0;
-                return false;
-            }
-
-            var value = info.GetValue(null) as string;
-            if (value == null) {
-                result = IntPtr.Zero;
-                resultSize = 0;
-                return false;
-            }
-
-            var handle = GCHandle.Alloc(value, GCHandleType.Pinned);
-            CustomMarshalerFilterRoots.Add(handle);
-#pragma warning disable 0618
-            result = handle.AddrOfPinnedObject() + RuntimeHelpers.OffsetToStringData;
-#pragma warning restore 0618
-            resultSize = value.Length;
-            return true;
-        }
-
-        private static unsafe void GetMethodPointer (Type type, string name, out IntPtr result) {
+        private static unsafe IntPtr GetMethodPointer (Type type, string name) {
             var info = type.GetMethod(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null)
-                result = IntPtr.Zero;
-            else {
-                var tmp = default(IntPtrAndHandle);
-                tmp.handle = info.MethodHandle;
-                result = tmp.ptr;
-            }
+                return IntPtr.Zero;
+
+            var tmp = default(IntPtrAndHandle);
+            tmp.handle = info.MethodHandle;
+            return tmp.ptr;
         }
 
-        public static unsafe int GetCustomMarshalerInfoForType (IntPtr typePtr, IntPtr resultPtr, int resultSize) {
+        private static unsafe string GetAndEscapeStringField (Type type, string name) {
+            var info = type.GetField(
+                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+            );
+            if (info == null)
+                return "null";
+
+            var value = info.GetValue(null) as string;
+            if (value == null)
+                return "null";
+
+            var result = "'";
+            foreach (var ch in value) {
+                switch (ch) {
+                    case '\'':
+                        result += '\'';
+                        continue;
+                    case '"':
+                        result += '\"';
+                        continue;
+                    case '\\':
+                        result += "\\\\";
+                        continue;
+                    case '\n':
+                        result += "\\n";
+                        continue;
+                }
+
+                if (ch < ' ') {
+                    result += "\\x";
+                    if (ch <= 0xF)
+                        result += '0';
+                    result += ((int)ch).ToString("X");
+                }
+            }
+            result += '"';
+
+            return result;
+        }
+
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr) {
             if (typePtr == IntPtr.Zero)
-                return 1;
-            if (
-                (resultPtr == IntPtr.Zero) ||
-                (resultSize < Marshal.SizeOf(typeof(CustomMarshalerInfo)))
-            )
-                return 2;
+                return "null";
 
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = typePtr;
             var typeHandle = tmp.typeHandle;
             var type = Type.GetTypeFromHandle(typeHandle);
 
-            var pResult = (CustomMarshalerInfo*)resultPtr.ToPointer();
-            GetAndRootStringField(
-                type, "JSToManaged_PreFilter",
-                out pResult->InputPreFilter, out pResult->InputPreFilterLength
-            );
-            GetAndRootStringField(
-                type, "ManagedToJS_PostFilter",
-                out pResult->OutputPostFilter, out pResult->OutputPostFilterLength
-            );
+            var preFilter = GetAndEscapeStringField(type, "JSToManaged_PreFilter");
+            var postFilter = GetAndEscapeStringField(type, "ManagedToJS_PostFilter");
 
-            return 0;
-        }
+            var inputPtr = GetMethodPointer(type, "JSToManaged");
+            var outputPtr = GetMethodPointer(type, "ManagedToJS");
 
-        public static void MakeMarshalTypeRecord (Type type, out MarshalTypeRecord result) {
-            result.MarshalType = GetMarshalTypeFromType(type);
-            result.TypeHandle = type.TypeHandle.Value;
+            return "{\n" + $"typePtr: {typePtr} \n" +
+                $"preFilter: {preFilter}, postFilter: {postFilter} \n" +
+                $"inputPtr: {inputPtr}, outputPtr: {outputPtr} \n" + "}";
         }
 
         public static MarshalType GetMarshalTypeFromType (Type type) {

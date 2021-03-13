@@ -1009,43 +1009,18 @@ var BindingSupportLib = {
 			var result = this._method_signature_info_table.get (methodPtr);
 			var classMismatch = !!result && (result.classPtr !== classPtr);
 			if (!result) {
-				const bufferSize = 1024;
-				var infoPtr = Module._malloc(bufferSize);
-				MONO._zero_region(infoPtr, bufferSize);
 				var typePtr = classPtr 
 					? this.mono_wasm_class_get_type (classPtr) 
 					: 0;
 				// console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr}, at offset ${infoPtr}`);
-				var err = this.make_marshal_signature_info (typePtr, methodPtr, infoPtr, bufferSize);
-				if (err !== 0)
-					throw new Error (`MakeMarshalSignatureInfo failed with code ${err}`);
+				var json = this.make_marshal_signature_info (typePtr, methodPtr);
+				if (!json)
+					throw new Error (`MakeMarshalSignatureInfo failed`);				
 
-				var off32 = (infoPtr / 4) | 0;
-				var pcount = Module.HEAPU32[off32 + 0];
+				console.log(json);
+				var result = JSON.parse(json);
+				result.classPtr = classPtr;
 
-				if (pcount > 512)
-					throw new Error (`MakeMarshalSignatureInfo produced ${pcount} parameters, almost certainly wrong`);
-
-				var decode = function (offset32) {
-					return {
-						"marshalType": Module.HEAPU32[offset32 + 0],
-						"typePtr": Module.HEAPU32[offset32 + 1]
-					};
-				};				
-
-				var parms = new Array(pcount);
-				for (var i = 0; i < pcount; i++)
-					parms[i] = decode(off32 + 1 + 2 + (i * 2));
-
-				result = {
-					"result": decode(off32 + 1),
-					"parameters": parms,
-					"typePtr": typePtr,
-					"classPtr": classPtr,
-					"methodPtr": methodPtr
-				};
-
-				Module._free (infoPtr);
 				if (classMismatch)
 					console.log("WARNING: Class ptr mismatch for signature info, so caching is disabled");
 				else
