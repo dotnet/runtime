@@ -2,8 +2,8 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <PackageVersion>5.0.1</PackageVersion>
-    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.1</AssemblyVersion>
+    <PackageVersion>5.0.2</PackageVersion>
+    <AssemblyVersion Condition="$(TargetFramework.StartsWith('net4'))">5.0.0.2</AssemblyVersion>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
 </Project>
