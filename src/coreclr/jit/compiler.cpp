@@ -2901,9 +2901,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         // Optionally, discard the profile data.
         //
-        else if (JitConfig.JitDisablePGO() == 1)
+        else if (JitConfig.JitDisablePGO() != 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePGO == 1";
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;

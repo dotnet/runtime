@@ -52,6 +52,12 @@ enum EXTRA_JIT_FLAGS
     HAS_CLASS_PROFILE = 61
 };
 
+// Asserts to catch changes in corjit flags definitions.
+
+static_assert(EXTRA_JIT_FLAGS::HAS_PGO == CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED36, "Jit Flags Mismatch");
+static_assert(EXTRA_JIT_FLAGS::HAS_EDGE_PROFILE == CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED35, "Jit Flags Mismatch");
+static_assert(EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED34, "Jit Flags Mismatch");
+
 class MethodContext
 {
 public:
