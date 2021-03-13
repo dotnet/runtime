@@ -5640,6 +5640,7 @@ protected:
 
 public:
     const char*                            fgPgoFailReason;
+    bool                                   fgPgoDisabled;
     ICorJitInfo::PgoInstrumentationSchema* fgPgoSchema;
     BYTE*                                  fgPgoData;
     UINT32                                 fgPgoSchemaCount;
