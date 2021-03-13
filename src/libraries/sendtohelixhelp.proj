@@ -256,7 +256,7 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'">
+    <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS' and '$(Scenario)' != 'BuildWasmApps'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
@@ -265,6 +265,28 @@
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
+
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TargetOS)' == 'Browser'">
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" />
+
+      <_WorkItem Remove="@(_WorkItem)" />
+
+      <_AllWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <!-- add multiple work items for Wasm.Build.Tests to split the work load -->
+      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=Debug" />
+      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' == 'Wasm.Build.Tests'" PreCommands="export WBT_TestConfigsToUse=Release" />
+
+      <!-- add rest of the items -->
+      <_WorkItem Include="@(_AllWorkItem)" Condition="'%(_AllWorkItem.FileName)' != 'Wasm.Build.Tests'" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
