@@ -74,6 +74,11 @@ namespace System.Net.Http.Headers
                 // back incurs multiple allocations, on top of which if the response headers are enumerated,
                 // we then need to format the boxed length back into a string.  Given typical usage patterns,
                 // it's better to just parse each time and pay the few additional nanoseconds to re-parse.
+                // If parsing multiple times ever becomes a perf issue, we could cache the Content-Length value
+                // on HttpContentHeaders as a `long`. This would require additional coordination with the underlying
+                // HttpHeaders header store (in case someone then called something like Add or Remove on
+                // Content-Length at the HttpHeaders level), e.g. a callback to HttpContentHeaders that
+                // Content-Length has been modified in the store and any cached value should be discarded.
                 if (TryGetHeaderValue(KnownHeaders.ContentLength.Descriptor, out object? storedValue))
                 {
                     // storedValue could be a raw string, a boxed long, or a HeaderStoreItemInfo containing
