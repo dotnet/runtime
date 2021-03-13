@@ -14,8 +14,6 @@
 
 #include "w32handle-namespace.h"
 
-#include "w32mutex.h"
-#include "w32semaphore.h"
 #include "w32event.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-coop-mutex.h"
@@ -44,8 +42,6 @@ static gboolean
 has_namespace (MonoW32Type type)
 {
 	switch (type) {
-	case MONO_W32TYPE_NAMEDMUTEX:
-	case MONO_W32TYPE_NAMEDSEM:
 	case MONO_W32TYPE_NAMEDEVENT:
 		return TRUE;
 	default:
@@ -71,8 +67,6 @@ mono_w32handle_namespace_search_handle_callback (MonoW32Handle *handle_data, gpo
 	search_data = (NamespaceSearchHandleData*) user_data;
 
 	switch (handle_data->type) {
-	case MONO_W32TYPE_NAMEDMUTEX: sharedns = mono_w32mutex_get_namespace ((MonoW32HandleNamedMutex*) handle_data->specific); break;
-	case MONO_W32TYPE_NAMEDSEM:   sharedns = mono_w32semaphore_get_namespace ((MonoW32HandleNamedSemaphore*) handle_data->specific); break;
 	case MONO_W32TYPE_NAMEDEVENT: sharedns = mono_w32event_get_namespace ((MonoW32HandleNamedEvent*) handle_data->specific); break;
 	default:
 		g_assert_not_reached ();
