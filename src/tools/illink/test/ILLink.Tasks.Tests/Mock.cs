@@ -20,6 +20,7 @@ namespace ILLink.Tasks.Tests
 			// Ensure that [Required] members are non-null
 			AssemblyPaths = new ITaskItem[0];
 			RootAssemblyNames = new ITaskItem[0];
+			ILLinkPath = Path.Combine (Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location), "illink.dll");
 		}
 
 		public MockDriver CreateDriver ()
