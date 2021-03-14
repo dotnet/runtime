@@ -67,9 +67,9 @@ namespace System.Collections.Generic
             {
                 // We know T is string from above check so Unsafe.As from
                 // the generic and then from string back to the generic
-                _comparer = Unsafe.As<IEqualityComparer<T>>(
+                _comparer = Unsafe.As<IEqualityComparer<T>?>(
                     NonRandomizedStringEqualityComparer.GetStringComparer(
-                        Unsafe.As<IEqualityComparer<string>>(_comparer)));
+                        Unsafe.As<IEqualityComparer<string>?>(_comparer)));
             }
         }
 

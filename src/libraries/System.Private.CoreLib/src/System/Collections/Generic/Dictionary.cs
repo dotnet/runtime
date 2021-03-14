@@ -67,9 +67,9 @@ namespace System.Collections.Generic
             {
                 // We know TKey is string from above check so Unsafe.As from
                 // the generic and then from string back to the generic
-                _comparer = Unsafe.As<IEqualityComparer<TKey>>(
+                _comparer = Unsafe.As<IEqualityComparer<TKey>?>(
                     NonRandomizedStringEqualityComparer.GetStringComparer(
-                        Unsafe.As<IEqualityComparer<string>>(_comparer)));
+                        Unsafe.As<IEqualityComparer<string>?>(_comparer)));
             }
         }
 
