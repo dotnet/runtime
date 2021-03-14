@@ -65,7 +65,7 @@ namespace System.Collections.Generic
 
             if (typeof(TKey) == typeof(string))
             {
-                _comparer = (IEqualityComparer<TKey>?)NonRandomizedStringEqualityComparer.GetStringComparer((IEqualityComparer<string>?)_comparer);
+                _comparer = (IEqualityComparer<TKey>?)NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
             }
         }
 

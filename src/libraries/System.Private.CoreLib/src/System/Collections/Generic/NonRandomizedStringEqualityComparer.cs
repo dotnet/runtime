@@ -102,7 +102,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public static IEqualityComparer<string> GetStringComparer(IEqualityComparer<string>? comparer)
+        public static IEqualityComparer<string>? GetStringComparer(object? comparer)
         {
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
@@ -121,7 +121,7 @@ namespace System.Collections.Generic
                 return stringComparers.WrappedAroundStringComparerOrdinalIgnoreCase;
             }
 
-            return comparer;
+            return (IEqualityComparer<string>?)comparer;
         }
 
         private class StringComparers
