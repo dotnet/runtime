@@ -19,6 +19,10 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="('$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true') And '$(BuildAllOOBPackages)' == 'true'" />
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(PkgDir)\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.proj" />
+    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\pkg\Microsoft.Extensions.Logging.EventSource.pkgproj" />
+    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\pkg\Microsoft.Extensions.Primitives.pkgproj" />
+    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\pkg\System.Reflection.MetadataLoadContext.pkgproj" />
+    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="$(MSBuildThisFileDirectory)System.Text.Json\pkg\System.Text.Json.pkgproj" />
     <!-- This is merge marker 1 to help automerge -->
     <!-- This is merge marker 2 to help automerge --> 
     <!-- This is merge marker 3 to help automerge --> 

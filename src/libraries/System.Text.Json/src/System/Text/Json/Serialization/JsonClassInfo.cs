@@ -319,7 +319,7 @@ namespace System.Text.Json
 
                 return memberInfo is PropertyInfo propertyInfo
                     ? propertyInfo.PropertyType
-                    : Unsafe.As<FieldInfo>(memberInfo).FieldType;
+                    : Unsafe.As<FieldInfo>(memberInfo)!.FieldType;
             }
 
             // Cache the lookup from object property name to JsonPropertyInfo using a case-insensitive comparer.
@@ -390,13 +390,13 @@ namespace System.Text.Json
             Debug.Assert(currentMember is PropertyInfo || currentMember is FieldInfo);
             PropertyInfo? currentPropertyInfo = currentMember as PropertyInfo;
             Type currentMemberType = currentPropertyInfo == null
-                ? Unsafe.As<FieldInfo>(currentMember).FieldType
+                ? Unsafe.As<FieldInfo>(currentMember)!.FieldType
                 : currentPropertyInfo.PropertyType;
 
             Debug.Assert(ignoredProperty is PropertyInfo || ignoredProperty is FieldInfo);
             PropertyInfo? ignoredPropertyInfo = ignoredProperty as PropertyInfo;
             Type ignoredPropertyType = ignoredPropertyInfo == null
-                ? Unsafe.As<FieldInfo>(ignoredProperty).FieldType
+                ? Unsafe.As<FieldInfo>(ignoredProperty)!.FieldType
                 : ignoredPropertyInfo.PropertyType;
 
             return currentMemberType == ignoredPropertyType &&
