@@ -1300,7 +1300,7 @@ namespace System.Diagnostics
                     }
                     object? ret = null;
                     // Avoid the exception which can be thrown during accessing the object properties.
-                    try { ret = fetch!.Fetch(obj); } catch { }
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
                     return ret;
                 }
 
