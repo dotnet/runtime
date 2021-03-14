@@ -221,9 +221,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetPriorityNative(int priority);
 
-        /// <summary>Returns the operating system identifier for the current thread.</summary>
-        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
-
         [DllImport(RuntimeHelpers.QCall)]
         private static extern ulong GetCurrentOSThreadId();
 

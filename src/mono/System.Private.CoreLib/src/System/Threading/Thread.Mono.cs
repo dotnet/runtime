@@ -87,14 +87,6 @@ namespace System.Threading
             FreeInternal();
         }
 
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return GetCurrentOSThreadId();
-            }
-        }
-
         public bool IsAlive
         {
             get

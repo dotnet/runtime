@@ -334,6 +334,9 @@ namespace System.Threading
             }
         }
 
+        /// <summary>Returns the operating system identifier for the current thread.</summary>
+        internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 
         public string? Name
