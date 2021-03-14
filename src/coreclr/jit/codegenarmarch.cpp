@@ -4231,8 +4231,16 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     // The src must be a register.
     regNumber operandReg = genConsumeReg(operand);
 
+#ifdef TARGET_ARM64
     GetEmitter()->emitIns_R_R_I(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
-    GetEmitter()->emitIns_R_R_COND(INS_mvn, emitActualTypeSize(tree), targetReg, REG_ZR, INS_COND_HS);
+    GetEmitter()->emitIns_R_R_R_COND(INS_csinv, emitActualTypeSize(tree), targetReg, targetReg, REG_ZR, INS_COND_LO);
+#else
+    regNumber tmpReg = tree->GetSingleTempReg();
+    GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree), tmpReg, 0);
+    GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(tree), targetReg, operandReg, 1, INS_FLAGS_SET);
+    GetEmitter()->emitIns_R_R(INS_adc, emitActualTypeSize(tree), tmpReg, tmpReg);
+    GetEmitter()->emitIns_R_R(INS_sub, emitActualTypeSize(tree), targetReg, tmpReg);
+#endif
 
     genProduceReg(tree);
 }
