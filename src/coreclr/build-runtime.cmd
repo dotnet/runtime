@@ -604,12 +604,6 @@ if %__BuildNative% EQU 1 (
     call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     @if defined _echo @echo on
 
-    if not defined VSINSTALLDIR (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-        goto ExitWithError
-    )
-    if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
-
     if defined __SkipConfigure goto SkipConfigure
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
@@ -838,12 +832,4 @@ echo     build -all -x86
 echo        -- builds all build types for x86
 echo     build -all -x64 -x86 -Checked -Release
 echo        -- builds x64 and x86 architectures, Checked and Release build types for each
-exit /b 1
-
-:NoDIA
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md ^
-Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
-may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

@@ -49,10 +49,6 @@ if "%VisualStudioVersion%"=="16.0" (
     set __VSVersion=vs2019
     set __PlatformToolset=v142
     goto :SetVCEnvironment
-) else if "%VisualStudioVersion%"=="15.0" (
-    set __VSVersion=vs2017
-    set __PlatformToolset=v141
-    goto :SetVCEnvironment
 )
 
 :VSMissing
