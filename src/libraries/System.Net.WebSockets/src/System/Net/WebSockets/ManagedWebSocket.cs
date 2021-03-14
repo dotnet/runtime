@@ -26,15 +26,6 @@ namespace System.Net.WebSockets
     /// </remarks>
     internal sealed partial class ManagedWebSocket : WebSocket
     {
-        /// <summary>Creates a <see cref="ManagedWebSocket"/> from a <see cref="Stream"/> connected to a websocket endpoint.</summary>
-        /// <param name="stream">The connected Stream.</param>
-        /// <param name="options">The options with which the websocket must be created.</param>
-        /// <returns>The created <see cref="ManagedWebSocket"/> instance.</returns>
-        public static ManagedWebSocket CreateFromConnectedStream(Stream stream, WebSocketCreationOptions options)
-        {
-            return new ManagedWebSocket(stream, options);
-        }
-
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
         private static readonly RandomNumberGenerator s_random = RandomNumberGenerator.Create();
         /// <summary>Encoding for the payload of text messages: UTF8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
@@ -152,7 +143,12 @@ namespace System.Net.WebSockets
         private readonly WebSocketInflater? _inflater;
         private readonly WebSocketDeflater? _deflater;
 
-        private ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
+        /// <summary>Initializes the websocket.</summary>
+        /// <param name="stream">The connected Stream.</param>
+        /// <param name="isServer">true if this is the server-side of the connection; false if this is the client-side of the connection.</param>
+        /// <param name="subprotocol">The agreed upon subprotocol for the connection.</param>
+        /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
+        internal ManagedWebSocket(Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
         {
             Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
             Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
@@ -163,21 +159,8 @@ namespace System.Net.WebSockets
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
 
             _stream = stream;
-            _isServer = options.IsServer;
-            _subprotocol = options.SubProtocol;
-
-            var deflateOptions = options.DeflateOptions;
-
-            if (deflateOptions is not null)
-            {
-                _deflater = options.IsServer ?
-                    new WebSocketDeflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover) :
-                    new WebSocketDeflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
-
-                _inflater = options.IsServer ?
-                        new WebSocketInflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover) :
-                        new WebSocketInflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
-            }
+            _isServer = isServer;
+            _subprotocol = subprotocol;
 
             // Create a buffer just large enough to handle received packet headers (at most 14 bytes) and
             // control payloads (at most 125 bytes).  Message payloads are read directly into the buffer
@@ -207,7 +190,7 @@ namespace System.Net.WebSockets
             // Now that we're opened, initiate the keep alive timer to send periodic pings.
             // We use a weak reference from the timer to the web socket to avoid a cycle
             // that could keep the web socket rooted in erroneous cases.
-            if (options.KeepAliveInterval > TimeSpan.Zero)
+            if (keepAliveInterval > TimeSpan.Zero)
             {
                 _keepAliveTimer = new Timer(static s =>
                 {
@@ -216,7 +199,27 @@ namespace System.Net.WebSockets
                     {
                         thisRef.SendKeepAliveFrameAsync();
                     }
-                }, new WeakReference<ManagedWebSocket>(this), options.KeepAliveInterval, options.KeepAliveInterval);
+                }, new WeakReference<ManagedWebSocket>(this), keepAliveInterval, keepAliveInterval);
+            }
+        }
+
+        /// <summary>Initializes the websocket.</summary>
+        /// <param name="stream">The connected Stream.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
+        internal ManagedWebSocket(Stream stream, WebSocketCreationOptions options)
+            : this(stream, options.IsServer, options.SubProtocol, options.KeepAliveInterval)
+        {
+            var deflateOptions = options.DeflateOptions;
+
+            if (deflateOptions is not null)
+            {
+                _deflater = options.IsServer ?
+                    new WebSocketDeflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover) :
+                    new WebSocketDeflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover);
+
+                _inflater = options.IsServer ?
+                        new WebSocketInflater(deflateOptions.ServerMaxWindowBits, deflateOptions.ServerContextTakeover) :
+                        new WebSocketInflater(deflateOptions.ClientMaxWindowBits, deflateOptions.ClientContextTakeover);
             }
         }
 

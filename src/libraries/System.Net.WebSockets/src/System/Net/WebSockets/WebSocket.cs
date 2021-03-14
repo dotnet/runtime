@@ -157,12 +157,7 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, new WebSocketCreationOptions
-            {
-                IsServer = isServer,
-                SubProtocol = subProtocol,
-                KeepAliveInterval = keepAliveInterval
-            });
+            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
         }
 
         /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
@@ -179,7 +174,7 @@ namespace System.Net.WebSockets
             if (!stream.CanRead || !stream.CanWrite)
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, options);
+            return new ManagedWebSocket(stream, options);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -231,11 +226,7 @@ namespace System.Net.WebSockets
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
-            return ManagedWebSocket.CreateFromConnectedStream(innerStream, new WebSocketCreationOptions
-            {
-                SubProtocol = subProtocol,
-                KeepAliveInterval = keepAliveInterval
-            });
+            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval);
         }
     }
 }
