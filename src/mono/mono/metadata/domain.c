@@ -364,7 +364,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
-	mono_w32handle_namespace_init ();
 #endif
 
 	mono_w32event_init ();
