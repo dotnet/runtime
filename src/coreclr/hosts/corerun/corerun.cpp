@@ -43,9 +43,6 @@ struct configuration
     // Wait for debugger to be attached.
     bool wait_to_debug;
 
-    // Verbose output from corerun.
-    bool verbose;
-
     // Perform self test.
     bool self_test;
 };
@@ -165,6 +162,49 @@ static const char* get_envvar_as_boolean(const char_t* var, bool def = false)
         ? "true"
         : "false";
 }
+
+class logger_t final
+{
+    const char* _exePath;
+    int _propertyCount;
+    const char** _propertyKeys;
+    const char** _propertyValues;
+    const char* _managedAssembly;
+    int _argc;
+    const char** _argv;
+public:
+    logger_t(
+        const char* exePath,
+        int propertyCount, const char** propertyKeys, const char** propertyValues,
+        const char* managedAssembly, int argc, const char** argv)
+    : _exePath{ exePath }
+    , _propertyCount{ propertyCount }
+    , _propertyKeys{ propertyKeys }
+    , _propertyValues{ propertyValues }
+    , _managedAssembly{ managedAssembly }
+    , _argc{ argc }
+    , _argv{ argv }
+    { }
+
+    void dump_details(FILE* fd = stderr)
+    {
+        // Using std::fprintf since values have been converted to UTF-8.
+        std::fprintf(fd, "Exe path: %s\n", _exePath);
+        std::fprintf(fd, "Properties:\n");
+        for (int i = 0; i < _propertyCount; ++i)
+        {
+            std::fprintf(fd, "    %s = %s\n", _propertyKeys[i], _propertyValues[i]);
+        }
+
+        std::fprintf(fd, "Managed assembly: %s\n", _managedAssembly);
+        std::fprintf(fd, "Arguments (%d): ", _argc);
+        for (int i = 0; i < _argc; ++i)
+        {
+            std::fprintf(fd, "%s ", _argv[i]);
+        }
+        std::fprintf(fd, "\n");
+    }
+};
 
 // The current CoreCLR instance details.
 static void* CurrentClrInstance;
@@ -310,24 +350,33 @@ static int run(const configuration& config)
         enable_globalization_invariant,
     };
 
+    int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
+
     // Construct arguments
     pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
     std::vector<pal::string_utf8_t> argv_lifetime;
     pal::malloc_ptr<const char*> argv_utf8{ pal::convert_argv_to_utf8(config.entry_assembly_argc, config.entry_assembly_argv, argv_lifetime) };
     pal::string_utf8_t entry_assembly_utf8 = pal::convert_to_utf8(config.entry_assembly_fullpath.c_str());
 
+    logger_t logger{
+        exe_path_utf8.c_str(),
+        propertyCount, propertyKeys, propertyValues,
+        entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
+
     int result;
     result = coreclr_init_func(
         exe_path_utf8.c_str(),
         "corerun",
-        sizeof(propertyKeys) / sizeof(propertyKeys[0]),
+        propertyCount,
         propertyKeys,
         propertyValues,
         &CurrentClrInstance,
         &CurrentAppDomainId);
     if (FAILED(result))
     {
-        pal::fprintf(stderr, W("coreclr_initialize failed - Error: 0x%08x\n"), result);
+        pal::fprintf(stderr, W("BEGIN: coreclr_initialize failed - Error: 0x%08x\n"), result);
+        logger.dump_details();
+        pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;
     }
 
@@ -344,7 +393,9 @@ static int run(const configuration& config)
             (uint32_t*)&exit_code);
         if (FAILED(result))
         {
-            pal::fprintf(stderr, W("coreclr_execute_assembly failed - Error: 0x%08x\n"), result);
+            pal::fprintf(stderr, W("BEGIN: coreclr_execute_assembly failed - Error: 0x%08x\n"), result);
+            logger.dump_details();
+            pal::fprintf(stderr, W("END: coreclr_execute_assembly failed - Error: 0x%08x\n"), result);
             return -1;
         }
 
@@ -376,7 +427,6 @@ static void display_usage()
         W("\n")
         W("Options:\n")
         W("    -c, --clr-path - path to CoreCLR binary and managed CLR assemblies\n")
-        W("    -v, --verbose - causes verbose output to be written to the console\n")
         W("    -d, --debug - causes corerun to wait for a debugger to attach before executing\n")
         W("    -?, -h, --help - show this help\n")
         W("\n")
@@ -449,10 +499,6 @@ static bool parse_args(
         {
             config.wait_to_debug = true;
         }
-        else if ((pal::strcmp(option, W("v")) == 0 || (pal::strcmp(option, W("verbose")) == 0)))
-        {
-            config.verbose = true;
-        }
         else if (pal::strcmp(option, W("st")) == 0)
         {
             config.self_test = true;
@@ -514,10 +560,9 @@ static int self_test()
     {
         {
             configuration config{};
-            const char_t* args[] = { W(""), W("-d"), W("-v"), W("foo") };
-            THROW_IF_FALSE(parse_args(4, args, config));
+            const char_t* args[] = { W(""), W("-d"), W("foo") };
+            THROW_IF_FALSE(parse_args(3, args, config));
             THROW_IF_FALSE(config.wait_to_debug);
-            THROW_IF_FALSE(config.verbose);
             THROW_IF_FALSE(config.clr_path.empty());
             THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
             THROW_IF_FALSE(config.entry_assembly_argc == 0);
@@ -526,7 +571,6 @@ static int self_test()
             configuration config{};
             const char_t* args[] = { W(""), W("-d"), W("foo"), W("1"), W("2"), W("3") };
             THROW_IF_FALSE(parse_args(6, args, config));
-            THROW_IF_FALSE(!config.verbose);
             THROW_IF_FALSE(config.wait_to_debug);
             THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
             THROW_IF_FALSE(config.entry_assembly_argc == 3);
@@ -535,7 +579,6 @@ static int self_test()
             configuration config{};
             const char_t* args[] = { W(""), W("--clr-path"), W("path"), W("foo"), W("1") };
             THROW_IF_FALSE(parse_args(5, args, config));
-            THROW_IF_FALSE(!config.verbose);
             THROW_IF_FALSE(!config.wait_to_debug);
             THROW_IF_FALSE(config.clr_path == W("path"));
             THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
