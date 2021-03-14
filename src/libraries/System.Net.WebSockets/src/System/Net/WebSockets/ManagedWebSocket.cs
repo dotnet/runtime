@@ -157,6 +157,7 @@ namespace System.Net.WebSockets
             Debug.Assert(stream != null, $"Expected non-null stream");
             Debug.Assert(stream.CanRead, $"Expected readable stream");
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
+            Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid keepalive interval: {keepAliveInterval}");
 
             _stream = stream;
             _isServer = isServer;
