@@ -412,6 +412,8 @@ namespace pal
     }
 
     // Forward declaration
+    template<size_t LEN>
+    bool string_ends_with(const string_t& str, const char_t(&suffix)[LEN]);
     bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix);
     void ensure_trailing_delimiter(pal::string_t& dir);
 
