@@ -65,11 +65,7 @@ namespace System.Collections.Generic
 
             if (typeof(T) == typeof(string))
             {
-                // We know T is string from above check so Unsafe.As from
-                // the generic and then from string back to the generic
-                _comparer = Unsafe.As<IEqualityComparer<T>?>(
-                    NonRandomizedStringEqualityComparer.GetStringComparer(
-                        Unsafe.As<IEqualityComparer<string>?>(_comparer)));
+                _comparer = (IEqualityComparer<T>?)NonRandomizedStringEqualityComparer.GetStringComparer((IEqualityComparer<string>?)_comparer);
             }
         }
 
