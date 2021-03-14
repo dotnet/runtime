@@ -42,6 +42,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<int, AssemblyName> _moduleIdToAssemblyNameMap;
 
         /// <summary>
+        /// MVID's of the assemblies included in manifest metadata to be emitted as the
+        /// ComponentAssemblyMvid R2R header table used by the runtime to check loaded assemblies
+        /// and fail fast in case of mismatch.
+        /// </summary>
+        private readonly List<Guid> _componentAssemblyMvids;
+
+        /// <summary>
         /// Registered signature emitters.
         /// </summary>
         private readonly List<ISignatureEmitter> _signatureEmitters;
@@ -71,6 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();
+            _componentAssemblyMvids = new List<Guid>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
             _nextModuleId = 1;
@@ -150,6 +158,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
 
                 _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
+                _componentAssemblyMvids.Add(module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid));
             }
             return assemblyRefIndex;
         }
@@ -240,6 +249,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: Array.Empty<Relocation>(),
                 alignment: 1,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        private const int GuidByteSize = 16;
+
+        public int ComponentAssemblyMvidTableSize => GuidByteSize * _componentAssemblyMvids.Count;
+
+        public ObjectData GetComponentAssemblyMvidTableData(NodeFactory factory, bool relocsOnly = false)
+        {
+            if (relocsOnly)
+            {
+                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+            }
+
+            byte[] componentAssemblyMvidTable = new byte[ComponentAssemblyMvidTableSize];
+            for (int i = 0; i < _componentAssemblyMvids.Count; i++)
+            {
+                Array.Copy(
+                    sourceArray: _componentAssemblyMvids[i].ToByteArray(),
+                    sourceIndex: 0,
+                    destinationArray: componentAssemblyMvidTable,
+                    destinationIndex: GuidByteSize * i,
+                    length: GuidByteSize);
+            }
+            return new ObjectData(componentAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 0, new ISymbolDefinitionNode[] { this });
         }
     }
 }
