@@ -534,57 +534,51 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, ReadOnlySpan<byte> payloadBuffer)
         {
-            try
+            if (_deflater is not null && !payloadBuffer.IsEmpty)
             {
-                if (_deflater is not null && !payloadBuffer.IsEmpty)
-                {
-                    payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
-                }
-
-                // Ensure we have a _sendBuffer.
-                AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
-                Debug.Assert(_sendBuffer != null);
-
-                // Write the message header data to the buffer.
-                int headerLength;
-                int? maskOffset = null;
-                if (_isServer)
-                {
-                    // The server doesn't send a mask, so the mask offset returned by WriteHeader
-                    // is actually the end of the header.
-                    headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _inflater is not null);
-                }
-                else
-                {
-                    // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
-                    // and we need to know the total length for sending it on the wire.
-                    maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _inflater is not null);
-                    headerLength = maskOffset.GetValueOrDefault() + MaskLength;
-                }
-
-                // Write the payload
-                if (payloadBuffer.Length > 0)
-                {
-                    payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length));
-
-                    // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
-                    // changing the data in the caller-supplied payload buffer.
-                    if (maskOffset.HasValue)
-                    {
-                        ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadBuffer.Length), _sendBuffer, maskOffset.Value, 0);
-                    }
-                }
-
-                // Return the number of bytes in the send buffer
-                return headerLength + payloadBuffer.Length;
+                payloadBuffer = _deflater.Deflate(payloadBuffer, opcode == MessageOpcode.Continuation, endOfMessage);
             }
-            finally
+            int payloadLength = payloadBuffer.Length;
+
+            // Ensure we have a _sendBuffer
+            AllocateSendBuffer(payloadLength + MaxMessageHeaderLength);
+            Debug.Assert(_sendBuffer != null);
+
+            // Write the message header data to the buffer.
+            int headerLength;
+            int? maskOffset = null;
+            if (_isServer)
             {
-                if (_deflater is not null)
+                // The server doesn't send a mask, so the mask offset returned by WriteHeader
+                // is actually the end of the header.
+                headerLength = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: false, compressed: _inflater is not null);
+            }
+            else
+            {
+                // We need to know where the mask starts so that we can use the mask to manipulate the payload data,
+                // and we need to know the total length for sending it on the wire.
+                maskOffset = WriteHeader(opcode, _sendBuffer, payloadBuffer, endOfMessage, useMask: true, compressed: _inflater is not null);
+                headerLength = maskOffset.GetValueOrDefault() + MaskLength;
+            }
+
+            // Write the payload
+            if (!payloadBuffer.IsEmpty)
+            {
+                payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadLength));
+
+                // Release the deflater buffer if any, we're not going to need the payloadBuffer anymore.
+                _deflater?.ReleaseBuffer();
+
+                // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
+                // changing the data in the caller-supplied payload buffer.
+                if (maskOffset.HasValue)
                 {
-                    _deflater.ReleaseBuffer();
+                    ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadLength), _sendBuffer, maskOffset.Value, 0);
                 }
             }
+
+            // Return the number of bytes in the send buffer
+            return headerLength + payloadLength;
         }
 
         private void SendKeepAliveFrameAsync()
