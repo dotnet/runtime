@@ -36,6 +36,13 @@ namespace pal
 
     template<typename T>
     using malloc_ptr = std::unique_ptr<T, free_delete>;
+
+    enum class debugger_state_t
+    {
+        na,
+        attached,
+        not_attached,
+    };
 }
 
 #ifdef TARGET_WINDOWS
@@ -99,7 +106,10 @@ namespace pal
         return { buffer.get() };
     }
 
-    bool is_debugger_attached() { return ::IsDebuggerPresent() == TRUE; }
+    debugger_state_t is_debugger_attached()
+    {
+        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
+    }
 
     bool does_file_exist(const string_t& file_path)
     {
@@ -279,11 +289,14 @@ public:
 #include <sys/stat.h>
 #include <unistd.h>
 
-#if defined(__APPLE__)
 // Needed for detecting the debugger attach scenario
+#if defined(__APPLE__)
 #include <sys/sysctl.h>
 #include <sys/types.h>
-#endif // __APPLE__
+#else // !__APPLE__
+#include <fcntl.h>
+#include <ctype.h>
+#endif // !__APPLE__
 
 // CMake generated
 #include <config.h>
@@ -354,7 +367,7 @@ namespace pal
         return abs_path;
     }
 
-    bool is_debugger_attached()
+    debugger_state_t is_debugger_attached()
     {
 #if defined(__APPLE__)
         // Taken from https://developer.apple.com/library/archive/qa/qa1361/_index.html
@@ -384,10 +397,48 @@ namespace pal
 
         // We're being debugged if the P_TRACED flag is set.
 
-        return ( (info.kp_proc.p_flag & P_TRACED) != 0 );
+        return ( (info.kp_proc.p_flag & P_TRACED) != 0 ) ? debugger_state_t::attached : debugger_state_t::not_attached;
+
 #else // !__APPLE__
-        pal::fprintf(stdout, W("Debugger attach is not supported on this platform\n"));
-        return true;
+        // Use procfs to detect if there is a tracer process.
+        // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
+        char status[2048] = { 0 };
+        int fd = ::open("/proc/self/status", O_RDONLY);
+        if (fd == -1)
+        {
+            // If the file can't be opened assume we are on a not supported platform.
+            return debugger_state_t::na;
+        }
+
+        // Attempt to read
+        ssize_t bytes_read = ::read(fd, status, sizeof(status) - 1);
+        if (bytes_read > 0)
+        {
+            // We have data. At this point we can likely make a strong decision.
+            const char tracer_pid_name[] = "TracerPid:";
+            const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
+            if (tracer_pid_ptr == nullptr)
+                return debugger_state_t::not_attached;
+
+            // The number after the name is the process ID of the
+            // tracer application or 0 if none exists.
+            const char* curr = tracer_pid_ptr + (sizeof(tracer_pid_name) - 1);
+            const char* end = status + bytes_read;
+            for (;curr < end; ++curr)
+            {
+                if (::isspace(*curr))
+                    continue;
+
+                // Check the first non-space if it is 0. If so, we have
+                // a non-zero process ID and a tracer is attached.
+                return (::isdigit(*curr) && *curr != '0') ? debugger_state_t::attached : debugger_state_t::not_attached;
+            }
+        }
+
+        // The read in data is either incomplete (i.e. small buffer) or
+        // the returned content is not expected. Let's fallback to not available.
+        return debugger_state_t::na;
+
 #endif // !__APPLE__
     }
 

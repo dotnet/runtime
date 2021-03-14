@@ -74,18 +74,26 @@ namespace envvar
 
 static void wait_for_debugger()
 {
-    if (!pal::is_debugger_attached())
+    pal::debugger_state_t state = pal::is_debugger_attached();
+    if (state == pal::debugger_state_t::na)
+    {
+        pal::fprintf(stdout, W("Debugger attach is not available on this platform\n"));
+        return;
+    }
+    else if (state == pal::debugger_state_t::not_attached)
     {
         pal::fprintf(stdout, W("Waiting for the debugger to attach. Press any key to continue ...\n"));
         (void)getchar();
-        if (pal::is_debugger_attached())
-        {
-            pal::fprintf(stdout, W("Debugger is attached.\n"));
-        }
-        else
-        {
-            pal::fprintf(stdout, W("Debugger failed to attach.\n"));
-        }
+        state = pal::is_debugger_attached();
+    }
+
+    if (state == pal::debugger_state_t::attached)
+    {
+        pal::fprintf(stdout, W("Debugger is attached.\n"));
+    }
+    else
+    {
+        pal::fprintf(stdout, W("Debugger failed to attach.\n"));
     }
 }
 
