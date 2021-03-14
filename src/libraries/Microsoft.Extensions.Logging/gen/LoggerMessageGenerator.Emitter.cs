@@ -194,17 +194,35 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenLogMethod(LoggerMethod lm)
             {
-                string level = lm.Level switch
+                string level = string.Empty;
+
+                if (lm.Level == null)
                 {
-                    0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
-                    1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
-                    2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
-                    3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
-                    4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
-                    5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
-                    6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
-                    _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
-                };
+                    foreach (var p in lm.Parameters)
+                    {
+                        if (p.IsLogLevel)
+                        {
+                            level = p.Name;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+#pragma warning disable S109 // Magic numbers should not be used
+                    level = lm.Level switch
+                    {
+                        0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
+                        1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
+                        2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
+                        3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
+                        4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
+                        5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
+                        6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
+                        _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
+                    };
+#pragma warning restore S109 // Magic numbers should not be used
+                }
 
                 string eventName;
                 if (string.IsNullOrWhiteSpace(lm.EventName))
@@ -282,7 +300,7 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 if (lm.Parameters.Count == 0)
                 {
-                    return $"default(global::{StateHolderNamespace}.LogStateHolder)";
+                    return $"new global::{StateHolderNamespace}.LogStateHolder({formatFunc})";
                 }
 
                 if (lm.Parameters.Count == 1)

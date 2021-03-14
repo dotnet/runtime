@@ -67,6 +67,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             M8(logger);
             M9(logger);
             M10(logger, null);
+            M11(logger, "A", LogLevel.Debug, "B");
         }
 
         // normal public method
@@ -108,13 +109,17 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         // nullable parameter
         [LoggerMessage(9, LogLevel.Critical, "Message10 {optional}")]
         internal static partial void M10(ILogger logger, string? optional);
+
+        // dynamic log level
+        [LoggerMessage(10, "Message11 {p1} {p2}")]
+        internal static partial void M11(ILogger logger, string p1, LogLevel level, string p2);
     }
 
     // test particular method signature variations are generated correctly
     internal static partial class SignatureTests
     {
         // extension method
-        [LoggerMessage(10, LogLevel.Critical, "Message11")]
+        [LoggerMessage(eventId: 10, level: LogLevel.Critical, message: "Message11")]
         internal static partial void M11(this ILogger logger);
 
         public static void Combo(ILogger logger)

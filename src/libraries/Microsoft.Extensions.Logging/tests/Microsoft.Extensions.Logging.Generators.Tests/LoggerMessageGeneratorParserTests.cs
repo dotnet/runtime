@@ -29,6 +29,21 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        public async Task MissingLogLevel()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, ""M1"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0017", d[0].Id);
+        }
+
+        [Fact]
         public async Task InvalidMethodBody()
         {
             var d = await RunGenerator(@"
@@ -120,6 +135,21 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             Assert.Single(d);
             Assert.Equal("LG0013", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NeedlessLogLevelInMessage()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, ""M1 {l1} {l2}"")]
+                    static partial void M1(ILogger logger, LogLevel l1, LogLevel l2);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0018", d[0].Id);
         }
 
         [Fact]
@@ -242,9 +272,29 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         public async Task MissingILoggerType()
         {
             var d = await RunGenerator(@"
-                namespace Microsoft.Extensions.Logging
+                namespace Microsoft.R9.Extensions.Logging
                 {
                     public sealed class LoggerMessageAttribute : System.Attribute {}
+                }
+                partial class C
+                {
+                }
+            ", false, includeLoggingReferences: false);
+
+            Assert.Empty(d);
+        }
+
+        [Fact]
+        public async Task MissingLogLevelType()
+        {
+            var d = await RunGenerator(@"
+                namespace Microsoft.R9.Extensions.Logging
+                {
+                    public sealed class LoggerMessageAttribute : System.Attribute {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public interface ILogger {}
                 }
                 partial class C
                 {

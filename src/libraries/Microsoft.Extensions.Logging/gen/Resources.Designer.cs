@@ -97,6 +97,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
+        /// </summary>
+        internal static string DontMentionLogLevelInMessageMessage {
+            get {
+                return ResourceManager.GetString("DontMentionLogLevelInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include log level parameters as templates in the logging message..
+        /// </summary>
+        internal static string DontMentionLogLevelInMessageTitle {
+            get {
+                return ResourceManager.GetString("DontMentionLogLevelInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Multiple logging messages are using event id {0}.
         /// </summary>
         internal static string ErrorEventIdReuseMessage {
@@ -237,6 +255,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string ErrorMethodIsGenericTitle {
             get {
                 return ResourceManager.GetString("ErrorMethodIsGenericTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method.
+        /// </summary>
+        internal static string ErrorMissingLogLevelMessage {
+            get {
+                return ResourceManager.GetString("ErrorMissingLogLevelMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method.
+        /// </summary>
+        internal static string ErrorMissingLogLevelTitle {
+            get {
+                return ResourceManager.GetString("ErrorMissingLogLevelTitle", resourceCulture);
             }
         }
         

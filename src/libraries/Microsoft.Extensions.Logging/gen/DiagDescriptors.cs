@@ -141,5 +141,21 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ErrorMissingLogLevel { get; } = new (
+            id: "LG0017",
+            title: Resources.ErrorMissingLogLevelTitle,
+            messageFormat: Resources.ErrorMissingLogLevelMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor DontMentionLogLevelInMessage { get; } = new (
+            id: "LG0018",
+            title: Resources.DontMentionLogLevelInMessageTitle,
+            messageFormat: Resources.DontMentionLogLevelInMessageMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
