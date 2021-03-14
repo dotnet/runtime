@@ -51,7 +51,7 @@ namespace System.Net.WebSockets.Compression
             // output might be larger than the payload. This is why we rent at least 4KB initially.
             const int MinInitialBufferLength = 4 * 1024;
 
-            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(Math.Max(payload.Length, MinInitialBufferLength), MaxInitialBufferLength));
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Clamp(payload.Length, MinInitialBufferLength, MaxInitialBufferLength));
             int position = 0;
 
             while (true)
