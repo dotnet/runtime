@@ -6,7 +6,6 @@
   <PropertyGroup>
     <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
     <IsNETCoreAppRef>true</IsNETCoreAppRef>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>

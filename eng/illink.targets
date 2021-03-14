@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
+    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(NetCoreAppCurrentBuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
     <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblySuppressionsXmlsDir>
   </PropertyGroup>
 
@@ -54,15 +54,15 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFramework>
