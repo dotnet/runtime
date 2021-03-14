@@ -4233,7 +4233,7 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
 
 #ifdef TARGET_ARM64
     GetEmitter()->emitIns_R_R_I(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
-    GetEmitter()->emitIns_R_R_R_COND(INS_csinv, emitActualTypeSize(tree), targetReg, targetReg, REG_ZR, INS_COND_LO);
+    GetEmitter()->emitIns_R_R_COND(INS_cinv, emitActualTypeSize(tree), targetReg, targetReg, INS_COND_HS);
 #else
     regNumber tmpReg = tree->GetSingleTempReg();
     GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree), tmpReg, 0);
