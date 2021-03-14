@@ -54,7 +54,7 @@ namespace System.Collections.Generic
                 Initialize(capacity);
             }
 
-            if (comparer != null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            if (comparer is not null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -65,18 +65,11 @@ namespace System.Collections.Generic
 
             if (typeof(TKey) == typeof(string))
             {
-                if (_comparer is null)
-                {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundDefaultComparer;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
-                {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinal;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
-                {
-                    _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinalIgnoreCase;
-                }
+                // We know TKey is string from above check so Unsafe.As from
+                // the generic and then from string back to the generic
+                _comparer = Unsafe.As<IEqualityComparer<TKey>>(
+                    NonRandomizedStringEqualityComparer.GetStringComparer(
+                        Unsafe.As<IEqualityComparer<string>>(_comparer)));
             }
         }
 

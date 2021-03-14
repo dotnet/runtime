@@ -54,7 +54,7 @@ namespace System.Collections.Generic
 
         public HashSet(IEqualityComparer<T>? comparer)
         {
-            if (comparer != null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            if (comparer is not null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -65,18 +65,11 @@ namespace System.Collections.Generic
 
             if (typeof(T) == typeof(string))
             {
-                if (_comparer is null)
-                {
-                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundDefaultComparer;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.Ordinal))
-                {
-                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinal;
-                }
-                else if (ReferenceEquals(_comparer, StringComparer.OrdinalIgnoreCase))
-                {
-                    _comparer = (IEqualityComparer<T>)NonRandomizedStringEqualityComparer.WrappedAroundStringComparerOrdinalIgnoreCase;
-                }
+                // We know T is string from above check so Unsafe.As from
+                // the generic and then from string back to the generic
+                _comparer = Unsafe.As<IEqualityComparer<T>>(
+                    NonRandomizedStringEqualityComparer.GetStringComparer(
+                        Unsafe.As<IEqualityComparer<string>>(_comparer)));
             }
         }
 
