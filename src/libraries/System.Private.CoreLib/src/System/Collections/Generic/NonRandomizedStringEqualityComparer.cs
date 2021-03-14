@@ -14,7 +14,13 @@ namespace System.Collections.Generic
     // Needs to be public to support binary serialization compatibility
     public class NonRandomizedStringEqualityComparer : IEqualityComparer<string?>, IInternalStringEqualityComparer, ISerializable
     {
-        private static readonly StringComparers s_stringComparers = new StringComparers();
+        // Dictionary<...>.Comparer and similar methods need to return the original IEqualityComparer
+        // that was passed in to the ctor. The caller chooses one of these singletons so that the
+        // GetUnderlyingEqualityComparer method can return the correct value.
+
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
+        private static readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
 
         private readonly IEqualityComparer<string?> _underlyingComparer;
 
@@ -107,31 +113,20 @@ namespace System.Collections.Generic
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
-            StringComparers stringComparers = s_stringComparers;
             if (comparer is null)
             {
-                return stringComparers.WrappedAroundDefaultComparer;
+                return WrappedAroundDefaultComparer;
             }
             else if (ReferenceEquals(comparer, StringComparer.Ordinal))
             {
-                return stringComparers.WrappedAroundStringComparerOrdinal;
+                return WrappedAroundStringComparerOrdinal;
             }
             else if (ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
             {
-                return stringComparers.WrappedAroundStringComparerOrdinalIgnoreCase;
+                return WrappedAroundStringComparerOrdinalIgnoreCase;
             }
 
-            return (IEqualityComparer<string>?)comparer;
-        }
-
-        private class StringComparers
-        {
-            // Dictionary<...>.Comparer and similar methods need to return the original IEqualityComparer
-            // that was passed in to the ctor. The caller chooses one of these singletons so that the
-            // GetUnderlyingEqualityComparer method can return the correct value.
-            public readonly NonRandomizedStringEqualityComparer WrappedAroundDefaultComparer = new OrdinalComparer(EqualityComparer<string?>.Default);
-            public readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinal = new OrdinalComparer(StringComparer.Ordinal);
-            public readonly NonRandomizedStringEqualityComparer WrappedAroundStringComparerOrdinalIgnoreCase = new OrdinalIgnoreCaseComparer(StringComparer.OrdinalIgnoreCase);
+            return null;
         }
     }
 }

@@ -62,10 +62,13 @@ namespace System.Collections.Generic
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
-
             if (typeof(T) == typeof(string))
             {
-                _comparer = (IEqualityComparer<T>?)NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
+                IEqualityComparer<string>? stringComparer = NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
+                if (stringComparer is not null)
+                {
+                    _comparer = (IEqualityComparer<T>?)stringComparer;
+                }
             }
         }
 
