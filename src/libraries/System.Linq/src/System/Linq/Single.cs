@@ -10,7 +10,7 @@ namespace System.Linq
     {
         public static TSource Single<TSource>(this IEnumerable<TSource> source)
         {
-            var single = source.TryGetSingle(out bool found);
+            TSource? single = source.TryGetSingle(out bool found);
             if (!found)
             {
                 ThrowHelper.ThrowNoElementsException();
@@ -20,10 +20,10 @@ namespace System.Linq
         }
         public static TSource Single<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            var single = source.TryGetSingle(predicate, out bool found);
+            TSource? single = source.TryGetSingle(predicate, out bool found);
             if (!found)
             {
-                ThrowHelper.ThrowNoElementsException();
+                ThrowHelper.ThrowNoMatchException();
             }
 
             return single!;

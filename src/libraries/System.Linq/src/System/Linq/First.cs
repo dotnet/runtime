@@ -35,7 +35,7 @@ namespace System.Linq
 
         public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
-            var first = source.TryGetFirst(out bool found);
+            TSource? first = source.TryGetFirst(out bool found);
             return found ? first! : defaultValue;
         }
 
@@ -44,7 +44,7 @@ namespace System.Linq
 
         public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
         {
-            var first = source.TryGetFirst(predicate, out bool found);
+            TSource? first = source.TryGetFirst(predicate, out bool found);
             return found ? first! : defaultValue;
         }
 
