@@ -2317,12 +2317,23 @@ namespace System.Tests
                     {
                         string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
                         TimeSpan ts = TimeSpan.Parse(offset);
-                        if (tzi.BaseUtcOffset != ts && tzi.Id.IndexOf("Morocco", StringComparison.Ordinal) >= 0)
+                        if (PlatformDetection.IsWindows &&
+                            tzi.BaseUtcOffset != ts &&
+                            (tzi.Id.Contains("Morocco")  || tzi.Id.Contains("Volgograd")))
                         {
                             // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
                             // We special case this in the test to avoid the test failures like:
                             //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
-                            Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            //      04:00 != 03:00:00, dn:(UTC+04:00) Volgograd, sn:Volgograd Standard Time
+                            if (tzi.Id.Contains("Morocco"))
+                            {
+                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            }
+                            else
+                            {
+                                // Volgograd, Russia
+                                Assert.True(tzi.BaseUtcOffset == new TimeSpan(3, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                            }
                         }
                         else
                         {
