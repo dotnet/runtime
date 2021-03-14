@@ -8,25 +8,11 @@ set "__MsgPrefix=BUILD: "
 echo %__MsgPrefix%Starting Build at %TIME%
 
 set __ThisScriptFull="%~f0"
-set __ThisScriptDir="%~dp0"
-
-call %__ThisScriptDir%\setup_vs_tools.cmd
-if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
-
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
-)
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __TargetOS           -- default: windows
+::      __TargetOS          -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
@@ -205,6 +191,14 @@ if defined __Priority (
     ) else (
         set __PassThroughArgs=-priority=%__Priority%
     )
+)
+
+:: Initialize VS environment
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
+if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
+
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
 
 if defined __BuildAll goto BuildAll

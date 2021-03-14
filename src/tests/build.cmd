@@ -15,17 +15,11 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\src\coreclr\setup_vs_tools.cmd
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
 
 :: Set the default arguments for build
