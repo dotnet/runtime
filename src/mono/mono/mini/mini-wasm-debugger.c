@@ -1535,10 +1535,10 @@ decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 		*(guint64*)addr = atol(variableValue);
 		break;
 	case MONO_TYPE_R4:
-		*(guint32*)addr = atoi(variableValue);
+		*(gfloat*)addr = atof(variableValue);
 		break;
 	case MONO_TYPE_R8:
-		*(guint64*)addr = atol(variableValue);
+		*(gdouble*)addr = atof(variableValue);
 	}
 	return TRUE;
 }
