@@ -36,7 +36,7 @@
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework);
-        BuildSettings=$(BuildSettings)
+        BuildSettings=$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)
       </_PropertiesToPass>
     </PropertyGroup>
 
@@ -84,7 +84,7 @@
 
     <!-- The Helix correlation payload file -->
     <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
-                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
     <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
   </PropertyGroup>
 
@@ -133,17 +133,19 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" />
   </Target>
 
-  <!--
-    We need to include all dlls in the runtime path as inputs to make it really incremental. If we use the root folder,
-    if a dll is updated, the folder's timestamp is not updated, therefore skipped.
-  -->
-  <ItemGroup>
-    <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
+  <Target Name="_CollectRuntimeInputs">
+    <!--
+      We need to include all dlls in the runtime path as inputs to make it really incremental. If we use the root folder,
+      if a dll is updated, the folder's timestamp is not updated, therefore skipped.
+    -->
+    <ItemGroup>
+      <_RuntimeInput Include="$(TestHostRootPath)**\*.dll" />
 
-    <!-- Add the scenario TestEnv batch files -->
-    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(TestHostRootPath)**/*.cmd" />
-    <_RuntimeInputs Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(TestHostRootPath)**/*.sh" />
-  </ItemGroup>
+      <!-- Add the scenario TestEnv batch files -->
+      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(TestHostRootPath)**\*.cmd" />
+      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(TestHostRootPath)**\*.sh" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="IncludeDumpDocsInTesthost"
           Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
@@ -160,8 +162,8 @@
   </Target>
 
   <Target Name="CompressRuntimeDirectory"
-          DependsOnTargets="IncludeDumpDocsInTesthost"
-          Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
+          DependsOnTargets="IncludeDumpDocsInTesthost;_CollectRuntimeInputs"
+          Inputs="@(_RuntimeInput);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TestPackages)' != 'true' and
                      '$(TargetsMobile)' != 'true' and

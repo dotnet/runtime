@@ -47,8 +47,8 @@
              Properties="$(TraversalGlobalProperties)" />
   </Target>
 
-  <Import Condition="'$(BuildingNetCoreAppVertical)' == 'true'"
-          Project="$(MSBuildThisFileDirectory)\illink-trimassemblies.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)illink-trimassemblies.targets"
+          Condition="'$(BuildingNetCoreAppVertical)' == 'true'" />
 
   <Target Name="RunApiCompat"
           Condition="'@(ApiCompatProject)' != ''"

@@ -6,7 +6,6 @@
   <PropertyGroup>
     <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
     <IsNETCoreAppRef>true</IsNETCoreAppRef>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,7 +22,9 @@
     <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library.ref\$(NETStandardLibraryRefVersion)\ref\netstandard2.1\</NETStandard21RefPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or
+                        '$(MSBuildProjectName)' == 'mscorlib' or
+                        '$(MSBuildProjectName)' == 'netstandard'">
     <!-- Omit System.Void since C# doesn't permit the use of the `System.Void`
          typename and instead requires callers to use the `void` keyword. -->
     <GenFacadesOmitType Include="System.Void" />

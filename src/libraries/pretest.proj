@@ -86,7 +86,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="$(NETCoreAppTestSharedFrameworkPath)*.*"
           Outputs="$(NETCoreAppTestSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
-          Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
