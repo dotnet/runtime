@@ -413,7 +413,11 @@ namespace System.ComponentModel
         /// <summary>
         /// This dynamically binds an EventDescriptor to a type.
         /// </summary>
-        public static EventDescriptor CreateEvent(Type componentType, string name, Type type, params Attribute[] attributes)
+        public static EventDescriptor CreateEvent(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            string name,
+            Type type,
+            params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, name, type, attributes);
         }
@@ -422,7 +426,10 @@ namespace System.ComponentModel
         /// This creates a new event descriptor identical to an existing event descriptor. The new event descriptor
         /// has the specified metadata attributes merged with the existing metadata attributes.
         /// </summary>
-        public static EventDescriptor CreateEvent(Type componentType, EventDescriptor oldEventDescriptor, params Attribute[] attributes)
+        public static EventDescriptor CreateEvent(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            EventDescriptor oldEventDescriptor,
+            params Attribute[] attributes)
         {
             return new ReflectEventDescriptor(componentType, oldEventDescriptor, attributes);
         }
