@@ -25,7 +25,7 @@ public class RuntimeConfigParserTask : Task
     public string OutputFile { get; set; } = "";
 
     /// <summary>
-    /// List of reserved properties.
+    /// List of properties reserved for the host.
     /// </summary>
     public ITaskItem[] ReservedProperties { get; set; } = Array.Empty<ITaskItem>();
 
@@ -68,20 +68,25 @@ public class RuntimeConfigParserTask : Task
         var jsonString = File.ReadAllText(inputFilePath);
         var parsedJson = JsonSerializer.Deserialize<Root>(jsonString, options);
 
-        return parsedJson!.ConfigProperties;
+        if (parsedJson == null)
+        {
+            throw new ArgumentException("Wasn't able to parse the json file successfully.");
+        }
+
+        return parsedJson.ConfigProperties;
     }
 
     /// Just write the dictionary out to a blob as a count followed by
     /// a length-prefixed UTF8 encoding of each key and value
-    private void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder b)
+    private void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder builder)
     {
         int count = properties.Count;
 
-        b.WriteCompressedInteger(count);
+        builder.WriteCompressedInteger(count);
         foreach (var kvp in properties)
         {
-            b.WriteSerializedString(kvp.Key);
-            b.WriteSerializedString(kvp.Value);
+            builder.WriteSerializedString(kvp.Key);
+            builder.WriteSerializedString(kvp.Value);
         }
     }
 
