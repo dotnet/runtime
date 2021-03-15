@@ -111,17 +111,10 @@ jobs:
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
-      - BaselineWindowsQueueGoesHere
-      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
-        - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - OuterLoopGoesHere
-        - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - NotOuterLoopFullMatrixGoesHere
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-            - NotOuterLoopNotFullMatrixGoesHere
-      - ${{ if in(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
-        - FrameworkParameterIsWrong
+      - TestScopeVariableIs${{ parameters.jobParameters.testScope }}
+      - RuntimeFlavorVariableIs${{ parameters.jobParameters.runtimeFlavor }}
+      - FrameworkVariableIs${{ parameters.jobParameters.framework }}
+      - FullMatrixVariableIs${{ parameters.jobParameters.isFullMatrix }}
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
