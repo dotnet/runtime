@@ -1488,6 +1488,15 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE2_Pause:
+        {
+            assert(baseType == TYP_VOID);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns(INS_pause);
+            break;
+        }
+
         case NI_SSE2_StoreNonTemporal:
         case NI_SSE2_X64_StoreNonTemporal:
         {

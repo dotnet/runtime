@@ -3804,6 +3804,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<sbyte> PackSignedSaturate(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> PackSignedSaturate(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> PackUnsignedSaturate(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static void Pause() { }
         public static System.Runtime.Intrinsics.Vector128<short> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<short> value, byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<short> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector128<int> value, byte count) { throw null; }

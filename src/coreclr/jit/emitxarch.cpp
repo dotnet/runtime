@@ -363,6 +363,7 @@ bool emitter::TakesVexPrefix(instruction ins)
         case INS_lfence:
         case INS_mfence:
         case INS_movnti:
+        case INS_pause:
         case INS_prefetchnta:
         case INS_prefetcht0:
         case INS_prefetcht1:
@@ -2752,7 +2753,7 @@ void emitter::emitIns(instruction ins)
              ins == INS_r_movsp || ins == INS_r_stosb || ins == INS_r_stosd || ins == INS_r_stosp || ins == INS_ret ||
              ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
              // These instructions take zero operands
-             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence);
+             || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_pause || ins == INS_sfence);
 
         assert(assertCond);
     }
@@ -15448,6 +15449,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_mfence:
+        case INS_pause:
             result.insThroughput = PERFSCORE_THROUGHPUT_33C;
             break;
 

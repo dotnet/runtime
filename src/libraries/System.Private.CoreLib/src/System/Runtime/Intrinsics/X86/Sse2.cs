@@ -1000,6 +1000,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<byte> PackUnsignedSaturate(Vector128<short> left, Vector128<short> right) => PackUnsignedSaturate(left, right);
 
         /// <summary>
+        /// void _mm_pause(void)
+        ///   PAUSE
+        /// </summary>
+        public static void Pause() => Pause();
+
+        /// <summary>
         /// __m128i _mm_sad_epu8 (__m128i a,  __m128i b)
         ///   PSADBW xmm, xmm/m128
         /// </summary>

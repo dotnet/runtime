@@ -227,6 +227,7 @@ INST3(prefetcht0,       "prefetcht0",       IUM_RD, 0x000F0818,   BAD_CODE,     
 INST3(prefetcht1,       "prefetcht1",       IUM_RD, 0x000F1018,   BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)
 INST3(prefetcht2,       "prefetcht2",       IUM_RD, 0x000F1818,   BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)
 INST3(sfence,           "sfence",           IUM_RD, 0x000FF8AE,   BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)
+INST3(pause,            "pause",            IUM_RD, 0x0000F390,   BAD_CODE,     BAD_CODE,                                INS_FLAGS_None)
 
 // SSE 2 arith
 INST3(addps,            "addps",            IUM_WR, BAD_CODE,     BAD_CODE,     PCKFLT(0x58),                            INS_Flags_IsDstDstSrcAVXInstruction)    // Add packed singles
