@@ -57,6 +57,11 @@ namespace System.Net.WebSockets.Compression
             _persisted = persisted;
         }
 
+        /// <summary>
+        /// Indicates that there is nothing left for inflating. If there is
+        /// more data left to be received for the message then call <see cref="Initialize(long, int)"/>
+        /// and receive directly into <see cref="Memory"/>.
+        /// </summary>
         public bool Finished { get; private set; } = true;
 
         public Memory<byte> Memory => _buffer;
@@ -69,14 +74,20 @@ namespace System.Net.WebSockets.Compression
             ReleaseBuffer();
         }
 
-        public void Initialize(long payloadLength)
+        /// <summary>
+        /// Initializes the inflater by allocating a buffer so the websocket can receive directly onto it.
+        /// </summary>
+        /// <param name="payloadLength">the length of the message payload</param>
+        /// <param name="clientBufferLength">the length of the buffer where the payload will be inflated</param>
+        public void Initialize(long payloadLength, int clientBufferLength)
         {
             Debug.Assert(_available == 0);
             Debug.Assert(_buffer is null);
 
-            // Do not try to rent anythin above 1MB because the array pool
-            // will not pool the buffer but allocate it.
-            _buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(payloadLength, 1_000_000));
+            // Rent a buffer as close to the size of the client buffer as possible,
+            // but not try to rent anything above 1MB because the array pool will allocate.
+            // If the payload is smaller than the client buffer, rent only as much as we need.
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(clientBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
             _position = 0;
         }
 

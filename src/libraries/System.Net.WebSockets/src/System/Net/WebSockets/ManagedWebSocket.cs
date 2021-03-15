@@ -810,7 +810,7 @@ namespace System.Net.WebSockets
                             if (header.Compressed)
                             {
                                 Debug.Assert(_inflater is not null);
-                                _inflater.Initialize(header.PayloadLength);
+                                _inflater.Initialize(header.PayloadLength, payloadBuffer.Length);
                                 _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(_inflater.Span);
                                 ConsumeFromBuffer(receiveBufferBytesToCopy);
                                 totalBytesReceived += receiveBufferBytesToCopy;
@@ -830,7 +830,7 @@ namespace System.Net.WebSockets
                         else if (header.Compressed)
                         {
                             Debug.Assert(_inflater is not null);
-                            _inflater.Initialize(header.PayloadLength);
+                            _inflater.Initialize(header.PayloadLength, payloadBuffer.Length);
                         }
 
                         // Then read directly into the appropriate buffer until we've hit a limit.
