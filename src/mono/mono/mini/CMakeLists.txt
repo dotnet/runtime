@@ -45,6 +45,11 @@ if(ENABLE_PERFTRACING)
 
 endif(ENABLE_PERFTRACING)
 
+if(HOST_WIN32)
+  # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
+  add_link_options(/OPT:NOICF)
+endif()
+
 # ICU
 if(HAVE_SYS_ICU)
   if(STATIC_ICU)
