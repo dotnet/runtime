@@ -91,6 +91,8 @@ namespace System.Collections
             return GetPrime(newSize);
         }
 
+        public static readonly ulong FastModMultiplierDivisor1 = GetFastModMultiplier(1);
+
         /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
         /// <remarks>This should only be used on 64-bit.</remarks>
         public static ulong GetFastModMultiplier(uint divisor) =>

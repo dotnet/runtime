@@ -22,6 +22,10 @@ namespace System.Collections.Generic
         private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<Entry>()
+        private static readonly Entry[] s_emptyArray = new Entry[0];
+#pragma warning restore CA1825
+
         private int[] _buckets;
         private Entry[] _entries;
 #if TARGET_64BIT
@@ -502,10 +506,10 @@ namespace System.Collections.Generic
         {
             _freeList = -1;
 #if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier(1);
+            _fastModMultiplier = HashHelpers.FastModMultiplierDivisor1;
 #endif
             _buckets = HashHelpers.SizeOneIntArray;
-            _entries = Array.Empty<Entry>();
+            _entries = s_emptyArray;
         }
 
         private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)

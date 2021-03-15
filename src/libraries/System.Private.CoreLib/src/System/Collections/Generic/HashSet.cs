@@ -27,6 +27,10 @@ namespace System.Collections.Generic
         /// <summary>Cutoff point for stackallocs. This corresponds to the number of ints.</summary>
         private const int StackAllocThreshold = 100;
 
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<Entry>()
+        private static readonly Entry[] s_emptyArray = new Entry[0];
+#pragma warning restore CA1825
+
         /// <summary>
         /// When constructing a hashset from an existing collection, it may contain duplicates,
         /// so this is used as the max acceptable excess ratio of capacity to count. Note that
@@ -1083,10 +1087,10 @@ namespace System.Collections.Generic
         {
             _freeList = -1;
 #if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier(1);
+            _fastModMultiplier = HashHelpers.FastModMultiplierDivisor1;
 #endif
             _buckets = HashHelpers.SizeOneIntArray;
-            _entries = Array.Empty<Entry>();
+            _entries = s_emptyArray;
         }
 
         /// <summary>Adds the specified element to the set if it's not already contained.</summary>
