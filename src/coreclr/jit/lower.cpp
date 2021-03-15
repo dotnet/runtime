@@ -5224,6 +5224,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             divMod->SetOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
+            divMod->gtFlags |= GTF_UNSIGNED;
             divisor->AsIntCon()->SetIconValue(magic);
         }
         else
