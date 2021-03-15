@@ -14,36 +14,86 @@ namespace DebuggerTests
 {
     public class SetVariableValueTests : DebuggerTestBase
     {
-        [Fact]
-        public async Task SetVariableValuesAtBreakpointSite(){
-            await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", 1);
+        [Theory]
+        [InlineData(1, "a", 10, 30)]
+        [InlineData(1, "a", 10, -1)]
+        [InlineData(1, "b", 20, 30)]
+        [InlineData(2, "c", 30, 60)]
+        [InlineData(3, "d", 50, 70)]
+        public async Task SetVariableValuesAtBreakpointSite(int offset, string variableName, int originalValue, int newValue){
+            await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 9, 8, "IntAdd",
+                "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "IntAdd",
                 locals_fn: (locals) =>
                 {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    CheckNumber(locals, "c", 0);
-                    CheckNumber(locals, "d", 0);
-                    CheckNumber(locals, "e", 0);
+                    CheckNumber(locals, variableName, originalValue);
                 }
             );
             var callFrameId = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-            await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName="a", newValue=JObject.FromObject(new {value=30}) }));
+            await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
 
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd",
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 8, "IntAdd",
                 locals_fn: (locals) =>
                 {
-                    CheckNumber(locals, "a", 30);
-                    CheckNumber(locals, "b", 20);
-                    CheckNumber(locals, "c", 50);
-                    CheckNumber(locals, "d", 0);
-                    CheckNumber(locals, "e", 0);
+                    CheckNumber(locals, variableName, newValue);
                 }
             );
         }
+
+        [Theory]
+        [InlineData(1, "a", 10, "wrongValue")]
+        [InlineData(1, "b", 20, "wrongValue")]
+        [InlineData(2, "c", 30, "wrongValue")]
+        [InlineData(3, "d", 50, "wrongValue")]
+        public async Task SetVariableValuesAtBreakpointSiteFail(int offset, string variableName, int originalValue, string invalidValue){
+            await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "IntAdd",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, variableName, originalValue);
+                }
+            );
+            var callFrameId = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+            await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=invalidValue}) }), false);
+
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 8, "IntAdd",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, variableName, originalValue);
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(5, "f", true, false)]
+        [InlineData(5, "f", true, true)]
+        public async Task SetVariableValuesAtBreakpointSiteBool(int offset, string variableName, bool originalValue, bool newValue){
+            await SetBreakpointInMethod("debugger-test.dll", "Math", "IntAdd", offset);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 8+offset, 8, "IntAdd",
+                locals_fn: (locals) =>
+                {
+                    CheckBool(locals, variableName, originalValue);
+                }
+            );
+            var callFrameId = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+            await SetVariableValueOnCallFrame( JObject.FromObject(new {callFrameId, variableName, newValue=JObject.FromObject(new {value=newValue}) }));
+
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 9+offset, 4, "IntAdd",
+                locals_fn: (locals) =>
+                {
+                    CheckBool(locals, variableName, newValue);
+                }
+            );
+        }
+
     }
 
 }

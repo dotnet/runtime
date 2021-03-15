@@ -493,7 +493,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             var varIds = scope.Method.GetLiveVarsAt(scope.Location.CliLocation.Offset);
             var varToSetValue = varIds.FirstOrDefault(v => v.Name == varName);
             Result res = await SendMonoCommand(id, MonoCommands.SetVariableValue(scopeId, varToSetValue.Index, varName, varValue["value"].Value<string>()), token);
-            SendResponse(id, Result.Ok(new JObject()), token);
+            if (res.Value["result"]?["value"].Value<int>() == 1)
+                SendResponse(id, Result.Ok(new JObject()), token);
+            else
+                SendResponse(id, Result.Err($"Unable to set '{varValue["value"].Value<string>()}' to variable '{varName}'"), token);
             return true;
         }
 

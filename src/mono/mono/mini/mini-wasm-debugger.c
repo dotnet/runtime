@@ -865,6 +865,7 @@ typedef struct {
 	int pos;
 	const char* new_value;
 	gboolean found;
+	gboolean error;
 } SetVariableValueData;
 
 /*
@@ -1503,43 +1504,52 @@ describe_variable (InterpFrame *frame, MonoMethod *method, MonoMethodHeader *hea
 static gboolean
 decode_value (MonoType *t, guint8 *addr, const char* variableValue)
 {
+	char* endptr;
+	errno = 0;
 	switch (t->type) {
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)addr = atoi(variableValue);
+		if (!strcmp(variableValue, "True"))
+			*(guint8*)addr = 1;
+		else if (!strcmp(variableValue, "False"))
+			*(guint8*)addr = 0;
+		else 
+			return FALSE;
 		break;
 	case MONO_TYPE_CHAR:
 		*(gunichar2*)addr = variableValue[0];
 		break;
 	case MONO_TYPE_I1:
-		*(gint8*)addr = atoi(variableValue);
+		*(gint8*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_U1:
-		*(guint8*)addr = atoi(variableValue);
+		*(guint8*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_I2:
-		*(gint16*)addr = atoi(variableValue);
+		*(gint16*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_U2:
-		*(guint16*)addr = atoi(variableValue);
+		*(guint16*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_I4:
-		*(gint32*)addr = atoi(variableValue);
+		*(gint32*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_U4:
-		*(guint32*)addr = atoi(variableValue);
+		*(guint32*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_I8:
-		*(gint64*)addr = atoi(variableValue);
+		*(gint64*)addr = strtoimax(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_U8:
-		*(guint64*)addr = atol(variableValue);
+		*(guint64*)addr = strtol(variableValue, &endptr, 10);
 		break;
 	case MONO_TYPE_R4:
-		*(gfloat*)addr = atof(variableValue);
+		*(gfloat*)addr = strtof(variableValue, &endptr);
 		break;
 	case MONO_TYPE_R8:
-		*(gdouble*)addr = atof(variableValue);
+		*(gdouble*)addr = strtof(variableValue, &endptr);
 	}
+	if (errno != 0)
+		return FALSE;
 	return TRUE;
 }
 
@@ -1585,7 +1595,10 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	else
 		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame, pos);
 	val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
-	decode_value(t, val_buf, data->new_value);
+	if (!decode_value(t, val_buf, data->new_value)) {
+		data->error = TRUE;
+		return TRUE;
+	}
 	mono_de_set_interp_var (t, addr, val_buf);
 	return TRUE;
 }
@@ -1640,9 +1653,10 @@ mono_wasm_set_variable_value_native (int scope, int index, const char* name, con
 	data.pos = index;
 	data.found = FALSE;
 	data.new_value = value;
+	data.error = FALSE;
 
 	mono_walk_stack_with_ctx (set_variable_value_on_frame, NULL, MONO_UNWIND_NONE, &data);
-	return data.found;
+	return !data.error;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
