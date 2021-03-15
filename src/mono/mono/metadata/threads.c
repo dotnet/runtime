@@ -858,43 +858,6 @@ fail:
 	return FALSE;
 }
 
-#ifndef HOST_WIN32
-static GENERATE_GET_CLASS_WITH_CACHE (wait_subsystem, "System.Threading", "WaitSubsystem");
-
-static void
-abandon_mutexes (MonoInternalThread *internal)
-{
-	// TODO: delete me if we decide not to prejit
-/*	ERROR_DECL (error);
-
-	MONO_STATIC_POINTER_INIT (MonoMethod, thread_exiting)
-
-		MonoClass *wait_subsystem_class = mono_class_get_wait_subsystem_class ();
-		g_assert (wait_subsystem_class);
-		thread_exiting = mono_class_get_method_from_name_checked (wait_subsystem_class, "OnThreadExiting", -1, 0, error);
-		mono_error_assert_ok (error);
-
-	MONO_STATIC_POINTER_INIT_END (MonoMethod, thread_exiting)
-
-	g_assert (thread_exiting);
-
-	if (mono_runtime_get_no_exec ())
-		return;
-
-	HANDLE_FUNCTION_ENTER ();
-
-	ERROR_DECL (error);
-
-	gpointer args [1];
-	args [0] = internal;
-	mono_runtime_try_invoke_handle (thread_exiting, NULL_HANDLE, args, error);
-
-	mono_error_cleanup (error);
-
-	HANDLE_FUNCTION_RETURN ();*/
-}
-#endif
-
 static void
 mono_thread_detach_internal (MonoInternalThread *thread)
 {
@@ -925,10 +888,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	* threads needs to make sure thread detach calls won't race with runtime shutdown.
 	*/
 	threads_add_pending_joinable_runtime_thread (info);
-
-#ifndef HOST_WIN32
-	abandon_mutexes (thread);
-#endif
 
 	mono_gchandle_free_internal (thread->abort_state_handle);
 	thread->abort_state_handle = 0;
