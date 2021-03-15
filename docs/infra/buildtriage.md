@@ -35,15 +35,3 @@ Unfortunately, the teams channel's members need to be listed individually. Ping 
 Contact @chcosta if you are having any trouble accessing the dashboards.
 Contact @Chrisboh if you don't have the calendar invite for the CI Council meeting.
 Contact @jaredpar if you are having any trouble with runfo, site or utility.
-
-## Build Rotation for upcoming months
-
-| Month | Alias  |
-|-------|-----------|
-| March 2021 | @directhex |
-| April 2021   | @jkoritzinsky |
-| May 2021 | @aik-jahoda |
-| June 2021 | @akoeplinger |
-| July 2021 | @hoyosjs |
-| August 2021 | @anipik |
-| September 2021 | @directhex |
