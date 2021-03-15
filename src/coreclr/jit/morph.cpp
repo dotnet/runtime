@@ -1056,9 +1056,10 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     curArgTabEntry->needTmp   = false;
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
-#ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
+    }
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
@@ -1153,9 +1154,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     curArgTabEntry->needTmp   = false;
     curArgTabEntry->needPlace = false;
     curArgTabEntry->processed = false;
-#ifdef FEATURE_HFA
-    curArgTabEntry->_hfaElemKind = CORINFO_HFA_ELEM_NONE;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        curArgTabEntry->SetHfaElemKind(CORINFO_HFA_ELEM_NONE);
+    }
     curArgTabEntry->isBackFilled  = false;
     curArgTabEntry->isNonStandard = false;
     curArgTabEntry->isStruct      = isStruct;
@@ -3015,28 +3017,29 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         bool                 isNonStandard = false;
         regNumber            nonStdRegNum  = REG_NA;
 
-#ifdef FEATURE_HFA
-        hfaType  = GetHfaType(argx);
-        isHfaArg = varTypeIsValidHfaType(hfaType);
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            hfaType  = GetHfaType(argx);
+            isHfaArg = varTypeIsValidHfaType(hfaType);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        // Make sure for vararg methods isHfaArg is not true.
-        isHfaArg = callIsVararg ? false : isHfaArg;
+            // Make sure for vararg methods isHfaArg is not true.
+            isHfaArg = callIsVararg ? false : isHfaArg;
 #endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 
-        if (isHfaArg)
-        {
-            isHfaArg = true;
-            hfaSlots = GetHfaCount(argx);
+            if (isHfaArg)
+            {
+                isHfaArg = true;
+                hfaSlots = GetHfaCount(argx);
 
-            // If we have a HFA struct it's possible we transition from a method that originally
-            // only had integer types to now start having FP types.  We have to communicate this
-            // through this flag since LSRA later on will use this flag to determine whether
-            // or not to track the FP register set.
-            //
-            compFloatingPointUsed = true;
+                // If we have a HFA struct it's possible we transition from a method that originally
+                // only had integer types to now start having FP types.  We have to communicate this
+                // through this flag since LSRA later on will use this flag to determine whether
+                // or not to track the FP register set.
+                //
+                compFloatingPointUsed = true;
+            }
         }
-#endif // FEATURE_HFA
 
         const bool isFloatHfa = (hfaType == TYP_FLOAT);
 
@@ -3586,12 +3589,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif
         }
 
-#ifdef FEATURE_HFA
-        if (isHfaArg)
+        if (GlobalJitOptions::compFeatureHfa)
         {
-            newArgEntry->SetHfaType(hfaType, hfaSlots);
+            if (isHfaArg)
+            {
+                newArgEntry->SetHfaType(hfaType, hfaSlots);
+            }
         }
-#endif // FEATURE_HFA
+
         newArgEntry->SetMultiRegNums();
 
         noway_assert(newArgEntry != nullptr);

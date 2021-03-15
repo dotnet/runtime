@@ -4004,40 +4004,38 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         if (doingFloat)
         {
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-            insCopy = ins_Copy(TYP_DOUBLE);
-            // Compute xtraReg here when we have a float argument
-            assert(xtraReg == REG_NA);
-
-            regMaskTP fpAvailMask;
-
-            fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-            fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
-
-            if (fpAvailMask == RBM_NONE)
+#ifndef UNIX_AMD64_ABI
+            if (GlobalJitOptions::compFeatureHfa)
+#endif // !UNIX_AMD64_ABI
             {
-                fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
-#if defined(FEATURE_HFA)
-                fpAvailMask &= RBM_ALLDOUBLE;
-#else
-#if !defined(UNIX_AMD64_ABI)
-#error Error. Wrong architecture.
-#endif // !defined(UNIX_AMD64_ABI)
-#endif // defined(FEATURE_HFA)
+                insCopy = ins_Copy(TYP_DOUBLE);
+                // Compute xtraReg here when we have a float argument
+                assert(xtraReg == REG_NA);
+
+                regMaskTP fpAvailMask;
+
+                fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
+                if (GlobalJitOptions::compFeatureHfa)
+                {
+                    fpAvailMask &= RBM_ALLDOUBLE;
+                }
+
+                if (fpAvailMask == RBM_NONE)
+                {
+                    fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
+                    if (GlobalJitOptions::compFeatureHfa)
+                    {
+                        fpAvailMask &= RBM_ALLDOUBLE;
+                    }
+                }
+
+                assert(fpAvailMask != RBM_NONE);
+
+                // We pick the lowest avail register number
+                regMaskTP tempMask = genFindLowestBit(fpAvailMask);
+                xtraReg            = genRegNumFromMask(tempMask);
             }
-
-            assert(fpAvailMask != RBM_NONE);
-
-            // We pick the lowest avail register number
-            regMaskTP tempMask = genFindLowestBit(fpAvailMask);
-            xtraReg            = genRegNumFromMask(tempMask);
-#elif defined(TARGET_X86)
+#if defined(TARGET_X86)
             // This case shouldn't occur on x86 since NYI gets converted to an assert
             NYI("Homing circular FP registers via xtraReg");
 #endif
@@ -9562,20 +9560,26 @@ bool Compiler::IsHfa(CORINFO_CLASS_HANDLE hClass)
 
 bool Compiler::IsHfa(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return IsHfa(gtGetStructHandleIfPresent(tree));
-#else
-    return false;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return IsHfa(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return false;
+    }
 }
 
 var_types Compiler::GetHfaType(GenTree* tree)
 {
-#ifdef FEATURE_HFA
-    return GetHfaType(gtGetStructHandleIfPresent(tree));
-#else
-    return TYP_UNDEF;
-#endif
+    if (GlobalJitOptions::compFeatureHfa)
+    {
+        return GetHfaType(gtGetStructHandleIfPresent(tree));
+    }
+    else
+    {
+        return TYP_UNDEF;
+    }
 }
 
 unsigned Compiler::GetHfaCount(GenTree* tree)
@@ -9585,18 +9589,19 @@ unsigned Compiler::GetHfaCount(GenTree* tree)
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
 {
-#ifdef FEATURE_HFA
-    if (hClass != NO_CLASS_HANDLE)
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
-        if (elemKind != CORINFO_HFA_ELEM_NONE)
+        if (hClass != NO_CLASS_HANDLE)
         {
-            // This type may not appear elsewhere, but it will occupy a floating point register.
-            compFloatingPointUsed = true;
+            CorInfoHFAElemType elemKind = info.compCompHnd->getHFAType(hClass);
+            if (elemKind != CORINFO_HFA_ELEM_NONE)
+            {
+                // This type may not appear elsewhere, but it will occupy a floating point register.
+                compFloatingPointUsed = true;
+            }
+            return HfaTypeFromElemKind(elemKind);
         }
-        return HfaTypeFromElemKind(elemKind);
     }
-#endif // FEATURE_HFA
     return TYP_UNDEF;
 }
 
