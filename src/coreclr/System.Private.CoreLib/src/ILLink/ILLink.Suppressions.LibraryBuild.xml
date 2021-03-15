@@ -8,5 +8,9 @@
       <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks()</property>
       <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.StartupHookProvider.IsSupported=true.</property>
     </attribute>
+    <linker>
+    <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
   </assembly>
 </linker>
