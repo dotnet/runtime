@@ -90,8 +90,6 @@ mono_runtime_try_shutdown (void)
 
 	mono_runtime_set_shutting_down ();
 
-	mono_threads_set_shutting_down ();
-
 	/* No new threads will be created after this point */
 
 	/*TODO move the follow to here:

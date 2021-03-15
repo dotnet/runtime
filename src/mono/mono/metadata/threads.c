@@ -234,8 +234,6 @@ gint32 mono_thread_interruption_request_flag;
 /* Event signaled when a thread changes its background mode */
 static MonoOSEvent background_change_event;
 
-static gboolean shutting_down = FALSE;
-
 static gint32 managed_thread_id_counter = 0;
 
 static void
@@ -803,11 +801,6 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	mono_threads_lock ();
 
-	if (shutting_down && !force_attach) {
-		mono_threads_unlock ();
-		goto fail;
-	}
-
 	if (threads_starting_up)
 		mono_g_hash_table_remove (threads_starting_up, thread);
 
@@ -1248,19 +1241,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	error_init (error);
 
 	mono_threads_lock ();
-	if (shutting_down && !(flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE)) {
-		mono_threads_unlock ();
-		/* We're already shutting down, don't create the new
-		 * thread. Instead detach and exit from the current thread.
-		 * Don't expect mono_threads_set_shutting_down to return.
-		 */
-		mono_threads_set_shutting_down ();
-		g_assert_not_reached ();
-	}
+
 	if (threads_starting_up == NULL) {
 		threads_starting_up = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Starting Table");
 	}
 	mono_g_hash_table_insert_internal (threads_starting_up, thread, thread);
+
 	mono_threads_unlock ();
 
 	internal->debugger_thread = flags & MONO_THREAD_CREATE_FLAGS_DEBUGGER;
@@ -2317,10 +2303,8 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Abort requested for %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), thread, (gsize)thread->tid));
 
-	/* During shutdown, we can't wait for other threads */
-	if (!shutting_down)
-		/* Make sure the thread is awake */
-		mono_thread_resume (thread);
+	/* Make sure the thread is awake */
+	mono_thread_resume (thread);
 
 	UNLOCK_THREAD (thread);
 	return TRUE;
@@ -2740,54 +2724,6 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	}
 }
 
-/** 
- * mono_threads_set_shutting_down:
- *
- * Is called by a thread that wants to shut down Mono. If the runtime is already
- * shutting down, the calling thread is suspended/stopped, and this function never
- * returns.
- */
-void
-mono_threads_set_shutting_down (void)
-{
-	MonoInternalThread *current_thread = mono_thread_internal_current ();
-
-	mono_threads_lock ();
-
-	if (shutting_down) {
-		mono_threads_unlock ();
-
-		/* Make sure we're properly suspended/stopped */
-
-		LOCK_THREAD (current_thread);
-
-		if (current_thread->state & (ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
-			UNLOCK_THREAD (current_thread);
-			mono_thread_execute_interruption_void ();
-		} else {
-			UNLOCK_THREAD (current_thread);
-		}
-
-		/*since we're killing the thread, detach it.*/
-		mono_thread_detach_internal (current_thread);
-
-		/* Wake up other threads potentially waiting for us */
-		mono_thread_info_exit (0);
-	} else {
-		shutting_down = TRUE;
-
-		/* Not really a background state change, but this will
-		 * interrupt the main thread if it is waiting for all
-		 * the other threads.
-		 */
-		MONO_ENTER_GC_SAFE;
-		mono_os_event_set (&background_change_event);
-		MONO_EXIT_GC_SAFE;
-
-		mono_threads_unlock ();
-	}
-}
-
 /**
  * mono_thread_manage_internal:
  */
@@ -2814,11 +2750,6 @@ mono_thread_manage_internal (void)
 	
 	do {
 		mono_threads_lock ();
-		if (shutting_down) {
-			/* somebody else is shutting down */
-			mono_threads_unlock ();
-			break;
-		}
 		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
@@ -3467,16 +3398,14 @@ do_free_special_slot (guint32 offset, guint32 size, gint32 align)
 	if (threads != NULL)
 		mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
 
-	if (!mono_runtime_is_shutting_down ()) {
-		StaticDataFreeList *item = g_new0 (StaticDataFreeList, 1);
+	StaticDataFreeList *item = g_new0 (StaticDataFreeList, 1);
 
-		item->offset = offset;
-		item->size = size;
-		item->align = align;
+	item->offset = offset;
+	item->size = size;
+	item->align = align;
 
-		item->next = info->freelist;
-		info->freelist = item;
-	}
+	item->next = info->freelist;
+	info->freelist = item;
 }
 
 static void
