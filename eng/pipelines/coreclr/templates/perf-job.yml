@@ -119,7 +119,7 @@ jobs:
         displayName: "Create wasm directory (Linux)"
 
     # Download AOT
-    - ${{ if eq(parameters.runtimeType, 'aot') }}:
+    - ${{ if eq(parameters.codeGenType, 'AOT') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/LinuxMonoAOT
