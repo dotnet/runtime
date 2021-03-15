@@ -111,7 +111,7 @@ jobs:
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
-      # netcoreapp
+      - BaselineWindowsQueueGoesHere
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - OuterLoopGoesHere
@@ -122,14 +122,6 @@ jobs:
             - NotOuterLoopNotFullMatrixGoesHere
       - ${{ if in(parameters.jobParameters.framework, 'allConfigurations', 'net48') }}:
         - FrameworkParameterIsWrong
-
-      # .NETFramework
-      - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - Windows.10.Amd64.Client19H1.Open
-      
-      # AllConfigurations
-      - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
-        - Windows.10.Amd64.Server19H1.Open
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
