@@ -568,19 +568,6 @@ mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 	mono_tramp_info_register_internal (info, domain, TRUE);
 }
 
-static void
-mono_tramp_info_cleanup (void)
-{
-	GSList *l;
-
-	for (l = tramp_infos; l; l = l->next) {
-		MonoTrampInfo *info = (MonoTrampInfo *)l->data;
-
-		mono_tramp_info_free (info);
-	}
-	g_slist_free (tramp_infos);
-}
-
 /* Register trampolines created before the root domain was created in the jit info tables */
 static void
 register_trampolines (MonoDomain *domain)
@@ -4550,8 +4537,6 @@ register_icalls (void)
 				ves_icall_get_trace);
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
-				mono_runtime_cleanup_handlers);
 
 #if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
 	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",

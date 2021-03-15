@@ -169,20 +169,6 @@ mono_tls_init_runtime_keys (void)
 #endif
 }
 
-void
-mono_tls_free_keys (void)
-{
-#ifdef MONO_KEYWORD_THREAD
-#elif defined(DISABLE_THREADS)
-#else
-	mono_native_tls_free (mono_tls_key_thread);
-	mono_native_tls_free (mono_tls_key_jit_tls);
-	mono_native_tls_free (mono_tls_key_domain);
-	mono_native_tls_free (mono_tls_key_sgen_thread_info);
-	mono_native_tls_free (mono_tls_key_lmf_addr);
-#endif
-}
-
 // Some references are from AOT and cannot be inlined.
 
 G_EXTERN_C MonoInternalThread *mono_tls_get_thread_extern (void)

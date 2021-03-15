@@ -248,12 +248,6 @@ mono_metadata_update_init (void)
 	mono_native_tls_alloc (&exposed_generation_id, NULL);
 }
 
-void
-mono_metadata_update_cleanup (void)
-{
-	mono_native_tls_free (exposed_generation_id);
-}
-
 /* Inform the execution engine that updates are coming */
 static void
 mono_metadata_update_ee_init (MonoError *error)

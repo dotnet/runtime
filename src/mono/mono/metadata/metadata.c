@@ -2050,25 +2050,6 @@ mono_metadata_init (void)
 }
 
 /**
- * mono_metadata_cleanup:
- *
- * Free all resources used by this module.
- * This is a Mono runtime internal function.
- */
-void
-mono_metadata_cleanup (void)
-{
-#ifdef ENABLE_METADATA_UPDATE
-	mono_metadata_update_cleanup ();
-#endif
-	g_hash_table_destroy (type_cache);
-	type_cache = NULL;
-	g_ptr_array_free (image_sets, TRUE);
-	image_sets = NULL;
-	mono_os_mutex_destroy (&image_sets_mutex);
-}
-
-/**
  * mono_metadata_parse_type:
  * \param m metadata context
  * \param mode kind of type that may be found at \p ptr
