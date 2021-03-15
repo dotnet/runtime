@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include logger parameters as templates in the logging message..
+        ///   Looks up a localized string similar to Don&apos;t include logger parameters as templates in the logging message.
         /// </summary>
         internal static string DontMentionLoggerInMessageTitle {
             get {
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Don&apos;t include log level parameters as templates in the logging message..
+        ///   Looks up a localized string similar to Don&apos;t include log level parameters as templates in the logging message.
         /// </summary>
         internal static string DontMentionLogLevelInMessageTitle {
             get {

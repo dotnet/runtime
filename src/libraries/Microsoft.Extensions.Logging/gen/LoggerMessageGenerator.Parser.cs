@@ -499,7 +499,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, HashSet<string> templates)
+            private static void ExtractTemplates(string? message, ISet<string> templates)
             {
                 if (string.IsNullOrEmpty(message))
                 {
@@ -606,12 +606,12 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public readonly List<LoggerParameter> AllParameters = new ();
             public readonly List<LoggerParameter> RegularParameters = new ();
+            public readonly HashSet<string> Templates = new ();
             public string Name = string.Empty;
             public string? Message;
             public int? Level;
             public int EventId;
             public string? EventName;
-            public readonly HashSet<string> Templates = new ();
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
         }

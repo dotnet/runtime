@@ -223,12 +223,12 @@
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
   </data>
   <data name="DontMentionLogLevelInMessageTitle" xml:space="preserve">
-    <value>Don't include log level parameters as templates in the logging message.</value>
+    <value>Don't include log level parameters as templates in the logging message</value>
   </data>
   <data name="DontMentionLoggerInMessageMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
   </data>
   <data name="DontMentionLoggerInMessageTitle" xml:space="preserve">
-    <value>Don't include logger parameters as templates in the logging message.</value>
+    <value>Don't include logger parameters as templates in the logging message</value>
   </data>
 </root>

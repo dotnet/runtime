@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "<Pending>")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "Test")]
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]

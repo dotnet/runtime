@@ -1,4 +1,4 @@
-// � Microsoft Corporation. All rights reserved.
+// © Microsoft Corporation. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -151,6 +151,8 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             logger.Reset();
             CollectionTestExtensions.M8(logger, LogLevel.Critical, 0, new ArgumentException("Foo"), 1);
             TestCollection(2, logger);
+
+            Assert.True(true);
         }
 
         [Fact]

@@ -158,6 +158,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     break;
                                 }
+
                                 index++;
                             }
 
@@ -321,19 +322,19 @@ namespace Microsoft.Extensions.Logging.Generators
                 var sb = GetStringBuilder();
                 try
                 {
-                    sb.Append("{{");
+                    _ = sb.Append("{{");
                     foreach (var p in lm.RegularParameters)
                     {
                         if (p != lm.RegularParameters[0])
                         {
-                            sb.Append(',');
+                            _ = sb.Append(',');
                         }
 
                         _ = sb.Append($"\"{p.Name}\":\"{{{p.Name}}}\"");
-                        lm.Templates.Add(p.Name);
+                        _ = lm.Templates.Add(p.Name);
                     }
 
-                    sb.Append("}}");
+                    _ = sb.Append("}}");
                     lm.Message = sb.ToString();
                 }
                 finally

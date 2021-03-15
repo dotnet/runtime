@@ -1,9 +1,23 @@
 // © Microsoft Corporation. All rights reserved.
 
 #pragma warning disable CA1801 // Review unused parameters
+#pragma warning disable S1118
 
 namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
+    // test particular method signature variations are generated correctly
+    internal static partial class SignatureTestExtensions
+    {
+        // extension method
+        [LoggerMessage(eventId: 10, level: LogLevel.Critical, message: "Message11")]
+        internal static partial void M11(this ILogger logger);
+
+        public static void Combo(ILogger logger)
+        {
+            logger.M11();
+        }
+    }
+
     // test particular method signature variations are generated correctly
     internal partial class SignatureTestExtensions<T>
         where T : class
@@ -65,18 +79,5 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         // dynamic log level
         [LoggerMessage(10, "Message11 {p1} {p2}")]
         internal static partial void M11(ILogger logger, string p1, LogLevel level, string p2);
-    }
-
-    // test particular method signature variations are generated correctly
-    internal static partial class SignatureTestExtensions
-    {
-        // extension method
-        [LoggerMessage(eventId: 10, level: LogLevel.Critical, message: "Message11")]
-        internal static partial void M11(this ILogger logger);
-
-        public static void Combo(ILogger logger)
-        {
-            logger.M11();
-        }
     }
 }

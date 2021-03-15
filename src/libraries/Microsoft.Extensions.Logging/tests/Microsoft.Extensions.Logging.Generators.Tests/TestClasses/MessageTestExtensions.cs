@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 
         [LoggerMessage(1, LogLevel.Debug, "")]
         public static partial void M1(ILogger logger);
-        
+
         [LoggerMessage(2, LogLevel.Trace)]
         public static partial void M2(ILogger logger, string p1, string p2);
 
