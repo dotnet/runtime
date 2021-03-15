@@ -36,16 +36,16 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 4)
             {
-                uint value;
+                uint abcd32;
                 if (BitConverter.IsLittleEndian)
                 {
-                    value = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
+                    abcd32 = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
                 }
                 else
                 {
-                    value = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
+                    abcd32 = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
                 }
-                Unsafe.WriteUnaligned<uint>(ref MemoryMarshal.GetReference(span), value);
+                Unsafe.WriteUnaligned<uint>(ref MemoryMarshal.GetReference(span), abcd32);
                 return true;
             }
             else
@@ -66,17 +66,18 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 5)
             {
-                uint value;
+                uint abcd32;
                 if (BitConverter.IsLittleEndian)
                 {
-                    value = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
+                    abcd32 = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
                 }
                 else
                 {
-                    value = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
+                    abcd32 = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
                 }
-                Unsafe.WriteUnaligned<uint>(ref MemoryMarshal.GetReference(span), value);
-                Unsafe.Add(ref MemoryMarshal.GetReference(span), 4) = e;
+                ref byte rDest = ref MemoryMarshal.GetReference(span);
+                Unsafe.WriteUnaligned<uint>(ref rDest, abcd32);
+                Unsafe.Add(ref rDest, 4) = e;
                 return true;
             }
             else
@@ -97,20 +98,21 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 6)
             {
-                uint hi;
-                uint lo;
+                uint abcd32;
+                uint ef16;
                 if (BitConverter.IsLittleEndian)
                 {
-                    hi = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
-                    lo = ((uint)f << 8) | e;
+                    abcd32 = ((uint)d << 24) | ((uint)c << 16) | ((uint)b << 8) | a;
+                    ef16 = ((uint)f << 8) | e;
                 }
                 else
                 {
-                    hi = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
-                    lo = ((uint)e << 8) | f;
+                    abcd32 = ((uint)a << 24) | ((uint)b << 16) | ((uint)c << 8) | d;
+                    ef16 = ((uint)e << 8) | f;
                 }
-                Unsafe.WriteUnaligned<uint>(ref MemoryMarshal.GetReference(span), hi);
-                Unsafe.WriteUnaligned<ushort>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), 4), (ushort)lo);
+                ref byte rDest = ref MemoryMarshal.GetReference(span);
+                Unsafe.WriteUnaligned<uint>(ref rDest, abcd32);
+                Unsafe.WriteUnaligned<ushort>(ref Unsafe.Add(ref rDest, 4), (ushort)ef16);
                 return true;
             }
             else
@@ -131,16 +133,16 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 4)
             {
-                ulong value;
+                ulong abcd64;
                 if (BitConverter.IsLittleEndian)
                 {
-                    value = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
+                    abcd64 = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
                 }
                 else
                 {
-                    value = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
+                    abcd64 = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
                 }
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span)), value);
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span)), abcd64);
                 return true;
             }
             else
@@ -161,17 +163,18 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 5)
             {
-                ulong value;
+                ulong abcd64;
                 if (BitConverter.IsLittleEndian)
                 {
-                    value = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
+                    abcd64 = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
                 }
                 else
                 {
-                    value = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
+                    abcd64 = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
                 }
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span)), value);
-                Unsafe.Add(ref MemoryMarshal.GetReference(span), 4) = e;
+                ref char rDest = ref MemoryMarshal.GetReference(span);
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref rDest), abcd64);
+                Unsafe.Add(ref rDest, 4) = e;
                 return true;
             }
             else
@@ -192,20 +195,21 @@ namespace System.Text.Encodings.Web
         {
             if (span.Length >= 6)
             {
-                ulong value64;
-                uint value32;
+                ulong abcd64;
+                uint ef32;
                 if (BitConverter.IsLittleEndian)
                 {
-                    value64 = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
-                    value32 = ((uint)f << 16) | e;
+                    abcd64 = ((ulong)d << 48) | ((ulong)c << 32) | ((ulong)b << 16) | a;
+                    ef32 = ((uint)f << 16) | e;
                 }
                 else
                 {
-                    value64 = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
-                    value32 = ((uint)e << 16) | f;
+                    abcd64 = ((ulong)a << 48) | ((ulong)b << 32) | ((ulong)c << 16) | d;
+                    ef32 = ((uint)e << 16) | f;
                 }
-                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span)), value64);
-                Unsafe.WriteUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), 4)), value32);
+                ref byte rDest = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span));
+                Unsafe.WriteUnaligned<ulong>(ref rDest, abcd64);
+                Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref rDest, sizeof(ulong)), ef32);
                 return true;
             }
             else
