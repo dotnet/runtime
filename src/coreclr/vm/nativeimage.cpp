@@ -67,7 +67,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
 
     m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
-    m_pComponentAssemblyMvids = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblyMvids);
+    m_pComponentAssemblyMvids = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestAssemblyMvids);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
