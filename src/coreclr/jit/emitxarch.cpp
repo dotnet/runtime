@@ -14418,13 +14418,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
-                case IF_RRW: // probably should use INS_shl_N
+                case IF_RRW:
                     // ins   reg, cl
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case IF_MRW: // probably should use INS_shr_N
+                case IF_MRW:
                 case IF_SRW:
                 case IF_ARW:
                     // ins   [mem], cl
@@ -14441,12 +14441,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shl_1:
         case INS_shr_1:
         case INS_sar_1:
-            result.insLatency = PERFSCORE_LATENCY_1C;
             switch (insFmt)
             {
                 case IF_RRW:
                     // ins   reg, 1
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
                 case IF_MRW:
@@ -14474,19 +14474,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_sar_N:
         case INS_ror_N:
         case INS_rol_N:
-            result.insLatency = PERFSCORE_LATENCY_2C;
             switch (insFmt)
             {
                 case IF_RRW_SHF:
-                    // ins   reg, cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    // ins   reg, cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
                 case IF_MRW_SHF:
                 case IF_SRW_SHF:
                 case IF_ARW_SHF:
-                    // ins   [mem], cl
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                    // ins   [mem], cns
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                     break;
 
                 default:
