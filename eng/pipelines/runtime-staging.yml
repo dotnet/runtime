@@ -106,7 +106,6 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Windows_x64
-    - Windows_x86
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
