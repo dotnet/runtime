@@ -1110,11 +1110,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         {
                             if (scalarOp != nullptr)
                             {
-                                *scalarOp = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, *scalarOp,
-                                                                       NI_Vector64_CreateScalarUnsafe, baseType, 8);
+                                hwIntrinsic = NI_AdvSimd_MultiplyByScalar;
+                                *scalarOp   = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, *scalarOp,
+                                                                         NI_Vector64_CreateScalarUnsafe, baseType, 8);
                             }
-
-                            hwIntrinsic = NI_AdvSimd_MultiplyByScalar;
+                            else
+                            {
+                                hwIntrinsic = NI_AdvSimd_Multiply;
+                            }
                             break;
                         }
 
@@ -1122,11 +1125,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         {
                             if (scalarOp != nullptr)
                             {
-                                *scalarOp =
+                                hwIntrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
+                                *scalarOp   =
                                     gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, *scalarOp, NI_Vector64_Create, baseType, 8);
-                            }
 
-                            hwIntrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
+                            }
+                            else
+                            {
+                                hwIntrinsic = NI_AdvSimd_Arm64_Multiply;
+                            }
                             break;
                         }
 
