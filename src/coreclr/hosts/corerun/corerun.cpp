@@ -527,6 +527,7 @@ static bool parse_args(
     return false;
 }
 
+// Forward declaration for self testing method.
 static int self_test();
 
 //
@@ -558,7 +559,7 @@ extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clr
 #endif // TARGET_WINDOWS
 
 //
-// Tests
+// Self testing for corerun.
 //
 
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
