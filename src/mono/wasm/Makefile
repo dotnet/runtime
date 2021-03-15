@@ -35,7 +35,7 @@ all: build-native icu-files source-files header-files
 
 EMSCRIPTEN_VERSION=2.0.12
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
