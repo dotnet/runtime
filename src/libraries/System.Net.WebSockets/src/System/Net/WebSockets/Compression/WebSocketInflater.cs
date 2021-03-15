@@ -78,16 +78,16 @@ namespace System.Net.WebSockets.Compression
         /// Initializes the inflater by allocating a buffer so the websocket can receive directly onto it.
         /// </summary>
         /// <param name="payloadLength">the length of the message payload</param>
-        /// <param name="clientBufferLength">the length of the buffer where the payload will be inflated</param>
-        public void Initialize(long payloadLength, int clientBufferLength)
+        /// <param name="userBufferLength">the length of the buffer where the payload will be inflated</param>
+        public void Initialize(long payloadLength, int userBufferLength)
         {
             Debug.Assert(_available == 0);
             Debug.Assert(_buffer is null);
 
-            // Rent a buffer as close to the size of the client buffer as possible,
+            // Rent a buffer as close to the size of the user buffer as possible,
             // but not try to rent anything above 1MB because the array pool will allocate.
-            // If the payload is smaller than the client buffer, rent only as much as we need.
-            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(clientBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
+            // If the payload is smaller than the user buffer, rent only as much as we need.
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1_000_000)));
             _position = 0;
         }
 
