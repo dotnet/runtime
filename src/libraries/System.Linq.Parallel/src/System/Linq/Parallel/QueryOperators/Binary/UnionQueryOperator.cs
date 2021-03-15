@@ -184,7 +184,7 @@ namespace System.Linq.Parallel
         {
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey>? _leftSource; // Left data source.
             private QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TRightKey>? _rightSource; // Right data source.
-            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the union.
+            private HashSet<TInputOutput>? _hashLookup; // The hash lookup, used to produce the union.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount;
             private readonly IEqualityComparer<TInputOutput>? _comparer;
@@ -216,7 +216,7 @@ namespace System.Linq.Parallel
             {
                 if (_hashLookup == null)
                 {
-                    _hashLookup = new Set<TInputOutput>(_comparer);
+                    _hashLookup = new HashSet<TInputOutput>(_comparer);
                     _outputLoopCount = new Shared<int>(0);
                 }
 
