@@ -67,9 +67,9 @@ namespace System.Globalization.Tests
             {
                 dtfi.Calendar = calendar;
 
-                if (PlatformDetection.IsNotBrowser)
+                if (PlatformDetection.IsNotUsingLimitedCultures)
                 {
-                    // Browser's ICU doesn't contain NativeCalendarName,
+                    // Mobile / Browser ICU doesn't contain NativeCalendarName,
                     Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
                 }
             }

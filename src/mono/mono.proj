@@ -61,7 +61,7 @@
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -248,6 +248,7 @@
       <_MonoCMakeSystemName Condition="'$(TargetstvOS)' == 'true'">tvOS</_MonoCMakeSystemName>
       <_MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</_MonoCMakeVersionMin>
       <_MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</_MonoCMakeVersionMin>
+      <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/lib</_IcuLibdir>
     </PropertyGroup>
     <ItemGroup Condition="('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and '$(Platform)' == 'arm64'">
       <_MonoCMakeArgs Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
@@ -256,11 +257,13 @@
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=$(_MonoCMakeSystemName)"/>
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(_MonoCMakeVersionMin)" />
       <_MonoCMakeArgs Include="-DCMAKE_OSX_SYSROOT='$(_MonoCMakeSysroot)'" />
+      <_MonoCMakeArgs Include="-DICU_LIBDIR=$(_IcuLibdir)"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;"/>
       <_MonoCFLAGS Include="-Wl,-application_extension" />
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/include" />
       <_MonoCXXFLAGS Include="-Wl,-application_extension" />
     </ItemGroup>
     <!-- iOS simulator specific options -->
@@ -555,6 +558,7 @@
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
+      <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
       <_MonoAotCrossFilePath>$(MonoObjDir)cross\out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>
@@ -596,7 +600,18 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
+
+      <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
+                      Include="$(_IcuLibdir)\libicuuc.a;
+                               $(_IcuLibdir)\libicui18n.a;
+                               $(_IcuLibdir)\libicudata.a;
+                               $(_IcuLibdir)\*.dat" />
     </ItemGroup>
+
+    <Copy Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
+          SourceFiles="@(_IcuArtifacts)"
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"

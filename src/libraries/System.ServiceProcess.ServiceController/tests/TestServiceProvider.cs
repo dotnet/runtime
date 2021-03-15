@@ -86,7 +86,7 @@ namespace System.ServiceProcess.Tests
             Task readTask;
             byte[] received = new byte[] { 0 };
             readTask = Client.ReadAsync(received, 0, 1);
-            await readTask.TimeoutAfter(readTimeout).ConfigureAwait(false);
+            await readTask.WaitAsync(TimeSpan.FromMilliseconds(readTimeout)).ConfigureAwait(false);
             return received[0];
         }
 

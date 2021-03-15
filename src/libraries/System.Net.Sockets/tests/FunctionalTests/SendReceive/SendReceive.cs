@@ -882,7 +882,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => socket.Dispose());
 
-                await Task.WhenAny(disposeTask, receiveTask).TimeoutAfter(30000);
+                await Task.WhenAny(disposeTask, receiveTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
 
                 SocketError? localSocketError = null;
@@ -966,7 +966,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
+                    await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));
                     await disposeTask;
 
                     SocketError? localSocketError = null;

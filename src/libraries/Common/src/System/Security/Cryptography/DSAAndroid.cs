@@ -36,6 +36,11 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeDsaHandle>(GenerateKey);
             }
 
+            internal DSAAndroid(SafeDsaHandle key)
+            {
+                SetKey(key.DuplicateHandle());
+            }
+
             public override int KeySize
             {
                 set
@@ -45,10 +50,11 @@ namespace System.Security.Cryptography
                         return;
                     }
 
+                    ThrowIfDisposed();
+
                     // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                     base.KeySize = value;
 
-                    ThrowIfDisposed();
                     FreeKey();
                     _key = new Lazy<SafeDsaHandle>(GenerateKey);
                 }
@@ -382,6 +388,8 @@ namespace System.Security.Cryptography
 
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
+
+            internal SafeDsaHandle DuplicateKeyHandle() => _key.Value.DuplicateHandle();
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 1024, maxSize: 3072, skipSize: 1024) };
         }

@@ -71,6 +71,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
+            Socket? socket,
             Stream stream,
             TransportContext? transportContext)
         {
@@ -79,10 +80,7 @@ namespace System.Net.Http
 
             _pool = pool;
             _stream = stream;
-            if (stream is NetworkStream networkStream)
-            {
-                _socket = networkStream.Socket;
-            }
+            _socket = socket;
 
             _transportContext = transportContext;
 

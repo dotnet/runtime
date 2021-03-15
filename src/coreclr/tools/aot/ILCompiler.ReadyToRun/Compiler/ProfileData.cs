@@ -94,10 +94,14 @@ namespace ILCompiler
                         }
                     }
 
-                    var mergedSchemaData = data.SchemaData;
-                    if (mergedSchemaData == null)
+                    PgoSchemaElem[] mergedSchemaData;
+                    if (data.SchemaData == null)
                     {
                         mergedSchemaData = dataToMerge.SchemaData;
+                    }
+                    else if (dataToMerge.SchemaData == null)
+                    {
+                        mergedSchemaData = data.SchemaData;
                     }
                     else
                     {

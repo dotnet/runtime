@@ -7620,11 +7620,11 @@ BOOL gc_heap::card_bundles_enabled ()
 }
 #endif // CARD_BUNDLE
 
-#if defined (TARGET_AMD64)
+#if defined (HOST_64BIT)
 #define brick_size ((size_t)4096)
 #else
 #define brick_size ((size_t)2048)
-#endif //TARGET_AMD64
+#endif //HOST_64BIT
 
 inline
 size_t gc_heap::brick_of (uint8_t* add)

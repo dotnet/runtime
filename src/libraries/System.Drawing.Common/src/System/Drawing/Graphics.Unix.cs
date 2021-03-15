@@ -578,8 +578,12 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetContextInfo()
         {
-            // only known source of information @ http://blogs.wdevs.com/jdunlap/Default.aspx
             throw new NotImplementedException();
+        }
+
+        private void CheckErrorStatus(int status)
+        {
+            Gdip.CheckStatus(status);
         }
     }
 }

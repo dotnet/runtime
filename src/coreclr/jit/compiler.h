@@ -454,6 +454,11 @@ public:
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
 
+    unsigned char lvEhWriteThruCandidate : 1; // variable has a single def and hence is a register candidate if
+                                              // if it is an EH variable
+
+    unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
+
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
@@ -2688,6 +2693,8 @@ public:
     GenTree* gtNewZeroConNode(var_types type);
 
     GenTree* gtNewOneConNode(var_types type);
+
+    GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
 #ifdef FEATURE_SIMD
     GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
@@ -7368,6 +7375,24 @@ public:
     regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
 
     void raMarkStkVars();
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#if defined(TARGET_AMD64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        return (type == TYP_SIMD32);
+    }
+#elif defined(TARGET_ARM64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
+        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+    }
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#error("Unknown target architecture for FEATURE_SIMD")
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 protected:
     // Some things are used by both LSRA and regpredict allocators.

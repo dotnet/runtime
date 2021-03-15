@@ -200,17 +200,9 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void Fail(string? message, string? detailMessage)
         {
-            StringBuilder failMessage = new StringBuilder();
-            failMessage.Append(SR.TraceListenerFail);
-            failMessage.Append(' ');
-            failMessage.Append(message);
-            if (detailMessage != null)
-            {
-                failMessage.Append(' ');
-                failMessage.Append(detailMessage);
-            }
-
-            WriteLine(failMessage.ToString());
+            WriteLine(detailMessage is null ?
+                SR.TraceListenerFail + " " + message :
+                SR.TraceListenerFail + " " + message + " " + detailMessage);
         }
 
         /// <devdoc>
@@ -360,19 +352,7 @@ namespace System.Diagnostics
 
             WriteHeader(source, eventType, id);
 
-            StringBuilder sb = new StringBuilder();
-            if (data != null)
-            {
-                for (int i = 0; i < data.Length; i++)
-                {
-                    if (i != 0)
-                        sb.Append(", ");
-
-                    if (data[i] != null)
-                        sb.Append(data[i]!.ToString());
-                }
-            }
-            WriteLine(sb.ToString());
+            WriteLine(data != null ? string.Join(", ", data) : string.Empty);
 
             WriteFooter(eventCache);
         }

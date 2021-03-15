@@ -318,7 +318,7 @@ namespace System.Net.Sockets.Tests
                 msDelay *= 2;
                 Task disposeTask = Task.Run(() => listener.Dispose());
 
-                await Task.WhenAny(disposeTask, acceptTask).TimeoutAfter(30000);
+                await Task.WhenAny(disposeTask, acceptTask).WaitAsync(TimeSpan.FromSeconds(30));
                 await disposeTask;
 
                 SocketError? localSocketError = null;

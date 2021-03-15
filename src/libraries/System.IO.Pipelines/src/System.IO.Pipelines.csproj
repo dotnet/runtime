@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+         Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
     <Compile Include="System\IO\Pipelines\CompletionData.cs" />
@@ -48,7 +48,7 @@
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
   </ItemGroup>
-   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or
                          $(TargetFramework.StartsWith('net4'))">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
