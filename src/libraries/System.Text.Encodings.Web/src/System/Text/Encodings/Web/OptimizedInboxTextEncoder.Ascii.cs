@@ -5,6 +5,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if NETCOREAPP
+using System.Runtime.Intrinsics;
+#endif
+
 namespace System.Text.Encodings.Web
 {
     internal sealed partial class OptimizedInboxTextEncoder
@@ -15,8 +19,20 @@ namespace System.Text.Encodings.Web
         [StructLayout(LayoutKind.Explicit)]
         private unsafe partial struct AllowedAsciiCodePoints
         {
-            [FieldOffset(0)] // ensure same offset with field in .Simd.cs file
+            [FieldOffset(0)] // ensure same offset with AsVector field
             private fixed byte AsBytes[16];
+
+#if NETCOREAPP
+#if !TARGET_BROWSER
+            [FieldOffset(0)] // ensure same offset with AsBytes field
+            internal Vector128<byte> AsVector;
+#else
+            // This member shouldn't be accessed from browser-based code paths.
+            // All call sites should be trimmed away, which will also trim this member
+            // and the type hierarchy it links to.
+            internal Vector128<byte> AsVector => throw new PlatformNotSupportedException();
+#endif
+#endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal readonly bool IsAllowedAsciiCodePoint(uint codePoint)

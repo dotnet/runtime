@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -31,7 +30,7 @@ namespace System.Text.Encodings.Web
                 {
                     // Read 16 bytes at a time into a single 128-bit vector.
 
-                    var packed = Unsafe.ReadUnaligned<Vector128<byte>>(pData + i);
+                    Vector128<byte> packed = Sse2.LoadVector128(pData + i); // unaligned read
 
                     // Each element of the packed vector corresponds to a byte of untrusted source data. It will
                     // have the format [ ..., 0xYZ, ... ]. We use the low nibble of each byte to index into
@@ -70,7 +69,7 @@ namespace System.Text.Encodings.Web
                 // Same logic as the 16-byte case, but we only care about the low byte of the final pmovmskb value.
                 // Everything except the low byte of pmovksmb contains garbage and must be discarded.
 
-                var packed = LoadScalar64OfByteFrom(pData + i);
+                var packed = Sse2.LoadScalarVector128((/* unaligned */ ulong*)(pData + i)).AsByte();
                 var allowedCodePointsShuffled = Ssse3.Shuffle(allowedCodePoints, packed);
                 var vecPowersOfTwoShuffled = Ssse3.Shuffle(vecPowersOfTwo, Sse2.And(Sse2.ShiftRightLogical(packed.AsUInt32(), 4).AsByte(), vec0x7));
                 var result = Sse2.And(allowedCodePointsShuffled, vecPowersOfTwoShuffled);
@@ -89,7 +88,7 @@ namespace System.Text.Encodings.Web
                 // Same logic as the 16-byte case, but we only care about the low nibble of the final pmovmskb value.
                 // Everything except the low nibble of pmovksmb contains garbage and must be discarded.
 
-                var packed = LoadScalar32OfByteFrom(pData + i);
+                var packed = Sse2.LoadScalarVector128((/* unaligned */ uint*)(pData + i)).AsByte();
                 var allowedCodePointsShuffled = Ssse3.Shuffle(allowedCodePoints, packed);
                 var vecPowersOfTwoShuffled = Ssse3.Shuffle(vecPowersOfTwo, Sse2.And(Sse2.ShiftRightLogical(packed.AsUInt32(), 4).AsByte(), vec0x7));
                 var result = Sse2.And(allowedCodePointsShuffled, vecPowersOfTwoShuffled);
@@ -152,8 +151,8 @@ namespace System.Text.Encodings.Web
                     // Read 16 chars at a time into 2x 128-bit vectors, then pack into a single 128-bit vector.
 
                     var packed = Sse2.PackUnsignedSaturate(
-                        Unsafe.ReadUnaligned<Vector128<short>>(pData + i),
-                        Unsafe.ReadUnaligned<Vector128<short>>(pData + 8 + i));
+                        Sse2.LoadVector128((/* unaligned */ short*)(pData + i)),
+                        Sse2.LoadVector128((/* unaligned */ short*)(pData + 8 + i)));
                     var allowedCodePointsShuffled = Ssse3.Shuffle(allowedCodePoints, packed);
                     var vecPowersOfTwoShuffled = Ssse3.Shuffle(vecPowersOfTwo, Sse2.And(Sse2.ShiftRightLogical(packed.AsUInt32(), 4).AsByte(), vec0x7));
                     var result = Sse2.And(allowedCodePointsShuffled, vecPowersOfTwoShuffled);
@@ -170,7 +169,7 @@ namespace System.Text.Encodings.Web
                 // Read 8 chars at a time into a single 128-bit vector, then pack into low 8 bytes.
 
                 var packed = Sse2.PackUnsignedSaturate(
-                    Unsafe.ReadUnaligned<Vector128<short>>(pData + i),
+                    Sse2.LoadVector128((/* unaligned */ short*)(pData + i)),
                     vecZero.AsInt16());
                 var allowedCodePointsShuffled = Ssse3.Shuffle(allowedCodePoints, packed);
                 var vecPowersOfTwoShuffled = Ssse3.Shuffle(vecPowersOfTwo, Sse2.And(Sse2.ShiftRightLogical(packed.AsUInt32(), 4).AsByte(), vec0x7));
@@ -190,7 +189,7 @@ namespace System.Text.Encodings.Web
                 // Everything except the low nibble of pmovksmb contains garbage and must be discarded.
 
                 var packed = Sse2.PackUnsignedSaturate(
-                   LoadScalar64OfByteFrom(pData + i).AsInt16(),
+                   Sse2.LoadScalarVector128((/* unaligned */ ulong*)(pData + i)).AsInt16(),
                    vecZero.AsInt16());
                 var allowedCodePointsShuffled = Ssse3.Shuffle(allowedCodePoints, packed);
                 var vecPowersOfTwoShuffled = Ssse3.Shuffle(vecPowersOfTwo, Sse2.And(Sse2.ShiftRightLogical(packed.AsUInt32(), 4).AsByte(), vec0x7));

@@ -39,7 +39,6 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or '$(TargetFramework)' == 'netcoreapp3.1'">
-    <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Simd.cs" />
     <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ssse3.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net461'">
