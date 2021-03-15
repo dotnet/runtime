@@ -343,12 +343,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type using its name.
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "typeName is annotated with DynamicallyAccessedMembers, which will preserve the type.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:ReturnValueNotSatisfied",
-            Justification = "typeName is annotated with PublicConstructors, which preserves the ctors.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-            Justification = "Using the non-assembly qualified type name will still work.")]
+        [RequiresUnreferencedCode("Calls ComponentType.Assembly.GetType on the non-fully qualified typeName, which the trimmer cannot recognize.")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         protected Type GetTypeFromName(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)

@@ -485,7 +485,7 @@ namespace System.ComponentModel
             /// then a global Type.GetType is performed.
             /// </summary>
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "typeName is annotated with DynamicallyAccessedMembers, which will preserve the type.")]
+                Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
                 Justification = "Using the non-assembly qualified type name will still work.")]
             private Type GetTypeFromName(

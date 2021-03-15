@@ -397,7 +397,7 @@ namespace System.ComponentModel
         private MethodInfo SetMethodValue
         {
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "_componentClass is annotated with All, but the trimmer is still warning. https://github.com/mono/linker/issues/1882")]
+                Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting properties on BaseType. https://github.com/mono/linker/issues/1882")]
             get
             {
                 if (!_state[s_bitSetQueried] && _state[s_bitSetOnDemand])
