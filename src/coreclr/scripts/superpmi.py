@@ -1731,11 +1731,14 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        base_option_flags_for_diff_artifact = base_option_flags
 
         diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
-                diff_option_flags += "-jitoption2", o
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
 
         if self.coreclr_args.altjit:
             altjit_asm_diffs_flags += [
@@ -1889,8 +1892,8 @@ class SuperPMIReplayAsmDiffs:
                                 return generated_txt
 
                             # Generate diff and base JIT dumps
-                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags)
-                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags)
+                            base_txt = await create_one_artifact(self.base_jit_path, base_location, flags + base_option_flags_for_diff_artifact)
+                            diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags_for_diff_artifact)
 
                             if base_txt != diff_txt:
                                 jit_differences_queue.put_nowait(item)
