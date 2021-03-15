@@ -16,7 +16,7 @@ namespace System.IO
     internal sealed class StdInReader : TextReader
     {
 
-        private static int _readLineIndex; // int that keeps track of current index in string oof _readLineSB
+        private static int _readLineIndex; // int that keeps track of current index in string of _readLineSB
         private static int _linesFromTop; // int that tells us how far from the top we are so we don't overwrite console text when home is pressed
         private static int _linesFromLeft;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output.  This is a field simply to enable reuse; it's only used in ReadLine.
