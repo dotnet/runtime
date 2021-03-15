@@ -4337,9 +4337,12 @@ mono_aot_can_dedup (MonoMethod *method)
 			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF ||
 			info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
 			return FALSE;
+#if 0
+		// See is_linkonce_method () in mini-llvm.c
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 			/* Handled using linkonce */
 			return FALSE;
+#endif
 		return TRUE;
 	}
 	default:
