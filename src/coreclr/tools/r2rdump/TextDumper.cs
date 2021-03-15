@@ -95,7 +95,7 @@ namespace R2RDump
                         {
                             int mvidOffset = _r2r.GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
                             Guid mvid = new Guid(new ReadOnlySpan<byte>(_r2r.Image, mvidOffset, GuidByteSize));
-                            dividerName += $@" - MVID {mvid}";
+                            dividerName += $@" - MVID {mvid:b}";
                         }
                         WriteDivider(dividerName);
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
@@ -515,7 +515,7 @@ namespace R2RDump
                     for (int mvidIndex = 0; mvidIndex < mvidCount; mvidIndex++)
                     {
                         Guid mvid = new Guid(new Span<byte>(_r2r.Image, mvidOffset + GuidByteSize * mvidIndex, GuidByteSize));
-                        _writer.WriteLine("MVID[{0}] = {1}", mvidIndex, mvid);
+                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, mvid);
                     }
                     break;
                 default:

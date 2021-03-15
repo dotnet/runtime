@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (relocsOnly)
             {
-                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+                return new ObjectData(Array.Empty<byte>(), null, 0, null);
             }
 
             byte[] manifestAssemblyMvidTable = _manifestNode.GetManifestAssemblyMvidTableData();

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<int, AssemblyName> _moduleIdToAssemblyNameMap;
 
         /// <summary>
-        /// MVID's of the assemblies included in manifest metadata to be emitted as the
+        /// MVIDs of the assemblies included in manifest metadata to be emitted as the
         /// ManifestAssemblyMvid R2R header table used by the runtime to check loaded assemblies
         /// and fail fast in case of mismatch.
         /// </summary>
@@ -260,12 +260,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             byte[] manifestAssemblyMvidTable = new byte[ManifestAssemblyMvidTableSize];
             for (int i = 0; i < _manifestAssemblyMvids.Count; i++)
             {
-                Array.Copy(
-                    sourceArray: _manifestAssemblyMvids[i].ToByteArray(),
-                    sourceIndex: 0,
-                    destinationArray: manifestAssemblyMvidTable,
-                    destinationIndex: GuidByteSize * i,
-                    length: GuidByteSize);
+                _manifestAssemblyMvids[i].TryWriteBytes(new Span<byte>(manifestAssemblyMvidTable, GuidByteSize * i, GuidByteSize));
             }
             return manifestAssemblyMvidTable;
         }

@@ -79,7 +79,7 @@ enum class ReadyToRunSectionType : uint32_t
     InliningInfo2               = 114, // Added in V4.1
     ComponentAssemblies         = 115, // Added in V4.1
     OwnerCompositeExecutable    = 116, // Added in V4.1
-    PgoInstrumentationData      = 117, // Added in 5.2
+    PgoInstrumentationData      = 117, // Added in V5.2
     ManifestAssemblyMvids       = 118, // Added in V5.3
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
