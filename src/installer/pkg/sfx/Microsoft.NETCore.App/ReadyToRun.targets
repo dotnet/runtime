@@ -49,7 +49,7 @@
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-      <DOTNET_ROOT>$(RepoRoot)</DOTNET_ROOT>
+      <DOTNET_ROOT>$([System.IO.Path]::Combine('$(RepoRoot)', '.dotnet'))</DOTNET_ROOT>
     </PropertyGroup>
   </Target>
 
