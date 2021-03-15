@@ -470,7 +470,7 @@ static jclass GetOptionalClassGRef(JNIEnv *env, const char* name)
     jclass klass = NULL;
     if (!TryGetClassGRef(env, name, &klass))
     {
-        LOG_ERROR("optional class %s was not found", name);
+        LOG_DEBUG("optional class %s was not found", name);
     }
 
     return klass;
