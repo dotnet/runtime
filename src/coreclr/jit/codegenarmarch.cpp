@@ -4215,34 +4215,4 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // TARGET_ARM64
 }
 
-// Produce code for a GT_INC_SATURATE node.
-void CodeGen::genCodeForIncSaturate(GenTree* tree)
-{
-    regNumber targetReg  = tree->GetRegNum();
-    var_types targetType = tree->TypeGet();
-
-    // The arithmetic node must be sitting in a register (since it's not contained)
-    assert(!tree->isContained());
-    // The dst can only be a register.
-    assert(targetReg != REG_NA);
-
-    GenTree* operand = tree->gtGetOp1();
-    assert(!operand->isContained());
-    // The src must be a register.
-    regNumber operandReg = genConsumeReg(operand);
-
-#ifdef TARGET_ARM64
-    GetEmitter()->emitIns_R_R_I(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
-    GetEmitter()->emitIns_R_R_COND(INS_cinv, emitActualTypeSize(tree), targetReg, targetReg, INS_COND_HS);
-#else
-    regNumber tmpReg = tree->GetSingleTempReg();
-    GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree), tmpReg, 0);
-    GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(tree), targetReg, operandReg, 1, INS_FLAGS_SET);
-    GetEmitter()->emitIns_R_R(INS_adc, emitActualTypeSize(tree), tmpReg, tmpReg);
-    GetEmitter()->emitIns_R_R(INS_sub, emitActualTypeSize(tree), targetReg, tmpReg);
-#endif
-
-    genProduceReg(tree);
-}
-
 #endif // TARGET_ARMARCH
