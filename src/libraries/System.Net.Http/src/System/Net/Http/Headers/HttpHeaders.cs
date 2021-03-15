@@ -554,18 +554,7 @@ namespace System.Net.Http.Headers
                     object sourceValue = header.Value;
                     if (sourceValue is HeaderStoreItemInfo info)
                     {
-                        if (!sourceHeaders.ParseRawHeaderValues(header.Key, info, removeEmptyHeader: false))
-                        {
-                            // If after trying to parse source header values no value is left (i.e. all values contain
-                            // invalid newline chars), delete it and skip to the next header.  ParseRawHeaderValues takes
-                            // a lock, and it'll only ever return false once for one thread, so we don't need to be
-                            // concerned about concurrent removals on the HttpClient.DefaultRequestHeaders source.
-                            sourceHeadersStore.Remove(header.Key);
-                        }
-                        else
-                        {
-                            AddHeaderInfo(header.Key, info);
-                        }
+                        AddHeaderInfo(header.Key, info);
                     }
                     else
                     {
@@ -580,18 +569,19 @@ namespace System.Net.Http.Headers
         {
             HeaderStoreItemInfo destinationInfo = CreateAndAddHeaderToStore(descriptor);
 
-            // We have custom header values. The parsed values are strings.
+            // Always copy raw values
+            destinationInfo.RawValue = CloneStringHeaderInfoValues(sourceInfo.RawValue);
+
             if (descriptor.Parser == null)
             {
-                Debug.Assert((sourceInfo.RawValue == null) && (sourceInfo.InvalidValue == null),
-                    "No raw or invalid values expected for custom headers.");
-
+                // We have custom header values. The parsed values are strings.
                 // Custom header values are always stored as string or list of strings.
+                Debug.Assert(sourceInfo.InvalidValue == null, "No invalid values expected for custom headers.");
                 destinationInfo.ParsedValue = CloneStringHeaderInfoValues(sourceInfo.ParsedValue);
             }
             else
             {
-                // We have a parser, so we have to copy invalid values and clone parsed values.
+                // We have a parser, so we also have to copy invalid values and clone parsed values.
 
                 // Invalid values are always strings. Strings are immutable. So we only have to clone the
                 // collection (if there is one).
