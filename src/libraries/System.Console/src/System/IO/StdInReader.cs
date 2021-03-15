@@ -190,7 +190,7 @@ namespace System.IO
                         return false;
                     }
                     // Alt + B/F is what macOS will send in place of Alt + Left/Right
-                    else if (keyInfo.Modifiers == ConsoleModifiers.Alt && (OperatingSystem.IsMacOS() ? keyInfo.Key == ConsoleKey.B : keyInfo.Key == ConsoleKey.LeftArrow))
+                    else if ((OperatingSystem.IsMacOS() ? (keyInfo.Modifiers == ConsoleModifiers.Alt  && keyInfo.Key == ConsoleKey.B) :  (keyInfo.Modifiers == ConsoleModifiers.Control  && keyInfo.Key == ConsoleKey.LeftArrow)))
                     {
                         if (_readLineIndex == 0)
                             continue;
@@ -208,7 +208,7 @@ namespace System.IO
                         ConsolePal.SetCursorPosition(leftover, lines);
 
                     }
-                    else if (keyInfo.Modifiers == ConsoleModifiers.Alt && (OperatingSystem.IsMacOS() ? keyInfo.Key == ConsoleKey.F : keyInfo.Key == ConsoleKey.RightArrow))
+                    else if ((OperatingSystem.IsMacOS() ? (keyInfo.Modifiers == ConsoleModifiers.Alt  && keyInfo.Key == ConsoleKey.F) :  (keyInfo.Modifiers == ConsoleModifiers.Control  && keyInfo.Key == ConsoleKey.RightArrow)))
                     {
                         if (_readLineIndex == _readLineSB.Length)
                              continue;
