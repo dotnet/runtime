@@ -698,6 +698,38 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
+        public class PropertyThrow
+        {
+            public string property1 => "P1";
+            public string property2 => throw new Exception("Always throw!");
+            public string property3 => "P3";
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestWithPropertyThrowing()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestThrows"))
+                {
+                    eventSourceListener.Enable("TestThrows/TestEvent1");
+
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new PropertyThrow());
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestThrows", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("P1", eventSourceListener.LastEvent.Arguments["property1"]);
+                    Assert.Equal("P3", eventSourceListener.LastEvent.Arguments["property3"]);
+                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["property2"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
         /// <summary>
         /// Test what happens when there are nulls passed in the event payloads
         /// Basically strings get turned into empty strings and other nulls are typically

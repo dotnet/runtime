@@ -10,7 +10,7 @@
 
 #include "object.h"
 #include "object-internals.h"
-#include "w32handle-namespace.h"
+#include "w32handle.h"
 #include <mono/metadata/icalls.h>
 
 void
@@ -24,14 +24,5 @@ mono_w32event_close (gpointer handle);
 
 void
 mono_w32event_set (gpointer handle);
-
-ICALL_EXPORT
-gboolean
-ves_icall_System_Threading_Events_SetEvent_internal (gpointer handle);
-
-typedef struct MonoW32HandleNamedEvent MonoW32HandleNamedEvent;
-
-MonoW32HandleNamespace*
-mono_w32event_get_namespace (MonoW32HandleNamedEvent *event);
 
 #endif /* _MONO_METADATA_W32EVENT_H_ */

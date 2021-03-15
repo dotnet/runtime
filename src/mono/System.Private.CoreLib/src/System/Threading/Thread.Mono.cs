@@ -82,7 +82,7 @@ namespace System.Threading
         ~Thread()
         {
 #if TARGET_UNIX || TARGET_BROWSER
-            WaitSubsystem.OnThreadExiting(this);
+            _waitInfo?.OnThreadExiting();
 #endif
             FreeInternal();
         }
