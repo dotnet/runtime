@@ -208,6 +208,7 @@
     <Message Importance="High" Text="Using HelixType: $(HelixType)" />
     <Message Importance="High" Text="Using WorkItemArchiveWildCard: $(WorkItemArchiveWildCard)" />
     <Message Importance="High" Text="Using Timeout: $(_workItemTimeout)" />
+    <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EMSDK_PATH)" />
 
     <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
       <!-- Create work items for test apps -->
@@ -256,7 +257,7 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-      <HelixCorrelationPayload Include="$(EmSdkDir)"                             Destination="build/emsdk" />
+      <HelixCorrelationPayload Include="$(EMSDK_PATH)"                           Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
@@ -270,7 +271,7 @@
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       
       <!-- Provide toolchain to be able to AOT on helix -->
-      <HelixCorrelationPayload Include="$(EmsdkDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
+      <HelixCorrelationPayload Include="$(EMSDK_PATH)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
         <Destination>emsdk</Destination>
         <IncludeDirectoryName>true</IncludeDirectoryName>
       </HelixCorrelationPayload>
