@@ -1708,7 +1708,7 @@ var MonoSupportLib = {
 			// Crypto support is only available in the Browser.
 			if (ENVIRONMENT_IS_WEB) {
 				var chan = Module.channel.create();
-				var worker = new Worker ("crypto_worker.js");
+				var worker = new Worker ("dotnet_crypto_worker.js");
 				worker.postMessage ({
 					comm_buf: chan.get_comm_buffer(),
 					msg_buf: chan.get_msg_buffer(),

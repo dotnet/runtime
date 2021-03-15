@@ -118,8 +118,8 @@ $(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DI
 $(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c | $(BUILDS_OBJ_DIR)
 	$(EMCC) $(EMCC_FLAGS) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
 
-$(NATIVE_BIN_DIR)/crypto_worker.js: runtime/crypto_worker.js | $(NATIVE_BIN_DIR)
-	cp runtime/crypto_worker.js $(NATIVE_BIN_DIR)/crypto_worker.js
+$(NATIVE_BIN_DIR)/dotnet_crypto_worker.js: runtime/dotnet_crypto_worker.js | $(NATIVE_BIN_DIR)
+	cp runtime/dotnet_crypto_worker.js $(NATIVE_BIN_DIR)/dotnet_crypto_worker.js
 
 $(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src Makefile
 	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1) -Oz" > $$@
@@ -127,7 +127,7 @@ $(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src Makefile
 $(NATIVE_BIN_DIR)/src/emcc-version.txt: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(EMCC) --version | head -1 > $$@
 
-build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/crypto_worker.js $(NATIVE_BIN_DIR)/src/emcc-flags.txt $(NATIVE_BIN_DIR)/src/emcc-version.txt
+build-native: $(NATIVE_BIN_DIR)/dotnet.js $(NATIVE_BIN_DIR)/dotnet_crypto_worker.js $(NATIVE_BIN_DIR)/src/emcc-flags.txt $(NATIVE_BIN_DIR)/src/emcc-version.txt
 
 endef
 

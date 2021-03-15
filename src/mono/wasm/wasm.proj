@@ -93,7 +93,7 @@
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat;
-                       $(NativeBinDir)crypto_worker.js;
+                       $(NativeBinDir)dotnet_crypto_worker.js;
                        $(NativeBinDir)libicuuc.a;
                        $(NativeBinDir)libicui18n.a"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
