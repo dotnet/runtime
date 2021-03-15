@@ -9,10 +9,11 @@ using System.Text;
 
 internal class Xcode
 {
+    private string RuntimeIdentifier { get; set; }
     private string SysRoot { get; set; }
     private string Target { get; set; }
 
-    public Xcode(string target)
+    public Xcode(string target, string arch)
     {
         Target = target;
         switch (Target)
@@ -33,6 +34,8 @@ internal class Xcode
                 SysRoot = Utils.RunProcess("xcrun", "--sdk macosx --show-sdk-path");
                 break;
         }
+
+        RuntimeIdentifier = $"{Target}-{arch}";
     }
 
     public bool EnableRuntimeLogging { get; set; }
@@ -198,6 +201,7 @@ internal class Xcode
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
                 .Replace("//%DllMap%", dllMap.ToString())
+                .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);

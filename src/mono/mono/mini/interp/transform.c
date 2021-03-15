@@ -2633,6 +2633,16 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 #define INLINE_DEPTH_LIMIT 10
 
 static gboolean
+is_metadata_update_disabled (void)
+{
+	static gboolean disabled = FALSE;
+	if (disabled)
+		return disabled;
+	disabled = !mono_metadata_update_enabled (NULL);
+	return disabled;
+}
+
+static gboolean
 interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodSignature *csignature)
 {
 	MonoMethodHeaderSummary header;
@@ -2684,6 +2694,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 		return FALSE;
 
 	if (td->prof_coverage)
+		return FALSE;
+
+	if (!is_metadata_update_disabled () && mono_metadata_update_no_inline (td->method, method))
 		return FALSE;
 
 	if (g_list_find (td->dont_inline, method))

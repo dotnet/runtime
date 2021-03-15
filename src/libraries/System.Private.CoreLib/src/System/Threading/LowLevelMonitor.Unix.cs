@@ -44,6 +44,19 @@ namespace System.Threading
             Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
         }
 
+        private bool WaitCore(int timeoutMilliseconds)
+        {
+            Debug.Assert(timeoutMilliseconds >= -1);
+
+            if (timeoutMilliseconds < 0)
+            {
+                WaitCore();
+                return true;
+            }
+
+            return Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
+        }
+
         private void Signal_ReleaseCore()
         {
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);

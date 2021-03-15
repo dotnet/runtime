@@ -11260,11 +11260,14 @@ is_linkonce_method (MonoMethod *method)
 	 * FIXME: Fails System.Core tests
 	 * -> amodule->sorted_methods contains duplicates, screwing up jit tables.
 	 */
+	// FIXME: This works, but the aot data for the methods is still kept, so size still increases
+#if 0
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 			return TRUE;
 	}
+#endif
 #endif
 	return FALSE;
 }
