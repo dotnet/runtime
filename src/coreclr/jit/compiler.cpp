@@ -3244,9 +3244,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #elif defined(ARM_SOFTFP)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
-#else
-    // Not ARM, or normal armhf abi compilation
-    assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
 #endif // CONFIGURABLE_ARM_ABI
 
     opts.compScopeInfo = opts.compDbgInfo;
