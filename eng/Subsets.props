@@ -98,7 +98,7 @@
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
-    <SubsetName Include="Mono.MsCorDbi" Description="The implementation of icordebug interface." />
+    <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
