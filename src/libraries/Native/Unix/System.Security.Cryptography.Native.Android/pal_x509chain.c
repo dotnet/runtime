@@ -8,20 +8,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 }; \
-
-#define RELEASE_LOCALS(name, env) \
-{ \
-    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
-    { \
-        jobject local = name[i_##name]; \
-        if (local != NULL) \
-            (*env)->DeleteLocalRef(env, local); \
-    } \
-} \
-
 struct X509ChainContext_t
 {
     jobject /*PKIXBuilderParameters*/ params;
@@ -47,7 +33,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     JNIEnv* env = GetJNIEnv();
 
     X509ChainContext* ret = NULL;
-    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore)
+    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore);
 
     // String keyStoreType = "AndroidCAStore";
     // KeyStore keyStore = KeyStore.getInstance(keyStoreType);
@@ -99,7 +85,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     ret->errorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -122,7 +108,7 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, date, builderType, builder, result, ex, certPath, trustAnchor)
+    INIT_LOCALS(loc, date, builderType, builder, result, ex, certPath, trustAnchor);
 
     jobject params = ctx->params;
 
@@ -157,7 +143,7 @@ int32_t AndroidCryptoNative_X509ChainBuild(X509ChainContext* ctx, int64_t timeIn
     ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }
 
@@ -429,7 +415,7 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = FAIL;
-    INIT_LOCALS(loc, validatorType, validator, checker, result, ex)
+    INIT_LOCALS(loc, validatorType, validator, checker, result, ex);
 
     jobject params = ctx->params;
     jobject certPath = ctx->certPath;
@@ -479,6 +465,6 @@ int32_t AndroidCryptoNative_X509ChainValidate(X509ChainContext* ctx,
     ret = SUCCESS;
 
 cleanup:
-    RELEASE_LOCALS(loc, env)
+    RELEASE_LOCALS(loc, env);
     return ret;
 }

@@ -181,7 +181,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(valid);
                 chainHolder.DisposeChainElements();
 
-                // Make sure AllowUnknownCertificateAuthority is set, as this test we verifies it does not get reset
+                // This test checks that the verification flags do not get reset when the chain is reset,
+                // so we set AllowUnknownCertificateAuthority even on platforms that don't respect it.
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                 chain.AllowUnknownAuthorityOrAddSelfSignedToCustomTrust(sampleCert);
 

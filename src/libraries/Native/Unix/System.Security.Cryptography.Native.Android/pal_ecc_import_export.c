@@ -7,19 +7,6 @@
 #include "pal_jni.h"
 #include "pal_utilities.h"
 
-
-#define INIT_LOCALS(name, ...) \
-    enum { __VA_ARGS__, count_##name }; \
-    jobject name[count_##name] = { 0 } \
-
-#define RELEASE_LOCALS_ENV(name, releaseFn) \
-do { \
-    for (int i = 0; i < count_##name; ++i) \
-    { \
-        releaseFn(env, name[i]); \
-    } \
-} while(0)
-
 int32_t AndroidCryptoNative_GetECKeyParameters(const EC_KEY* key,
                                         int32_t includePrivate,
                                         jobject* qx,

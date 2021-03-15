@@ -427,6 +427,28 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 #define JSTRING(str) ((jstring)(*env)->NewStringUTF(env, str))
 #define ON_EXCEPTION_PRINT_AND_GOTO(label) if (CheckJNIExceptions(env)) goto label
 
+#define INIT_LOCALS(name, ...) \
+    enum { __VA_ARGS__, count_##name }; \
+    jobject name[count_##name] = { 0 } \
+
+#define RELEASE_LOCALS(name, env) \
+do { \
+    for (int i_##name = 0; i_##name < count_##name; ++i_##name) \
+    { \
+        jobject local = name[i_##name]; \
+        if (local != NULL) \
+            (*env)->DeleteLocalRef(env, local); \
+    } \
+} while(0)
+
+#define RELEASE_LOCALS_ENV(name, releaseFn) \
+do { \
+    for (int i = 0; i < count_##name; ++i) \
+    { \
+        releaseFn(env, name[i]); \
+    } \
+} while(0)
+
 void SaveTo(uint8_t* src, uint8_t** dst, size_t len, bool overwrite);
 jobject ToGRef(JNIEnv *env, jobject lref);
 jobject AddGRef(JNIEnv *env, jobject gref);
