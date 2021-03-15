@@ -19,18 +19,51 @@ namespace Microsoft.NET.HostModel.Tests
             sharedTestState = fixture;            
         }
 
-        [Fact]
-        public void Run_apphost_behind_symbolic_link()
+        [Theory]
+        [InlineData ("../../SymlinkToApphost")]
+        [InlineData ("../SymlinkToApphost")]
+        public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
-            while (!System.Diagnostics.Debugger.IsAttached)
-                System.Threading.Thread.Sleep(5000);
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
             
             var appExe = fixture.TestProject.AppExe;
+            string symbolicLink = Path.GetFullPath(Path.Combine(appExe, symlinkRelativePath));
+            string targetFileName = appExe;
+            if (!SymbolicLinking.MakeSymbolicLink (symbolicLink, targetFileName, out var errorString))
+                throw new Exception($"Failed to create symbolic link '{symbolicLink}' targeting '{targetFileName}': {errorString}");
 
-            Command.Create(appExe)
+            Command.Create(symbolicLink)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Theory]
+        [InlineData ("../../FirstSymlink", "../../SecondSymlink")]
+        [InlineData ("../../FirstSymlink", "../SecondSymlink")]
+        [InlineData ("../FirstSymlink", "../../SecondSymlink")]
+        [InlineData ("../FirstSymlink", "../SecondSymlink")]
+        public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+            
+            var appExe = fixture.TestProject.AppExe;
+            // second symlink -> apphost
+            string secondSymbolicLink = Path.GetFullPath(Path.Combine(appExe, secondSymlinkRelativePath));
+            string targetFileName = appExe;
+            if (!SymbolicLinking.MakeSymbolicLink (secondSymbolicLink, targetFileName, out var errorString))
+                throw new Exception($"Failed to create symbolic link '{secondSymbolicLink}' targeting '{targetFileName}': {errorString}");
+
+            // first symlink -> second symlink
+            string firstSymbolicLink = Path.GetFullPath(Path.Combine(appExe, firstSymlinkRelativePath));
+            if (!SymbolicLinking.MakeSymbolicLink (firstSymbolicLink, secondSymbolicLink, out errorString))
+                throw new Exception($"Failed to create symbolic link '{firstSymbolicLink}' targeting '{secondSymbolicLink}': {errorString}");
+
+            Command.Create(firstSymbolicLink)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -48,12 +81,12 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                var buildFixture = new TestProjectFixture("StandaloneApp6x", RepoDirectories);
+                var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 buildFixture
                     .EnsureRestoredForRid(buildFixture.CurrentRid)
                     .BuildProject(runtime: buildFixture.CurrentRid);
 
-                var publishFixture = new TestProjectFixture("StandaloneApp6x", RepoDirectories);
+                var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
                     .PublishProject(runtime: publishFixture.CurrentRid);

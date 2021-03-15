@@ -26,8 +26,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 #else
         [DllImport("libc", SetLastError = true)]
         internal static extern int symlink(
-            string symbolicLinkName,
-            string targetFileName);
+            string targetFileName,
+            string linkPath);
 
         [DllImport("libc", CharSet = CharSet.Ansi)]
         internal static extern IntPtr strerror(int errnum);
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return false;
             }
 #else
-            if (symlink(symbolicLinkName, targetFileName) == -1)
+            if (symlink(targetFileName, symbolicLinkName) == -1)
             {
                 int errno = Marshal.GetLastWin32Error();
                 errorMessage = Marshal.PtrToStringAnsi(strerror(errno));
