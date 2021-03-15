@@ -119,6 +119,7 @@
       Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
       OutputAssembly="$(_WasmDedupAssembly)"
       TargetType="library"
+      Deterministic="true"
       References="@(ReferencePath)"
       ToolExe="$(CscToolExe)"
       ToolPath="$(CscToolPath)" />
