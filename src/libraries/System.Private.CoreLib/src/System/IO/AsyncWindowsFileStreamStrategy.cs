@@ -271,6 +271,7 @@ namespace System.IO
                 // touch the file pointer location at all.  We will adjust it
                 // ourselves, but only in memory.  This isn't threadsafe.
                 _filePosition += source.Length;
+                UpdateLengthOnChangePosition();
             }
 
             // queue an async WriteFile operation and pass in a packed overlapped

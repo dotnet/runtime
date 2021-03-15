@@ -23,6 +23,8 @@ namespace System.IO
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
         private readonly FileAccess _access;
 
+        private readonly FileShare _share;
+
         /// <summary>The path to the opened file.</summary>
         protected readonly string? _path;
 
@@ -32,6 +34,7 @@ namespace System.IO
         private readonly bool _isPipe;      // Whether to disable async buffering code.
 
         private long _appendStart; // When appending, prevent overwriting file.
+        private long? _length;
 
         internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
@@ -40,6 +43,7 @@ namespace System.IO
             // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
             // but we can't as they're readonly.
             _access = access;
+            _share = FileStream.DefaultShare;
 
             // As the handle was passed in, we must set the handle field at the very end to
             // avoid the finalizer closing the handle when we throw errors.
@@ -52,6 +56,7 @@ namespace System.IO
 
             _path = fullPath;
             _access = access;
+            _share = share;
 
             _fileHandle = FileStreamHelpers.OpenHandle(fullPath, mode, access, share, options);
 
@@ -77,7 +82,25 @@ namespace System.IO
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length => FileStreamHelpers.GetFileLength(_fileHandle, _path);
+        public unsafe sealed override long Length => _share > FileShare.Read ?
+            FileStreamHelpers.GetFileLength(_fileHandle, _path) :
+            _length ??= FileStreamHelpers.GetFileLength(_fileHandle, _path);
+
+        protected void UpdateLengthOnChangePosition()
+        {
+            // Do not update the cached length if the file can be written somewhere else
+            // or if the length has not been queried.
+            if (_share > FileShare.Read || _length is null)
+            {
+                Debug.Assert(_length is null);
+                return;
+            }
+
+            if (_filePosition > _length)
+            {
+                _length = _filePosition;
+            }
+        }
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public override long Position
@@ -256,6 +279,7 @@ namespace System.IO
             Debug.Assert(value >= 0, "value >= 0");
 
             FileStreamHelpers.SetLength(_fileHandle, _path, value);
+            _length = value;
 
             if (_filePosition > value)
             {

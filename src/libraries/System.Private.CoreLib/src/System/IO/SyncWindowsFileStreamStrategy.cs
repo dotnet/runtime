@@ -159,7 +159,7 @@ namespace System.IO
             }
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
             _filePosition += r;
-            return;
+            UpdateLengthOnChangePosition();
         }
 
         private NativeOverlapped GetNativeOverlappedForCurrentPosition()
