@@ -789,6 +789,16 @@ namespace DebuggerTests
             return (null, res);
         }
 
+        internal async Task<(JToken, Result)> SetVariableValueOnCallFrame(JObject parms, bool expect_ok = true)
+        {
+            var res = await cli.SendCommand("Debugger.setVariableValue", parms, token);
+            AssertEqual(expect_ok, res.IsOk, $"Debugger.setVariableValue ('{parms}') returned {res.IsOk} instead of {expect_ok}, with Result: {res}");
+            if (res.IsOk)
+                return (res.Value["result"], res);
+
+            return (null, res);
+        }
+
         internal async Task<Result> RemoveBreakpoint(string id, bool expect_ok = true)
         {
             var remove_bp = JObject.FromObject(new
