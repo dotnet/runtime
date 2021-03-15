@@ -91,13 +91,15 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private static unsafe int SysRead(SafeSocketHandle socket, Span<byte> buffer, out Interop.Error errno)
+        private static unsafe int SysRead(SafeSocketHandle handle, Span<byte> buffer, out Interop.Error errno)
         {
+            Debug.Assert(!handle.IsSocket);
+
             int received = 0;
 
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
-                received = Interop.Sys.Read(socket, b, buffer.Length);
+                received = Interop.Sys.Read(handle, b, buffer.Length);
                 errno = received != -1 ? Interop.Error.SUCCESS : Interop.Sys.GetLastError();
             }
 
@@ -171,13 +173,15 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int SysWrite(SafeSocketHandle socket, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
+        private static unsafe int SysWrite(SafeSocketHandle handle, ReadOnlySpan<byte> buffer, ref int offset, ref int count, out Interop.Error errno)
         {
+            Debug.Assert(!handle.IsSocket);
+
             int sent;
 
             fixed (byte* b = &MemoryMarshal.GetReference(buffer))
             {
-                sent = Interop.Sys.Write(socket, b + offset, count);
+                sent = Interop.Sys.Write(handle, b + offset, count);
                 if (sent == -1)
                 {
                     errno = Interop.Sys.GetLastError();
