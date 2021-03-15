@@ -13,7 +13,7 @@ namespace System.IO
     public class FileStream : Stream
     {
         internal const int DefaultBufferSize = 4096;
-        private const FileShare DefaultShare = FileShare.Read;
+        internal const FileShare DefaultShare = FileShare.Read;
         private const bool DefaultIsAsync = false;
 
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>

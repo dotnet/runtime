@@ -272,6 +272,7 @@ namespace System.IO.Strategies
                 // touch the file pointer location at all.  We will adjust it
                 // ourselves, but only in memory.  This isn't threadsafe.
                 _filePosition += source.Length;
+                UpdateLengthOnChangePosition();
             }
 
             // queue an async WriteFile operation and pass in a packed overlapped
@@ -372,7 +373,7 @@ namespace System.IO.Strategies
             finally
             {
                 // Make sure the stream's current position reflects where we ended up
-                if (!_fileHandle.IsClosed && canSeek)
+                if (!_fileHandle.IsClosed && CanSeek)
                 {
                     _filePosition = Length;
                 }
