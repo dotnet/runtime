@@ -37,7 +37,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the Clr Type of the early bound object.
         /// </summary>
-        [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public Type EarlyBoundType
         {
             get { return _ebType; }
