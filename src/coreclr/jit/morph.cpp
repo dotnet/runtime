@@ -18513,6 +18513,18 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 bool undoPromotion = ((lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
                                       (nonCallAppearances <= varDsc->lvFieldCnt));
 
+#ifdef DEBUG
+                // Above is a profitability heurisic; either value of
+                // undoPromotion should lead to correct code. So,
+                // under stress, make different decisions at times.
+                if (compStressCompile(STRESS_BYREF_PROMOTION, 25))
+                {
+                    undoPromotion = !undoPromotion;
+                    JITDUMP("Stress -- changing byref undo promotion for V%02u to %s undo\n", lclNum,
+                            undoPromotion ? "" : "NOT");
+                }
+#endif // DEBUG
+
                 JITDUMP("%s promotion of implicit by-ref V%02u: %s total: %u non-call: %u fields: %u\n",
                         undoPromotion ? "Undoing" : "Keeping", lclNum,
                         (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ? "dependent;" : "",
