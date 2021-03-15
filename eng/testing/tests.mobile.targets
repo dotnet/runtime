@@ -33,6 +33,17 @@
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' and '$(UseDefaultiOSFeatureSwitches)' != 'false'">
+  	<EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+		<EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+		<EventSourceSupport>false</EventSourceSupport>
+		<HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<StartupHookSupport>false</StartupHookSupport>
+		<UseSystemResourceKeys>true</UseSystemResourceKeys>
+		<UseNativeHttpHandler>true</UseNativeHttpHandler>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
