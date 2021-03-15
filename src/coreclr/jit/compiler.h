@@ -9315,7 +9315,7 @@ public:
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
     }
 
-    bool compPromoteLessStructs(unsigned lclNum);
+    bool compPromoteFewerStructs(unsigned lclNum);
 
 #endif // DEBUG
 

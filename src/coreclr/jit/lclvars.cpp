@@ -2105,10 +2105,10 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         shouldPromote = false;
     }
 #if defined(DEBUG)
-    else if (compiler->compPromoteLessStructs(lclNum))
+    else if (compiler->compPromoteFewerStructs(lclNum))
     {
         // Do not promote some structs, that can be promoted, to stress promoted/unpromoted moves.
-        JITDUMP("Not promoting promotable struct local V%02u, because of STRESS_PROMOTE_LESS_STRUCTS\n", lclNum);
+        JITDUMP("Not promoting promotable struct local V%02u, because of STRESS_PROMOTE_FEWER_STRUCTS\n", lclNum);
         shouldPromote = false;
     }
 #endif
