@@ -13,13 +13,10 @@ namespace System.Net.Quic.Tests
     public abstract class QuicConnectionTests<T> : QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task TestConnect()
         {
             using QuicListener listener = CreateQuicListener();
-
-            listener.Start();
             IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
             using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
