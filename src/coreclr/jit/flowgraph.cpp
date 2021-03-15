@@ -684,31 +684,16 @@ PhaseStatus Compiler::fgImport()
 
 bool Compiler::fgIsThrow(GenTree* tree)
 {
-    if ((tree->gtOper != GT_CALL) || (tree->AsCall()->gtCallType != CT_HELPER))
+    if (!tree->IsCall())
     {
         return false;
     }
-
-    // TODO-Throughput: Replace all these calls to eeFindHelper() with a table based lookup
-
-    if ((tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED)) ||
-        (tree->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED)))
+    GenTreeCall* call = tree->AsCall();
+    if ((call->gtCallType == CT_HELPER) && s_helperCallProperties.AlwaysThrow(eeGetHelperNum(call->gtCallMethHnd)))
     {
-        noway_assert(tree->gtFlags & GTF_CALL);
-        noway_assert(tree->gtFlags & GTF_EXCEPT);
+        noway_assert(call->gtFlags & GTF_EXCEPT);
         return true;
     }
-
-    // TODO-CQ: there are a bunch of managed methods in System.ThrowHelper
-    // that would be nice to recognize.
-
     return false;
 }
 
@@ -926,13 +911,14 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
     result->gtFlags |= callFlags;
 
-    // If we're importing the special EqualityComparer<T>.Default
-    // intrinsic, flag the helper call. Later during inlining, we can
+    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+    // intrinsics, flag the helper call. Later during inlining, we can
     // remove the helper call if the associated field lookup is unused.
     if ((info.compFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
         NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
-        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_Comparer_get_Default))
         {
             JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
             result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
@@ -2312,17 +2298,7 @@ private:
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
-#ifdef DEBUG
-        if (comp->verbose)
-        {
-            printf("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
-        }
-#endif
-
-        // We have profile weight, the weight is zero, and the block is run rarely,
-        // until we prove otherwise by merging other returns into this one.
-        newReturnBB->bbFlags |= (BBF_PROF_WEIGHT | BBF_RUN_RARELY);
-        newReturnBB->bbWeight = 0;
+        JITDUMP("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
 
         GenTree* returnExpr;
 
@@ -2504,6 +2480,22 @@ private:
                     // merged return block are lexically forward.
 
                     insertionPoints[index] = returnBlock;
+
+                    // Update profile information in the mergedReturnBlock to
+                    // reflect the additional flow.
+                    //
+                    if (returnBlock->hasProfileWeight())
+                    {
+                        BasicBlock::weight_t const oldWeight =
+                            mergedReturnBlock->hasProfileWeight() ? mergedReturnBlock->bbWeight : BB_ZERO_WEIGHT;
+                        BasicBlock::weight_t const newWeight = oldWeight + returnBlock->bbWeight;
+
+                        JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to const return " FMT_BB "\n",
+                                returnBlock->bbWeight, returnBlock->bbNum, mergedReturnBlock->bbNum);
+
+                        mergedReturnBlock->setBBProfileWeight(newWeight);
+                        DISPBLOCK(mergedReturnBlock);
+                    }
                 }
             }
         }
@@ -2511,6 +2503,8 @@ private:
         if (mergedReturnBlock == nullptr)
         {
             // No constant return block for this return; use the general one.
+            // We defer flow update and profile update to morph.
+            //
             mergedReturnBlock = comp->genReturnBB;
             if (mergedReturnBlock == nullptr)
             {
@@ -2527,20 +2521,6 @@ private:
 
         if (returnBlock != nullptr)
         {
-            // Propagate profile weight and related annotations to the merged block.
-            // Return weight should never exceed entry weight, so cap it to avoid nonsensical
-            // hot returns in synthetic profile settings.
-            mergedReturnBlock->bbWeight =
-                min(mergedReturnBlock->bbWeight + returnBlock->bbWeight, comp->fgFirstBB->bbWeight);
-            if (!returnBlock->hasProfileWeight())
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_PROF_WEIGHT;
-            }
-            if (mergedReturnBlock->bbWeight > 0)
-            {
-                mergedReturnBlock->bbFlags &= ~BBF_RUN_RARELY;
-            }
-
             // Update fgReturnCount to reflect or anticipate that `returnBlock` will no longer
             // be a return point.
             comp->fgReturnCount--;
@@ -2745,13 +2725,6 @@ void Compiler::fgAddInternal()
         // will expect to find it.
         BasicBlock* mergedReturn = merger.EagerCreate();
         assert(mergedReturn == genReturnBB);
-        // Assume weight equal to entry weight for this BB.
-        mergedReturn->bbFlags &= ~BBF_PROF_WEIGHT;
-        mergedReturn->bbWeight = fgFirstBB->bbWeight;
-        if (mergedReturn->bbWeight > 0)
-        {
-            mergedReturn->bbFlags &= ~BBF_RUN_RARELY;
-        }
     }
     else
     {

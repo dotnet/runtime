@@ -427,7 +427,10 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         return errno == 0 ? -1 : errno;
     }
 #else
-    int error = readdir_r(dir, entry, &result);
+    int error;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
 
     // positive error number returned -> failure
     if (error != 0)
@@ -473,12 +476,27 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
 
 DIR* SystemNative_OpenDir(const char* path)
 {
-    return opendir(path);
+    DIR *result;
+
+    // EINTR isn't documented, happens in practice on macOS.
+    while ((result = opendir(path)) == NULL && errno == EINTR);
+
+    return result;
 }
 
 int32_t SystemNative_CloseDir(DIR* dir)
 {
-    return closedir(dir);
+    int32_t result;
+
+    result = closedir(dir);
+
+    // EINTR isn't documented, happens in practice on macOS.
+    if (result < 0 && errno == EINTR)
+    {
+        result = 0;
+    }
+
+    return result;
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
@@ -1263,8 +1281,27 @@ char* SystemNative_RealPath(const char* path)
     return realpath(path, NULL);
 }
 
+static int16_t ConvertLockType(int16_t managedLockType)
+{
+    // the managed enum Interop.Sys.LockType has no 1:1 mapping with corresponding Unix values
+    // which can be different per distro:
+    // https://github.com/torvalds/linux/blob/fcadab740480e0e0e9fa9bd272acd409884d431a/arch/alpha/include/uapi/asm/fcntl.h#L48-L50
+    // https://github.com/freebsd/freebsd-src/blob/fb8c2f743ab695f6004650b58bf96972e2535b20/sys/sys/fcntl.h#L277-L279
+    switch (managedLockType)
+    {
+        case 0:
+            return F_RDLCK;
+        case 1:
+            return F_WRLCK;
+        default:
+            assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
+            return F_UNLCK;
+    }
+}
+
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {
+    int16_t unixLockType = ConvertLockType(lockType);
     if (offset < 0 || length < 0)
     {
         errno = EINVAL;
@@ -1277,7 +1314,7 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
-    lockArgs.l_type = lockType;
+    lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;

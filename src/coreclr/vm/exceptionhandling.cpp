@@ -1202,12 +1202,12 @@ lExit: ;
 
     if ((ExceptionContinueSearch == returnDisposition))
     {
-#ifdef USE_GC_INFO_DECODER
         if (dwExceptionFlags & EXCEPTION_UNWINDING)
         {
             EECodeInfo codeInfo(pDispatcherContext->ControlPc);
             if (codeInfo.IsValid())
             {
+#ifdef USE_GC_INFO_DECODER
                 GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
                 if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
                 {
@@ -1216,9 +1216,21 @@ lExit: ;
                     bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
                     CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
                 }
+#else // USE_GC_INFO_DECODER
+                hdrInfo gcHdrInfo;
+
+                DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+
+                if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+                {
+                    // Exception is being propagated from a method marked UnmanagedCallersOnlyAttribute into its native caller.
+                    // The explicit frame chain needs to be unwound at this boundary.
+                    bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
+                    CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
+                }
+#endif // USE_GC_INFO_DECODER
             }
         }
-#endif // USE_GC_INFO_DECODER
 
         GCX_PREEMP_NO_DTOR();
     }
@@ -3312,10 +3324,6 @@ DWORD_PTR ExceptionTracker::CallHandler(
         break;
     }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
 #ifdef USE_FUNCLET_CALL_HELPER
     // Invoke the funclet. We pass throwable only when invoking the catch block.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -3952,10 +3960,6 @@ void ExceptionTracker::ResumeExecution(
     EH_LOG((LL_INFO100, "resuming execution at 0x%p\n", GetIP(pContextRecord)));
     EH_LOG((LL_INFO100, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     RtlRestoreContext(pContextRecord, pExceptionRecord);
 
     UNREACHABLE();
@@ -4569,6 +4573,22 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+        {
+            // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
+            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            {
+                LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+            }
+            CrashDumpAndTerminateProcess(1);
+            UNREACHABLE();
+        }
+#else // USE_GC_INFO_DECODER
+        hdrInfo gcHdrInfo;
+
+        DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+
+        if (gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
         {
             // Propagating exception from a method marked by UnmanagedCallersOnly attribute is prohibited on Unix
             if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))

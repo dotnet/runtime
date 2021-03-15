@@ -790,6 +790,29 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
                 break;
         }
     }
+    else // must be a VNF_ function
+    {
+        if (hasNanArg)
+        {
+            // unordered comparisons with NaNs always return true
+            return true;
+        }
+
+        switch (vnf)
+        {
+            case VNF_GT_UN:
+                return v0 > v1;
+            case VNF_GE_UN:
+                return v0 >= v1;
+            case VNF_LT_UN:
+                return v0 < v1;
+            case VNF_LE_UN:
+                return v0 <= v1;
+            default:
+                // For any other value of 'vnf', we will assert below
+                break;
+        }
+    }
     noway_assert(!"Unhandled operation in EvalComparison<double>");
     return 0;
 }
@@ -835,8 +858,8 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
     {
         if (hasNanArg)
         {
-            // always returns true
-            return false;
+            // unordered comparisons with NaNs always return true
+            return true;
         }
 
         switch (vnf)
@@ -1922,18 +1945,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
 
         if (arg0IsFloating != arg1IsFloating)
-        {
-            canFold = false;
-        }
-
-        // NaNs are unordered wrt to other floats. While an ordered
-        // comparison would return false, an unordered comparison
-        // will return true if any operands are a NaN. We only perform
-        // ordered NaN comparison in EvalComparison.
-        if ((arg0IsFloating && (((arg0VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg0VN))) ||
-                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg0VN))))) ||
-            (arg1IsFloating && (((arg1VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg1VN))) ||
-                                ((arg1VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg1VN))))))
         {
             canFold = false;
         }
@@ -3117,13 +3128,10 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         // some VNF_ that we can evaluate
         switch (vnf)
         {
-            // Consider adding:
-            //   case VNF_GT_UN:
-            //   case VNF_GE_UN:
-            //   case VNF_LT_UN:
-            //   case VNF_LE_UN:
-            //
-
+            case VNF_GT_UN:
+            case VNF_GE_UN:
+            case VNF_LT_UN:
+            case VNF_LE_UN:
             case VNF_Cast:
                 // We can evaluate these.
                 return true;
@@ -4286,18 +4294,33 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 }
 
 //------------------------------------------------------------------------
+// IsVNPositiveInt32Constant: returns true iff vn is a known Int32 constant that is greater then 0
+//
+// Arguments:
+//    vn - Value number to query
+bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
+{
+    return IsVNInt32Constant(vn) && (ConstantValue<INT32>(vn) > 0);
+}
+
+//------------------------------------------------------------------------
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
-//    such as "(uint)i < (uint)len" that implies that the index is valid
-//    (0 <= i && i < a.len).
+//    of one of the following forms:
+//    - "(uint)i < (uint)len" that implies (0 <= i < len)
+//    - "const < (uint)len" that implies "len > const"
+//    - "const <= (uint)len" that implies "len > const - 1"
 //
 // Arguments:
 //    vn - Value number to query
 //    info - Pointer to an UnsignedCompareCheckedBoundInfo object to return information about
 //           the expression. Not populated if the vn expression isn't suitable (e.g. i <= len).
-//           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
+//           This enables optCreateJTrueBoundAssertion to immediately create an OAK_NO_THROW
 //           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
 //           (IsVNCompareCheckedBound, IsVNCompareCheckedBoundArith) that require further processing.
-
+//
+// Note:
+//   For comparisons of the form constant <= length, this returns them as (constant - 1) < length
+//
 bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info)
 {
     VNFuncApp funcApp;
@@ -4314,6 +4337,19 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 info->vnBound = funcApp.m_args[1];
                 return true;
             }
+            // We care about (uint)len < constant and its negation "(uint)len >= constant"
+            else if (IsVNPositiveInt32Constant(funcApp.m_args[1]) && IsVNCheckedBound(funcApp.m_args[0]))
+            {
+                // Change constant < len into (uint)len >= (constant - 1)
+                // to make consuming this simpler (and likewise for it's negation).
+                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[1]) - 1;
+                assert(validIndex >= 0);
+
+                info->vnIdx   = VNForIntCon(validIndex);
+                info->cmpOper = (funcApp.m_func == VNF_GE_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnBound = funcApp.m_args[0];
+                return true;
+            }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
@@ -4324,6 +4360,19 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
                 // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
                 info->vnBound = funcApp.m_args[0];
+                return true;
+            }
+            // Look for constant > (uint)len and its negation "constant <= (uint)len"
+            else if (IsVNPositiveInt32Constant(funcApp.m_args[0]) && IsVNCheckedBound(funcApp.m_args[1]))
+            {
+                // Change constant <= (uint)len to (constant - 1) < (uint)len
+                // to make consuming this simpler (and likewise for it's negation).
+                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[0]) - 1;
+                assert(validIndex >= 0);
+
+                info->vnIdx   = VNForIntCon(validIndex);
+                info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnBound = funcApp.m_args[1];
                 return true;
             }
         }
@@ -5516,7 +5565,7 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
 static UINT8      vnfOpAttribs[VNF_COUNT];
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND,
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
@@ -8497,6 +8546,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         noway_assert("LOCKADD should not appear before lowering");
                         break;
 
+                    case GT_XORR: // Binop
+                    case GT_XAND: // Binop
                     case GT_XADD: // Binop
                     case GT_XCHG: // Binop
                     {

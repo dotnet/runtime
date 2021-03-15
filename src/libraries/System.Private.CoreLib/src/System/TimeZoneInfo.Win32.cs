@@ -105,6 +105,31 @@ namespace System
             }
         }
 
+        private static unsafe string? GetAlternativeId(string id)
+        {
+            if (!GlobalizationMode.Invariant && !GlobalizationMode.UseNls)
+            {
+                foreach (char c in id)
+                {
+                    // ICU uses some characters as a separator and trim the id at that character.
+                    // while we should fail if the Id contained one of these characters.
+                    if (c == '\\' || c == '\n' || c == '\r')
+                    {
+                        return null;
+                    }
+                }
+
+                char* buffer = stackalloc char[100];
+                int length = Interop.Globalization.IanaIdToWindowsId(id, buffer, 100);
+                if (length > 0)
+                {
+                    return new string(buffer, 0, length);
+                }
+            }
+
+            return null;
+        }
+
         private TimeZoneInfo(in TIME_ZONE_INFORMATION zone, bool dstDisabled)
         {
             string standardName = zone.GetStandardName();

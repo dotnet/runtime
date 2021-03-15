@@ -440,6 +440,7 @@ FCFuncEnd()
 
 FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
+    QCFuncElement("ApplyUpdate", AssemblyNative::ApplyUpdate)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
@@ -996,6 +997,20 @@ FCFuncStart(gEventLogger)
 FCFuncEnd()
 #endif // defined(FEATURE_EVENTSOURCE_XPLAT)
 
+#if defined(FEATURE_PERFTRACING)
+FCFuncStart(gNativeEventLogger)
+    QCFuncElement("LogThreadPoolWorkerThreadStart", NativeEventLogger::LogThreadPoolWorkerThreadStart)
+    QCFuncElement("LogThreadPoolWorkerThreadStop", NativeEventLogger::LogThreadPoolWorkerThreadStop)
+    QCFuncElement("LogThreadPoolWorkerThreadWait", NativeEventLogger::LogThreadPoolWorkerThreadWait)
+    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentSample", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentSample)
+    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentAdjustment", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentAdjustment)
+    QCFuncElement("LogThreadPoolWorkerThreadAdjustmentStats", NativeEventLogger::LogThreadPoolWorkerThreadAdjustmentStats)
+    QCFuncElement("LogThreadPoolIOEnqueue", NativeEventLogger::LogThreadPoolIOEnqueue)
+    QCFuncElement("LogThreadPoolIODequeue", NativeEventLogger::LogThreadPoolIODequeue)
+    QCFuncElement("LogThreadPoolWorkingThreadCount", NativeEventLogger::LogThreadPoolWorkingThreadCount)
+FCFuncEnd()
+#endif // defined(FEATURE_PERFTRACING)
+
 #ifdef FEATURE_PERFTRACING
 FCFuncStart(gEventPipeInternalFuncs)
     QCFuncElement("Enable", EventPipeInternal::Enable)
@@ -1152,6 +1167,9 @@ FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)
+#if defined(FEATURE_PERFTRACING)
+FCClassElement("NativeRuntimeEventSource", "System.Diagnostics.Tracing", gNativeEventLogger)
+#endif //defined(FEATURE_PERFTRACING)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif

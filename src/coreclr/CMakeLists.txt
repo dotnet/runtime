@@ -126,6 +126,10 @@ if(FEATURE_STANDALONE_GC)
   endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
 
+if(CLR_CMAKE_BUILD_SUBSET_RUNTIME AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
+endif()
+
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
   include_directories("pal/inc/rt")

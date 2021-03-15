@@ -23,16 +23,11 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
-#include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
-#include <mono/metadata/attach.h>
-#include <mono/metadata/console-io.h>
-#include <mono/metadata/w32process.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
@@ -85,6 +80,16 @@ static gboolean finalizer_thread_exited;
 static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
+#ifndef HOST_WASM
+static RuntimeInvokeFunction finalize_runtime_invoke;
+#endif
+
+/*
+ * This must be a GHashTable, since these objects can't be finalized
+ * if the hashtable contains a GC visible reference to them.
+ */
+static GHashTable *finalizable_objects_hash;
+static mono_mutex_t finalizable_objects_hash_lock;
 
 #ifdef TARGET_WIN32
 static HANDLE pending_done_event;
@@ -93,6 +98,9 @@ static gboolean pending_done;
 static MonoCoopCond pending_done_cond;
 static MonoCoopMutex pending_done_mutex;
 #endif
+
+#define finalizers_lock() mono_os_mutex_lock (&finalizable_objects_hash_lock);
+#define finalizers_unlock() mono_os_mutex_unlock (&finalizable_objects_hash_lock);
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -218,11 +226,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
-	mono_domain_finalizers_lock (domain);
+	finalizers_lock ();
 
-	o2 = (MonoObject *)g_hash_table_lookup (domain->finalizable_objects_hash, o);
+	o2 = (MonoObject *)g_hash_table_lookup (finalizable_objects_hash, o);
 
-	mono_domain_finalizers_unlock (domain);
+	finalizers_unlock ();
 
 	if (!o2)
 		/* Already finalized somehow */
@@ -297,16 +305,16 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
 #ifndef HOST_WASM
-	if (!domain->finalize_runtime_invoke) {
+	if (!finalize_runtime_invoke) {
 		MonoMethod *finalize_method = mono_class_get_method_from_name_checked (mono_defaults.object_class, "Finalize", 0, 0, error);
 		mono_error_assert_ok (error);
 		MonoMethod *invoke = mono_marshal_get_runtime_invoke (finalize_method, TRUE);
 
-		domain->finalize_runtime_invoke = mono_compile_method_checked (invoke, error);
+		finalize_runtime_invoke = (RuntimeInvokeFunction)mono_compile_method_checked (invoke, error);
 		mono_error_assert_ok (error); /* expect this not to fail */
 	}
 
-	RuntimeInvokeFunction runtime_invoke = (RuntimeInvokeFunction)domain->finalize_runtime_invoke;
+	RuntimeInvokeFunction runtime_invoke = finalize_runtime_invoke;
 #endif
 
 	mono_runtime_class_init_full (o->vtable, error);
@@ -357,38 +365,21 @@ unhandled_error:
 static void
 object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
-	MonoDomain *domain;
-
 	g_assert (obj != NULL);
 
-	domain = obj->vtable->domain;
-
 #if HAVE_BOEHM_GC
-	if (mono_domain_is_unloading (domain) && (callback != NULL))
-		/*
-		 * Can't register finalizers in a dying appdomain, since they
-		 * could be invoked after the appdomain has been unloaded.
-		 */
-		return;
-
-	mono_domain_finalizers_lock (domain);
+	finalizers_lock ();
 
 	if (callback)
-		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
+		g_hash_table_insert (finalizable_objects_hash, obj, obj);
 	else
-		g_hash_table_remove (domain->finalizable_objects_hash, obj);
+		g_hash_table_remove (finalizable_objects_hash, obj);
 
-	mono_domain_finalizers_unlock (domain);
+	finalizers_unlock ();
 
 	mono_gc_register_for_finalization (obj, callback);
 #elif defined(HAVE_SGEN_GC)
-	/*
-	 * If we register finalizers for domains that are unloading we might
-	 * end up running them while or after the domain is being cleared, so
-	 * the objects will not be valid anymore.
-	 */
-	if (!mono_domain_is_unloading (domain))
-		mono_gc_register_for_finalization (obj, callback);
+	mono_gc_register_for_finalization (obj, callback);
 #endif
 }
 
@@ -650,8 +641,6 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
 
-#if ENABLE_NETCORE
-
 MonoGCHandle
 ves_icall_System_GCHandle_InternalAlloc (MonoObjectHandle obj, gint32 type, MonoError *error)
 {
@@ -693,88 +682,6 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 {
 	mono_gchandle_set_target_handle (handle, obj);
 }
-
-#else
-
-MonoObjectHandle
-ves_icall_System_GCHandle_GetTarget (MonoGCHandle handle, MonoError *error)
-{
-	return mono_gchandle_get_target_handle (handle);
-}
-
-/*
- * if type == -1, change the target of the handle, otherwise allocate a new handle.
- */
-MonoGCHandle
-ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, MonoGCHandle handle, gint32 type, MonoError *error)
-{
-	if (type == -1) {
-		mono_gchandle_set_target_handle (handle, obj);
-		/* the handle doesn't change */
-		return handle;
-	}
-	switch (type) {
-	case HANDLE_WEAK:
-		return mono_gchandle_new_weakref_from_handle (obj);
-	case HANDLE_WEAK_TRACK:
-		return mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
-	case HANDLE_NORMAL:
-		return mono_gchandle_from_handle (obj, FALSE);
-	case HANDLE_PINNED:
-		return mono_gchandle_from_handle (obj, TRUE);
-	default:
-		g_assert_not_reached ();
-	}
-	return NULL;
-}
-
-void
-ves_icall_System_GCHandle_FreeHandle (MonoGCHandle handle)
-{
-	mono_gchandle_free_internal (handle);
-}
-
-gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (MonoGCHandle handle)
-{
-	// Handles seem to only be in the way here, and the object is pinned.
-
-	MonoObject *obj;
-	guint32 gch = MONO_GC_HANDLE_TO_UINT (handle);
-
-	if (MONO_GC_HANDLE_TYPE (gch) != HANDLE_PINNED)
-		return (gpointer)-2;
-
-	obj = mono_gchandle_get_target_internal (handle);
-	if (obj) {
-		MonoClass *klass = mono_object_class (obj);
-
-		// FIXME This would be a good place for
-		// object->GetAddrOfPinnedObject()
-		// or klass->GetAddrOfPinnedObject(obj);
-
-		if (klass == mono_defaults.string_class) {
-			return mono_string_chars_internal ((MonoString*)obj);
-		} else if (m_class_get_rank (klass)) {
-			return mono_array_addr_internal ((MonoArray*)obj, char, 0);
-		} else {
-			/* the C# code will check and throw the exception */
-			/* FIXME: missing !klass->blittable test, see bug #61134 */
-			if (mono_class_is_auto_layout (klass))
-				return (gpointer)-1;
-			return mono_object_get_data (obj);
-		}
-	}
-	return NULL;
-}
-
-MonoBoolean
-ves_icall_System_GCHandle_CheckCurrentDomain (MonoGCHandle gchandle)
-{
-	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
-}
-
-#endif
 
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
@@ -878,7 +785,7 @@ finalize_domain_objects (void)
 	mono_gc_invoke_finalizers ();
 
 #ifdef HAVE_BOEHM_GC
-	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
+	while (g_hash_table_size (finalizable_objects_hash) > 0) {
 		int i;
 		GPtrArray *objs;
 		/* 
@@ -887,7 +794,7 @@ finalize_domain_objects (void)
 		 * remove entries from the hash table, so we make a copy.
 		 */
 		objs = g_ptr_array_new ();
-		g_hash_table_foreach (domain->finalizable_objects_hash, collect_objects, objs);
+		g_hash_table_foreach (finalizable_objects_hash, collect_objects, objs);
 		/* printf ("FINALIZING %d OBJECTS.\n", objs->len); */
 
 		for (i = 0; i < objs->len; ++i) {
@@ -923,10 +830,6 @@ mono_runtime_do_background_work (void)
 {
 	mono_threads_perform_thread_dump ();
 
-	mono_console_handle_async_ops ();
-
-	mono_attach_maybe_start ();
-
 	finalize_domain_objects ();
 
 	MONO_PROFILER_RAISE (gc_finalizing, ());
@@ -941,8 +844,6 @@ mono_runtime_do_background_work (void)
 	mono_threads_join_threads ();
 
 	reference_queue_proccess_all ();
-
-	mono_w32process_signal_finished ();
 
 	hazard_free_queue_pump ();
 }
@@ -1003,7 +904,7 @@ static void
 init_finalizer_thread (void)
 {
 	ERROR_DECL (error);
-	gc_thread = mono_thread_create_internal (mono_domain_get (), (gpointer)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	gc_thread = mono_thread_create_internal ((MonoThreadStart)finalizer_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 }
 
@@ -1021,7 +922,9 @@ mono_gc_init_finalizer_thread (void)
 #ifndef LAZY_GC_THREAD_CREATION
 	/* do nothing */
 #else
+	MONO_ENTER_GC_UNSAFE;
 	init_finalizer_thread ();
+	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 
@@ -1036,6 +939,8 @@ mono_gc_init (void)
 {
 	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
+	mono_os_mutex_init_recursive (&finalizable_objects_hash_lock);
+	finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.major_gc_count);
@@ -1113,7 +1018,7 @@ mono_gc_cleanup (void)
 					mono_gc_suspend_finalizers ();
 
 					/* Try to abort the thread, in the hope that it is running managed code */
-					mono_thread_internal_abort (gc_thread, FALSE);
+					mono_thread_internal_abort (gc_thread);
 
 					/* Wait for it to stop */
 					ret = guarded_wait (gc_thread->handle, 100, FALSE);

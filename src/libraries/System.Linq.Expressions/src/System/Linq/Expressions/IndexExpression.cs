@@ -209,6 +209,7 @@ namespace System.Linq.Expressions
         /// <param name="propertyName">The name of the indexer.</param>
         /// <param name="arguments">An array of <see cref="Expression"/> objects that are used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static IndexExpression Property(Expression instance, string propertyName, params Expression[]? arguments)
         {
             ExpressionUtils.RequiresCanRead(instance, nameof(instance));

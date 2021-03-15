@@ -1850,12 +1850,12 @@ HRESULT validateOneArg(
 
     BYTE        elementType;          // Current element type being processed.
     mdToken     token;                  // Embedded token.
-    ULONG       ulArgCnt;               // Argument count for function pointer.
-    ULONG       ulIndex;                // Index for type parameters
-    ULONG       ulRank;                 // Rank of the array.
-    ULONG       ulSizes;                // Count of sized dimensions of the array.
-    ULONG       ulLbnds;                // Count of lower bounds of the array.
-    ULONG       ulCallConv;
+    uint32_t    ulArgCnt;               // Argument count for function pointer.
+    uint32_t    ulIndex;                // Index for type parameters
+    uint32_t    ulRank;                 // Rank of the array.
+    uint32_t    ulSizes;                // Count of sized dimensions of the array.
+    uint32_t    ulLbnds;                // Count of lower bounds of the array.
+    uint32_t    ulCallConv;
 
     HRESULT     hr = S_OK;              // Value returned.
     BOOL        bRepeat = TRUE;         // MODOPT and MODREQ belong to the arg after them
@@ -2077,9 +2077,9 @@ HRESULT validateTokenSig(
     }
     CONTRACTL_END;
 
-    ULONG       ulCallConv;             // Calling convention.
-    ULONG       ulArgCount = 1;         // Count of arguments (1 because of the return type)
-    ULONG       ulTyArgCount = 0;         // Count of type arguments
+    uint32_t    ulCallConv;             // Calling convention.
+    uint32_t    ulArgCount = 1;         // Count of arguments (1 because of the return type)
+    uint32_t    ulTyArgCount = 0;       // Count of type arguments
     ULONG       ulArgIx = 0;            // Starting index of argument (standalone sig: 1)
     ULONG       i;                      // Looping index.
     HRESULT     hr = S_OK;              // Value returned.

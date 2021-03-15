@@ -26,7 +26,7 @@ macro(append_extra_cryptography_libs NativeLibsExtra)
     endif()
     
     if(NOT OPENSSL_FOUND)
-        message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (on Linux, but this may vary by distro) or openssl (on macOS) !!!. See the requirements document for your specific operating system: https://github.com/dotnet/runtime/tree/master/docs/workflow/requirements.")
+        message(FATAL_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (on Linux, but this may vary by distro) or openssl (on macOS) !!!. See the requirements document for your specific operating system: https://github.com/dotnet/runtime/tree/main/docs/workflow/requirements.")
     endif(NOT OPENSSL_FOUND)
     
     

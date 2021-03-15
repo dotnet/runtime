@@ -54,7 +54,8 @@ namespace System.Drawing.Internal
             Debug.Assert(g != null, "null Graphics object.");
 
             WindowsRegion? wr = null;
-            float[]? elements = null;
+
+            PointF offset = default;
 
             Region? clipRgn = null;
             Matrix? worldTransf = null;
@@ -71,7 +72,7 @@ namespace System.Drawing.Internal
                 {
                     if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0)
                     {
-                        elements = worldTransf.Elements;
+                        offset = worldTransf.Offset;
                     }
 
                     worldTransf.Dispose();
@@ -110,10 +111,10 @@ namespace System.Drawing.Internal
                 }
             }
 
-            if (elements != null)
+            if (offset != default)
             {
                 // elements (XFORM) = [eM11, eM12, eM21, eM22, eDx, eDy], eDx/eDy specify the translation offset.
-                wg.DeviceContext.TranslateTransform((int)elements[4], (int)elements[5]);
+                wg.DeviceContext.TranslateTransform((int)offset.X, (int)offset.Y);
             }
 
             return wg;

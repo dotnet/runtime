@@ -150,6 +150,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the field.  This can be null for static fields.</param>
         /// <param name="fieldName">The field to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static MemberExpression Field(Expression expression, string fieldName)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
@@ -164,7 +165,6 @@ namespace System.Linq.Expressions
             }
             return Expression.Field(expression, fi);
         }
-
 
         /// <summary>
         /// Creates a <see cref="MemberExpression"/> accessing a field.
@@ -202,6 +202,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
         /// <param name="propertyName">The property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static MemberExpression Property(Expression expression, string propertyName)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
@@ -295,6 +296,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
         /// <param name="propertyAccessor">An accessor method of the property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static MemberExpression Property(Expression? expression, MethodInfo propertyAccessor)
         {
             ContractUtils.RequiresNotNull(propertyAccessor, nameof(propertyAccessor));
@@ -302,6 +304,7 @@ namespace System.Linq.Expressions
             return Property(expression, GetProperty(propertyAccessor, nameof(propertyAccessor)));
         }
 
+        [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         private static PropertyInfo GetProperty(MethodInfo mi, string? paramName, int index = -1)
         {
             Type? type = mi.DeclaringType;
@@ -326,6 +329,8 @@ namespace System.Linq.Expressions
             throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName, index);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Since the methods are already supplied, they won't be trimmed. Just checking for method equality.")]
         private static bool CheckMethod(MethodInfo method, MethodInfo propertyMethod)
         {
             if (method.Equals(propertyMethod))
@@ -351,6 +356,7 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the member.  This can be null for static members.</param>
         /// <param name="propertyOrFieldName">The member to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
+        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static MemberExpression PropertyOrField(Expression expression, string propertyOrFieldName)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));

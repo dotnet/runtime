@@ -58,12 +58,14 @@ static MonoClass* datetimeoffset_class;
 static MonoClass* uri_class;
 static MonoClass* task_class;
 static MonoClass* safehandle_class;
+static MonoClass* voidtaskresult_class;
 
 static int resolved_datetime_class = 0,
 	resolved_datetimeoffset_class = 0,
 	resolved_uri_class = 0,
 	resolved_task_class = 0,
-	resolved_safehandle_class = 0;
+	resolved_safehandle_class = 0,
+	resolved_voidtaskresult_class = 0;
 
 int mono_wasm_enable_gc = 1;
 
@@ -274,9 +276,7 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
-#ifdef ENABLE_NETCORE
 static void *sysglobal_native_handle;
-#endif
 
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
@@ -285,10 +285,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 	if (handle)
 		return handle;
 
-#ifdef ENABLE_NETCORE
 	if (!strcmp (name, "System.Globalization.Native"))
 		return sysglobal_native_handle;
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	return dlopen(name, flags);
@@ -300,10 +298,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 static void*
 wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
-#ifdef ENABLE_NETCORE
 	if (handle == sysglobal_native_handle)
 		assert (0);
-#endif
 
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
@@ -472,10 +468,16 @@ mono_wasm_register_bundled_satellite_assemblies ()
 	}
 }
 
+void mono_wasm_link_icu_shim (void);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
+
+#ifndef INVARIANT_GLOBALIZATION
+	mono_wasm_link_icu_shim ();
+#endif
 
 #ifdef DEBUG
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
@@ -511,12 +513,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
-
-#ifdef ENABLE_METADATA_UPDATE
-	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
-		interp_opts = "-inline";
-	}
-#endif
 
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
@@ -606,6 +602,12 @@ EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
 	return mono_class_get_method_from_name (klass, name, arguments);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_get_delegate_invoke (MonoObject *delegate)
+{
+	return mono_get_delegate_invoke(mono_object_get_class (delegate));
 }
 
 EMSCRIPTEN_KEEPALIVE MonoObject*
@@ -799,6 +801,7 @@ MonoClass* mono_get_uri_class(MonoException** exc)
 #define MARSHAL_TYPE_UINT64 27
 #define MARSHAL_TYPE_CHAR 28
 #define MARSHAL_TYPE_STRING_INTERNED 29
+#define MARSHAL_TYPE_VOID 30
 
 void mono_wasm_ensure_classes_resolved ()
 {
@@ -818,6 +821,10 @@ void mono_wasm_ensure_classes_resolved ()
 	if (!safehandle_class && !resolved_safehandle_class) {
 		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
 		resolved_safehandle_class = 1;
+	}
+	if (!voidtaskresult_class && !resolved_voidtaskresult_class) {
+		voidtaskresult_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "VoidTaskResult");
+		resolved_voidtaskresult_class = 1;
 	}
 }
 
@@ -884,6 +891,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 			return MARSHAL_TYPE_DATEOFFSET;
 		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
 			return MARSHAL_TYPE_URI;
+		if (klass == voidtaskresult_class)
+			return MARSHAL_TYPE_VOID;
 		if (mono_class_is_enum (klass))
 			return MARSHAL_TYPE_ENUM;
 		if (!mono_type_is_reference (type)) //vt

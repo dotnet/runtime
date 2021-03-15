@@ -2879,16 +2879,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoSchema                  = nullptr;
     fgPgoData                    = nullptr;
     fgPgoSchemaCount             = 0;
+    fgPgoQueryResult             = E_FAIL;
     fgProfileData_ILSizeMismatch = false;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
-        HRESULT hr;
-        hr = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema, &fgPgoSchemaCount,
-                                                            &fgPgoData);
-
-        JITDUMP(
-            "BBOPT set; query for profile data returned hr %0x, schema at %p, counts at %p, schema element count %d\n",
-            hr, dspPtr(fgPgoSchema), dspPtr(fgPgoData), fgPgoSchemaCount);
+        fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
+                                                                          &fgPgoSchemaCount, &fgPgoData);
 
         // a failed result that also has a non-NULL fgPgoSchema
         // indicates that the ILSize for the method no longer matches
@@ -2896,7 +2892,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(hr) && (fgPgoSchema != nullptr))
+        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
         {
             fgProfileData_ILSizeMismatch = true;
             fgPgoData                    = nullptr;
@@ -2905,7 +2901,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(fgPgoQueryResult))
         {
             assert(fgPgoSchema != nullptr);
         }
@@ -2913,7 +2909,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // A failed result implies a NULL fgPgoSchema
         //   see implementation of Compiler::fgHaveProfileData()
         //
-        if (FAILED(hr))
+        if (FAILED(fgPgoQueryResult))
         {
             assert(fgPgoSchema == nullptr);
         }
@@ -3801,28 +3797,28 @@ void Compiler::compSetOptimizationLevel()
 
 #if 0
     // The code in this #if can be used to debug optimization issues according to method hash.
-	// To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
+    // To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
 #ifdef DEBUG
     unsigned methHash = info.compMethodHash();
     char* lostr = getenv("minoptshashlo");
     unsigned methHashLo = 0;
-	if (lostr != nullptr)
-	{
-		sscanf_s(lostr, "%x", &methHashLo);
-		char* histr = getenv("minoptshashhi");
-		unsigned methHashHi = UINT32_MAX;
-		if (histr != nullptr)
-		{
-			sscanf_s(histr, "%x", &methHashHi);
-			if (methHash >= methHashLo && methHash <= methHashHi)
-			{
-				printf("MinOpts for method %s, hash = %08x.\n",
-					info.compFullName, methHash);
-				printf("");         // in our logic this causes a flush
-				theMinOptsValue = true;
-			}
-		}
-	}
+    if (lostr != nullptr)
+    {
+        sscanf_s(lostr, "%x", &methHashLo);
+        char* histr = getenv("minoptshashhi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            if (methHash >= methHashLo && methHash <= methHashHi)
+            {
+                printf("MinOpts for method %s, hash = %08x.\n",
+                    info.compFullName, methHash);
+                printf("");         // in our logic this causes a flush
+                theMinOptsValue = true;
+            }
+        }
+    }
 #endif
 #endif
 
@@ -3982,6 +3978,15 @@ _SetMinOpts:
             codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
+
+#if TARGET_ARM
+    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
+    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
+    //
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
+#else
+    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
+#endif
 
     fgCanRelocateEHRegions = true;
 }
@@ -4369,11 +4374,11 @@ void Compiler::EndPhase(Phases phase)
 //  code:CILJit::compileMethod function.
 //
 //  For an overview of the structure of the JIT, see:
-//   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/jit/ryujit-overview.md
+//   https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md
 //
 //  Also called for inlinees, though they will only be run through the first few phases.
 //
-void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
+void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
     // Prepare for importation
     //
@@ -4400,13 +4405,19 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     compFunctionTraceStart();
 
-    // If profile data is available, incorporate it into the flowgraph.
+    // Incorporate profile data.
+    //
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
+    DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+
+    // If we're going to instrument code, we may need to prepare before
+    // we import.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
-        DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
     }
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
@@ -4827,19 +4838,23 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
+        // Invert loops
+        //
+        DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
         // Compute reachability sets and dominators.
         //
         DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-        // Perform loop inversion (i.e. transform "while" loops into
-        // "repeat" loops) and discover and classify natural loops
+        // Discover and classify natural loops
         // (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels
         //
-        DoPhase(this, PHASE_OPTIMIZE_LOOPS, &Compiler::optOptimizeLoops);
+        DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoops);
 
         // Clone loops with optimization opportunities, and
         // choose the one based on dynamic condition evaluation.
@@ -5288,10 +5303,8 @@ void Compiler::RecomputeLoopInfo()
         block->bbFlags &= ~BBF_LOOP_FLAGS;
     }
     fgComputeReachability();
-    // Rebuild the loop tree annotations themselves.  Since this is performed as
-    // part of 'optOptimizeLoops', this will also re-perform loop rotation, but
-    // not other optimizations, as the others are not part of 'optOptimizeLoops'.
-    optOptimizeLoops();
+    // Rebuild the loop tree annotations themselves
+    optFindLoops();
 }
 
 /*****************************************************************************/
@@ -5424,7 +5437,7 @@ bool Compiler::skipMethod()
 
 int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
                           void**                methodCodePtr,
-                          ULONG*                methodCodeSize,
+                          uint32_t*             methodCodeSize,
                           JitFlags*             compileFlags)
 {
     // compInit should have set these already.
@@ -5442,7 +5455,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // Call into VM to get the config strings. FEATURE_JIT_METHOD_PERF is enabled for
         // retail builds. Do not call the regular Config helper here as it would pull
         // in a copy of the config parser into the clrjit.dll.
-        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename, info.compCompHnd->getJitTimeLogFilename(), NULL);
+        InterlockedCompareExchangeT(&Compiler::compJitTimeLogFilename,
+                                    (LPCWSTR)info.compCompHnd->getJitTimeLogFilename(), NULL);
 
         // At a process or module boundary clear the file and start afresh.
         JitTimer::PrintCsvHeader();
@@ -5512,7 +5526,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 #ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
 #endif
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
@@ -5569,6 +5583,21 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
+#ifdef DEBUG
+    if (JitConfig.EnableExtraSuperPmiQueries())
+    {
+        // This call to getClassModule/getModuleAssembly/getAssemblyName fails in crossgen2 due to these
+        // APIs being unimplemented. So disable this extra info for pre-jit mode. See
+        // https://github.com/dotnet/runtime/issues/48888.
+        if (!compileFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)info.compCompHnd->getAssemblyName(
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+        }
+    }
+#endif // DEBUG
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
 #if defined(DEBUG) || defined(LATE_DISASM)
@@ -5618,7 +5647,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
 
         int result;
@@ -6043,7 +6072,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 COMP_HANDLE           compHnd,
                                 CORINFO_METHOD_INFO*  methodInfo,
                                 void**                methodCodePtr,
-                                ULONG*                methodCodeSize,
+                                uint32_t*             methodCodeSize,
                                 JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
@@ -6889,7 +6918,7 @@ int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                   COMP_HANDLE           compHnd,
                   CORINFO_METHOD_INFO*  methodInfo,
                   void**                methodCodePtr,
-                  ULONG*                methodCodeSize,
+                  uint32_t*             methodCodeSize,
                   JitFlags*             compileFlags,
                   void*                 inlineInfoPtr)
 {
@@ -6933,7 +6962,7 @@ START:
         COMP_HANDLE           compHnd;
         CORINFO_METHOD_INFO*  methodInfo;
         void**                methodCodePtr;
-        ULONG*                methodCodeSize;
+        uint32_t*             methodCodeSize;
         JitFlags*             compileFlags;
         InlineInfo*           inlineInfo;
 #if MEASURE_CLRAPI_CALLS

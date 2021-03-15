@@ -13,12 +13,75 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class ReceiveMessageFrom<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
+        protected static Socket CreateSocket(AddressFamily addressFamily = AddressFamily.InterNetwork) => new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+
         protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
             addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
         protected static readonly TimeSpan CancellationTestTimeout = TimeSpan.FromSeconds(30);
 
         protected ReceiveMessageFrom(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(1, -1, 0)] // offset low
+        [InlineData(1, 2, 0)] // offset high
+        [InlineData(1, 0, -1)] // count low
+        [InlineData(1, 0, 2)] // count high
+        [InlineData(1, 1, 1)] // count high
+        public async Task OutOfRange_Throws_ArgumentOutOfRangeException(int length, int offset, int count)
+        {
+            using Socket socket = CreateSocket();
+
+            ArraySegment<byte> buffer = new FakeArraySegment
+            {
+                Array = new byte[length],
+                Count = count,
+                Offset = offset
+            }.ToActual();
+
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => ReceiveMessageFromAsync(socket, buffer, GetGetDummyTestEndpoint()));
+        }
+
+        [Fact]
+        public async Task NullBuffer_Throws_ArgumentNullException()
+        {
+            if (!ValidatesArrayArguments) return;
+            using Socket socket = CreateSocket();
+            await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, null, GetGetDummyTestEndpoint()));
+        }
+
+        [Fact]
+        public async Task NullEndpoint_Throws_ArgumentException()
+        {
+            using Socket socket = CreateSocket();
+            if (UsesEap)
+            {
+                await AssertThrowsSynchronously<ArgumentException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
+            }
+            else
+            {
+                await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveMessageFromAsync(socket, new byte[1], null));
+            }
+        }
+
+        [Fact]
+        public async Task AddressFamilyDoesNotMatch_Throws_ArgumentException()
+        {
+            using var ipv4Socket = CreateSocket();
+            EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
+            await AssertThrowsSynchronously<ArgumentException>(() => ReceiveMessageFromAsync(ipv4Socket, new byte[1], ipV6Endpoint));
+        }
+
+        [Fact]
+        public async Task NotBound_Throws_InvalidOperationException()
+        {
+            // ReceiveFromAsync(saea) fails on a Debug.Assert():
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/47714")]
+            if (UsesEap) return;
+
+            using Socket socket = CreateSocket();
+            await AssertThrowsSynchronously<InvalidOperationException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
+        }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Theory]
@@ -146,13 +209,11 @@ namespace System.Net.Sockets.Tests
 
                 if (DisposeDuringOperationResultsInDisposedException)
                 {
-                    await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                    await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
                 }
                 else
                 {
-                    SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask)
-                        .TimeoutAfter(CancellationTestTimeout);
+                    SocketException ex = await Assert.ThrowsAsync<SocketException>(() => receiveTask).WaitAsync(CancellationTestTimeout);
                     SocketError expectedError = UsesSync ? SocketError.Interrupted : SocketError.OperationAborted;
                     Assert.Equal(expectedError, ex.SocketErrorCode);
                 }
@@ -174,7 +235,7 @@ namespace System.Net.Sockets.Tests
             if (shutdown == SocketShutdown.Both) await Task.Delay(50);
 
             SocketException exception = await Assert.ThrowsAnyAsync<SocketException>(() => ReceiveMessageFromAsync(socket, new byte[1], GetGetDummyTestEndpoint()))
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
 
             Assert.Equal(SocketError.Shutdown, exception.SocketErrorCode);
         }
@@ -209,6 +270,77 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveMessageFrom_Apm : ReceiveMessageFrom<SocketHelperApm>
     {
         public ReceiveMessageFrom_Apm(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public void EndReceiveMessageFrom_NullAsyncResult_Throws_ArgumentNullException()
+        {
+            SocketFlags socketFlags = SocketFlags.None;
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+
+            Assert.Throws<ArgumentNullException>(() => socket.EndReceiveMessageFrom(null, ref socketFlags, ref endpoint, out _));
+        }
+
+        [Fact]
+        public void EndReceiveMessageFrom_UnrelatedAsyncResult_Throws_ArgumentException()
+        {
+            SocketFlags socketFlags = SocketFlags.None;
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+
+            Assert.Throws<ArgumentException>(() => socket.EndReceiveMessageFrom(Task.CompletedTask, ref socketFlags, ref endpoint, out _));
+        }
+
+        [Fact]
+        public void EndReceiveMessageFrom_NullEndPoint_Throws_ArgumentNullException()
+        {
+            SocketFlags socketFlags = SocketFlags.None;
+            EndPoint validEndPoint = new IPEndPoint(IPAddress.Loopback, 1);
+            EndPoint invalidEndPoint = null;
+            using Socket socket = CreateSocket();
+            socket.BindToAnonymousPort(IPAddress.Loopback);
+            IAsyncResult iar = socket.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref validEndPoint, null, null);
+
+            Assert.Throws<ArgumentNullException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
+        }
+
+        [Fact]
+        public void EndReceiveMessageFrom_AddressFamilyDoesNotMatch_Throws_ArgumentException()
+        {
+            SocketFlags socketFlags = SocketFlags.None;
+            EndPoint validEndPoint = new IPEndPoint(IPAddress.Loopback, 1);
+            EndPoint invalidEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, 1);
+            using Socket socket = CreateSocket();
+            socket.BindToAnonymousPort(IPAddress.Loopback);
+            IAsyncResult iar = socket.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref validEndPoint, null, null);
+
+            Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
+        }
+
+        [Fact]
+        public void BeginReceiveMessageFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
+        {
+            EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);
+            EndPoint remoteEp = anyEp;
+            using Socket receiver = CreateSocket();
+            receiver.BindToAnonymousPort(IPAddress.Loopback);
+            using Socket sender = CreateSocket();
+            sender.BindToAnonymousPort(IPAddress.Loopback);
+
+            sender.SendTo(new byte[1], receiver.LocalEndPoint);
+
+            IAsyncResult iar = receiver.BeginReceiveMessageFrom(new byte[1], 0, 1, SocketFlags.None, ref remoteEp, null, null);
+            if (iar.CompletedSynchronously)
+            {
+                _output.WriteLine("Completed synchronously, updated endpoint.");
+                Assert.Equal(sender.LocalEndPoint, remoteEp);
+            }
+            else
+            {
+                _output.WriteLine("Completed asynchronously, did not update endPoint");
+                Assert.Equal(anyEp, remoteEp);
+            }
+        }
     }
 
     public sealed class ReceiveMessageFrom_Task : ReceiveMessageFrom<SocketHelperTask>
@@ -236,7 +368,7 @@ namespace System.Net.Sockets.Tests
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => socket.ReceiveMessageFromAsync(buffer, SocketFlags.None, dummy.LocalEndPoint, cts.Token).AsTask())
-                .TimeoutAfter(CancellationTestTimeout);
+                .WaitAsync(CancellationTestTimeout);
             Assert.Equal(cts.Token, ex.CancellationToken);
         }
     }
@@ -244,6 +376,13 @@ namespace System.Net.Sockets.Tests
     public sealed class ReceiveMessageFrom_Eap : ReceiveMessageFrom<SocketHelperEap>
     {
         public ReceiveMessageFrom_Eap(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public void ReceiveFromAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
+        {
+            using Socket socket = CreateSocket();
+            Assert.Throws<ArgumentNullException>(() => socket.ReceiveMessageFromAsync(null));
+        }
 
         [Theory]
         [InlineData(false, 0)]

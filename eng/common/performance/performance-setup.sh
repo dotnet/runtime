@@ -27,6 +27,7 @@ using_mono=false
 wasm_runtime_loc=
 using_wasm=false
 use_latest_dotnet=false
+logical_machine=
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -53,6 +54,10 @@ while (($# > 0)); do
       ;;
     --compilationmode)
       compilation_mode=$2
+      shift 2
+      ;;
+    --logicalmachine)
+      logical_machine=$2
       shift 2
       ;;
     --repository)
@@ -86,6 +91,10 @@ while (($# > 0)); do
       ;;
     --internal)
       internal=true
+      shift 1
+      ;;
+    --alpine)
+      alpine=true
       shift 1
       ;;
     --llvm)
@@ -143,6 +152,7 @@ while (($# > 0)); do
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --alpine                       Set for runs on Alpine"
       echo ""
       exit 0
       ;;
@@ -174,19 +184,6 @@ queue=Ubuntu.1804.Amd64.Open
 creator=$BUILD_DEFINITIONNAME
 helix_source_prefix="pr"
 
-if [[ "$compare" == true ]]; then
-  extra_benchmark_dotnet_arguments=
-  perflab_arguments=
-
-  # No open queues for arm64
-  if [[ "$architecture" = "arm64" ]]; then
-    echo "Compare not available for arm64"
-    exit 1
-  fi
-
-  queue=Ubuntu.1804.Amd64.Tiger.Perf.Open
-fi
-
 if [[ "$internal" == true ]]; then
     perflab_arguments="--upload-to-perflab-container"
     helix_source_prefix="official"
@@ -196,13 +193,25 @@ if [[ "$internal" == true ]]; then
     if [[ "$architecture" = "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
-        queue=Ubuntu.1804.Amd64.Tiger.Perf
+        if [[ "$logical_machine" = "perfowl" ]]; then
+            queue=Ubuntu.1804.Amd64.Owl.Perf
+        else
+            queue=Ubuntu.1804.Amd64.Tiger.Perf
+        fi
+    fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
     fi
 else
     if [[ "$architecture" = "arm64" ]]; then
         queue=ubuntu.1804.armarch.open
     else
         queue=Ubuntu.1804.Amd64.Open
+    fi
+
+    if [[ "$alpine" = "true" ]]; then
+        queue=alpine.amd64.tiger.perf
     fi
 fi
 
@@ -223,16 +232,6 @@ fi
 
 common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
-
-
-if [[ "$use_latest_dotnet" = false ]]; then
-    # Get the tools section from the global.json.
-    # This grabs the LKG version number of dotnet and passes it to our scripts
-    dotnet_version=`cat global.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["tools"]["dotnet"])'`
-    # TODO: Change this back to parsing when we have a good story for dealing with TFM changes or when the LKG in runtime gets updated to include net6.0
-    # setup_arguments="--dotnet-versions $dotnet_version $setup_arguments"
-    setup_arguments="--dotnet-versions 6.0.100-alpha.1.20553.6 $setup_arguments"
-fi
 
 if [[ "$run_from_perf_repo" = true ]]; then
     payload_directory=

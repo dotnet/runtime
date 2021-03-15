@@ -515,6 +515,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
 
 #include <mono/utils/mono-context.h>
+#include <mono/utils/ftnptr.h>
 
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
@@ -525,6 +526,12 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	memcpy (mctx->regs, UCONTEXT_GREGS (sigctx), sizeof (host_mgreg_t) * 31);
 	mctx->pc = UCONTEXT_REG_PC (sigctx);
 	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (sigctx);
+#ifdef UCONTEXT_REG_LR
+	mctx->regs [ARMREG_LR] = UCONTEXT_REG_LR (sigctx);
+#endif
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
+	mctx->regs [ARMREG_FP] = (host_mgreg_t)ptrauth_strip ((void*)mctx->regs [ARMREG_FP], ptrauth_key_frame_pointer);
+#endif
 #ifdef __linux__
 	struct fpsimd_context *fpctx = (struct fpsimd_context*)&((ucontext_t*)sigctx)->uc_mcontext.__reserved;
 	int i;
@@ -543,9 +550,15 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
 #else
+#ifdef MONO_ARCH_ENABLE_PTRAUTH
 	memcpy (UCONTEXT_GREGS (sigctx), mctx->regs, sizeof (host_mgreg_t) * 31);
-	UCONTEXT_REG_PC (sigctx) = mctx->pc;
-	UCONTEXT_REG_SP (sigctx) = mctx->regs [ARMREG_SP];
+	UCONTEXT_REG_SET_PC (sigctx, (gpointer)mctx->pc);
+	UCONTEXT_REG_SET_SP (sigctx, mctx->regs [ARMREG_SP]);
+#else
+	memcpy (UCONTEXT_GREGS (sigctx), mctx->regs, sizeof (host_mgreg_t) * 31);
+	UCONTEXT_REG_SET_PC (sigctx, mctx->pc);
+	UCONTEXT_REG_SET_SP (sigctx, mctx->regs [ARMREG_SP]);
+#endif
 #endif
 }
 

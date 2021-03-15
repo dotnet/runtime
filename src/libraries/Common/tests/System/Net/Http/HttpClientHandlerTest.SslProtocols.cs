@@ -127,7 +127,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
-                client.DefaultRequestHeaders.Host = getTestSNIName();
+                client.DefaultRequestHeaders.Host = GetTestSNIName();
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -140,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, count);
             }
 
-            string getTestSNIName()
+            string GetTestSNIName()
             {
                 return $"{nameof(GetAsync_AllowedSSLVersion_Succeeds)}_{acceptedProtocol}_{requestOnlyThisProtocol}";
             }

@@ -191,7 +191,6 @@ typedef enum {
 #define S390_FP				s390_r11
 #define S390_MINIMAL_STACK_SIZE		160
 #define S390_REG_SAVE_OFFSET 		48
-#define S390_NONPARM_SAVE_OFFSET 	56
 #define S390_PARM_SAVE_OFFSET 		16
 #define S390_RET_ADDR_OFFSET		112
 #define S390_FLOAT_SAVE_OFFSET 		128
@@ -1213,6 +1212,7 @@ typedef struct {
 #define s390_cdsg(c, r1, r2, b, d)	S390_RSY_1(c, 0xeb3e, r1, r2, b, d)
 #define s390_cdsy(c, r1, r2, b, d)	S390_RSY_1(c, 0xeb31, r1, r2, b, d)
 #define s390_cebr(c, r1, r2)		S390_RRE(c, 0xb309, r1, r2)
+#define s390_cefbr(c, r1, r2)		S390_RRE(c, 0xb394, r1, r2)
 #define s390_cegbr(c, r1, r2)		S390_RRE(c, 0xb3a4, r1, r2)
 #define s390_cfdbr(c, r1, m, r2)	S390_RRF_2(c, 0xb399, r1, m, r2)
 #define s390_cfebr(c, r1, m, r2)	S390_RRF_2(c, 0xb398, r1, m, r2)
@@ -1417,6 +1417,7 @@ typedef struct {
 #define s390_msgr(c, r1, r2)		S390_RRE(c, 0xb90c, r1, r2)
 #define s390_msgrkc(c, r1, r2, r3)	S390_RRF_1(c, 0xb9ed, r1, r2, r3)
 #define s390_msr(c, r1, r2)		S390_RRE(c, 0xb252, r1, r2)
+#define s390_msrkc(c, r1, r2, r3)	S390_RRF_1(c, 0xb9fd, r1, r2, r3)
 #define s390_mvc(c, l, b1, d1, b2, d2)	S390_SS_1(c, 0xd2, l, b1, d1, b2, d2)
 #define s390_mvcl(c, r1, r2)		S390_RR(c, 0x0e, r1, r2)
 #define s390_mvcle(c, r1, r3, d2, b2)	S390_RS_1(c, 0xa8, r1, r3, d2, b2)

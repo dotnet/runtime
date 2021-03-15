@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
 #include "mcs.h"
@@ -12,6 +10,7 @@
 #include "verbfracture.h"
 #include "verbdumpmap.h"
 #include "verbdumptoc.h"
+#include "verbjitflags.h"
 #include "verbildump.h"
 #include "verbtoc.h"
 #include "verbremovedup.h"
@@ -101,6 +100,10 @@ int __cdecl main(int argc, char* argv[])
     if (o.actionPrintJITEEVersion)
     {
         exitCode = verbPrintJITEEVersion::DoWork();
+    }
+    if (o.actionJitFlags)
+    {
+        exitCode = verbJitFlags::DoWork(o.nameOfFile1);
     }
 
     Logger::Shutdown();

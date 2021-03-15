@@ -487,7 +487,7 @@ DictionaryEntryLayout::GetKind()
 
     SigPointer ptr((PCCOR_SIGNATURE)dac_cast<TADDR>(m_signature));
 
-    ULONG kind; // DictionaryEntryKind
+    uint32_t kind; // DictionaryEntryKind
     IfFailThrow(ptr.GetData(&kind));
 
     return (DictionaryEntryKind)kind;
@@ -926,7 +926,7 @@ Dictionary::PopulateEntry(
     ZapSig::Context zapSigContext(NULL, NULL, ZapSig::NormalTokens);
     ZapSig::Context * pZapSigContext = NULL;
 
-    ULONG kind = DictionaryEntryKind::EmptySlot;
+    uint32_t kind = DictionaryEntryKind::EmptySlot;
 
     SigPointer ptr((PCCOR_SIGNATURE)signature);
 
@@ -1010,7 +1010,7 @@ Dictionary::PopulateEntry(
         // instantiated (non-shared) super-type of the class passed in.
 
 
-        ULONG dictionaryIndex = 0;
+        uint32_t dictionaryIndex = 0;
 
         if (isReadyToRunModule)
         {
@@ -1127,12 +1127,12 @@ Dictionary::PopulateEntry(
             MethodTable * pOwnerMT = NULL;
             MethodDesc * pMethod = NULL;
 
-            DWORD methodFlags = 0;
+            uint32_t methodFlags = 0;
             BOOL isInstantiatingStub = 0;
             BOOL isUnboxingStub = 0;
             BOOL fMethodNeedsInstantiation = 0;
 
-            DWORD methodSlot = -1;
+            uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
 
             if (isReadyToRunModule)
@@ -1326,7 +1326,7 @@ Dictionary::PopulateEntry(
             // Instantiate the method if needed, or create a stub to a static method in a generic class.
             if (fMethodNeedsInstantiation)
             {
-                DWORD nargs;
+                uint32_t nargs;
                 IfFailThrow(ptr.GetData(&nargs));
 
                 SIZE_T cbMem;
@@ -1335,7 +1335,7 @@ Dictionary::PopulateEntry(
                     ThrowHR(COR_E_OVERFLOW);
 
                 TypeHandle * pInst = (TypeHandle*)_alloca(cbMem);
-                for (DWORD i = 0; i < nargs; i++)
+                for (uint32_t i = 0; i < nargs; i++)
                 {
                     pInst[i] = ptr.GetTypeHandleThrowing(
                         pLookupModule,
@@ -1475,7 +1475,7 @@ Dictionary::PopulateEntry(
                 }
                 IfFailThrow(ptr.SkipExactlyOne());
 
-                DWORD fieldIndex;
+                uint32_t fieldIndex;
                 IfFailThrow(ptr.GetData(&fieldIndex));
 
                 if (!IsCompilationProcess())
@@ -1491,11 +1491,11 @@ Dictionary::PopulateEntry(
             break;
         }
 
-        ULONG slotIndex;
+        uint32_t slotIndex;
         if (isReadyToRunModule)
         {
-            _ASSERT(dictionaryIndexAndSlot != (DWORD)-1);
-            slotIndex = (ULONG)(dictionaryIndexAndSlot & 0xFFFF);
+            _ASSERT(dictionaryIndexAndSlot != (uint32_t)-1);
+            slotIndex = (uint32_t)(dictionaryIndexAndSlot & 0xFFFF);
         }
         else
         {

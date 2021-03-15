@@ -240,6 +240,7 @@ namespace System.Reflection.Emit
                     assemblyName,
                     AssemblyBuilderAccess.Run,
                     ref stackMark,
+                    null,
                     null);
 
                 // this always gets the internal module.

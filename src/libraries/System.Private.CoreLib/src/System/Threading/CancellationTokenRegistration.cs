@@ -31,10 +31,31 @@ namespace System.Threading
         /// </summary>
         public void Dispose()
         {
-            CancellationTokenSource.CallbackNode node = _node;
-            if (node != null && !node.Partition.Unregister(_id, node))
+            if (_node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node))
             {
-                WaitForCallbackIfNecessary();
+                WaitForCallbackIfNecessary(_id, node);
+
+                static void WaitForCallbackIfNecessary(long id, CancellationTokenSource.CallbackNode node)
+                {
+                    // We're a valid registration but we were unable to unregister, which means the callback wasn't in the list,
+                    // which means either it already executed or it's currently executing. We guarantee that we will not return
+                    // if the callback is being executed (assuming we are not currently called by the callback itself)
+                    // We achieve this by the following rules:
+                    //    1. If we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
+                    //       - if the currently executing callback is this CTR, then waiting would deadlock. (We choose to return rather than deadlock)
+                    //       - if not, then this CTR cannot be the one executing, hence no need to wait
+                    //    2. If unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
+                    //       => poll until cts.ExecutingCallback is not the one we are trying to unregister.
+                    CancellationTokenSource source = node.Registrations.Source;
+                    if (source.IsCancellationRequested && // Running callbacks has commenced.
+                        !source.IsCancellationCompleted && // Running callbacks hasn't finished.
+                        node.Registrations.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
+                    {
+                        // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                        // so observe and wait until this target callback is no longer the executing callback.
+                        node.Registrations.WaitForCallbackToComplete(id);
+                    }
+                }
             }
         }
 
@@ -47,10 +68,27 @@ namespace System.Threading
         /// </summary>
         public ValueTask DisposeAsync()
         {
-            CancellationTokenSource.CallbackNode node = _node;
-            return node != null && !node.Partition.Unregister(_id, node) ?
-                WaitForCallbackIfNecessaryAsync() :
+            return _node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node) ?
+                WaitForCallbackIfNecessaryAsync(_id, node) :
                 default;
+
+            static ValueTask WaitForCallbackIfNecessaryAsync(long id, CancellationTokenSource.CallbackNode node)
+            {
+                // Same as WaitForCallbackIfNecessary, except returning a task that'll be completed when callbacks complete.
+
+                CancellationTokenSource source = node.Registrations.Source;
+                if (source.IsCancellationRequested && // Running callbacks has commenced.
+                    !source.IsCancellationCompleted && // Running callbacks hasn't finished.
+                    node.Registrations.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
+                {
+                    // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                    // so get a task that'll complete when this target callback is no longer the executing callback.
+                    return node.Registrations.WaitForCallbackToCompleteAsync(id);
+                }
+
+                // Callback is either already completed, won't execute, or the callback itself is calling this.
+                return default;
+            }
         }
 
         /// <summary>Gets the <see cref="CancellationToken"/> with which this registration is associated.</summary>
@@ -59,66 +97,17 @@ namespace System.Threading
         /// to <see cref="CancellationToken.Register"/> on a token that already had cancellation requested),
         /// this will return a default token.
         /// </remarks>
-        public CancellationToken Token
-        {
-            get
-            {
-                CancellationTokenSource.CallbackNode node = _node;
-                return node != null ?
-                    new CancellationToken(node.Partition.Source) : // avoid CTS.Token, which throws after disposal
-                    default;
-            }
-        }
+        public CancellationToken Token =>
+            _node is CancellationTokenSource.CallbackNode node ?
+                new CancellationToken(node.Registrations.Source) : // avoid CTS.Token, which throws after disposal
+                default;
 
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated
         /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
-        public bool Unregister()
-        {
-            CancellationTokenSource.CallbackNode node = _node;
-            return node != null && node.Partition.Unregister(_id, node);
-        }
-
-        private void WaitForCallbackIfNecessary()
-        {
-            // We're a valid registration but we were unable to unregister, which means the callback wasn't in the list,
-            // which means either it already executed or it's currently executing. We guarantee that we will not return
-            // if the callback is being executed (assuming we are not currently called by the callback itself)
-            // We achieve this by the following rules:
-            //    1. If we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
-            //       - if the currently executing callback is this CTR, then waiting would deadlock. (We choose to return rather than deadlock)
-            //       - if not, then this CTR cannot be the one executing, hence no need to wait
-            //    2. If unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
-            //       => poll until cts.ExecutingCallback is not the one we are trying to unregister.
-            CancellationTokenSource source = _node.Partition.Source;
-            if (source.IsCancellationRequested && // Running callbacks has commenced.
-                !source.IsCancellationCompleted && // Running callbacks hasn't finished.
-                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
-            {
-                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
-                // so observe and wait until this target callback is no longer the executing callback.
-                source.WaitForCallbackToComplete(_id);
-            }
-        }
-
-        private ValueTask WaitForCallbackIfNecessaryAsync()
-        {
-            // Same as WaitForCallbackIfNecessary, except returning a task that'll be completed when callbacks complete.
-
-            CancellationTokenSource source = _node.Partition.Source;
-            if (source.IsCancellationRequested && // Running callbacks has commenced.
-                !source.IsCancellationCompleted && // Running callbacks hasn't finished.
-                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
-            {
-                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
-                // so get a task that'll complete when this target callback is no longer the executing callback.
-                return source.WaitForCallbackToCompleteAsync(_id);
-            }
-
-            // Callback is either already completed, won't execute, or the callback itself is calling this.
-            return default;
-        }
+        public bool Unregister() =>
+            _node is CancellationTokenSource.CallbackNode node && node.Registrations.Unregister(_id, node);
 
         /// <summary>
         /// Determines whether two <see
@@ -148,7 +137,7 @@ namespace System.Threading
         /// they both refer to the output of a single call to the same Register method of a
         /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
         /// </returns>
-        public override bool Equals([NotNullWhen(true)] object? obj) => obj is CancellationTokenRegistration && Equals((CancellationTokenRegistration)obj);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is CancellationTokenRegistration other && Equals(other);
 
         /// <summary>
         /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the

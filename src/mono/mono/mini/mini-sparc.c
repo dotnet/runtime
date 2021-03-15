@@ -2246,11 +2246,8 @@ mono_sparc_is_virtual_call (guint32 *code)
 #define JUMP_IMM_SIZE 5
 #define ENABLE_WRONG_METHOD_CHECK 0
 
-/*
- * LOCKING: called with the domain lock held
- */
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i;
@@ -2279,9 +2276,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		size += item->chunk_size;
 	}
 	if (fail_tramp) {
-		code = mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size * 4);
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size * 4);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size * 4);
 	}
 	start = code;
@@ -2352,7 +2349,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	UnlockedAdd (&mono_stats.imt_trampolines_size, (code - start));
 	g_assert (code - start <= size);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
@@ -4384,6 +4381,13 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
+}
+
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 {
 	/* FIXME: implement */
 	g_assert_not_reached ();

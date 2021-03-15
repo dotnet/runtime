@@ -4,8 +4,6 @@
 using System;
 using System.Runtime.InteropServices;
 
-#nullable enable
-
 internal static partial class Interop
 {
     internal static partial class Gdi32

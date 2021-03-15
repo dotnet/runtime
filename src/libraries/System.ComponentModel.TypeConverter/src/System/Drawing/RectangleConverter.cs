@@ -129,6 +129,7 @@ namespace System.Drawing
 
         private static readonly string[] s_propertySort = { "X", "Y", "Width", "Height" };
 
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(Rectangle), attributes);

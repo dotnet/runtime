@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 
 namespace System.Threading
 {
@@ -169,9 +170,9 @@ namespace System.Threading
                 // Add the current thread count and throughput sample to our history
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
                 }
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
@@ -343,9 +344,9 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
                         throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
                 }
 
@@ -404,12 +405,12 @@ namespace System.Threading
 
                 _logSize++;
 
-                if (PortableThreadPoolEventSource.Log.IsEnabled())
+                if (NativeRuntimeEventSource.Log.IsEnabled())
                 {
-                    PortableThreadPoolEventSource.Log.ThreadPoolWorkerThreadAdjustmentAdjustment(
+                    NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadAdjustmentAdjustment(
                         throughput,
                         (uint)newThreadCount,
-                        (PortableThreadPoolEventSource.ThreadAdjustmentReasonMap)stateOrTransition);
+                        (NativeRuntimeEventSource.ThreadAdjustmentReasonMap)stateOrTransition);
                 }
             }
 

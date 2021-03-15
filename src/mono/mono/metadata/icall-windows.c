@@ -49,7 +49,7 @@ mono_icall_get_machine_name (MonoError *error)
 	DWORD len = G_N_ELEMENTS (buf);
 
 	if (GetComputerNameW (buf, &len))
-		return mono_string_new_utf16_handle (mono_domain_get (), buf, len, error);
+		return mono_string_new_utf16_handle (buf, len, error);
 	return MONO_HANDLE_NEW (MonoString, NULL);
 }
 #elif !HAVE_EXTERN_DEFINED_WIN32_GET_COMPUTER_NAME
@@ -57,7 +57,7 @@ MonoStringHandle
 mono_icall_get_machine_name (MonoError *error)
 {
 	g_unsupported_api ("GetComputerName");
-	return mono_string_new_handle (mono_domain_get (), "mono", error);
+	return mono_string_new_handle ("mono", error);
 }
 #endif
 
@@ -71,7 +71,7 @@ mono_icall_get_platform (void)
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error)
 {
-	return mono_string_new_handle (mono_domain_get (), "\r\n", error);
+	return mono_string_new_handle ("\r\n", error);
 }
 
 MonoBoolean
@@ -92,7 +92,6 @@ MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
 	MonoArrayHandle names;
-	MonoDomain *domain;
 	MonoStringHandle str;
 	WCHAR* env_strings;
 	WCHAR* env_string;
@@ -113,8 +112,7 @@ mono_icall_get_environment_variable_names (MonoError *error)
 		}
 	}
 
-	domain = mono_domain_get ();
-	names = mono_array_new_handle (domain, mono_defaults.string_class, n, error);
+	names = mono_array_new_handle (mono_defaults.string_class, n, error);
 	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	if (env_strings) {
@@ -126,7 +124,7 @@ mono_icall_get_environment_variable_names (MonoError *error)
 			if (*env_string != '=') {
 				equal_str = wcschr(env_string, '=');
 				g_assert(equal_str);
-				MonoString *s = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
+				MonoString *s = mono_string_new_utf16_checked (env_string, (gint32)(equal_str - env_string), error);
 				goto_if_nok (error, cleanup);
 				MONO_HANDLE_ASSIGN_RAW (str, s);
 
@@ -164,9 +162,9 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 		int len = 0;
 		while (path [len])
 			++ len;
-		return mono_string_new_utf16_handle (mono_domain_get (), path, len, error);
+		return mono_string_new_utf16_handle (path, len, error);
 	}
-	return mono_string_new_handle (mono_domain_get (), "", error);
+	return mono_string_new_handle ("", error);
 }
 #elif !HAVE_EXTERN_DEFINED_WIN32_SH_GET_FOLDER_PATH
 MonoStringHandle
@@ -174,7 +172,7 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 {
 	error_init (error);
 	g_unsupported_api ("SHGetFolderPath");
-	return mono_string_new_handle (mono_domain_get (), "", error);
+	return mono_string_new_handle ("", error);
 }
 #endif
 

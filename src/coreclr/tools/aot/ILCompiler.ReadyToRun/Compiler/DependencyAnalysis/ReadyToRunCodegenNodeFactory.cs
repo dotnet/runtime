@@ -297,6 +297,8 @@ namespace ILCompiler.DependencyAnalysis
             });
         }
 
+        public int CompilationCurrentPhase { get; private set; }
+
         public SignatureContext SignatureContext;
 
         public ModuleTokenResolver Resolver;
@@ -543,6 +545,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
+            graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
+
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
@@ -729,6 +733,11 @@ namespace ILCompiler.DependencyAnalysis
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph);
+        }
+
+        private void Graph_ComputingDependencyPhaseChange(int newPhase)
+        {
+            CompilationCurrentPhase = newPhase;
         }
 
         private ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)

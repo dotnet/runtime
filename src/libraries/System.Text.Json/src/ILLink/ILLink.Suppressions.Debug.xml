@@ -13,5 +13,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Text.Json.Serialization.ReflectionEmitMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2090</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Text.Json.Serialization.ReflectionMemberAccessor.CreateParameterizedConstructor(System.Reflection.ConstructorInfo)</property>
+    </attribute>
   </assembly>
 </linker>

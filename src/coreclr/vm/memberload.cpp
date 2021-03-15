@@ -824,7 +824,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
     // Load the generic method instantiation
     THROW_BAD_FORMAT_MAYBE(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST, 0, pModule);
 
-    DWORD nGenericMethodArgs = 0;
+    uint32_t nGenericMethodArgs = 0;
     IfFailThrow(sp.GetData(&nGenericMethodArgs));
 
     DWORD cbAllocSize = 0;
@@ -835,7 +835,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
 
     TypeHandle *genericMethodArgs = reinterpret_cast<TypeHandle *>(qbGenericMethodArgs.AllocThrows(cbAllocSize));
 
-    for (DWORD i = 0; i < nGenericMethodArgs; i++)
+    for (uint32_t i = 0; i < nGenericMethodArgs; i++)
     {
         genericMethodArgs[i] = sp.GetTypeHandleThrowing(pModule, pTypeContext);
         _ASSERTE (!genericMethodArgs[i].IsNull());

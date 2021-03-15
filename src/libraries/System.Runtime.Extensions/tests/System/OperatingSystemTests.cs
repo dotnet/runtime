@@ -11,6 +11,7 @@ namespace System.Tests
         {
             "Android",
             "macOS",
+            //"MacCatalyst",
             "iOS",
             "tvOS",
             "watchOS",
@@ -122,6 +123,14 @@ namespace System.Tests
             AssertVersionChecks(true, (major, minor, build) => OperatingSystem.IsOSPlatformVersionAtLeast("osx", major, minor, build));
         }
 
+        /* Disable Mac Catalyst tests until Arcade and xharness are ready
+        [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
+        public static void TestIsOSPlatform_MacCatalyst() => TestIsOSPlatform("MacCatalyst", OperatingSystem.IsMacCatalyst);
+
+        [Fact, PlatformSpecific(TestPlatforms.MacCatalyst)]
+        public static void TestIsOSVersionAtLeast_MacCatalyst() => TestIsOSVersionAtLeast("MacCatalyst");
+        */
+
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]
         public static void TestIsOSPlatform_TvOS() => TestIsOSPlatform("tvOS", OperatingSystem.IsTvOS);
 
@@ -155,6 +164,7 @@ namespace System.Tests
                 OperatingSystem.IsAndroid(),
                 OperatingSystem.IsIOS(),
                 OperatingSystem.IsMacOS(),
+                //OperatingSystem.IsMacCatalyst(),
                 OperatingSystem.IsTvOS(),
                 OperatingSystem.IsWatchOS(),
                 OperatingSystem.IsWindows()
@@ -177,6 +187,7 @@ namespace System.Tests
             AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
+            //AssertVersionChecks(currentOSName.Equals("MacCatalyst", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacCatalystVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("tvOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsTvOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("watchOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWatchOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("Windows", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWindowsVersionAtLeast);

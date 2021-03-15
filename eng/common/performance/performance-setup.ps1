@@ -18,7 +18,8 @@ Param(
     [switch] $Internal,
     [switch] $Compare,
     [string] $MonoDotnet="",
-    [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind"
+    [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind",
+    [string] $LogicalMachine=""
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -33,25 +34,22 @@ $Creator = $env:BUILD_DEFINITIONNAME
 $PerfLabArguments = ""
 $HelixSourcePrefix = "pr"
 
-$Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
-
-# TODO: Implement a better logic to determine if Framework is .NET Core or >= .NET 5.
-if ($Framework.StartsWith("netcoreapp") -or ($Framework -eq "net5.0")) {
-    $Queue = "Windows.10.Amd64.ClientRS5.Open"
-}
-
-if ($Compare) {
-    $Queue = "Windows.10.Amd64.19H1.Tiger.Perf.Open"
-    $PerfLabArguments = ""
-    $ExtraBenchmarkDotNetArguments = ""
-}
+$Queue = ""
 
 if ($Internal) {
-    $Queue = "Windows.10.Amd64.19H1.Tiger.Perf"
+    switch ($LogicalMachine) {
+        "perftiger" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf"  }
+        "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf"  }
+        "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
+        Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
+    }
     $PerfLabArguments = "--upload-to-perflab-container"
     $ExtraBenchmarkDotNetArguments = ""
     $Creator = ""
     $HelixSourcePrefix = "official"
+}
+else {
+    $Queue = "Windows.10.Amd64.ClientRS4.DevEx.15.8.Open"
 }
 
 if($MonoInterpreter)
@@ -77,14 +75,6 @@ if($MonoDotnet -ne "")
 # FIX ME: This is a workaround until we get this from the actual pipeline
 $CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
-
-
-#This grabs the LKG version number of dotnet and passes it to our scripts
-$VersionJSON = Get-Content global.json | ConvertFrom-Json
-$DotNetVersion = $VersionJSON.tools.dotnet
-# TODO: Change this back to parsing when we have a good story for dealing with TFM changes or when the LKG in runtime gets updated to include net6.0
-# $SetupArguments = "--dotnet-versions $DotNetVersion $SetupArguments"
-$SetupArguments = "--dotnet-versions 6.0.100-alpha.1.20553.6 $SetupArguments"
 
 
 if ($RunFromPerformanceRepo) {

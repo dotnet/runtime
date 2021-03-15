@@ -10,8 +10,7 @@ namespace System.Buffers.Binary
     /// Reads bytes as primitives with specific endianness
     /// </summary>
     /// <remarks>
-    /// For native formats, MemoryExtensions.Read{T}; should be used.
-    /// Use these helpers when you need to read specific endinanness.
+    /// Use these helpers when you need to read specific endianness.
     /// </remarks>
     public static partial class BinaryPrimitives
     {

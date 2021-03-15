@@ -6105,6 +6105,8 @@ void emitter::emitIns_R_R_R(
         case INS_ldadda:
         case INS_ldaddal:
         case INS_ldaddl:
+        case INS_ldclral:
+        case INS_ldsetal:
         case INS_swpb:
         case INS_swpab:
         case INS_swpalb:

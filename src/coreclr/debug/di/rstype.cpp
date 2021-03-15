@@ -899,7 +899,7 @@ CordbType::SigToType(CordbModule * pModule,
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
         {
-            ULONG tyvar_num;
+            uint32_t tyvar_num;
 
             IfFailRet(sigParser.GetData(&tyvar_num));
 
@@ -966,7 +966,7 @@ CordbType::SigToType(CordbModule * pModule,
             pClass->SetIsValueClassKnown(true);
 
             // Build up the array of generic arguments.
-            ULONG cArgs; // number of generic arguments in the type.
+            uint32_t cArgs; // number of generic arguments in the type.
 
             IfFailRet(sigParser.GetData(&cArgs));
 
@@ -1043,7 +1043,7 @@ CordbType::SigToType(CordbModule * pModule,
 
             IfFailRet(sigParser.SkipExactlyOne());
 
-            ULONG rank;
+            uint32_t rank;
 
             IfFailRet(sigParser.GetData(&rank));
 
@@ -1070,7 +1070,7 @@ CordbType::SigToType(CordbModule * pModule,
 
     case ELEMENT_TYPE_FNPTR:
         {
-            ULONG cArgs;
+            uint32_t cArgs;
 
             IfFailRet(sigParser.GetData(&cArgs)); // Skip callingConv
 
@@ -1867,7 +1867,7 @@ CordbType::GetUnboxedObjectSize(ULONG32 *pObjectSize)
 
         SigParser sigParser(&corSig, sizeof(corSig));
 
-        ULONG size;
+        uint32_t size;
 
         IfFailRet(sigParser.PeekElemTypeSize(&size));
 

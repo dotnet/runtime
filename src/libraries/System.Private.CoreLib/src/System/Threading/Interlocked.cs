@@ -164,6 +164,7 @@ namespace System.Threading
         /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int And(ref int location1, int value)
         {
@@ -195,6 +196,7 @@ namespace System.Threading
         /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long And(ref long location1, long value)
         {
@@ -228,6 +230,7 @@ namespace System.Threading
         /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Or(ref int location1, int value)
         {
@@ -259,6 +262,7 @@ namespace System.Threading
         /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Or(ref long location1, long value)
         {

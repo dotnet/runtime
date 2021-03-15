@@ -5,9 +5,9 @@ using System;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class LoggerRuleSelector
+    internal static class LoggerRuleSelector
     {
-        public void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
+        public static void Select(LoggerFilterOptions options, Type providerType, string category, out LogLevel? minLevel, out Func<string, string, LogLevel, bool> filter)
         {
             filter = null;
             minLevel = options.MinLevel;

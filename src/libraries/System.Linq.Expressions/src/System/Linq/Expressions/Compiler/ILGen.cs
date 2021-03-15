@@ -485,7 +485,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (TryEmitILConstant(il, value, nonNullType))
                 {
-                    il.Emit(OpCodes.Newobj, GetNullableConstructor(type, nonNullType));
+                    il.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type, nonNullType));
                     return true;
                 }
 
@@ -826,7 +826,7 @@ namespace System.Linq.Expressions.Compiler
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
-            ConstructorInfo ci = GetNullableConstructor(typeTo, nnTypeTo);
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
             il.Emit(OpCodes.Newobj, ci);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
@@ -846,19 +846,8 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(typeTo.IsNullableType());
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
-            ConstructorInfo ci = GetNullableConstructor(typeTo, nnTypeTo);
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
             il.Emit(OpCodes.Newobj, ci);
-        }
-
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> ctor will be preserved by the DynamicDependency.")]
-        private static ConstructorInfo GetNullableConstructor(Type nullableType, Type nonNullableType)
-        {
-            Debug.Assert(nullableType.IsNullableType());
-            Debug.Assert(!nonNullableType.IsNullableType() && nonNullableType.IsValueType);
-
-            return nullableType.GetConstructor(new Type[] { nonNullableType })!;
         }
 
         private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)

@@ -63,7 +63,7 @@ class CodeGenInterface
 
 public:
     CodeGenInterface(Compiler* theCompiler);
-    virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode) = 0;
+    virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode) = 0;
 
     Compiler* GetCompiler() const
     {

@@ -1,8 +1,6 @@
 #include "config.h"
 #include "mono/utils/mono-compiler.h"
 
-#ifdef ENABLE_NETCORE // MonoAssemblyLoadContext support only in netcore Mono
-
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/exception-internals.h"
@@ -15,15 +13,30 @@
 
 GENERATE_GET_CLASS_WITH_CACHE (assembly_load_context, "System.Runtime.Loader", "AssemblyLoadContext");
 
+static GSList *alcs;
+static MonoAssemblyLoadContext *default_alc;
+static MonoCoopMutex alc_list_lock; /* Used when accessing 'alcs' */
+
+static inline void
+alcs_lock (void)
+{
+	mono_coop_mutex_lock (&alc_list_lock);
+}
+
+static inline void
+alcs_unlock (void)
+{
+	mono_coop_mutex_unlock (&alc_list_lock);
+}
+
 static void
-mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collectible)
+mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoLoadedImages *li = g_new0 (MonoLoadedImages, 1);
 	mono_loaded_images_init (li, alc);
-	alc->domain = domain;
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
-	alc->memory_manager = mono_mem_manager_create_singleton (alc, domain, collectible);
+	alc->memory_manager = mono_mem_manager_create_singleton (alc, collectible);
 	alc->generic_memory_managers = g_ptr_array_new ();
 	mono_coop_mutex_init (&alc->memory_managers_lock);
 	alc->unloading = FALSE;
@@ -34,38 +47,39 @@ mono_alc_init (MonoAssemblyLoadContext *alc, MonoDomain *domain, gboolean collec
 }
 
 static MonoAssemblyLoadContext *
-mono_alc_create (MonoDomain *domain, gboolean is_default, gboolean collectible)
+mono_alc_create (gboolean collectible)
 {
 	MonoAssemblyLoadContext *alc = NULL;
 
-	mono_domain_alcs_lock (domain);
-	if (is_default && domain->default_alc)
-		goto leave;
-
 	alc = g_new0 (MonoAssemblyLoadContext, 1);
-	mono_alc_init (alc, domain, collectible);
+	mono_alc_init (alc, collectible);
 
-	domain->alcs = g_slist_prepend (domain->alcs, alc);
-	if (is_default)
-		domain->default_alc = alc;
+	alcs_lock ();
+	alcs = g_slist_prepend (alcs, alc);
+	alcs_unlock ();
 
-leave:
-	mono_domain_alcs_unlock (domain);
 	return alc;
 }
 
 void
-mono_alc_create_default (MonoDomain *domain)
+mono_alcs_init (void)
 {
-	if (domain->default_alc)
-		return;
-	mono_alc_create (domain, TRUE, FALSE);
+	mono_coop_mutex_init (&alc_list_lock);
+
+	default_alc = mono_alc_create (FALSE);
 }
 
 MonoAssemblyLoadContext *
-mono_alc_create_individual (MonoDomain *domain, MonoGCHandle this_gchandle, gboolean collectible, MonoError *error)
+mono_alc_get_default (void)
 {
-	MonoAssemblyLoadContext *alc = mono_alc_create (domain, FALSE, collectible);
+	g_assert (default_alc);
+	return default_alc;
+}
+
+MonoAssemblyLoadContext *
+mono_alc_create_individual (MonoGCHandle this_gchandle, gboolean collectible, MonoError *error)
+{
+	MonoAssemblyLoadContext *alc = mono_alc_create (collectible);
 
 	alc->gchandle = this_gchandle;
 
@@ -78,7 +92,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC. 
 	// The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	GSList *tmp;
-	MonoDomain *domain = alc->domain;
+	MonoDomain *domain = mono_get_root_domain ();
 
 	// Remove the assemblies from domain_assemblies
 	mono_domain_assemblies_lock (domain);
@@ -101,7 +115,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 		MonoAssembly *assembly = (MonoAssembly *)tmp->data;
 		if (!assembly->image || !image_is_dynamic (assembly->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], dynamic assembly %s[%p], ref_count=%d", domain, assembly->aname.name, assembly, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], dynamic assembly %s[%p], ref_count=%d", alc, assembly->aname.name, assembly, assembly->ref_count);
 		if (!mono_assembly_close_except_image_pools (assembly))
 			tmp->data = NULL;
 	}
@@ -113,7 +127,7 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 			continue;
 		if (!assembly->image || image_is_dynamic (assembly->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], non-dynamic assembly %s[%p], ref_count=%d", domain, assembly->aname.name, assembly, assembly->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading ALC [%p], non-dynamic assembly %s[%p], ref_count=%d", alc, assembly->aname.name, assembly, assembly->ref_count);
 		if (!mono_assembly_close_except_image_pools (assembly))
 			tmp->data = NULL;
 	}
@@ -140,17 +154,15 @@ mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 static void
 mono_alc_cleanup (MonoAssemblyLoadContext *alc)
 {
-	MonoDomain *domain = alc->domain;
-
-	g_assert (alc != mono_domain_default_alc (domain));
+	g_assert (alc != default_alc);
 	g_assert (alc->collectible == TRUE);
 
 	// TODO: alc unloading profiler event
 
-	// Remove from domain list
-	mono_domain_alcs_lock (domain);
-	domain->alcs = g_slist_remove (domain->alcs, alc);
-	mono_domain_alcs_unlock (domain);
+	// Remove from alc list
+	alcs_lock ();
+	alcs = g_slist_remove (alcs, alc);
+	alcs_unlock ();
 
 	mono_alc_cleanup_assemblies (alc);
 
@@ -210,17 +222,15 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC 
 {
 	/* If the ALC is collectible, this_gchandle is weak, otherwise it's strong. */
 	MonoGCHandle this_gchandle = (MonoGCHandle)this_gchandle_ptr;
-
-	MonoDomain *domain = mono_domain_get ();
 	MonoAssemblyLoadContext *alc = NULL;
 
 	if (is_default_alc) {
-		alc = mono_domain_default_alc (domain);
+		alc = default_alc;
 		g_assert (alc);
 		if (!alc->gchandle)
 			alc->gchandle = this_gchandle;
 	} else
-		alc = mono_alc_create_individual (domain, this_gchandle, collectible, error);
+		alc = mono_alc_create_individual (this_gchandle, collectible, error);
 
 	return alc;
 }
@@ -255,7 +265,7 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_GetLoadContextForAssembly (M
 gboolean
 mono_alc_is_default (MonoAssemblyLoadContext *alc)
 {
-	return alc == mono_alc_domain (alc)->default_alc;
+	return alc == default_alc;
 }
 
 MonoAssemblyLoadContext *
@@ -270,8 +280,8 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 MonoGCHandle
 mono_alc_get_default_gchandle (void)
 {
-	// Because the default domain is never unloadable, this should be a strong handle and never change
-	return mono_domain_default_alc (mono_domain_get ())->gchandle;
+	// Because the default alc is never unloadable, this should be a strong handle and never change
+	return default_alc->gchandle;
 }
 
 static MonoAssembly*
@@ -287,7 +297,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	aname_str = mono_stringify_assembly_name (aname);
 
-	MonoStringHandle aname_obj = mono_string_new_handle (mono_alc_domain (alc), aname_str, error);
+	MonoStringHandle aname_obj = mono_string_new_handle (aname_str, error);
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
@@ -410,7 +420,3 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 	return result;
 }
-
-#endif /* ENABLE_NETCORE */
-
-MONO_EMPTY_SOURCE_FILE (assembly_load_context)

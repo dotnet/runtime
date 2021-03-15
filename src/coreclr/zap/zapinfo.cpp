@@ -499,8 +499,8 @@ void ZapInfo::CompileMethod()
 
     CorJitResult res = CORJIT_SKIPPED;   // FAILED() returns true for this value
 
-    BYTE *pCode;
-    ULONG cCode;
+    uint8_t *pCode;
+    uint32_t cCode;
     bool  doNormalCompile = true;
 
 #ifdef ALLOW_SXS_JIT_NGEN
@@ -897,7 +897,7 @@ void ZapInfo::getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal)
         offsetof(CORCOMPILE_EE_INFO_TABLE, gsCookie));
 }
 
-DWORD ZapInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
+uint32_t ZapInfo::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 {
     _ASSERTE(jitFlags != NULL);
     _ASSERTE(sizeInBytes >= sizeof(m_jitFlags));
@@ -913,8 +913,8 @@ bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
 
 HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
                                                  PgoInstrumentationSchema* pSchema,
-                                                 UINT32 countSchemaItems,
-                                                 BYTE** pInstrumentationData)
+                                                 uint32_t countSchemaItems,
+                                                 uint8_t** pInstrumentationData)
 {
     HRESULT hr;
 
@@ -996,8 +996,8 @@ HRESULT ZapInfo::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 
 HRESULT ZapInfo::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                               PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
-                                              UINT32 *                   pCountSchemaItems,          // pointer to the count schema items
-                                              BYTE **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                              uint32_t *                   pCountSchemaItems,          // pointer to the count schema items
+                                              uint8_t **                    pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
 {
     _ASSERTE(pCountSchemaItems != nullptr);
     _ASSERTE(pInstrumentationData != nullptr);
@@ -1145,10 +1145,10 @@ CORINFO_CLASS_HANDLE ZapInfo::getLikelyClass(
 }
 
 void ZapInfo::allocMem(
-    ULONG               hotCodeSize,    /* IN */
-    ULONG               coldCodeSize,   /* IN */
-    ULONG               roDataSize,     /* IN */
-    ULONG               xcptnsCount,    /* IN */
+    uint32_t            hotCodeSize,    /* IN */
+    uint32_t            coldCodeSize,   /* IN */
+    uint32_t            roDataSize,     /* IN */
+    uint32_t            xcptnsCount,    /* IN */
     CorJitAllocMemFlag  flag,           /* IN */
     void **             hotCodeBlock,   /* OUT */
     void **             coldCodeBlock,  /* OUT */
@@ -1363,7 +1363,7 @@ void ZapInfo::reportFatalError(CorJitResult result)
 // For prejitted code we need to count how many funclet regions
 // we have so that we can allocate and sort a contiguous .rdata block.
 //
-void ZapInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
+void ZapInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
 {
     // Nothing to do
 }
@@ -1393,12 +1393,12 @@ void ZapInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSiz
 //    funcKind        type of funclet (main method code, handler, filter)
 //
 void ZapInfo::allocUnwindInfo (
-        BYTE *              pHotCode,              /* IN */
-        BYTE *              pColdCode,             /* IN */
-        ULONG               startOffset,           /* IN */
-        ULONG               endOffset,             /* IN */
-        ULONG               unwindSize,            /* IN */
-        BYTE *              pUnwindBlock,          /* IN */
+        uint8_t *           pHotCode,              /* IN */
+        uint8_t *           pColdCode,             /* IN */
+        uint32_t            startOffset,           /* IN */
+        uint32_t            endOffset,             /* IN */
+        uint32_t            unwindSize,            /* IN */
+        uint8_t *           pUnwindBlock,          /* IN */
         CorJitFuncKind      funcKind               /* IN */
         )
 {
@@ -1489,12 +1489,12 @@ bool ZapInfo::logMsg(unsigned level, const char *fmt, va_list args)
 // ICorDynamicInfo
 //
 
-DWORD ZapInfo::getThreadTLSIndex(void **ppIndirection)
+uint32_t ZapInfo::getThreadTLSIndex(void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
 
     *ppIndirection = NULL;
-    return (DWORD)-1;
+    return (uint32_t)-1;
 }
 
 const void * ZapInfo::getInlinedCallFrameVptr(void **ppIndirection)
@@ -1506,7 +1506,7 @@ const void * ZapInfo::getInlinedCallFrameVptr(void **ppIndirection)
     return NULL;
 }
 
-LONG * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
+int32_t * ZapInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
 
@@ -2688,7 +2688,7 @@ CORINFO_CLASS_HANDLE ZapInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fi
     return NULL;
 }
 
-DWORD ZapInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field,
+uint32_t ZapInfo::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field,
                                           void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
@@ -2801,13 +2801,13 @@ InfoAccessType ZapInfo::emptyStringLiteral(void **ppValue)
     return IAT_PPVALUE;
 }
 
-void ZapInfo::recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO *callSig, CORINFO_METHOD_HANDLE methodHandle)
+void ZapInfo::recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO *callSig, CORINFO_METHOD_HANDLE methodHandle)
 {
     return;
 }
 
 void ZapInfo::recordRelocation(void *location, void *target,
-                               WORD fRelocType, WORD slotNum, INT32 addlDelta)
+                               uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta)
 {
     // Factor slotNum into the location address
     switch (fRelocType)
@@ -3009,7 +3009,7 @@ WORD ZapInfo::getRelocTypeHint(void * target)
 #endif
 }
 
-DWORD ZapInfo::getExpectedTargetArchitecture()
+uint32_t ZapInfo::getExpectedTargetArchitecture()
 {
     return IMAGE_FILE_MACHINE_NATIVE;
 }
@@ -3056,7 +3056,7 @@ void ZapInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     m_pEEJitInfo->getEEInfo(pEEInfoOut);
 }
 
-LPCWSTR ZapInfo::getJitTimeLogFilename()
+const char16_t * ZapInfo::getJitTimeLogFilename()
 {
     return m_pEEJitInfo->getJitTimeLogFilename();
 }
@@ -3093,7 +3093,7 @@ CorInfoHFAElemType ZapInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 //
 
 void ZapInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int *cILOffsets,
-                             DWORD **pILOffsets, ICorDebugInfo::BoundaryTypes *implicitBoundaries)
+                             uint32_t **pILOffsets, ICorDebugInfo::BoundaryTypes *implicitBoundaries)
 {
     m_pEEJitInfo->getBoundaries(ftn, cILOffsets, pILOffsets,
                                               implicitBoundaries);
@@ -3411,7 +3411,7 @@ const char* ZapInfo::getHelperName(CorInfoHelpFunc func)
     return m_pEEJitInfo->getHelperName(func);
 }
 
-int ZapInfo::appendClassName(__deref_inout_ecount(*pnBufLen) WCHAR** ppBuf, int* pnBufLen,
+int ZapInfo::appendClassName(__deref_inout_ecount(*pnBufLen) char16_t** ppBuf, int* pnBufLen,
                              CORINFO_CLASS_HANDLE    cls,
                              bool fNamespace,
                              bool fFullInst,
@@ -3430,7 +3430,7 @@ CorInfoInlineTypeCheck ZapInfo::canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, Co
     return m_pEEJitInfo->canInlineTypeCheck(cls, source);
 }
 
-DWORD ZapInfo::getClassAttribs(CORINFO_CLASS_HANDLE cls)
+uint32_t ZapInfo::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->getClassAttribs(cls);
 }
@@ -3546,7 +3546,7 @@ unsigned ZapInfo::getArrayRank(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getArrayRank(cls);
 }
 
-void * ZapInfo::getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size)
+void * ZapInfo::getArrayInitializationData(CORINFO_FIELD_HANDLE field, uint32_t size)
 {
     if (m_pEEJitInfo->getClassModule(m_pEEJitInfo->getFieldClass(field)) != m_pImage->m_hModule)
         return NULL;
@@ -3928,7 +3928,7 @@ bool ZapInfo::isValidStringRef (
     return m_pEEJitInfo->isValidStringRef(tokenScope, token);
 }
 
-LPCWSTR ZapInfo::getStringLiteral (
+const char16_t* ZapInfo::getStringLiteral (
             CORINFO_MODULE_HANDLE       tokenScope,
             unsigned                    token,
             int*                        length)
@@ -3955,7 +3955,7 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
     return m_pEEJitInfo->getMethodHash(ftn);
 }
 
-DWORD ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
+uint32_t ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
     DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);
     return FilterNamedIntrinsicMethodAttribs(this, result, ftn, m_pEEJitInfo);
@@ -3980,7 +3980,7 @@ bool ZapInfo::getMethodInfo(CORINFO_METHOD_HANDLE ftn,CORINFO_METHOD_INFO* info)
 
 CorInfoInline ZapInfo::canInline(CORINFO_METHOD_HANDLE caller,
                                            CORINFO_METHOD_HANDLE callee,
-                                           DWORD* pRestrictions)
+                                           uint32_t* pRestrictions)
 {
     return m_pEEJitInfo->canInline(caller, callee, pRestrictions);
 
@@ -4067,6 +4067,12 @@ CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(
     bool* requiresInstMethodTableArg)
 {
     return m_pEEJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
+}
+
+CORINFO_CLASS_HANDLE ZapInfo::getDefaultComparerClass(
+    CORINFO_CLASS_HANDLE elemType)
+{
+    return m_pEEJitInfo->getDefaultComparerClass(elemType);
 }
 
 CORINFO_CLASS_HANDLE ZapInfo::getDefaultEqualityComparerClass(
@@ -4156,7 +4162,7 @@ HRESULT ZapInfo::GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers)
     return m_pEEJitInfo->GetErrorHRESULT(pExceptionPointers);
 }
 
-ULONG ZapInfo::GetErrorMessage(__in_ecount(bufferLength) LPWSTR buffer, ULONG bufferLength)
+uint32_t ZapInfo::GetErrorMessage(__in_ecount(bufferLength) char16_t* buffer, uint32_t bufferLength)
 {
     return m_pEEJitInfo->GetErrorMessage(buffer, bufferLength);
 }

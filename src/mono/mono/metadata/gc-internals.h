@@ -19,9 +19,6 @@
 #include <mono/sgen/gc-internal-agnostic.h>
 #include <mono/metadata/icalls.h>
 
-#define mono_domain_finalizers_lock(domain) mono_os_mutex_lock (&(domain)->finalizable_objects_hash_lock);
-#define mono_domain_finalizers_unlock(domain) mono_os_mutex_unlock (&(domain)->finalizable_objects_hash_lock);
-
 /* Register a memory area as a conservatively scanned GC root */
 #define MONO_GC_REGISTER_ROOT_PINNING(x,src,key,msg) mono_gc_register_root ((char*)&(x), sizeof(x), MONO_GC_DESCRIPTOR_NULL, (src), (key), (msg))
 
@@ -429,5 +426,12 @@ extern gboolean mono_log_finalizers;
 extern gboolean mono_do_not_finalize;
 /* List of names of classes not to finalize. */
 extern gchar **mono_do_not_finalize_class_names;
+
+/*
+ * Unified runtime stop/restart world, SGEN Only.
+ * Will take and release the LOCK_GC.
+ */
+void mono_stop_world (MonoThreadInfoFlags flags);
+void mono_restart_world (MonoThreadInfoFlags flags);
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
