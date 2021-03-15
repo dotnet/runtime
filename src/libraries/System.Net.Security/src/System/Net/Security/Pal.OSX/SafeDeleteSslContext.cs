@@ -20,6 +20,11 @@ namespace System.Net
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
+        // state values for the _pendingXXX varaibles bellow
+        private const int NoIOPending = 0;
+        private const int NativeIOPending =1;
+        private const int ManagedIOPending = 2;
+        private const int Disposed = 3;
         private int _pendingInput;
         private int _pendingOutput;
 
@@ -147,12 +152,12 @@ namespace System.Net
                 SafeSslHandle sslContext = _sslContext;
                 if (null != sslContext)
                 {
-                    if (Interlocked.Exchange(ref _pendingInput, 2) == 0)
+                    if (Interlocked.Exchange(ref _pendingInput, Disposed) == NoIOPending)
                     {
                         _inputBuffer.Dispose();
                     }
 
-                    if (Interlocked.Exchange(ref _pendingOutput, 2) == 0)
+                    if (Interlocked.Exchange(ref _pendingOutput, Disposed) == NoIOPending)
                     {
                         _outputBuffer.Dispose();
                     }
@@ -169,7 +174,7 @@ namespace System.Net
             ulong length = (ulong)*dataLength;
             Debug.Assert(length <= int.MaxValue);
 
-            if (Interlocked.Exchange(ref _pendingOutput, 1) == 2)
+            if (Interlocked.Exchange(ref _pendingOutput, NativeIOPending) == Disposed)
             {
                 const int writErr = -20;
                 return writErr;
@@ -182,7 +187,7 @@ namespace System.Net
             inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
             _outputBuffer.Commit(toWrite);
 
-            if (Interlocked.Exchange(ref _pendingOutput, 0) == 2)
+            if (Interlocked.CompareExchange(ref _pendingOutput, NoIOPending, NativeIOPending) == Disposed)
             {
                 _outputBuffer.Dispose();
             }
@@ -203,7 +208,7 @@ namespace System.Net
                 return noErr;
             }
 
-            if (Interlocked.Exchange(ref _pendingInput, 1) == 2)
+            if (Interlocked.Exchange(ref _pendingInput, NativeIOPending) == Disposed)
             {
                const int readErr = -19;
                return readErr;
@@ -213,7 +218,7 @@ namespace System.Net
 
             if (_inputBuffer.ActiveLength == 0)
             {
-                if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+                if (Interlocked.Exchange(ref _pendingInput, NoIOPending) == Disposed)
                 {
                     _inputBuffer.Dispose();
                 }
@@ -228,7 +233,7 @@ namespace System.Net
             _inputBuffer.Discard(limit);
             transferred = (uint)limit;
 
-            if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+            if (Interlocked.Exchange(ref _pendingInput, NoIOPending) == Disposed)
             {
                 _inputBuffer.Dispose();
             }
@@ -239,7 +244,7 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            if (Interlocked.Exchange(ref _pendingInput, 3) == 2)
+            if (Interlocked.Exchange(ref _pendingInput, ManagedIOPending) == Disposed)
             {
                 throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
             }
@@ -248,7 +253,7 @@ namespace System.Net
             buf.CopyTo(_inputBuffer.AvailableSpan);
             _inputBuffer.Commit(buf.Length);
 
-           if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+           if (Interlocked.CompareExchange(ref _pendingInput, NoIOPending, ManagedIOPending) == Disposed)
            {
                 _inputBuffer.Dispose();
            }
@@ -258,20 +263,19 @@ namespace System.Net
 
         internal byte[]? ReadPendingWrites()
         {
-            if (Interlocked.Exchange(ref _pendingOutput, 3) == 2)
+            if (Interlocked.Exchange(ref _pendingOutput, ManagedIOPending) == Disposed)
             {
                 throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
             }
 
-            if (_outputBuffer.ActiveLength == 0)
+            byte[]? buffer = null;
+            if (_outputBuffer.ActiveLength != 0)
             {
-                return null;
+                buffer = _outputBuffer.ActiveSpan.ToArray();
+                _outputBuffer.Discard(_outputBuffer.ActiveLength);
             }
 
-            byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
-            _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-            if (Interlocked.Exchange(ref _pendingOutput, 0) == 2)
+            if (Interlocked.CompareExchange(ref _pendingOutput, NoIOPending, ManagedIOPending) == Disposed)
             {
                 _outputBuffer.Dispose();
             }
@@ -286,7 +290,7 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            if (Interlocked.Exchange(ref _pendingOutput, 3) == 2)
+            if (Interlocked.Exchange(ref _pendingOutput, ManagedIOPending) == Disposed)
             {
                 throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
             }
@@ -296,7 +300,7 @@ namespace System.Net
             _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
             _outputBuffer.Discard(limit);
 
-            if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+            if (Interlocked.CompareExchange(ref _pendingInput, NoIOPending, ManagedIOPending) == Disposed)
             {
                 _outputBuffer.Dispose();
             }
