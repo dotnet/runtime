@@ -10,7 +10,6 @@
       - MonoVerboseBuild - enable verbose build
       - MonoMetadataUpdate - enable experimental method body replacement code (in Directory.Build.props)
       - MonoThreadSuspend - coop,hybrid,preemptive - default thread suspend mode
-      - MonoMsCorDbi - generate mono mscordbi which implements iCorDebug interface
   -->
 
   <PropertyGroup>
@@ -69,10 +68,6 @@
   <!-- CI specific build options -->
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-    <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1"/>
   </ItemGroup>
 
   <!-- Sanity checks -->
