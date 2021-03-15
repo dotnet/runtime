@@ -1500,7 +1500,7 @@ namespace Mono.Linker.Steps
 			if (CheckProcessed (field))
 				return;
 
-			MarkType (field.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, field), field);
+			MarkType (field.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, field), reason.Source as IMemberDefinition ?? field);
 			MarkType (field.FieldType, new DependencyInfo (DependencyKind.FieldType, field), field);
 			MarkCustomAttributes (field, new DependencyInfo (DependencyKind.CustomAttribute, field), field);
 			MarkMarshalSpec (field, new DependencyInfo (DependencyKind.FieldMarshalSpec, field), field);
@@ -1711,7 +1711,7 @@ namespace Mono.Linker.Steps
 				// For virtuals that must be preserved, blame the declaring type.
 				MarkMethodsIf (type.Methods, IsVirtualNeededByTypeDueToPreservedScope, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), type);
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod)
-					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), type);
+					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), sourceLocationMember);
 
 				MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 			}
@@ -2592,6 +2592,7 @@ namespace Mono.Linker.Steps
 		{
 			switch (dependencyKind) {
 			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.CctorForType:
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.DynamicDependency:
 			case DependencyKind.ElementMethod:
