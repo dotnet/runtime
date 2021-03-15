@@ -1704,22 +1704,29 @@ var MonoSupportLib = {
 		},
 
 		_initialize_workers: function () {
-			var chan = Module.channel.create();
-			var worker = new Worker ("crypto_worker.js");
-			worker.postMessage ({
-				comm_buf: chan.get_comm_buffer(),
-				msg_buf: chan.get_msg_buffer(),
-				msg_char_len: chan.get_msg_len()
-			});
-			MONO.mono_wasm_crypto.channel = chan;
-			MONO.mono_wasm_crypto.worker = worker;
+			console.debug ("MONO_WASM: Initialize WebWorkers");
+			// Crypto support is only available in the Browser.
+			if (ENVIRONMENT_IS_WEB) {
+				var chan = Module.channel.create();
+				var worker = new Worker ("crypto_worker.js");
+				worker.postMessage ({
+					comm_buf: chan.get_comm_buffer(),
+					msg_buf: chan.get_msg_buffer(),
+					msg_char_len: chan.get_msg_len()
+				});
+				MONO.mono_wasm_crypto.channel = chan;
+				MONO.mono_wasm_crypto.worker = worker;
+			}
 		},
 
 		_shutdown_workers: function () {
-			console.debug ("MONO_WASM: WebWorkers shutdown");
-			var chan = MONO.mono_wasm_crypto.channel;
-			if (chan !== null) {
-				chan.shutdown ();
+			console.debug ("MONO_WASM: Shutdown WebWorkers");
+			// Crypto support is only available in the Browser.
+			if (ENVIRONMENT_IS_WEB) {
+				var chan = MONO.mono_wasm_crypto.channel;
+				if (chan !== null) {
+					chan.shutdown ();
+				}
 			}
 		},
 
