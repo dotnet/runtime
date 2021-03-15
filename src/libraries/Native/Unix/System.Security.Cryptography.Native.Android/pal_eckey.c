@@ -49,7 +49,7 @@ void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
                 {
                     (*env)->CallVoidMethod(env, privateKey, g_destroy);
                     ReleaseLRef(env, privateKey);
-                    CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+                    TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
                 }
             }
 
