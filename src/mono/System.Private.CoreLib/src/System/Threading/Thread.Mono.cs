@@ -320,15 +320,16 @@ namespace System.Threading
         private static extern void InitInternal(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InitializeCurrentThread_icall([NotNull] ref Thread? thread);
+        private static extern Thread GetCurrentThread();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
-            InitializeCurrentThread_icall(ref t_currentThread);
+            var current = GetCurrentThread();
 #if TARGET_UNIX || TARGET_BROWSER
-            t_currentThread.EnsureWaitInfo();
+            current.EnsureWaitInfo();
 #endif
+            t_currentThread = current;
             return t_currentThread;
         }
 

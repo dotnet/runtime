@@ -1693,10 +1693,10 @@ mono_thread_exit (void)
 	mono_thread_info_exit (0);
 }
 
-void
-ves_icall_System_Threading_Thread_GetCurrentThread (MonoThread *volatile* thread)
+MonoThread *
+ves_icall_System_Threading_Thread_GetCurrentThread (void)
 {
-	*thread = mono_thread_current ();
+	return mono_thread_current ();
 }
 
 static MonoInternalThread*
