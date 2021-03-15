@@ -30,7 +30,7 @@ namespace System.IO
         private int _startIndex; // First unprocessed index in the buffer;
         private int _endIndex; // Index after last unprocessed index in the buffer;
 
-        private ConsoleKey[] denyList = new ConsoleKey[]
+        private readonly ConsoleKey[] denyList = new ConsoleKey[]
         {
             ConsoleKey.Backspace,
             ConsoleKey.LeftArrow,
