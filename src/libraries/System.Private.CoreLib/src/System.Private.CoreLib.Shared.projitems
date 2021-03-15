@@ -946,7 +946,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf16Utility.Validation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.WhiteSpace.CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeDebug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeUtility.cs" />
