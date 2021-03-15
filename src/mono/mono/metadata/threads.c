@@ -1712,55 +1712,6 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	mono_thread_name_cleanup (&this_obj->name);
 }
 
-static void
-mono_sleep_internal (gint32 ms, MonoBoolean allow_interruption, MonoError *error)
-{
-	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
-
-	MonoInternalThread * const thread = mono_thread_internal_current ();
-
-	HANDLE_LOOP_PREPARE;
-
-	while (TRUE) {
-		gboolean alerted = FALSE;
-
-		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-
-		(void)mono_thread_info_sleep (ms, &alerted);
-
-		mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
-
-		if (!alerted)
-			return;
-
-		if (allow_interruption) {
-			SETUP_ICALL_FRAME;
-
-			MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
-
-			const gboolean interrupt = mono_thread_execute_interruption (&exc);
-
-			if (interrupt)
-				mono_set_pending_exception_handle (exc);
-
-			CLEAR_ICALL_FRAME;
-
-			if (interrupt)
-				return;
-		}
-
-		if (ms == MONO_INFINITE_WAIT) // FIXME: !MONO_INFINITE_WAIT
-			continue;
-		return;
-	}
-}
-
-void
-ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoBoolean allow_interruption, MonoError *error)
-{
-	mono_sleep_internal (ms, allow_interruption, error);
-}
-
 /**
  * mono_thread_get_name_utf8:
  * \returns the name of the thread in UTF-8.

@@ -119,8 +119,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
-        public static void Sleep(int millisecondsTimeout) => SleepInternal(millisecondsTimeout);
-
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void UninterruptibleSleep0();
 

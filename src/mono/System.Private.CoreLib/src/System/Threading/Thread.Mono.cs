@@ -196,8 +196,7 @@ namespace System.Threading
 
         public bool Join(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            VerifyTimeoutMilliseconds(millisecondsTimeout);
             return JoinInternal(this, millisecondsTimeout);
         }
 
@@ -228,16 +227,6 @@ namespace System.Threading
             while (iterations-- > 0)
                 SpinWait_nop();
         }
-
-        public static void Sleep(int millisecondsTimeout)
-        {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-
-            SleepInternal(millisecondsTimeout, true);
-        }
-
-        internal static void UninterruptibleSleep0() => SleepInternal(0, false);
 
         // Called from the runtime
         internal void StartCallback()
@@ -359,9 +348,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool YieldInternal();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void SleepInternal(int millisecondsTimeout, bool allowInterruption);
 
         [Intrinsic]
         private static void SpinWait_nop()
