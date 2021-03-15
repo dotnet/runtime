@@ -316,8 +316,6 @@
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
      <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
      <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
-
 
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
