@@ -203,8 +203,8 @@ jobs:
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        runtimeType: aot
-        codeGenType: 'aot'
+        runtimeType: mono
+        codeGenType: 'AOT'
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
