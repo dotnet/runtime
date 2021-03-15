@@ -188,6 +188,27 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
+        public void InstanceTests()
+        {
+            var logger = new MockLogger();
+            var o = new TestInstances(logger);
+
+            logger.Reset();
+            o.M0();
+            Assert.Null(logger.LastException);
+            Assert.Equal("M0", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Error, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            o.M1("Foo");
+            Assert.Null(logger.LastException);
+            Assert.Equal("M1 Foo", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
         public void LevelTests()
         {
             var logger = new MockLogger();

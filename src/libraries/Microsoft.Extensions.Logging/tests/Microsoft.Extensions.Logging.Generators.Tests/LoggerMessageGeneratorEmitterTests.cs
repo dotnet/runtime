@@ -60,6 +60,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 + await File.ReadAllTextAsync(@"..\..\..\TestClasses\EventNameTestExtensions.cs")
                 + await File.ReadAllTextAsync(@"..\..\..\TestClasses\SignatureTestExtensions.cs")
                 + await File.ReadAllTextAsync(@"..\..\..\TestClasses\MessageTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\TestInstances.cs")
                 + await File.ReadAllTextAsync(@"..\..\..\TestClasses\CollectionTestExtensions.cs");
 
             var (d, r) = await RoslynTestUtils.RunGenerator(

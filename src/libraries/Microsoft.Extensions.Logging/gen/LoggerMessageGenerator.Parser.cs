@@ -162,12 +162,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
                                         }
 
-                                        if (!isStatic)
-                                        {
-                                            Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
-                                            keepMethod = false;
-                                        }
-
                                         if (!isPartial)
                                         {
                                             Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
@@ -319,10 +313,14 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         if (keepMethod)
                                         {
-                                            if (!foundLogger)
+                                            if (isStatic && !foundLogger)
                                             {
                                                 Diag(DiagDescriptors.ErrorMissingLogger, method.GetLocation());
                                                 keepMethod = false;
+                                            }
+                                            else if (!isStatic && foundLogger)
+                                            {
+                                                Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
                                             }
 
                                             if (level == null && !foundLogLevel)

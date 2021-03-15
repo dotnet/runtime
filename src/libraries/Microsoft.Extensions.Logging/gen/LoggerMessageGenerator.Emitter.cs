@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message!)}\"";
                 }
 
-                string loggerArg = string.Empty;
+                string loggerArg = "_logger";
                 foreach (var p in lm.AllParameters)
                 {
                     if (p.IsLogger)
