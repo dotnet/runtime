@@ -6,6 +6,7 @@
       <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
       <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
       <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
+      <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>--targetarch:$(TargetArchitecture)</PublishReadyToRunCrossgen2ExtraArgs>
 
       <JitTargetOSComponent>unix</JitTargetOSComponent>
