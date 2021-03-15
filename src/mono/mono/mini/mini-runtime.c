@@ -4896,7 +4896,6 @@ runtime_cleanup (MonoDomain *domain, gpointer user_data)
 	mini_cleanup (domain);
 }
 
-#ifdef DISABLE_CLEANUP
 void
 mini_cleanup (MonoDomain *domain)
 {
@@ -4911,100 +4910,6 @@ mini_cleanup (MonoDomain *domain)
 	ds_server_shutdown ();
 #endif
 }
-#else
-void
-mini_cleanup (MonoDomain *domain)
-{
-	if (mono_stats.enabled)
-		g_printf ("Printing runtime stats at shutdown\n");
-	if (mono_profiler_sampling_enabled ())
-		mono_runtime_shutdown_stat_profiler ();
-
-	MONO_PROFILER_RAISE (runtime_shutdown_begin, ());
-
-#ifndef DISABLE_COM
-	mono_cominterop_release_all_rcws ();
-#endif
-
-#ifndef MONO_CROSS_COMPILE
-	/*
-	 * mono_domain_finalize () needs to be called early since it needs the
-	 * execution engine still fully working (it may invoke managed finalizers).
-	 */
-	mono_domain_finalize (domain, 2000);
-#endif
-
-	/* This accesses metadata so needs to be called before runtime shutdown */
-	mono_runtime_print_stats ();
-	jit_stats_cleanup ();
-
-#ifndef MONO_CROSS_COMPILE
-	mono_runtime_cleanup (domain);
-#endif
-
-	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
-
-	mono_profiler_cleanup ();
-
-	if (profile_options) {
-		for (guint i = 0; i < profile_options->len; ++i)
-			g_free (g_ptr_array_index (profile_options, i));
-		g_ptr_array_free (profile_options, TRUE);
-	}
-
-	mono_icall_cleanup ();
-
-	mono_runtime_cleanup_handlers ();
-
-#ifndef MONO_CROSS_COMPILE
-	mono_domain_free (domain, TRUE);
-#endif
-	free_jit_tls_data (mono_tls_get_jit_tls ());
-
-#ifdef ENABLE_LLVM
-	if (mono_use_llvm)
-		mono_llvm_cleanup ();
-#endif
-
-	mono_aot_cleanup ();
-
-	mono_trampolines_cleanup ();
-
-	mono_unwind_cleanup ();
-
-	mono_code_manager_destroy (global_codeman);
-	g_free (vtable_trampolines);
-
-	mini_jit_cleanup ();
-
-	mini_get_interp_callbacks ()->cleanup ();
-
-	mono_tramp_info_cleanup ();
-
-	mono_arch_cleanup ();
-
-	mono_generic_sharing_cleanup ();
-
-	mono_cleanup_native_crash_info ();
-
-	mono_cleanup ();
-
-	mono_trace_cleanup ();
-
-	if (mono_inject_async_exc_method)
-		mono_method_desc_free (mono_inject_async_exc_method);
-
-	mono_tls_free_keys ();
-
-	mono_os_mutex_destroy (&jit_mutex);
-
-	mono_code_manager_cleanup ();
-
-#ifndef HOST_WIN32
-	mono_w32handle_cleanup ();
-#endif
-}
-#endif
 
 void
 mono_set_defaults (int verbose_level, guint32 opts)
