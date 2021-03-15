@@ -61,6 +61,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (var lm in lc.Methods)
                     {
+                        AutoGenerateMessage(lm);
+                    }
+
+                    foreach (var lm in lc.Methods)
+                    {
                         _ = sb.Append(GenNameArray(lm));
                     }
 
@@ -102,7 +107,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenFormatFunc(LoggerMethod lm)
             {
-                if (!lm.MessageHasTemplates)
+                if (lm.Templates.Count == 0)
                 {
                     return string.Empty;
                 }
@@ -111,28 +116,21 @@ namespace Microsoft.Extensions.Logging.Generators
                 try
                 {
                     string typeName;
-                    if (lm.Parameters.Count == 1)
+                    if (lm.RegularParameters.Count == 1)
                     {
-                        typeName = $"global::{StateHolderNamespace}.LogStateHolder<{lm.Parameters[0].Type}>";
-                        _ = sb.Append($"                                var {lm.Parameters[0].Name} = _holder.Value;\n");
+                        typeName = $"global::{StateHolderNamespace}.LogStateHolder<{lm.RegularParameters[0].Type}>";
                     }
-                    else if (lm.Parameters.Count > MaxStateHolderArity)
+                    else if (lm.RegularParameters.Count > MaxStateHolderArity)
                     {
                         typeName = $"global::{StateHolderNamespace}.LogStateHolderN";
-
-                        var index = 0;
-                        foreach (var p in lm.Parameters)
-                        {
-                            _ = sb.Append($"                                var {p.Name} = _holder[{index++}].Value;\n");
-                        }
                     }
                     else
                     {
                         _ = sb.Append($"global::{StateHolderNamespace}.LogStateHolder<");
 
-                        foreach (var p in lm.Parameters)
+                        foreach (var p in lm.RegularParameters)
                         {
-                            if (p != lm.Parameters[0])
+                            if (p != lm.RegularParameters[0])
                             {
                                 _ = sb.Append(", ");
                             }
@@ -142,12 +140,35 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         _ = sb.Append('>');
                         typeName = sb.ToString();
-
                         _ = sb.Clear();
-                        var index = 1;
-                        foreach (var p in lm.Parameters)
+                    }
+
+                    foreach (var t in lm.Templates)
+                    {
+                        if (lm.RegularParameters.Count == 1)
                         {
-                            _ = sb.Append($"                                var {p.Name} = _holder.Value{index++};\n");
+                            _ = sb.Append($"                                var {t} = _holder.Value;\n");
+                        }
+                        else
+                        {
+                            int index = 0;
+                            foreach (var p in lm.RegularParameters)
+                            {
+                                if (p.Name == t)
+                                {
+                                    break;
+                                }
+                                index++;
+                            }
+
+                            if (lm.RegularParameters.Count > MaxStateHolderArity)
+                            {
+                                _ = sb.Append($"                                var {t} = _holder[{index}].Value;\n");
+                            }
+                            else
+                            {
+                                _ = sb.Append($"                                var {t} = _holder.Value{index + 1};\n");
+                            }
                         }
                     }
 
@@ -156,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             private static readonly global::System.Func<{typeName}, global::System.Exception?, string> _format{lm.Name} = (_holder, _) =>
                             {{
 {sb}
-                                return $""{EscapeMessageString(lm.Message)}"";
+                                return $""{EscapeMessageString(lm.Message!)}"";
                             }};
                 ";
                 }
@@ -168,7 +189,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenNameArray(LoggerMethod lm)
             {
-                if (lm.Parameters.Count is < MinStateHolderWithNameArray or > MaxStateHolderArity)
+                if (lm.RegularParameters.Count is < MinStateHolderWithNameArray or > MaxStateHolderArity)
                 {
                     return string.Empty;
                 }
@@ -178,7 +199,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     _ = sb.Append("\n                            [global::System.Runtime.CompilerServices.CompilerGenerated]\n");
                     _ = sb.Append($"                            private static readonly string[] _names{lm.Name} = new[] {{ ");
-                    foreach (var p in lm.Parameters)
+                    foreach (var p in lm.RegularParameters)
                     {
                         _ = sb.Append($"\"{NormalizeArgumentName(p.Name)}\", ");
                     }
@@ -198,7 +219,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (lm.Level == null)
                 {
-                    foreach (var p in lm.Parameters)
+                    foreach (var p in lm.AllParameters)
                     {
                         if (p.IsLogLevel)
                         {
@@ -235,7 +256,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 string exceptionArg = "null";
-                foreach (var p in lm.Parameters)
+                foreach (var p in lm.AllParameters)
                 {
                     if (p.IsException)
                     {
@@ -245,23 +266,33 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 string formatFunc;
-                if (lm.MessageHasTemplates)
+                if (lm.Templates.Count != 0)
                 {
                     formatFunc = $"_format{lm.Name}";
                 }
                 else
                 {
-                    formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message)}\"";
+                    formatFunc = $"(_, _) => \"{EscapeMessageString(lm.Message!)}\"";
+                }
+
+                string loggerArg = string.Empty;
+                foreach (var p in lm.AllParameters)
+                {
+                    if (p.IsLogger)
+                    {
+                        loggerArg = p.Name;
+                        break;
+                    }
                 }
 
 #pragma warning disable S103 // Lines should not be too long
                 return $@"
                             [global::System.Runtime.CompilerServices.CompilerGenerated]
-                            {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{lm.LoggerType} {lm.LoggerName}{(lm.Parameters.Count > 0 ? ", " : string.Empty)}{GenParameters(lm)})
+                            {lm.Modifiers} void {lm.Name}({(lm.IsExtensionMethod ? "this " : string.Empty)}{GenParameters(lm)})
                             {{
-                                if ({lm.LoggerName}.IsEnabled({level}))
+                                if ({loggerArg}.IsEnabled({level}))
                                 {{
-                                    {lm.LoggerName}.Log(
+                                    {loggerArg}.Log(
                                         {level},
                                         new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}),
                                         {GenHolder(lm, formatFunc)},
@@ -273,14 +304,52 @@ namespace Microsoft.Extensions.Logging.Generators
 #pragma warning restore S103 // Lines should not be too long
             }
 
+            private void AutoGenerateMessage(LoggerMethod lm)
+            {
+                if (!string.IsNullOrEmpty(lm.Message))
+                {
+                    // already got a message
+                    return;
+                }
+
+                if (lm.RegularParameters.Count == 0)
+                {
+                    lm.Message = "{}";
+                    return;
+                }
+
+                var sb = GetStringBuilder();
+                try
+                {
+                    sb.Append("{{");
+                    foreach (var p in lm.RegularParameters)
+                    {
+                        if (p != lm.RegularParameters[0])
+                        {
+                            sb.Append(',');
+                        }
+
+                        _ = sb.Append($"\"{p.Name}\":\"{{{p.Name}}}\"");
+                        lm.Templates.Add(p.Name);
+                    }
+
+                    sb.Append("}}");
+                    lm.Message = sb.ToString();
+                }
+                finally
+                {
+                    ReturnStringBuilder(sb);
+                }
+            }
+
             private string GenParameters(LoggerMethod lm)
             {
                 var sb = GetStringBuilder();
                 try
                 {
-                    foreach (var p in lm.Parameters)
+                    foreach (var p in lm.AllParameters)
                     {
-                        if (p != lm.Parameters[0])
+                        if (p != lm.AllParameters[0])
                         {
                             _ = sb.Append(", ");
                         }
@@ -298,24 +367,24 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenHolder(LoggerMethod lm, string formatFunc)
             {
-                if (lm.Parameters.Count == 0)
+                if (lm.RegularParameters.Count == 0)
                 {
                     return $"new global::{StateHolderNamespace}.LogStateHolder({formatFunc})";
                 }
 
-                if (lm.Parameters.Count == 1)
+                if (lm.RegularParameters.Count == 1)
                 {
-                    return $"new global::{StateHolderNamespace}.LogStateHolder<{lm.Parameters[0].Type}>" +
-                        $"({formatFunc}, \"{NormalizeArgumentName(lm.Parameters[0].Name)}\", {lm.Parameters[0].Name})";
+                    return $"new global::{StateHolderNamespace}.LogStateHolder<{lm.RegularParameters[0].Type}>" +
+                            $"({formatFunc}, \"{NormalizeArgumentName(lm.RegularParameters[0].Name)}\", {lm.RegularParameters[0].Name})";
                 }
 
                 var sb = GetStringBuilder();
                 try
                 {
-                    if (lm.Parameters.Count > MaxStateHolderArity)
+                    if (lm.RegularParameters.Count > MaxStateHolderArity)
                     {
                         _ = sb.Append($"new global::{StateHolderNamespace}.LogStateHolderN({formatFunc}, new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
-                        foreach (var p in lm.Parameters)
+                        foreach (var p in lm.RegularParameters)
                         {
                             _ = sb.Append($"new (\"{NormalizeArgumentName(p.Name)}\", {p.Name}), ");
                         }
@@ -324,9 +393,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                     else
                     {
-                        foreach (var p in lm.Parameters)
+                        foreach (var p in lm.RegularParameters)
                         {
-                            if (p != lm.Parameters[0])
+                            if (p != lm.RegularParameters[0])
                             {
                                 _ = sb.Append(", ");
                             }
@@ -338,9 +407,9 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         _ = sb.Clear();
                         _ = sb.Append($"new global::{StateHolderNamespace}.LogStateHolder<{tp}>({formatFunc}, _names{lm.Name}, ");
-                        foreach (var p in lm.Parameters)
+                        foreach (var p in lm.RegularParameters)
                         {
-                            if (p != lm.Parameters[0])
+                            if (p != lm.RegularParameters[0])
                             {
                                 _ = sb.Append(", ");
                             }

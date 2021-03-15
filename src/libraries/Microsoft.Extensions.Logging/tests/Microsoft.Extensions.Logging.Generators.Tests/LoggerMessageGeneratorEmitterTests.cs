@@ -54,7 +54,13 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             // attained by processing Definitions.cs. The functionality of the
             // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
 
-            var testSourceCode = await File.ReadAllTextAsync(@"..\..\..\Definitions.cs");
+            var testSourceCode = await File.ReadAllTextAsync(@"..\..\..\TestClasses\MiscTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\LevelTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\ArgTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\EventNameTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\SignatureTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\MessageTestExtensions.cs")
+                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\CollectionTestExtensions.cs");
 
             var (d, r) = await RoslynTestUtils.RunGenerator(
                 new LoggerMessageGenerator(),

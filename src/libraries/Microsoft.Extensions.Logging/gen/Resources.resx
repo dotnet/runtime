@@ -123,12 +123,6 @@
   <data name="ErrorInvalidMethodNameMessage" xml:space="preserve">
     <value>Logging method names cannot start with _</value>
   </data>
-  <data name="ErrorInvalidMessageTitle" xml:space="preserve">
-    <value>Missing message for logging method</value>
-  </data>
-  <data name="ErrorInvalidMessageMessage" xml:space="preserve">
-    <value>Missing message for logging method {0}</value>
-  </data>
   <data name="ErrorInvalidParameterNameTitle" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
@@ -159,11 +153,11 @@
   <data name="ErrorInvalidMethodReturnTypeMessage" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
-  <data name="ErrorFirstArgMustBeILoggerTitle" xml:space="preserve">
-    <value>The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
+  <data name="ErrorMissingLoggerTitle" xml:space="preserve">
+    <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
-  <data name="ErrorFirstArgMustBeILoggerMessage" xml:space="preserve">
-    <value>The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
+  <data name="ErrorMissingLoggerMessage" xml:space="preserve">
+    <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
   </data>
   <data name="ErrorNotStaticMethodTitle" xml:space="preserve">
     <value>Logging methods must be static</value>
@@ -230,5 +224,11 @@
   </data>
   <data name="DontMentionLogLevelInMessageTitle" xml:space="preserve">
     <value>Don't include log level parameters as templates in the logging message.</value>
+  </data>
+  <data name="DontMentionLoggerInMessageMessage" xml:space="preserve">
+    <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
+  </data>
+  <data name="DontMentionLoggerInMessageTitle" xml:space="preserve">
+    <value>Don't include logger parameters as templates in the logging message.</value>
   </data>
 </root>

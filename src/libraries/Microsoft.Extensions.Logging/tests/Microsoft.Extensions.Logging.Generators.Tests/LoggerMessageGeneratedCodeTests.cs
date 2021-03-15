@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Generators.Test.TestClasses;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
@@ -111,44 +112,79 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
-        public void ReadOnlyListTest()
+        public void CollectionTest()
         {
             var logger = new MockLogger();
 
             logger.Reset();
-            ReadOnlyListExtensions.M0(logger);
+            CollectionTestExtensions.M0(logger);
             TestCollection(0, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M1(logger, 0);
+            CollectionTestExtensions.M1(logger, 0);
             TestCollection(1, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M2(logger, 0, 1);
+            CollectionTestExtensions.M2(logger, 0, 1);
             TestCollection(2, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M3(logger, 0, 1, 2);
+            CollectionTestExtensions.M3(logger, 0, 1, 2);
             TestCollection(3, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M4(logger, 0, 1, 2, 3);
+            CollectionTestExtensions.M4(logger, 0, 1, 2, 3);
             TestCollection(4, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M5(logger, 0, 1, 2, 3, 4);
+            CollectionTestExtensions.M5(logger, 0, 1, 2, 3, 4);
             TestCollection(5, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M6(logger, 0, 1, 2, 3, 4, 5);
+            CollectionTestExtensions.M6(logger, 0, 1, 2, 3, 4, 5);
             TestCollection(6, logger);
 
             logger.Reset();
-            ReadOnlyListExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
+            CollectionTestExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
             TestCollection(7, logger);
 
-            // TestCollection is doing all the testing for us
-            Assert.True(true);
+            logger.Reset();
+            CollectionTestExtensions.M8(logger, LogLevel.Critical, 0, new ArgumentException("Foo"), 1);
+            TestCollection(2, logger);
+        }
+
+        [Fact]
+        public void MessageTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            MessageTestExtensions.M0(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("{}", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M1(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("{}", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M2(logger, "Foo", "Bar");
+            Assert.Null(logger.LastException);
+            Assert.Equal("{\"p1\":\"Foo\",\"p2\":\"Bar\"}", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M3(logger, "Foo", 42);
+            Assert.Null(logger.LastException);
+            Assert.Equal("{\"p1\":\"Foo\",\"p2\":\"42\"}", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
@@ -210,6 +246,40 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             Assert.Null(logger.LastException);
             Assert.Equal("M7", logger.LastFormattedString);
             Assert.Equal((LogLevel)42, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M8(logger, LogLevel.Critical);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M8", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Critical, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M9(LogLevel.Trace, logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M9", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+        }
+
+        [Fact]
+        public void ExceptionTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            ExceptionTestExtensions.M0(logger, new ArgumentException("Foo"), new ArgumentException("Bar"));
+            Assert.Equal("Foo", logger.LastException!.Message);
+            Assert.Equal("M0 System.ArgumentException: Bar", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ExceptionTestExtensions.M1(new ArgumentException("Foo"), logger, new ArgumentException("Bar"));
+            Assert.Equal("Foo", logger.LastException!.Message);
+            Assert.Equal("M1 System.ArgumentException: Bar", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
         }
 

@@ -14,10 +14,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor ErrorInvalidMessage { get; } = new (
+        public static DiagnosticDescriptor DontMentionLogLevelInMessage { get; } = new (
             id: "LG0001",
-            title: Resources.ErrorInvalidMessageTitle,
-            messageFormat: Resources.ErrorInvalidMessageMessage,
+            title: Resources.DontMentionLogLevelInMessageTitle,
+            messageFormat: Resources.DontMentionLogLevelInMessageMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -62,10 +62,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor ErrorFirstArgMustBeILogger { get; } = new (
+        public static DiagnosticDescriptor ErrorMissingLogger { get; } = new (
             id: "LG0007",
-            title: Resources.ErrorFirstArgMustBeILoggerTitle,
-            messageFormat: Resources.ErrorFirstArgMustBeILoggerMessage,
+            title: Resources.ErrorMissingLoggerTitle,
+            messageFormat: Resources.ErrorMissingLoggerMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.Logging.Generators
             title: Resources.ArgumentHasNoCorrespondingTemplateTitle,
             messageFormat: Resources.ArgumentHasNoCorrespondingTemplateMessage,
             category: "LoggingGenerator",
-            DiagnosticSeverity.Error,
+            DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ErrorMethodHasBody { get; } = new (
@@ -150,10 +150,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor DontMentionLogLevelInMessage { get; } = new (
+        public static DiagnosticDescriptor DontMentionLoggerInMessage { get; } = new (
             id: "LG0018",
-            title: Resources.DontMentionLogLevelInMessageTitle,
-            messageFormat: Resources.DontMentionLogLevelInMessageMessage,
+            title: Resources.DontMentionLoggerInMessageTitle,
+            messageFormat: Resources.DontMentionLoggerInMessageMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

@@ -99,6 +99,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         /// <summary>
         ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
         /// </summary>
+        internal static string DontMentionLoggerInMessageMessage {
+            get {
+                return ResourceManager.GetString("DontMentionLoggerInMessageMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include logger parameters as templates in the logging message..
+        /// </summary>
+        internal static string DontMentionLoggerInMessageTitle {
+            get {
+                return ResourceManager.GetString("DontMentionLoggerInMessageTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Don&apos;t include a template for {0} in the logging message since it is implicitly taken care of.
+        /// </summary>
         internal static string DontMentionLogLevelInMessageMessage {
             get {
                 return ResourceManager.GetString("DontMentionLogLevelInMessageMessage", resourceCulture);
@@ -129,42 +147,6 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string ErrorEventIdReuseTitle {
             get {
                 return ResourceManager.GetString("ErrorEventIdReuseTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
-        /// </summary>
-        internal static string ErrorFirstArgMustBeILoggerMessage {
-            get {
-                return ResourceManager.GetString("ErrorFirstArgMustBeILoggerMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The first argument to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
-        /// </summary>
-        internal static string ErrorFirstArgMustBeILoggerTitle {
-            get {
-                return ResourceManager.GetString("ErrorFirstArgMustBeILoggerTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Missing message for logging method {0}.
-        /// </summary>
-        internal static string ErrorInvalidMessageMessage {
-            get {
-                return ResourceManager.GetString("ErrorInvalidMessageMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Missing message for logging method.
-        /// </summary>
-        internal static string ErrorInvalidMessageTitle {
-            get {
-                return ResourceManager.GetString("ErrorInvalidMessageTitle", resourceCulture);
             }
         }
         
@@ -255,6 +237,24 @@ namespace Microsoft.Extensions.Logging.Generators {
         internal static string ErrorMethodIsGenericTitle {
             get {
                 return ResourceManager.GetString("ErrorMethodIsGenericTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
+        /// </summary>
+        internal static string ErrorMissingLoggerMessage {
+            get {
+                return ResourceManager.GetString("ErrorMissingLoggerMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface.
+        /// </summary>
+        internal static string ErrorMissingLoggerTitle {
+            get {
+                return ResourceManager.GetString("ErrorMissingLoggerTitle", resourceCulture);
             }
         }
         
