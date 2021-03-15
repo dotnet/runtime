@@ -1077,7 +1077,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     if (varTypeIsArithmetic(op1->TypeGet()))
                     {
-                        scalarOp = &op1;
+                        // MultiplyByScalar requires the scalar op to be op2
+                        std::swap(op1, op2);
+
+                        scalarOp = &op2;
                     }
                     else if (varTypeIsArithmetic(op2->TypeGet()))
                     {
