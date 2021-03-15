@@ -22,6 +22,10 @@
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
