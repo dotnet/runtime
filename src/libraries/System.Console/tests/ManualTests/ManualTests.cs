@@ -251,6 +251,16 @@ namespace System
             AssertUserExpectedResults("Pi and Segma or question marks");
         }
 
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void CursorMovementTest()
+        {
+            Console.WriteLine("Write some text then use left/right arrow keys, Ctrl + Left/Right (Cmd + Left/Right on MacOS), and Home/End and make edits to the text.");
+            string input = Console.ReadLine();
+            Console.WriteLine(input);
+            AssertUserExpectedResults("What you typed as it appeared in the preview");
+        }
+
         private static void AssertUserExpectedResults(string expected)
         {
             Console.Write($"Did you see {expected}? [y/n] ");
