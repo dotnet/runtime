@@ -2445,6 +2445,7 @@ void     mono_arch_undo_ip_adjustment           (MonoContext *ctx);
 void     mono_arch_do_ip_adjustment             (MonoContext *ctx);
 gpointer mono_arch_ip_from_context              (void *sigctx);
 host_mgreg_t mono_arch_context_get_int_reg      (MonoContext *ctx, int reg);
+host_mgreg_t*mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg);
 void     mono_arch_context_set_int_reg		(MonoContext *ctx, int reg, host_mgreg_t val);
 void     mono_arch_flush_register_windows       (void);
 gboolean mono_arch_is_inst_imm                  (int opcode, int imm_opcode, gint64 imm);
@@ -2877,24 +2878,6 @@ enum {
 
 /* SIMD operations */
 typedef enum {
-	SIMD_OP_ARM64_FABS,
-	SIMD_OP_ARM64_DABS,
-	SIMD_OP_ARM64_I8ABS,
-	SIMD_OP_ARM64_I16ABS,
-	SIMD_OP_ARM64_I32ABS,
-	SIMD_OP_ARM64_I64ABS,
-	SIMD_OP_ARM64_I8ABS_SATURATE,
-	SIMD_OP_ARM64_I16ABS_SATURATE,
-	SIMD_OP_ARM64_I32ABS_SATURATE,
-	SIMD_OP_ARM64_I64ABS_SATURATE,
-	SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN,
-	SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN,
-	SIMD_OP_ARM64_FABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL,
-	SIMD_OP_ARM64_DABSOLUTE_COMPARE_GREATER_THAN_OR_EQUAL,
-	SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN,
-	SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN,
-	SIMD_OP_ARM64_FABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL,
-	SIMD_OP_ARM64_DABSOLUTE_COMPARE_LESS_THAN_OR_EQUAL,
 	SIMD_OP_SSE_CVTSS2SI,
 	SIMD_OP_SSE_CVTTSS2SI,
 	SIMD_OP_SSE_CVTSS2SI64,
@@ -2996,7 +2979,7 @@ typedef enum {
 	SIMD_OP_ARM64_SHA256SU0,
 	SIMD_OP_ARM64_SHA256SU1,
 	SIMD_OP_ARM64_PMULL64_LOWER,
-	SIMD_OP_ARM64_PMULL64_UPPER
+	SIMD_OP_ARM64_PMULL64_UPPER,
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);

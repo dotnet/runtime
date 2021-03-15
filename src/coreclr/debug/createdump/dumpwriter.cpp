@@ -203,23 +203,23 @@ DumpWriter::WriteDump()
         // Only write the regions that are backed by memory
         if (memoryRegion.IsBackedByMemory())
         {
-            uint32_t size = memoryRegion.Size();
             uint64_t address = memoryRegion.StartAddress();
+            size_t size = memoryRegion.Size();
             total += size;
 
             while (size > 0)
             {
-                uint32_t bytesToRead = std::min(size, (uint32_t)sizeof(m_tempBuffer));
+                size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
                 size_t read = 0;
 
                 if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) FAILED\n", address, bytesToRead);
+                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
                     return false;
                 }
 
                 // This can happen if the target process dies before createdump is finished
                 if (read == 0) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08x) returned 0 bytes read\n", address, bytesToRead);
+                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
                     return false;
                 }
 

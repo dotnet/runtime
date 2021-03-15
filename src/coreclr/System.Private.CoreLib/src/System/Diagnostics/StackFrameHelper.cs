@@ -83,13 +83,6 @@ namespace System.Diagnostics
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
 
-        // TODO: Remove these DynamicDependencyAttributes when https://github.com/mono/linker/issues/943 is fixed.
-        // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
-        // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
-        // is not always part of the closure linker works on.
-        // DynamicDependencyAttribute on the other hand can pull in additional assemblies.
-        [DynamicDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
-        [DynamicDependency("#ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
         internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);

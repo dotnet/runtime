@@ -23,3 +23,6 @@ PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* loc
                                                                 TimeZoneDisplayNameType type,
                                                                 UChar* result,
                                                                 int32_t resultLength);
+
+PALEXPORT int32_t GlobalizationNative_WindowsIdToIanaId(const UChar* windowsId, UChar* ianaId, int32_t ianaIdLength);
+PALEXPORT int32_t GlobalizationNative_IanaIdToWindowsId(const UChar* ianaId, UChar* windowsId, int32_t windowsIdLength);
