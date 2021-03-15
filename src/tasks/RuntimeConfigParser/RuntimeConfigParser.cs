@@ -100,7 +100,7 @@ public class RuntimeConfigParserTask : Task
 public class Root
 {
     // the configProperties key
-    [JsonPropertyName ("configProperties")]
+    [JsonPropertyName("configProperties")]
     public Dictionary<string, string> ConfigProperties {get; set;} = new Dictionary<string, string> ();
     // everything other than configProperties
     [JsonExtensionData]
