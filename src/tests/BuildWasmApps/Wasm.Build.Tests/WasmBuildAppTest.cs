@@ -61,6 +61,18 @@ namespace Wasm.Build.Tests
                     }
                 }", buildArgs, host, id);
 
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        public void Bug49588_RegressionTest(BuildArgs buildArgs, RunHost host, string id)
+            => TestMain("bug49588", @"
+                public class TestClass {
+                    public static int Main()
+                    {
+                        System.Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
+                        return 42;
+                    }
+                }", buildArgs, host, id);
+
         void TestMain(string projectName, string programText, BuildArgs buildArgs, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
