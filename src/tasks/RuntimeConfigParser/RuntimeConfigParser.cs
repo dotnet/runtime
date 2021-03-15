@@ -101,7 +101,7 @@ public class Root
 {
     // the configProperties key
     [JsonPropertyName("configProperties")]
-    public Dictionary<string, string> ConfigProperties {get; set;} = new Dictionary<string, string> ();
+    public Dictionary<string, string> ConfigProperties { get; set; } = new Dictionary<string, string>();
     // everything other than configProperties
     [JsonExtensionData]
     public Dictionary<string, object> ExtensionData {get; set;} = new Dictionary<string, object> ();
