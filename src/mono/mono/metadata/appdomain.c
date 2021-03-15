@@ -517,6 +517,53 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 	return mono_mem_manager_mp_contains_addr (mono_mem_manager_get_ambient (), vtable_slot);
 }
 
+void
+mono_domain_set_fast (MonoDomain *domain)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	mono_domain_set_internal_with_options (domain, TRUE);
+}
+
+static gboolean
+add_assembly_to_array (MonoArrayHandle dest, int dest_idx, MonoAssembly* assm, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (assm, error);
+	goto_if_nok (error, leave);
+	MONO_HANDLE_ARRAY_SETREF (dest, dest_idx, assm_obj);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+}
+
+static MonoArrayHandle
+get_assembly_array_from_domain (MonoDomain *domain, MonoError *error)
+{
+	int i;
+	GPtrArray *assemblies;
+
+	assemblies = mono_domain_get_assemblies (domain);
+
+	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
+	goto_if_nok (error, leave);
+	for (i = 0; i < assemblies->len; ++i) {
+		if (!add_assembly_to_array (res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
+			goto leave;
+	}
+
+leave:
+	g_ptr_array_free (assemblies, TRUE);
+	return res;
+}
+
+MonoArrayHandle
+ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies (MonoError *error)
+{
+	MonoDomain *domain = mono_domain_get ();
+	return get_assembly_array_from_domain (domain, error);
+}
+
 MonoAssembly*
 mono_try_assembly_resolve (MonoAssemblyLoadContext *alc, const char *fname_raw, MonoAssembly *requesting, MonoError *error)
 {

@@ -761,13 +761,12 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 static void 
 mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, void *alloc_key);
 
-static gboolean
-mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean force_domain)
+static void
+mono_thread_attach_internal (MonoThread *thread)
 {
 	MonoThreadInfo *info;
 	MonoInternalThread *internal;
-	MonoDomain *domain, *root_domain;
-	MonoGCHandle gchandle;
+	MonoDomain *domain = mono_get_root_domain ();
 
 	g_assert (thread);
 
@@ -794,10 +793,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	SET_CURRENT_OBJECT (internal);
 
-	domain = mono_object_domain (thread);
-
-	if (!mono_domain_set_fast (domain, force_domain))
-		goto fail;
+	mono_domain_set_fast (domain);
 
 	mono_threads_lock ();
 
@@ -822,33 +818,12 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	mono_threads_unlock ();
 
-	root_domain = mono_get_root_domain ();
-
 #ifdef MONO_METADATA_UPDATE
 	/* Roll up to the latest published metadata generation */
 	mono_metadata_update_thread_expose_published ();
 #endif
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, internal->tid, internal->handle));
-
-	return TRUE;
-
-fail:
-	mono_threads_lock ();
-	if (threads_starting_up)
-		mono_g_hash_table_remove (threads_starting_up, thread);
-	mono_threads_unlock ();
-
-	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
-		g_error ("%s: failed to get gchandle, info %p", __func__, info);
-
-	mono_gchandle_free_internal (gchandle);
-
-	mono_thread_info_unset_internal_thread_gchandle (info);
-
-	SET_CURRENT_OBJECT(NULL);
-
-	return FALSE;
 }
 
 static void
@@ -1046,18 +1021,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper", __func__, mono_native_thread_id_get ()));
 
-	if (!mono_thread_attach_internal (thread, start_info->force_attach, FALSE)) {
-		start_info->failed = TRUE;
-
-		mono_coop_sem_post (&start_info->registered);
-
-		if (mono_atomic_dec_i32 (&start_info->ref) == 0) {
-			mono_coop_sem_destroy (&start_info->registered);
-			g_free (start_info);
-		}
-
-		return 0;
-	}
+	mono_thread_attach_internal (thread);
 
 	mono_thread_internal_set_priority (internal, (MonoThreadPriority)internal->priority);
 
@@ -1451,8 +1415,6 @@ mono_thread_internal_attach (MonoDomain *domain)
 	MonoNativeThreadId tid;
 
 	if (mono_thread_internal_current_is_attached ()) {
-		if (domain != mono_domain_get ())
-			mono_domain_set_fast (domain, TRUE);
 		/* Already attached */
 		return mono_thread_current ();
 	}
@@ -1496,11 +1458,7 @@ mono_thread_internal_attach (MonoDomain *domain)
 
 	thread = internal;
 
-	if (!mono_thread_attach_internal (thread, FALSE, TRUE)) {
-		/* Mono is shutting down, so just wait for the end */
-		for (;;)
-			mono_thread_info_sleep (10000, NULL);
-	}
+	mono_thread_attach_internal (thread);
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, internal->handle));
 
@@ -4497,20 +4455,13 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
  *  - @stackdata: semi-opaque struct: stackpointer and function_name
  *  - @return: the original domain which needs to be restored, or NULL.
  */
-MonoDomain*
-mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoStackData *stackdata)
+void
+mono_threads_attach_coop_internal (gpointer *cookie, MonoStackData *stackdata)
 {
-	MonoDomain *orig;
 	MonoThreadInfo *info;
 	gboolean external = FALSE;
 
-	orig = mono_domain_get ();
-
-	if (!domain) {
-		/* Happens when called from AOTed code which is only used in the root domain. */
-		domain = mono_get_root_domain ();
-		g_assert (domain);
-	}
+	MonoDomain *domain = mono_get_root_domain ();
 
 	/* On coop, when we detached, we moved the thread from  RUNNING->BLOCKING.
 	 * If we try to reattach we do a BLOCKING->RUNNING transition.  If the thread
@@ -4536,11 +4487,6 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 			*cookie = mono_threads_enter_gc_unsafe_region_unbalanced_internal (stackdata);
 		}
 	}
-
-	if (orig != domain)
-		mono_domain_set_fast (domain, TRUE);
-
-	return orig;
 }
 
 /*
@@ -4557,7 +4503,8 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
 {
 	MONO_STACKDATA (stackdata);
 	stackdata.stackpointer = dummy;
-	return mono_threads_attach_coop_internal (domain, dummy, &stackdata);
+	mono_threads_attach_coop_internal (dummy, &stackdata);
+	return NULL;
 }
 
 /*
@@ -4570,18 +4517,8 @@ mono_threads_attach_coop (MonoDomain *domain, gpointer *dummy)
  *    - non-blocking mode: contains random data
  */
 void
-mono_threads_detach_coop_internal (MonoDomain *orig, gpointer cookie, MonoStackData *stackdata)
+mono_threads_detach_coop_internal (gpointer cookie, MonoStackData *stackdata)
 {
-	MonoDomain *domain = mono_domain_get ();
-	g_assert (domain);
-
-	if (orig != domain) {
-		if (!orig)
-			mono_domain_unset ();
-		else
-			mono_domain_set_fast (orig, TRUE);
-	}
-
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		/* it won't do anything if cookie is NULL
 		 * thread state RUNNING -> (RUNNING|BLOCKING) */
@@ -4603,7 +4540,7 @@ mono_threads_detach_coop (gpointer orig, gpointer *dummy)
 {
 	MONO_STACKDATA (stackdata);
 	stackdata.stackpointer = dummy;
-	mono_threads_detach_coop_internal ((MonoDomain*)orig, *dummy, &stackdata);
+	mono_threads_detach_coop_internal (*dummy, &stackdata);
 }
 
 #if 0
