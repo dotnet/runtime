@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
@@ -19,6 +20,8 @@ namespace System.Net
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
+        private int _pendingInput;
+        private int _pendingOutput;
 
         public SafeSslHandle SslContext => _sslContext;
 
@@ -144,8 +147,16 @@ namespace System.Net
                 SafeSslHandle sslContext = _sslContext;
                 if (null != sslContext)
                 {
-                    _inputBuffer.Dispose();
-                    _outputBuffer.Dispose();
+                    if (Interlocked.Exchange(ref _pendingInput, 2) == 0)
+                    {
+                        _inputBuffer.Dispose();
+                    }
+
+                    if (Interlocked.Exchange(ref _pendingOutput, 2) == 0)
+                    {
+                        _outputBuffer.Dispose();
+                    }
+
                     sslContext.Dispose();
                 }
             }
@@ -158,12 +169,23 @@ namespace System.Net
             ulong length = (ulong)*dataLength;
             Debug.Assert(length <= int.MaxValue);
 
+            if (Interlocked.Exchange(ref _pendingOutput, 1) == 2)
+            {
+                const int writErr = -20;
+                return writErr;
+            }
+
             int toWrite = (int)length;
             var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
 
             _outputBuffer.EnsureAvailableSpace(toWrite);
             inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
             _outputBuffer.Commit(toWrite);
+
+            if (Interlocked.Exchange(ref _pendingOutput, 0) == 2)
+            {
+                _outputBuffer.Dispose();
+            }
 
             // Since we can enqueue everything, no need to re-assign *dataLength.
             const int noErr = 0;
@@ -181,10 +203,21 @@ namespace System.Net
                 return noErr;
             }
 
+            if (Interlocked.Exchange(ref _pendingInput, 1) == 2)
+            {
+               const int readErr = -19;
+               return readErr;
+            }
+
             uint transferred = 0;
 
             if (_inputBuffer.ActiveLength == 0)
             {
+                if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+                {
+                    _inputBuffer.Dispose();
+                }
+
                 *dataLength = (void*)0;
                 return errSSLWouldBlock;
             }
@@ -195,21 +228,41 @@ namespace System.Net
             _inputBuffer.Discard(limit);
             transferred = (uint)limit;
 
+            if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+            {
+                _inputBuffer.Dispose();
+            }
+
             *dataLength = (void*)transferred;
             return noErr;
         }
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
+            if (Interlocked.Exchange(ref _pendingInput, 3) == 2)
+            {
+                throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
+            }
+
             _inputBuffer.EnsureAvailableSpace(buf.Length);
             buf.CopyTo(_inputBuffer.AvailableSpan);
             _inputBuffer.Commit(buf.Length);
+
+           if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+           {
+                _inputBuffer.Dispose();
+           }
         }
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal byte[]? ReadPendingWrites()
         {
+            if (Interlocked.Exchange(ref _pendingOutput, 3) == 2)
+            {
+                throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
+            }
+
             if (_outputBuffer.ActiveLength == 0)
             {
                 return null;
@@ -217,6 +270,11 @@ namespace System.Net
 
             byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
             _outputBuffer.Discard(_outputBuffer.ActiveLength);
+
+            if (Interlocked.Exchange(ref _pendingOutput, 0) == 2)
+            {
+                _outputBuffer.Dispose();
+            }
 
             return buffer;
         }
@@ -228,10 +286,20 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
+            if (Interlocked.Exchange(ref _pendingOutput, 3) == 2)
+            {
+                throw new ObjectDisposedException(nameof(SafeDeleteSslContext));
+            }
+
             int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
             _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
             _outputBuffer.Discard(limit);
+
+            if (Interlocked.Exchange(ref _pendingInput, 0) == 2)
+            {
+                _outputBuffer.Dispose();
+            }
 
             return limit;
         }
