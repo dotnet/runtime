@@ -66,10 +66,10 @@
       </_ProjectsToBuild>
 
       <_ProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' == 'BuildWasmApps'">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);WBT_TestConfigsToUse=Debug;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestRunNamePrefixSuffix=Debug-;WBT_TestConfigsToUse=Debug;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
       </_ProjectsToBuild>
       <_ProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' == 'BuildWasmApps'">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);WBT_TestConfigsToUse=Release;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestRunNamePrefixSuffix=Release-;WBT_TestConfigsToUse=Release;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
