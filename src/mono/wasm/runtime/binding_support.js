@@ -1264,9 +1264,14 @@ var BindingSupportLib = {
 			switch (paramRecord.marshalType) {
 				case 4: // Struct
 					var info = this._get_custom_marshaler_info_for_type (paramRecord.typePtr);
-					result.needs_unbox = (info != null) 
-						? (info.outputNeedsToBeUnboxed != 0) 
-						: true;
+					if (info && !info.outputNeedsToBeUnboxed) {
+						result.needs_unbox = false;
+						// While the output of the marshaler is not a valuetype, it may be
+						//  an object that needs to be converted, like a string.
+						result.convert = this.js_to_mono_obj.bind(this);
+					} else {
+						result.needs_unbox = true;
+					}
 					; // FIXME: Fall-through
 				case 7: // OBJECT
 					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.class);
