@@ -3087,7 +3087,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pFile->GetAssemblyLoadContext()->AddLoadedAssembly(pDomainAssembly->GetLoadedAssembly());
+            pFile->GetAssemblyLoadContext()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
         }
     }
     else
