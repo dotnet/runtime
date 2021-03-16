@@ -350,6 +350,10 @@
       <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
+      <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
