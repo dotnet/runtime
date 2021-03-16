@@ -17,6 +17,7 @@ Param(
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [switch]$ninja,
+  [switch]$msbuild,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
@@ -79,7 +80,8 @@ function Get-Help() {
 
   Write-Host "Native build settings:"
   Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
-  Write-Host "  -ninja                  Use Ninja instead of MSBuild to run the native build."
+  Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
+  Write-Host "  -msbuild                Use MSBuild to drive the native build."
   Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
@@ -234,7 +236,9 @@ foreach ($argument in $PSBoundParameters.Keys)
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
-    "ninja"                  { $arguments += " /p:Ninja=$($PSBoundParameters[$argument])" }
+    # The -ninja switch is a no-op since Ninja is the default generator on Windows.
+    "ninja"                  { }
+    "msbuild"                { $arguments += " /p:Ninja=false" }
     "pgoinstrument"          { $arguments += " /p:PgoInstrument=$($PSBoundParameters[$argument])"}
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
@@ -263,6 +267,10 @@ if ($failedBuilds.Count -ne 0) {
         Write-Host "`t$failedBuild"
     }
     exit 1
+}
+
+if ($ninja) {
+    Write-Host "The -ninja option has no effect on Windows builds since the Ninja generator is the default generator."
 }
 
 exit 0
