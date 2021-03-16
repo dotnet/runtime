@@ -127,8 +127,9 @@ jobs:
           includeRootFolder: true
           displayName: AOT Mono Artifacts
           artifactName: LinuxMonoAOT
+          archiveExtension: '.tar.gz'
           archiveType: tar
-          archiveExtension: .tar,gz
+          tarCompression: gz
 
   # # build mono
   # - template: /eng/pipelines/common/platform-matrix.yml
