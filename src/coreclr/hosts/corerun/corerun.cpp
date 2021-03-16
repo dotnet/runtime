@@ -66,10 +66,6 @@ namespace envvar
     // Environment variable for setting whether or not to use Concurrent GC.
     // On by default.
     const char_t* concurrentGc = W("COMPlus_gcConcurrent");
-
-    // Name of environment variable to control "System.Globalization.Invariant"
-    // Set to 1 for Globalization Invariant mode to be true. Default is false.
-    const char_t* globalizationInvariant = W("CORECLR_GLOBAL_INVARIANT");
 }
 
 static void wait_for_debugger()
@@ -314,7 +310,6 @@ static int run(const configuration& config)
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
     const char* enable_server_gc = get_envvar_as_boolean(envvar::serverGc);
     const char* enable_concurrent_gc = get_envvar_as_boolean(envvar::concurrentGc, true /* default */);
-    const char* enable_globalization_invariant = get_envvar_as_boolean(envvar::globalizationInvariant);
 
     // Allowed property names:
     //
@@ -337,7 +332,6 @@ static int run(const configuration& config)
         "NATIVE_DLL_SEARCH_DIRECTORIES",
         "System.GC.Server",
         "System.GC.Concurrent",
-        "System.Globalization.Invariant",
     };
 
     const char* propertyValues[] =
@@ -354,8 +348,6 @@ static int run(const configuration& config)
         enable_server_gc,
         // System.GC.Concurrent
         enable_concurrent_gc,
-        // System.Globalization.Invariant
-        enable_globalization_invariant,
     };
 
     int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
