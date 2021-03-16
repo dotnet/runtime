@@ -342,6 +342,9 @@ namespace System.Reflection.Emit
 
         public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
         {
+			if (name == null)
+                throw new ArgumentNullException(nameof(name));
+			
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException("Duplicate type name within an assembly.");

@@ -15,7 +15,7 @@ namespace System.Collections
 
         public const int HashPrime = 101;
 
-        // must never be written to
+        // This field is shared between Dictionary and HashSet for initially empty collections and shouldn't be written to
         public static readonly int[] SizeOneIntArray = new int[1];
 
         // Table of prime numbers to use as hash table sizes.

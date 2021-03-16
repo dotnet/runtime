@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_hashtableCtor == null)
                 {
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes);
+                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
                     Debug.Assert(s_hashtableCtor != null);
                 }
                 return s_hashtableCtor;
