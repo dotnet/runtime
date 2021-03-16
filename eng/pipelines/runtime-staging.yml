@@ -256,3 +256,33 @@ jobs:
       useContinueOnErrorDuringBuild: true
       enablePublisTestResults: true
       testResultsFormat: xunit
+
+#
+# CoreCLR Build for running Apple Silicon libraries-innerloop
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platforms:
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - OSX_arm64
+    jobParameters:
+      testGroup: innerloop
+#
+# Libraries Build for running Apple Silicon libraries-innerloop
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platforms:
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - OSX_arm64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: ${{ variables['isOfficialBuild'] }}
+      isFullMatrix: ${{ variables['isFullMatrix'] }}
+      runTests: true
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
