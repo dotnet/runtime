@@ -760,6 +760,9 @@
         <ExcludeList Include="$(XunitTestBinBase)Loader/classloader/TypeGeneratorTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/46365</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)Interop/ICustomMarshaler/Primitives/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49621</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->

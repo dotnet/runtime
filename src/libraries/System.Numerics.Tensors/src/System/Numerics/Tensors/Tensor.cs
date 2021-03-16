@@ -691,6 +691,62 @@ namespace System.Numerics.Tensors
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>
         public abstract void SetValue(int index, T value);
 
+        /// <summary>
+        /// The type that implements enumerators for <see cref="Tensor{T}"/> instances.
+        /// </summary>
+        public struct Enumerator : IEnumerator<T>
+        {
+            private readonly Tensor<T> _tensor;
+            private int _index;
+
+            internal Enumerator(Tensor<T> tensor)
+            {
+                Debug.Assert(tensor != null);
+
+                _tensor = tensor;
+                _index = 0;
+                Current = default;
+            }
+
+            public T Current { get; private set; }
+
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext()
+            {
+                if (_index < _tensor.Length)
+                {
+                    Current = _tensor.GetValue(_index);
+                    ++_index;
+                    return true;
+                }
+                else
+                {
+                    Current = default;
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Resets the enumerator to the beginning.
+            /// </summary>
+            public void Reset()
+            {
+                _index = 0;
+                Current = default;
+            }
+
+            /// <summary>
+            /// Disposes the enumerator.
+            /// </summary>
+            public void Dispose() { }
+        }
+
+        /// <summary>
+        /// Gets an enumerator that enumerates the elements of the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>An enumerator for the current <see cref="Tensor{T}"/>.</returns>
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         #region statics
         /// <summary>
@@ -717,10 +773,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IEnumerable members
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable<T>)this).GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region ICollection members
@@ -828,13 +881,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region IEnumerable<T> members
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            for (int i = 0; i < Length; i++)
-            {
-                yield return GetValue(i);
-            }
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         #endregion
 
         #region ICollection<T> members

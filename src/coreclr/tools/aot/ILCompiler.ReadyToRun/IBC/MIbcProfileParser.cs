@@ -426,13 +426,17 @@ namespace ILCompiler.IBC
                                 // If no exclusive weight is found assign a non zero value that assumes the order in the pgo file is significant.
                                 exclusiveWeight = Math.Min(1000000.0 - profileEntryFound, 0.0) / 1000000.0;
                             }
-                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
+                            if (methodInProgress != null)
+                            {
+                                // If the method being loaded didn't have meaningful input, skip
+                                MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
+                                yield return mibcData;
+                            }
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
                             weights = null;
                             instrumentationDataLongs = null;
                             pgoSchemaData = null;
-                            yield return mibcData;
                         }
                         methodInProgress = null;
                         break;

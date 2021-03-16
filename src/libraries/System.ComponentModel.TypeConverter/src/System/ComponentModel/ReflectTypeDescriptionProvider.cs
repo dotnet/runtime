@@ -201,6 +201,7 @@ namespace System.ComponentModel
         /// TypeDescriptor will search an editor
         /// table for the editor type, if one can be found.
         /// </summary>
+        [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
             if (editorBaseType == null)
@@ -227,7 +228,11 @@ namespace System.ComponentModel
         /// <summary>
         /// CreateInstance implementation. We delegate to Activator.
         /// </summary>
-        public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
+        public override object CreateInstance(
+            IServiceProvider provider,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type[] argTypes,
+            object[] args)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
@@ -271,7 +276,9 @@ namespace System.ComponentModel
         /// type implements a Type constructor, and if it does it invokes that ctor.
         /// Otherwise, it just tries to create the type.
         /// </summary>
-        private static object CreateInstance(Type objectType, Type callingType)
+        private static object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
+            Type callingType)
         {
             return objectType.GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
                 ?? Activator.CreateInstance(objectType);
@@ -364,7 +371,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
         internal object GetEditor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object instance, Type editorBaseType)
         {
             ReflectedTypeData td = GetTypeData(type, true);
@@ -374,6 +381,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves a default editor table for the given editor base type.
         /// </summary>
+        [RequiresUnreferencedCode("The Types specified in EditorTables may be trimmed, or have their static construtors trimmed.")]
         private static Hashtable GetEditorTable(Type editorBaseType)
         {
             Hashtable editorTables = EditorTables;
@@ -484,7 +492,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the editor for the given base type.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
         internal object GetExtendedEditor(object instance, Type editorBaseType)
         {
             return GetEditor(instance.GetType(), instance, editorBaseType);
@@ -914,7 +922,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves a type from a name.
         /// </summary>
-        private static Type GetTypeFromName(string typeName)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+            Justification = "typeName is annotated with DynamicallyAccessedMembers, which will preserve the type. " +
+            "Using the non-assembly qualified type name will still work.")]
+        private static Type GetTypeFromName(
+            // Using PublicParameterlessConstructor to preserve the type. See https://github.com/mono/linker/issues/1878
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
         {
             Type t = Type.GetType(typeName);
 
@@ -1295,6 +1308,7 @@ namespace System.ComponentModel
         /// for types as needed. These instances are stored back into the table
         /// for the base type, and for the original component type, for fast access.
         /// </summary>
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
         private static object GetIntrinsicTypeEditor(Hashtable table, Type callingType)
         {
             object hashEntry = null;

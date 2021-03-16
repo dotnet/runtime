@@ -83,6 +83,7 @@ namespace System.Data.Common
 
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
 
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
