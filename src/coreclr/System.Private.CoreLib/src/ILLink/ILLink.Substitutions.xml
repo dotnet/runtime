@@ -1,5 +1,5 @@
 <linker>
-  <assembly fullname="System.Private.Corelib">
+  <assembly fullname="System.Private.CoreLib">
     <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
