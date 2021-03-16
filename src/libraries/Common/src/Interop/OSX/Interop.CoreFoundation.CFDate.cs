@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeCFDateHandle : SafeHandle
     {
-        internal SafeCFDateHandle()
+        public SafeCFDateHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }

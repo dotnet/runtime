@@ -157,9 +157,11 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop());
-                thread.IsBackground = true;
-                thread.Name = ".NET Sockets";
+                var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop())
+                {
+                    IsBackground = true,
+                    Name = ".NET Sockets"
+                };
                 thread.UnsafeStart(this);
             }
             catch

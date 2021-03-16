@@ -169,7 +169,7 @@ namespace System.Xml
         public UniqueId(string value) { }
         public int CharArrayLength { get { throw null; } }
         public bool IsGuid { get { throw null; } }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Xml.UniqueId? id1, System.Xml.UniqueId? id2) { throw null; }
         public static bool operator !=(System.Xml.UniqueId? id1, System.Xml.UniqueId? id2) { throw null; }

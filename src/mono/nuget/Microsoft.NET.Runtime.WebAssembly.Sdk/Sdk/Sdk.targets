@@ -1,0 +1,10 @@
+<Project>
+  <!-- Property overrides -->
+  <PropertyGroup>
+    <WasmAppBuilderTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.targets" />
+</Project>

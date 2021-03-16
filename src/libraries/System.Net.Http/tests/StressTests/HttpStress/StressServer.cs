@@ -67,7 +67,7 @@ namespace HttpStress
                 // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
                 host = host.UseKestrel(ko =>
                 {
-                    // conservative estimation based on https://github.com/aspnet/AspNetCore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
+                    // conservative estimation based on https://github.com/dotnet/aspnetcore/blob/caa910ceeba5f2b2c02c47a23ead0ca31caea6f0/src/Servers/Kestrel/Core/src/Internal/Http2/Http2Stream.cs#L204
                     ko.Limits.MaxRequestLineSize = Math.Max(ko.Limits.MaxRequestLineSize, configuration.MaxRequestUriSize + 100);
                     ko.Limits.MaxRequestHeaderCount = Math.Max(ko.Limits.MaxRequestHeaderCount, configuration.MaxRequestHeaderCount);
                     ko.Limits.MaxRequestHeadersTotalSize = Math.Max(ko.Limits.MaxRequestHeadersTotalSize, configuration.MaxRequestHeaderTotalSize);
@@ -111,7 +111,7 @@ namespace HttpStress
                         }
                         else
                         {
-                            listenOptions.Protocols = 
+                            listenOptions.Protocols =
                                 configuration.HttpVersion == new Version(2,0) ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
@@ -123,7 +123,7 @@ namespace HttpStress
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             if (configuration.Trace)
             {
-                // Clear existing logs first.                
+                // Clear existing logs first.
                 foreach (var filename in Directory.GetFiles(".", "server*.log"))
                 {
                     try
@@ -239,7 +239,7 @@ namespace HttpStress
                 // Post echos back the requested content, first buffering it all server-side, then sending it all back.
                 var s = new MemoryStream();
                 await context.Request.Body.CopyToAsync(s);
-                
+
                 ulong checksum = CRC.CalculateCRC(s.ToArray());
                 AppendChecksumHeader(context.Response.Headers, checksum);
 
@@ -323,7 +323,7 @@ namespace HttpStress
             {
                 var uri = new Uri(serverUri);
                 return (uri.Scheme, uri.Host, uri.Port);
-            } 
+            }
             catch (UriFormatException)
             {
                 // Simple uri parser: used to parse values valid in Kestrel
@@ -345,7 +345,7 @@ namespace HttpStress
 
             int GetExpectedContentLength()
             {
-                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) && 
+                if (ctx.Request.Headers.TryGetValue(ExpectedResponseContentLength, out StringValues values) &&
                     values.Count == 1 &&
                     int.TryParse(values[0], out int result))
                 {

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it.")]
+    [SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for TripleDES, not consuming it.")]
     [UnsupportedOSPlatform("browser")]
     public abstract class TripleDES : SymmetricAlgorithm
     {
@@ -25,6 +26,7 @@ namespace System.Security.Cryptography
             return new TripleDesImplementation();
         }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new TripleDES? Create(string str)
         {
             return (TripleDES?)CryptoConfig.CreateFromName(str);

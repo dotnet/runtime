@@ -96,6 +96,13 @@ if(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_BUILD_SUBSET_RUNTIME)
   add_subdirectory(gc/sample)
 endif()
 
+#-------------------------------------
+# Include directory directives
+#-------------------------------------
+# Include the basic prebuilt headers - required for getting fileversion resource details.
+include_directories("pal/prebuilt/inc")
+include_directories("../../artifacts/obj/coreclr")
+
 add_subdirectory(tools/aot/jitinterface)
 
 # Above projects do not build with these compile options
@@ -112,19 +119,16 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-#-------------------------------------
-# Include directory directives
-#-------------------------------------
-# Include the basic prebuilt headers - required for getting fileversion resource details.
-include_directories("pal/prebuilt/inc")
-include_directories("../../artifacts/obj/coreclr")
-
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
   if (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
     add_subdirectory(gc)
   endif (CLR_CMAKE_BUILD_SUBSET_RUNTIME)
 endif(FEATURE_STANDALONE_GC)
+
+if(CLR_CMAKE_BUILD_SUBSET_RUNTIME AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
+endif()
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")

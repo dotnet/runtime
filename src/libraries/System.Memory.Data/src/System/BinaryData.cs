@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -256,7 +257,7 @@ namespace System
         /// <see langword="true" /> if the specified object is equal to the current object; otherwise, <see langword="false" />.
         /// </returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj) => ReferenceEquals(this, obj);
+        public override bool Equals([NotNullWhen(true)] object? obj) => ReferenceEquals(this, obj);
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]

@@ -32,6 +32,14 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
+        /// Gets the concrete type Comparer`1.Create returns or null if it's not known at compile time.
+        /// </summary>
+        public static TypeDesc GetComparerForType(TypeDesc comparand)
+        {
+            return GetComparerForType(comparand, "Comparer", "IComparable`1");
+        }
+
+        /// <summary>
         /// Gets the concrete type EqualityComparer`1.Create returns or null if it's not known at compile time.
         /// </summary>
         public static TypeDesc GetEqualityComparerForType(TypeDesc comparand)

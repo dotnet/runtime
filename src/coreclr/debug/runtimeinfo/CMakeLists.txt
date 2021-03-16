@@ -12,3 +12,6 @@ if (NOT (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TAR
     add_dependencies(runtimeinfo mscordaccore_module_index_header)
     add_dependencies(runtimeinfo mscordbi_module_index_header)
 endif()
+
+# publish runtimeinfo lib
+_install(TARGETS runtimeinfo DESTINATION lib)

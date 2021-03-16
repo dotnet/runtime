@@ -59,7 +59,7 @@ namespace System.Net.Http.Headers
             return _scheme + " " + _parameter;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             AuthenticationHeaderValue? other = obj as AuthenticationHeaderValue;
 

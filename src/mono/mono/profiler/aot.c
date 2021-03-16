@@ -684,7 +684,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 
 		MonoString *extra_arg = NULL;
 		if (prof->send_to_arg) {
-			extra_arg = mono_string_new_checked (mono_domain_get (), prof->send_to_arg, error);
+			extra_arg = mono_string_new_checked (prof->send_to_arg, error);
 			mono_error_assert_ok (error);
 		}
 

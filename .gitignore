@@ -360,7 +360,3 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/inc/obj/
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
-
-# Mono Wasm-specific excludes
-src/mono/wasm/emsdk/
-src/mono/wasm/.stamp-wasm-install-and-select*

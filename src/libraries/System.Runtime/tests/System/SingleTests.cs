@@ -223,7 +223,7 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7F7FFFFFu,  SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu, SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
@@ -273,6 +273,34 @@ namespace System.Tests
             yield return new object[] { (567.89f).ToString(), defaultStyle, null, 567.89f };
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
+
+            // 2^24 + 1. Not exactly representable
+            yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };
+            yield return new object[] { "16777217.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "16777217.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "16777217.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "5.005", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.050", defaultStyle, invariantFormat, 5.05f };
+            yield return new object[] { "5.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+
+            yield return new object[] { "5005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5005.0f };
+            yield return new object[] { "50050.0", defaultStyle, invariantFormat, 50050.0f };
+            yield return new object[] { "5005", defaultStyle, invariantFormat, 5005.0f };
+            yield return new object[] { "050050", defaultStyle, invariantFormat, 50050.0f };
+            yield return new object[] { "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.0f };
+            yield return new object[] { "0.005", defaultStyle, invariantFormat, 0.005f };
+            yield return new object[] { "0.0500", defaultStyle, invariantFormat, 0.05f };
+            yield return new object[] { "6250000000000000000000000000000000e-12", defaultStyle, invariantFormat, 6.25e21f };
+            yield return new object[] { "6250000e0", defaultStyle, invariantFormat, 6.25e6f };
+            yield return new object[] { "6250100e-5", defaultStyle, invariantFormat, 62.501f };
+            yield return new object[] { "625010.00e-4", defaultStyle, invariantFormat, 62.501f };
+            yield return new object[] { "62500e-4", defaultStyle, invariantFormat, 6.25f };
+            yield return new object[] { "62500", defaultStyle, invariantFormat, 62500.0f };
 
             yield return new object[] { (123.1f).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1f };
             yield return new object[] { (1000.0f).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0f };
@@ -443,6 +471,7 @@ namespace System.Tests
                 yield return testData;
             }
 
+
             yield return new object[] { float.MinValue, "G", null, "-3.4028235E+38" };
             yield return new object[] { float.MaxValue, "G", null, "3.4028235E+38" };
 
@@ -450,6 +479,11 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.Epsilon, "G", invariantFormat, "1E-45" };
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -493,6 +527,9 @@ namespace System.Tests
             float f = 123.0f;
             Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         [Theory]

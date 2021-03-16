@@ -1102,18 +1102,6 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
         return true;
     }
 
-    // If dependent, check if we can use some assertions.
-    if (op1Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op1, op1Range DEBUGARG(0));
-    }
-
-    // If dependent, check if we can use some assertions.
-    if (op2Range->UpperLimit().IsDependent())
-    {
-        MergeAssertion(block, op2, op2Range DEBUGARG(0));
-    }
-
     JITDUMP("Checking bin op overflow %s %s\n", op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
 

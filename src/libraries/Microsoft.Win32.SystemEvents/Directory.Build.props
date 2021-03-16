@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IsWindowsSpecific>true</IsWindowsSpecific>
     <PackageDescription>Provides access to Windows system event notifications.
 

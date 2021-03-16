@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -786,6 +787,8 @@ namespace System.Linq.Expressions
             return node;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The 'ToString' method cannot be trimmed on any Expression type because we are calling Expression.ToString() in this method.")]
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.

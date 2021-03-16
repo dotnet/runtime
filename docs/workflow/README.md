@@ -14,6 +14,8 @@ The repo can be built for the following platforms, using the provided setup and 
 
 Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
 
+Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.
+
 ## Concepts
 
 The runtime repo can be built from a regular, non-administrator command prompt, from the root of the repo, as follows:

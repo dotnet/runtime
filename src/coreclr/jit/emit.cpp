@@ -4651,13 +4651,16 @@ bool emitter::emitEndsWithAlignInstr()
 //               such that it doesn't exceed the maxLoopSize.
 //
 //  Arguments:
-//       igLoopHeader - The header IG of a loop
-//       maxLoopSize  - Maximum loop size. If the loop is bigger than this value, we will just
-//                      return this value.
+//       igLoopHeader    - The header IG of a loop
+//       maxLoopSize     - Maximum loop size. If the loop is bigger than this value, we will just
+//                         return this value.
+//       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
+//                         During generating code, it is 'false' (because we haven't adjusted the size yet).
+//                         During outputting code, it is 'true'.
 //
 //  Returns:  size of a loop in bytes.
 //
-unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
+unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted))
 {
     unsigned loopSize = 0;
 
@@ -4670,9 +4673,47 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize)
             // of the current loop and should have backedge to current loop header.
             assert(igInLoop->igLoopBackEdge == igLoopHeader);
 
-            // In such cases, the current loop size should exclude the align instruction size reserved for
-            // next loop.
-            loopSize -= emitComp->opts.compJitAlignPaddingLimit;
+#ifdef DEBUG
+            if (isAlignAdjusted)
+            {
+                // If this IG is already align adjusted, get the adjusted padding already calculated.
+                instrDescAlign* alignInstr      = emitAlignList;
+                bool            foundAlignInstr = false;
+
+                // Find the alignInstr for igInLoop IG.
+                for (; alignInstr != nullptr; alignInstr = alignInstr->idaNext)
+                {
+                    if (alignInstr->idaIG->igNum == igInLoop->igNum)
+                    {
+                        foundAlignInstr = true;
+                        break;
+                    }
+                }
+                assert(foundAlignInstr);
+
+                unsigned adjustedPadding = 0;
+                if (emitComp->opts.compJitAlignLoopAdaptive)
+                {
+                    adjustedPadding = alignInstr->idCodeSize();
+                }
+                else
+                {
+                    instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
+                    for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
+                         alignInstrToAdj = alignInstrToAdj->idaNext)
+                    {
+                        adjustedPadding += alignInstrToAdj->idCodeSize();
+                    }
+                }
+
+                loopSize -= adjustedPadding;
+            }
+            else
+#endif
+            {
+                // The current loop size should exclude the align instruction size reserved for next loop.
+                loopSize -= emitComp->opts.compJitAlignPaddingLimit;
+            }
         }
         if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
@@ -4843,8 +4884,10 @@ void emitter::emitLoopAlignAdjustments()
                 alignInstr = prevAlignInstr;
             }
 
-            JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d\n", emitComp->compMethodID, alignIG->igNum,
+            JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %02d to %02d.\n", emitComp->compMethodID, alignIG->igNum,
                     estimatedPaddingNeeded, actualPaddingNeeded);
+            JITDUMP("Adjusted size of G_M%03u_IG%02u from %04d to %04d.\n", emitComp->compMethodID, alignIG->igNum,
+                    (alignIG->igSize + diff), alignIG->igSize);
         }
 
         // Adjust the offset of all IGs starting from next IG until we reach the IG having the next
@@ -4853,6 +4896,8 @@ void emitter::emitLoopAlignAdjustments()
         insGroup* adjOffUptoIG = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
         while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
         {
+            JITDUMP("Adjusted offset of G_M%03u_IG%02u from %04X to %04X\n", emitComp->compMethodID, adjOffIG->igNum,
+                    adjOffIG->igOffs, (adjOffIG->igOffs - alignBytesRemoved));
             adjOffIG->igOffs -= alignBytesRemoved;
             adjOffIG = adjOffIG->igNext;
         }
@@ -4873,6 +4918,13 @@ void emitter::emitLoopAlignAdjustments()
 //-----------------------------------------------------------------------------
 //  emitCalculatePaddingForLoopAlignment: Calculate the padding to insert at the
 //    end of 'ig' so the loop that starts after 'ig' is aligned.
+//
+//  Arguments:
+//       ig              - The IG having 'align' instruction in the end.
+//       offset          - The offset at which the IG that follows 'ig' starts.
+//       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
+//                         During generating code, it is 'false' (because we haven't adjusted the size yet).
+//                         During outputting code, it is 'true'.
 //
 //  Returns: Padding amount.
 //    0 means no padding is needed, either because loop is already aligned or it
@@ -4896,8 +4948,7 @@ void emitter::emitLoopAlignAdjustments()
 //     3b. If the loop already fits in minimum alignmentBoundary blocks, then return 0. // already best aligned
 //     3c. return paddingNeeded.
 //
-unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
-                                                       size_t offset DEBUG_ARG(bool displayAlignmentDetails))
+unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted))
 {
     assert(ig->isLoopAlign());
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
@@ -4924,7 +4975,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
-    unsigned loopSize = getLoopSize(ig->igNext, maxLoopSize);
+    unsigned loopSize = getLoopSize(ig->igNext, maxLoopSize DEBUG_ARG(isAlignAdjusted));
 
     // No padding if loop is big
     if (loopSize > maxLoopSize)
@@ -5020,8 +5071,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig,
         }
     }
 
-    JITDUMP(";; Calculated padding to add %d bytes to align at %dB boundary that starts at 0x%x.'\n", paddingToAdd,
-            alignmentBoundary, offset);
+    JITDUMP(";; Calculated padding to add %d bytes to align G_M%03u_IG%02u at %dB boundary.\n", paddingToAdd,
+            emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
 
     // Either no padding is added because it is too expensive or the offset gets aligned
     // to the alignment boundary

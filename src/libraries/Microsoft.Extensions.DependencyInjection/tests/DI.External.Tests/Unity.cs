@@ -7,6 +7,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class UnityDependencyInjectionSpecificationTests: SkippableDependencyInjectionSpecificationTests
     {
+        // See https://github.com/unitycontainer/microsoft-dependency-injection/issues/87
+        public override bool ExpectStructWithPublicDefaultConstructorInvoked => true;
+
         public override string[] SkippedTests => new[]
         {
             "SingletonServiceCanBeResolvedFromScope"

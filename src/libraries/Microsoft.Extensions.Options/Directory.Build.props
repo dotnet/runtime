@@ -2,5 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <PackageDescription>Provides a strongly typed way of specifying and accessing settings using dependency injection.</PackageDescription>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

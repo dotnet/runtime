@@ -282,8 +282,15 @@ namespace Tracing.Tests.Common
                 }
             });
 
+            var waitSentinelEventTask = new Task(() => {
+                sentinelEventReceived.WaitOne();
+            });
+
             readerTask.Start();
-            sentinelEventReceived.WaitOne();
+            waitSentinelEventTask.Start();
+
+            // Will throw if the reader task throws any exceptions before signaling sentinelEventReceived.
+            Task.WaitAny(readerTask, waitSentinelEventTask);
 
             Logger.logger.Log("Starting event generating action...");
             _eventGeneratingAction();

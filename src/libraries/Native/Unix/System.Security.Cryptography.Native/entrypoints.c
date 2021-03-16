@@ -209,6 +209,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_ObjTxt2Obj)
     DllImportEntry(CryptoNative_OcspRequestDestroy)
     DllImportEntry(CryptoNative_OcspResponseDestroy)
+    DllImportEntry(CryptoNative_Pbkdf2)
     DllImportEntry(CryptoNative_PemReadBioPkcs7)
     DllImportEntry(CryptoNative_PemReadBioX509Crl)
     DllImportEntry(CryptoNative_PemReadX509FromBio)

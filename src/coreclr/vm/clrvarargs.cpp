@@ -76,7 +76,9 @@ VARARGS::MarshalToUnmanagedVaList(
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_PTR:
                 {
-                    DWORD cbSize = StackElemSize(CorTypeInfo::Size(elemType));
+                    const bool isValueType = false;
+                    const bool isFloatHfa = false;
+                    DWORD cbSize = StackElemSize(CorTypeInfo::Size(elemType), isValueType, isFloatHfa);
 
                     #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                     if (cbSize > ENREGISTERED_PARAMTYPE_MAXSIZE)

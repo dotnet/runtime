@@ -478,17 +478,17 @@ public:
 #endif
 
 
-// The large heap handle bucket class is used to contain handles allocated
-// from an array contained in the large heap.
-class LargeHeapHandleBucket
+// The pinned heap handle bucket class is used to contain handles allocated
+// from an array contained in the pinned heap.
+class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
-    ~LargeHeapHandleBucket();
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
-    LargeHeapHandleBucket *GetNext()
+    PinnedHeapHandleBucket *GetNext()
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -523,7 +523,7 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
-    LargeHeapHandleBucket *m_pNext;
+    PinnedHeapHandleBucket *m_pNext;
     int m_ArraySize;
     int m_CurrentPos;
     int m_CurrentEmbeddedFreePos;
@@ -533,16 +533,16 @@ private:
 
 
 
-// The large heap handle table is used to allocate handles that are pointers
-// to objects stored in an array in the large object heap.
-class LargeHeapHandleTable
+// The pinned heap handle table is used to allocate handles that are pointers
+// to objects stored in an array in the pinned object heap.
+class PinnedHeapHandleTable
 {
 public:
     // Constructor and desctructor.
-    LargeHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
-    ~LargeHeapHandleTable();
+    PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
+    ~PinnedHeapHandleTable();
 
-    // Allocate handles from the large heap handle table.
+    // Allocate handles from the pinned heap handle table.
     OBJECTREF* AllocateHandles(DWORD nRequested);
 
     // Release object handles allocated using AllocateHandles().
@@ -552,22 +552,22 @@ public:
 
 private:
     // The buckets of object handles.
-    LargeHeapHandleBucket *m_pHead;
+    PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
-    // The size of the LargeHeapHandleBuckets.
+    // The size of the PinnedHeapHandleBucket.
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
-    LargeHeapHandleBucket *m_pFreeSearchHint;
+    PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
 #ifdef _DEBUG
 
     // these functions are present to enforce that there is a locking mechanism in place
-    // for each LargeHeapHandleTable even though the code itself does not do the locking
+    // for each PinnedHeapHandleTable even though the code itself does not do the locking
     // you must tell the table which lock you intend to use and it will verify that it has
     // in fact been taken before performing any operations
 
@@ -590,18 +590,18 @@ private:
 
 };
 
-class LargeHeapHandleBlockHolder;
-void LargeHeapHandleBlockHolder__StaticFree(LargeHeapHandleBlockHolder*);
+class PinnedHeapHandleBlockHolder;
+void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder*);
 
 
-class LargeHeapHandleBlockHolder:public Holder<LargeHeapHandleBlockHolder*,DoNothing,LargeHeapHandleBlockHolder__StaticFree>
+class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoNothing,PinnedHeapHandleBlockHolder__StaticFree>
 
 {
-    LargeHeapHandleTable* m_pTable;
+    PinnedHeapHandleTable* m_pTable;
     DWORD m_Count;
     OBJECTREF* m_Data;
 public:
-    FORCEINLINE LargeHeapHandleBlockHolder(LargeHeapHandleTable* pOwner, DWORD nCount)
+    FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
         WRAPPER_NO_CONTRACT;
         m_Data = pOwner->AllocateHandles(nCount);
@@ -624,7 +624,7 @@ public:
     }
 };
 
-FORCEINLINE  void LargeHeapHandleBlockHolder__StaticFree(LargeHeapHandleBlockHolder* pHolder)
+FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder* pHolder)
 {
     WRAPPER_NO_CONTRACT;
     pHolder->FreeData();
@@ -1129,7 +1129,7 @@ protected:
 
     //****************************************************************************************
     // Helper method to initialize the large heap handle table.
-    void InitLargeHeapHandleTable();
+    void InitPinnedHeapHandleTable();
 
     //****************************************************************************************
     //
@@ -1158,11 +1158,11 @@ protected:
 
     IGCHandleStore* m_handleStore;
 
-    // The large heap handle table.
-    LargeHeapHandleTable        *m_pLargeHeapHandleTable;
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
-    // The large heap handle table critical section.
-    CrstExplicitInit             m_LargeHeapHandleTableCrst;
+    // The pinned heap handle table critical section.
+    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.

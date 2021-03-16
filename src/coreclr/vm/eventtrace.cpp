@@ -5395,7 +5395,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
     }
 }
 
-VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data)
+VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles)
 {
     CONTRACTL{
         NOTHROW;
@@ -5410,6 +5410,19 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
         EX_TRY
         {
             SendMethodDetailsEvent(method);
+
+            // If there are any type handles, fire the BulkType events to describe them
+            if (typeHandles != 0)
+            {
+                BulkTypeEventLogger typeLogger;
+
+                for (uint32_t iTypeHandle = 0; iTypeHandle < typeHandles; iTypeHandle++)
+                {
+                    ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, (ULONGLONG)pTypeHandles[iTypeHandle].AsPtr(), ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
+                }
+                typeLogger.FireBulkTypeEvent();
+            }
+
             ULONG ulMethodToken=0;
             auto pModule = method->GetModule_NoLogging();
             bool bIsDynamicMethod = method->IsDynamicMethod();

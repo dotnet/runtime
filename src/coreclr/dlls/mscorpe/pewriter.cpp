@@ -27,10 +27,6 @@ static INT64 s_minPcRel25;
 static INT64 s_maxPcRel25;
 #endif
 
-#ifdef EnC_SUPPORTED
-#define ENC_DELTA_HACK
-#endif
-
     /* This is the stub program that says it can't be run in DOS mode */
     /* it is x86 specific, but so is dos so I suppose that is OK */
 static const unsigned char x86StubPgm[] = {
@@ -2191,48 +2187,6 @@ HRESULT PEWriter::Close()
 HRESULT PEWriter::write(__in LPCWSTR fileName) {
 
     HRESULT hr;
-
-#ifdef ENC_DELTA_HACK
-    PathString szFileName;
-    DWORD len = WszGetEnvironmentVariable(L"COMP_ENC_EMIT", szFileName);
-    _ASSERTE(len < sizeof(szFileName));
-    if (len > 0)
-    {
-        _ASSERTE(!m_pSeedFileDecoder);
-        szFileName.Append(L".dil");
-
-        HANDLE pDelta = WszCreateFile(szFileName,
-                           GENERIC_WRITE,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE,
-                           NULL,
-                           CREATE_ALWAYS,
-                           FILE_ATTRIBUTE_NORMAL,
-                           NULL );
-        if (pDelta == INVALID_HANDLE_VALUE) {
-            hr = HRESULT_FROM_GetLastError();
-            _ASSERTE(!"failure so open .dil file");
-            goto ErrExit;
-        }
-
-        // write the actual data
-        for (PEWriterSection **cur = getSectStart(); cur < getSectCur(); cur++) {
-            if (strcmp((*cur)->m_name, ".text") == 0)
-            {
-                hr = (*cur)->write(pDelta);
-                CloseHandle(pDelta);
-                pDelta = NULL;
-                if (FAILED(hr))
-                {
-                    _ASSERT(!"failure to write to .dil file");
-                    goto ErrExit;
-                }
-                break;
-            }
-        }
-        PREFIX_ASSUME(!pDelta);
-        return S_OK;
-    }
-#endif
 
     bool ExeOrDll;
     unsigned RoundUpVal;

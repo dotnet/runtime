@@ -74,7 +74,7 @@ namespace System.Text.Encodings.Web
             // it's unfortunately common for developers to
             // forget to HTML-encode a string once it has been URL-encoded,
             // so this offers extra protection.
-            DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharacters);
+            HtmlEncoderHelper.ForbidHtmlCharacters(_allowedCharacters);
 
             // Per RFC 3987, Sec. 2.2, we want encodings that are safe for
             // four particular components: 'isegment', 'ipath-noscheme',
@@ -161,7 +161,7 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
+            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, new Span<char>(buffer, bufferLength), out numberOfCharactersWritten); }
 
             numberOfCharactersWritten = 0;
 

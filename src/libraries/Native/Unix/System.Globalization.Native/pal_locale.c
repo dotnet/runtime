@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,7 +16,7 @@ int32_t UErrorCodeToBool(UErrorCode status)
 {
     if (U_SUCCESS(status))
     {
-        return TRUE;
+        return true;
     }
 
     // assert errors that should never occur
@@ -24,7 +25,7 @@ int32_t UErrorCodeToBool(UErrorCode status)
 
     // add possible SetLastError support here
 
-    return FALSE;
+    return false;
 }
 
 int32_t GetLocale(const UChar* localeName,
@@ -197,7 +198,7 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
     UErrorCode status = U_ZERO_ERROR;
 
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
+    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, true, &status);
     u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
     if (U_SUCCESS(status))
@@ -245,10 +246,10 @@ int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
 
     if (U_FAILURE(err))
-        return FALSE;
+        return false;
 
     // ures_open returns err = U_ZERO_ERROR when ICU has data for localeName.
     // If it is fake locale, it will return err = U_USING_FALLBACK_WARNING || err = U_USING_DEFAULT_WARNING.

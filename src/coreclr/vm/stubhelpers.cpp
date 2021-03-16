@@ -549,24 +549,6 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
 
     DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
 
-#if defined(TARGET_X86)
-    // On x86 we wrap the call with a thunk that handles host notifications.
-    SyncBlock *pSyncBlock = orefThis->PassiveGetSyncBlock();
-    if (pSyncBlock != NULL)
-    {
-        InteropSyncBlockInfo *pInteropInfo = pSyncBlock->GetInteropInfoNoCreate();
-        if (pInteropInfo != NULL)
-        {
-            // we return entry point to a stub that wraps the real target
-            Stub *pInterceptStub = pInteropInfo->GetInterceptStub();
-            if (pInterceptStub != NULL)
-            {
-                pEntryPoint = pInterceptStub->GetEntryPoint();
-            }
-        }
-    }
-#endif // TARGET_X86
-
 #if defined(HOST_64BIT)
     UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
 

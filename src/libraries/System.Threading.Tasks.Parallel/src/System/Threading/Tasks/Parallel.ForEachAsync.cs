@@ -370,6 +370,8 @@ namespace System.Threading.Tasks
         /// <typeparam name="TSource">Specifies the type of data being enumerated.</typeparam>
         private abstract class ForEachAsyncState<TSource> : TaskCompletionSource, IThreadPoolWorkItem
         {
+            /// <summary>The caller-provided cancellation token.</summary>
+            private readonly CancellationToken _externalCancellationToken;
             /// <summary>Registration with caller-provided cancellation token.</summary>
             protected readonly CancellationTokenRegistration _registration;
             /// <summary>
@@ -409,6 +411,7 @@ namespace System.Threading.Tasks
                     _executionContext = ExecutionContext.Capture();
                 }
 
+                _externalCancellationToken = cancellationToken;
                 _registration = cancellationToken.UnsafeRegister(static o => ((ForEachAsyncState<TSource>)o!).Cancellation.Cancel(), this);
             }
 
@@ -464,11 +467,11 @@ namespace System.Threading.Tasks
                 Debug.Assert(_completionRefCount == 0, $"Expected {nameof(_completionRefCount)} == 0, got {_completionRefCount}");
 
                 bool taskSet;
-                if (_registration.Token.IsCancellationRequested)
+                if (_externalCancellationToken.IsCancellationRequested)
                 {
                     // The externally provided token had cancellation requested. Assume that any exceptions
                     // then are due to that, and just cancel the resulting task.
-                    taskSet = TrySetCanceled(_registration.Token);
+                    taskSet = TrySetCanceled(_externalCancellationToken);
                 }
                 else if (_exceptions is null)
                 {

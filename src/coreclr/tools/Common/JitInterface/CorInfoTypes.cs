@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Pgo;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -68,6 +69,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct MethodSignatureInfo
+    {
+    }
+
     public enum _EXCEPTION_POINTERS
     { }
 
@@ -83,22 +88,24 @@ namespace Internal.JitInterface
     { }
 
     public enum HRESULT {
+        S_OK = 0,
         E_NOTIMPL = -2147467263
     }
 
     public unsafe struct CORINFO_SIG_INFO
     {
         public CorInfoCallConv callConv;
-        public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
-        public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
+        public CORINFO_CLASS_STRUCT_* retTypeClass;     // if the return type is a value class, this is its handle (enums are normalized)
+        public CORINFO_CLASS_STRUCT_* retTypeSigClass;  // returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public CorInfoSigInfoFlags flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;               // used by IL stubs code
         public ushort numArgs;
-        public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
+        public CORINFO_SIG_INST sigInst;                // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
         public byte* pSig;
         public uint cbSig;
-        public CORINFO_MODULE_STRUCT_* scope;          // passed to getArgClass
+        public MethodSignatureInfo* methodSignature;    // used in place of pSig and cbSig to reference a method signature object handle
+        public CORINFO_MODULE_STRUCT_* scope;           // passed to getArgClass
         public mdToken token;
 
         public CorInfoType retType { get { return (CorInfoType)_retType; } set { _retType = (byte)value; } }
@@ -304,35 +311,6 @@ namespace Internal.JitInterface
         public int ILOffset;
         public int Count;
         public int Other;
-    }
-
-    public enum PgoInstrumentationKind
-    {
-        // Schema data types
-        None = 0,
-        FourByte = 1,
-        EightByte = 2,
-        TypeHandle = 3,
-
-        // Mask of all schema data types
-        MarshalMask = 0xF,
-
-        // ExcessAlignment
-        Align4Byte = 0x10,
-        Align8Byte = 0x20,
-        AlignPointer = 0x30,
-
-        // Mask of all schema data types
-        AlignMask = 0x30,
-
-        DescriptorMin = 0x40,
-
-        Done = None, // All instrumentation schemas must end with a record which is "Done"
-        BasicBlockIntCount = DescriptorMin | FourByte, // 4 byte basic block counter, using unsigned 4 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 1) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 1) | TypeHandle, // TypeHandle that is part of a type histogram
-        Version = (DescriptorMin * 2) | None, // Version is encoded in the Other field of the schema
-        NumRuns = (DescriptorMin * 3) | None, // Number of runs is encoded in the Other field of the schema
     }
 
     // Flags computed by a runtime compiler
@@ -1087,7 +1065,7 @@ namespace Internal.JitInterface
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? 1 : 0; } }
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
     }
 
@@ -1351,7 +1329,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_UNUSED10 = 38,
+        CORJIT_FLAG_TRACK_TRANSITIONS = 38, // The JIT should insert the helper variants that track transitions.
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records

@@ -49,6 +49,18 @@
           DestinationFiles="%(FilesToPublish.Destination)" />
   </Target>
 
+  <Target Name="PublishSymbolsToDisk">
+    <Error Condition="'$(SymbolsOutputPath)' == ''" Text="Publishing to disk requires the SymbolsOutputPath to be set to the root of the path to write to." />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\dotnet.pdb"
+          Condition="'$(TargetOS)' == 'windows'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+
+    <Copy SourceFiles="$(DotNetHostBinDir)\dotnet$(SymbolsSuffix)"
+          Condition="'$(TargetOS)' != 'windows'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+  </Target>
+
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
       <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />

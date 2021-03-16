@@ -867,11 +867,10 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            // COMPAT: This block of code isn't entirely correct.
-            // Users passing in typeof(MulticastDelegate) as 't' skip this check
-            // since Delegate is a base type of MulticastDelegate.
-            Type? c = t.BaseType;
-            if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
+            // For backward compatibility, we allow lookup up of existing delegate to
+            // function pointer mappings using abstract MulticastDelegate type. We will check
+            // for the non-abstract delegate type later if no existing mapping is found.
+            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
             }
@@ -996,5 +995,16 @@ namespace System.Runtime.InteropServices
 
         [SupportedOSPlatform("windows")]
         public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
+
+        /// <summary>
+        /// Initializes the underlying handle of a newly created <see cref="SafeHandle" /> to the provided value.
+        /// </summary>
+        /// <param name="safeHandle"><see cref="SafeHandle"/> instance to update</param>
+        /// <param name="handle">Pre-existing handle</param>
+        public static void InitHandle(SafeHandle safeHandle, IntPtr handle)
+        {
+            // To help maximize performance of P/Invokes, don't check if safeHandle is null.
+            safeHandle.SetHandle(handle);
+        }
     }
 }

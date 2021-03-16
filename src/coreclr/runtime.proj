@@ -8,7 +8,8 @@
           AfterTargets="Build">
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
-      <_CoreClrBuildArg Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
@@ -21,7 +22,8 @@
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
                                    '$(Configuration)' == 'Release' and
                                    '$(ClrRuntimeSubset)' == 'true' and
-                                   '$(NoPgoOptimize)' != 'true'"
+                                   '$(NoPgoOptimize)' != 'true' and
+                                   '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true'" Include="-ninja" />
@@ -29,7 +31,8 @@
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' != 'true'" Include="-skipjit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' != 'true'" Include="-skipalljits" />
-      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true'" Include="-nopgooptimize" />
+      <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
+      <_CoreClrBuildArg Condition="'$(NoPgoOptimize)' == 'true' or '$(PgoInstrument)' == 'true'" Include="-nopgooptimize" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
     </ItemGroup>
 

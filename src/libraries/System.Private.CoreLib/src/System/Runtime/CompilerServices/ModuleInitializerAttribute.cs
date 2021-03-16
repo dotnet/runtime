@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
     /// - The method's effective accessibility must be `internal` or `public`.
     ///
     /// The specification for module initializers in the .NET runtime can be found here:
-    /// https://github.com/dotnet/runtime/blob/master/docs/design/specs/Ecma-335-Augments.md#module-initializer
+    /// https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#module-initializer
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class ModuleInitializerAttribute : Attribute

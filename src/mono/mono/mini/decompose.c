@@ -1478,14 +1478,6 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 	}
 }
 
-inline static MonoInst *
-mono_get_domainvar (MonoCompile *cfg)
-{
-	if (!cfg->domainvar)
-		cfg->domainvar = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-	return cfg->domainvar;
-}
-
 /**
  * mono_decompose_array_access_opts:
  *
@@ -1546,34 +1538,25 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}
 					break;
-				case OP_NEWARR:
-					if (cfg->opt & MONO_OPT_SHARED) {
-						EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
-						EMIT_NEW_CLASSCONST (cfg, iargs [1], ins->inst_newa_class);
-						MONO_INST_NEW (cfg, iargs [2], OP_MOVE);
-						iargs [2]->dreg = ins->sreg1;
+				case OP_NEWARR: {
+					ERROR_DECL (vt_error);
+					MonoClass *array_class = mono_class_create_array (ins->inst_newa_class, 1);
+					MonoVTable *vtable = mono_class_vtable_checked (array_class, vt_error);
+					MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
-						dest = mono_emit_jit_icall (cfg, ves_icall_array_new, iargs);
-						dest->dreg = ins->dreg;
-					} else {
-						MonoClass *array_class = mono_class_create_array (ins->inst_newa_class, 1);
-						ERROR_DECL (vt_error);
-						MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, array_class, vt_error);
-						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
+					mono_error_assert_ok (vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
+					NEW_VTABLECONST (cfg, iargs [0], vtable);
+					MONO_ADD_INS (cfg->cbb, iargs [0]);
+					MONO_INST_NEW (cfg, iargs [1], OP_MOVE);
+					iargs [1]->dreg = ins->sreg1;
 
-						mono_error_assert_ok (vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
-						NEW_VTABLECONST (cfg, iargs [0], vtable);
-						MONO_ADD_INS (cfg->cbb, iargs [0]);
-						MONO_INST_NEW (cfg, iargs [1], OP_MOVE);
-						iargs [1]->dreg = ins->sreg1;
-
-						if (managed_alloc)
-							dest = mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
-						else
-							dest = mono_emit_jit_icall (cfg, ves_icall_array_new_specific, iargs);
-						dest->dreg = ins->dreg;
-					}
+					if (managed_alloc)
+						dest = mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
+					else
+						dest = mono_emit_jit_icall (cfg, ves_icall_array_new_specific, iargs);
+					dest->dreg = ins->dreg;
 					break;
+				}
 				case OP_STRLEN:
 					MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, ins->dreg,
 														 ins->sreg1, MONO_STRUCT_OFFSET (MonoString, length), ins->flags | MONO_INST_INVARIANT_LOAD);

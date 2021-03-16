@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        internal static extern unsafe Interop.BOOL FileTimeToSystemTime(long* lpFileTime, Interop.Kernel32.SYSTEMTIME* lpSystemTime);
+        internal static extern unsafe Interop.BOOL FileTimeToSystemTime(ulong* lpFileTime, Interop.Kernel32.SYSTEMTIME* lpSystemTime);
     }
 }

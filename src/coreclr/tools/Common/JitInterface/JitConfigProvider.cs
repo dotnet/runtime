@@ -41,7 +41,6 @@ namespace Internal.JitInterface
             if (Interlocked.CompareExchange(ref s_instance, config, null) != null)
                 throw new InvalidOperationException();
 
-#if READYTORUN
             NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, (libName, assembly, searchPath) =>
             {
                 IntPtr libHandle = IntPtr.Zero;
@@ -62,9 +61,6 @@ namespace Internal.JitInterface
                 }
                 return libHandle;
             });
-#else
-            Debug.Assert(jitPath == null);
-#endif
 
             CorInfoImpl.Startup();
         }

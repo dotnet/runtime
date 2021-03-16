@@ -1121,7 +1121,11 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Throws<SocketException>(() =>
                 {
-                    socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/47905")]
+                    // TODO: When fixing the issue above, revert this test to check that the exception is being thrown in BeginSendTo
+                    // without the need to call EndSendTo.
+                    IAsyncResult result = socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
+                    socket.EndSendTo(result);
                 });
             }
         }

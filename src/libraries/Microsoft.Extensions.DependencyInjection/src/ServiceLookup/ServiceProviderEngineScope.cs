@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -19,12 +20,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private bool _disposed;
         private readonly object _disposelock = new object();
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine)
+        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
         {
             Engine = engine;
+
+            // To reduce lock contention for singletons upon resolve we use a concurrent dictionary.
+            ResolvedServices = isRoot ? new ConcurrentDictionary<ServiceCacheKey, object>() : new Dictionary<ServiceCacheKey, object>();
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; } = new Dictionary<ServiceCacheKey, object>();
+        internal IDictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
         public ServiceProviderEngine Engine { get; }
 

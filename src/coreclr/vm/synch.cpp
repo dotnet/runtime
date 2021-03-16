@@ -359,10 +359,6 @@ BOOL CLREventBase::Reset()
 
     _ASSERTE(Thread::Debug_AllowCallout());
 
-    // We do not allow Reset on AutoEvent
-    _ASSERTE (!IsAutoEvent() ||
-              !"Can not call Reset on AutoEvent");
-
     {
         return ResetEvent(m_handle);
     }

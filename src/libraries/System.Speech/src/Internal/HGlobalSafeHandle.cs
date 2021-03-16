@@ -12,7 +12,7 @@ namespace System.Speech.Internal
     {
         #region Constructors
 
-        internal HGlobalSafeHandle() : base(IntPtr.Zero, true)
+        public HGlobalSafeHandle() : base(IntPtr.Zero, true)
         {
         }
 

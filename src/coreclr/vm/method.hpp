@@ -2758,7 +2758,10 @@ public:
     void SetNativeStackArgSize(WORD cbArgSize)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsILStub() && (cbArgSize % TARGET_POINTER_SIZE) == 0);
+        _ASSERTE(IsILStub());
+#if !defined(OSX_ARM64_ABI)
+        _ASSERTE((cbArgSize % TARGET_POINTER_SIZE) == 0);
+#endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 
@@ -3238,13 +3241,13 @@ private:
 #endif
 public:
 
-    void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)
+    void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
 #if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
-        if (unmgdCallConv == pmCallConvThiscall)
+        if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
             _ASSERTE(cbDstBuffer >= sizeof(SLOT));
             cbDstBuffer -= sizeof(SLOT);

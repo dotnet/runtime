@@ -544,7 +544,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -572,7 +572,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvokedWithContentLength.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvokedWithContentLength.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -643,7 +643,7 @@ namespace System.Net.Tests
             byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
             if (IsAsync)
             {
-                await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                await uploadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
             }
         }
 
@@ -709,13 +709,10 @@ namespace System.Net.Tests
 
         private static void AddMD5Header(WebClient wc, string data)
         {
-            using (MD5 md5 = MD5.Create())
-            {
-                // Compute MD5 hash of the data that will be uploaded. We convert the string to UTF-8 since
-                // that is the encoding used by WebClient when serializing the data on the wire.
-                string headerValue = Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(data)));
-                wc.Headers.Add("Content-MD5", headerValue);
-            }
+            // Compute MD5 hash of the data that will be uploaded. We convert the string to UTF-8 since
+            // that is the encoding used by WebClient when serializing the data on the wire.
+            string headerValue = Convert.ToBase64String(MD5.HashData(Encoding.UTF8.GetBytes(data)));
+            wc.Headers.Add("Content-MD5", headerValue);
         }
     }
 

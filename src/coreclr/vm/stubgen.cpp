@@ -117,7 +117,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
         {
             CQuickBytes qbTargetSigBytes;
             PCCOR_SIGNATURE pSig;
-            DWORD cbSig;
+            uint32_t cbSig;
 
             if (token == TOKEN_ILSTUB_TARGET_SIG)
             {
@@ -2131,7 +2131,7 @@ void FunctionSigBuilder::SetSig(PCCOR_SIGNATURE pSig, DWORD cSig)
     SigPointer sigPtr(pSig, cSig);
 
     // 1) calling convention
-    ULONG callConv;
+    uint32_t callConv;
     IfFailThrow(sigPtr.GetCallingConvInfo(&callConv));
     SetCallingConv((CorCallingConvention)callConv);
 
@@ -2322,7 +2322,7 @@ static BOOL SigHasVoidReturnType(const Signature &signature)
 
     SigPointer ptr = signature.CreateSigPointer();
 
-    ULONG data;
+    uint32_t data;
     IfFailThrow(ptr.GetCallingConvInfo(&data));
     // Skip number of type arguments
     if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
@@ -2400,7 +2400,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         // IMAGE_CEE_CS_CALLCONV_HASTHIS.
         //
 
-        ULONG   uStubCallingConvInfo;
+        uint32_t   uStubCallingConvInfo;
         IfFailThrow(m_managedSigPtr.GetCallingConvInfo(&uStubCallingConvInfo));
 
         m_fHasThis = (flags & ILSTUB_LINKER_FLAG_STUB_HAS_THIS) != 0;
@@ -2410,10 +2410,10 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         // Otherwise, derive one based on the stub's signature.
         //
 
-        ULONG   uCallingConvInfo = uStubCallingConvInfo;
+        uint32_t   uCallingConvInfo = uStubCallingConvInfo;
 
-        ULONG   uCallingConv    = (uCallingConvInfo & IMAGE_CEE_CS_CALLCONV_MASK);
-        ULONG   uNativeCallingConv;
+        uint32_t   uCallingConv    = (uCallingConvInfo & IMAGE_CEE_CS_CALLCONV_MASK);
+        uint32_t   uNativeCallingConv;
 
         if (IMAGE_CEE_CS_CALLCONV_VARARG == uCallingConv)
         {
@@ -2483,7 +2483,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
         if (uStubCallingConvInfo & IMAGE_CEE_CS_CALLCONV_GENERIC)
             IfFailThrow(m_managedSigPtr.GetData(NULL));    // skip number of type parameters
 
-        ULONG numParams = 0;
+        uint32_t numParams = 0;
         IfFailThrow(m_managedSigPtr.GetData(&numParams));
         // If we are a reverse stub, then the target signature called in the stub
         // is the managed signature. In that case, we calculate the target IL stack delta
@@ -2587,16 +2587,16 @@ void ILStubLinker::GetStubReturnType(LocalDesc* pLoc, Module* pModule)
 {
     STANDARD_VM_CONTRACT;
     SigPointer ptr = m_stubSig.CreateSigPointer();
-    ULONG uCallingConv;
-    int   nTypeArgs = 0;
-    int   nArgs;
+    uint32_t uCallingConv;
+    uint32_t nTypeArgs = 0;
+    uint32_t nArgs;
 
     IfFailThrow(ptr.GetCallingConvInfo(&uCallingConv));
 
     if (uCallingConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
-        IfFailThrow(ptr.GetData((ULONG*)&nTypeArgs));
+        IfFailThrow(ptr.GetData(&nTypeArgs));
 
-    IfFailThrow(ptr.GetData((ULONG*)&nArgs));
+    IfFailThrow(ptr.GetData(&nArgs));
 
     GetManagedTypeHelper(pLoc, pModule, ptr.GetPtr(), m_pTypeContext, m_pMD);
 }
@@ -2763,6 +2763,73 @@ void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingC
     }
 }
 
+void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(callConv != CorInfoCallConvExtension::Managed);
+
+    const CorCallingConvention originalCallingConvention = m_nativeFnSigBuilder.GetCallingConv();
+    if (originalCallingConvention != IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        // For performance reasons, we try to encode the calling convention using
+        // the flags-based method if possible before using modopts.
+        switch (callConv)
+        {
+            case CorInfoCallConvExtension::C:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_C);
+                break;
+            case CorInfoCallConvExtension::Stdcall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_STDCALL);
+                break;
+            case CorInfoCallConvExtension::Thiscall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_THISCALL);
+                break;
+            case CorInfoCallConvExtension::Fastcall:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_FASTCALL);
+                break;
+            default:
+                m_nativeFnSigBuilder.SetCallingConv(IMAGE_CEE_CS_CALLCONV_UNMANAGED);
+                break;
+        }
+    }
+
+    // We may have updated the calling convention above, so reread the calling convention
+    // from the signature builder instead of using originalCallingConvention.
+    if (m_nativeFnSigBuilder.GetCallingConv() == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
+    {
+        // In this case we're already using the "Unmanaged" calling convention, so encode the specific callconv
+        // with the requisite modopts for the calling convention.
+        switch (callConv)
+        {
+            case CorInfoCallConvExtension::C:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_CDECL)));
+                break;
+            case CorInfoCallConvExtension::Stdcall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_STDCALL)));
+                break;
+            case CorInfoCallConvExtension::Thiscall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_THISCALL)));
+                break;
+            case CorInfoCallConvExtension::Fastcall:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
+                break;
+            default:
+                _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
+                break;
+        }
+    }
+
+    if (!m_fIsReverseStub)
+    {
+        if (originalCallingConvention & CORINFO_CALLCONV_HASTHIS)
+        {
+            // Our calling convention had an implied-this beforehand and now it doesn't.
+            // Account for this in the target stack delta.
+            m_iTargetStackDelta++;
+        }
+    }
+}
+
 static size_t GetManagedTypeForMDArray(LocalDesc* pLoc, Module* pModule, PCCOR_SIGNATURE psigManagedArg, SigTypeContext *pTypeContext)
 {
     CONTRACTL
@@ -2875,7 +2942,7 @@ void ILStubLinker::GetManagedTypeHelper(LocalDesc* pLoc, Module* pModule, PCCOR_
         case ELEMENT_TYPE_MVAR:
             {
                 IfFailThrow(ptr.GetElemType(NULL)); // skip ET
-                ULONG varNum;
+                uint32_t varNum;
                 IfFailThrowBF(ptr.GetData(&varNum), BFA_BAD_COMPLUS_SIG, pModule);
 
                 DWORD varCount = (eType == ELEMENT_TYPE_VAR ? pTypeContext->m_classInst.GetNumArgs() :

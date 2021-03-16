@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -305,7 +306,7 @@ namespace System.Text.Json
                 return StringComparer.OrdinalIgnoreCase.GetHashCode(Name);
             }
 
-            public override bool Equals(object? obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 Debug.Assert(obj is ParameterLookupKey);
 

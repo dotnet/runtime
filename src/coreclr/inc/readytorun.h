@@ -16,7 +16,7 @@
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 #define READYTORUN_MAJOR_VERSION 0x0005
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x003
 
@@ -79,6 +79,7 @@ enum class ReadyToRunSectionType : uint32_t
     InliningInfo2               = 114, // Added in V4.1
     ComponentAssemblies         = 115, // Added in V4.1
     OwnerCompositeExecutable    = 116, // Added in V4.1
+    PgoInstrumentationData      = 117, // Added in 5.2
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

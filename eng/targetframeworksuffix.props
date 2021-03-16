@@ -7,7 +7,7 @@
 
   <PropertyGroup Condition="'$(TargetFrameworkSuffix)' != '' and '$(TargetFrameworkSuffix)' != 'windows'">
     <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
-    <TargetPlatformVersion>0.0</TargetPlatformVersion>
+    <TargetPlatformVersion>1.0</TargetPlatformVersion>
     <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
   </PropertyGroup>
   
@@ -44,6 +44,13 @@
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <PackageTargetRuntime>osx</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'MacCatalyst'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsMacCatalyst>true</TargetsMacCatalyst>
+        <PackageTargetRuntime>maccatalyst</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'tvOS'">

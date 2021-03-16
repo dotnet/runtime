@@ -28,7 +28,7 @@ usage()
   echo "  --help (-h)                     Print help and exit."
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, tvOS, iOS, Android,"
+  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, iOS, Android,"
   echo "                                  Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -109,7 +109,7 @@ usage()
   echo ""
   echo "However, for this example, you need to already have ROOTFS_DIR set up."
   echo "Further information on this can be found here:"
-  echo "https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/linux-instructions.md"
+  echo "https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/linux-instructions.md"
   echo ""
   echo "* Build Mono runtime for Linux x64 on Release configuration."
   echo "./build.sh mono -c release"
@@ -121,7 +121,7 @@ usage()
   echo "./build.sh mono.corelib+libs.pretest -rc debug -c release"
   echo ""
   echo ""
-  echo "For more general information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  echo "For more general information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 initDistroRid()
@@ -262,6 +262,8 @@ while [[ $# > 0 ]]; do
           os="FreeBSD" ;;
         osx)
           os="OSX" ;;
+        maccatalyst)
+          os="MacCatalyst" ;;
         tvos)
           os="tvOS" ;;
         ios)
@@ -276,7 +278,7 @@ while [[ $# > 0 ]]; do
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, tvOS, iOS, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, iOS, Android, Browser, illumos and Solaris."
           exit 1
           ;;
       esac

@@ -40,6 +40,7 @@
 #endif
 
 #ifdef HOST_WIN32
+#define sleep(t)                 Sleep((t) * 1000)
 #ifdef _MSC_VER
 #include <winsock2.h>
 #include <process.h>
@@ -47,6 +48,7 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #endif
+
 
 #ifdef HOST_ANDROID
 #include <linux/in.h>
@@ -61,13 +63,11 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32socket.h>
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
@@ -134,6 +134,7 @@ typedef struct {
 	gboolean defer;
 	int keepalive;
 	gboolean setpgid;
+	gboolean using_icordbg;
 } AgentConfig;
 
 typedef struct _InvokeData InvokeData;
@@ -262,231 +263,11 @@ typedef struct {
 	int (*recv) (void *buf, int len);
 } DebuggerTransport;
 
-/* 
- * Wire Protocol definitions
- */
+/* Buffered reply packets */
+static ReplyPacket reply_packets [128];
+static int nreply_packets;
 
-#define HEADER_LENGTH 11
-
-#define MAJOR_VERSION 2
-#define MINOR_VERSION 58
-
-typedef enum {
-	CMD_SET_VM = 1,
-	CMD_SET_OBJECT_REF = 9,
-	CMD_SET_STRING_REF = 10,
-	CMD_SET_THREAD = 11,
-	CMD_SET_ARRAY_REF = 13,
-	CMD_SET_EVENT_REQUEST = 15,
-	CMD_SET_STACK_FRAME = 16,
-	CMD_SET_APPDOMAIN = 20,
-	CMD_SET_ASSEMBLY = 21,
-	CMD_SET_METHOD = 22,
-	CMD_SET_TYPE = 23,
-	CMD_SET_MODULE = 24,
-	CMD_SET_FIELD = 25,
-	CMD_SET_EVENT = 64,
-	CMD_SET_POINTER = 65
-} CommandSet;
-
-typedef enum {
-	SUSPEND_POLICY_NONE = 0,
-	SUSPEND_POLICY_EVENT_THREAD = 1,
-	SUSPEND_POLICY_ALL = 2
-} SuspendPolicy;
-
-typedef enum {
-	ERR_NONE = 0,
-	ERR_INVALID_OBJECT = 20,
-	ERR_INVALID_FIELDID = 25,
-	ERR_INVALID_FRAMEID = 30,
-	ERR_NOT_IMPLEMENTED = 100,
-	ERR_NOT_SUSPENDED = 101,
-	ERR_INVALID_ARGUMENT = 102,
-	ERR_UNLOADED = 103,
-	ERR_NO_INVOCATION = 104,
-	ERR_ABSENT_INFORMATION = 105,
-	ERR_NO_SEQ_POINT_AT_IL_OFFSET = 106,
-	ERR_INVOKE_ABORTED = 107,
-	ERR_LOADER_ERROR = 200, /*XXX extend the protocol to pass this information down the pipe */
-} ErrorCode;
-
-typedef enum {
-	TOKEN_TYPE_STRING = 0,
-	TOKEN_TYPE_TYPE = 1,
-	TOKEN_TYPE_FIELD = 2,
-	TOKEN_TYPE_METHOD = 3,
-	TOKEN_TYPE_UNKNOWN = 4
-} DebuggerTokenType;
-
-typedef enum {
-	VALUE_TYPE_ID_NULL = 0xf0,
-	VALUE_TYPE_ID_TYPE = 0xf1,
-	VALUE_TYPE_ID_PARENT_VTYPE = 0xf2,
-	VALUE_TYPE_ID_FIXED_ARRAY = 0xf3
-} ValueTypeId;
-
-typedef enum {
-	FRAME_FLAG_DEBUGGER_INVOKE = 1,
-	FRAME_FLAG_NATIVE_TRANSITION = 2
-} StackFrameFlags;
-
-typedef enum {
-	INVOKE_FLAG_DISABLE_BREAKPOINTS = 1,
-	INVOKE_FLAG_SINGLE_THREADED = 2,
-	INVOKE_FLAG_RETURN_OUT_THIS = 4,
-	INVOKE_FLAG_RETURN_OUT_ARGS = 8,
-	INVOKE_FLAG_VIRTUAL = 16
-} InvokeFlags;
-
-typedef enum {
-	BINDING_FLAGS_IGNORE_CASE = 0x70000000,
-} BindingFlagsExtensions;
-
-typedef enum {
-	CMD_VM_VERSION = 1,
-	CMD_VM_ALL_THREADS = 2,
-	CMD_VM_SUSPEND = 3,
-	CMD_VM_RESUME = 4,
-	CMD_VM_EXIT = 5,
-	CMD_VM_DISPOSE = 6,
-	CMD_VM_INVOKE_METHOD = 7,
-	CMD_VM_SET_PROTOCOL_VERSION = 8,
-	CMD_VM_ABORT_INVOKE = 9,
-	CMD_VM_SET_KEEPALIVE = 10,
-	CMD_VM_GET_TYPES_FOR_SOURCE_FILE = 11,
-	CMD_VM_GET_TYPES = 12,
-	CMD_VM_INVOKE_METHODS = 13,
-	CMD_VM_START_BUFFERING = 14,
-	CMD_VM_STOP_BUFFERING = 15
-} CmdVM;
-
-typedef enum {
-	CMD_THREAD_GET_FRAME_INFO = 1,
-	CMD_THREAD_GET_NAME = 2,
-	CMD_THREAD_GET_STATE = 3,
-	CMD_THREAD_GET_INFO = 4,
-	CMD_THREAD_GET_ID = 5,
-	CMD_THREAD_GET_TID = 6,
-	CMD_THREAD_SET_IP = 7,
-	CMD_THREAD_ELAPSED_TIME = 8
-} CmdThread;
-
-typedef enum {
-	CMD_EVENT_REQUEST_SET = 1,
-	CMD_EVENT_REQUEST_CLEAR = 2,
-	CMD_EVENT_REQUEST_CLEAR_ALL_BREAKPOINTS = 3
-} CmdEvent;
-
-typedef enum {
-	CMD_COMPOSITE = 100
-} CmdComposite;
-
-typedef enum {
-	CMD_APPDOMAIN_GET_ROOT_DOMAIN = 1,
-	CMD_APPDOMAIN_GET_FRIENDLY_NAME = 2,
-	CMD_APPDOMAIN_GET_ASSEMBLIES = 3,
-	CMD_APPDOMAIN_GET_ENTRY_ASSEMBLY = 4,
-	CMD_APPDOMAIN_CREATE_STRING = 5,
-	CMD_APPDOMAIN_GET_CORLIB = 6,
-	CMD_APPDOMAIN_CREATE_BOXED_VALUE = 7,
-	CMD_APPDOMAIN_CREATE_BYTE_ARRAY = 8,
-} CmdAppDomain;
-
-typedef enum {
-	CMD_ASSEMBLY_GET_LOCATION = 1,
-	CMD_ASSEMBLY_GET_ENTRY_POINT = 2,
-	CMD_ASSEMBLY_GET_MANIFEST_MODULE = 3,
-	CMD_ASSEMBLY_GET_OBJECT = 4,
-	CMD_ASSEMBLY_GET_TYPE = 5,
-	CMD_ASSEMBLY_GET_NAME = 6,
-	CMD_ASSEMBLY_GET_DOMAIN = 7,
-	CMD_ASSEMBLY_GET_METADATA_BLOB = 8,
-	CMD_ASSEMBLY_GET_IS_DYNAMIC = 9,
-	CMD_ASSEMBLY_GET_PDB_BLOB = 10,
-	CMD_ASSEMBLY_GET_TYPE_FROM_TOKEN = 11,
-	CMD_ASSEMBLY_GET_METHOD_FROM_TOKEN = 12,
-	CMD_ASSEMBLY_HAS_DEBUG_INFO = 13,
-	CMD_ASSEMBLY_GET_CATTRS = 14,
-} CmdAssembly;
-
-typedef enum {
-	CMD_MODULE_GET_INFO = 1,
-} CmdModule;
-
-typedef enum {
-	CMD_FIELD_GET_INFO = 1,
-} CmdField;
-
-typedef enum {
-	CMD_METHOD_GET_NAME = 1,
-	CMD_METHOD_GET_DECLARING_TYPE = 2,
-	CMD_METHOD_GET_DEBUG_INFO = 3,
-	CMD_METHOD_GET_PARAM_INFO = 4,
-	CMD_METHOD_GET_LOCALS_INFO = 5,
-	CMD_METHOD_GET_INFO = 6,
-	CMD_METHOD_GET_BODY = 7,
-	CMD_METHOD_RESOLVE_TOKEN = 8,
-	CMD_METHOD_GET_CATTRS = 9,
-	CMD_METHOD_MAKE_GENERIC_METHOD = 10
-} CmdMethod;
-
-typedef enum {
-	CMD_TYPE_GET_INFO = 1,
-	CMD_TYPE_GET_METHODS = 2,
-	CMD_TYPE_GET_FIELDS = 3,
-	CMD_TYPE_GET_VALUES = 4,
-	CMD_TYPE_GET_OBJECT = 5,
-	CMD_TYPE_GET_SOURCE_FILES = 6,
-	CMD_TYPE_SET_VALUES = 7,
-	CMD_TYPE_IS_ASSIGNABLE_FROM = 8,
-	CMD_TYPE_GET_PROPERTIES = 9,
-	CMD_TYPE_GET_CATTRS = 10,
-	CMD_TYPE_GET_FIELD_CATTRS = 11,
-	CMD_TYPE_GET_PROPERTY_CATTRS = 12,
-	CMD_TYPE_GET_SOURCE_FILES_2 = 13,
-	CMD_TYPE_GET_VALUES_2 = 14,
-	CMD_TYPE_GET_METHODS_BY_NAME_FLAGS = 15,
-	CMD_TYPE_GET_INTERFACES = 16,
-	CMD_TYPE_GET_INTERFACE_MAP = 17,
-	CMD_TYPE_IS_INITIALIZED = 18,
-	CMD_TYPE_CREATE_INSTANCE = 19,
-	CMD_TYPE_GET_VALUE_SIZE = 20
-} CmdType;
-
-typedef enum {
-	CMD_STACK_FRAME_GET_VALUES = 1,
-	CMD_STACK_FRAME_GET_THIS = 2,
-	CMD_STACK_FRAME_SET_VALUES = 3,
-	CMD_STACK_FRAME_GET_DOMAIN = 4,
-	CMD_STACK_FRAME_SET_THIS = 5,
-} CmdStackFrame;
-
-typedef enum {
-	CMD_ARRAY_REF_GET_LENGTH = 1,
-	CMD_ARRAY_REF_GET_VALUES = 2,
-	CMD_ARRAY_REF_SET_VALUES = 3,
-} CmdArray;
-
-typedef enum {
-	CMD_STRING_REF_GET_VALUE = 1,
-	CMD_STRING_REF_GET_LENGTH = 2,
-	CMD_STRING_REF_GET_CHARS = 3
-} CmdString;
-
-typedef enum {
-	CMD_POINTER_GET_VALUE = 1
-} CmdPointer;
-
-typedef enum {
-	CMD_OBJECT_REF_GET_TYPE = 1,
-	CMD_OBJECT_REF_GET_VALUES = 2,
-	CMD_OBJECT_REF_IS_COLLECTED = 3,
-	CMD_OBJECT_REF_GET_ADDRESS = 4,
-	CMD_OBJECT_REF_GET_DOMAIN = 5,
-	CMD_OBJECT_REF_SET_VALUES = 6,
-	CMD_OBJECT_REF_GET_INFO = 7,
-} CmdObject;
+static int packet_id = 0;
 
 /*
  * Contains additional information for an event
@@ -505,16 +286,6 @@ typedef struct {
 	char *dump;
 	MonoStackHash *hashes;
 } EventInfo;
-
-typedef struct {
-	guint8 *buf, *p, *end;
-} Buffer;
-
-typedef struct ReplyPacket {
-	int id;
-	int error;
-	Buffer *data;
-} ReplyPacket;
 
 #ifdef HOST_WIN32
 #define get_last_sock_error() WSAGetLastError()
@@ -548,8 +319,6 @@ static gint32 agent_inited;
 static int conn_fd;
 static int listen_fd;
 #endif
-
-static int packet_id = 0;
 
 static int objref_id = 0;
 
@@ -613,10 +382,6 @@ static gint32 suspend_count;
 
 /* Whenever to buffer reply messages and send them together */
 static gboolean buffer_replies;
-
-/* Buffered reply packets */
-static ReplyPacket reply_packets [128];
-static int nreply_packets;
 
 #define dbg_lock mono_de_lock
 #define dbg_unlock mono_de_unlock
@@ -1234,7 +999,7 @@ socket_transport_connect (const char *address)
 			MONO_HINT_UNSPECIFIED
 		};
 
-		mono_network_init ();
+		mono_networking_init ();
 
 		for (int i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
@@ -1289,8 +1054,7 @@ socket_transport_connect (const char *address)
 
 				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 
-				sfd = socket (rp->family, rp->socktype,
-							  rp->protocol);
+				sfd = socket (rp->family, rp->socktype, rp->protocol);
 				if (sfd == -1)
 					continue;
 
@@ -1343,32 +1107,41 @@ socket_transport_connect (const char *address)
 	} else {
 		/* Connect to the specified address */
 		/* FIXME: Respect the timeout */
-		for (rp = result->entries; rp != NULL; rp = rp->next) {
-			MonoSocketAddress sockaddr;
-			socklen_t sock_len;
+		uint32_t startTime = time(NULL);
+		uint32_t elapsedTime;
+		do {
+			PRINT_DEBUG_MSG (1, "Trying to connect.\n");
+			for (rp = result->entries; rp != NULL; rp = rp->next) {
+				MonoSocketAddress sockaddr;
+				socklen_t sock_len;
 
-			mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 
-			sfd = socket (rp->family, rp->socktype,
-						  rp->protocol);
-			if (sfd == -1)
-				continue;
+				sfd = socket (rp->family, rp->socktype,
+							rp->protocol);
+				if (sfd == -1)
+					continue;
 
-			MONO_ENTER_GC_SAFE;
-			res = connect (sfd, &sockaddr.addr, sock_len);
-			MONO_EXIT_GC_SAFE;
+				MONO_ENTER_GC_SAFE;
+				res = connect (sfd, &sockaddr.addr, sock_len);
+				MONO_EXIT_GC_SAFE;
 
-			if (res != -1)
-				break;       /* Success */
-			
-			MONO_ENTER_GC_SAFE;
-#ifdef HOST_WIN32
-			closesocket (sfd);
-#else
-			close (sfd);
-#endif
-			MONO_EXIT_GC_SAFE;
-		}
+				if (res != -1)
+					break;       /* Success */
+				
+				MONO_ENTER_GC_SAFE;
+	#ifdef HOST_WIN32
+				closesocket (sfd);
+	#else
+				close (sfd);
+	#endif
+				MONO_EXIT_GC_SAFE;
+			}
+			elapsedTime = difftime (time (NULL), startTime) * 1000;
+			if (rp == 0)
+				sleep (1);
+		} while ((elapsedTime < agent_config.timeout) && (rp == 0));
+		
 
 		if (rp == 0) {
 			PRINT_ERROR_MSG ("debugger-agent: Unable to connect to %s:%d\n", host, port);
@@ -1645,201 +1418,13 @@ start_debugger_thread (MonoError *error)
 {
 	MonoInternalThread *thread;
 
-	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
+	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
 	/* Is it possible for the thread to be dead alreay ? */
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);
 	g_assert (debugger_thread_handle);
 	
-}
-
-/*
- * Functions to decode protocol data
- */
-
-static int
-decode_byte (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	*endbuf = buf + 1;
-	g_assert (*endbuf <= limit);
-	return buf [0];
-}
-
-static int
-decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	*endbuf = buf + 4;
-	g_assert (*endbuf <= limit);
-
-	return (((int)buf [0]) << 24) | (((int)buf [1]) << 16) | (((int)buf [2]) << 8) | (((int)buf [3]) << 0);
-}
-
-static gint64
-decode_long (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	guint32 high = decode_int (buf, &buf, limit);
-	guint32 low = decode_int (buf, &buf, limit);
-
-	*endbuf = buf;
-
-	return ((((guint64)high) << 32) | ((guint64)low));
-}
-
-static int
-decode_id (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	return decode_int (buf, endbuf, limit);
-}
-
-static char*
-decode_string (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	int len = decode_int (buf, &buf, limit);
-	char *s;
-
-	if (len < 0) {
-		*endbuf = buf;
-		return NULL;
-	}
-
-	s = (char *)g_malloc (len + 1);
-	g_assert (s);
-
-	memcpy (s, buf, len);
-	s [len] = '\0';
-	buf += len;
-	*endbuf = buf;
-
-	return s;
-}
-
-/*
- * Functions to encode protocol data
- */
-
-static void
-buffer_init (Buffer *buf, int size)
-{
-	buf->buf = (guint8 *)g_malloc (size);
-	buf->p = buf->buf;
-	buf->end = buf->buf + size;
-}
-
-static int
-buffer_len (Buffer *buf)
-{
-	return buf->p - buf->buf;
-}
-
-static void
-buffer_make_room (Buffer *buf, int size)
-{
-	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
-		guint8 *p = (guint8 *)g_realloc (buf->buf, new_size);
-		size = buf->p - buf->buf;
-		buf->buf = p;
-		buf->p = p + size;
-		buf->end = buf->buf + new_size;
-	}
-}
-
-static void
-buffer_add_byte (Buffer *buf, guint8 val)
-{
-	buffer_make_room (buf, 1);
-	buf->p [0] = val;
-	buf->p++;
-}
-
-static void
-buffer_add_short (Buffer *buf, guint32 val)
-{
-	buffer_make_room (buf, 2);
-	buf->p [0] = (val >> 8) & 0xff;
-	buf->p [1] = (val >> 0) & 0xff;
-	buf->p += 2;
-}
-
-static void
-buffer_add_int (Buffer *buf, guint32 val)
-{
-	buffer_make_room (buf, 4);
-	buf->p [0] = (val >> 24) & 0xff;
-	buf->p [1] = (val >> 16) & 0xff;
-	buf->p [2] = (val >> 8) & 0xff;
-	buf->p [3] = (val >> 0) & 0xff;
-	buf->p += 4;
-}
-
-static void
-buffer_add_long (Buffer *buf, guint64 l)
-{
-	buffer_add_int (buf, (l >> 32) & 0xffffffff);
-	buffer_add_int (buf, (l >> 0) & 0xffffffff);
-}
-
-static void
-buffer_add_id (Buffer *buf, int id)
-{
-	buffer_add_int (buf, (guint64)id);
-}
-
-static void
-buffer_add_data (Buffer *buf, guint8 *data, int len)
-{
-	buffer_make_room (buf, len);
-	memcpy (buf->p, data, len);
-	buf->p += len;
-}
-
-static void
-buffer_add_utf16 (Buffer *buf, guint8 *data, int len)
-{
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	buffer_make_room (buf, len);
-	memcpy (buf->p, data, len);
-#else
-	for (int i=0; i<len; i +=2) {
-		buf->p[i] = data[i+1];
-		buf->p[i+1] = data[i];
-	}
-#endif
-	buf->p += len;
-}
-
-static void
-buffer_add_string (Buffer *buf, const char *str)
-{
-	int len;
-
-	if (str == NULL) {
-		buffer_add_int (buf, 0);
-	} else {
-		len = strlen (str);
-		buffer_add_int (buf, len);
-		buffer_add_data (buf, (guint8*)str, len);
-	}
-}
-
-static void
-buffer_add_byte_array (Buffer *buf, guint8 *bytes, guint32 arr_len)
-{
-    buffer_add_int (buf, arr_len);
-    buffer_add_data (buf, bytes, arr_len);
-}
-
-static void
-buffer_add_buffer (Buffer *buf, Buffer *data)
-{
-	buffer_add_data (buf, data->buf, buffer_len (data));
-}
-
-static void
-buffer_free (Buffer *buf)
-{
-	g_free (buf->buf);
 }
 
 static gboolean
@@ -2113,21 +1698,6 @@ buffer_add_objid (Buffer *buf, MonoObject *o)
 }
 
 /*
- * IDS
- */
-
-typedef enum {
-	ID_ASSEMBLY = 0,
-	ID_MODULE = 1,
-	ID_TYPE = 2,
-	ID_METHOD = 3,
-	ID_FIELD = 4,
-	ID_DOMAIN = 5,
-	ID_PROPERTY = 6,
-	ID_NUM
-} IdType;
-
-/*
  * Represents a runtime structure accessible to the debugger client
  */
 typedef struct {
@@ -2191,14 +1761,19 @@ ids_cleanup (void)
 }
 
 static void
-debugger_agent_free_domain_info (MonoDomain *domain)
+debugger_agent_free_mem_manager (gpointer mem_manager)
 {
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
-	int i, j;
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)mem_manager;
+	AgentDomainInfo *info = (AgentDomainInfo *)jit_mm->agent_info;
+	int i;
 	GHashTableIter iter;
 	GPtrArray *file_names;
 	char *basename;
 	GSList *l;
+
+	// FIXME:
+	if (mem_manager != get_default_jit_mm ())
+		return;
 
 	if (info) {
 		for (i = 0; i < ID_NUM; ++i)
@@ -2227,8 +1802,9 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	domain_jit_info (domain)->agent_info = NULL;
+	jit_mm->agent_info = NULL;
 
+#if 0
 	/* Clear ids referencing structures in the domain */
 	dbg_lock ();
 	for (i = 0; i < ID_NUM; ++i) {
@@ -2241,17 +1817,15 @@ debugger_agent_free_domain_info (MonoDomain *domain)
 		}
 	}
 	dbg_unlock ();
-
-	mono_de_domain_remove (domain);
+#endif
 }
 
 static AgentDomainInfo*
-get_agent_domain_info (MonoDomain *domain)
+get_agent_info (void)
 {
 	AgentDomainInfo *info = NULL;
-	MonoJitDomainInfo *jit_info = domain_jit_info (domain);
-
-	info = (AgentDomainInfo *)jit_info->agent_info;
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	info = (AgentDomainInfo *)jit_mm->agent_info;
 
 	if (info) {
 		mono_memory_read_barrier ();
@@ -2266,7 +1840,7 @@ get_agent_domain_info (MonoDomain *domain)
 
 	mono_memory_write_barrier ();
 
-	gpointer other_info = mono_atomic_cas_ptr (&jit_info->agent_info, info, NULL);
+	gpointer other_info = mono_atomic_cas_ptr (&jit_mm->agent_info, info, NULL);
 
 	if (other_info != NULL) {
 		g_hash_table_destroy (info->loaded_classes);
@@ -2276,7 +1850,7 @@ get_agent_domain_info (MonoDomain *domain)
 		g_free (info);
 	}
 
-	return (AgentDomainInfo *)jit_info->agent_info;
+	return (AgentDomainInfo *)jit_mm->agent_info;
 }
 
 static int
@@ -2288,7 +1862,7 @@ get_id (MonoDomain *domain, IdType type, gpointer val)
 	if (val == NULL)
 		return 0;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	dbg_lock ();
 
@@ -2336,7 +1910,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	res = (Id *)g_ptr_array_index (ids [type], GPOINTER_TO_INT (id - 1));
 	dbg_unlock ();
 
-	if (res->domain == NULL || res->domain->state == MONO_APPDOMAIN_UNLOADED) {
+	if (res->domain == NULL) {
 		PRINT_DEBUG_MSG (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
@@ -2498,8 +2072,10 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 	if (out_ip)
 		*out_ip = ip;
+	if (domain)
+		*domain = mono_get_root_domain ();
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, domain);
+	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
 		/* Could be an interpreter method */
 
@@ -2582,7 +2158,6 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
-		data->domain = info->domain;
 		return TRUE;
 	}
 }
@@ -2613,7 +2188,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 
 	g_assert (info);
 
-	ip = MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
+	ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 	tid = mono_thread_info_get_tid (info);
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
@@ -2724,7 +2299,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 		/* not attached */
 		ji = NULL;
 	} else {
-		ji = mono_jit_info_table_find_internal ( domain, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx), TRUE, TRUE);
+		ji = mono_jit_info_table_find_internal (domain, MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx)), TRUE, TRUE);
 	}
 
 	/* This is signal safe */
@@ -2868,11 +2443,6 @@ suspend_vm (void)
 		 */
 		tp_suspend = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_suspend)
-		mono_threadpool_suspend ();
-#endif
 }
 
 /*
@@ -2911,11 +2481,6 @@ resume_vm (void)
 	if (suspend_count == 0)
 		tp_resume = TRUE;
 	mono_loader_unlock ();
-
-#ifndef ENABLE_NETCORE
-	if (tp_resume)
-		mono_threadpool_resume ();
-#endif
 }
 
 /*
@@ -3135,17 +2700,17 @@ no_seq_points_found (MonoMethod *method, int offset)
 }
 
 static int
-calc_il_offset (MonoDomain *domain, MonoMethod *method, int native_offset, gboolean is_top_frame)
+calc_il_offset (MonoMethod *method, int native_offset, gboolean is_top_frame)
 {
 	int ret = -1;
 	if (is_top_frame) {
 		SeqPoint sp;
 		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
-		if (mono_find_prev_seq_point_for_native_offset (domain, method, native_offset, NULL, &sp))
+		if (mono_find_prev_seq_point_for_native_offset (method, native_offset, NULL, &sp))
 			ret = sp.il_offset;
 	}
 	if (ret == -1)
-		ret = mono_debug_il_offset_from_address (method, domain, native_offset);
+		ret = mono_debug_il_offset_from_address (method, NULL, native_offset);
 	return ret;
 }
 
@@ -3194,7 +2759,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	}
 
 	if (info->il_offset == -1) {
-		info->il_offset = calc_il_offset (info->domain, method, info->native_offset, ud->frames == NULL);
+		info->il_offset = calc_il_offset (method, info->native_offset, ud->frames == NULL);
 	}
 
 	PRINT_DEBUG_MSG (1, "\tFrame: %s:[il=0x%x, native=0x%x] %d\n", mono_method_full_name (method, TRUE), info->il_offset, info->native_offset, info->managed);
@@ -3222,8 +2787,8 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 
 	frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
 	frame->de.method = method;
+	frame->de.domain = mono_get_root_domain ();
 	frame->de.native_offset = info->native_offset;
 
 	frame->actual_method = actual_method;
@@ -3434,7 +2999,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 			StackFrame *top_frame = tls->frames [0];
 			if (interp_resume_frame == top_frame->interp_frame) {
 				int native_offset = (int) ((uintptr_t) interp_resume_ip - (uintptr_t) top_frame->de.ji->code_start);
-				top_frame->il_offset = calc_il_offset (top_frame->de.domain, top_frame->de.method, native_offset, TRUE);
+				top_frame->il_offset = calc_il_offset (top_frame->de.method, native_offset, TRUE);
 			}
 		}
 	}
@@ -3450,7 +3015,7 @@ static void
 emit_appdomain_load (gpointer key, gpointer value, gpointer user_data)
 {
 	process_profiler_event (EVENT_KIND_APPDOMAIN_CREATE, value);
-	g_hash_table_foreach (get_agent_domain_info ((MonoDomain *)value)->loaded_classes, emit_type_load, NULL);
+	g_hash_table_foreach (get_agent_info ()->loaded_classes, emit_type_load, NULL);
 }
 
 /*
@@ -3805,34 +3370,6 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 	return events;
 }
 
-static G_GNUC_UNUSED const char*
-event_to_string (EventKind event)
-{
-	switch (event) {
-	case EVENT_KIND_VM_START: return "VM_START";
-	case EVENT_KIND_VM_DEATH: return "VM_DEATH";
-	case EVENT_KIND_THREAD_START: return "THREAD_START";
-	case EVENT_KIND_THREAD_DEATH: return "THREAD_DEATH";
-	case EVENT_KIND_APPDOMAIN_CREATE: return "APPDOMAIN_CREATE";
-	case EVENT_KIND_APPDOMAIN_UNLOAD: return "APPDOMAIN_UNLOAD";
-	case EVENT_KIND_METHOD_ENTRY: return "METHOD_ENTRY";
-	case EVENT_KIND_METHOD_EXIT: return "METHOD_EXIT";
-	case EVENT_KIND_ASSEMBLY_LOAD: return "ASSEMBLY_LOAD";
-	case EVENT_KIND_ASSEMBLY_UNLOAD: return "ASSEMBLY_UNLOAD";
-	case EVENT_KIND_BREAKPOINT: return "BREAKPOINT";
-	case EVENT_KIND_STEP: return "STEP";
-	case EVENT_KIND_TYPE_LOAD: return "TYPE_LOAD";
-	case EVENT_KIND_EXCEPTION: return "EXCEPTION";
-	case EVENT_KIND_KEEPALIVE: return "KEEPALIVE";
-	case EVENT_KIND_USER_BREAK: return "USER_BREAK";
-	case EVENT_KIND_USER_LOG: return "USER_LOG";
-	case EVENT_KIND_CRASH: return "CRASH";
-	default:
-		g_assert_not_reached ();
-		return "";
-	}
-}
-
 /*
  * process_event:
  *
@@ -4104,6 +3641,8 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
+	if (CHECK_PROTOCOL_VERSION (2, 59))
+		process_profiler_event (EVENT_KIND_ASSEMBLY_LOAD, (mono_defaults.corlib->assembly));
 	if (agent_config.defer) {
 		ERROR_DECL (error);
 		start_debugger_thread (error);
@@ -4310,10 +3849,9 @@ static void
 send_type_load (MonoClass *klass)
 {
 	gboolean type_load = FALSE;
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 
@@ -4339,10 +3877,7 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 	g_assert (info);
 
 	old_domain = mono_domain_get ();
@@ -4361,9 +3896,6 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
-
-	if (mono_domain_is_unloading (domain))
-		return;
 
 	old_domain = mono_domain_get ();
 
@@ -4927,7 +4459,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		 * Find the seq point corresponding to the landing site ip, which is the first seq
 		 * point after ip.
 		 */
-		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &args->sp);
+		found_sp = mono_find_next_seq_point_for_native_offset (frame.method, frame.native_offset, &info, &args->sp);
 		if (!found_sp)
 			no_seq_points_found (frame.method, frame.native_offset);
 		if (!found_sp) {
@@ -4975,7 +4507,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 		if (frame) {
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
-				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.domain, frame->de.method, frame->de.native_offset, &info, &args->sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->de.method, frame->de.native_offset, &info, &args->sp);
 				if (!found_sp)
 					no_seq_points_found (frame->de.method, frame->de.native_offset);
 				if (!found_sp) {
@@ -5211,7 +4743,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (!agent_inited)
 		return;
 
-	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
+	ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (throw_ctx));
 	if (catch_frame)
 		catch_ji = catch_frame->ji;
 	else
@@ -5360,6 +4892,24 @@ buffer_add_fixed_array (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain
 		}
 	}
 }
+static void
+buffer_add_info_for_null_value (Buffer* buf, MonoType* t, MonoDomain* domain)
+{
+	buffer_add_byte (buf, t->type);
+	switch (t->type) {
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
+		break;
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		buffer_add_byte (buf, m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type);
+		buffer_add_int (buf, m_class_get_rank (mono_class_from_mono_type_internal (t)));
+		if (m_class_get_byval_arg (m_class_get_element_class (mono_class_from_mono_type_internal (t)))->type == MONO_TYPE_CLASS)
+			buffer_add_typeid (buf, domain, m_class_get_element_class (mono_class_from_mono_type_internal (t)));
+		break;
+	}
+}
 /*
  * buffer_add_value_full:
  *
@@ -5414,6 +4964,28 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		buffer_add_fixed_array(buf, t, addr, domain, as_vtype, parent_vtypes, len_fixed_array);
 		return;
 	}
+
+	if (agent_config.using_icordbg) {
+		switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_PTR:
+			buffer_add_byte (buf, t->type);
+			buffer_add_long (buf, (gssize) addr);
+			return;
+		}
+	}
+
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		buffer_add_byte (buf, t->type);
@@ -5466,6 +5038,9 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		if (!obj) {
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+			if (CHECK_PROTOCOL_VERSION (2, 59)) {
+				buffer_add_info_for_null_value(buf, t, domain);
+			}
 		} else {
 			if (m_class_is_valuetype (obj->vtable->klass)) {
 				t = m_class_get_byval_arg (obj->vtable->klass);
@@ -5480,6 +5055,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				buffer_add_byte (buf, m_class_get_byval_arg (obj->vtable->klass)->type);
 			}
 			buffer_add_objid (buf, obj);
+			if (agent_config.using_icordbg)
+				buffer_add_long (buf, (gssize) addr);
 		}
 		break;
 	handle_vtype:
@@ -5567,16 +5144,7 @@ static gboolean
 obj_is_of_type (MonoObject *obj, MonoType *t)
 {
 	MonoClass *klass = obj->vtable->klass;
-	if (!mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-		if (mono_class_is_transparent_proxy (klass)) {
-			klass = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-			if (mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass)) {
-				return TRUE;
-			}
-		}
-		return FALSE;
-	}
-	return TRUE;
+	return mono_class_is_assignable_from_internal (mono_class_from_mono_type_internal (t), klass);
 }
 
 static ErrorCode
@@ -5762,7 +5330,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		/* Fall through */
 		handle_vtype:
 	case MONO_TYPE_VALUETYPE:
-		if (type == MONO_TYPE_OBJECT) {
+		if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 			/* Boxed vtype */
 			int objid = decode_objid (buf, &buf, limit);
 			ErrorCode err;
@@ -5787,7 +5355,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_OBJECT) {
+			if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
 				int objid = decode_objid (buf, &buf, limit);
 				ErrorCode err;
 				MonoObject *obj;
@@ -5843,7 +5411,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 					g_free (vtype_buf);
 					return err;
 				}
-				*(MonoObject**)addr = mono_value_box_checked (d, klass, vtype_buf, error);
+				*(MonoObject**)addr = mono_value_box_checked (klass, vtype_buf, error);
 				mono_error_cleanup (error);
 				g_free (vtype_buf);
 			} else {
@@ -5901,7 +5469,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 				g_free (nullable_buf);
 				return err;
 			}
-			MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (targ), nullable_buf, error);
+			MonoObject *boxed = mono_value_box_checked (mono_class_from_mono_type_internal (targ), nullable_buf, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
 				return ERR_INVALID_OBJECT;
@@ -5926,16 +5494,14 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 	guint32 flags;
 	int reg;
 	guint8 *addr, *gaddr;
-	host_mgreg_t reg_val;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 	reg = var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 
 	switch (flags) {
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
-		reg_val = mono_arch_context_get_int_reg (ctx, reg);
-
-		buffer_add_value_full (buf, t, &reg_val, domain, as_vtype, NULL, 1);
+		addr = (guint8 *)mono_arch_context_get_int_reg_address (ctx, reg);
+		buffer_add_value_full (buf, t, addr, domain, as_vtype, NULL, 1);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		addr = (guint8 *)mono_arch_context_get_int_reg (ctx, reg);
@@ -6252,14 +5818,9 @@ type_comes_from_assembly (gpointer klass, gpointer also_klass, gpointer assembly
 static void
 clear_types_for_assembly (MonoAssembly *assembly)
 {
-	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	if (!domain || !domain_jit_info (domain))
-		/* Can happen during shutdown */
-		return;
-
-	info = get_agent_domain_info (domain);
+	info = get_agent_info ();
 
 	mono_loader_lock ();
 	g_hash_table_foreach_remove (info->loaded_classes, type_comes_from_assembly, assembly);
@@ -6358,10 +5919,12 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		return ERR_INVALID_ARGUMENT;
 	} else if (m_class_is_valuetype (m->klass) && (m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		/* Should be null */
-		int type = decode_byte (p, &p, end);
-		if (type != VALUE_TYPE_ID_NULL) {
-			PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
-			return ERR_INVALID_ARGUMENT;
+		if (!CHECK_PROTOCOL_VERSION (2, 59)) { //on icordbg I couldn't find type information when invoking a static method maybe I can change this later
+			int type = decode_byte (p, &p, end);
+			if (type != VALUE_TYPE_ID_NULL) {
+				PRINT_DEBUG_MSG (1, "[%p] Error: Static vtype method invoked with this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
+				return ERR_INVALID_ARGUMENT;
+			}
 		}
 		memset (this_buf, 0, mono_class_instance_size (m->klass));
 	} else if (m_class_is_valuetype (m->klass) && !strcmp (m->name, ".ctor")) {
@@ -6378,12 +5941,14 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 					return err;
 			}
 	} else {
-		err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE);
-		if (err != ERR_NONE)
-			return err;
+		if (!(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
+			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
+			if (err != ERR_NONE)
+				return err;
+		}
 	}
 
-	if (!m_class_is_valuetype (m->klass))
+	if (!m_class_is_valuetype (m->klass) && !(m->flags & METHOD_ATTRIBUTE_STATIC && CHECK_PROTOCOL_VERSION (2, 59))) //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
 		this_arg = *(MonoObject**)this_buf;
 	else
 		this_arg = NULL;
@@ -6422,7 +5987,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				return ERR_INVALID_ARGUMENT;
 			else {
 				ERROR_DECL (error);
-				this_arg = mono_object_new_checked (domain, m->klass, error);
+				this_arg = mono_object_new_checked (m->klass, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					return ERR_INVALID_ARGUMENT;
@@ -6751,10 +6316,7 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
 	mono_domain_assemblies_lock (domain);
@@ -6793,10 +6355,7 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
 
-	if (mono_domain_is_unloading (domain))
-		return;
-
-	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
+	AgentDomainInfo *info = get_agent_info ();
 
 	/* Update 'source_file_to_class' cache */
 	g_hash_table_iter_init (&iter, info->loaded_classes);
@@ -6853,6 +6412,26 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 		g_ptr_array_add (ud->res_domains, domain);
 	}
 }
+
+static gboolean
+module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoArray *dpdb, MonoError *error)
+{
+#ifdef ENABLE_METADATA_UPDATE
+	/* TODO: use dpdb */
+	gpointer dmeta_bytes = (gpointer)mono_array_addr_internal (dmeta, char, 0);
+	int32_t dmeta_len = mono_array_length_internal (dmeta);
+	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
+	int32_t dil_len = mono_array_length_internal (dil);
+	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	return is_ok (error);
+#else
+	mono_error_set_not_supported (error, "");
+	return FALSE;
+#endif
+}
+	
 
 static void
 buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *val)
@@ -7101,11 +6680,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 			mono_environment_exitcode_set (exit_code);
 
-			/* Suspend all managed threads since the runtime is going away */
-#ifndef ENABLE_NETCORE
-			PRINT_DEBUG_MSG (1, "Suspending all threads...\n");
-			mono_thread_suspend_all_other_threads ();
-#endif
 			PRINT_DEBUG_MSG (1, "Shutting down the runtime...\n");
 			mono_runtime_quit_internal ();
 			transport_close2 ();
@@ -7163,14 +6737,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		tls->pending_invoke->endp = tls->pending_invoke->p + (end - p);
 		tls->pending_invoke->suspend_count = suspend_count;
 		tls->pending_invoke->nmethods = nmethods;
-
 		if (flags & INVOKE_FLAG_SINGLE_THREADED) {
-			resume_thread (THREAD_TO_INTERNAL (thread));
+			resume_thread(THREAD_TO_INTERNAL(thread));
 		}
 		else {
 			count = suspend_count;
 			for (i = 0; i < count; ++i)
-				resume_vm ();
+				resume_vm();
 		}
 		break;
 	}
@@ -7214,7 +6787,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 		tls->abort_requested = TRUE;
 
-		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread), FALSE);
+		mono_thread_internal_abort (THREAD_TO_INTERNAL (thread));
 		mono_loader_unlock ();
 		break;
 	}
@@ -7313,6 +6886,16 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_VM_STOP_BUFFERING:
 		/* Handled in the main loop */
 		break;
+	case MDBGPROT_CMD_VM_READ_MEMORY: {
+		guint8* memory = (guint8*) decode_long (p, &p, end);
+		int size = decode_int (p, &p, end);
+		buffer_add_byte_array (buf, memory, size);
+		break;
+	}
+	case MDBGPROT_CMD_VM_SET_USING_ICORDBG: {
+		agent_config.using_icordbg = TRUE;
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7617,7 +7200,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (err != ERR_NONE)
 			return err;
 
-		buffer_add_assemblyid (buf, domain, domain->entry_assembly);
+		buffer_add_assemblyid (buf, domain, mono_runtime_get_entry_assembly ());
 		break;
 	}
 	case CMD_APPDOMAIN_GET_CORLIB: {
@@ -7638,12 +7221,18 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		s = decode_string (p, &p, end);
 
-		o = mono_string_new_checked (domain, s, error);
+		o = mono_string_new_checked (s, error);
 		if (!is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "[dbg] Failed to allocate String object '%s': %s\n", s, mono_error_get_message (error));
 			mono_error_cleanup (error);
 			return ERR_INVALID_OBJECT;
 		}
+		
+		if (CHECK_PROTOCOL_VERSION(3, 0)) {
+			buffer_add_byte(buf, 1);
+			buffer_add_byte(buf, MONO_TYPE_STRING);
+		}
+
 		buffer_add_objid (buf, (MonoObject*)o);
 		break;
 	}
@@ -7655,7 +7244,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		uintptr_t size = 0;
 		int len = decode_int (p, &p, end);
 		size = len;
-		arr = mono_array_new_full_checked (mono_domain_get (), mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
+		arr = mono_array_new_full_checked (mono_class_create_array (mono_get_byte_class(), 1), &size, NULL, error);
 		elem = mono_array_addr_internal (arr, guint8, 0);
 		memcpy (elem, p, len);
 		p += len;
@@ -7678,7 +7267,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME:
 		g_assert (domain == domain2);
 
-		o = mono_object_new_checked (domain, klass, error);
+		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
 		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
@@ -7696,12 +7285,12 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
-get_assembly_object_command (MonoDomain *domain, MonoAssembly *ass, Buffer *buf, MonoError *error)
+get_assembly_object_command (MonoAssembly *ass, Buffer *buf, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	ErrorCode err = ERR_NONE;
 	error_init (error);
-	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (domain, ass, error);
+	MonoReflectionAssemblyHandle o = mono_assembly_get_object_handle (ass, error);
 	if (MONO_HANDLE_IS_NULL (o)) {
 		err = ERR_INVALID_OBJECT;
 		goto leave;
@@ -7754,7 +7343,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case CMD_ASSEMBLY_GET_OBJECT: {
 		ERROR_DECL (error);
-		err = get_assembly_object_command (domain, ass, buf, error);
+		err = get_assembly_object_command (ass, buf, error);
 		mono_error_cleanup (error);
 		return err;
 	}
@@ -7772,7 +7361,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoType *t;
 		gboolean type_resolve, res;
 		MonoDomain *d = mono_domain_get ();
-		MonoAssemblyLoadContext *alc = mono_domain_default_alc (d);
+		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
 		/* This is needed to be able to find referenced assemblies */
 		res = mono_domain_set_fast (domain, FALSE);
@@ -7915,6 +7504,15 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			return err;
 		break;
 	}
+	case MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS: {
+        MonoImage* image = ass->image;
+        if (ass->dynamic) {
+            return ERR_NOT_IMPLEMENTED;
+        }
+		buffer_add_long (buf, (guint64)(gsize)image->raw_data);
+        buffer_add_int (buf, image->raw_data_len);
+        break;
+    }
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7948,6 +7546,27 @@ module_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_free (sourcelink);
 		break;			
 	}
+	case MDBGPROT_CMD_MODULE_APPLY_CHANGES: {
+		MonoImage *image = decode_moduleid (p, &p, end, &domain, &err);
+		if (err != ERR_NONE)
+			return err;
+		int dmeta_id = decode_objid (p, &p, end);
+		int dil_id = decode_objid (p, &p, end);
+		int dpdb_id = decode_objid (p, &p, end);
+		MonoObject *dmeta, *dil, *dpdb;
+		if ((err = get_object (dmeta_id, &dmeta)) != ERR_NONE)
+			return err;
+		if ((err = get_object (dil_id, &dil)) != ERR_NONE)
+			return err;
+		if ((err = get_object_allow_null (dpdb_id, &dpdb)) != ERR_NONE)
+			return err;
+		ERROR_DECL (error);
+		if (!module_apply_changes (image, (MonoArray *)dmeta, (MonoArray *)dil, (MonoArray *)dpdb, error)) {
+			mono_error_cleanup (error);
+			return ERR_LOADER_ERROR;
+		}
+		return ERR_NONE;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -7969,6 +7588,11 @@ field_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_typeid (buf, domain, f->parent);
 		buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
 		buffer_add_int (buf, f->type->attrs);
+		if (CHECK_PROTOCOL_VERSION (2, 59)) {
+			buffer_add_int (buf, f->type->type);
+			buffer_add_int (buf, m_class_get_type_token (f->parent));
+			buffer_add_int (buf, m_class_get_type_token (mono_class_from_mono_type_internal (f->type)));
+		}
 		break;
 	}
 	default:
@@ -8108,6 +7732,8 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		while ((m = mono_class_get_methods (klass, &iter))) {
 			buffer_add_methodid (buf, domain, m);
+			if (CHECK_PROTOCOL_VERSION (2, 59))
+				buffer_add_int(buf, m->token);
 			i ++;
 		}
 		g_assert (i == nmethods);
@@ -8268,7 +7894,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (!found)
 				goto invalid_fieldid;
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -8313,7 +7939,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 			// FIXME: Check for literal/const
 
-			vtable = mono_class_vtable_checked (domain, f->parent, error);
+			vtable = mono_class_vtable_checked (f->parent, error);
 			goto_if_nok (error, invalid_fieldid);
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
@@ -8331,7 +7957,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_GET_OBJECT: {
-		MonoObject *o = (MonoObject*)mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoObject *o = (MonoObject*)mono_type_get_object_checked (m_class_get_byval_arg (klass), error);
 		if (!is_ok (error)) {
 			mono_error_cleanup (error);
 			goto invalid_object;
@@ -8458,7 +8084,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		break;
 	}
 	case CMD_TYPE_IS_INITIALIZED: {
-		MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
+		MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 		goto_if_nok (error, loader_error);
 
 		if (vtable)
@@ -8471,7 +8097,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		ERROR_DECL (error);
 		MonoObject *obj;
 
-		obj = mono_object_new_checked (domain, klass, error);
+		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
 		break;
@@ -8841,7 +8467,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			MonoString *s;
 			char *s2;
 
-			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
+			s = mono_ldstr_checked (m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 			s2 = mono_string_to_utf8_checked_internal (s, error);
@@ -8966,6 +8592,14 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_methodid (buf, domain, inflated);
 		break;
 	}
+	case CMD_METHOD_TOKEN: {
+		buffer_add_int(buf, method->token);
+		break;
+	}
+	case CMD_METHOD_ASSEMBLY: {
+		buffer_add_assemblyid(buf, mono_domain_get (), m_class_get_image(method->klass)->assembly);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9068,7 +8702,6 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			 */
 			buffer_add_byte (buf, tls->frames [i]->flags);
 		}
-
 		break;
 	}
 	case CMD_THREAD_GET_STATE:
@@ -9111,7 +8744,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = mono_find_seq_point (domain, method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (method, il_offset, &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -9139,12 +8772,80 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (long)mono_stopwatch_elapsed_ms (&tls->step_time));
 		break;
 	}
+	case MDBGPROT_CMD_THREAD_GET_APPDOMAIN: {
+		DebuggerTlsData* tls;
+		mono_loader_lock ();
+		tls = (DebuggerTlsData*)mono_g_hash_table_lookup (thread_to_tls, thread);
+		mono_loader_unlock ();
+		if (tls == NULL)
+			return ERR_UNLOADED;
+		if (tls->frame_count <= 0)
+			return ERR_UNLOADED;
+		buffer_add_domainid (buf, tls->frames[0]->de.domain);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
 
 	return ERR_NONE;
 }
+
+static ErrorCode
+cmd_stack_frame_get_this (StackFrame *frame, MonoMethodSignature *sig, Buffer *buf, MonoDebugMethodJitInfo *jit)
+{
+	if (frame->de.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+			return ERR_ABSENT_INFORMATION;
+	if (m_class_is_valuetype (frame->api_method->klass)) {
+		if (!sig->hasthis) {
+			MonoObject *p = NULL;
+			buffer_add_value (buf, mono_get_object_type (), &p, frame->de.domain);
+		} else {
+			if (frame->de.ji->is_interp) {
+				guint8 *addr;
+
+				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+
+				buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+			} else {
+				add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+			}
+		}
+	} else {
+		if (!sig->hasthis) {
+			MonoObject *p = NULL;
+			buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, frame->de.domain);
+		} else {
+			if (frame->de.ji->is_interp) {
+				guint8 *addr;
+
+				addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+
+				buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
+			} else {
+				add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
+			}
+		}
+	}
+	return ERR_NONE;
+}
+static void 
+cmd_stack_frame_get_parameter (StackFrame *frame, MonoMethodSignature *sig, int pos, Buffer *buf, MonoDebugMethodJitInfo *jit)
+{
+	PRINT_DEBUG_MSG (4, "[dbg]   send arg %d.\n", pos);
+	if (frame->de.ji->is_interp) {
+		guint8 *addr;
+
+		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
+
+		buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL, 1);
+	} else {
+		g_assert (pos >= 0 && pos < jit->num_params);
+
+		add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->de.domain, FALSE);
+	}
+}
+
 
 static ErrorCode
 frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
@@ -9160,7 +8861,8 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoMethodSignature *sig;
 	gssize id;
 	MonoMethodHeader *header;
-
+	ERROR_DECL (error);
+	
 	objid = decode_objid (p, &p, end);
 	err = get_object (objid, (MonoObject**)&thread_obj);
 	if (err != ERR_NONE)
@@ -9205,15 +8907,27 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	sig = mono_method_signature_internal (frame->actual_method);
 
-	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->de.domain, frame->actual_method))
+	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->actual_method))
 		/*
 		 * The method is probably from an aot image compiled without soft-debug, variables might be dead, etc.
 		 */
 		return ERR_ABSENT_INFORMATION;
 
 	switch (command) {
+	case CMD_STACK_FRAME_GET_ARGUMENT: {
+		pos = decode_int (p, &p, end);
+		if (sig->hasthis) {
+			if (pos == 0)
+				return cmd_stack_frame_get_this (frame, sig, buf, jit);
+			else
+				pos--;
+		}
+		len = 1;		
+		header = mono_method_get_header_checked (frame->actual_method, error);
+		cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
+		break;
+	}
 	case CMD_STACK_FRAME_GET_VALUES: {
-		ERROR_DECL (error);
 		len = decode_int (p, &p, end);
 		header = mono_method_get_header_checked (frame->actual_method, error);
 		mono_error_assert_ok (error); /* FIXME report error */
@@ -9223,20 +8937,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			if (pos < 0) {
 				pos = - pos - 1;
-
-				PRINT_DEBUG_MSG (4, "[dbg]   send arg %d.\n", pos);
-
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame->interp_frame, pos);
-
-					buffer_add_value_full (buf, sig->params [pos], addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					g_assert (pos >= 0 && pos < jit->num_params);
-
-					add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->de.domain, FALSE);
-				}
+				cmd_stack_frame_get_parameter (frame, sig, pos, buf, jit);
 			} else {
 				MonoDebugLocalsInfo *locals;
 
@@ -9266,39 +8967,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_STACK_FRAME_GET_THIS: {
-		if (frame->de.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-			return ERR_ABSENT_INFORMATION;
-		if (m_class_is_valuetype (frame->api_method->klass)) {
-			if (!sig->hasthis) {
-				MonoObject *p = NULL;
-				buffer_add_value (buf, mono_get_object_type (), &p, frame->de.domain);
-			} else {
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-
-					buffer_add_value_full (buf, m_class_get_this_arg (frame->actual_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					add_var (buf, jit, m_class_get_this_arg (frame->actual_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
-				}
-			}
-		} else {
-			if (!sig->hasthis) {
-				MonoObject *p = NULL;
-				buffer_add_value (buf, m_class_get_byval_arg (frame->actual_method->klass), &p, frame->de.domain);
-			} else {
-				if (frame->de.ji->is_interp) {
-					guint8 *addr;
-
-					addr = (guint8*)mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
-
-					buffer_add_value_full (buf, m_class_get_byval_arg (frame->api_method->klass), addr, frame->de.domain, FALSE, NULL, 1);
-				} else {
-					add_var (buf, jit, m_class_get_byval_arg (frame->api_method->klass), jit->this_var, &frame->ctx, frame->de.domain, TRUE);
-				}
-			}
-		}
+		return cmd_stack_frame_get_this (frame, sig, buf, jit);
 		break;
 	}
 	case CMD_STACK_FRAME_SET_VALUES: {
@@ -9417,6 +9086,13 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return err;
 
 	switch (command) {
+	case CMD_ARRAY_REF_GET_TYPE: {
+			buffer_add_byte(buf, m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type);
+			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
+			if (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type == MONO_TYPE_CLASS)
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
+		}
+		break;
 	case CMD_ARRAY_REF_GET_LENGTH:
 		buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
 		if (!arr->bounds) {
@@ -9613,10 +9289,9 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	ErrorCode err;
 	MonoObject *obj;
 	int len, i;
-	MonoClassField *f;
+	MonoClassField *f = NULL;
 	MonoClass *k;
 	gboolean found;
-	gboolean remote_obj = FALSE;
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL); // FIXME? Not always needed.
 
 	if (command == CMD_OBJECT_REF_IS_COLLECTED) {
@@ -9638,26 +9313,32 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	MonoClass *obj_type;
 
 	obj_type = obj->vtable->klass;
-	if (mono_class_is_transparent_proxy (obj_type)) {
-		obj_type = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
-		remote_obj = TRUE;
-	}
-
 	g_assert (obj_type);
 
 	switch (command) {
 	case CMD_OBJECT_REF_GET_TYPE:
-		/* This handles transparent proxies too */
 		buffer_add_typeid (buf, obj->vtable->domain, mono_class_from_mono_type_internal (((MonoReflectionType*)obj->vtable->type)->type));
 		break;
+	case CMD_OBJECT_REF_GET_VALUES_ICORDBG: {
+		gpointer iter;
+		iter = NULL;
+		len = 1;
+		MonoClass *dummy_class;
+		int field_token =  decode_int (p, &p, end);
+		i = 0;
+		f = mono_field_from_token_checked (m_class_get_image (obj_type), field_token, &dummy_class, NULL, error);
+		if (f) {
+			goto get_field_value;
+		}
+		goto invalid_fieldid;
+	}
 	case CMD_OBJECT_REF_GET_VALUES:
 		len = decode_int (p, &p, end);
 
 		for (i = 0; i < len; ++i) {
-			MonoClassField *f = decode_fieldid (p, &p, end, NULL, &err);
+			f = decode_fieldid (p, &p, end, NULL, &err);
 			if (err != ERR_NONE)
 				goto exit;
-
 			/* Check that the field belongs to the object */
 			found = FALSE;
 			for (k = obj_type; k; k = m_class_get_parent (k)) {
@@ -9668,7 +9349,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			}
 			if (!found)
 				goto invalid_fieldid;
-
+get_field_value:
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9677,7 +9358,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_object;
@@ -9691,22 +9372,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = NULL;
-#ifndef DISABLE_REMOTING
-				void *field_storage = NULL;
-#endif
-				if (remote_obj) {
-#ifndef DISABLE_REMOTING
-					field_value = mono_load_remote_field_checked(obj, obj_type, f, &field_storage, error);
-					if (!is_ok (error)) {
-						mono_error_cleanup (error); /* FIXME report the error */
-						goto invalid_object;
-					}
-#else
-					g_assert_not_reached ();
-#endif
-				} else
-					field_value = (guint8*)obj + f->offset;
+				void *field_value = (guint8*)obj + f->offset;
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
@@ -9739,7 +9405,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					goto invalid_fieldid;
 
 				g_assert (f->type->attrs & FIELD_ATTRIBUTE_STATIC);
-				vtable = mono_class_vtable_checked (obj->vtable->domain, f->parent, error);
+				vtable = mono_class_vtable_checked (f->parent, error);
 				if (!is_ok (error)) {
 					mono_error_cleanup (error);
 					goto invalid_fieldid;
@@ -9839,7 +9505,9 @@ static const char* vm_cmds_str [] = {
 	"SET_KEEPALIVE"
 	"GET_TYPES_FOR_SOURCE_FILE",
 	"GET_TYPES",
-	"INVOKE_METHODS"
+	"INVOKE_METHODS",
+	"START_BUFFERING",
+	"STOP_BUFFERING"
 };
 
 static const char* thread_cmds_str[] = {
@@ -9877,11 +9545,19 @@ static const char* assembly_cmds_str[] = {
 	"GET_TYPE",
 	"GET_NAME",
 	"GET_DOMAIN",
-	"HAS_DEBUG_INFO"
+	"GET_METADATA_BLOB",
+	"GET_IS_DYNAMIC",
+	"GET_PDB_BLOB",
+	"GET_TYPE_FROM_TOKEN", 
+	"GET_METHOD_FROM_TOKEN",
+	"HAS_DEBUG_INFO",
+	"GET_CUSTOM_ATTRIBUTES",
+	"GET_PEIMAGE_ADDRESS"
 };
 
 static const char* module_cmds_str[] = {
 	"GET_INFO",
+	"APPLY_CHANGES",
 };
 
 static const char* field_cmds_str[] = {
@@ -10279,7 +9955,7 @@ mono_debugger_agent_init (void)
 	cbs.single_step_event = debugger_agent_single_step_event;
 	cbs.single_step_from_context = debugger_agent_single_step_from_context;
 	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
-	cbs.free_domain_info = debugger_agent_free_domain_info;
+	cbs.free_mem_manager = debugger_agent_free_mem_manager;
 	cbs.unhandled_exception = debugger_agent_unhandled_exception;
 	cbs.handle_exception = debugger_agent_handle_exception;
 	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;

@@ -33,6 +33,7 @@
 //
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Threading;
 
@@ -106,7 +107,7 @@ namespace System.Drawing
             thread.Start();
         }
 
-        public static bool CanAnimate(Image? image)
+        public static bool CanAnimate([NotNullWhen(true)] Image? image)
         {
             if (image == null)
                 return false;

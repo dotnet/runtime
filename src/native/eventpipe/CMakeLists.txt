@@ -5,6 +5,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
     set (SHARED_DIAGNOSTIC_SERVER_HEADERS "")
 
     list(APPEND SHARED_EVENTPIPE_SOURCES
+        ep-sources.c
         ep.c
         ep-block.c
         ep-buffer.c
@@ -58,7 +59,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
     )
 
     list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-        ds.c
+        ds-sources.c
         ds-dump-protocol.c
         ds-eventpipe-protocol.c
         ds-ipc.c

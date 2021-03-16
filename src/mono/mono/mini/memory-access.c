@@ -17,11 +17,7 @@
 #include "ir-emit.h"
 #include "jit-icalls.h"
 
-#ifdef ENABLE_NETCORE
 #define MAX_INLINE_COPIES 16
-#else
-#define MAX_INLINE_COPIES 10
-#endif
 #define MAX_INLINE_COPY_SIZE 10000
 
 void 
@@ -501,6 +497,8 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 	} else if (!mini_debug_options.weak_memory_model && mini_type_is_reference (type) && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
+	MONO_EMIT_NULL_CHECK (cfg, dest->dreg, FALSE);
 
 	if ((ins_flag & MONO_INST_UNALIGNED) && !COMPILE_LLVM (cfg)) {
 		MonoInst *addr, *mov, *tmp_var;

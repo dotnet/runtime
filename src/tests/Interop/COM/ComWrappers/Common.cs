@@ -334,7 +334,7 @@ namespace ComWrappersTests.Common
                 if (isAggregation)
                 {
                     // Indicate the scenario is aggregation
-                    createObjectFlags |= (CreateObjectFlags)4;
+                    createObjectFlags |= CreateObjectFlags.Aggregation;
 
                     // The instance supports IReferenceTracker.
                     if (classNative.ReferenceTracker != default(IntPtr))

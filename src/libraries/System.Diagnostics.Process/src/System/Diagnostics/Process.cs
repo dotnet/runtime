@@ -683,6 +683,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardInput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardIn);
@@ -700,6 +701,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardOutput == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardOut);
@@ -725,6 +727,7 @@ namespace System.Diagnostics
         {
             get
             {
+                CheckDisposed();
                 if (_standardError == null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardError);
@@ -1150,10 +1153,7 @@ namespace System.Diagnostics
             if (!_haveProcessHandle)
             {
                 //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
+                CheckDisposed();
 
                 SetProcessHandle(GetProcessHandle());
             }
@@ -1224,10 +1224,7 @@ namespace System.Diagnostics
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            CheckDisposed();
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
@@ -1452,7 +1449,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
-                    await WaitUntilOutputEOF().ConfigureAwait(false);
+                    await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
                     return;
                 }
 
@@ -1480,23 +1477,23 @@ namespace System.Diagnostics
                 }
 
                 // Wait until output streams have been drained
-                await WaitUntilOutputEOF().ConfigureAwait(false);
+                await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
             }
 
-            async ValueTask WaitUntilOutputEOF()
+            async Task WaitUntilOutputEOF(CancellationToken cancellationToken)
             {
-                if (_output != null)
+                if (_output is not null)
                 {
-                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _output.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (_error != null)
+                if (_error is not null)
                 {
-                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -1586,6 +1583,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelOutputRead()
         {
+            CheckDisposed();
             if (_output != null)
             {
                 _output.CancelOperation();
@@ -1606,6 +1604,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelErrorRead()
         {
+            CheckDisposed();
             if (_error != null)
             {
                 _error.CancelOperation();
@@ -1653,6 +1652,16 @@ namespace System.Diagnostics
                 {
                     errorDataReceived(this, e);
                 }
+            }
+        }
+
+        /// <summary>Throws a System.ObjectDisposedException if the Proces was disposed</summary>
+        /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
             }
         }
 

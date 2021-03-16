@@ -1,7 +1,6 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 //----------------------------------------------------------
 // CallUtils.h - Utility code for analyzing and working with managed calls
 //----------------------------------------------------------
@@ -29,7 +28,6 @@ public:
                                           void*                     callTarget,
                                           /*out*/ CORINFO_SIG_INFO* outSigInfo,
                                           /*out*/ char**            outCallTargetSymbol);
-    static bool HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args);
     static CorInfoHelpFunc GetHelperNum(CORINFO_METHOD_HANDLE method);
     static bool IsNativeMethod(CORINFO_METHOD_HANDLE method);
     static CORINFO_METHOD_HANDLE GetMethodHandleForNative(CORINFO_METHOD_HANDLE method);

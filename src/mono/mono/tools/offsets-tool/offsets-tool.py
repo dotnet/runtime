@@ -75,7 +75,7 @@ class OffsetsTool:
 		if not os.path.isfile (args.target_path + "/config.h"):
 			print ("File '" + args.target_path + "/config.h' doesn't exist.", file=sys.stderr)
 			sys.exit (1)
-			
+
 		self.sys_includes=[]
 		self.target = None
 		self.target_args = []
@@ -194,9 +194,6 @@ class OffsetsTool:
 			print ("ABI '" + args.abi + "' is not supported.", file=sys.stderr)
 			sys.exit (1)
 
-		if args.netcore:
-			self.target_args += ["-DENABLE_NETCORE"]
-
 		self.args = args
 
 	#
@@ -212,7 +209,7 @@ class OffsetsTool:
 			args.mono_path + "/mono",
 			args.mono_path + "/mono/eglib",
 			args.target_path,
-			args.target_path + "/mono/eglib"
+			args.target_path + "mono/eglib"
 			]
 		
 		self.basic_types = ["gint8", "gint16", "gint32", "gint64", "float", "double", "gpointer"]

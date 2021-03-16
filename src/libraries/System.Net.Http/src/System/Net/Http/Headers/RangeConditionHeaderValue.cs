@@ -59,7 +59,7 @@ namespace System.Net.Http.Headers
             return _entityTag.ToString();
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             RangeConditionHeaderValue? other = obj as RangeConditionHeaderValue;
 

@@ -141,6 +141,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         [Theory]
         [MemberData(nameof(AllViableRevocation))]
+        public static void RevokeLeafWithAiaFetchingDisabled(PkiOptions pkiOptions)
+        {
+            SimpleTest(
+                pkiOptions,
+                (root, intermediate, endEntity, holder, responder) =>
+                {
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+                    intermediate.Revoke(endEntity, now);
+                    holder.Chain.ChainPolicy.VerificationTime = now.AddSeconds(1).UtcDateTime;
+                    holder.Chain.ChainPolicy.DisableCertificateDownloads = true;
+
+                    SimpleRevocationBody(
+                        holder,
+                        endEntity,
+                        rootRevoked: false,
+                        issrRevoked: false,
+                        leafRevoked: true);
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(AllViableRevocation))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
         public static void RevokeIntermediateAndEndEntity(PkiOptions pkiOptions)
         {

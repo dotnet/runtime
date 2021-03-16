@@ -110,7 +110,7 @@ namespace System.Text.RegularExpressions
             Regex.ValidatePattern(pattern);
 
             CultureInfo culture = CultureInfo.CurrentCulture;
-            Key key = new Key(pattern, culture.ToString(), RegexOptions.None, hasTimeout: false);
+            Key key = new Key(pattern, culture.ToString(), RegexOptions.None, Regex.s_defaultMatchTimeout);
 
             if (!TryGet(key, out Regex? regex))
             {
@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions
             Regex.ValidateMatchTimeout(matchTimeout);
 
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            Key key = new Key(pattern, culture.ToString(), options, matchTimeout != Regex.InfiniteMatchTimeout);
+            Key key = new Key(pattern, culture.ToString(), options, matchTimeout);
 
             if (!TryGet(key, out Regex? regex))
             {
@@ -265,9 +265,9 @@ namespace System.Text.RegularExpressions
             private readonly string _pattern;
             private readonly string _culture;
             private readonly RegexOptions _options;
-            private readonly bool _hasTimeout;
+            private readonly TimeSpan _matchTimeout;
 
-            public Key(string pattern, string culture, RegexOptions options, bool hasTimeout)
+            public Key(string pattern, string culture, RegexOptions options, TimeSpan matchTimeout)
             {
                 Debug.Assert(pattern != null, "Pattern must be provided");
                 Debug.Assert(culture != null, "Culture must be provided");
@@ -275,17 +275,17 @@ namespace System.Text.RegularExpressions
                 _pattern = pattern;
                 _culture = culture;
                 _options = options;
-                _hasTimeout = hasTimeout;
+                _matchTimeout = matchTimeout;
             }
 
-            public override bool Equals(object? obj) =>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is Key other && Equals(other);
 
             public bool Equals(Key other) =>
                 _pattern.Equals(other._pattern) &&
                 _culture.Equals(other._culture) &&
                 _options == other._options &&
-                _hasTimeout == other._hasTimeout;
+                _matchTimeout == other._matchTimeout;
 
             public static bool operator ==(Key left, Key right) =>
                 left.Equals(right);
