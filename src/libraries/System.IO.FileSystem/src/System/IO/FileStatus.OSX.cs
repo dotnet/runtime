@@ -33,7 +33,22 @@ namespace System.IO
             attrList.forkAttr = 0;
             attrList.volAttr = 0;
 
-            Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), Interop.libc.FSOPT_NOFOLLOW);
+            // Try to set the attribute on the file system entry using setattrlist,
+            // otherwise fall back to the method used on other unix platforms as the
+            // path may either be on an unsupported volume type (for setattrlist) or it
+            // could be another error (eg. no file) which the fallback implementation can throw.
+            bool succeeded = Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), Interop.libc.FSOPT_NOFOLLOW) == 0;
+            if (!succeeded)
+            {
+                if (commonAttr == Interop.libc.AttrList.ATTR_CMN_CRTIME)
+                {
+                    SetCreationTime_OtherUnix(path, time);
+                }
+                else if (commonAttr == Interop.libc.AttrList.ATTR_CMN_MODTIME)
+                {
+                    SetLastWriteTime_OtherUnix(path, time);
+                }
+            }
         }
     }
 }
