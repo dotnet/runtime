@@ -4503,7 +4503,12 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         switch (lookup.accessType)
         {
             case IAT_VALUE:
-                if (!IsCallTargetInRange(addr))
+                // IsCallTargetInRange always return true on x64. It wants to use rip-based addressing
+                // for this call. Unfortunately, in case of pinvokes (+suppressgctransition) to external libs
+                // (e.g. kernel32.dll) the relative offset is unlikely to fit into int32 and we will have to
+                // turn fAllowRel32 off globally.
+                if ((call->IsSuppressGCTransition() && !comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+                    !IsCallTargetInRange(addr))
                 {
                     result = AddrGen(addr);
                 }

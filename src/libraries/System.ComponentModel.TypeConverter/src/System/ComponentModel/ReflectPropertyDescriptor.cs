@@ -396,6 +396,8 @@ namespace System.ComponentModel
         /// </summary>
         private MethodInfo SetMethodValue
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting properties on BaseType. https://github.com/mono/linker/issues/1882")]
             get
             {
                 if (!_state[s_bitSetQueried] && _state[s_bitSetOnDemand])
@@ -404,7 +406,7 @@ namespace System.ComponentModel
 
                     if (_setMethod == null)
                     {
-                        for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
+                        for (Type t = _componentClass.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
                             PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, null);

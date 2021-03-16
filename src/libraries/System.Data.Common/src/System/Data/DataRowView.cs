@@ -239,7 +239,10 @@ namespace System.Data
         TypeConverter ICustomTypeDescriptor.GetConverter() => null;
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
+
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
+
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents() => new EventDescriptorCollection(null);
 
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]

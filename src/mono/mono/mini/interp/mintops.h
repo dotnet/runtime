@@ -60,7 +60,6 @@ typedef enum {
 #define MINT_IS_BINOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BEQ_I4 && (op) <= MINT_BLT_UN_R8_S)
 #define MINT_IS_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_JIT_CALL)
 #define MINT_IS_PATCHABLE_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_VCALL)
-#define MINT_IS_NEWOBJ(op) ((op) >= MINT_NEWOBJ && (op) <= MINT_NEWOBJ_MAGIC)
 #define MINT_IS_LDC_I4(op) ((op) >= MINT_LDC_I4_M1 && (op) <= MINT_LDC_I4)
 #define MINT_IS_UNOP(op) ((op) >= MINT_ADD1_I4 && (op) <= MINT_CEQ0_I4)
 #define MINT_IS_BINOP(op) ((op) >= MINT_ADD_I4 && (op) <= MINT_CLT_UN_R8)
@@ -68,6 +67,7 @@ typedef enum {
 #define MINT_IS_STFLD(op) ((op) >= MINT_STFLD_I1 && (op) <= MINT_STFLD_O)
 
 #define MINT_CALL_ARGS 2
+#define MINT_CALL_ARGS_SREG -2
 
 extern unsigned char const mono_interp_oplen[];
 extern int const mono_interp_op_dregs [];

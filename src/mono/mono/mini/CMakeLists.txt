@@ -45,11 +45,17 @@ if(ENABLE_PERFTRACING)
 
 endif(ENABLE_PERFTRACING)
 
+if(HOST_WIN32)
+  # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
+  add_link_options(/OPT:NOICF)
+endif()
+
 # ICU
 if(HAVE_SYS_ICU)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)
+    add_definitions(-DSTATIC_ICU=1)
   else()
     set(pal_icushim_sources_base
         pal_icushim.c)
@@ -143,6 +149,7 @@ set(mini_common_sources
     arch-stubs.c
     llvm-runtime.h
     llvm-intrinsics.h
+    llvm-intrinsics-types.h
     type-checking.c
     lldb.h
     lldb.c

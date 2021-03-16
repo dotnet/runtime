@@ -121,6 +121,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? MsymPath { get; set; }
 
+    /// <summary>
+    /// The assembly whose AOT image will contained dedup-ed generic instances
+    /// </summary>
+    public string? DedupAssembly { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -242,6 +247,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
+        bool isDedup = assembly == DedupAssembly;
 
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
@@ -273,6 +279,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
 
         string assemblyFilename = Path.GetFileName(assembly);
+
+        if (isDedup)
+        {
+            aotArgs.Add($"dedup-include={assemblyFilename}");
+        }
+        else if (!string.IsNullOrEmpty (DedupAssembly))
+        {
+            aotArgs.Add("dedup-skip");
+        }
 
         // compute output mode and file names
         if (parsedAotMode == MonoAotMode.LLVMOnly || parsedAotMode == MonoAotMode.AotInterp)
@@ -350,11 +365,38 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // values, which wont work.
         processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
-        processArgs.Add($"\"{assemblyFilename}\"");
+        string paths = "";
+        if (isDedup)
+        {
+            StringBuilder sb = new StringBuilder();
+            HashSet<string> allPaths = new HashSet<string>();
+            foreach (var aItem in Assemblies)
+            {
+                string filename = aItem.ItemSpec;
+                processArgs.Add(filename);
+                string dir = Path.GetDirectoryName(filename)!;
+                if (!allPaths.Contains(dir))
+                {
+                    allPaths.Add(dir);
+                    if (sb.Length > 0)
+                        sb.Append(Path.PathSeparator);
+                    sb.Append(dir);
+                }
+            }
+            if (sb.Length > 0)
+                sb.Append(Path.PathSeparator);
+            sb.Append(monoPaths);
+            paths = sb.ToString();
+        }
+        else
+        {
+            paths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
+            processArgs.Add(assemblyFilename);
+        }
 
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", $"{assemblyDir}{Path.PathSeparator}{monoPaths}"},
+            {"MONO_PATH", paths},
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 

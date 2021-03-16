@@ -117,6 +117,18 @@ jobs:
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 50 # size in MB
       displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
 
+    # Create required directories for merged mch collection and superpmi logs
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p $(MergedMchFileLocation)
+          mkdir -p $(SpmiLogsLocation)
+        displayName: Create directory for merged collection
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir $(MergedMchFileLocation)
+          mkdir $(SpmiLogsLocation)
+        displayName: Create directories
+
       # Run superpmi collection in helix
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
       parameters:
@@ -135,22 +147,16 @@ jobs:
         InputArtifacts: '$(InputArtifacts)'
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
+        continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
 
-    # Create directories and ensure crossgen is executable
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: |
-          mkdir -p $(MergedMchFileLocation)
-          mkdir -p $(SpmiLogsLocation)
-        displayName: Create directory for merged collection
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: |
-          mkdir $(MergedMchFileLocation)
-          mkdir $(SpmiLogsLocation)
-        displayName: Create directories
-
+    # Always run merged step even if collection of some partition fails so we can store collection
+    # of the partitions that succeeded. If all the partitions fail, merge-mch would fail and we won't
+    # run future steps like uploading superpmi collection.
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
       displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
+      condition: always()
 
+    # If merge step above fails, then skip "Upload as artifact" and "Upload to Azure storage"
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
         rootFolder: $(MergedMchFileLocation)
@@ -166,6 +172,7 @@ jobs:
       env:
         CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 
+    # Always upload the available logs for diagnostics
     - task: CopyFiles@2
       displayName: Copying superpmi.log of all partitions
       inputs:

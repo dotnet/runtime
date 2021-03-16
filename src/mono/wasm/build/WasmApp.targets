@@ -24,6 +24,7 @@
       - $(WasmDebugLevel)
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
+      - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTMode)           - Defaults to `AotInterp`
@@ -64,6 +65,7 @@
 
   <PropertyGroup>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">$(RunAOTCompilation)</WasmDedup>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -106,6 +108,28 @@
            Text="Builing in AOTMode=LLVMonly, but found some assemblies marked as _InternalForceInterpret: @(_AOT_InternalForceInterpretAssemblies)" />
 
     <Message Text="AOT'ing @(_AotInputAssemblies->Count()) assemblies" Importance="High" />
+
+    <!-- Dedup -->
+    <PropertyGroup Condition="'$(WasmDedup)' == 'true'">
+      <_WasmDedupAssembly>$(_WasmIntermediateOutputPath)\aot-instances.dll</_WasmDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(WasmDedup)' == 'true'" File="$(_WasmIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" />
+    <Csc
+      Condition="'$(WasmDedup)' == 'true'"
+      Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_WasmDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(WasmDedup)' == 'true'">
+      <_AotInputAssemblies Include="$(_WasmDedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
+
     <MonoAOTCompiler
       CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
       OutputDir="$(_WasmIntermediateOutputPath)"
@@ -119,6 +143,7 @@
       AotModulesTablePath="$(_WasmIntermediateOutputPath)driver-gen.c"
       UseLLVM="true"
       DisableParallelAot="true"
+      DedupAssembly="$(_WasmDedupAssembly)"
       LLVMPath="$(EMSDK_PATH)\upstream\bin">
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
@@ -253,7 +278,8 @@
     </ReadLinesFromFile>
 
     <PropertyGroup>
-      <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
+      <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
+      <EmccFlags>$(EmccFlags) $(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
@@ -292,8 +318,6 @@
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
      <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
      <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
-
 
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>
@@ -409,7 +433,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     </ItemGroup>
 
     <!-- $(WasmResolveAssembliesBeforeBuild) can add more assemblies, so no point checking the count in that case -->
-    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssembliesFinal->Distinct()->Count()) != @(WasmAssembliesToBundle->Distinct()->Count())"
+    <Error Condition="'$(WasmResolveAssembliesBeforeBuild)' != 'true' and @(WasmAssembliesFinal->Distinct()->Count()) != @(WasmAssembliesToBundle->Distinct()->Count()) and '$(WasmDedup)' != 'true'"
       Text="Bug: The wasm build started with @(WasmAssembliesToBundle->Count()) assemblies, but completed with @(WasmAssembliesFinal->Count()).
       WasmAssembliesToBundle: @(WasmAssembliesToBundle)
       WasmAssembliesFinal: @(WasmAssembliesFinal)" />
