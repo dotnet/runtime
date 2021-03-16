@@ -220,6 +220,19 @@ namespace Server.Contract.Servers
     internal class InspectableTestingClass
     {
     }
+
+    [ComImport]
+    [CoClass(typeof(TrackMyLifetimeTestingClass))]
+    [Guid("57f396a1-58a0-425f-8807-9f938a534984")]
+    internal interface TrackMyLifetimeTesting : Server.Contract.ITrackMyLifetimeTesting
+    {
+    }
+
+    [ComImport]
+    [Guid(Server.Contract.Guids.TrackMyLifetimeTesting)]
+    internal class TrackMyLifetimeTestingClass
+    {
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features

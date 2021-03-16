@@ -465,6 +465,17 @@ namespace DebuggerTests
                    ("this.NullIfAIsNotZero.foo", "ReferenceError"));
            });
 
+        [Fact]
+        public async Task EvaluatePropertyThatThrows()
+        => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateTestsClassWithProperties", "InstanceMethod", /*line_offset*/1, "InstanceMethod",
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.EvaluateTestsClassWithProperties:run');}}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id, ("this.PropertyThrowException", TString("System.Exception: error")));
+            });
+
         async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
         {
             foreach (var arg in args)

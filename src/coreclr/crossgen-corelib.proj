@@ -88,7 +88,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(UseCrossgen2)' != 'true'">
-      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'setup_vs_tools.cmd')) &amp;&amp;</VsSetupCmd>
+      <VsSetupCmd>call $([MSBuild]::NormalizePath('$(RepoRoot)', 'eng', 'native', 'init-vs-env.cmd')) &amp;&amp;</VsSetupCmd>
 
       <CrossGenDllCmd>$(CrossGen1Cmd) /out "$(CoreLibOutputPath)"</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) "$(CoreLibInputPath)"</CrossGenDllCmd>

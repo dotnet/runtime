@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -102,6 +102,7 @@
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />

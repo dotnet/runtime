@@ -27,9 +27,6 @@
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
 #include "w32file.h"
-#include "w32mutex.h"
-#include "w32semaphore.h"
-#include "w32socket.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */
@@ -224,10 +221,6 @@ ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAlloc
 ICALL_EXPORT gpointer   ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal		(gpointer, gsize);
 ICALL_EXPORT      char* ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi    (const gunichar2*, int);
 ICALL_EXPORT gunichar2*	ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni	(const gunichar2*, int);
-
-ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_CreateSemaphore_icall     (gint32 initialCount, gint32 maximumCount, const gunichar2 *name, gint32 name_length, gint32 *win32error);
-ICALL_EXPORT gpointer    ves_icall_System_Threading_Semaphore_OpenSemaphore_icall       (const gunichar2 *name, gint32 name_length, gint32 rights, gint32 *win32error);
-ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount);
 
 ICALL_EXPORT gpointer ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void);
 ICALL_EXPORT void     ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr);

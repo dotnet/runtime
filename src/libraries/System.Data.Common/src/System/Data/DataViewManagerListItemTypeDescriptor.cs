@@ -66,6 +66,7 @@ namespace System.Data
         /// <summary>
         /// Retrieves the an editor for this object.
         /// </summary>
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
 
         /// <summary>

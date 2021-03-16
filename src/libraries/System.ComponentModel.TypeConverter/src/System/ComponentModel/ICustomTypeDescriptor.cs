@@ -44,6 +44,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type for this object.
         /// </summary>
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
         object GetEditor(Type editorBaseType);
 
         /// <summary>
