@@ -3123,6 +3123,14 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             case VNF_GE_UN:
             case VNF_LT_UN:
             case VNF_LE_UN:
+
+            case VNF_ADD_OVF:
+            case VNF_SUB_OVF:
+            case VNF_MUL_OVF:
+            case VNF_ADD_UN_OVF:
+            case VNF_SUB_UN_OVF:
+            case VNF_MUL_UN_OVF:
+
             case VNF_Cast:
                 // We can evaluate these.
                 return true;
@@ -3149,8 +3157,6 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
 //
 bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    bool shouldFold = true;
-
     // We have some arithmetic operations that will always throw
     // an exception given particular constant argument(s).
     // (i.e. integer division by zero)
@@ -3158,75 +3164,64 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
     // We will avoid performing any constant folding on them
     // since they won't actually produce any result.
     // Instead they always will throw an exception.
-    //
-    if (func < VNF_Boundary)
+
+    // Floating point operations do not throw exceptions.
+    if (varTypeIsFloating(typ))
     {
-        genTreeOps oper = genTreeOps(func);
+        return true;
+    }
 
-        // Floating point operations do not throw exceptions
-        //
-        if (!varTypeIsFloating(typ))
+    genTreeOps oper = genTreeOps(func);
+    // Is this an integer divide/modulo that will always throw an exception?
+    if (GenTree::StaticOperIs(oper, GT_DIV, GT_UDIV, GT_MOD, GT_UMOD))
+    {
+        if (!((typ == TYP_INT) || (typ == TYP_LONG)))
         {
-            // Is this an integer divide/modulo that will always throw an exception?
-            //
-            if ((oper == GT_DIV) || (oper == GT_UDIV) || (oper == GT_MOD) || (oper == GT_UMOD))
-            {
-                if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
-                {
-                    // Just in case we have mismatched types
-                    shouldFold = false;
-                }
-                else
-                {
-                    bool isUnsigned = (oper == GT_UDIV) || (oper == GT_UMOD);
-                    if (typ == TYP_LONG)
-                    {
-                        INT64 kArg0 = ConstantValue<INT64>(arg0VN);
-                        INT64 kArg1 = ConstantValue<INT64>(arg1VN);
+            assert(!"Unexpected type in VNEvalShouldFold for integer division/modulus");
+            return false;
+        }
+        // Just in case we have mismatched types.
+        if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
+        {
+            return false;
+        }
 
-                        if (IsIntZero(kArg1))
-                        {
-                            // Don't fold, we have a divide by zero
-                            shouldFold = false;
-                        }
-                        else if (!isUnsigned || IsOverflowIntDiv(kArg0, kArg1))
-                        {
-                            // Don't fold, we have a divide of INT64_MIN/-1
-                            shouldFold = false;
-                        }
-                    }
-                    else if (typ == TYP_INT)
-                    {
-                        int kArg0 = ConstantValue<int>(arg0VN);
-                        int kArg1 = ConstantValue<int>(arg1VN);
+        INT64 divisor = CoercedConstantValue<INT64>(arg1VN);
 
-                        if (IsIntZero(kArg1))
-                        {
-                            // Don't fold, we have a divide by zero
-                            shouldFold = false;
-                        }
-                        else if (!isUnsigned && IsOverflowIntDiv(kArg0, kArg1))
-                        {
-                            // Don't fold, we have a divide of INT32_MIN/-1
-                            shouldFold = false;
-                        }
-                    }
-                    else // strange value for 'typ'
-                    {
-                        assert(!"unexpected 'typ' in VNForFunc constant folding");
-                        shouldFold = false;
-                    }
-                }
-            }
+        if (divisor == 0)
+        {
+            // Don't fold, we have a divide by zero.
+            return false;
+        }
+        else if ((oper == GT_DIV || oper == GT_MOD) && (divisor == -1))
+        {
+            // Don't fold if we have a division of INT32_MIN or INT64_MIN by -1.
+            // Note that while INT_MIN % -1 is mathematically well-defined (and equal to 0),
+            // we still give up on folding it because the "idiv" instruction is used to compute it on x64.
+            // And "idiv" raises an exception on such inputs.
+            INT64 dividend    = CoercedConstantValue<INT64>(arg0VN);
+            INT64 badDividend = typ == TYP_INT ? INT32_MIN : INT64_MIN;
+
+            // Only fold if our dividend is good.
+            return dividend != badDividend;
         }
     }
-    else // (func > VNF_Boundary)
+    else
     {
-        // OK to fold,
-        // Add checks in the future if we support folding of VNF_ADD_OVF, etc...
+        switch (func)
+        {
+            // Is this a checked operation that will always throw an exception?
+            case VNF_ADD_OVF:
+            case VNF_SUB_OVF:
+            case VNF_MUL_OVF:
+            case VNF_ADD_UN_OVF:
+            case VNF_SUB_UN_OVF:
+            case VNF_MUL_UN_OVF:
+                return false;
+        }
     }
 
-    return shouldFold;
+    return true;
 }
 
 //----------------------------------------------------------------------------------------
