@@ -1257,7 +1257,7 @@ var BindingSupportLib = {
 				);
 
 				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
-				
+
 				this._automatic_converter_table.set (typePtr, result);
 			}
 			return this._automatic_converter_table.get (typePtr);
@@ -1445,8 +1445,7 @@ var BindingSupportLib = {
 				//  pass the raw address of its boxed value into the callee.
 				if (step.needs_unbox) {
 					closure.mono_wasm_unbox_rooted = this.mono_wasm_unbox_rooted;
-					closure.unbox_mono_obj = this.unbox_mono_obj.bind(this);
-					body.push (`console.log('unboxing', ${valueKey}); ${valueKey} = unbox_mono_obj (${valueKey}); console.log('unboxed ok and got', ${valueKey});`);
+					body.push (`console.log('unboxing', ${valueKey}); ${valueKey} = mono_wasm_unbox_rooted (${valueKey}); console.log('unboxed ok and got', ${valueKey});`);
 				}
 
 				if (step.indirect) {
