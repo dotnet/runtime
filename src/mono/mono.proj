@@ -374,11 +374,15 @@
     <!-- Devloop features -->
     <ItemGroup Condition="'$(MonoMetadataUpdate)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
+      <_MonoCFLAGSOptionSrc Include="@(_MonoCPPFLAGS)" />
+      <_MonoCFLAGSOptionSrc Include="@(_MonoCFLAGS)" />
+      <_MonoCXXFLAGSOptionSrc Include="@(_MonoCPPFLAGS)" />
+      <_MonoCXXFLAGSOptionSrc Include="@(_MonoCXXFLAGS)" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
-      <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
+      <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCFLAGSOptionSrc, ' ')"</_MonoCFLAGSOption>
+      <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCXXFLAGSOptionSrc, ' ')"</_MonoCXXFLAGSOption>
     </PropertyGroup>
     <ItemGroup>
       <_MonoCMakeArgs Include="$(_MonoCFLAGSOption)"/>
