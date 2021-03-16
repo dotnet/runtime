@@ -76,6 +76,7 @@ var BindingSupportLib = {
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 			this.mono_wasm_get_class_for_bind_or_invoke = Module.cwrap ('mono_wasm_get_class_for_bind_or_invoke', 'number', ['number', 'number']);
 			this.mono_wasm_class_get_type = Module.cwrap ('mono_wasm_class_get_type', 'number', ['number']);
+			this.mono_wasm_get_type_name = Module.cwrap ('mono_wasm_get_type_name', 'string', ['number']);
 
 			this._box_buffer = Module._malloc(32);
 			this._unbox_buffer_size = 65536;
@@ -123,9 +124,21 @@ var BindingSupportLib = {
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
 
+			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
+
+			this._empty_string = "";
+			this._empty_string_ptr = 0;
+			this._interned_string_full_root_buffers = [];
+			this._interned_string_current_root_buffer = null;
+			this._interned_string_current_root_buffer_count = 0;
+			this._interned_js_string_table = new Map ();
+			this._custom_marshaler_info_cache = new Map ();
+
 			// HACK: This method needs to be the absolute first one we bind, because
 			//  the process of binding other methods relies on it.
 			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
+
+			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "i");
 
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
@@ -156,14 +169,6 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 
-			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
-
-			this._empty_string = "";
-			this._empty_string_ptr = 0;
-			this._interned_string_full_root_buffers = [];
-			this._interned_string_current_root_buffer = null;
-			this._interned_string_current_root_buffer_count = 0;
-			this._interned_js_string_table = new Map ();
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -1017,7 +1022,7 @@ var BindingSupportLib = {
 				if (!json)
 					throw new Error (`MakeMarshalSignatureInfo failed`);				
 
-				console.log(json);
+				// console.log(json);
 				var result = JSON.parse(json);
 				result.classPtr = classPtr;
 
@@ -1107,6 +1112,35 @@ var BindingSupportLib = {
 			return signatureChForMtype[mtype] || 'a';
 		},
 
+		_get_custom_marshaler_info_for_type: function (typePtr) {
+			if (!typePtr)
+				return null;
+
+			if (!this._custom_marshaler_info_cache)
+				this._custom_marshaler_info_cache = new Map ();
+			
+			var result;
+			if (!this._custom_marshaler_info_cache.has (typePtr)) {
+				var json = this.get_custom_marshaler_info (typePtr);
+				console.log(json);
+				result = JSON.parse(json);
+				this._custom_marshaler_info_cache.set (typePtr, result);
+			} else {
+				result = this._custom_marshaler_info_cache.get (typePtr);
+			}
+
+			console.log(result);
+
+			return result;
+		},
+
+		_get_custom_marshaler_info_for_class: function (classPtr) {
+			if (!classPtr)
+				return null;
+			var typePtr = this.mono_wasm_class_get_type (classPtr);
+			return this._get_custom_marshaler_info_for_type (typePtr);
+		},
+
 		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
 			var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
 			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
@@ -1118,14 +1152,16 @@ var BindingSupportLib = {
 				this._struct_unboxer_cache = new Map ();
 
 			if (!this._struct_unboxer_cache.has (classPtr)) {
-				var postFilterGetter = this.find_method (classPtr, "ManagedToJS_PostFilter", 0);
-				var postFilter = postFilterGetter 
-					? this.call_method (postFilterGetter, 0, "", [])
-					: null;
+				var info = this._get_custom_marshaler_info_for_class (classPtr);
+				// HACK
+				if (!info)
+					info = {};
+
+				var postFilter = info.postFilter;
 
 				// console.log ("postFilter", postFilter);
 
-				var convMethod = this.find_method (classPtr, "ManagedToJS", 1);
+				var convMethod = info.outputPtr;
 				if (!convMethod)
 					this._struct_unboxer_cache.set (classPtr, null);
 				else {
@@ -1182,15 +1218,16 @@ var BindingSupportLib = {
 			if (!this._automatic_converter_table)
 				this._automatic_converter_table = new Map ();
 			if (!this._automatic_converter_table.has (classPtr)) {
-				var preFilterGetter = this.find_method(classPtr, "JSToManaged_PreFilter", 0);
+				var info = this._get_custom_marshaler_info_for_class (classPtr);
+				// HACK
+				if (!info)
+					info = {};
 
-				var preFilter = preFilterGetter 
-					? this.call_method (preFilterGetter, 0, "", [])
-					: null;
+				var preFilter = info.preFilter;
 
 				// console.log ("preFilter", preFilter);
 
-				var convMethod = this.find_method (classPtr, "JSToManaged", 1);
+				var convMethod = info.inputPtr;
 				if (!convMethod) {
 					console.log (`No automatic converter found for classPtr ${classPtr} and methodPtr ${methodPtr}`);
 					this._automatic_converter_table.set (classPtr, null);
@@ -1220,9 +1257,16 @@ var BindingSupportLib = {
 				key: 'a'
 			};
 
+			console.log("paramRecord", JSON.stringify(paramRecord));
+			if (paramRecord.typePtr)
+				console.log("name", this.mono_wasm_get_type_name(paramRecord.typePtr));
+
 			switch (paramRecord.marshalType) {
 				case 4: // Struct
-					result.needs_unbox = true;
+					var info = this._get_custom_marshaler_info_for_type (paramRecord.typePtr);
+					result.needs_unbox = (info != null) 
+						? (info.outputNeedsToBeUnboxed != 0) 
+						: true;
 					; // FIXME: Fall-through
 				case 7: // OBJECT
 					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.class);
@@ -1238,7 +1282,7 @@ var BindingSupportLib = {
 					break;
 			}
 
-			// console.log(JSON.stringify(result));
+			console.log(JSON.stringify(result));
 			return result;
 		},
 
@@ -1391,7 +1435,7 @@ var BindingSupportLib = {
 				//  pass the raw address of its boxed value into the callee.
 				if (step.needs_unbox) {
 					closure.mono_wasm_unbox_rooted = this.mono_wasm_unbox_rooted;
-					body.push (`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
+					body.push (`console.log('unboxing', ${valueKey}); ${valueKey} = mono_wasm_unbox_rooted (${valueKey}); console.log('unboxed ok and got', ${valueKey});`);
 				}
 
 				if (step.indirect) {

@@ -1364,6 +1364,11 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 {
 	if (!obj)
 		return 0;
+	MonoClass * klass = mono_object_get_class(obj);
+	char * type_name = mono_type_get_name_full (mono_class_get_type(klass), MONO_TYPE_NAME_FORMAT_REFLECTION);
+	EM_ASM({
+		console.log("mono_wasm_unbox_rooted", Module.UTF8ToString($0));
+	}, type_name);
 	return mono_object_unbox (obj);
 }
 
@@ -1375,4 +1380,9 @@ mono_wasm_get_class_for_bind_or_invoke (MonoObject *this_arg, MonoMethod *method
 		return mono_method_get_class (method);
 	else
 		return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE char * 
+mono_wasm_get_type_name (MonoType * typePtr) {
+	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
 }

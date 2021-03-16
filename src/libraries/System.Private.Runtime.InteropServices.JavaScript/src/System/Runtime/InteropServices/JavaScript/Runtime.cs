@@ -307,7 +307,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         public static string MakeMarshalTypeRecord (Type type) {
-            return $"{{ marshalType: {GetMarshalTypeFromType(type)}, typePtr: {type.TypeHandle.Value} }}";
+            return $"{{ 'marshalType': {(int)GetMarshalTypeFromType(type)}, 'typePtr': {type.TypeHandle.Value} }}";
         }
 
         public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
@@ -324,9 +324,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return null;
 
             var result = "{ " +
-                $"result: {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
-                $"typePtr: {typePtr}, methodPtr: {methodPtr}, " +
-                "parameters: [";
+                $"'result': {MakeMarshalTypeRecord((mb as MethodInfo)?.ReturnType ?? typeof(void))}, " +
+                $"'typePtr': {typePtr}, 'methodPtr': {methodPtr}, " +
+                "'parameters': [";
 
             int i = 0;
             foreach (var p in mb.GetParameters()) {
@@ -338,15 +338,19 @@ namespace System.Runtime.InteropServices.JavaScript
 
             result += "] }";
 
-            return result;
+            return result.Replace("'", "\"");
         }
 
-        private static unsafe IntPtr GetMethodPointer (Type type, string name) {
+        private static unsafe IntPtr GetMethodPointer (Type type, string name, out Type? returnType) {
             var info = type.GetMethod(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
-            if (info == null)
+            if (info == null) {
+                returnType = null;
                 return IntPtr.Zero;
+            }
+
+            returnType = info.ReturnType;
 
             var tmp = default(IntPtrAndHandle);
             tmp.handle = info.MethodHandle;
@@ -400,17 +404,23 @@ namespace System.Runtime.InteropServices.JavaScript
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = typePtr;
             var typeHandle = tmp.typeHandle;
+
             var type = Type.GetTypeFromHandle(typeHandle);
 
             var preFilter = GetAndEscapeStringField(type, "JSToManaged_PreFilter");
             var postFilter = GetAndEscapeStringField(type, "ManagedToJS_PostFilter");
 
-            var inputPtr = GetMethodPointer(type, "JSToManaged");
-            var outputPtr = GetMethodPointer(type, "ManagedToJS");
+            var inputPtr = GetMethodPointer(type, "JSToManaged", out Type? temp);
+            var outputPtr = GetMethodPointer(type, "ManagedToJS", out Type? outputReturnType);
 
-            return "{\n" + $"typePtr: {typePtr} \n" +
-                $"preFilter: {preFilter}, postFilter: {postFilter} \n" +
-                $"inputPtr: {inputPtr}, outputPtr: {outputPtr} \n" + "}";
+            var outputNeedsToBeUnboxed = outputReturnType?.IsValueType ?? true;
+
+            return ("{\n" + $"'typePtr': {typePtr}, \n" +
+                $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
+                $"'inputPtr': {inputPtr}, 'outputPtr': {outputPtr}, \n" +
+                $"'outputNeedsToBeUnboxed': {(outputNeedsToBeUnboxed ? 1 : 0)} \n" +
+                "}")
+                .Replace("'", "\"");
         }
 
         public static MarshalType GetMarshalTypeFromType (Type type) {

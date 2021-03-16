@@ -49,15 +49,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             private static string ManagedToJS_PostFilter () => "new Date(value)";
 
             private static CustomDate JSToManaged (string s) {
-                // Console.WriteLine($"CustomDate.JSToManaged({s})");
+                Console.WriteLine($"CustomDate.JSToManaged({s})");
+                var newDate = DateTime.Parse(s).ToUniversalTime();
+                Console.WriteLine($"newDate={newDate}");
                 return new CustomDate { 
-                    Date = DateTime.Parse(s).ToUniversalTime()
+                    Date = newDate
                 };
             }
 
             private static string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
-                // Console.WriteLine($"CustomDate.ManagedToJS === {result}");
+                Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;
             }
         }
