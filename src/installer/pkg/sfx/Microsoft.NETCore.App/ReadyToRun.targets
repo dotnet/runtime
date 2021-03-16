@@ -63,17 +63,20 @@
 
   <PropertyGroup>
     <OriginalDotnetRootValue />
-    <DOTNET_ROOT />
   </PropertyGroup>
 
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
+      <DotnetSdkRootFile>$(RepoRoot)/artifacts/toolset/sdk.txt</DotnetSdkRootFile>
     </PropertyGroup>
 
-    <ReadLinesFromFile File="$(RepoRoot)/artifacts/toolset/sdk.txt">
+    <ReadLinesFromFile File="$(DotnetSdkRootFile)">
       <Output TaskParameter="Lines" PropertyName="DotnetRoot"/>
     </ReadLinesFromFile>
+
+    <Message Importance="High" Text="DotnetSdkRootFile: $(DotnetSdkRootFile)" />
+    <Message Importance="High" Text="DotnetRoot:        $(DotnetRoot)" />
 
     <SetEnvVar Name="DOTNET_ROOT" Value="$(DotnetRoot)" />
   </Target>
