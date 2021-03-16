@@ -32,6 +32,7 @@ static jstring CreateAliasForCertificate(JNIEnv* env, jobject /*X509Certificate*
     char buffer[9] = {0}; // 8-character hex + null terminator
     size_t written = (size_t)snprintf(buffer, sizeof(buffer), "%08X", hashCode);
     assert(written == sizeof(buffer) - 1);
+    (void)written;
 
     return (*env)->NewStringUTF(env, buffer);
 }
