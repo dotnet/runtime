@@ -41,6 +41,26 @@
   <!-- Crossgen2 bring-up before SDK 6.0 Preview 2 propagates to the runtime repo. -->
   <!-- https://github.com/dotnet/runtime/issues/48252 -->
 
+  <UsingTask
+    TaskName="SetEnvVar"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+
+    <ParameterGroup>
+      <Name ParameterType="System.String" Required="true" />
+      <Value ParameterType="System.String" Required="false" />
+    </ParameterGroup>
+
+    <Task>
+      <Using Namespace="System" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          Environment.SetEnvironmentVariable(Name, Value);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
   <PropertyGroup>
     <OriginalDotnetRootValue />
     <DOTNET_ROOT />
@@ -52,16 +72,14 @@
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(RepoRoot)/artifacts/toolset/sdk.txt">
-      <Output TaskParameter="Lines" PropertyName="DOTNET_ROOT"/>
+      <Output TaskParameter="Lines" PropertyName="DotnetRoot"/>
     </ReadLinesFromFile>
 
-    <Message Importance="High" Text="DOTNET_ROOT=$(DOTNET_ROOT)" />
+    <SetEnvVar Name="DOTNET_ROOT" Value="$(DotnetRoot)" />
   </Target>
 
   <Target Name="RestoreDotnetRootAfterRunningCrossgen2" AfterTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <DOTNET_ROOT>$(OriginalDotnetRootValue)</DOTNET_ROOT>
-    </PropertyGroup>
+    <SetEnvVar Name="DOTNET_ROOT" Value="$(OriginalDotnetRootValue)" />
   </Target>
 
   <!-- End of hack to patch DOTNET_ROOT for the duration of Crossgen2 compilation. -->
