@@ -18879,6 +18879,11 @@ bool FieldSeqNode::CheckFldBelongsToCls(Compiler* comp, CORINFO_CLASS_HANDLE cls
     {
         return false;
     }
+    if (IsPseudoField())
+    {
+        // Not sure about it.
+        return true;
+    }
     CORINFO_CLASS_HANDLE realClsHnd = comp->info.compCompHnd->getFieldClass(m_fieldHnd);
     if (realClsHnd != clsHnd)
     {
