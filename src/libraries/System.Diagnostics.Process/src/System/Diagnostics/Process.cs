@@ -1228,6 +1228,8 @@ namespace System.Diagnostics
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
+
             return StartCore(startInfo);
         }
 
