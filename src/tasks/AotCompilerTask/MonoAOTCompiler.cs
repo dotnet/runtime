@@ -400,8 +400,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
-        Utils.LogInfo ($"MONO_PATH={paths}");
-
         try
         {
             // run the AOT compiler
