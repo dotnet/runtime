@@ -31,11 +31,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.ARM:
                     if (target.Abi == TargetAbi.CoreRTArmel)
                     {
-                        return Arm32TransitionBlock.Instance;
+                        return Arm32ElTransitionBlock.Instance;
                     }
                     else
                     {
-                        return Arm32ElTransitionBlock.Instance;
+                        return Arm32TransitionBlock.Instance;
                     }
 
                 case TargetArchitecture.ARM64:
