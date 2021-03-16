@@ -118,39 +118,39 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             logger.Reset();
             CollectionTestExtensions.M0(logger);
-            TestCollection(0, logger);
-
-            logger.Reset();
-            CollectionTestExtensions.M1(logger, 0);
             TestCollection(1, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M2(logger, 0, 1);
+            CollectionTestExtensions.M1(logger, 0);
             TestCollection(2, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M3(logger, 0, 1, 2);
+            CollectionTestExtensions.M2(logger, 0, 1);
             TestCollection(3, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M4(logger, 0, 1, 2, 3);
+            CollectionTestExtensions.M3(logger, 0, 1, 2);
             TestCollection(4, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M5(logger, 0, 1, 2, 3, 4);
+            CollectionTestExtensions.M4(logger, 0, 1, 2, 3);
             TestCollection(5, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M6(logger, 0, 1, 2, 3, 4, 5);
+            CollectionTestExtensions.M5(logger, 0, 1, 2, 3, 4);
             TestCollection(6, logger);
 
             logger.Reset();
-            CollectionTestExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
+            CollectionTestExtensions.M6(logger, 0, 1, 2, 3, 4, 5);
             TestCollection(7, logger);
 
             logger.Reset();
+            CollectionTestExtensions.M7(logger, 0, 1, 2, 3, 4, 5, 6);
+            TestCollection(8, logger);
+
+            logger.Reset();
             CollectionTestExtensions.M8(logger, LogLevel.Critical, 0, new ArgumentException("Foo"), 1);
-            TestCollection(2, logger);
+            TestCollection(3, logger);
 
             Assert.True(true);
         }
@@ -330,20 +330,26 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             Assert.Equal(expected, rol.Count);
             for (int i = 0; i < expected; i++)
             {
-                var kvp = new KeyValuePair<string, object?>($"p{i}", i);
-                Assert.Equal(kvp, rol[i]);
+                if (i != expected - 1)
+                {
+                    var kvp = new KeyValuePair<string, object?>($"p{i}", i);
+                    Assert.Equal(kvp, rol[i]);
+                }
             }
 
             int count = 0;
             foreach (var actual in rol)
             {
-                var kvp = new KeyValuePair<string, object?>($"p{count}", count);
-                Assert.Equal(kvp, actual);
+                if (count != expected - 1)
+                {
+                    var kvp = new KeyValuePair<string, object?>($"p{count}", count);
+                    Assert.Equal(kvp, actual);
+                }
+
                 count++;
             }
 
             Assert.Equal(expected, count);
-
             Assert.Throws<ArgumentOutOfRangeException>(() => _ = rol[expected]);
         }
     }

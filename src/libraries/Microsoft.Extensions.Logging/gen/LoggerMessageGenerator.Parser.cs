@@ -41,6 +41,20 @@ namespace Microsoft.Extensions.Logging.Generators
                     return results;
                 }
 
+                var enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
+                if (enumerableSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Collections.IEnumerable");
+                    return results;
+                }
+
+                var stringSymbol = _compilation.GetTypeByMetadataName("System.String");
+                if (stringSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.String");
+                    return results;
+                }
+
                 var dateTimeSymbol = _compilation.GetTypeByMetadataName("System.DateTime");
                 if (dateTimeSymbol == null)
                 {
@@ -236,6 +250,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 IsLogger = !foundLogger && IsBaseOrIdentity(paramSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramSymbol!, exceptionSymbol),
                                                 IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramSymbol!, logLevelSymbol),
+                                                IsEnumerable = IsBaseOrIdentity(paramSymbol!, enumerableSymbol) && !IsBaseOrIdentity(paramSymbol!, stringSymbol),
                                             };
 
                                             foundLogger |= lp.IsLogger;
@@ -626,6 +641,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsLogger;
             public bool IsException;
             public bool IsLogLevel;
+            public bool IsEnumerable;
             public bool IsRegular => !IsLogger && !IsException && !IsLogLevel;
         }
     }

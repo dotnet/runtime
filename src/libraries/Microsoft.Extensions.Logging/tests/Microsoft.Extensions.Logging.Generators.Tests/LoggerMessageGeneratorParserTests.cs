@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0014", d[0].Id);
+            Assert.Equal(DiagDescriptors.TemplateHasNoCorrespondingArgument.Id, d[0].Id);
         }
 
         [Fact]
