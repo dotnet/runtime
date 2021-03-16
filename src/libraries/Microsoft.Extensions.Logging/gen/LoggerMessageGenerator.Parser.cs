@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -33,10 +32,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
                 const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
-                const int LoggerMessageAttrEventIdArg = 0;
-                const int LoggerMessageAttrLevelArg = 1;
-                const int LoggerMessageAttrMessageArg = 2;
-                const int LoggerMessageAttrEventNameArg = 3;
 
                 var results = new List<LoggerClass>();
 
@@ -68,7 +63,14 @@ namespace Microsoft.Extensions.Logging.Generators
                     return results;
                 }
 
-                var ids = new HashSet<string>();
+                var logLevelSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
+                if (logLevelSymbol == null)
+                {
+                    // nothing to do if this type isn't available
+                    return results;
+                }
+
+                var ids = new HashSet<int>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
                 foreach (var group in classes.GroupBy(x => x.SyntaxTree))
@@ -98,34 +100,18 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     sm ??= _compilation.GetSemanticModel(classDef.SyntaxTree);
 
-                                    var mattrSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
-                                    if (mattrSymbol == null || !loggerMessageAttribute.Equals(mattrSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    var attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
+                                    if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
                                         // badly formed attribute definition, or not the right attribute
                                         continue;
                                     }
 
-                                    var args = ma.ArgumentList!.Arguments;
-
-                                    var eventId = sm.GetConstantValue(args[LoggerMessageAttrEventIdArg].Expression, _cancellationToken).ToString();
-                                    var level = (int)sm.GetConstantValue(args[LoggerMessageAttrLevelArg].Expression, _cancellationToken).Value!;
-                                    var message = sm.GetConstantValue(args[LoggerMessageAttrMessageArg].Expression, _cancellationToken).ToString();
-
-                                    string eventName = string.Empty;
-                                    if (args.Count > LoggerMessageAttrEventNameArg)
-                                    {
-                                        eventName = sm.GetConstantValue(args[LoggerMessageAttrEventNameArg].Expression, _cancellationToken).ToString();
-                                    }
+                                    var (eventId, level, message, eventName) = ExtractAttributeValues(ma.ArgumentList!, sm);
 
                                     var methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                                     if (methodSymbol != null)
                                     {
-                                        List<string>? templates = null;
-                                        if (!string.IsNullOrWhiteSpace(message))
-                                        {
-                                            templates = ExtractTemplateArgs(message);
-                                        }
-
                                         var lm = new LoggerMethod
                                         {
                                             Name = method.Identifier.ToString(),
@@ -133,12 +119,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Message = message,
                                             EventId = eventId,
                                             EventName = eventName,
-                                            MessageHasTemplates = templates != null && templates.Count > 0,
                                             IsExtensionMethod = methodSymbol.IsExtensionMethod,
                                             Modifiers = method.Modifiers.ToString(),
                                         };
 
-                                        bool keep = true;   // whether or not we want to keep the method definition or if it's got errors making it worth discarding instead
+                                        ExtractTemplates(message, lm.Templates);
+
+                                        bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
                                         if (lm.Name[0] == '_')
                                         {
                                             // can't have logging method names that start with _ since that can lead to conflicting symbol names
@@ -150,14 +137,14 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             // logging methods must return void
                                             Diag(DiagDescriptors.ErrorInvalidMethodReturnType, method.ReturnType.GetLocation());
-                                            keep = false;
+                                            keepMethod = false;
                                         }
 
                                         if (method.Arity > 0)
                                         {
                                             // we don't currently support generic methods
                                             Diag(DiagDescriptors.ErrorMethodIsGeneric, method.Identifier.GetLocation());
-                                            keep = false;
+                                            keepMethod = false;
                                         }
 
                                         bool isStatic = false;
@@ -176,28 +163,22 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
                                         }
 
-                                        if (!isStatic)
-                                        {
-                                            Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
-                                            keep = false;
-                                        }
-
                                         if (!isPartial)
                                         {
                                             Diag(DiagDescriptors.ErrorNotPartialMethod, method.GetLocation());
-                                            keep = false;
+                                            keepMethod = false;
                                         }
 
                                         if (method.Body != null)
                                         {
                                             Diag(DiagDescriptors.ErrorMethodHasBody, method.Body.GetLocation());
-                                            keep = false;
+                                            keepMethod = false;
                                         }
 
                                         // ensure there are no duplicate ids.
                                         if (ids.Contains(lm.EventId))
                                         {
-                                            Diag(DiagDescriptors.ErrorEventIdReuse, args[0].GetLocation(), lm.EventId);
+                                            Diag(DiagDescriptors.ErrorEventIdReuse, ma.GetLocation(), lm.EventId);
                                         }
                                         else
                                         {
@@ -206,9 +187,10 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         if (string.IsNullOrWhiteSpace(lm.Message))
                                         {
-                                            Diag(DiagDescriptors.ErrorInvalidMessage, ma.GetLocation(), method.Identifier.ToString());
+                                            lm.Message = null;
                                         }
-                                        else
+
+                                        if (lm.Message != null)
                                         {
                                             var msg = lm.Message;
 #pragma warning disable S1067 // Expressions should not be too complex
@@ -224,14 +206,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
                                         }
 
+                                        bool foundLogger = false;
                                         bool foundException = false;
+                                        bool foundLogLevel = false;
                                         foreach (var p in method.ParameterList.Parameters)
                                         {
                                             var paramName = p.Identifier.ToString();
                                             if (string.IsNullOrWhiteSpace(paramName))
                                             {
                                                 // semantic problem, just bail quietly
-                                                keep = false;
+                                                keepMethod = false;
                                                 break;
                                             }
 
@@ -239,53 +223,58 @@ namespace Microsoft.Extensions.Logging.Generators
                                             if (paramSymbol is IErrorTypeSymbol)
                                             {
                                                 // semantic problem, just bail quietly
-                                                keep = false;
+                                                keepMethod = false;
                                                 break;
                                             }
 
                                             var declaredType = sm.GetDeclaredSymbol(p);
                                             var typeName = declaredType!.ToDisplayString();
 
-                                            // skip the ILogger parameter
-                                            if (p == method.ParameterList.Parameters[0])
-                                            {
-                                                if (!IsBaseOrIdentity(paramSymbol!, loggerSymbol))
-                                                {
-                                                    Diag(DiagDescriptors.ErrorFirstArgMustBeILogger, p.Identifier.GetLocation());
-                                                    keep = false;
-                                                }
-                                                else
-                                                {
-                                                    lm.LoggerType = typeName;
-                                                    lm.LoggerName = paramName;
-                                                    continue;
-                                                }
-                                            }
-
                                             var lp = new LoggerParameter
                                             {
                                                 Name = paramName,
                                                 Type = typeName,
+                                                IsLogger = !foundLogger && IsBaseOrIdentity(paramSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramSymbol!, exceptionSymbol),
+                                                IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramSymbol!, logLevelSymbol),
                                             };
 
-                                            if (lp.IsException)
-                                            {
-                                                foundException = true;
-                                            }
+                                            foundLogger |= lp.IsLogger;
+                                            foundException |= lp.IsException;
+                                            foundLogLevel |= lp.IsLogLevel;
 
                                             if (IsBaseOrIdentity(paramSymbol!, dateTimeSymbol))
                                             {
                                                 Diag(DiagDescriptors.PassingDateTime, p.Identifier.GetLocation());
                                             }
 
-                                            if (lp.IsException && templates != null)
+                                            if (lp.IsLogger)
                                             {
-                                                foreach (var t in templates)
+                                                foreach (var t in lm.Templates)
+                                                {
+                                                    if (t == paramName)
+                                                    {
+                                                        Diag(DiagDescriptors.DontMentionLoggerInMessage, p.Identifier.GetLocation(), paramName);
+                                                    }
+                                                }
+                                            }
+                                            else if (lp.IsException)
+                                            {
+                                                foreach (var t in lm.Templates)
                                                 {
                                                     if (t == paramName)
                                                     {
                                                         Diag(DiagDescriptors.DontMentionExceptionInMessage, p.Identifier.GetLocation(), paramName);
+                                                    }
+                                                }
+                                            }
+                                            else if (lp.IsLogLevel)
+                                            {
+                                                foreach (var t in lm.Templates)
+                                                {
+                                                    if (t == paramName)
+                                                    {
+                                                        Diag(DiagDescriptors.DontMentionLogLevelInMessage, p.Identifier.GetLocation(), paramName);
                                                     }
                                                 }
                                             }
@@ -297,18 +286,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Diag(DiagDescriptors.ErrorInvalidParameterName, p.Identifier.GetLocation());
                                             }
 
-                                            if (!lp.IsException)
+                                            if (lp.IsRegular && !string.IsNullOrEmpty(lm.Message))
                                             {
-                                                bool found = false;
-                                                if (templates != null)
+                                                var found = false;
+                                                foreach (var t in lm.Templates)
                                                 {
-                                                    foreach (var t in templates)
+                                                    if (t.Equals(lp.Name, StringComparison.Ordinal))
                                                     {
-                                                        if (t.Equals(lp.Name, StringComparison.Ordinal))
-                                                        {
-                                                            found = true;
-                                                            break;
-                                                        }
+                                                        found = true;
+                                                        break;
                                                     }
                                                 }
 
@@ -318,15 +304,36 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 }
                                             }
 
-                                            lm.Parameters.Add(lp);
+                                            lm.AllParameters.Add(lp);
+
+                                            if (lp.IsRegular)
+                                            {
+                                                lm.RegularParameters.Add(lp);
+                                            }
                                         }
 
-                                        if (templates != null)
+                                        if (keepMethod)
                                         {
-                                            foreach (var t in templates)
+                                            if (isStatic && !foundLogger)
+                                            {
+                                                Diag(DiagDescriptors.ErrorMissingLogger, method.GetLocation());
+                                                keepMethod = false;
+                                            }
+                                            else if (!isStatic && foundLogger)
+                                            {
+                                                Diag(DiagDescriptors.ErrorNotStaticMethod, method.GetLocation());
+                                            }
+
+                                            if (level == null && !foundLogLevel)
+                                            {
+                                                Diag(DiagDescriptors.ErrorMissingLogLevel, method.GetLocation());
+                                                keepMethod = false;
+                                            }
+
+                                            foreach (var t in lm.Templates)
                                             {
                                                 bool found = false;
-                                                foreach (var p in lm.Parameters)
+                                                foreach (var p in lm.AllParameters)
                                                 {
                                                     if (t.Equals(p.Name, StringComparison.Ordinal))
                                                     {
@@ -352,7 +359,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 {
                                                     // since this generator doesn't know how to generate a nested type...
                                                     Diag(DiagDescriptors.ErrorNestedType, classDef.Identifier.GetLocation());
-                                                    keep = false;
+                                                    keepMethod = false;
                                                 }
                                             }
                                             else
@@ -371,7 +378,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
                                         }
 
-                                        if (keep)
+                                        if (keepMethod)
                                         {
                                             lc ??= new LoggerClass
                                             {
@@ -397,6 +404,84 @@ namespace Microsoft.Extensions.Logging.Generators
                 return results;
             }
 
+            private (int eventId, int? level, string? message, string? eventName) ExtractAttributeValues(AttributeArgumentListSyntax args, SemanticModel sm)
+            {
+                // two constructor arg shapes:
+                //
+                //   (eventId, level, message)
+                //   (eventId, message)
+
+                int eventId = 0;
+                int? level = null;
+                string? eventName = null;
+                string? message = null;
+                int numPositional = 0;
+                foreach (var a in args.Arguments)
+                {
+                    if (a.NameEquals != null)
+                    {
+                        switch (a.NameEquals.Name.ToString())
+                        {
+                            case "EventName":
+                                eventName = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                        }
+                    }
+                    else if (a.NameColon != null)
+                    {
+                        switch (a.NameColon.Name.ToString())
+                        {
+                            case "eventId":
+                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            case "level":
+                                level = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            case "message":
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                        }
+                    }
+                    else
+                    {
+#pragma warning disable S109 // Magic numbers should not be used
+                        switch (numPositional)
+                        {
+                            // event id
+                            case 0:
+                                eventId = (int)sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                break;
+
+                            // log level or message
+                            case 1:
+                                var o = sm.GetConstantValue(a.Expression, _cancellationToken).Value!;
+                                if (o is int l)
+                                {
+                                    level = l;
+                                }
+                                else
+                                {
+                                    message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                }
+
+                                break;
+
+                            // message
+                            case 2:
+                                message = sm.GetConstantValue(a.Expression, _cancellationToken).ToString();
+                                break;
+                        }
+#pragma warning restore S109 // Magic numbers should not be used
+
+                        numPositional++;
+                    }
+                }
+
+                return (eventId, level, message, eventName);
+            }
+
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
 #pragma warning restore SA1011 // Closing square brackets should be spaced correctly
@@ -415,11 +500,15 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static List<string> ExtractTemplateArgs(string message)
+            private static void ExtractTemplates(string? message, ISet<string> templates)
             {
-                var args = new List<string>();
+                if (string.IsNullOrEmpty(message))
+                {
+                    return;
+                }
+
                 var scanIndex = 0;
-                var endIndex = message.Length;
+                var endIndex = message!.Length;
 
                 while (scanIndex < endIndex)
                 {
@@ -435,12 +524,10 @@ namespace Microsoft.Extensions.Logging.Generators
                         // Format item syntax : { index[,alignment][ :formatString] }.
                         var formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
 
-                        args.Add(message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
+                        _ = templates.Add(message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
                         scanIndex = closeBraceIndex + 1;
                     }
                 }
-
-                return args;
             }
 
             private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
@@ -507,7 +594,7 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         internal class LoggerClass
         {
-            public readonly List<LoggerMethod> Methods = new();
+            public readonly List<LoggerMethod> Methods = new ();
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public string Constraints = string.Empty;
@@ -518,17 +605,16 @@ namespace Microsoft.Extensions.Logging.Generators
         /// </summary>
         internal class LoggerMethod
         {
-            public readonly List<LoggerParameter> Parameters = new();
+            public readonly List<LoggerParameter> AllParameters = new ();
+            public readonly List<LoggerParameter> RegularParameters = new ();
+            public readonly HashSet<string> Templates = new ();
             public string Name = string.Empty;
-            public string Message = string.Empty;
-            public int Level;
-            public string EventId = string.Empty;
-            public string EventName = string.Empty;
-            public bool MessageHasTemplates;
+            public string? Message;
+            public int? Level;
+            public int EventId;
+            public string? EventName;
             public bool IsExtensionMethod;
             public string Modifiers = string.Empty;
-            public string LoggerType = string.Empty;
-            public string LoggerName = string.Empty;
         }
 
         /// <summary>
@@ -538,7 +624,10 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
+            public bool IsLogger;
             public bool IsException;
+            public bool IsLogLevel;
+            public bool IsRegular => !IsLogger && !IsException && !IsLogLevel;
         }
     }
 }

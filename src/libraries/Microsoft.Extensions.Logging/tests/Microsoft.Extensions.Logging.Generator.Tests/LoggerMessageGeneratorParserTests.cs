@@ -7,12 +7,11 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Generators;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Test
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2007:Consider calling ConfigureAwait on the awaited task", Justification = "Test")]
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
@@ -28,6 +27,21 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             Assert.Single(d);
             Assert.Equal("LG0000", d[0].Id);
+        }
+
+        [Fact]
+        public async Task MissingLogLevel()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, ""M1"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0017", d[0].Id);
         }
 
         [Fact]
@@ -47,21 +61,6 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             Assert.Single(d);
             Assert.Equal("LG0016", d[0].Id);
-        }
-
-        [Fact]
-        public async Task InvalidMessage()
-        {
-            var d = await RunGenerator(@"
-                partial class C
-                {
-                    [LoggerMessage(0, LogLevel.Debug, """")]
-                    static partial void M1(ILogger logger);
-                }
-            ");
-
-            Assert.Single(d);
-            Assert.Equal("LG0001", d[0].Id);
         }
 
         [Fact]
@@ -122,6 +121,36 @@ namespace Microsoft.Extensions.Logging.Generators.Test
 
             Assert.Single(d);
             Assert.Equal("LG0013", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NeedlessLogLevelInMessage()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, ""M1 {l1} {l2}"")]
+                    static partial void M1(ILogger logger, LogLevel l1, LogLevel l2);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0001", d[0].Id);
+        }
+
+        [Fact]
+        public async Task NeedlessLoggerInMessage()
+        {
+            var d = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {logger}"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Assert.Single(d);
+            Assert.Equal("LG0018", d[0].Id);
         }
 
         [Fact]
@@ -244,9 +273,29 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         public async Task MissingILoggerType()
         {
             var d = await RunGenerator(@"
-                namespace Microsoft.R9.Extensions.Logging
+                namespace Microsoft.Extensions.Logging
                 {
                     public sealed class LoggerMessageAttribute : System.Attribute {}
+                }
+                partial class C
+                {
+                }
+            ", false, includeLoggingReferences: false);
+
+            Assert.Empty(d);
+        }
+
+        [Fact]
+        public async Task MissingLogLevelType()
+        {
+            var d = await RunGenerator(@"
+                namespace Microsoft.Extensions.Logging
+                {
+                    public sealed class LoggerMessageAttribute : System.Attribute {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public interface ILogger {}
                 }
                 partial class C
                 {
@@ -292,13 +341,13 @@ namespace Microsoft.Extensions.Logging.Generators.Test
         }
 
         [Fact]
-        public async Task FirstArgILogger()
+        public async Task MissingILogger()
         {
             var d = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1} {logger}"")]
-                    static partial void M1(int p1, ILogger logger);
+                    [LoggerMessage(0, LogLevel.Debug, ""M1 {p1}"")]
+                    static partial void M1(int p1);
                 }
             ");
 
@@ -450,7 +499,6 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 text = $@"
                     {nspaceStart}
                     using Microsoft.Extensions.Logging;
-                    using Microsoft.R9.Extensions.Logging;
                     {code}
                     {nspaceEnd}
                 ";

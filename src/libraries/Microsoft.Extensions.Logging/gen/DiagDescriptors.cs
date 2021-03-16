@@ -16,10 +16,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor ErrorInvalidMessage { get; } = new (
+        public static DiagnosticDescriptor DontMentionLogLevelInMessage { get; } = new (
             id: "LG0001",
-            title: SR.ErrorInvalidMessageTitle,
-            messageFormat: SR.ErrorInvalidMessageMessage,
+            title: SR.DontMentionLogLevelInMessageTitle,
+            messageFormat: SR.DontMentionLogLevelInMessageMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -64,10 +64,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor ErrorFirstArgMustBeILogger { get; } = new (
+        public static DiagnosticDescriptor ErrorMissingLogger { get; } = new (
             id: "LG0007",
-            title: SR.ErrorFirstArgMustBeILoggerTitle,
-            messageFormat: SR.ErrorFirstArgMustBeILoggerMessage,
+            title: SR.ErrorMissingLoggerTitle,
+            messageFormat: SR.ErrorMissingLoggerMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -133,13 +133,29 @@ namespace Microsoft.Extensions.Logging.Generators
             title: SR.ArgumentHasNoCorrespondingTemplateTitle,
             messageFormat: SR.ArgumentHasNoCorrespondingTemplateMessage,
             category: "LoggingGenerator",
-            DiagnosticSeverity.Error,
+            DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor ErrorMethodHasBody { get; } = new (
             id: "LG0016",
             title: SR.ErrorMethodHasBodyTitle,
             messageFormat: SR.ErrorMethodHasBodyMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ErrorMissingLogLevel { get; } = new (
+            id: "LG0017",
+            title: SR.ErrorMissingLogLevelTitle,
+            messageFormat: SR.ErrorMissingLogLevelMessage,
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor DontMentionLoggerInMessage { get; } = new (
+            id: "LG0018",
+            title: SR.DontMentionLoggerInMessageTitle,
+            messageFormat: SR.DontMentionLoggerInMessageMessage,
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

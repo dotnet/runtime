@@ -5,7 +5,7 @@
 using System;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.Extensions.Logging
+namespace Microsoft.Extensions.Logging.Generators.Test
 {
     /// <summary>
     /// A logger which captures the last log state logged to it.

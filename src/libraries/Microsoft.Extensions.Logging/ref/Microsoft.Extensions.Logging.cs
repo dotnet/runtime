@@ -83,14 +83,15 @@ namespace Microsoft.Extensions.Logging
         public string ProviderName { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class LoggerMessageAttribute : System.Attribute
     {
-        public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) { }
+        public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string? message = null) { }
+        public LoggerMessageAttribute(int eventId, string? message = null) { }
         public int EventId { get { throw null; } }
         public string? EventName { get { throw null; } set { } }
-        public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } }
-        public string Message { get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel? Level { get { throw null; } }
+        public string? Message { get { throw null; } }
     }
     public static partial class LoggingBuilderExtensions
     {
@@ -104,5 +105,101 @@ namespace Microsoft.Extensions.Logging
     {
         public ProviderAliasAttribute(string alias) { }
         public string Alias { get { throw null; } }
+    }
+}
+namespace Microsoft.Extensions.Logging.Internal
+{
+    public sealed partial class LogValues : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues, System.Exception?, string> formatFunc) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValuesN : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValuesN(System.Func<Microsoft.Extensions.Logging.Internal.LogValuesN, System.Exception?, string> formatFunc, System.Collections.Generic.KeyValuePair<string, object>[] kvp) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T>, System.Exception?, string> formatFunc, string name, T value) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T Value { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T1, T2> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T1, T2>, System.Exception?, string> formatFunc, string[] names, T1 value1, T2 value2) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T1 Value1 { get { throw null; } }
+        public T2 Value2 { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T1, T2, T3> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T1, T2, T3>, System.Exception?, string> formatFunc, string[] names, T1 value1, T2 value2, T3 value3) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T1 Value1 { get { throw null; } }
+        public T2 Value2 { get { throw null; } }
+        public T3 Value3 { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T1, T2, T3, T4> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T1, T2, T3, T4>, System.Exception?, string> formatFunc, string[] names, T1 value1, T2 value2, T3 value3, T4 value4) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T1 Value1 { get { throw null; } }
+        public T2 Value2 { get { throw null; } }
+        public T3 Value3 { get { throw null; } }
+        public T4 Value4 { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T1, T2, T3, T4, T5> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T1, T2, T3, T4, T5>, System.Exception?, string> formatFunc, string[] names, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T1 Value1 { get { throw null; } }
+        public T2 Value2 { get { throw null; } }
+        public T3 Value3 { get { throw null; } }
+        public T4 Value4 { get { throw null; } }
+        public T5 Value5 { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class LogValues<T1, T2, T3, T4, T5, T6> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>>, System.Collections.IEnumerable
+    {
+        public LogValues(System.Func<Microsoft.Extensions.Logging.Internal.LogValues<T1, T2, T3, T4, T5, T6>, System.Exception?, string> formatFunc, string[] names, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object?> this[int index] { get { throw null; } }
+        public T1 Value1 { get { throw null; } }
+        public T2 Value2 { get { throw null; } }
+        public T3 Value3 { get { throw null; } }
+        public T4 Value4 { get { throw null; } }
+        public T5 Value5 { get { throw null; } }
+        public T6 Value6 { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
     }
 }

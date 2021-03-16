@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.Logging.Generators
     [Generator]
     public partial class LoggerMessageGenerator : ISourceGenerator
     {
-        /// <inheritdoc />
         [ExcludeFromCodeCoverage]
         [CLSCompliant(false)]
         public void Initialize(GeneratorInitializationContext context)
@@ -25,7 +24,6 @@ namespace Microsoft.Extensions.Logging.Generators
             context.RegisterForSyntaxNotifications(SyntaxReceiver.Create);
         }
 
-        /// <inheritdoc />
         [ExcludeFromCodeCoverage]
         [CLSCompliant(false)]
         public void Execute(GeneratorExecutionContext context)
