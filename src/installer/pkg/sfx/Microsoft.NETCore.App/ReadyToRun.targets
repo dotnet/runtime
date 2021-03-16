@@ -68,11 +68,16 @@
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-      <DotnetSdkRootFile>$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'toolset', 'sdk.txt'))</DotnetSdkRootFile>
+      <ToolsetDir>$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'toolset'))</ToolsetDir>
+      <DotnetSdkRootFile>$([MSBuild]::NormalizePath('$(ToolsetDir)', 'sdk.txt'))</DotnetSdkRootFile>
     </PropertyGroup>
 
+    <Message Importance="High" Condition="Exists('$(ToolsetDir)')" Text="ToolsetDir exists: $(ToolsetDir)" />
+    <Message Importance="High" Condition="Exists('$(DotnetSdkRootFile)')" Text="sdk.txt file exists: $(DotnetSdkRootFile)" />
+    <Message Importance="High" Text="sdk.txt file content: $([System.IO.File]::ReadAllText('$(DotnetSdkRootFile)'))" />
+
     <ReadLinesFromFile File="$(DotnetSdkRootFile)">
-      <Output TaskParameter="Lines" PropertyName="DotnetRoot"/>
+      <Output TaskParameter="Lines" PropertyName="DotnetRoot" />
     </ReadLinesFromFile>
 
     <Message Importance="High" Text="DotnetSdkRootFile: $(DotnetSdkRootFile)" />
