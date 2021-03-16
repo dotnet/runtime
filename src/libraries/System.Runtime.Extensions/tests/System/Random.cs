@@ -388,7 +388,10 @@ namespace System.Tests
             r.NextBytes(Span<byte>.Empty);
         }
 
-        [Fact]
+        // The following test makes assumptions about the implementation that hold
+        // true only on little-endian platforms.
+        public static bool IsLittleEndian => BitConverter.IsLittleEndian;
+        [ConditionalFact(nameof(IsLittleEndian))]
         public void Xoshiro_AlgorithmBehavesAsExpected()
         {
             // This test is validating implementation detail.  If the algorithm used by `new Random()` is ever
