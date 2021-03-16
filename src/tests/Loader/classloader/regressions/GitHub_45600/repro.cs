@@ -92,10 +92,11 @@ public class G
 
 class Program
 {
-    static void Main(string[] args)
+    static int Main(string[] args)
     {
         var contaner = new G();
         contaner.RegisterNamedObjectType<B>();
         contaner.Register<B, D>();
-    }		
+        return 100;
+    }
 }
