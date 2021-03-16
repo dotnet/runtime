@@ -85,6 +85,12 @@ jmethodID g_sslCtxGetDefaultSslParamsMethod;
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
 
+// java/security/interfaces/DSAKey
+jclass    g_DSAKeyClass;
+
+// java/security/interfaces/ECKey
+jclass    g_ECKeyClass;
+
 // java/security/interfaces/RSAKey
 jclass    g_RSAKeyClass;
 jmethodID g_RSAKeyGetModulus;
@@ -107,14 +113,26 @@ jmethodID g_keyPairGenInitializeMethod;
 jmethodID g_keyPairGenGenKeyPairMethod;
 
 // java/security/KeyStore
-jclass    g_KeyStore;
+jclass    g_KeyStoreClass;
 jmethodID g_KeyStoreGetInstance;
 jmethodID g_KeyStoreAliases;
 jmethodID g_KeyStoreDeleteEntry;
 jmethodID g_KeyStoreGetCertificate;
+jmethodID g_KeyStoreGetCertificateAlias;
+jmethodID g_KeyStoreGetEntry;
 jmethodID g_KeyStoreIsCertificateEntry;
 jmethodID g_KeyStoreLoad;
 jmethodID g_KeyStoreSetCertificateEntry;
+jmethodID g_KeyStoreSetKeyEntry;
+
+// java/security/KeyStore$PrivateKeyEntry
+jclass    g_PrivateKeyEntryClass;
+jmethodID g_PrivateKeyEntryGetCertificate;
+jmethodID g_PrivateKeyEntryGetPrivateKey;
+
+// java/security/KeyStore$TrustedCertificateEntry
+jclass    g_TrustedCertificateEntryClass;
+jmethodID g_TrustedCertificateEntryGetTrustedCertificate;
 
 // java/security/Signature
 jclass    g_SignatureClass;
@@ -142,6 +160,7 @@ jmethodID g_CertPathGetEncoded;
 jclass    g_X509CertClass;
 jmethodID g_X509CertGetEncoded;
 jmethodID g_X509CertGetPublicKey;
+jmethodID g_X509CertHashCode;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -544,6 +563,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
     g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
     g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
+    g_X509CertHashCode =                    GetMethod(env, false, g_X509CertClass, "hashCode", "()I");
+
+    g_DSAKeyClass = GetClassGRef(env, "java/security/interfaces/DSAKey");
+
+    g_ECKeyClass =  GetClassGRef(env, "java/security/interfaces/ECKey");
 
     g_RSAKeyClass =                    GetClassGRef(env, "java/security/interfaces/RSAKey");
     g_RSAKeyGetModulus =               GetMethod(env, false, g_RSAKeyClass, "getModulus", "()Ljava/math/BigInteger;");
@@ -567,9 +591,19 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyStoreAliases =             GetMethod(env, false, g_KeyStoreClass, "aliases", "()Ljava/util/Enumeration;");
     g_KeyStoreDeleteEntry =         GetMethod(env, false, g_KeyStoreClass, "deleteEntry", "(Ljava/lang/String;)V");
     g_KeyStoreGetCertificate =      GetMethod(env, false, g_KeyStoreClass, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
+    g_KeyStoreGetCertificateAlias = GetMethod(env, false, g_KeyStoreClass, "getCertificateAlias", "(Ljava/security/cert/Certificate;)Ljava/lang/String;");
+    g_KeyStoreGetEntry =            GetMethod(env, false, g_KeyStoreClass, "getEntry", "(Ljava/lang/String;Ljava/security/KeyStore$ProtectionParameter;)Ljava/security/KeyStore$Entry;");
     g_KeyStoreIsCertificateEntry =  GetMethod(env, false, g_KeyStoreClass, "isCertificateEntry", "(Ljava/lang/String;)Z");
     g_KeyStoreLoad =                GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
     g_KeyStoreSetCertificateEntry = GetMethod(env, false, g_KeyStoreClass, "setCertificateEntry", "(Ljava/lang/String;Ljava/security/cert/Certificate;)V");
+    g_KeyStoreSetKeyEntry =         GetMethod(env, false, g_KeyStoreClass, "setKeyEntry", "(Ljava/lang/String;Ljava/security/Key;[C[Ljava/security/cert/Certificate;)V");
+
+    g_PrivateKeyEntryClass =            GetClassGRef(env, "java/security/KeyStore$PrivateKeyEntry");
+    g_PrivateKeyEntryGetCertificate =   GetMethod(env, false, g_PrivateKeyEntryClass, "getCertificate", "()Ljava/security/cert/Certificate;");
+    g_PrivateKeyEntryGetPrivateKey =    GetMethod(env, false, g_PrivateKeyEntryClass, "getPrivateKey", "()Ljava/security/PrivateKey;");
+
+    g_TrustedCertificateEntryClass =                    GetClassGRef(env, "java/security/KeyStore$TrustedCertificateEntry");
+    g_TrustedCertificateEntryGetTrustedCertificate =    GetMethod(env, false, g_TrustedCertificateEntryClass, "getTrustedCertificate", "()Ljava/security/cert/Certificate;");
 
     g_SignatureClass =                 GetClassGRef(env, "java/security/Signature");
     g_SignatureGetInstance =           GetMethod(env, true, g_SignatureClass, "getInstance", "(Ljava/lang/String;)Ljava/security/Signature;");

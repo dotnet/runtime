@@ -2,28 +2,44 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include "pal_x509.h"
 
 /*
 Add a certificate to the specified key store
 
+If the certificate is already in the store, this function simply returns success.
 Returns 1 on success, 0 otherwise.
 */
 PALEXPORT int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
-                                                              jobject /*X509Certificate*/ cert,
-                                                              const char* thumbprint);
+                                                              jobject /*X509Certificate*/ cert);
+
+/*
+Add a certificate with a private key to the specified key store
+
+If the certificate is already in the store, it is replaced. This means that a certificate
+without a private key will be replaced with one with a private key.
+Returns 1 on success, 0 otherwise.
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyStore*/ store,
+                                                                            jobject /*X509Certificate*/ cert,
+                                                                            void* key,
+                                                                            PAL_KeyAlgorithm algorithm);
 
 /*
 Get whether or not a certificate is contained in the specified key store
 */
-PALEXPORT bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store, const char* thumbprint);
-
-typedef void (*EnumCertificatesCallback)(jobject cert, void* context);
+PALEXPORT bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store,
+                                                                jobject /*X509Certificate*/ cert);
 
 /*
 Enumerate certificates for the specified key store
-The certificate passed to the callback will already be a global jobject reference.
+The certificate and key passed to the callback will already be a global jobject reference.
 */
-PALEXPORT void AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ store,
+typedef void (*EnumCertificatesCallback)(jobject /*X509Certificate*/ cert,
+                                         void* privateKey,
+                                         PAL_KeyAlgorithm algorithm,
+                                         void* context);
+PALEXPORT int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ store,
                                                                   EnumCertificatesCallback cb,
                                                                   void* context);
 
@@ -33,8 +49,9 @@ The certificate passed to the callback will already be a global jobject referenc
 
 Returns 1 on success, 0 otherwise.
 */
+typedef void (*EnumTrustedCertificatesCallback)(jobject /*X509Certificate*/ cert, void* context);
 PALEXPORT int32_t AndroidCryptoNative_X509StoreEnumerateTrustedCertificates(bool isSystem,
-                                                                            EnumCertificatesCallback cb,
+                                                                            EnumTrustedCertificatesCallback cb,
                                                                             void* context);
 /*
 Open the default key store
@@ -44,6 +61,8 @@ PALEXPORT jobject /*KeyStore*/ AndroidCryptoNative_X509StoreOpenDefault(void);
 /*
 Remove a certificate from the specified key store
 
+If the certificate is not in the store, this function returns success.
 Returns 1 on success, 0 otherwise.
 */
-PALEXPORT int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store, const char* thumbprint);
+PALEXPORT int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store,
+                                                                 jobject /*X509Certificate*/ cert);

@@ -15,20 +15,27 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreAddCertificate(
             SafeX509StoreHandle store,
+            SafeX509Handle cert);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern unsafe bool X509StoreAddCertificateWithPrivateKey(
+            SafeX509StoreHandle store,
             SafeX509Handle cert,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+            SafeKeyHandle key,
+            PAL_KeyAlgorithm algorithm);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreContainsCertificate(
             SafeX509StoreHandle store,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+            SafeX509Handle cert);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreEnumerateCertificates(
             SafeX509StoreHandle storeHandle,
-            delegate* unmanaged<void*, void*, void> callback,
+            delegate* unmanaged<void*, void*, Interop.AndroidCrypto.PAL_KeyAlgorithm, void*, void> callback,
             void *callbackContext);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
@@ -45,7 +52,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreRemoveCertificate(
             SafeX509StoreHandle store,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string thumbprint);
+            SafeX509Handle cert);
     }
 }
 
