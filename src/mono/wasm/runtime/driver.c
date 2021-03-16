@@ -1373,10 +1373,6 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	if (!obj)
 		return 0;
 	MonoClass * klass = mono_object_get_class(obj);
-	char * type_name = mono_type_get_name_full (mono_class_get_type(klass), MONO_TYPE_NAME_FORMAT_REFLECTION);
-	EM_ASM({
-		console.log("mono_wasm_unbox_rooted", Module.UTF8ToString($0));
-	}, type_name);
 	return mono_object_unbox (obj);
 }
 
