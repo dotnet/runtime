@@ -81,7 +81,7 @@ function Get-Help() {
   Write-Host "Native build settings:"
   Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
   Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                Use MSBuild to drive the native build."
+  Write-Host "  -msbuild                Use MSBuild to drive the native build. This is a no-op for Mono."
   Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
