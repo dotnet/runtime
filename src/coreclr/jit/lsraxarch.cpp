@@ -318,11 +318,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildModDiv(tree->AsOp());
             break;
 
-        case GT_INC_SATURATE:
-            srcCount = BuildOperandUses(tree->gtGetOp1());
-            BuildDef(tree, RBM_EAX); // force EAX because the following MULHI will require EAX:EDX input anyway
-            break;
-
 #if defined(TARGET_X86)
         case GT_MUL_LONG:
             dstCount = 2;
