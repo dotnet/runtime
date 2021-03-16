@@ -127,7 +127,7 @@ elif [[ "$__TargetOS" == iOS ]]; then
     fi
 elif [[ "$__TargetOS" == tvOS ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
-    # set default tvOS device deployment target 
+    # set default tvOS device deployment target
     # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
@@ -157,4 +157,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "$__CMakeArgs" "native libraries component"
+build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"

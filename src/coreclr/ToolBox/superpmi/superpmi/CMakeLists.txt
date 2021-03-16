@@ -41,7 +41,7 @@ set(SUPERPMI_SOURCES
     ../superpmi-shared/spmidumphelper.cpp
 )
 
-_add_executable(superpmi
+add_executable_clr(superpmi
     ${SUPERPMI_SOURCES}
 )
 
@@ -62,7 +62,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES $<TARGET_PDB_FILE:superpmi> DESTINATION PDB)
+    install (FILES $<TARGET_PDB_FILE:superpmi> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
-_install (TARGETS superpmi DESTINATION .)
+install (TARGETS superpmi DESTINATION .)

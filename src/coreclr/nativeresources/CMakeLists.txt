@@ -5,4 +5,4 @@ add_library_clr(nativeresourcestring
   resourcestring.cpp
 )
 
-_install (TARGETS nativeresourcestring DESTINATION lib)
+install (TARGETS nativeresourcestring DESTINATION lib)

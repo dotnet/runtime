@@ -99,7 +99,7 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "crosscomponents" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -125,20 +125,9 @@ handle_arguments_local() {
             __StaticAnalyzer=1
             ;;
 
-        skipjit|-skipjit)
-            __BuildJit=0
-            ;;
-
-        skipalljits|-skipalljits)
-            __BuildAllJits=0
-            ;;
-
-        skipruntime|-skipruntime)
-            __BuildRuntime=0
-            ;;
-
-        paltests|-paltests)
-            __BuildPALTests=1
+        component|-component)
+            __RequestedBuildComponents="$__RequestedBuildComponents${__RequestedBuildComponents:+-}$2"
+            __ShiftArgs=1
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
@@ -192,7 +181,7 @@ __UseNinja=0
 __VerboseBuild=0
 __ValidateCrossArg=1
 __CMakeArgs=""
-__BuildPALTests=0
+__RequestedBuildComponents=""
 __BuildAllJits=1
 __BuildRuntime=1
 
@@ -247,17 +236,37 @@ restore_optdata
 
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
-__CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
-__CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
+__CMakeTarget=""
+echo "Requested build components: -$__RequestedBuildComponents-"
+if [[ "-$__RequestedBuildComponents-" =~ "-jit-" ]]; then
+    __CMakeTarget="${__CMakeTarget} clrjit_install"
+fi
+if [[ "-$__RequestedBuildComponents-" =~ "-alljits-" ]]; then
+    __CMakeTarget="${__CMakeTarget}  all_jits"
+fi
+if [[ "-$__RequestedBuildComponents-" =~ "-runtime-" ]]; then
+    __CMakeTarget="${__CMakeTarget} runtime"
+fi
+if [[ "-$__RequestedBuildComponents-" =~ "-paltests-" ]]; then
+    __CMakeTarget="${__CMakeTarget} paltests_install"
+fi
+if [[ "-$__RequestedBuildComponents-" =~ "-iltools-" ]]; then
+    __CMakeTarget="${__CMakeTarget} iltools"
+fi
+
+if [[ -z "$__CMakeTarget" ]]; then
+    __CMakeTarget="install"
+fi
+
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then
