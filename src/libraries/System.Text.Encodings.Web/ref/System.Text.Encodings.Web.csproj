@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <!-- Only CLS-compliant members can be abstract -->
     <NoWarn>$(NoWarn);CS3011</NoWarn>
     <Nullable>enable</Nullable>
