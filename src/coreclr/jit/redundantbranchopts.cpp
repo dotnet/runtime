@@ -115,22 +115,145 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 // We can use liberal VNs as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
-                ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
+                const ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
 
+                // Screen for interesting VNs.
+                //
                 // Note we could also infer the tree relop's value from similar relops higher in the dom tree.
                 // For example, (x >= 0) dominating (x > 0), or (x < 0) dominating (x > 0).
                 //
                 // That is left as a future enhancement.
                 //
-                if (domCmpVN == tree->GetVN(VNK_Liberal))
+                auto hasInterestingVN = [this](ValueNum domCmpVN, GenTree* const tree, BasicBlock* block,
+                                               bool& viaPhi) {
+
+                    // Dominator compare is interesting if VNs exactly match.
+                    //
+                    const ValueNum treeVN = tree->GetVN(VNK_Liberal);
+                    if (domCmpVN == treeVN)
+                    {
+                        return true;
+                    }
+
+                    // If the tree VN is Relop(...PhiDef...)
+                    // then find the matching PHI and enumerate its VNs.
+                    //
+                    // See if any of those PHI VNs, if substituted
+                    // in place of the PhiDef, would match domCmpVN.
+                    //
+                    // First, check for Relop(...)
+                    //   vnStore->VNFuncIsComparsion(relopFuncApp.m_func)))
+                    //
+                    VNFuncApp relopFuncApp;
+                    if (!vnStore->GetVNFunc(treeVN, &relopFuncApp) || !(relopFuncApp.m_arity == 2))
+                    {
+                        return false;
+                    }
+                    bool     foundPhiDef = false;
+                    unsigned numCases    = 0;
+
+                    // We'll try both relop inputs....
+                    //
+                    for (int i = 0; i < 2; i++)
+                    {
+                        // Next, for Relop(PhiDef(...))
+                        //
+                        const ValueNum phiDefVN = relopFuncApp.m_args[i];
+                        VNFuncApp      phiDefFuncApp;
+                        if (!vnStore->GetVNFunc(phiDefVN, &phiDefFuncApp) || !(phiDefFuncApp.m_func == VNF_PhiDef))
+                        {
+                            return false;
+                        }
+
+                        const unsigned lclNum = unsigned(phiDefFuncApp.m_args[0]);
+                        JITDUMP("... [hasInterestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n",
+                                block->bbNum, i == 0 ? "first" : "second", lclNum);
+                        if (!foundPhiDef)
+                        {
+                            DISPTREE(tree);
+                        }
+
+                        foundPhiDef = true;
+
+                        // We'll try each Phi in the PhiDef.
+                        //
+                        // Note the while loop here as we don't know now many of these we might have.
+                        // It should be less than the number of preds at least.
+                        //
+                        unsigned phiCount = 0;
+                        ValueNum phiVN    = phiDefFuncApp.m_args[2];
+                        while (phiVN != ValueNumStore::NoVN)
+                        {
+                            numCases++;
+                            VNFuncApp phiFuncApp;
+                            if (!vnStore->GetVNFunc(phiVN, &phiFuncApp) || (phiFuncApp.m_func != VNF_Phi))
+                            {
+                                // I think this is unexpected. At any rate we can't iterate through
+                                // this phi def any further.
+                                //
+                                JITDUMP("... phi chain broken\n");
+                                break;
+                            }
+
+                            // The VNF_Phi links us to the ssa def, which links us to the VN.
+                            // The second arg is the remainder of the phi list.
+                            //
+                            const unsigned phiArgSsaNum = vnStore->ConstantValue<unsigned>(phiFuncApp.m_args[0]);
+                            const ValueNum phiArgVN =
+                                lvaTable[lclNum].GetPerSsaData(phiArgSsaNum)->m_vnPair.GetLiberal();
+                            const ValueNum nextPhiVN = phiFuncApp.m_args[1];
+
+                            JITDUMP("... phi input [%u] has VN " FMT_VN "\n", phiCount, phiArgVN);
+
+                            // Build a VN for Relop(phiArgVn, ...) swapping in the Phi VN for the
+                            // appropriate original arg.
+                            //
+                            const ValueNum relopFirstArg  = (i == 0) ? phiArgVN : relopFuncApp.m_args[0];
+                            const ValueNum relopSecondArg = (i == 1) ? phiArgVN : relopFuncApp.m_args[1];
+                            const ValueNum substVN =
+                                vnStore->VNForFunc(tree->TypeGet(), relopFuncApp.m_func, relopFirstArg, relopSecondArg);
+
+                            JITDUMP("... substitute VN is " FMT_VN "\n", substVN);
+
+                            // If this VN matches the dominator VN, we have a partially redundant compare.
+                            //
+                            if (domCmpVN == substVN)
+                            {
+                                // Success!
+                                //
+                                JITDUMP("... phi search succeeded after checking %u cases\n", numCases);
+                                viaPhi = true;
+                                return true;
+                            }
+
+                            // Else there may be more phi inputs to check.
+                            //
+                            phiCount++;
+                            phiVN = nextPhiVN;
+                        }
+                    }
+
+                    // No Phi VN lead to a sucessful match.
+                    //
+                    JITDUMP("... phi search failed after checking %u cases\n", numCases);
+                    return false;
+                };
+
+                // If this gets set true, the compare is only partially redundant,
+                // and so the only optimization we can try is jump threading.
+                //
+                bool isPartiallyRedundant = false;
+
+                if (hasInterestingVN(domCmpVN, tree, block, isPartiallyRedundant))
                 {
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with same liberal VN:\n", domBlock->bbNum,
-                            block->bbNum);
+                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with an interesting liberal VN:\n",
+                            domBlock->bbNum, block->bbNum)
                     DISPTREE(domCmpTree);
-                    JITDUMP(" Redundant compare; current relop:\n");
+                    JITDUMP("Implies current relop is %s compare\n",
+                            isPartiallyRedundant ? "partially redundant" : "redundant");
                     DISPTREE(tree);
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
@@ -140,8 +263,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     if (trueReaches && falseReaches)
                     {
-                        // Both dominating compare outcomes reach the current block so we can't infer the
-                        // value of the relop.
+                        // Both dominating compare outcomes reach the current block, or the relop
+                        // is (possibly) partially redundant, so we can't directly infer the value of the relop.
                         //
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
@@ -153,7 +276,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                             return true;
                         }
                     }
-                    else if (trueReaches)
+                    else if (trueReaches && !isPartiallyRedundant)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true.
                         //
@@ -162,7 +285,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         relopValue = 1;
                         break;
                     }
-                    else if (falseReaches)
+                    else if (falseReaches && !isPartiallyRedundant)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false.
                         //
