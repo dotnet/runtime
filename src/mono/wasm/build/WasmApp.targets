@@ -65,7 +65,7 @@
 
   <PropertyGroup>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">$(RunAOTCompilation)</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
