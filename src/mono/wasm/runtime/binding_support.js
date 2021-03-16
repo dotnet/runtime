@@ -1048,9 +1048,9 @@ var BindingSupportLib = {
 			};
 			var body = [
 				"var value = boundConverter (js_value), filteredValue = null;",
-				"console.log(`value === ${value}`);",
+				// "console.log(`value === ${value}`);",
 				`{ filteredValue = ${js}; }`,
-				"console.log(`filteredValue === ${filteredValue}`);",
+				// "console.log(`filteredValue === ${filteredValue}`);",
 				"return filteredValue;"
 			];
 			
@@ -1123,14 +1123,14 @@ var BindingSupportLib = {
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
 				var json = this.get_custom_marshaler_info (typePtr);
-				console.log(json);
+				// console.log(json);
 				result = JSON.parse(json);
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
 			}
 
-			console.log(result);
+			// console.log(result);
 
 			return result;
 		},
@@ -1158,7 +1158,7 @@ var BindingSupportLib = {
 				var info = this._get_custom_marshaler_info_for_class (classPtr);
 				// HACK
 				if (!info) {
-					console.log("_get_custom_marshaler_info returned null for classPtr", classPtr);
+					// console.log("_get_custom_marshaler_info returned null for classPtr", classPtr);
 					info = {};
 				}
 
@@ -1201,11 +1201,11 @@ var BindingSupportLib = {
 			};
 			var body = [
 				"var filteredValue = null;",
-				"console.log(`preFilter(${value})`);",
+				// "console.log(`preFilter(${value})`);",
 				`{ filteredValue = ${js}; }`,
-				"console.log(`preFilter === ${filteredValue}`);",
+				// "console.log(`preFilter === ${filteredValue}`);",
 				"var convertedResult = boundConverter (filteredValue, method, parmIdx);",
-				"console.log(`convertedResult === ${convertedResult}`);",
+				// "console.log(`convertedResult === ${convertedResult}`);",
 				"return convertedResult;"
 			];
 			
@@ -1230,7 +1230,7 @@ var BindingSupportLib = {
 				var info = this._get_custom_marshaler_info_for_type (typePtr);
 				// HACK
 				if (!info) {
-					console.log("_get_custom_marshaler_info returned null for typePtr", typePtr);
+					// console.log("_get_custom_marshaler_info returned null for typePtr", typePtr);
 					info = {};
 				}
 
@@ -1240,7 +1240,7 @@ var BindingSupportLib = {
 
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
-					console.log (`No automatic converter found for typePtr ${typePtr} and methodPtr ${methodPtr}`);
+					// console.log (`No automatic converter found for typePtr ${typePtr} and methodPtr ${methodPtr}`);
 					this._automatic_converter_table.set (typePtr, null);
 					return null;
 				}
@@ -1271,9 +1271,11 @@ var BindingSupportLib = {
 				key: 'a'
 			};
 
+			/*
 			console.log("paramRecord", JSON.stringify(paramRecord));
 			if (paramRecord.typePtr)
 				console.log("name", this.mono_wasm_get_type_name(paramRecord.typePtr));
+			*/
 
 			switch (paramRecord.marshalType) {
 				case 4: // Struct
@@ -1445,7 +1447,7 @@ var BindingSupportLib = {
 				//  pass the raw address of its boxed value into the callee.
 				if (step.needs_unbox) {
 					closure.mono_wasm_unbox_rooted = this.mono_wasm_unbox_rooted;
-					body.push (`console.log('unboxing', ${valueKey}); ${valueKey} = mono_wasm_unbox_rooted (${valueKey}); console.log('unboxed ok and got', ${valueKey});`);
+					body.push (`${valueKey} = mono_wasm_unbox_rooted (${valueKey});`);
 				}
 
 				if (step.indirect) {
@@ -1672,7 +1674,7 @@ var BindingSupportLib = {
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
 
-			try {
+			// try {
 				// check if the method signature needs argument mashalling
 				if (needs_converter) {
 					var classPtr = this.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
@@ -1691,10 +1693,12 @@ var BindingSupportLib = {
 				}
 
 				return this._call_method_with_converted_args (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer);
+			/*
 			} catch (exc) {
 				console.log("while calling method", this._method_descriptions.get(method) || method);
 				throw exc;
 			}
+			*/
 		},
 
 		_handle_exception_for_call: function (
