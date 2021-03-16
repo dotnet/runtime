@@ -121,6 +121,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.5"); // validation would add spaces
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("From", "invalidemail"); // would fail to parse if validated
 
                     var m = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     (await client.SendAsync(TestAsync, m)).Dispose();
@@ -128,7 +129,8 @@ namespace System.Net.Http.Functional.Tests
             }, async server =>
             {
                 List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync();
-                Assert.Contains(headers, header => header.Contains("en-US,en;q=0.5"));
+                Assert.Contains(headers, header => header.Contains("Accept-Language: en-US,en;q=0.5"));
+                Assert.Contains(headers, header => header.Contains("From: invalidemail"));
             });
         }
     }
