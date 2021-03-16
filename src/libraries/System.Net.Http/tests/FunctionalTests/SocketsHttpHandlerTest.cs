@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
                             GC.WaitForPendingFinalizers();
                         }
 
-                        await completedWhenFinalized.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                        await completedWhenFinalized.WaitAsync(TestHelper.PassingTestTimeout);
                     }
                 }
                 finally
@@ -213,7 +213,7 @@ namespace System.Net.Http.Functional.Tests
                             await request1;
 
                             // Now the second request should complete.
-                            await secondResponse.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                            await secondResponse.WaitAsync(TestHelper.PassingTestTimeout);
                         });
                     });
                 }
@@ -1574,7 +1574,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
             });
-            await serverTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            await serverTask.WaitAsync(TestHelper.PassingTestTimeout);
         }
     }
 
@@ -2065,8 +2065,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
 
-                await Task.WhenAll(responseTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
-                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(responseTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2102,7 +2102,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(MaxConcurrentStreams, handledRequestCount);
 
-                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2131,7 +2131,7 @@ namespace System.Net.Http.Functional.Tests
                     HandleAllPendingRequests(connection2, sendTasks.Count)
                 };
 
-                await Task.WhenAll(handleRequestTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(handleRequestTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 Assert.Equal(handleRequestTasks[0].Result.Count, MaxConcurrentStreams);
                 Assert.Equal(handleRequestTasks[1].Result.Count, MaxConcurrentStreams);
@@ -2154,13 +2154,13 @@ namespace System.Net.Http.Functional.Tests
                     HandleAllPendingRequests(connection4, sendTasks.Count)
                 };
 
-                await Task.WhenAll(finalHandleTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(finalHandleTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 Assert.Equal(finalHandleTasks[0].Result.Count, MaxConcurrentStreams);
                 Assert.Equal(finalHandleTasks[1].Result.Count, MaxConcurrentStreams);
                 Assert.Equal(finalHandleTasks[2].Result.Count, MaxConcurrentStreams);
 
-                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2191,16 +2191,16 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(MaxConcurrentStreams, handledRequests1);
 
                 // Complete all the requests.
-                await Task.WhenAll(connection1SendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(connection1SendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
                 await VerifySendTasks(connection1SendTasks).ConfigureAwait(false);
                 connection1SendTasks.ForEach(t => t.Result.Dispose());
 
                 // Wait until the idle connection timeout expires.
-                await connection1.WaitForClientDisconnectAsync(false).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
                 // Client connection might be still alive, so send an extra request which will either land on the shutting down connection or on a new one.
                 try
                 {
-                    await client.GetAsync(server.Address).TimeoutAfter(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
+                    await client.GetAsync(server.Address).WaitAsync(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -2221,7 +2221,7 @@ namespace System.Net.Http.Functional.Tests
                 int handledRequests0 = await SendResponses(connection0, acceptedStreamIds).ConfigureAwait(false);
                 Assert.Equal(MaxConcurrentStreams, handledRequests0);
 
-                await Task.WhenAll(sendTasks).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds).ConfigureAwait(false);
+                await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
@@ -2247,13 +2247,13 @@ namespace System.Net.Http.Functional.Tests
         private async Task<Http2LoopbackConnection> PrepareConnection(Http2LoopbackServer server, HttpClient client, uint maxConcurrentStreams, int readTimeout = 3, int expectedWarmUpTasks = 1)
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
-            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
+            Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
             {
                 Task handleRequestTask = HandleAllPendingRequests(connection, expectedWarmUpTasks);
-                await Task.WhenAll(warmUpTask, handleRequestTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds * 2).ConfigureAwait(false);
+                await Task.WhenAll(warmUpTask, handleRequestTask).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
                 Assert.True(warmUpTask.Result.IsSuccessStatusCode);
                 warmUpTask.Result.Dispose();
                 if (settingAckReceived.IsCompleted)

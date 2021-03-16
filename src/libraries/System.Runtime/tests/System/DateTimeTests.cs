@@ -1038,11 +1038,11 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000-07:00c", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
-			
+
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
-			
+
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0"));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter()));
             Assert.Throws<FormatException>(() => DateTime.Parse("2020-5-7T09:37:00.0000000+00:00#\0", new MyFormatter(), DateTimeStyles.NoCurrentDateDefault));
@@ -1544,7 +1544,15 @@ namespace System.Tests
         [Fact]
         public static void ParseExact_EscapedSingleQuotes()
         {
-            var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            DateTimeFormatInfo formatInfo;
+            if (PlatformDetection.IsBrowser)
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("id-ID"));
+            }
+            else
+            {
+                formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));
+            }
             const string format = @"dddd, d' ta\' 'MMMM yyyy";
 
             DateTime expected = new DateTime(1999, 2, 28, 17, 00, 01);
@@ -1728,8 +1736,16 @@ namespace System.Tests
                 hebrewCulture.DateTimeFormat.Calendar = new HebrewCalendar();
                 yield return new object[] { today.ToString(hebrewCulture), hebrewCulture, today };
 
-                var mongolianCulture = new CultureInfo("mn-MN");
-                yield return new object[] { today.ToString(mongolianCulture), mongolianCulture, today };
+                CultureInfo culture;
+                if (PlatformDetection.IsBrowser)
+                {
+                    culture = new CultureInfo("pl-PL");
+                }
+                else
+                {
+                    culture = new CultureInfo("mn-MN");
+                }
+                yield return new object[] { today.ToString(culture), culture, today };
             }
         }
 
@@ -2319,6 +2335,13 @@ namespace System.Tests
             Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
             Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
 
+            // Some of the parsed strings could not include the the date parts which make the parser use today's date in the result.
+            // It is possible the clock move to the next day between parsing operations or between calculating the expected value and the parsing.
+            // To make the test reliable, we need to check for such case.
+            if (result3.Day != result4.Day) { result3.AddDays(1); Assert.Equal(result3.Day, result4.Day); }
+            if (result2.Day != result3.Day) { result2.AddDays(1); Assert.Equal(result2.Day, result3.Day); }
+            if (result1.Day != result2.Day) { result1.AddDays(1); Assert.Equal(result1.Day, result2.Day); }
+
             Assert.Equal(result1, result2);
             Assert.Equal(result1, result3);
             Assert.Equal(result1, result4);
@@ -2334,6 +2357,8 @@ namespace System.Tests
                 {
                     result1 = result1.ToUniversalTime();
                 }
+
+                if (expected.Value.Day != result1.Day) { expected.Value.AddDays(1); Assert.Equal(expected.Value.Day, result1.Day); }
 
                 Assert.Equal(expected, result1);
             }

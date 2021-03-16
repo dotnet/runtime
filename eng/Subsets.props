@@ -202,7 +202,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj" Pack="true" BuildInParallel="false" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->

@@ -72,6 +72,7 @@ G_END_DECLS
 static void describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAsyncLocalThis, int gpflags);
 static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
+static MonoObject* mono_runtime_try_invoke_internal (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError* error);
 
 //FIXME move all of those fields to the profiler object
 static gboolean debugger_enabled;
@@ -83,6 +84,7 @@ static GHashTable *objrefs;
 static GHashTable *obj_to_objref;
 static int objref_id = 0;
 static int pause_on_exc = EXCEPTION_MODE_NONE;
+static MonoObject* exception_on_runtime_invoke = NULL;
 
 static const char*
 all_getters_allowed_class_names[] = {
@@ -174,13 +176,13 @@ collect_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 
 	PRINT_DEBUG_MSG (2, "collect_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
-	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
+	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
 		PRINT_DEBUG_MSG (2, "collect_frames: Failed to lookup sequence point. method: %s, native_offset: %d \n", method->name, info->native_offset);
 
  
 	StackFrame *frame = g_new0 (StackFrame, 1);
 	frame->de.ji = info->ji;
-	frame->de.domain = info->domain;
+	frame->de.domain = mono_get_root_domain ();
 	frame->de.method = method;
 	frame->de.native_offset = info->native_offset;
 
@@ -314,7 +316,7 @@ get_this_async_id (DbgEngineStackFrame *frame)
 		return 0;
 	}
 
-	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
+	obj = mono_runtime_try_invoke_internal (method, builder, NULL, &ex, error);
 	mono_error_assert_ok (error);
 
 	return get_object_id (obj);
@@ -376,7 +378,7 @@ ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 
 	DbgEngineStackFrame *frame = (DbgEngineStackFrame*)g_ptr_array_index (frames, 0);
 	ss_req->start_method = ss_args->method = frame->method;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
+	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (frame->method, frame->native_offset, &ss_args->info, &ss_args->sp);
 	if (!found_sp)
 		no_seq_points_found (frame->method, frame->native_offset);
 	g_assert (found_sp);
@@ -552,6 +554,9 @@ handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch
 {
 	ERROR_DECL (error);
 	PRINT_DEBUG_MSG (1, "handle exception - %d - %p - %p - %p\n", pause_on_exc, exc, throw_ctx, catch_ctx);
+	
+    //normal mono_runtime_try_invoke does not capture the exception and this is a temporary workaround.
+	exception_on_runtime_invoke = (MonoObject*)exc;
 
 	if (pause_on_exc == EXCEPTION_MODE_NONE)
 		return;
@@ -601,7 +606,7 @@ mono_wasm_set_breakpoint (const char *assembly_name, int method_token, int il_of
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
 	MonoAssemblyByNameRequest byname_req;
-	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_get_root_domain ()));
+	mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 	g_free (lookup_name);
 	if (!assembly) {
@@ -695,7 +700,7 @@ mono_wasm_current_bp_id (void)
 
 	MonoSeqPointInfo *info = NULL;
 	SeqPoint sp;
-	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
+	gboolean found_sp = mono_find_prev_seq_point_for_native_offset (method, native_offset, &info, &sp);
 	if (!found_sp)
 		PRINT_DEBUG_MSG (1, "Could not find SP\n");
 
@@ -758,7 +763,7 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 
 	PRINT_DEBUG_MSG (2, "list_frames: Reporting method %s native_offset %d, wrapper_type: %d\n", method->name, info->native_offset, method->wrapper_type);
 
-	if (!mono_find_prev_seq_point_for_native_offset (mono_get_root_domain (), method, info->native_offset, NULL, &sp))
+	if (!mono_find_prev_seq_point_for_native_offset (method, info->native_offset, NULL, &sp))
 		PRINT_DEBUG_MSG (2, "list_frames: Failed to lookup sequence point. method: %s, native_offset: %d\n", method->name, info->native_offset);
 
 	method_full_name = mono_method_full_name (method, FALSE);
@@ -807,7 +812,7 @@ invoke_to_string (const char *class_name, MonoClass *klass, gpointer addr)
 		if (!method)
 			return NULL;
 
-		MonoString *mstr = (MonoString*) mono_runtime_try_invoke (method, addr , NULL, &exc, error);
+		MonoString *mstr = (MonoString*) mono_runtime_try_invoke_internal (method, addr , NULL, &exc, error);
 		if (exc || !is_ok (error)) {
 			PRINT_DEBUG_MSG (1, "Failed to invoke ToString for %s\n", class_name);
 			return NULL;
@@ -1190,15 +1195,34 @@ invoke_and_describe_getter_value (MonoObject *obj, MonoProperty *p)
 
 	MonoMethodSignature *sig = mono_method_signature_internal (p->get);
 
-	res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
+	res = mono_runtime_try_invoke_internal (p->get, obj, NULL, &exc, error);
 	if (!is_ok (error) && exc == NULL)
-		exc = (MonoObject*) mono_error_convert_to_exception (error);
+		exc = (MonoObject *) mono_error_convert_to_exception (error);
 	if (exc)
-		return describe_value (mono_get_object_type (), &exc, GPFLAG_EXPAND_VALUETYPES);
+	{
+		const char *class_name = mono_class_full_name (mono_object_class (exc));
+		ERROR_DECL (local_error);
+		char *str = mono_string_to_utf8_checked_internal (((MonoException*)exc)->message, local_error);
+		mono_error_assert_ok (local_error); /* FIXME report error */
+		char *msg = g_strdup_printf("%s: %s", class_name, str);
+		mono_wasm_add_typed_value ("string", msg, 0);
+		g_free (msg);
+		return TRUE;
+	}
 	else if (!res || !m_class_is_valuetype (mono_object_class (res)))
 		return describe_value (sig->ret, &res, GPFLAG_EXPAND_VALUETYPES);
 	else
 		return describe_value (sig->ret, mono_object_unbox_internal (res), GPFLAG_EXPAND_VALUETYPES);
+}
+
+static MonoObject* mono_runtime_try_invoke_internal (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError* error)
+{
+	exception_on_runtime_invoke = NULL;
+	MonoObject* res = mono_runtime_try_invoke (method, obj, params, exc, error);
+	if (exception_on_runtime_invoke != NULL)
+		*exc = exception_on_runtime_invoke;
+	exception_on_runtime_invoke = NULL;
+	return res;
 }
 
 static void
@@ -1271,6 +1295,9 @@ handle_parent:
 				// getters with params are not shown
 				continue;
 			}
+
+			if (p->get->flags & METHOD_ATTRIBUTE_STATIC)
+				continue;
 
 			EM_ASM ({
 				MONO.mono_wasm_add_properties_var ($0, { field_offset: $1, is_own: $2, attr: $3, owner_class: $4 });

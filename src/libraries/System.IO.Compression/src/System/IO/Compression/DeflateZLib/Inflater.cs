@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -20,7 +21,7 @@ namespace System.IO.Compression
         private bool _isDisposed;                           // Prevents multiple disposals
         private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
+        private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
 
@@ -110,7 +111,7 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
+                if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
                 {
                     DeallocateInputBufferHandle();
                 }
@@ -121,7 +122,7 @@ namespace System.IO.Compression
         {
             if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
             {
-                if (!NeedsInput() && IsGzipStream() && _inputBufferHandle.IsAllocated)
+                if (!NeedsInput() && IsGzipStream() && IsInputBufferHandleAllocated)
                 {
                     _finished = ResetStreamForLeftoverInput();
                 }
@@ -142,7 +143,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(!NeedsInput());
             Debug.Assert(IsGzipStream());
-            Debug.Assert(_inputBufferHandle.IsAllocated);
+            Debug.Assert(IsInputBufferHandleAllocated);
 
             lock (SyncLock)
             {
@@ -180,16 +181,24 @@ namespace System.IO.Compression
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBuffer != null);
             Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
-            Debug.Assert(!_inputBufferHandle.IsAllocated);
+            Debug.Assert(!IsInputBufferHandleAllocated);
 
-            if (0 == count)
+            SetInput(inputBuffer.AsMemory(startIndex, count));
+        }
+
+        public unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
+        {
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(!IsInputBufferHandleAllocated);
+
+            if (inputBuffer.IsEmpty)
                 return;
 
             lock (SyncLock)
             {
-                _inputBufferHandle = GCHandle.Alloc(inputBuffer, GCHandleType.Pinned);
-                _zlibStream.NextIn = _inputBufferHandle.AddrOfPinnedObject() + startIndex;
-                _zlibStream.AvailIn = (uint)count;
+                _inputBufferHandle = inputBuffer.Pin();
+                _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
+                _zlibStream.AvailIn = (uint)inputBuffer.Length;
                 _finished = false;
             }
         }
@@ -201,7 +210,7 @@ namespace System.IO.Compression
                 if (disposing)
                     _zlibStream.Dispose();
 
-                if (_inputBufferHandle.IsAllocated)
+                if (IsInputBufferHandleAllocated)
                     DeallocateInputBufferHandle();
 
                 _isDisposed = true;
@@ -313,14 +322,16 @@ namespace System.IO.Compression
         /// </summary>
         private void DeallocateInputBufferHandle()
         {
-            Debug.Assert(_inputBufferHandle.IsAllocated);
+            Debug.Assert(IsInputBufferHandleAllocated);
 
             lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                _inputBufferHandle.Free();
+                _inputBufferHandle.Dispose();
             }
         }
+
+        private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;
     }
 }

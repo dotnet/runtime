@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices
 {
@@ -30,14 +31,14 @@ namespace System.DirectoryServices
             Offset = offset;
         }
 
-        public DirectoryVirtualListView(int beforeCount, int afterCount, string target)
+        public DirectoryVirtualListView(int beforeCount, int afterCount, string? target)
         {
             BeforeCount = beforeCount;
             AfterCount = afterCount;
             Target = target;
         }
 
-        public DirectoryVirtualListView(int beforeCount, int afterCount, int offset, DirectoryVirtualListViewContext context)
+        public DirectoryVirtualListView(int beforeCount, int afterCount, int offset, DirectoryVirtualListViewContext? context)
         {
             BeforeCount = beforeCount;
             AfterCount = afterCount;
@@ -45,7 +46,7 @@ namespace System.DirectoryServices
             DirectoryVirtualListViewContext = context;
         }
 
-        public DirectoryVirtualListView(int beforeCount, int afterCount, string target, DirectoryVirtualListViewContext context)
+        public DirectoryVirtualListView(int beforeCount, int afterCount, string? target, DirectoryVirtualListViewContext? context)
         {
             BeforeCount = beforeCount;
             AfterCount = afterCount;
@@ -123,6 +124,7 @@ namespace System.DirectoryServices
         }
 
         [DefaultValue("")]
+        [AllowNull]
         public string Target
         {
             get => _target;
@@ -145,6 +147,6 @@ namespace System.DirectoryServices
         }
 
         [DefaultValue(null)]
-        public DirectoryVirtualListViewContext DirectoryVirtualListViewContext { get; set; }
+        public DirectoryVirtualListViewContext? DirectoryVirtualListViewContext { get; set; }
     }
 }

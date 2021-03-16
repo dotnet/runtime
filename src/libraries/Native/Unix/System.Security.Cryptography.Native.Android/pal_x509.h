@@ -4,34 +4,64 @@
 #include "pal_jni.h"
 
 // Creation and lifetime
-PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_DecodeX509(const uint8_t *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_EncodeX509(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
+PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_X509Decode(const uint8_t* buf, int32_t len);
 
-PALEXPORT void CryptoNative_X509Destroy(jobject /*X509Certificate*/ cert);
-PALEXPORT jobject /*X509Certificate*/ CryptoNative_X509UpRef(jobject /*X509Certificate*/ cert);
+/*
+Encode a certificate in ASN.1 DER format
 
-// Keep in sync with managed definition in Interop.X509
-struct X509BasicInformation
+Returns 1 on success, -1 on insufficient buffer, 0 otherwise.
+The outLen parameter will be set to the length required for encoding the certificate.
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509Encode(jobject /*X509Certificate*/ cert, uint8_t* out, int32_t* outLen);
+
+/*
+Decodes a collection of certificates.
+
+Returns 1 on success, -1 on insufficient buffer, 0 otherwise.
+The outLen parameter will be set to the length required for decoding the collection.
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509DecodeCollection(const uint8_t* buf,
+                                                           int32_t bufLen,
+                                                           jobject /*X509Certificate*/* out,
+                                                           int32_t* outLen);
+
+/*
+Exports a collection of certificates in PKCS#7 format
+
+Returns 1 on success, -1 on insufficient buffer, 0 otherwise.
+The outLen parameter will be set to the length required for exporting the collection.
+*/
+PALEXPORT int32_t AndroidCryptoNative_X509ExportPkcs7(jobject* /*X509Certificate[]*/ certs,
+                                                      int32_t certsLen,
+                                                      uint8_t* out,
+                                                      int32_t* outLen);
+
+// Matches managed X509ContentType enum
+enum
 {
-    int32_t Version;
-    int64_t NotAfter;
-    int64_t NotBefore;
+    PAL_X509Unknown = 0,
+    PAL_Certificate = 1,
+    PAL_SerializedCert = 2,
+    PAL_Pkcs12 = 3,
+    PAL_SerializedStore = 4,
+    PAL_Pkcs7 = 5,
+    PAL_Authenticode = 6,
 };
+typedef uint32_t PAL_X509ContentType;
+PALEXPORT PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, int32_t len);
 
-// Basic properties
-PALEXPORT bool AndroidCryptoNative_X509GetBasicInformation(jobject /*X509Certificate*/ cert, struct X509BasicInformation *info);
-PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetPublicKeyParameterBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetSerialNumber(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetSignatureAlgorithm(jobject /*X509Certificate*/ cert, char *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetThumbprint(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
+// Matches managed PAL_KeyAlgorithm enum
+enum
+{
+    PAL_DSA = 0,
+    PAL_EC = 1,
+    PAL_RSA = 2,
+};
+typedef uint32_t PAL_KeyAlgorithm;
 
-// Name
-PALEXPORT int32_t AndroidCryptoNative_X509GetIssuerNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
-PALEXPORT int32_t AndroidCryptoNative_X509GetSubjectNameBytes(jobject /*X509Certificate*/ cert, uint8_t *buf, int32_t len);
+/*
+Gets an opaque handle for a certificate's public key
 
-// Extensions
-typedef void (*EnumX509ExtensionsCallback)(const char *oid, int32_t oid_len, const uint8_t *data, int32_t data_len, bool isCritical, void *context);
-PALEXPORT int32_t AndroidCryptoNative_X509EnumExtensions(jobject /*X509Certificate*/ cert, EnumX509ExtensionsCallback cb, void *context);
-PALEXPORT int32_t AndroidCryptoNative_X509FindExtensionData(jobject /*X509Certificate*/ cert, const char *oid, uint8_t *buf, int32_t len);
+Returns null if the requested algorithm does not match that of the public key.
+*/
+PALEXPORT void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_KeyAlgorithm algorithm);

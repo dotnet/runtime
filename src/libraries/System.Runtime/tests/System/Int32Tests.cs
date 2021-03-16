@@ -355,6 +355,12 @@ namespace System.Tests
             yield return new object[] { "123123", NumberStyles.AllowLeadingSign, new NumberFormatInfo() { NegativeSign = "123" }, -123 };
             yield return new object[] { "123123", NumberStyles.AllowLeadingSign, new NumberFormatInfo() { PositiveSign = "12312" }, 3 };
             yield return new object[] { "123123", NumberStyles.AllowLeadingSign, new NumberFormatInfo() { NegativeSign = "12312" }, -3 };
+
+            // Test trailing zeros
+            yield return new object[] { "3.00", NumberStyles.Number, CultureInfo.InvariantCulture, 3 };
+            yield return new object[] { "3.00000000", NumberStyles.Number, CultureInfo.InvariantCulture, 3 };
+            yield return new object[] { "3.000000000", NumberStyles.Number, CultureInfo.InvariantCulture, 3 };
+            yield return new object[] { "3.0000000000", NumberStyles.Number, CultureInfo.InvariantCulture, 3 };
         }
 
         [Theory]

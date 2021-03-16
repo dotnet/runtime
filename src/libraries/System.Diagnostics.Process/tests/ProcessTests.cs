@@ -735,6 +735,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49107", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -1465,6 +1466,56 @@ namespace System.Diagnostics.Tests
             process.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => process.Start());
+        }
+
+        [Fact]
+        public void StandardInput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardInput);
+        }
+
+        [Fact]
+        public void StandardError_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardError);
+        }
+
+        [Fact]
+        public void StandardOutput_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.StandardOutput);
+        }
+
+        [Fact]
+        public void CancelOutputRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelOutputRead());
+        }
+
+        [Fact]
+        public void CancelErrorRead_Disposed_ThrowsObjectDisposedException()
+        {
+            var process = new Process();
+            process.StartInfo.FileName = "Nothing";
+            process.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => process.CancelErrorRead());
         }
 
         [Fact]

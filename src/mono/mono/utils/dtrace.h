@@ -10,7 +10,7 @@
 #ifndef __UTILS_DTRACE_H__
 #define __UTILS_DTRACE_H__
 
-#ifdef ENABLE_DTRACE
+#if defined(ENABLE_DTRACE) && !defined(MONO_GENERATING_OFFSETS)
 
 #include <mono/utils/mono-dtrace.h>
 

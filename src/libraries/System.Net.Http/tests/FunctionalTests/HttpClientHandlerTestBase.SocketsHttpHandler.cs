@@ -18,13 +18,13 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null)
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {
             useVersion ??= HttpVersion.Version11;
 
             HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion.Version30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
-            if (useVersion >= HttpVersion.Version20)
+            if (useVersion >= HttpVersion.Version20 && allowAllHttp2Certificates)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }

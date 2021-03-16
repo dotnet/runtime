@@ -75,6 +75,7 @@ namespace System.Diagnostics
         private string? _spanId;
 
         private byte _w3CIdFlags;
+        private byte _parentTraceFlags;
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
@@ -213,6 +214,9 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -220,7 +224,9 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
+                        Span<char> flagsChars = stackalloc char[2];
+                        HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
+                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -551,6 +557,7 @@ namespace System.Diagnostics
                 _traceId = traceId.ToHexString();     // The child will share the parent's traceId.
                 _parentSpanId = spanId.ToHexString();
                 ActivityTraceFlags = activityTraceFlags;
+                _parentTraceFlags = (byte) activityTraceFlags;
             }
             return this;
         }
@@ -1007,55 +1014,15 @@ namespace System.Diagnostics
             return ret;
         }
 
-        internal static Activity CreateAndStart(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
-                                                IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links,
-                                                DateTimeOffset startTime, ActivityTagsCollection? samplerTags, ActivitySamplingResult request)
+        internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
+                                        IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
-
-            activity._previousActiveActivity = Current;
-            if (parentId != null)
-            {
-                activity._parentId = parentId;
-            }
-            else if (parentContext != default)
-            {
-                activity._traceId = parentContext.TraceId.ToString();
-
-                if (parentContext.SpanId != default)
-                {
-                    activity._parentSpanId = parentContext.SpanId.ToString();
-                }
-
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
-            }
-            else
-            {
-                if (activity._previousActiveActivity != null)
-                {
-                    // The parent change should not form a loop. We are actually guaranteed this because
-                    // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
-                    // 2. All started activities have a finite parent change (by inductive reasoning).
-                    activity.Parent = activity._previousActiveActivity;
-                }
-            }
-
-            activity.IdFormat =
-                ForceDefaultIdFormat ? DefaultIdFormat :
-                activity.Parent != null ? activity.Parent.IdFormat :
-                activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                activity._parentId == null ? DefaultIdFormat :
-                IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
-                ActivityIdFormat.Hierarchical;
-
-            if (activity.IdFormat == ActivityIdFormat.W3C)
-                activity.GenerateW3CId();
-            else
-                activity._id = activity.GenerateHierarchicalId();
+            activity.IdFormat = idFormat;
 
             if (links != null)
             {
@@ -1091,8 +1058,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.StartTimeUtc = startTime == default ? GetUtcNow() : startTime.UtcDateTime;
-
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
 
             if (request == ActivitySamplingResult.AllDataAndRecorded)
@@ -1100,7 +1065,33 @@ namespace System.Diagnostics
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
-            SetCurrent(activity);
+            if (parentId != null)
+            {
+                activity._parentId = parentId;
+            }
+            else if (parentContext != default)
+            {
+                activity._traceId = parentContext.TraceId.ToString();
+
+                if (parentContext.SpanId != default)
+                {
+                    activity._parentSpanId = parentContext.SpanId.ToString();
+                }
+
+                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                activity._parentTraceFlags = (byte) parentContext.TraceFlags;
+                activity._traceState = parentContext.TraceState;
+            }
+
+            if (startTime != default)
+            {
+                activity.StartTimeUtc = startTime.UtcDateTime;
+            }
+
+            if (startIt)
+            {
+                activity.Start();
+            }
 
             return activity;
         }
@@ -1475,6 +1466,8 @@ namespace System.Diagnostics
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
 
+            private StringBuilder? _stringBuilder;
+
             public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
@@ -1635,6 +1628,37 @@ namespace System.Diagnostics
 
                     current = current.Next;
                 };
+            }
+
+            public override string ToString()
+            {
+                lock (this)
+                {
+                    if (_first == null)
+                    {
+                        return string.Empty;
+                    }
+
+                    _stringBuilder ??= new StringBuilder();
+                    _stringBuilder.Append(_first.Value.Key);
+                    _stringBuilder.Append(':');
+                    _stringBuilder.Append(_first.Value.Value);
+
+                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    while (current != null)
+                    {
+                        _stringBuilder.Append(", ");
+                        _stringBuilder.Append(current.Value.Key);
+                        _stringBuilder.Append(':');
+                        _stringBuilder.Append(current.Value.Value);
+
+                        current = current.Next;
+                    }
+
+                    string result = _stringBuilder.ToString();
+                    _stringBuilder.Clear();
+                    return result;
+                }
             }
         }
 

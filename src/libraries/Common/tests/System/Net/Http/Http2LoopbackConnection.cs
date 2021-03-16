@@ -241,8 +241,7 @@ namespace System.Net.Test.Common
             Task currentTask = _ignoredSettingsAckPromise?.Task;
             if (currentTask != null)
             {
-                var timeout = TimeSpan.FromMilliseconds(timeoutMs);
-                await currentTask.TimeoutAfter(timeout);
+                await currentTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
             }
 
             _ignoredSettingsAckPromise = new TaskCompletionSource<bool>();
@@ -909,7 +908,7 @@ namespace System.Net.Test.Common
             Frame frame;
             do
             {
-                frame = await ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
+                frame = await ReadFrameAsync(TestHelper.PassingTestTimeout);
                 Assert.NotNull(frame); // We should get Rst before closing connection.
                 Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
                 if (ignoreIncomingData)

@@ -817,8 +817,8 @@ namespace System
                     return SR.Task_ContinueWith_ESandLR;
                 case ExceptionResource.Task_ContinueWith_NotOnAnything:
                     return SR.Task_ContinueWith_NotOnAnything;
-                case ExceptionResource.Task_Delay_InvalidDelay:
-                    return SR.Task_Delay_InvalidDelay;
+                case ExceptionResource.Task_InvalidTimerTimeSpan:
+                    return SR.Task_InvalidTimerTimeSpan;
                 case ExceptionResource.Task_Delay_InvalidMillisecondsDelay:
                     return SR.Task_Delay_InvalidMillisecondsDelay;
                 case ExceptionResource.Task_Dispose_NotCompleted:
@@ -1022,7 +1022,7 @@ namespace System
         AsyncMethodBuilder_InstanceNotInitialized,
         Task_ContinueWith_ESandLR,
         Task_ContinueWith_NotOnAnything,
-        Task_Delay_InvalidDelay,
+        Task_InvalidTimerTimeSpan,
         Task_Delay_InvalidMillisecondsDelay,
         Task_Dispose_NotCompleted,
         Task_ThrowIfDisposed,

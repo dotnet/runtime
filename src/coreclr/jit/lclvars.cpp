@@ -2614,14 +2614,16 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         {
             noway_assert(lvaTable[i].lvIsStructField);
             lvaTable[i].lvLiveInOutOfHndlr = 1;
-            if (!lvaEnregEHVars)
+            // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
+            if (!lvaEnregEHVars || !lvaTable[i].lvEhWriteThruCandidate || lvaTable[i].lvRefCnt() <= 1)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
             }
         }
     }
 
-    if (!lvaEnregEHVars)
+    // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
+    if (!lvaEnregEHVars || !varDsc->lvEhWriteThruCandidate || varDsc->lvRefCnt() <= 1)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
@@ -4040,7 +4042,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         /* Record if the variable has a single def or not */
 
-        if (!varDsc->lvDisqualify) // If this variable is already disqualified we can skip this
+        if (!varDsc->lvDisqualify) // If this variable is already disqualified, we can skip this
         {
             if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
@@ -4075,6 +4077,34 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 BlockSetOps::AddElemD(this, varDsc->lvRefBlks, block->bbNum);
             }
         }
+
+        if (!varDsc->lvDisqualifyForEhWriteThru) // If this EH var already disqualified, we can skip this
+        {
+            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
+            {
+                bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
+                bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
+
+                if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
+                {
+                    varDsc->lvEhWriteThruCandidate     = false;
+                    varDsc->lvDisqualifyForEhWriteThru = true;
+                }
+                else
+                {
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                    // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
+                    // such variable. In future, need to enable enregisteration for such variables.
+                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+#endif
+                    {
+                        varDsc->lvEhWriteThruCandidate = true;
+                    }
+                }
+            }
+        }
+
 #endif // ASSERTION_PROP
 
         bool allowStructs = false;
@@ -4178,6 +4208,8 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block, bool isRecompute)
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
+            // TODO: Stop passing isRecompute once we are sure that this assert is never hit.
+            assert(!m_isRecompute);
             m_compiler->lvaMarkLclRefs(*use, m_block, m_stmt, m_isRecompute);
             return WALK_CONTINUE;
         }
@@ -4437,7 +4469,13 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
         // Set initial value for lvSingleDef for explicit and implicit
         // argument locals as they are "defined" on entry.
-        varDsc->lvSingleDef = varDsc->lvIsParam;
+        // However, if we are just recomputing the ref counts, retain the value
+        // that was set by past phases.
+        if (!isRecompute)
+        {
+            varDsc->lvSingleDef            = varDsc->lvIsParam;
+            varDsc->lvEhWriteThruCandidate = varDsc->lvIsParam;
+        }
     }
 
     // Remember current state of generic context use, and prepare
@@ -7194,7 +7232,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s0x%02X]  ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    printf("[%2s%1s%02XH]  ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
 }
 
 /*****************************************************************************

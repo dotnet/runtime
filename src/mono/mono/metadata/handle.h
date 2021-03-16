@@ -676,12 +676,6 @@ mono_handle_unbox_unsafe (MonoObjectHandle handle)
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 
-MonoAppContextHandle
-mono_context_get_handle (void);
-
-void
-mono_context_set_handle (MonoAppContextHandle new_context);
-
 MonoGCHandle
 mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle);
 

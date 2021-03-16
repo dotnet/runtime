@@ -454,6 +454,11 @@ public:
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
 
+    unsigned char lvEhWriteThruCandidate : 1; // variable has a single def and hence is a register candidate if
+                                              // if it is an EH variable
+
+    unsigned char lvDisqualifyForEhWriteThru : 1; // tracks variable that are disqualified from register candidancy
+
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
@@ -2352,29 +2357,29 @@ public:
             ehnBlockType = FaultNode;
         }
 
-        BOOL ehnIsTryBlock()
+        bool ehnIsTryBlock()
         {
             return ehnBlockType == TryNode;
         }
-        BOOL ehnIsFilterBlock()
+        bool ehnIsFilterBlock()
         {
             return ehnBlockType == FilterNode;
         }
-        BOOL ehnIsHandlerBlock()
+        bool ehnIsHandlerBlock()
         {
             return ehnBlockType == HandlerNode;
         }
-        BOOL ehnIsFinallyBlock()
+        bool ehnIsFinallyBlock()
         {
             return ehnBlockType == FinallyNode;
         }
-        BOOL ehnIsFaultBlock()
+        bool ehnIsFaultBlock()
         {
             return ehnBlockType == FaultNode;
         }
 
         // returns true if there is any overlap between the two nodes
-        static BOOL ehnIsOverlap(pEHNodeDsc node1, pEHNodeDsc node2)
+        static bool ehnIsOverlap(pEHNodeDsc node1, pEHNodeDsc node2)
         {
             if (node1->ehnStartOffset < node2->ehnStartOffset)
             {
@@ -2387,7 +2392,7 @@ public:
         }
 
         // fails with BADCODE if inner is not completely nested inside outer
-        static BOOL ehnIsNested(pEHNodeDsc inner, pEHNodeDsc outer)
+        static bool ehnIsNested(pEHNodeDsc inner, pEHNodeDsc outer)
         {
             return ((inner->ehnStartOffset >= outer->ehnStartOffset) && (inner->ehnEndOffset <= outer->ehnEndOffset));
         }
@@ -2688,6 +2693,8 @@ public:
     GenTree* gtNewZeroConNode(var_types type);
 
     GenTree* gtNewOneConNode(var_types type);
+
+    GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
 #ifdef FEATURE_SIMD
     GenTree* gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size);
@@ -3543,8 +3550,8 @@ public:
 
     bool lvaIsParameter(unsigned varNum);
     bool lvaIsRegArgument(unsigned varNum);
-    BOOL lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
-    BOOL lvaIsOriginalThisReadOnly();           // return TRUE if there is no place in the code
+    bool lvaIsOriginalThisArg(unsigned varNum); // Is this varNum the original this argument?
+    bool lvaIsOriginalThisReadOnly();           // return true if there is no place in the code
                                                 // that writes to arg0
 
     // For x64 this is 3, 5, 6, 7, >8 byte structs that are passed by reference.
@@ -4368,7 +4375,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static BOOL impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -4396,9 +4403,9 @@ private:
 
     GenTree* impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, InlLclVarInfo* lclTypeInfo);
 
-    BOOL impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
+    bool impInlineIsThis(GenTree* tree, InlArgInfo* inlArgInfo);
 
-    BOOL impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
+    bool impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*          additionalTree,
                                                             GenTreeCall::Use* additionalCallArgs,
                                                             GenTree*          dereferencedAddress,
                                                             InlArgInfo*       inlArgInfo);
@@ -6539,6 +6546,7 @@ protected:
         ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
                                    // assignment
         unsigned csdIndex;         // 1..optCSECandidateCount
+        bool     csdIsSharedConst; // true if this CSE is a shared const
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6631,9 +6639,17 @@ protected:
         return ((key & TARGET_SIGN_BIT) != 0);
     }
 
-    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    // returns the encoded key
+    static size_t Encode_Shared_Const_CSE_Value(size_t key)
     {
-        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+        return TARGET_SIGN_BIT | (key >> CSE_CONST_SHARED_LOW_BITS);
+    }
+
+    // returns the orginal key
+    static size_t Decode_Shared_Const_CSE_Value(size_t enckey)
+    {
+        assert(Is_Shared_Const_CSE(enckey));
+        return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
 #endif // FEATURE_ANYCSE
@@ -6798,6 +6814,14 @@ public:
     {
         optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
     }
+
+    void considerGuardedDevirtualization(GenTreeCall*            call,
+                                         IL_OFFSETX              iloffset,
+                                         bool                    isInterface,
+                                         CORINFO_METHOD_HANDLE   baseMethod,
+                                         CORINFO_CLASS_HANDLE    baseClass,
+                                         CORINFO_CONTEXT_HANDLE* pContextHandle DEBUGARG(CORINFO_CLASS_HANDLE objClass)
+                                             DEBUGARG(const char* objClassName));
 
     void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
                                              CORINFO_METHOD_HANDLE methodHandle,
@@ -7242,7 +7266,7 @@ public:
                                           var_types        toType,
                                           ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
-    AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions);
+    AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
                                ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
@@ -7352,6 +7376,24 @@ public:
 
     void raMarkStkVars();
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#if defined(TARGET_AMD64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        return (type == TYP_SIMD32);
+    }
+#elif defined(TARGET_ARM64)
+    static bool varTypeNeedsPartialCalleeSave(var_types type)
+    {
+        // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
+        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+    }
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#error("Unknown target architecture for FEATURE_SIMD")
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
 protected:
     // Some things are used by both LSRA and regpredict allocators.
 
@@ -7418,7 +7460,7 @@ public:
 
     // Get the flags
 
-    BOOL eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -7500,19 +7542,6 @@ public:
     target_size_t eeGetPageSize()
     {
         return (target_size_t)eeGetEEInfo()->osPageSize;
-    }
-
-    // Returns the frame size at which we will generate a loop to probe the stack.
-    target_size_t getVeryLargeFrameSize()
-    {
-#ifdef TARGET_ARM
-        // The looping probe code is 40 bytes, whereas the straight-line probing for
-        // the (0x2000..0x3000) case is 44, so use looping for anything 0x2000 bytes
-        // or greater, to generate smaller code.
-        return 2 * eeGetPageSize();
-#else
-        return 3 * eeGetPageSize();
-#endif
     }
 
     //------------------------------------------------------------------------
@@ -9238,6 +9267,7 @@ public:
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
+        STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9935,16 +9965,16 @@ public:
     // it is safe to have mismatches here (that tiCompatibleWith will not flag),
     // but when deciding if we need to reimport a block, we need to take these
     // in account
-    BOOL tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
+    bool tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
     // Returns TRUE if child is equal to or a subtype of parent.
     // normalisedForStack indicates that both types are normalised for the stack
-    BOOL tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
+    bool tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
 
     // Merges pDest and pSrc. Returns FALSE if merge is undefined.
     // *pDest is modified to represent the merged type.  Sets "*changed" to true
     // if this changes "*pDest".
-    BOOL tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
+    bool tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -9979,7 +10009,7 @@ public:
 
     // Merges the current verification state into the entry state of "block", return FALSE if that merge fails,
     // TRUE if it succeeds.  Further sets "*changed" to true if this changes the entry state of "block".
-    BOOL verMergeEntryStates(BasicBlock* block, bool* changed);
+    bool verMergeEntryStates(BasicBlock* block, bool* changed);
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
@@ -9987,15 +10017,15 @@ public:
                              bool bashStructToRef = false); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    BOOL verIsSDArray(const typeInfo& ti);
+    bool verIsSDArray(const typeInfo& ti);
     typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    BOOL verIsByRefLike(const typeInfo& ti);
-    BOOL verIsSafeToReturnByRef(const typeInfo& ti);
+    bool verIsByRefLike(const typeInfo& ti);
+    bool verIsSafeToReturnByRef(const typeInfo& ti);
 
     // generic type variables range over types that satisfy IsBoxable
-    BOOL verIsBoxable(const typeInfo& ti);
+    bool verIsBoxable(const typeInfo& ti);
 
     void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
                                                        DEBUGARG(unsigned line));
@@ -10020,7 +10050,7 @@ public:
                        const BYTE*             codeAddr,
                        CORINFO_CALL_INFO* callInfo DEBUGARG(const char* methodName));
 
-    BOOL verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
+    bool verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
 
     typeInfo verVerifySTIND(const typeInfo& ptr, const typeInfo& value, const typeInfo& instrType);
     typeInfo verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType);
@@ -10031,7 +10061,7 @@ public:
                         BOOL                      allowPlainStructAsThis = FALSE);
     void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
     void verVerifyThisPtrInitialised();
-    BOOL verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
+    bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
 
 #ifdef DEBUG
 

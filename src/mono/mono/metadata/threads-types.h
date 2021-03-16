@@ -58,7 +58,6 @@ typedef enum {
 
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
-#define SPECIAL_STATIC_CONTEXT 2
 
 /* It's safe to access System.Threading.InternalThread from native code via a
  * raw pointer because all instances should be pinned.  But for uniformity of
@@ -81,30 +80,11 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
 } MonoThreadCreateFlags;
 
-// FIXME func should be MonoThreadStart and remove the template
 MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
-}
-#endif
+mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInternalThreadHandle
-mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
-{
-	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
-}
-#endif
+mono_thread_create_internal_handle (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 void
 mono_thread_manage_internal (void);
@@ -210,78 +190,7 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void);
 
 ICALL_EXPORT
-gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
-
-ICALL_EXPORT
-gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr);
-
-ICALL_EXPORT
-gint64 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr);
-
-ICALL_EXPORT
-void * ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr);
-
-ICALL_EXPORT
-void * ves_icall_System_Threading_Thread_VolatileReadObject (void *ptr);
-
-ICALL_EXPORT
-double ves_icall_System_Threading_Thread_VolatileReadDouble (void *ptr);
-
-ICALL_EXPORT
-float ves_icall_System_Threading_Thread_VolatileReadFloat (void *ptr);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, MonoObject *);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double);
-
-ICALL_EXPORT
-gint64 ves_icall_System_Threading_Volatile_Read8 (void *ptr);
-
-ICALL_EXPORT
-guint64 ves_icall_System_Threading_Volatile_ReadU8 (void *ptr);
-
-ICALL_EXPORT
-double ves_icall_System_Threading_Volatile_ReadDouble (void *ptr);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Volatile_WriteDouble (void *ptr, double);
-
-ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
-
-void
-mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
-void
-mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 
@@ -297,7 +206,6 @@ void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 void mono_thread_internal_unhandled_exception (MonoObject* exc);
 
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
-gboolean mono_thread_current_check_pending_interrupt (void);
 
 void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
 void mono_thread_clr_state (MonoInternalThread *thread, MonoThreadState state);
@@ -391,18 +299,8 @@ void
 mono_thread_resume_interruption (gboolean exec);
 void mono_threads_perform_thread_dump (void);
 
-// FIXME Correct the type of func and remove the template.
 gboolean
-mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
-
-#ifdef __cplusplus
-template <typename T>
-inline gboolean
-mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
-{
-	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
-}
-#endif
+mono_thread_create_checked (MonoThreadStart func, gpointer arg, MonoError *error);
 
 void mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);
