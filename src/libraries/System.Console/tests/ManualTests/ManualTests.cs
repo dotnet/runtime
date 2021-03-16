@@ -47,7 +47,7 @@ namespace System
         [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ConsoleReadSupportsBackspace()
         {
-            string expectedLine = "aab\n";
+            string expectedLine = "aab\r";
 
             // Use Console.ReadLine
             Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");

@@ -475,6 +475,13 @@ namespace System.IO
                 }
 
                 MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
+
+                // Replace the '\n' char for Enter by '\r' to match Windows behavior.
+                if (key == ConsoleKey.Enter && ch == '\n')
+                {
+                    ch = '\r';
+                }
+
                 return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
             }
             finally
