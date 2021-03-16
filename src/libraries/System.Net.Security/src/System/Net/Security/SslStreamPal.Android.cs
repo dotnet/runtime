@@ -77,7 +77,8 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteContext securityContext,
-            byte[] buffer,
+            ReadOnlySpan<byte> input,
+            Span<byte> output,
             ref int offset,
             ref int count)
         {

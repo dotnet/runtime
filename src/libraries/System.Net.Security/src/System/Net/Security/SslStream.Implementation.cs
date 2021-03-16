@@ -138,17 +138,17 @@ namespace System.Net.Security
             // subsequent Reads first check if the context is still available.
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
-                byte[]? buffer = _internalBuffer;
+                byte[]? buffer = _rentedBuffer;
                 if (buffer != null)
                 {
-                    _internalBuffer = null;
+                    _rentedBuffer = null;
                     _internalBufferCount = 0;
                     _internalOffset = 0;
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
 
-            if (_internalBuffer == null)
+            if (_rentedBuffer == null)
             {
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
@@ -179,17 +179,6 @@ namespace System.Net.Security
 
                 return _context!.Encrypt(buffer, ref outBuffer, out outSize);
             }
-        }
-
-        private SecurityStatusPal DecryptData()
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-            return PrivateDecryptData(_internalBuffer, ref _decryptedBytesOffset, ref _decryptedBytesCount);
-        }
-
-        private SecurityStatusPal PrivateDecryptData(byte[]? buffer, ref int offset, ref int count)
-        {
-            return _context!.Decrypt(buffer, ref offset, ref count);
         }
 
         //
@@ -402,8 +391,9 @@ namespace System.Net.Security
                 if (_handshakeBuffer.ActiveLength > 0)
                 {
                     // If we read more than we needed for handshake, move it to input buffer for further processing.
-                    ResetReadBuffer();
-                    _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
+                    // This will always rent buffer.
+                    ResetReadBuffer(Memory<byte>.Empty);
+                    _handshakeBuffer.ActiveSpan.CopyTo(_rentedBuffer);
                     _internalBufferCount = _handshakeBuffer.ActiveLength;
                 }
 
@@ -740,59 +730,93 @@ namespace System.Net.Security
         // actually contains no decrypted or encrypted bytes
         private void ReturnReadBufferIfEmpty()
         {
-            if (_internalBuffer != null && _decryptedBytesCount == 0 && _internalBufferCount == 0)
+            if (_decryptedBytesCount == 0 && _internalBufferCount == 0)
             {
-                ArrayPool<byte>.Shared.Return(_internalBuffer);
-                _internalBuffer = null;
-                _internalBufferCount = 0;
+                if (_rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(_rentedBuffer);
+                    _rentedBuffer = null;
+                }
                 _internalOffset = 0;
-                _decryptedBytesCount = 0;
                 _decryptedBytesOffset = 0;
+                _internalBuffer = default;
+            }
+            else if (_rentedBuffer == null)
+            {
+                // We should always consume all decrypted data when using external buffer.
+                Debug.Assert(_decryptedBytesCount == 0);
+
+                // If we have any leftovers we need to preserve them internally.
+                if (_internalBufferCount > 0)
+                {
+                    _rentedBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+                    _internalBuffer.Span.Slice(_internalOffset, _internalBufferCount).CopyTo(_rentedBuffer);
+                    _internalBuffer = new Memory<byte>(_rentedBuffer);
+                    _internalOffset = 0;
+                }
             }
         }
 
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
             where TIOAdapter : IReadWriteAdapter
         {
+            ThrowIfExceptionalOrNotAuthenticated();
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
-            Debug.Assert(_internalBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
+            Debug.Assert(_rentedBuffer is null || _internalBufferCount > 0 || _decryptedBytesCount > 0, "_internalBuffer allocated when no data is buffered.");
 
             try
             {
+                if (_decryptedBytesCount != 0)
+                {
+                    return CopyDecryptedData(buffer);
+                }
+
+                if (buffer.Length == 0)
+                {
+                    // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                    // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                    // for reduced memory consumption when data is not immediately available.
+                    // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
+                    // until data is actually available from the underlying stream.
+                    // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
+                    // complete immediately and won't save any memory, but will still function correctly.
+                    return await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
+                }
+
+                Debug.Assert(_decryptedBytesOffset == 0);
+                Debug.Assert(_decryptedBytesCount == 0);
+
+                int processedLength = 0;
                 while (true)
                 {
-                    if (_decryptedBytesCount != 0)
-                    {
-                        return CopyDecryptedData(buffer);
-                    }
-
-                    if (buffer.Length == 0 && _internalBuffer is null)
-                    {
-                        // User requested a zero-byte read, and we have no data available in the buffer for processing.
-                        // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
-                        // for reduced memory consumption when data is not immediately available.
-                        // So, we will issue our own zero-byte read against the underlying stream and defer buffer allocation
-                        // until data is actually available from the underlying stream.
-                        // Note that if the underlying stream does not supporting blocking on zero byte reads, then this will
-                        // complete immediately and won't save any memory, but will still function correctly.
-                        await adapter.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
-                    }
-
-                    ResetReadBuffer();
-
                     // Read the next frame header.
-                    if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                    int payloadBytes = int.MaxValue;
+                    if (_internalBufferCount >= SecureChannel.ReadHeaderSize)
                     {
+                        payloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
+                        if (payloadBytes < 0)
+                        {
+                            throw new IOException(SR.net_frame_read_size);
+                        }
+                    }
+
+                    if (_internalBufferCount < payloadBytes)
+                    {
+                        // We may have enough space to complete frame, but we may still do extra IO if the frame is small.
+                        // So we will attempt larger read - that is trade of with extra copy.
+                        // This may be updated at some point based on size of existing chunk, rented buffer and size of 'buffer'.
+                        ResetReadBuffer(buffer);
+
                         // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
                         // done in this method both to better consolidate error handling logic (the first read is the special
                         // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
                         // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
                         // helper needs to yield and allocate a state machine.
-                        int readBytes = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                        int readBytes = await adapter.ReadAsync(_internalBuffer.Slice(_internalBufferCount)).ConfigureAwait(false);
                         if (readBytes == 0)
                         {
                             return 0;
@@ -803,31 +827,32 @@ namespace System.Net.Security
                         {
                             await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
                         }
+
+                        if (payloadBytes == int.MaxValue)
+                        {
+                            // Parse the frame header to determine the payload size unless already done above.
+                            payloadBytes = GetFrameSize(_internalBuffer.Span.Slice(_internalOffset));
+                            if (payloadBytes < 0)
+                            {
+                                throw new IOException(SR.net_frame_read_size);
+                            }
+                        }
+
+                        // Read in the rest of the payload if we don't have it.
+                        if (_internalBufferCount < payloadBytes)
+                        {
+                            await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
+                        }
                     }
-                    Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
 
-                    // Parse the frame header to determine the payload size (which includes the header size).
-                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
-                    if (payloadBytes < 0)
-                    {
-                        throw new IOException(SR.net_frame_read_size);
-                    }
-
-                    // Read in the rest of the payload if we don't have it.
-                    if (_internalBufferCount < payloadBytes)
-                    {
-                        await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
-                    }
-
-                    // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
-                    // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                    _decryptedBytesOffset = _internalOffset;
-                    _decryptedBytesCount = payloadBytes;
-
+                haveFullTlsFrame:
                     SecurityStatusPal status;
+                    int decryptedOffset = 0;    // gives offset if decryption was done in place.
+                    int decryptedCount = 0;
                     lock (_handshakeLock)
                     {
-                        status = DecryptData();
+                        status = _context!.Decrypt(_internalBuffer.Span.Slice(_internalOffset, payloadBytes), _internalBuffer.Span.Slice(_decryptedBytesOffset), ref decryptedOffset, ref decryptedCount);
+
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
                             // The status indicates that peer wants to renegotiate. (Windows only)
@@ -853,6 +878,18 @@ namespace System.Net.Security
                         }
                     }
 
+                    Debug.Assert(_decryptedBytesOffset == 0);
+                    _decryptedBytesCount = decryptedCount;
+                    if (decryptedCount > 0 && decryptedOffset > 0)
+                    {
+                        // schannel can change offset without providing decrypted data.
+                        _decryptedBytesOffset = _internalOffset + decryptedOffset;
+                    }
+                    else
+                    {
+                        _decryptedBytesOffset = 0;
+                    }
+
                     // Treat the bytes we just decrypted as consumed
                     // Note, we won't do another buffer read until the decrypted bytes are processed
                     ConsumeBufferedBytes(payloadBytes);
@@ -862,10 +899,11 @@ namespace System.Net.Security
                         byte[]? extraBuffer = null;
                         if (_decryptedBytesCount != 0)
                         {
-                            extraBuffer = new byte[_decryptedBytesCount];
-                            Buffer.BlockCopy(_internalBuffer!, _decryptedBytesOffset, extraBuffer, 0, _decryptedBytesCount);
+                            extraBuffer = new byte[_decryptedBytesOffset];
+                            _internalBuffer.Span.Slice(_decryptedBytesOffset, _decryptedBytesCount).CopyTo(extraBuffer);
 
                             _decryptedBytesCount = 0;
+                            _decryptedBytesOffset = 0;
                         }
 
                         if (NetEventSource.Log.IsEnabled())
@@ -891,7 +929,49 @@ namespace System.Net.Security
 
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
                     }
+
+                    if (_decryptedBytesCount == 0)
+                    {
+                        // This may be service frame to update keys or renegotiation.
+                        // Keep waiting for real data.
+                        if (processedLength > 0)
+                        {
+                            // We have some data. Hand them to caller before going for another iteration.
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    // This will either copy data from rented buffer or adjust final buffer as needed.
+                    // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
+                    processedLength += CopyDecryptedData(buffer);
+
+                    if (_decryptedBytesCount > 0)
+                    {
+                        // We have more than enough to fill provided buffer.
+                        break;
+                    }
+
+                    Debug.Assert(_decryptedBytesCount == 0);
+
+                    // Check if we have enough data to process next TLS frame
+                    if (_internalBufferCount > SecureChannel.ReadHeaderSize && _framing == Framing.SinceSSL3)
+                    {
+                        TlsFrameHelper.TryGetFrameHeader(_internalBuffer.Span.Slice(_internalOffset), ref _lastFrame.Header);
+                        payloadBytes = _lastFrame.Header.GetFrameSize();
+                        if (payloadBytes <= _internalBufferCount && _lastFrame.Header.Type == TlsContentType.AppData)
+                        {
+                            // skip over the already written decrypted data.
+                            buffer = buffer.Slice(decryptedCount);
+                            goto haveFullTlsFrame;
+                        }
+                    }
+
+                    break;
                 }
+
+                return processedLength;
             }
             catch (Exception e)
             {
@@ -970,7 +1050,7 @@ namespace System.Net.Security
 
             while (_internalBufferCount < numBytesRequired)
             {
-                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                int bytesRead = await adapter.ReadAsync(_internalBuffer.Slice(_internalBufferCount)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     throw new IOException(SR.net_io_eof);
@@ -1034,31 +1114,63 @@ namespace System.Net.Security
             int copyBytes = Math.Min(_decryptedBytesCount, buffer.Length);
             if (copyBytes != 0)
             {
-                new ReadOnlySpan<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                if (_rentedBuffer != null)
+                {
+                    // if we use internal rented buffer we need to copy data
+                    _internalBuffer.Span.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                    _decryptedBytesOffset += copyBytes;
+                }
+                else if (_decryptedBytesOffset != 0)
+                {
+                    // If not using rented buffer we should always have enough space to copy all decrypted data.
+                    Debug.Assert(buffer.Length >= _decryptedBytesCount);
+                    // We used user's buffer directly but decrypted data did not landed where we need them.
+                    _internalBuffer.Span.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                    _decryptedBytesOffset = 0;
+                }
 
-                _decryptedBytesOffset += copyBytes;
                 _decryptedBytesCount -= copyBytes;
+                if (_decryptedBytesCount == 0)
+                {
+                    _decryptedBytesOffset = 0;
+                }
             }
 
             return copyBytes;
         }
 
-        private void ResetReadBuffer()
+        private void ResetReadBuffer(Memory<byte> outputBuffer)
         {
             Debug.Assert(_decryptedBytesCount == 0);
 
-            if (_internalBuffer == null)
+            if (_rentedBuffer == null)
             {
-                _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
-                Debug.Assert(_internalOffset == 0);
+                if (outputBuffer.Length > ReadBufferSize)
+                {
+                    // If output buffer is big enough to hold at least one full frame we can use it directly.
+                    // That save allocation of ReadBufferSize bytes and extra copy if PAL can write where we need to.
+                    _internalBuffer = outputBuffer;
+                }
+                else
+                {
+                    // Output buffer is too small and it may or may not hold TLS frame.
+                    // In that case we will allocate internal buffer so can decrypt for sure and than
+                    // we will use BlockCopy to move decrypted data as needed.
+                    _rentedBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+                    _internalBuffer = new Memory<byte>(_rentedBuffer);
+                }
+
                 Debug.Assert(_internalBufferCount == 0);
+                Debug.Assert(_decryptedBytesCount == 0);
             }
             else if (_internalOffset > 0)
             {
+                Debug.Assert(_decryptedBytesCount == 0);
+                Debug.Assert(_rentedBuffer != null);
                 // We have buffered data at a non-zero offset.
                 // To maximize the buffer space available for the next read,
                 // copy the existing data down to the beginning of the buffer.
-                Buffer.BlockCopy(_internalBuffer, _internalOffset, _internalBuffer, 0, _internalBufferCount);
+                Buffer.BlockCopy(_rentedBuffer, _internalOffset, _rentedBuffer, 0, _internalBufferCount);
                 _internalOffset = 0;
             }
         }

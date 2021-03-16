@@ -58,11 +58,12 @@ namespace System.Net.Security
         private bool _handshakeCompleted;
 
         // Never updated directly, special properties are used.  This is the read buffer.
-        internal byte[]? _internalBuffer;
-        internal int _internalOffset;
-        internal int _internalBufferCount;
-        internal int _decryptedBytesOffset;
-        internal int _decryptedBytesCount;
+        internal int _internalOffset;               // This is offset where encrypted data starts.
+        internal int _internalBufferCount;          // Length of encrypted data.
+        internal int _decryptedBytesOffset;         // Offset of decrypted data relative to _internalBuffer.
+        internal int _decryptedBytesCount;          // Number of already decrypted bytes. Really valid only ion combination with _rentedBuffer.
+        internal Memory<byte> _internalBuffer;      // This can be rented buffer or block provided to ReadAsyncInternal.
+        internal byte[]? _rentedBuffer;             // Byte array if _internalBuffer is backed by ArrayPoll rent.
 
         private int _nestedWrite;
         private int _nestedRead;
@@ -724,10 +725,14 @@ namespace System.Net.Security
             // If there's any data in the buffer, take one byte, and we're done.
             try
             {
-                if (_decryptedBytesCount > 0)
+                if (_decryptedBytesCount > 0 && _rentedBuffer != null)
                 {
-                    int b = _internalBuffer![_decryptedBytesOffset++];
+                    int b = _rentedBuffer[_decryptedBytesOffset++];
                     _decryptedBytesCount--;
+                    if (_decryptedBytesCount == 0)
+                    {
+                        _decryptedBytesOffset = 0;
+                    }
                     ReturnReadBufferIfEmpty();
                     return b;
                 }
