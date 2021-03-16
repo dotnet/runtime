@@ -1246,7 +1246,7 @@ namespace System
             return m_ptr != null ? m_ptr.GetHashCode() : 0;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is ModuleHandle))
                 return false;

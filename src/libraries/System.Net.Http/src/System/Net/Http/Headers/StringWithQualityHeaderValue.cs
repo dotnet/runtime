@@ -60,7 +60,7 @@ namespace System.Net.Http.Headers
             return _value;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             StringWithQualityHeaderValue? other = obj as StringWithQualityHeaderValue;
 

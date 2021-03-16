@@ -58,7 +58,7 @@ EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken module
 // in a state where Destruct() can be safely called.
 //
 /*virtual*/
-void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
+void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACTL
     {
@@ -69,7 +69,7 @@ void EditAndContinueModule::Initialize(AllocMemTracker *pamTracker)
     CONTRACTL_END
 
     LOG((LF_ENC,LL_INFO100,"EACM::Initialize 0x%x\n", this));
-    Module::Initialize(pamTracker);
+    Module::Initialize(pamTracker, szName);
 }
 
 // Called when the module is being destroyed (eg. AD unload time)
@@ -173,9 +173,9 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     // Ensure the metadata is RW.
     EX_TRY
     {
-        // ConvertMetadataToRWForEnC should only ever be called on EnC capable files.
+        // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMetadataToRWForEnC();
+        GetFile()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -310,10 +310,13 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     CONTRACTL_END;
 
     // Notify the debugger of the update
-    HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        return hr;
+        HRESULT hr = g_pDebugInterface->UpdateFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
 
     // Notify the JIT that we've got new IL for this method
@@ -375,7 +378,10 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         // Class isn't loaded yet, don't have to modify any existing EE data structures beyond the metadata.
         // Just notify debugger and return.
         LOG((LF_ENC, LL_INFO100, "EnCModule::AM class %p not loaded, our work is done\n", parentTypeDef));
-        hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        if (CORDebuggerAttached())
+        {
+            hr = g_pDebugInterface->UpdateNotYetLoadedFunction(token, this, m_applyChangesCount);
+        }
         return hr;
     }
 
@@ -391,12 +397,15 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
         return hr;
     }
 
-    // Tell the debugger about the new method so it get's the version number properly
-    hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
-    if (FAILED(hr))
+    // Tell the debugger about the new method so it gets the version number properly
+    if (CORDebuggerAttached())
     {
-        _ASSERTE(!"Failed to add function");
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddFunction(pMethod, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            _ASSERTE(!"Failed to add function");
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add method %p to debugger with hr 0x%x\n", token));
+        }
     }
 
     return hr;
@@ -463,10 +472,13 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     }
 
     // Tell the debugger about the new field
-    hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
-    if (FAILED(hr))
+    if (CORDebuggerAttached())
     {
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        hr = g_pDebugInterface->AddField(pField, m_applyChangesCount);
+        if (FAILED(hr))
+        {
+            LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %p to debugger with hr 0x%x\n", token));
+        }
     }
 
 #ifdef _DEBUG
@@ -1082,7 +1094,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "\tEnCAF:Allocate for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // Create a new EnCAddedField instance
     EnCAddedField *pEntry = new EnCAddedField;
@@ -1229,7 +1241,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.
@@ -1303,7 +1315,7 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveOrAllocateField(OBJECTREF thisPointer, EnCFie
     // if the field doesn't yet have available storage, we'll have to allocate it.
     PTR_EnCAddedField pEntry = NULL;
 
-    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n", thisPointer, pFD->GetMemberDef()));
+    LOG((LF_ENC, LL_INFO1000, "EnCSBI:RF for this %p, FD %p\n",  OBJECTREFToObject(thisPointer), pFD->GetMemberDef()));
 
     // This list is not synchronized--it hasn't proved a problem, but we could conceivably see race conditions
     // arise here.

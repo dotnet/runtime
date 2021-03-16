@@ -1,2 +1,0 @@
-# these tests are extremly slow on our arm64 CI
--nonamespace System.Transactions.Tests

@@ -246,7 +246,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {

@@ -208,7 +208,7 @@ namespace System
         [NonVersionable]
         public static bool operator >=(float left, float right) => left >= right;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is float))
             {

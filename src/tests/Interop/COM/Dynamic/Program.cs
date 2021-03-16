@@ -22,6 +22,7 @@ namespace Dynamic
                 new CollectionTest().Run();
                 new EventTest().Run();
                 new ParametersTest().Run();
+                new NETServerTest().Run();
             }
             catch (Exception e)
             {

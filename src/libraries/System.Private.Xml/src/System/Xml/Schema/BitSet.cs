@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+
 namespace System.Xml.Schema
 {
-    using System.Text;
-    using System.Diagnostics;
-
     internal sealed class BitSet
     {
         private const int bitSlotShift = 5;
@@ -148,7 +149,7 @@ namespace System.Xml.Schema
         }
 
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // assume the same type
             if (obj != null)

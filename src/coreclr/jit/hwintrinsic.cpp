@@ -1062,6 +1062,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(getBaseTypeOfSIMDType(sigReader.op2ClsHnd));
                         break;
 
+                    case NI_ArmBase_Arm64_MultiplyHigh:
+                        if (sig->retType == CORINFO_TYPE_ULONG)
+                        {
+                            retNode->AsHWIntrinsic()->gtSIMDBaseType = TYP_ULONG;
+                        }
+                        else
+                        {
+                            assert(sig->retType == CORINFO_TYPE_LONG);
+                            retNode->AsHWIntrinsic()->gtSIMDBaseType = TYP_LONG;
+                        }
+                        break;
+
                     default:
                         break;
                 }

@@ -550,11 +550,6 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     }
     CONTRACTL_END;
 
-    // If the module wasn't imported from COM, fail. In .NET Framework the runtime
-    // would generate a ITypeLib instance, but .NET Core doesn't support that.
-    if (!pAssembly->IsImportedFromTypeLib())
-        return COR_E_NOTSUPPORTED;
-
     HRESULT hr;
 
     // Check for cached copy.

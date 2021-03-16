@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Tests
         private static IEnumerable<bool> WriteIndented
             => new[] { true, false };
 
-        private static IEnumerable<object[]> TestData(bool enumeratePayloadTweaks)
+        public static IEnumerable<object[]> TestData(bool enumeratePayloadTweaks)
         {
             // The serialized json gets padded with leading ' ' chars. The length of the
             // incrementing paddings, leads to continuations at every position of the payload.

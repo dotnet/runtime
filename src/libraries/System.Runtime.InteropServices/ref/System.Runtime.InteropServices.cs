@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices
         private object _dummy;
         private int _dummyPrimitive;
         public ArrayWithOffset(object? array, int offset) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
         public object? GetArray() { throw null; }
         public override int GetHashCode() { throw null; }
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices
         public CLong(int value) { }
         public CLong(nint value) { }
         public nint Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(CLong other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -297,7 +297,7 @@ namespace System.Runtime.InteropServices
         public CULong(uint value) { }
         public CULong(nuint value) { }
         public nuint Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(CULong other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
@@ -621,8 +621,8 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object? PtrToStructure(System.IntPtr ptr, System.Type structureType) { throw null; }
-        public static T? PtrToStructure<T>(System.IntPtr ptr) { throw null; }
+        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type structureType) { throw null; }
+        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
@@ -762,7 +762,7 @@ namespace System.Runtime.InteropServices
         public NFloat(float value) { }
         public NFloat(double value) { }
         public double Value { get { throw null; } }
-        public override bool Equals(object? o) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public bool Equals(NFloat other) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }

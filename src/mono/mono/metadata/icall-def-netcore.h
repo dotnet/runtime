@@ -1,6 +1,3 @@
-ICALL_TYPE(SAFEWAITHANDLE, "Microsoft.Win32.SafeHandles.SafeWaitHandle", SAFEWAITHANDLE_1) // && UNIX
-NOHANDLES(ICALL(SAFEWAITHANDLE_1, "CloseEventInternal", ves_icall_System_Threading_Events_CloseEvent_internal))
-
 ICALL_TYPE(RUNTIME, "Mono.Runtime", RUNTIME_20)
 NOHANDLES(ICALL(RUNTIME_20, "AnnotateMicrosoftTelemetry_internal", ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry))
 NOHANDLES(ICALL(RUNTIME_19, "CheckCrashReportLog_internal", ves_icall_Mono_Runtime_CheckCrashReportingLog))
@@ -145,7 +142,6 @@ NOHANDLES(ICALL(MATH_24, "Log2", ves_icall_System_Math_Log2))
 NOHANDLES(ICALL(MATH_10a, "ModF", ves_icall_System_Math_ModF))
 NOHANDLES(ICALL(MATH_11, "Pow", ves_icall_System_Math_Pow))
 NOHANDLES(ICALL(MATH_12, "Round", ves_icall_System_Math_Round))
-NOHANDLES(ICALL(MATH_25, "ScaleB", ves_icall_System_Math_ScaleB))
 NOHANDLES(ICALL(MATH_14, "Sin", ves_icall_System_Math_Sin))
 NOHANDLES(ICALL(MATH_15, "Sinh", ves_icall_System_Math_Sinh))
 NOHANDLES(ICALL(MATH_16, "Sqrt", ves_icall_System_Math_Sqrt))
@@ -174,7 +170,6 @@ NOHANDLES(ICALL(MATHF_15, "Log10", ves_icall_System_MathF_Log10))
 NOHANDLES(ICALL(MATHF_26, "Log2", ves_icall_System_MathF_Log2))
 NOHANDLES(ICALL(MATHF_23, "ModF(single,single*)", ves_icall_System_MathF_ModF))
 NOHANDLES(ICALL(MATHF_16, "Pow", ves_icall_System_MathF_Pow))
-NOHANDLES(ICALL(MATHF_27, "ScaleB", ves_icall_System_MathF_ScaleB))
 NOHANDLES(ICALL(MATHF_17, "Sin", ves_icall_System_MathF_Sin))
 NOHANDLES(ICALL(MATHF_18, "Sinh", ves_icall_System_MathF_Sinh))
 NOHANDLES(ICALL(MATHF_19, "Sqrt", ves_icall_System_MathF_Sqrt))
@@ -240,6 +235,11 @@ ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info, MonoReflectionMarshalAsAttribute, 1, (MonoReflectionField))
 
 HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type, MonoReflectionField, 2, (MonoClassField_ref, MonoType_ref))
+
+#ifdef ENABLE_METADATA_UPDATE
+ICALL_TYPE(ASSMEXT, "System.Reflection.Metadata.AssemblyExtensions", ASSMEXT_1)
+NOHANDLES(ICALL(ASSMEXT_1, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
+#endif
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 HANDLES(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod, MonoReflectionMethod, 0, ())
@@ -325,11 +325,6 @@ HANDLES(MPROP_2, "get_default_value", ves_icall_property_info_get_default_value,
 HANDLES_REUSE_WRAPPER(MPROP_3, "get_metadata_token", ves_icall_reflection_get_token)
 HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property_info, void, 3, (MonoReflectionProperty, MonoPropertyInfo_ref, PInfo))
 HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
-
-#ifdef ENABLE_METADATA_UPDATE
-ICALL_TYPE(RUNF, "System.Runtime.CompilerServices.RuntimeFeature", RUNF_1)
-NOHANDLES(ICALL(RUNF_1, "LoadMetadataUpdate_internal", ves_icall_Mono_Runtime_LoadMetadataUpdate))
-#endif
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
@@ -449,11 +444,6 @@ HANDLES(STRING_9, "FastAllocateString", ves_icall_System_String_FastAllocateStri
 HANDLES(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern, MonoString, 1, (MonoString))
 HANDLES(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned, MonoString, 1, (MonoString))
 
-ICALL_TYPE(NATIVEC, "System.Threading.EventWaitHandle", EWH_1) // && Unix
-HANDLES(EWH_1, "CreateEventInternal", ves_icall_System_Threading_Events_CreateEvent_icall, gpointer, 5, (MonoBoolean, MonoBoolean, const_gunichar2_ptr, gint32, gint32_ref))
-NOHANDLES(ICALL(EWH_2, "ResetEventInternal",  ves_icall_System_Threading_Events_ResetEvent_internal))
-NOHANDLES(ICALL(EWH_3, "SetEventInternal",    ves_icall_System_Threading_Events_SetEvent_internal))
-
 ICALL_TYPE(ILOCK, "System.Threading.Interlocked", ILOCK_1)
 NOHANDLES(ICALL(ILOCK_1, "Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int))
 NOHANDLES(ICALL(ILOCK_2, "Add(long&,long)", ves_icall_System_Threading_Interlocked_Add_Long))
@@ -492,16 +482,6 @@ HANDLES(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait
 NOHANDLES(ICALL(MONIT_8, "get_LockContentionCount", ves_icall_System_Threading_Monitor_Monitor_LockContentionCount))
 HANDLES(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var, void, 4, (MonoObject, guint32, MonoBoolean, MonoBoolean_ref))
 
-ICALL_TYPE(MUTEX, "System.Threading.Mutex", MUTEX_1)
-HANDLES(MUTEX_1, "CreateMutex_icall", ves_icall_System_Threading_Mutex_CreateMutex_icall, gpointer, 4, (MonoBoolean, const_gunichar2_ptr, gint32, MonoBoolean_ref))
-HANDLES(MUTEX_2, "OpenMutex_icall", ves_icall_System_Threading_Mutex_OpenMutex_icall, gpointer, 4, (const_gunichar2_ptr, gint32, gint32, gint32_ref))
-NOHANDLES(ICALL(MUTEX_3, "ReleaseMutex_internal", ves_icall_System_Threading_Mutex_ReleaseMutex_internal))
-
-ICALL_TYPE(SEMA, "System.Threading.Semaphore", SEMA_1)
-NOHANDLES(ICALL(SEMA_1, "CreateSemaphore_icall", ves_icall_System_Threading_Semaphore_CreateSemaphore_icall))
-NOHANDLES(ICALL(SEMA_2, "OpenSemaphore_icall", ves_icall_System_Threading_Semaphore_OpenSemaphore_icall))
-NOHANDLES(ICALL(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal))
-
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))
 HANDLES(ITHREAD_2, "FreeInternal", ves_icall_System_Threading_InternalThread_Thread_free_internal, void, 1, (MonoInternalThread))
@@ -516,12 +496,8 @@ HANDLES(THREAD_8, "SetName_icall", ves_icall_System_Threading_Thread_SetName_ica
 HANDLES(THREAD_9, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, void, 2, (MonoThreadObject, int))
 HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
 HANDLES(THREAD_11, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal, void, 2, (gint32, MonoBoolean))
-HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 1, (MonoThreadObject))
+HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 2, (MonoThreadObject, gint32))
 NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
-
-ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
-HANDLES(WAITH_1, "SignalAndWait_Internal", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal, gint32, 3, (gpointer, gpointer, gint32))
-HANDLES(WAITH_2, "Wait_internal", ves_icall_System_Threading_WaitHandle_Wait_internal, gint32, 4, (gpointer_ptr, gint32, MonoBoolean, gint32))
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))

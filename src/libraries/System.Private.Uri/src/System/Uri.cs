@@ -4,6 +4,7 @@
 using Internal.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1468,7 +1469,7 @@ namespace System
         //  Syntax is:
         //      scheme = alpha *(alpha | digit | '+' | '-' | '.')
         //
-        public static bool CheckSchemeName(string? schemeName)
+        public static bool CheckSchemeName([NotNullWhen(true)] string? schemeName)
         {
             if (string.IsNullOrEmpty(schemeName) || !UriHelper.IsAsciiLetter(schemeName[0]))
             {
@@ -1541,7 +1542,7 @@ namespace System
 
                 if (IsUncOrDosPath)
                 {
-                    return remoteUrl.GetHashCode(StringComparison.OrdinalIgnoreCase);
+                    return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
                 }
                 else
                 {
@@ -1619,7 +1620,7 @@ namespace System
         // Throws:
         //  Nothing
         //
-        public override bool Equals(object? comparand)
+        public override bool Equals([NotNullWhen(true)] object? comparand)
         {
             if (comparand is null)
             {
@@ -4420,17 +4421,18 @@ namespace System
                     //Note: we may produce non escaped Uri characters on the wire
                     if (InFact(Flags.E_PathNotCanonical) && NotAny(Flags.UserEscaped))
                     {
-                        string str = _string;
+                        ReadOnlySpan<char> str = _string;
 
                         // Check on not canonical disk designation like C|\, should be rare, rare case
                         if (dosPathIdx != 0 && str[dosPathIdx + _info.Offset.Path - 1] == '|')
                         {
-                            str = str.Remove(dosPathIdx + _info.Offset.Path - 1, 1);
-                            str = str.Insert(dosPathIdx + _info.Offset.Path - 1, ":");
+                            char[] chars = str.ToArray();
+                            chars[dosPathIdx + _info.Offset.Path - 1] = ':';
+                            str = chars;
                         }
 
                         UriHelper.EscapeString(
-                            str.AsSpan(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path),
+                            str.Slice(_info.Offset.Path, _info.Offset.Query - _info.Offset.Path),
                             ref dest, checkExistingEscaped: !IsImplicitFile, '?', '#');
                     }
                     else

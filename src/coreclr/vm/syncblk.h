@@ -797,7 +797,7 @@ public:
             {
                 map.SuppressRelease();
                 // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-                m_managedObjectComWrapperLock.Init(CrstInteropData, CRST_UNSAFE_COOPGC);
+                m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
             }
 
             _ASSERTE(m_managedObjectComWrapperMap != NULL);

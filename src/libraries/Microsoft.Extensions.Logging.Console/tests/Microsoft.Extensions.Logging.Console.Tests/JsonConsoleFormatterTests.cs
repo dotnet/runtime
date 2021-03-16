@@ -342,6 +342,35 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("\"LogKey\":null", message);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Log_ScopeIsIEnumerable_SerializesKeyValuePair()
+        {
+            // Arrange
+            var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    IncludeScopes = true
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            using (logger.BeginScope(new[] { 2 }.Select(x => new KeyValuePair<string, object>("Value", x))))
+            {
+                logger.LogInformation("{LogEntryNumber}", 1);
+            }
+
+            // Assert
+            string message = sink.Writes[0].Message;
+            Assert.Contains("\"Message\":\"System.Linq.Enumerable", message);
+            Assert.Contains("\"Value\":" + 2, message);
+        }
+
         public static TheoryData<object, string> SpecialCaseValues
         {
             get

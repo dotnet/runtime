@@ -226,7 +226,7 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
 
     case ELEMENT_TYPE_MVAR :
         {
-            DWORD ix;
+            uint32_t ix;
             IfFailThrow(sig.GetData(&ix));
             if (pTypeContext && !pTypeContext->m_methodInst.IsEmpty() && ix >= 0 && ix < pTypeContext->m_methodInst.GetNumArgs())
             {
@@ -243,7 +243,7 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
 
     case ELEMENT_TYPE_VAR :
         {
-            DWORD ix;
+            uint32_t ix;
             IfFailThrow(sig.GetData(&ix));
 
             if (pTypeContext && !pTypeContext->m_classInst.IsEmpty() && ix >= 0 && ix < pTypeContext->m_classInst.GetNumArgs())
@@ -264,11 +264,11 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
             AddTypeString(pModule, sig, pTypeContext);
 
             IfFailThrow(sig.SkipExactlyOne());
-            DWORD n;
+            uint32_t n;
             IfFailThrow(sig.GetData(&n));
 
             AddString("<");
-            for (DWORD i = 0; i < n; i++)
+            for (uint32_t i = 0; i < n; i++)
             {
                 if (i > 0)
                     AddString(",");
@@ -288,10 +288,10 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
             if (type == ELEMENT_TYPE_ARRAY)
             {
                 AddString("[");
-                ULONG len;
+                uint32_t len;
                 IfFailThrow(sig.GetData(&len));
 
-                for (ULONG i=1;i<len;i++)
+                for (uint32_t i=1;i<len;i++)
                     AddString(",");
 
                 AddString("]");
@@ -313,16 +313,16 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
 
     case ELEMENT_TYPE_FNPTR:
         {
-            DWORD callConv;
+            uint32_t callConv;
             IfFailThrow(sig.GetData(&callConv));
 
-            ULONG cArgs;
+            uint32_t cArgs;
             IfFailThrow(sig.GetData(&cArgs));
 
             AddTypeString(pModule, sig, pTypeContext);
             IfFailThrow(sig.SkipExactlyOne());
             AddString(" (");
-            ULONG i;
+            uint32_t i;
             for (i = 0; i < cArgs; i++) {
                 AddTypeString(pModule, sig, pTypeContext);
                 IfFailThrow(sig.SkipExactlyOne());

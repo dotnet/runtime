@@ -1550,7 +1550,7 @@ namespace System.Runtime.Serialization
                 if (endIndex < 0)
                 {
                     if (localName != null)
-                        localName.Append(typeName.Substring(startIndex));
+                        localName.Append(typeName.AsSpan(startIndex));
                     nestedParamCounts.Add(0);
                     break;
                 }

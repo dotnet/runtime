@@ -49,16 +49,23 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
             internal uint NextUInt32()
             {
-                uint result = BitOperations.RotateLeft(_s1 * 5, 7) * 9;
-                uint t = _s1 << 9;
+                uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
-                _s2 ^= _s0;
-                _s3 ^= _s1;
-                _s1 ^= _s2;
-                _s0 ^= _s3;
+                uint result = BitOperations.RotateLeft(s1 * 5, 7) * 9;
+                uint t = s1 << 9;
 
-                _s2 ^= t;
-                _s3 = BitOperations.RotateLeft(_s3, 11);
+                s2 ^= s0;
+                s3 ^= s1;
+                s1 ^= s2;
+                s0 ^= s3;
+
+                s2 ^= t;
+                s3 = BitOperations.RotateLeft(s3, 11);
+
+                _s0 = s0;
+                _s1 = s1;
+                _s2 = s2;
+                _s3 = s3;
 
                 return result;
             }
@@ -199,22 +206,50 @@ namespace System
 
             public override unsafe void NextBytes(Span<byte> buffer)
             {
+                uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
+
                 while (buffer.Length >= sizeof(uint))
                 {
-                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(buffer), NextUInt32());
+                    Unsafe.WriteUnaligned(
+                        ref MemoryMarshal.GetReference(buffer),
+                        BitOperations.RotateLeft(s1 * 5, 7) * 9);
+
+                    // Update PRNG state.
+                    uint t = s1 << 9;
+                    s2 ^= s0;
+                    s3 ^= s1;
+                    s1 ^= s2;
+                    s0 ^= s3;
+                    s2 ^= t;
+                    s3 = BitOperations.RotateLeft(s3, 11);
+
                     buffer = buffer.Slice(sizeof(uint));
                 }
 
                 if (!buffer.IsEmpty)
                 {
-                    uint next = NextUInt32();
+                    uint next = BitOperations.RotateLeft(s1 * 5, 7) * 9;
                     byte* remainingBytes = (byte*)&next;
                     Debug.Assert(buffer.Length < sizeof(uint));
                     for (int i = 0; i < buffer.Length; i++)
                     {
                         buffer[i] = remainingBytes[i];
                     }
+
+                    // Update PRNG state.
+                    uint t = s1 << 9;
+                    s2 ^= s0;
+                    s3 ^= s1;
+                    s1 ^= s2;
+                    s0 ^= s3;
+                    s2 ^= t;
+                    s3 = BitOperations.RotateLeft(s3, 11);
                 }
+
+                _s0 = s0;
+                _s1 = s1;
+                _s2 = s2;
+                _s3 = s3;
             }
 
             public override double NextDouble() =>

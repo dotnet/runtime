@@ -20,11 +20,6 @@ enum MonoAssemblyBuilderAccess {
 typedef struct _ArrayMethod ArrayMethod;
 
 typedef struct {
-	guint32 owner;
-	MonoReflectionGenericParam *gparam;
-} GenericParamTableEntry;
-
-typedef struct {
 	MonoReflectionILGen *ilgen;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
@@ -45,7 +40,6 @@ typedef struct {
 	MonoArray *return_modopt;
 	MonoArray *param_modreq;
 	MonoArray *param_modopt;
-	MonoArray *permissions;
 	MonoMethod *mhandle;
 	guint32 nrefs;
 	gpointer *refs;
@@ -100,9 +94,6 @@ MonoType* mono_type_array_get_and_resolve (MonoArrayHandle array, int idx, MonoE
 void
 mono_sre_array_method_free (ArrayMethod *am);
 
-void
-mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry);
-
 gboolean
 mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb,
 						   MonoError *error);
@@ -125,35 +116,7 @@ guint32
 mono_dynimage_encode_constant (MonoDynamicImage *assembly, MonoObject *val, MonoTypeEnum *ret_type);
 
 guint32
-mono_dynimage_encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, MonoError *error);
-
-guint32
-mono_dynimage_encode_fieldref_signature (MonoDynamicImage *assembly, MonoImage *field_image, MonoType *type);
-
-guint32
-mono_dynimage_encode_method_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig);
-
-guint32
-mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb,
-					       MonoError *error);
-
-guint32
-mono_dynimage_encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
-
-guint32
 mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
-
-guint32
-mono_dynimage_encode_reflection_sighelper (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper,
-					   MonoError *error);
-
-/* sre-encode, without DISABLE_REFLECTION_EMIT_SAVE (o.w. g_assert_not_reached ()) */
-
-guint32
-mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo, MonoError *error);
-
-guint32
-mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoReflectionPropertyBuilder *fb, MonoError *error);
 
 guint32
 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);

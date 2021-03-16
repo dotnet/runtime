@@ -23,7 +23,7 @@ namespace System.Threading
         private object _dummy;
         private int _dummyPrimitive;
         public void Dispose() { }
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
@@ -229,8 +229,8 @@ namespace System.Threading
     }
     public static partial class LazyInitializer
     {
-        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target) where T : class { throw null; }
-        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] ref T target, ref bool initialized, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock) { throw null; }
+        public static T EnsureInitialized<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target) where T : class { throw null; }
+        public static T EnsureInitialized<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] ref T target, ref bool initialized, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock) { throw null; }
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] ref T target, ref bool initialized, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock, System.Func<T> valueFactory) { throw null; }
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, System.Func<T> valueFactory) where T : class { throw null; }
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock, System.Func<T> valueFactory) where T : class { throw null; }
@@ -238,7 +238,7 @@ namespace System.Threading
     public partial struct LockCookie
     {
         private int _dummyPrimitive;
-        public override bool Equals(object? obj) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Threading.LockCookie obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }

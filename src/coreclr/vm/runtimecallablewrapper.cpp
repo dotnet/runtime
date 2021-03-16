@@ -1383,22 +1383,8 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     }
 
     AppDomain * pAppDomain = GetAppDomain();
-    if(flags & CF_QueryForIdentity)
-    {
-        IUnknown *pUnkTemp = NULL;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IUnknown, &pUnkTemp);
-        LogInteropQI(pUnk, IID_IUnknown, hr, "QI for IID_IUnknown in RCW::CreateRCW");
-        if(SUCCEEDED(hr))
-        {
-            pUnk = pUnkTemp;
-
-        }
-    }
-    else
-    {
-        ULONG cbRef = SafeAddRefPreemp(pUnk);
-        LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
-    }
+    ULONG cbRef = SafeAddRefPreemp(pUnk);
+    LogInteropAddRef(pUnk, cbRef, "RCWCache::CreateRCW: Addref pUnk because creating new RCW");
 
     // Make sure we release AddRef-ed pUnk in case of exceptions
     SafeComHolderPreemp<IUnknown> pUnkHolder = pUnk;

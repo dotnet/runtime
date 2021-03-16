@@ -122,8 +122,8 @@ ULONG               SystemDomain::s_dNumAppDomains = 0;
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
 
 #ifndef CROSSGEN_COMPILE
-// Constructor for the LargeHeapHandleBucket class.
-LargeHeapHandleBucket::LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
+// Constructor for the PinnedHeapHandleBucket class.
+PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
 : m_pNext(pNext)
 , m_ArraySize(Size)
 , m_CurrentPos(0)
@@ -143,19 +143,19 @@ LargeHeapHandleBucket::LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD
 
     // Allocate the array in the large object heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, TRUE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, /* bAllocateInPinnedHeap = */TRUE);
 
     // Retrieve the pointer to the data inside the array. This is legal since the array
     // is located in the large object heap and is guaranteed not to move.
     m_pArrayDataPtr = (OBJECTREF *)HandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreatePinningHandle((OBJECTREF)HandleArrayObj);
+    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
 }
 
 
-// Destructor for the LargeHeapHandleBucket class.
-LargeHeapHandleBucket::~LargeHeapHandleBucket()
+// Destructor for the PinnedHeapHandleBucket class.
+PinnedHeapHandleBucket::~PinnedHeapHandleBucket()
 {
     CONTRACTL
     {
@@ -166,14 +166,14 @@ LargeHeapHandleBucket::~LargeHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyPinningHandle(m_hndHandleArray);
+        DestroyStrongHandle(m_hndHandleArray);
         m_hndHandleArray = NULL;
     }
 }
 
 
 // Allocate handles from the bucket.
-OBJECTREF *LargeHeapHandleBucket::AllocateHandles(DWORD nRequested)
+OBJECTREF *PinnedHeapHandleBucket::AllocateHandles(DWORD nRequested)
 {
     CONTRACTL
     {
@@ -194,7 +194,7 @@ OBJECTREF *LargeHeapHandleBucket::AllocateHandles(DWORD nRequested)
 }
 
 // look for a free item embedded in the table
-OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
+OBJECTREF *PinnedHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
 {
     CONTRACTL
     {
@@ -224,7 +224,7 @@ OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
 }
 
 // enumerate the handles in the bucket
-void LargeHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+void PinnedHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
     for (int i = 0; i < m_CurrentPos; i++)
     {
@@ -239,8 +239,8 @@ void LargeHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 
 #define MAX_BUCKETSIZE (16384 - 4)
 
-// Constructor for the LargeHeapHandleTable class.
-LargeHeapHandleTable::LargeHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize)
+// Constructor for the PinnedHeapHandleTable class.
+PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize)
 : m_pHead(NULL)
 , m_pDomain(pDomain)
 , m_NextBucketSize(InitialBucketSize)
@@ -263,8 +263,8 @@ LargeHeapHandleTable::LargeHeapHandleTable(BaseDomain *pDomain, DWORD InitialBuc
 }
 
 
-// Destructor for the LargeHeapHandleTable class.
-LargeHeapHandleTable::~LargeHeapHandleTable()
+// Destructor for the PinnedHeapHandleTable class.
+PinnedHeapHandleTable::~PinnedHeapHandleTable()
 {
     CONTRACTL
     {
@@ -276,7 +276,7 @@ LargeHeapHandleTable::~LargeHeapHandleTable()
     // Delete the buckets.
     while (m_pHead)
     {
-        LargeHeapHandleBucket *pOld = m_pHead;
+        PinnedHeapHandleBucket *pOld = m_pHead;
         m_pHead = pOld->GetNext();
         delete pOld;
     }
@@ -294,7 +294,7 @@ LargeHeapHandleTable::~LargeHeapHandleTable()
 // thread notions.
 //
 // The instance in question is
-// There are two locations you can find a LargeHeapHandleTable
+// There are two locations you can find a PinnedHeapHandleTable
 // 1) there is one in every BaseDomain, it is used to keep track of the static members
 //     in that domain
 // 2) there is one in the System Domain that is used for the GlobalStringLiteralMap
@@ -315,7 +315,7 @@ LargeHeapHandleTable::~LargeHeapHandleTable()
 // Each BaseDomain has its own critical section
 //
 // BaseDomain::AllocateObjRefPtrsInLargeTable takes a lock with
-//        CrstHolder ch(&m_LargeHeapHandleTableCrst);
+//        CrstHolder ch(&m_PinnedHeapHandleTableCrst);
 //
 // it does this before it calls AllocateHandles which suffices.  It does not call ReleaseHandles
 // at any time (although ReleaseHandles may be called via AllocateHandles if the request
@@ -336,7 +336,7 @@ LargeHeapHandleTable::~LargeHeapHandleTable()
 //
 // AppDomainStringLiteralMap::GetStringLiteral
 // leads to calls to
-//     LargeHeapHandleBlockHolder constructor
+//     PinnedHeapHandleBlockHolder constructor
 //     leads to calls to
 //          m_Data = pOwner->AllocateHandles(nCount);
 //
@@ -377,7 +377,7 @@ LargeHeapHandleTable::~LargeHeapHandleTable()
 
 
 // Allocate handles from the large heap handle table.
-OBJECTREF* LargeHeapHandleTable::AllocateHandles(DWORD nRequested)
+OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
 {
     CONTRACTL
     {
@@ -447,7 +447,7 @@ OBJECTREF* LargeHeapHandleTable::AllocateHandles(DWORD nRequested)
         // We need a block big enough to hold the requested handles
         DWORD NewBucketSize = max(m_NextBucketSize, nRequested);
 
-        m_pHead = new LargeHeapHandleBucket(m_pHead, NewBucketSize, m_pDomain);
+        m_pHead = new PinnedHeapHandleBucket(m_pHead, NewBucketSize, m_pDomain);
 
         m_NextBucketSize = min(m_NextBucketSize * 2, MAX_BUCKETSIZE);
     }
@@ -457,7 +457,7 @@ OBJECTREF* LargeHeapHandleTable::AllocateHandles(DWORD nRequested)
 
 //*****************************************************************************
 // Release object handles allocated using AllocateHandles().
-void LargeHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
+void PinnedHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
 {
     CONTRACTL
     {
@@ -490,9 +490,9 @@ void LargeHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
 }
 
 // enumerate the handles in the handle table
-void LargeHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+void PinnedHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
-    for (LargeHeapHandleBucket *pBucket = m_pHead; pBucket != nullptr; pBucket = pBucket->GetNext())
+    for (PinnedHeapHandleBucket *pBucket = m_pHead; pBucket != nullptr; pBucket = pBucket->GetNext())
     {
         pBucket->EnumStaticGCRefs(fn, sc);
     }
@@ -517,7 +517,7 @@ ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNe
 
     // Allocate the array on the GC heap.
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass, FALSE);
+    HandleArrayObj = (PTRARRAYREF)AllocateObjectArray(Size, g_pObjectClass);
 
     // Store the array in a strong handle to keep it alive.
     m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)HandleArrayObj);
@@ -635,7 +635,7 @@ BaseDomain::BaseDomain()
     m_pTPABinderContext = NULL;
 
     // Make sure the container is set to NULL so that it gets loaded when it is used.
-    m_pLargeHeapHandleTable = NULL;
+    m_pPinnedHeapHandleTable = NULL;
 
 #ifndef CROSSGEN_COMPILE
     // Note that m_handleStore is overridden by app domains
@@ -702,8 +702,8 @@ void BaseDomain::Init()
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
     m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
-    // Large heap handle table CRST.
-    m_LargeHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
+    // Pinned heap handle table CRST.
+    m_PinnedHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
 
     m_crstLoaderAllocatorReferences.Init(CrstLoaderAllocatorReferences);
     // Has to switch thread to GC_NOTRIGGER while being held (see code:BaseDomain#AssemblyListLock)
@@ -883,7 +883,7 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
 
     // Enter preemptive state, take the lock and go back to cooperative mode.
     {
-        CrstHolder ch(&m_LargeHeapHandleTableCrst);
+        CrstHolder ch(&m_PinnedHeapHandleTableCrst);
         GCX_COOP();
 
         if (ppLazyAllocate && *ppLazyAllocate)
@@ -893,11 +893,11 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
         }
 
         // Make sure the large heap handle table is initialized.
-        if (!m_pLargeHeapHandleTable)
-            InitLargeHeapHandleTable();
+        if (!m_pPinnedHeapHandleTable)
+            InitPinnedHeapHandleTable();
 
         // Allocate the handles.
-        OBJECTREF* result = m_pLargeHeapHandleTable->AllocateHandles(nRequested);
+        OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
 
         if (ppLazyAllocate)
         {
@@ -983,22 +983,22 @@ STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
     return GetLoaderAllocator()->GetOrInternString(pString);
 }
 
-void BaseDomain::InitLargeHeapHandleTable()
+void BaseDomain::InitPinnedHeapHandleTable()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(m_pLargeHeapHandleTable==NULL);
+        PRECONDITION(m_pPinnedHeapHandleTable==NULL);
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    m_pLargeHeapHandleTable = new LargeHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
+    m_pPinnedHeapHandleTable = new PinnedHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
 
 #ifdef _DEBUG
-    m_pLargeHeapHandleTable->RegisterCrstDebug(&m_LargeHeapHandleTableCrst);
+    m_pPinnedHeapHandleTable->RegisterCrstDebug(&m_PinnedHeapHandleTableCrst);
 #endif
 }
 
@@ -5067,9 +5067,9 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              IsGCSpecialThread());
 
 #ifndef CROSSGEN_COMPILE
-    if (m_pLargeHeapHandleTable != nullptr)
+    if (m_pPinnedHeapHandleTable != nullptr)
     {
-        m_pLargeHeapHandleTable->EnumStaticGCRefs(fn, sc);
+        m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
 #endif // CROSSGEN_COMPILE
 

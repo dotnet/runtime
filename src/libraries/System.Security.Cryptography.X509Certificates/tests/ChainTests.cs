@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (var chainHolder = new ChainHolder())
                 {
                     X509Chain chain = chainHolder.Chain;
-                    chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                    chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     return chain.Build(microsoftDotCom);
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Halfway between microsoftDotCom's NotBefore and NotAfter
                 // This isn't a boundary condition test.
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Re-set the ChainPolicy properties
                     chain2.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                    chain2.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                    chain2.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Chain chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.Build(microsoftDotCom);
 
@@ -206,8 +206,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
-            using (ImportedCollection ic = Cert.Import(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
+            using (ImportedCollection ic = Cert.Import(TestFiles.ChainPfxFile, TestData.ChainPfxPassword, X509KeyStorageFlags.DefaultKeySet))
             using (var chainHolder = new ChainHolder())
             {
                 X509Certificate2Collection collection = ic.Collection;
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void SystemTrustCertificateWithCustomRootTrust(bool addCertificateToCustomRootTrust)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
@@ -328,7 +328,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BuildChainWithSystemTrustAndCustomTrustCertificates()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
@@ -343,7 +343,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void BuildChainWithCustomRootTrustAndInvalidCustomCertificates()
         {
-            using (var testCert = new X509Certificate2(Path.Combine("TestData", "test.pfx"), TestData.ChainPfxPassword))
+            using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
                 X509Chain chain = chainHolder.Chain;
@@ -368,17 +368,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> VerifyExpressionData()
+        public static IEnumerable<object[]> VerifyExpirationData()
         {
             // The test will be using the chain for TestData.MicrosoftDotComSslCertBytes
-            // The leaf cert (microsoft.com) is valid from 2014-10-15 00:00:00Z to 2016-10-15 23:59:59Z
+            // The leaf cert (microsoft.com) is valid from 2020-08-28 22:17:02Z to 2021-08-28 22:17:02Z
             DateTime[] validTimes =
             {
                 // The NotBefore value
-                new DateTime(2014, 10, 15, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2020, 08, 28, 22, 17, 02, DateTimeKind.Utc),
 
                 // One second before the NotAfter value
-                new DateTime(2016, 10, 15, 23, 59, 58, DateTimeKind.Utc),
+                new DateTime(2021, 08, 28, 22, 17, 01, DateTimeKind.Utc),
             };
 
             // The NotAfter value as a boundary condition differs on Windows and OpenSSL.
@@ -390,10 +390,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             DateTime[] invalidTimes =
             {
                 // One second before the NotBefore time
-                new DateTime(2014, 10, 14, 23, 59, 59, DateTimeKind.Utc),
+                new DateTime(2020, 08, 28, 22, 17, 01, DateTimeKind.Utc),
 
                 // One second after the NotAfter time
-                new DateTime(2016, 10, 16, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2021, 08, 28, 22, 17, 03, DateTimeKind.Utc),
             };
 
             List<object[]> testCases = new List<object[]>((validTimes.Length + invalidTimes.Length) * 3);
@@ -426,7 +426,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VerifyExpressionData))]
+        [MemberData(nameof(VerifyExpirationData))]
         public static void VerifyExpiration_LocalTime(DateTime verificationTime, bool shouldBeValid)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
@@ -684,7 +684,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         }
 
                         X509Chain chainValidator = chainHolder.Chain;
-                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2015, 10, 15, 12, 01, 01, DateTimeKind.Local);
+                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
                         chainValidator.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                         bool chainBuildResult = chainValidator.Build(microsoftDotCom);

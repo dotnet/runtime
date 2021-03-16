@@ -276,6 +276,8 @@ namespace Internal.ReadyToRunConstants
 
         StackProbe                  = 0x111,
 
+        GetCurrentManagedThreadId   = 0x112,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
@@ -313,8 +315,6 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
-
-        GetCurrentManagedThreadId,
     }
 
     // Enum used for HFA type recognition.

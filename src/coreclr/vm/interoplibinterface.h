@@ -5,7 +5,20 @@
 // Interface between the VM and Interop library.
 //
 
+#ifndef _INTEROPLIBINTERFACE_H_
+#define _INTEROPLIBINTERFACE_H_
+
 #ifdef FEATURE_COMWRAPPERS
+
+namespace InteropLibInterface
+{
+    // Base definition of the external object context.
+    struct ExternalObjectContextBase
+    {
+        PTR_VOID Identity;
+        DWORD SyncBlockIndex;
+    };
+}
 
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
@@ -101,3 +114,5 @@ public:
     // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
 };
+
+#endif // _INTEROPLIBINTERFACE_H_

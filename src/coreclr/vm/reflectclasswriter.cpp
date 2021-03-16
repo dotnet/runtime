@@ -113,9 +113,4 @@ RefClassWriter::~RefClassWriter()
         m_pCeeGen->Release();
         m_pCeeGen = NULL;
     }
-
-    if (m_pOnDiskEmitter) {
-        m_pOnDiskEmitter->Release();
-        m_pOnDiskEmitter = NULL;
-    }
 }

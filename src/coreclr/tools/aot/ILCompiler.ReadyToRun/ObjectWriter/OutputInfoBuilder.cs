@@ -225,6 +225,9 @@ namespace ILCompiler.PEWriter
         public IReadOnlyList<Section> Sections => _sections;
         public IReadOnlyList<OutputSymbol> Symbols => _symbols;
 
+        public IReadOnlyDictionary<ISymbolDefinitionNode, OutputNode> NodeSymbolMap => _nodeSymbolMap;
+        public IReadOnlyDictionary<ISymbolDefinitionNode, MethodWithGCInfo> MethodSymbolMap => _methodSymbolMap;
+
         public IReadOnlyDictionary<RelocType, int> RelocCounts => _relocCounts;
     }
 }

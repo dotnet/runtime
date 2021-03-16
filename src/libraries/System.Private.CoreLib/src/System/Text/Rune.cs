@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Unicode;
@@ -315,7 +316,7 @@ namespace System.Text
                 // Let's optimistically assume for now it's a high surrogate and hope
                 // that combining it with the next char yields useful results.
 
-                if (1 < (uint)source.Length)
+                if (source.Length > 1)
                 {
                     char secondChar = source[1];
                     if (TryCreate(firstChar, secondChar, out result))
@@ -758,7 +759,7 @@ namespace System.Text
             return bytesWritten;
         }
 
-        public override bool Equals(object? obj) => (obj is Rune other) && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
 
@@ -816,7 +817,7 @@ namespace System.Text
 
                 // Treat 'returnValue' as the high surrogate.
 
-                if (1 >= (uint)input.Length)
+                if (input.Length <= 1)
                 {
                     return -1; // not an argument exception - just a "bad data" failure
                 }

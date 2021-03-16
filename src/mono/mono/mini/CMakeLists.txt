@@ -26,7 +26,7 @@ include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
-if(TARGET_WIN32)  # TODO: hook up HAVE_SYS_ZLIB instead
+if(INTERNAL_ZLIB)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
 endif()
 
@@ -45,11 +45,17 @@ if(ENABLE_PERFTRACING)
 
 endif(ENABLE_PERFTRACING)
 
+if(HOST_WIN32)
+  # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
+  add_link_options(/OPT:NOICF)
+endif()
+
 # ICU
 if(HAVE_SYS_ICU)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)
+    add_definitions(-DSTATIC_ICU=1)
   else()
     set(pal_icushim_sources_base
         pal_icushim.c)
@@ -124,8 +130,6 @@ set(mini_common_sources
     branch-opts.c
     mini-generic-sharing.c
     simd-methods.h
-    tasklets.c
-    tasklets.h
     simd-intrinsics.c
     mini-native-types.c
     mini-unwind.h
@@ -145,6 +149,7 @@ set(mini_common_sources
     arch-stubs.c
     llvm-runtime.h
     llvm-intrinsics.h
+    llvm-intrinsics-types.h
     type-checking.c
     lldb.h
     lldb.c
@@ -157,7 +162,6 @@ set(mini_common_sources
     mini-runtime.h
     llvmonly-runtime.h
     llvmonly-runtime.c
-    simd-intrinsics-netcore.c
     monovm.h
     monovm.c)
 
@@ -166,6 +170,8 @@ set(debugger_sources
   debugger-engine.c
   debugger-agent.h
   debugger-agent.c
+  debugger-protocol.h
+  debugger-protocol.c
   debugger-agent-stubs.c
   debugger-state-machine.h
   debugger-state-machine.c)
@@ -342,6 +348,9 @@ if(NOT DISABLE_SHARED_LIBS)
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
+  if(NOT TARGET_WASM AND STATIC_ICU)
+    set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+  endif ()
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()

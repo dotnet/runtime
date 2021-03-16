@@ -11,6 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedViewAccessor.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedViewAccessorTests : MemoryMappedFilesTestBase
     {
         /// <summary>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -34,7 +35,7 @@ namespace System.Diagnostics
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
-        public override bool Equals(object? obj) => (obj is ActivityLink link) && this.Equals(link);
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ActivityLink link) && this.Equals(link);
 
         public bool Equals(ActivityLink value) => Context == value.Context && value.Tags == Tags;
         public static bool operator ==(ActivityLink left, ActivityLink right) => left.Equals(right);

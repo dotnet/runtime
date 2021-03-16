@@ -23,6 +23,9 @@
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
 #include <interoplibabi.h>
+
+typedef DPTR(InteropLibInterface::ExternalObjectContextBase) PTR_ExternalObjectContext;
+typedef DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) PTR_ManagedObjectWrapper;
 #endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
@@ -4926,7 +4929,7 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
 
         if (refCount != NULL)
         {
-            *refCount = (int)pMOW->_refCount;
+            *refCount = (int)pMOW->RefCount;
         }
     }
     else
@@ -5011,7 +5014,7 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     PTR_ExternalObjectContext pEOC(TO_TADDR(rcw));
     if (identity != NULL)
     {
-        *identity = PTR_CDADDR(pEOC->identity);
+        *identity = PTR_CDADDR(pEOC->Identity);
     }
 
     SOSDacLeave();

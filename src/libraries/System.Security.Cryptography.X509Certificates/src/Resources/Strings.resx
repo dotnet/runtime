@@ -247,6 +247,9 @@
   <data name="Cryptography_UnknownKeyAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known key algorithm.</value>
   </data>
+  <data name="Cryptography_UnknownSignatureFormat" xml:space="preserve">
+    <value>The signature format '{0}' is unknown.</value>
+  </data>
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
   </data>
@@ -441,5 +444,8 @@
   </data>
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
+  </data>
+  <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
+    <value>The certificate content type could not be determined.</value>
   </data>
 </root>

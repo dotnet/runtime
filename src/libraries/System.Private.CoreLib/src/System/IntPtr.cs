@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -72,7 +73,7 @@ namespace System
             info.AddValue("value", ToInt64());
         }
 
-        public override unsafe bool Equals(object? obj) =>
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj) =>
             obj is IntPtr other &&
             _value == other._value;
 
@@ -207,21 +208,34 @@ namespace System
         public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
         public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        unsafe bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
         public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
 
-        public static bool TryParse(string? s, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
-        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));

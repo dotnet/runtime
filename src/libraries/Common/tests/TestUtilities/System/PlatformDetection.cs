@@ -26,12 +26,15 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
+        public static bool IsNotMobile => IsNotBrowser && !IsMacCatalyst && !IsiOS && !IstvOS && !IsAndroid;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -49,8 +52,14 @@ namespace System
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => !IsBrowser;
 
+        public static bool IsSpeedOptimized => !IsSizeOptimized;
+        public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsiOS || IstvOS;
+
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+
+        public static bool IsUsingLimitedCultures => !IsNotMobile;
+        public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -128,11 +137,11 @@ namespace System
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
-        public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
+        public static bool SupportsAlpn => (IsWindows && !IsWindows7 && !IsNetFramework) ||
             (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
-        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsiOS || IstvOS;
+        public static bool SupportsClientAlpn => SupportsAlpn || IsOSX || IsMacCatalyst || IsiOS || IstvOS;
 
         private static Lazy<bool> s_supportsTls10 = new Lazy<bool>(GetTls10Support);
         private static Lazy<bool> s_supportsTls11 = new Lazy<bool>(GetTls11Support);
@@ -280,8 +289,8 @@ namespace System
 
         private static bool GetTls10Support()
         {
-            // on Windows and macOS TLS1.0/1.1 are supported.
-            if (IsWindows || IsOSXLike)
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
+            if (IsWindows || IsOSXLike || IsAndroid)
             {
                 return true;
             }
@@ -291,13 +300,13 @@ namespace System
 
         private static bool GetTls11Support()
         {
-            // on Windows and macOS TLS1.0/1.1 are supported.
+            // on Windows, macOS, and Android TLS1.0/1.1 are supported.
             // TLS 1.1 and 1.2 can work on Windows7 but it is not enabled by default.
             if (IsWindows)
             {
                 return !IsWindows7;
             }
-            else if (IsOSXLike)
+            else if (IsOSXLike || IsAndroid)
             {
                 return true;
             }
@@ -339,7 +348,7 @@ namespace System
                 // The build number is approximation.
                 return IsWindows10Version2004Build19573OrGreater;
             }
-            else if (IsOSX || IsiOS || IstvOS)
+            else if (IsOSX || IsMacCatalyst || IsiOS || IstvOS)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
                 return false;

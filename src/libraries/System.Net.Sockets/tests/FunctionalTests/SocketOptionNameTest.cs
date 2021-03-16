@@ -102,11 +102,7 @@ namespace System.Net.Sockets.Tests
 
                 sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
 
-                var cts = new CancellationTokenSource();
-                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
-                cts.Cancel();
-
-                int bytesReceived = await receiveTask;
+                int bytesReceived = await receiveTask.WaitAsync(TimeSpan.FromSeconds(30));
                 string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
 
                 Assert.Equal(receivedMessage, message);
@@ -212,11 +208,7 @@ namespace System.Net.Sockets.Tests
 
                 sendSocket.SendTo(Encoding.UTF8.GetBytes(message), new IPEndPoint(multicastAddress, port));
 
-                var cts = new CancellationTokenSource();
-                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
-                cts.Cancel();
-
-                int bytesReceived = await receiveTask;
+                int bytesReceived = await receiveTask.WaitAsync(TimeSpan.FromSeconds(30));
                 string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, bytesReceived);
 
                 Assert.Equal(receivedMessage, message);

@@ -995,7 +995,7 @@ namespace System.Numerics
             return hash;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             AssertValid();
 

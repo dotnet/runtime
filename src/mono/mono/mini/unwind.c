@@ -344,6 +344,11 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 				offset = decode_sleb128 (p, &p) * DWARF_DATA_ALIGN;
 				printf ("CFA: [%x] offset_extended_sf: %s at cfa-0x%x\n", pos, mono_arch_regname (mono_dwarf_reg_to_hw_reg (reg)), -offset);
 				break;
+			case DW_CFA_offset_extended:
+				reg = decode_uleb128 (p, &p);
+				offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
+				printf ("CFA: [%x] offset_extended: %s at cfa-0x%x\n", pos, mono_arch_regname (mono_dwarf_reg_to_hw_reg (reg)), -offset);
+				break;
 			case DW_CFA_same_value:
 				reg = decode_uleb128 (p, &p);
 				printf ("CFA: [%x] same_value: %s\n", pos, mono_arch_regname (mono_dwarf_reg_to_hw_reg (reg)));

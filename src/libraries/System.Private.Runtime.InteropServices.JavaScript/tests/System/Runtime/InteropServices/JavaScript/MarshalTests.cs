@@ -86,6 +86,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public static void MarshalNullStringToCS()
+        {
+            HelperMarshal._stringResource = null;
+            Runtime.InvokeJS("App.call_test_method(\"InvokeString\", [ null ])");
+            Assert.Null(HelperMarshal._stringResource);
+        }
+
+        [Fact]
         public static void MarshalStringToJS()
         {
             HelperMarshal._marshalledString = HelperMarshal._stringResource = null;
@@ -252,20 +260,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method (""UseAsFunction"", [ do_add ]);
             ");
             Assert.Equal(50, HelperMarshal._jsAddAsFunctionResult);
-        }
-
-        [Fact]
-        public static void MarshalDelegate()
-        {
-            HelperMarshal._object1 = null;
-            Runtime.InvokeJS(@"
-                var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
-                var res = funcDelegate (10, 20);
-                App.call_test_method (""InvokeI32"", [ res, res ]);
-            ");
-
-            Assert.Equal(30, HelperMarshal._functionResultValue);
-            Assert.Equal(60, HelperMarshal._i32Value);
         }
 
         [Fact]
@@ -846,6 +840,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("custom symbol", HelperMarshal._stringResource);
             Assert.Equal(HelperMarshal._stringResource, HelperMarshal._stringResource2);
             Assert.True(Object.ReferenceEquals(HelperMarshal._stringResource, HelperMarshal._stringResource2));
+        }
+
+        [Fact]
+        public static void InternedStringReturnValuesWork()
+        {
+            HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
+            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
+            Runtime.InvokeJS(
+                $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
+                $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
+                "App.call_test_method ('InvokeString2', [ b ]);"
+            );
+            Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
+            Assert.Equal("1", HelperMarshal._stringResource2);
         }
     }
 }

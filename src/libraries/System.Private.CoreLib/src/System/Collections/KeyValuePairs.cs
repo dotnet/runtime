@@ -10,7 +10,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 using System.Diagnostics;
 
 namespace System.Collections

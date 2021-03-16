@@ -244,6 +244,7 @@ HRESULT EEConfig::Init()
     fTieredCompilation_CallCounting = false;
     fTieredCompilation_UseCallCountingStubs = false;
     tieredCompilation_CallCountThreshold = 1;
+    tieredCompilation_BackgroundWorkerTimeoutMs = 0;
     tieredCompilation_CallCountingDelayMs = 0;
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
@@ -583,6 +584,13 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
 
+    {
+        NewArrayHolder<WCHAR> wszModifiableAssemblies;
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
+        if (wszModifiableAssemblies)
+            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+    }
+
     iRequireZaps        = RequireZapsType(GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
     if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)
         iRequireZaps = REQUIRE_ZAPS_NONE;
@@ -880,6 +888,9 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
                     CLRConfig::UNSUPPORTED_TC_QuickJitForLoops);
         }
 
+        tieredCompilation_BackgroundWorkerTimeoutMs =
+            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_BackgroundWorkerTimeoutMs);
+
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
         DWORD tieredCompilation_ConfiguredCallCountThreshold =
@@ -899,12 +910,18 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
 
+        bool hasSingleProcessor;
 #ifndef TARGET_UNIX
-        bool hadSingleProcessorAtStartup = CPUGroupInfo::HadSingleProcessorAtStartup();
-#else // !TARGET_UNIX
-        bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;
-#endif // !TARGET_UNIX
-        if (hadSingleProcessorAtStartup)
+        if (CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
+        {
+            hasSingleProcessor = CPUGroupInfo::GetNumActiveProcessors() == 1;
+        }
+        else
+#endif
+        {
+            hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
+        }
+        if (hasSingleProcessor)
         {
             DWORD delayMultiplier = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DelaySingleProcMultiplier);
             if (delayMultiplier > 1)

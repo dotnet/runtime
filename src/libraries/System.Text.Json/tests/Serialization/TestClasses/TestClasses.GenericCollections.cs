@@ -1641,4 +1641,30 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("value1", Dictionary.Value["key1"]);
         }
     }
+
+    public class DisposableEnumerator<T> : IEnumerator<T>
+    {
+        private readonly IEnumerator<T> _inner;
+        private Action _onDispose;
+
+        public DisposableEnumerator(IEnumerator<T> inner, Action onDispose)
+        {
+            _inner = inner;
+            _onDispose = onDispose;
+        }
+
+        public T Current => _inner.Current;
+
+        object IEnumerator.Current => ((IEnumerator)_inner).Current;
+
+        public bool MoveNext() => _inner.MoveNext();
+
+        public void Dispose()
+        {
+            _onDispose?.Invoke();
+            _onDispose = null;
+        }
+
+        public void Reset() => _inner.Reset();
+    }
 }

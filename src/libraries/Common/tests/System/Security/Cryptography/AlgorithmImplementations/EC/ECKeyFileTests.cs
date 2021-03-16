@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -28,6 +29,8 @@ namespace System.Security.Cryptography.Tests
         // This would need to be virtualized if there was ever a platform that
         // allowed explicit in ECDH or ECDSA but not the other.
         public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
+
+        public static bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
         private static bool IsCurveSupported(Oid oid)
         {
@@ -200,7 +203,7 @@ qtlbnispri1a/EghiaPQ0po=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"
@@ -1106,7 +1109,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
 
                     Assert.True(
                         e is PlatformNotSupportedException || e is CryptographicException,
-                        "e is PlatformNotSupportedException || e is CryptographicException");
+                        $"e should be PlatformNotSupportedException or CryptographicException.\n\te is {e.ToString()}");
                 }
             }
         }

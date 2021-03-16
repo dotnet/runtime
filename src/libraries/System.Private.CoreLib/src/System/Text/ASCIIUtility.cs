@@ -200,6 +200,10 @@ namespace System.Text
                 currentUInt32 = Unsafe.ReadUnaligned<ushort>(pBuffer);
                 if (!AllBytesInUInt32AreAscii(currentUInt32))
                 {
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        currentUInt32 = currentUInt32 << 16;
+                    }
                     goto FoundNonAsciiData;
                 }
 
@@ -1678,6 +1682,10 @@ namespace System.Text
                 asciiData = Unsafe.ReadUnaligned<ushort>(pAsciiBuffer + currentOffset);
                 if (!AllBytesInUInt32AreAscii(asciiData))
                 {
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        asciiData = asciiData << 16;
+                    }
                     goto FoundNonAsciiData;
                 }
 
@@ -1719,11 +1727,23 @@ namespace System.Text
 
             // Drain ASCII bytes one at a time.
 
-            while (((byte)asciiData & 0x80) == 0)
+            if (BitConverter.IsLittleEndian)
             {
-                pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
-                currentOffset++;
-                asciiData >>= 8;
+                while (((byte)asciiData & 0x80) == 0)
+                {
+                    pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
+                    currentOffset++;
+                    asciiData >>= 8;
+                }
+            }
+            else
+            {
+                while ((asciiData & 0x80000000) == 0)
+                {
+                    asciiData = BitOperations.RotateLeft(asciiData, 8);
+                    pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
+                    currentOffset++;
+                }
             }
 
             goto Finish;

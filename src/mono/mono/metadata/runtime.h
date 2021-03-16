@@ -22,6 +22,8 @@ void mono_runtime_init_tls (void);
 
 MONO_PROFILER_API char* mono_runtime_get_aotid (void);
 
+MonoAssembly* mono_runtime_get_entry_assembly (void);
+
+void mono_runtime_ensure_entry_assembly (MonoAssembly *assembly);
+
 #endif /* _MONO_METADATA_RUNTIME_H_ */
-
-

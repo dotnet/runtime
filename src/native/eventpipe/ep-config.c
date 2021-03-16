@@ -95,19 +95,6 @@ config_register_provider (
 
 	ep_requires_lock_held ();
 
-	// See if we've already registered this provider. When the portable thread pool is being used, allow there to be multiple
-	// DotNETRuntime providers, as the portable thread pool temporarily uses an event source on the managed side with the same
-	// provider name.
-	// TODO: This change to allow multiple DotNETRuntime providers is temporary to get EventPipe working for
-	// PortableThreadPoolEventSource. Once a long-term solution is figured out, this change should be reverted. See
-	// https://github.com/dotnet/runtime/issues/38763 for more information.
-	EventPipeProvider *existing_provider = NULL;
-	if (!ep_rt_config_value_get_use_portable_thread_pool () || ep_rt_utf8_string_compare (ep_config_get_public_provider_name_utf8 (), ep_provider_get_provider_name (provider)) != 0)
-		existing_provider = config_get_provider (config, ep_provider_get_provider_name (provider));
-
-	if (existing_provider)
-		return false;
-
 	// The provider has not been registered, so register it.
 	if (!ep_rt_provider_list_append (&config->provider_list, provider))
 		return false;

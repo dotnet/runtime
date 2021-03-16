@@ -11,7 +11,6 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
-    <ContinueOnError Condition="'$(TestTrimming)' == 'true'">true</ContinueOnError>
   </PropertyGroup>
   
   <!-- Projects that don't support code coverage measurement. -->
@@ -48,7 +47,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Debug\tests\System.Diagnostics.Debug.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\TestWithConfigSwitches\System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\System.Globalization.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
@@ -86,9 +84,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\System.Globalization.Calendars.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Extensions\tests\System.Globalization.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.Brotli\tests\System.IO.Compression.Brotli.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile\tests\System.IO.Compression.ZipFile.Tests.csproj" />
@@ -108,10 +103,19 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\UnitTests\System.Net.NameResolution.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation\tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Ping\tests\FunctionalTests\System.Net.Ping.Functional.Tests.csproj" />
+    
+    <!-- https://github.com/dotnet/runtime/issues/49191 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic\tests\FunctionalTests\System.Net.Quic.Functional.Tests.csproj" />
+    
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests\tests\System.Net.Requests.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
+    
+    <!-- https://github.com/dotnet/runtime/issues/49192-->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient\tests\System.Net.WebClient.Tests.csproj" />
+    
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri\tests\FunctionalTests\System.Private.Uri.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Context\tests\System.Reflection.Context.Tests.csproj" />
@@ -192,7 +196,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/ReflectionOnly/System.Xml.XmlSerializer.ReflectionOnly.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/System.Xml.XmlSerializer.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable/tests/System.Linq.Queryable.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.WebSocketProtocol/tests/System.Net.WebSockets.WebSocketProtocol.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight/tests/System.Reflection.Emit.Lightweight.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json/tests/System.Runtime.Serialization.Json.Tests.csproj" />
@@ -263,32 +266,40 @@
                       Condition="'$(TestAssemblies)' == 'true'" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
+    <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false"
-                      Condition="'$(TestTrimming)' == 'true'" />
+                      Condition="'$(TestTrimming)' == 'true'"
+                      AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
+    <ProjectReference Include="@(TrimmingTestProjects)" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\**\*.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' != 'true'"
+                      BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS')">
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\iOS\Program.csproj"
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
+    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" />
-                      <!-- TODO: remove Exclude after "tests.mobile.targets(107,5): error : Unable to compile method" fixed -->
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\**\*.Test.csproj"
-                      BuildInParallel="false"
-                      Exclude="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT\iOS.Simulator.Aot.Test.csproj"/>
+                      BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'tvOS'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\**\*.Test.csproj"
+                      BuildInParallel="false" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Android'">
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\Android\AndroidSampleApp.csproj"
+    <ProjectReference Include="$(MonoProjectRoot)sample\Android\AndroidSampleApp.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
-    <ProjectReference Include="$(MonoProjectRoot)netcore\sample\wasm\**\*.Sample.csproj"
+    <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       BuildInParallel="false" />
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\wasm\**\*.Test.csproj"
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
                       BuildInParallel="false" />
   </ItemGroup>
 
@@ -297,5 +308,20 @@
           DependsOnTargets="GenerateCoverageReport"
           Condition="'$(TestAssemblies)' == 'true' and
                      '$(Coverage)' == 'true'" />
+
+  <!-- Restoring all trimming test projects upfront in one single call to RestoreTrimmingProjects
+  so as to avoid possible race conditions that could happen if we restore each individually. -->
+  <Target Name="RestoreTrimmingProjects"
+          BeforeTargets="Build"
+          Condition="'$(TestTrimming)' == 'true'">
+    <MSBuild Projects="@(TrimmingTestProjects)"
+             Targets="GetTrimmingProjectsToRestore">
+      <Output TaskParameter="TargetOutputs" ItemName="_TrimmingProjectsToRestore" />
+    </MSBuild>
+
+    <MSBuild Projects="@(_TrimmingProjectsToRestore)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());Configuration=$(Configuration)" />
+  </Target>
 
 </Project>

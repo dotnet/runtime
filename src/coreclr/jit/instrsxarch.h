@@ -181,12 +181,10 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 
 INST3(FIRST_SSE_INSTRUCTION, "FIRST_SSE_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 // These are the SSE instructions used on x86
-INST3(mov_i2xmm,        "movd",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x6E),                            INS_FLAGS_None)    // Move int reg to a xmm reg. reg1=xmm reg, reg2=int reg
-INST3(mov_xmm2i,        "movd",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x7E),                            INS_FLAGS_None)    // Move xmm reg to an int reg. reg1=xmm reg, reg2=int reg
 INST3(pmovmskb,         "pmovmskb",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0xD7),                            INS_FLAGS_None)    // Move the MSB bits of all bytes in a xmm reg to an int reg
 INST3(movmskpd,         "movmskpd",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x50),                            INS_FLAGS_None)    // Extract 2-bit sign mask from xmm and store in reg. The upper bits of r32 or r64 are filled with zeros.
-INST3(movd,             "movd",             IUM_WR, PCKDBL(0x7E), BAD_CODE,     PCKDBL(0x6E),                            INS_FLAGS_None)
-INST3(movq,             "movq",             IUM_WR, PCKDBL(0xD6), BAD_CODE,     SSEFLT(0x7E),                            INS_FLAGS_None)
+INST3(movd,             "movd",             IUM_WR, PCKDBL(0x7E), BAD_CODE,     PCKDBL(0x6E),                            INS_FLAGS_None)    // Move Double/Quadword between mm regs <-> memory/r32/r64 regs, cleanup https://github.com/dotnet/runtime/issues/47943
+INST3(movq,             "movq",             IUM_WR, PCKDBL(0xD6), BAD_CODE,     SSEFLT(0x7E),                            INS_FLAGS_None)    // Move Quadword between memory/mm <-> regs, cleanup https://github.com/dotnet/runtime/issues/47943
 INST3(movsdsse2,        "movsd",            IUM_WR, SSEDBL(0x11), BAD_CODE,     SSEDBL(0x10),                            INS_Flags_IsDstSrcSrcAVXInstruction)
 
 INST3(punpckldq,        "punpckldq",        IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x62),                            INS_Flags_IsDstDstSrcAVXInstruction)

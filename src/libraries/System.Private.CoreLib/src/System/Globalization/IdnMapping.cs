@@ -24,6 +24,7 @@
 //  RFC 3492 - Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -142,7 +143,7 @@ namespace System.Globalization
             }
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is IdnMapping that &&
             _allowUnassigned == that._allowUnassigned &&
             _useStd3AsciiRules == that._useStd3AsciiRules;

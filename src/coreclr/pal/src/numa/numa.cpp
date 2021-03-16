@@ -116,10 +116,14 @@ NUMASupportInitialize()
         return TRUE;
     }
 
-    numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+    numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
     if (numaHandle == 0)
     {
-        numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
+        numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
+        if (numaHandle == 0)
+        {
+            numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+        }
     }
     if (numaHandle != 0)
     {

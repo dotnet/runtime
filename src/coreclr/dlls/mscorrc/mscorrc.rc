@@ -502,7 +502,6 @@ BEGIN
     IDS_EE_VARARG_NOT_SUPPORTED             "Vararg calling convention not supported."
 
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
-    IDS_EE_INVALID_CA_EX                    "Invalid custom attribute provided: '%1'"
 
     IDS_EE_THREADSTART_STATE                "Thread is running or terminated; it cannot restart."
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
@@ -525,6 +524,7 @@ BEGIN
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."
     IDS_EE_COMDEFITFNOTSUPPORTED            "Type '%1' does not support the specified default COM interface: '%2'"
 
+    IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     "Type '%1' cannot be marshalled to a Variant. Type library is not registered."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
 
     IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"

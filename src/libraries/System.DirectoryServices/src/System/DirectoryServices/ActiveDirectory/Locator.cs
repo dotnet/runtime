@@ -12,7 +12,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // To disable public/protected constructors for this class
         private Locator() { }
 
-        internal static DomainControllerInfo GetDomainControllerInfo(string computerName, string domainName, string siteName, long flags)
+        internal static DomainControllerInfo GetDomainControllerInfo(string? computerName, string? domainName, string? siteName, long flags)
         {
             int errorCode = 0;
             DomainControllerInfo domainControllerInfo;
@@ -27,7 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainControllerInfo;
         }
 
-        internal static int DsGetDcNameWrapper(string computerName, string domainName, string siteName, long flags, out DomainControllerInfo domainControllerInfo)
+        internal static int DsGetDcNameWrapper(string? computerName, string? domainName, string? siteName, long flags, out DomainControllerInfo domainControllerInfo)
         {
             IntPtr pDomainControllerInfo = IntPtr.Zero;
             int result = 0;
@@ -69,9 +69,9 @@ namespace System.DirectoryServices.ActiveDirectory
             return result;
         }
 
-        internal static ArrayList EnumerateDomainControllers(DirectoryContext context, string domainName, string siteName, long dcFlags)
+        internal static ArrayList EnumerateDomainControllers(DirectoryContext context, string? domainName, string? siteName, long dcFlags)
         {
-            Hashtable allDCs = null;
+            Hashtable? allDCs = null;
             ArrayList dcs = new ArrayList();
 
             //
@@ -126,7 +126,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return dcs;
         }
 
-        private static Hashtable DnsGetDcWrapper(string domainName, string siteName, long dcFlags)
+        private static Hashtable DnsGetDcWrapper(string? domainName, string? siteName, long dcFlags)
         {
             Hashtable domainControllers = new Hashtable();
 
@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int sockAddressCount = 0;
             IntPtr sockAddressCountPtr = new IntPtr(sockAddressCount);
             IntPtr sockAddressList = IntPtr.Zero;
-            string dcDnsHostName = null;
+            string? dcDnsHostName = null;
             int result = 0;
 
             result = NativeMethods.DsGetDcOpen(domainName, (int)optionFlags, siteName, IntPtr.Zero, null, (int)dcFlags, out retGetDcContext);
@@ -157,7 +157,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         {
                             try
                             {
-                                dcDnsHostName = Marshal.PtrToStringUni(dcDnsHostNamePtr);
+                                dcDnsHostName = Marshal.PtrToStringUni(dcDnsHostNamePtr)!;
                                 string key = dcDnsHostName.ToLowerInvariant();
 
                                 if (!domainControllers.Contains(key))

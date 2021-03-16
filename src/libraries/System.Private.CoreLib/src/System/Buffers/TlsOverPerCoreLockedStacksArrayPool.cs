@@ -145,9 +145,9 @@ namespace System.Buffers
 
             if (log.IsEnabled())
             {
-                int bufferId = buffer.GetHashCode(), bucketId = -1; // no bucket for an on-demand allocated buffer
-                log.BufferRented(bufferId, buffer.Length, Id, bucketId);
-                log.BufferAllocated(bufferId, buffer.Length, Id, bucketId, bucketIndex >= _buckets.Length ?
+                int bufferId = buffer.GetHashCode();
+                log.BufferRented(bufferId, buffer.Length, Id, ArrayPoolEventSource.NoBucketId);
+                log.BufferAllocated(bufferId, buffer.Length, Id, ArrayPoolEventSource.NoBucketId, bucketIndex >= _buckets.Length ?
                     ArrayPoolEventSource.BufferAllocatedReason.OverMaximumSize :
                     ArrayPoolEventSource.BufferAllocatedReason.PoolExhausted);
             }
@@ -166,7 +166,9 @@ namespace System.Buffers
             int bucketIndex = Utilities.SelectBucketIndex(array.Length);
 
             // If we can tell that the buffer was allocated (or empty), drop it. Otherwise, check if we have space in the pool.
-            if (bucketIndex < _buckets.Length)
+            bool returned = true;
+            bool haveBucket = bucketIndex < _buckets.Length;
+            if (haveBucket)
             {
                 // Clear the array if the user requests.
                 if (clearArray)
@@ -208,7 +210,7 @@ namespace System.Buffers
                     if (prev != null)
                     {
                         PerCoreLockedStacks stackBucket = _buckets[bucketIndex] ?? CreatePerCoreLockedStacks(bucketIndex);
-                        stackBucket.TryPush(prev);
+                        returned = stackBucket.TryPush(prev);
                     }
                 }
             }
@@ -218,6 +220,12 @@ namespace System.Buffers
             if (log.IsEnabled())
             {
                 log.BufferReturned(array.GetHashCode(), array.Length, Id);
+                if (!(haveBucket & returned))
+                {
+                    log.BufferDropped(array.GetHashCode(), array.Length, Id,
+                        haveBucket ? bucketIndex : ArrayPoolEventSource.NoBucketId,
+                        haveBucket ? ArrayPoolEventSource.BufferDroppedReason.Full : ArrayPoolEventSource.BufferDroppedReason.OverMaximumSize);
+                }
             }
         }
 
@@ -231,7 +239,9 @@ namespace System.Buffers
 
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             if (log.IsEnabled())
+            {
                 log.BufferTrimPoll(milliseconds, (int)pressure);
+            }
 
             PerCoreLockedStacks?[] perCoreBuckets = _buckets;
             for (int i = 0; i < perCoreBuckets.Length; i++)
@@ -344,7 +354,7 @@ namespace System.Buffers
 
             /// <summary>Try to push the array into the stacks. If each is full when it's tested, the array will be dropped.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void TryPush(T[] array)
+            public bool TryPush(T[] array)
             {
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
@@ -352,9 +362,11 @@ namespace System.Buffers
                 int index = Thread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
-                    if (stacks[index].TryPush(array)) return;
+                    if (stacks[index].TryPush(array)) return true;
                     if (++index == stacks.Length) index = 0;
                 }
+
+                return false;
             }
 
             /// <summary>Try to get an array from the stacks.  If each is empty when it's tested, null will be returned.</summary>

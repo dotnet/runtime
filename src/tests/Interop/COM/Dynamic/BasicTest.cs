@@ -38,6 +38,9 @@ namespace Dynamic
             Float();
             Double();
 
+            IntPtr();
+            UIntPtr();
+
             String();
             Date();
             ComObject();
@@ -286,6 +289,54 @@ namespace Dynamic
 
             // Pass as variant
             Variant<double>(val, expected);
+        }
+
+        private void IntPtr()
+        {
+            // IntPtr as a variant is converted to int in the runtime. Dynamic COM binding matches this behaviour.
+            // Runtime variant: OleVariant::MarshalOleVariantForObject conversion from ELEMENT_TYPE_I to VT_INT
+            // Dynamic COM binding: VarEnumSelector.TryGetPrimitiveComType conversion from IntPtr to VT_INT
+            int valRaw = (int)rand.Next(int.MinValue / 2, int.MaxValue / 2);
+            int expectedRaw = valRaw * 2;
+
+            IntPtr val = (IntPtr)valRaw;
+            IntPtr expected = (IntPtr)expectedRaw;
+
+            // Get and set property
+            obj.Variant_Property = val;
+            Assert.AreEqual(valRaw, obj.Variant_Property);
+
+            // Call method with return value
+            Assert.AreEqual(expectedRaw, obj.Variant_Ret(val));
+
+            // Call method passing by ref
+            IntPtr inout = val;
+            obj.Variant_InOut(ref inout);
+            Assert.AreEqual(expected, inout);
+        }
+
+        private void UIntPtr()
+        {
+            // UIntPtr as a variant is converted to uint in the runtime. Dynamic COM binding matches this behaviour.
+            // Runtime variant: OleVariant::MarshalOleVariantForObject conversion from ELEMENT_TYPE_U to VT_UINT
+            // Dynamic COM binding: VarEnumSelector.TryGetPrimitiveComType conversion from UIntPtr to VT_UINT
+            uint valRaw = (uint)rand.Next();
+            uint expectedRaw = valRaw * 2;
+
+            UIntPtr val = (UIntPtr)valRaw;
+            UIntPtr expected = (UIntPtr)expectedRaw;
+
+            // Get and set property
+            obj.Variant_Property = val;
+            Assert.AreEqual(valRaw, obj.Variant_Property);
+
+            // Call method with return value
+            Assert.AreEqual(expectedRaw, obj.Variant_Ret(val));
+
+            // Call method passing by ref
+            UIntPtr inout = val;
+            obj.Variant_InOut(ref inout);
+            Assert.AreEqual(expected, inout);
         }
 
         private void String()

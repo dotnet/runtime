@@ -83,11 +83,14 @@ namespace Microsoft.NET.HostModel.Tests
             // Generate a file specification with duplicate entries
             var fileSpecs = new List<FileSpec>();
             fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
-            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
-            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
+            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "rel/app.repeat"));
+            fileSpecs.Add(new FileSpec(Path.Join(BundleHelper.GetPublishPath(fixture), "System.dll"), "rel/app.repeat"));
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName, targetOS: targetOS, targetArch: targetArch);
-            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs))
+                .Message
+                    .Should().Contain("rel/app.repeat")
+                    .And.Contain(BundleHelper.GetAppPath(fixture));
         }
 
         [Fact]

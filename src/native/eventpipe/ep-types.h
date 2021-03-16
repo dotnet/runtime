@@ -62,7 +62,9 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_MAX_NUMBER_OF_SESSIONS 64
 
-#define EP_ACTIVITY_ID_SIZE 16
+#define EP_GUID_SIZE 16
+
+#define EP_ACTIVITY_ID_SIZE EP_GUID_SIZE
 
 #define EP_MAX_STACK_DEPTH 100
 

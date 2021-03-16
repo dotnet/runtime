@@ -74,15 +74,6 @@ PERFCTR_COUNTER(GC_RESBYTES, "# Total reserved Bytes", "", NumberOfItems64, gc_r
 PERFCTR_COUNTER(GC_PINNED, "# of Pinned Objects", "", NumberOfItems32, gc_num_pinned)
 PERFCTR_COUNTER(GC_SYNKB, "# of Sink Blocks in use", "", NumberOfItems32, gc_sync_blocks)
 
-PERFCTR_CAT(REMOTING, ".NET CLR Remoting", "", MultiInstance, Mono, REMOTING_CALLSEC)
-PERFCTR_COUNTER(REMOTING_CALLSEC, "Remote Calls/sec", "", RateOfCountsPerSecond32, remoting_calls)
-PERFCTR_COUNTER(REMOTING_CALLS, "Total Remote Calls", "", NumberOfItems32, remoting_calls)
-PERFCTR_COUNTER(REMOTING_CHANNELS, "Channels", "", NumberOfItems32, remoting_channels)
-PERFCTR_COUNTER(REMOTING_CPROXIES, "Context Proxies", "", NumberOfItems32, remoting_proxies)
-PERFCTR_COUNTER(REMOTING_CBLOADED, "Context-Bound Classes Loaded", "", NumberOfItems32, remoting_classes)
-PERFCTR_COUNTER(REMOTING_CBALLOCSEC, "Context-Bound Objects Alloc / sec", "", RateOfCountsPerSecond32, remoting_objects)
-PERFCTR_COUNTER(REMOTING_CONTEXTS, "Contexts", "", NumberOfItems32, remoting_contexts)
-
 PERFCTR_CAT(LOADING, ".NET CLR Loading", "", MultiInstance, Mono, LOADING_CLASSES)
 PERFCTR_COUNTER(LOADING_CLASSES, "Current Classes Loaded", "", NumberOfItems32, loader_classes)
 PERFCTR_COUNTER(LOADING_TOTCLASSES, "Total Classes Loaded", "", NumberOfItems32, loader_total_classes)
