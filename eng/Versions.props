@@ -61,7 +61,7 @@
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21155.1</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21155.1</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21155.1</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageValidationVersion>6.0.0-beta.21159.4</MicrosoftDotNetPackageValidationVersion>
+    <MicrosoftDotNetPackageValidationVersion>6.0.0-beta.21166.5</MicrosoftDotNetPackageValidationVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>5.9.0-preview.2</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
