@@ -68,7 +68,7 @@
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
     <PropertyGroup>
       <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-      <DotnetSdkRootFile>$(RepoRoot)/artifacts/toolset/sdk.txt</DotnetSdkRootFile>
+      <DotnetSdkRootFile>$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'toolset', 'sdk.txt'))</DotnetSdkRootFile>
     </PropertyGroup>
 
     <ReadLinesFromFile File="$(DotnetSdkRootFile)">
