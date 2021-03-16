@@ -14,7 +14,7 @@
     <ShouldBuildWasmLocally
       Condition="'$(ContinuousIntegrationBuild)' != 'true' or ('$(RunAOTCompilation)' != 'true' and '$(ContinuousIntegrationBuild)' == 'true')">true</ShouldBuildWasmLocally>
 
-    <AOTScriptCommand Condition="'$(ShouldBuildWasmLocally)' != 'true'">ls -la $HELIX_CORRELATION_PAYLOAD &amp;&amp; ls -la $HELIX_CORRELATION_PAYLOAD/emscripten &amp;&amp; ls -al $HELIX_CORRELATION_PAYLOAD/emscripten/emsdk &amp;&amp; dotnet msbuild publish/aot-build.proj &amp;&amp; </AOTScriptCommand>
+    <AOTScriptCommand Condition="'$(ShouldBuildWasmLocally)' != 'true'">dotnet msbuild publish/aot-build.proj &amp;&amp; </AOTScriptCommand>
 
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$(AOTScriptCommand)$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
