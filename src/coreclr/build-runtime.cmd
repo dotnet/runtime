@@ -78,7 +78,6 @@ set __CrossOS=0
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
-set __NinjaOptInDeprecated=0
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
 @REM    -priority=1
