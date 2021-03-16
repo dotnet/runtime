@@ -24,19 +24,9 @@
         "Unix"
         ]
       },
-    "iOS-sim": {
-      "#import": [
-        "iOS"
-        ]
-      },
     "tvOS": {
       "#import": [
         "Unix"
-        ]
-      },
-    "tvOS-sim": {
-      "#import": [
-        "tvOS"
         ]
       },
     "Android": {
