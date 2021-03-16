@@ -7,6 +7,8 @@ using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading;
 
+using System.IO;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -32,15 +34,17 @@ namespace Generators
                     }
 
                     _builder.AppendLine("using System;");
-                    GenType(ec, stringTypeSymbol);
-
-                    _context.AddSource($"{ec.ClassName}.Generated", SourceText.From(_builder.ToString(), Encoding.UTF8));
+                    //GenType(ec, stringTypeSymbol);
+                    GenerateEventMetadata(ec, stringTypeSymbol);
+                    GenType(ec);
+                    _context.AddSource($"{ec.ClassName}.Generated", SourceText.From(_builder.ToString(), Encoding.UTF8));//, Encoding.UTF8));
 
                     _builder.Clear();
                 }
             }
 
-            private void GenType(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
+
+            private void GenType(EventSourceClass ec)
             {
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
@@ -50,13 +54,11 @@ namespace {ec.Namespace}
                 }
 
                 _builder.AppendLine($@"
-    partial class {ec.ClassName}
+    partialll class {ec.ClassName}
     {{");
                 GenerateConstructor(ec);
 
                 GenerateProviderMetadata(ec.SourceName);
-
-                GenerateEventMetadata(ec);
 
                 _builder.AppendLine($@"
     }}");
@@ -64,16 +66,18 @@ namespace {ec.Namespace}
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
                     _builder.AppendLine($@"
-}}");
+}},");
                 }
-
             }
 
-            private void GenerateEventMetadata(EventSourceClass ec)
+
+            private void GenerateEventMetadata(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
+                string metadataString = MetadataForProvider(ec, stringTypeSymbol);
+                File.WriteAllText(@"D:\sourcegen-debug.txt", metadataString);
                 foreach (string debugStr in ec.DebugStrings)
                 {
-                    _builder.AppendLine(debugStr);
+                    File.AppendAllText(@"D:\sourcegen-debug.txt", debugStr+"\n");
                 }
             }
 
@@ -109,9 +113,10 @@ namespace {ec.Namespace}
                 Encoding.UTF8.GetBytes(name, 0, name.Length, metadata, 2);
                 return metadata;
             }
-            private void MetadataForProvider(string name, Guid guid, List<EventSourceEvent> events, ITypeSymbol stringTypeSymbol)
+
+            private string MetadataForProvider(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
-                ManifestBuilder manifest = new ManifestBuilder(_builder, name, guid);
+                ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid);
                                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
                 manifest.AddEventParameter(stringTypeSymbol, "message");
@@ -124,24 +129,39 @@ namespace {ec.Namespace}
                     manifest.AddKeyword("Session1", (long)0x4000 << 32);
                     manifest.AddKeyword("Session0", (long)0x8000 << 32);
                 }
-
-                foreach (EventSourceEvent evt in events)
+                foreach (EventSourceEvent evt in ec.Events)
                 {
                     EventAttribute eventAttribute = new EventAttribute(Int32.Parse(evt.Id));
 
                     eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
-                    eventAttribute.Keywords = (EventKeywords)(Int64.Parse(evt.Keywords));
+                    eventAttribute.Keywords = (EventKeywords)(1);
+                    eventAttribute.Version = 0; // TODO: FIX 
 
-                    manifest.StartEvent(evt.Name, eventAttribute);
+
+                    //manifest.StartEvent(evt.Name, new EventAttribute(Int32.Parse(evt.Id)) { Level = EventLevel.LogAlways });
                     
+                    
+                    manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
+                    manifest.AddEventParameter(stringTypeSymbol, "message");
+                    manifest.EndEvent("EventSourceMessage");
+
+
+                    /*
                     if (evt.Parameters is not null)
                     {
                         foreach (EventParameter param in evt.Parameters)
                         {
-                            manifest.AddEventParameter(param.Type, param.Name);
+                            if (param.Type is not null)
+                            {
+                                manifest.AddEventParameter(param.Type, param.Name);
+                            }
                         }
                     }
+                    */
+
+                    //manifest.EndEvent(evt.Name);
                 }
+                return manifest.CreateManifestString();
             }
 
             /*

@@ -268,6 +268,18 @@ namespace Generators
                                         // For enum, we need to create a mapping for the enum class type.
                                         if (yes.Type.TypeKind == TypeKind.Enum)
                                         {
+                                            debugStrings.Add("IsEnum");
+                                            INamedTypeSymbol? underlyingEnumType = ((INamedTypeSymbol)(yes.Type)).EnumUnderlyingType;
+                                            if (underlyingEnumType != null)
+                                            {
+                                                debugStrings.Add(underlyingEnumType.ToDisplayString());
+                                            }
+                                            else
+                                            {
+                                                debugStrings.Add("underlyingEnumType is null");
+                                            }
+
+                                            debugStrings.Add($"Name type: {yes.Type.Name}");
                                             int recordedFieldCount = 0;
                                             foreach (ISymbol symbol in yes.Type.GetMembers())
                                             {
@@ -280,7 +292,11 @@ namespace Generators
                                                 {
                                                     maps.Add(yes.Type.ToDisplayString(), new Dictionary<string, int>());
                                                 }
-                                                maps[yes.Type.ToDisplayString()].Add(symbol.Name, recordedFieldCount); 
+                                                else if (!maps[yes.Type.ToDisplayString()].ContainsKey(symbol.Name))
+                                                {
+                                                    maps[yes.Type.ToDisplayString()].Add(symbol.Name, recordedFieldCount);
+                                                    recordedFieldCount++;
+                                                }
                                                 debugStrings.Add(symbol.ToDisplayString());
                                             }
                                         }
