@@ -93,13 +93,17 @@
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
           Condition="'$(ShouldProvisionEmscripten)' == 'true'">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\wasm\emscripten-version.txt">
+      <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
+
     <PropertyGroup>
       <EmsdkExt Condition="'$(OS)' != 'Windows_NT'">.sh</EmsdkExt>
       <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.bat</EmsdkExt>
       <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
       <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
-      <EmscriptenVersion>2.0.11</EmscriptenVersion>
+      <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
