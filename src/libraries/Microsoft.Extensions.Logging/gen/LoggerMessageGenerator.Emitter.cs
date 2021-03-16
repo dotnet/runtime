@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Generators
     {
         internal class Emitter
         {
-            // The maximum arity of the LogStateHolder-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
+            // The maximum arity of the LogValues-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
             // for the array and boxing of all logging method arguments.
             private const int MaxStateHolderArity = 6;
             private const int MinStateHolderWithNameArray = 2;
@@ -123,15 +123,15 @@ namespace Microsoft.Extensions.Logging.Generators
                     string typeName;
                     if (lm.RegularParameters.Count == 1)
                     {
-                        typeName = $"global::{StateHolderNamespace}.LogStateHolder<{lm.RegularParameters[0].Type}>";
+                        typeName = $"global::{StateHolderNamespace}.LogValues<{lm.RegularParameters[0].Type}>";
                     }
                     else if (lm.RegularParameters.Count > MaxStateHolderArity)
                     {
-                        typeName = $"global::{StateHolderNamespace}.LogStateHolderN";
+                        typeName = $"global::{StateHolderNamespace}.LogValuesN";
                     }
                     else
                     {
-                        _ = sb.Append($"global::{StateHolderNamespace}.LogStateHolder<");
+                        _ = sb.Append($"global::{StateHolderNamespace}.LogValues<");
 
                         foreach (var p in lm.RegularParameters)
                         {
@@ -407,12 +407,12 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (lm.RegularParameters.Count == 0)
                 {
-                    return $"new global::{StateHolderNamespace}.LogStateHolder({formatFunc}, \"{originalFormat}\")";
+                    return $"new global::{StateHolderNamespace}.LogValues({formatFunc}, \"{originalFormat}\")";
                 }
 
                 if (lm.RegularParameters.Count == 1)
                 {
-                    return $"new global::{StateHolderNamespace}.LogStateHolder<{lm.RegularParameters[0].Type}>" +
+                    return $"new global::{StateHolderNamespace}.LogValues<{lm.RegularParameters[0].Type}>" +
                             $"({formatFunc}, \"{originalFormat}\", \"{NormalizeArgumentName(lm.RegularParameters[0].Name)}\", {lm.RegularParameters[0].Name})";
                 }
 
@@ -421,7 +421,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     if (lm.RegularParameters.Count > MaxStateHolderArity)
                     {
-                        _ = sb.Append($"new global::{StateHolderNamespace}.LogStateHolderN({formatFunc}, \"{originalFormat}\", new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
+                        _ = sb.Append($"new global::{StateHolderNamespace}.LogValuesN({formatFunc}, \"{originalFormat}\", new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
                         foreach (var p in lm.RegularParameters)
                         {
                             _ = sb.Append($"new (\"{NormalizeArgumentName(p.Name)}\", {p.Name}), ");
@@ -444,7 +444,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         var tp = sb.ToString();
 
                         _ = sb.Clear();
-                        _ = sb.Append($"new global::{StateHolderNamespace}.LogStateHolder<{tp}>({formatFunc}, \"{originalFormat}\", _names{lm.Name}, ");
+                        _ = sb.Append($"new global::{StateHolderNamespace}.LogValues<{tp}>({formatFunc}, \"{originalFormat}\", _names{lm.Name}, ");
                         foreach (var p in lm.RegularParameters)
                         {
                             if (p != lm.RegularParameters[0])
