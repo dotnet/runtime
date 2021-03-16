@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.JavaScript {
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
     public class CustomMarshalerAttribute : Attribute {
-        public Type MarshalerType;
+        private Type MarshalerType;
         
         public CustomMarshalerAttribute (Type marshalerType)
             : base () {

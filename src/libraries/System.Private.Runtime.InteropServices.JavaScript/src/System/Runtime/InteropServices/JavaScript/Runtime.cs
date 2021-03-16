@@ -408,12 +408,32 @@ namespace System.Runtime.InteropServices.JavaScript
             var typeHandle = tmp.typeHandle;
 
             var type = Type.GetTypeFromHandle(typeHandle);
+            Type? marshalerType;
 
-            var preFilter = GetAndEscapeStringProperty(type, "JSToManaged_PreFilter");
-            var postFilter = GetAndEscapeStringProperty(type, "ManagedToJS_PostFilter");
+            foreach (var cad in type.GetCustomAttributesData()) {
+                if (cad.AttributeType.FullName != "System.Runtime.InteropServices.JavaScript.CustomMarshalerAttribute")
+                    continue;
+                
+                var args = cad.ConstructorArguments;
+                if (args.Count < 1)
+                    continue;
+                
+                var arg = args[0];
+                if (arg.ArgumentType != typeof(Type))
+                    continue;
+                
+                marshalerType = (Type)arg.Value;
+                break;
+            }
 
-            var inputPtr = GetMethodPointer(type, "JSToManaged", out Type? temp);
-            var outputPtr = GetMethodPointer(type, "ManagedToJS", out Type? outputReturnType);
+            if (marshalerType == null)
+                return "null";
+
+            var preFilter = GetAndEscapeStringProperty(marshalerType, "JSToManaged_PreFilter");
+            var postFilter = GetAndEscapeStringProperty(marshalerType, "ManagedToJS_PostFilter");
+
+            var inputPtr = GetMethodPointer(marshalerType, "JSToManaged", out Type? temp);
+            var outputPtr = GetMethodPointer(marshalerType, "ManagedToJS", out Type? outputReturnType);
 
             var outputNeedsToBeUnboxed = outputReturnType?.IsValueType ?? true;
 
