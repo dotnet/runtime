@@ -357,8 +357,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return tmp.ptr;
         }
 
-        private static unsafe string GetAndEscapeStringField (Type type, string name) {
-            var info = type.GetField(
+        private static unsafe string GetAndEscapeStringProperty (Type type, string name) {
+            var info = type.GetProperty(
                 name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null)
@@ -390,6 +390,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (ch <= 0xF)
                         result += '0';
                     result += ((int)ch).ToString("X");
+                } else {
+                    result += ch;
                 }
             }
             result += '"';
@@ -407,8 +409,8 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var type = Type.GetTypeFromHandle(typeHandle);
 
-            var preFilter = GetAndEscapeStringField(type, "JSToManaged_PreFilter");
-            var postFilter = GetAndEscapeStringField(type, "ManagedToJS_PostFilter");
+            var preFilter = GetAndEscapeStringProperty(type, "JSToManaged_PreFilter");
+            var postFilter = GetAndEscapeStringProperty(type, "ManagedToJS_PostFilter");
 
             var inputPtr = GetMethodPointer(type, "JSToManaged", out Type? temp);
             var outputPtr = GetMethodPointer(type, "ManagedToJS", out Type? outputReturnType);

@@ -45,8 +45,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public struct CustomDate {
             public DateTime Date;
 
-            private static string JSToManaged_PreFilter () => "value.toISOString()";
-            private static string ManagedToJS_PostFilter () => "new Date(value)";
+            private static string JSToManaged_PreFilter { get; } = "value.toISOString()";
+            private static string ManagedToJS_PostFilter { get; } = "new Date(value)";
 
             private static CustomDate JSToManaged (string s) {
                 Console.WriteLine($"CustomDate.JSToManaged({s})");
