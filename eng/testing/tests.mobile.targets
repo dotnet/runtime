@@ -10,7 +10,7 @@
     <PublishingTestsRun>true</PublishingTestsRun>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' == 'true'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
     <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
     <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
@@ -21,7 +21,7 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
     <DebuggerSupport>false</DebuggerSupport>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
@@ -33,7 +33,7 @@
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' and '$(UseDefaultiOSFeatureSwitches)' != 'false'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' and '$(UseDefaultiOSFeatureSwitches)' == 'true'">
   	<EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
 		<EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
 		<EventSourceSupport>false</EventSourceSupport>
