@@ -1359,6 +1359,14 @@ mono_wasm_class_get_type (MonoClass *klass)
 	return mono_class_get_type (klass);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoClass *
+mono_wasm_type_get_class (MonoType *type)
+{
+	if (!type)
+		return 0;
+	return mono_type_get_class (type);
+}
+
 EMSCRIPTEN_KEEPALIVE void *
 mono_wasm_unbox_rooted (MonoObject *obj)
 {

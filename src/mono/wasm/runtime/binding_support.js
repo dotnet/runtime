@@ -76,6 +76,7 @@ var BindingSupportLib = {
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 			this.mono_wasm_get_class_for_bind_or_invoke = Module.cwrap ('mono_wasm_get_class_for_bind_or_invoke', 'number', ['number', 'number']);
 			this.mono_wasm_class_get_type = Module.cwrap ('mono_wasm_class_get_type', 'number', ['number']);
+			this.mono_wasm_type_get_class = Module.cwrap ('mono_wasm_type_get_class', 'number', ['number']);
 			this.mono_wasm_get_type_name = Module.cwrap ('mono_wasm_get_type_name', 'string', ['number']);
 
 			this._box_buffer = Module._malloc(32);
@@ -1218,18 +1219,18 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_pick_automatic_converter_for_user_type: function (methodPtr, args_marshal, classPtr) {
-			if (!classPtr)
-				throw new Error("classPtr is null or undefined");
+		_pick_automatic_converter_for_user_type: function (methodPtr, args_marshal, typePtr) {
+			if (!typePtr)
+				throw new Error("typePtr is null or undefined");
 
 			if (!this._automatic_converter_table)
 				this._automatic_converter_table = new Map ();
-			if (!this._automatic_converter_table.has (classPtr)) {
+			if (!this._automatic_converter_table.has (typePtr)) {
 					
-				var info = this._get_custom_marshaler_info_for_class (classPtr);
+				var info = this._get_custom_marshaler_info_for_type (typePtr);
 				// HACK
 				if (!info) {
-					console.log("_get_custom_marshaler_info returned null for classPtr", classPtr);
+					console.log("_get_custom_marshaler_info returned null for typePtr", typePtr);
 					info = {};
 				}
 
@@ -1239,10 +1240,12 @@ var BindingSupportLib = {
 
 				var convMethod = info.inputPtr;
 				if (!convMethod) {
-					console.log (`No automatic converter found for classPtr ${classPtr} and methodPtr ${methodPtr}`);
-					this._automatic_converter_table.set (classPtr, null);
+					console.log (`No automatic converter found for typePtr ${typePtr} and methodPtr ${methodPtr}`);
+					this._automatic_converter_table.set (typePtr, null);
 					return null;
 				}
+
+				var classPtr = this.mono_wasm_type_get_class (typePtr);
 
 				// FIXME
 				var sigInfo = this.get_method_signature_info (classPtr, convMethod);
@@ -1250,13 +1253,14 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, "JSToManaged_class" + classPtr
+					convMethod, 0, signature, "JSToManaged_type" + typePtr
 				);
 
 				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);
-				this._automatic_converter_table.set (classPtr, result);
+				
+				this._automatic_converter_table.set (typePtr, result);
 			}
-			return this._automatic_converter_table.get (classPtr);
+			return this._automatic_converter_table.get (typePtr);
 		},
 
 		_pick_automatic_converter: function (methodPtr, args_marshal, paramRecord) {
@@ -1276,7 +1280,7 @@ var BindingSupportLib = {
 					result.needs_unbox = true;
 					; // FIXME: Fall-through
 				case 7: // OBJECT
-					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.classPtr);
+					var res = this._pick_automatic_converter_for_user_type (methodPtr, args_marshal, paramRecord.typePtr);
 					if (res) {
 						result.convert = res;
 						break;
