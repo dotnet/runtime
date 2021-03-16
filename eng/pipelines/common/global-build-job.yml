@@ -117,6 +117,13 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
+    - ${{ if and(eq(parameters.hostedOs, 'windows'), and(eq(parameters.osGroup, 'Browser'), eq(parameters.platform, 'Browser_wasm'))) }}:
+      # Update machine certs
+      - task: PowerShell@2
+        displayName: Update machine certs
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
     # Build
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
       displayName: Build product
