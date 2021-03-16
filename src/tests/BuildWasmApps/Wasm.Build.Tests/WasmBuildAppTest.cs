@@ -65,10 +65,11 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void Bug49588_RegressionTest(BuildArgs buildArgs, RunHost host, string id)
             => TestMain("bug49588", @"
+                using Sytem;
                 public class TestClass {
                     public static int Main()
                     {
-                        System.Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
+                        Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
                         return 42;
                     }
                 }", buildArgs, host, id);
