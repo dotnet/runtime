@@ -9268,6 +9268,7 @@ public:
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
         STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
+        STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9313,6 +9314,8 @@ public:
     {
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
     }
+
+    bool compPromoteFewerStructs(unsigned lclNum);
 
 #endif // DEBUG
 
