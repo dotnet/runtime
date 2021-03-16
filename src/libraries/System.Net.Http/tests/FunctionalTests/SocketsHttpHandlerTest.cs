@@ -114,7 +114,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public async Task DefaultRequestHeaders_Invalid_SentUnparsed()
+        public async Task DefaultRequestHeaders_SentUnparsed()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {

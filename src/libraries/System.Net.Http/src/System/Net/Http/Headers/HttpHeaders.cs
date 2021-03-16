@@ -279,28 +279,29 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal string GetHeaderString(HeaderDescriptor descriptor, object? exclude = null) =>
-            TryGetHeaderValue(descriptor, out object? info) ?
-                GetHeaderString(descriptor, info, exclude) :
-                string.Empty;
-
-        private string GetHeaderString(HeaderDescriptor descriptor, object info, object? exclude = null)
+        internal string GetHeaderString(HeaderDescriptor descriptor, object? exclude = null)
         {
-            string[] values = GetValuesAsStrings(descriptor, info, exclude);
-
-            if (values.Length == 1)
+            if (TryGetHeaderValue(descriptor, out object? info))
             {
-                return values[0];
+                string[] values = GetValuesAsStrings(descriptor, info, exclude);
+
+                if (values.Length == 1)
+                {
+                    return values[0];
+                }
+
+                // Note that if we get multiple values for a header that doesn't support multiple values, we'll
+                // just separate the values using a comma (default separator).
+                string? separator = HttpHeaderParser.DefaultSeparator;
+                if (descriptor.Parser != null && descriptor.Parser.SupportsMultipleValues)
+                {
+                    separator = descriptor.Parser.Separator;
+                }
+
+                return string.Join(separator, values);
             }
 
-            // Note that if we get multiple values for a header that doesn't support multiple values, we'll
-            // just separate the values using a comma (default separator).
-            string? separator = HttpHeaderParser.DefaultSeparator;
-            if ((descriptor.Parser != null) && (descriptor.Parser.SupportsMultipleValues))
-            {
-                separator = descriptor.Parser.Separator;
-            }
-            return string.Join(separator, values);
+            return string.Empty;
         }
 
         #region IEnumerable<KeyValuePair<string, IEnumerable<string>>> Members
@@ -345,6 +346,23 @@ namespace System.Net.Http.Headers
                     string[] values = GetValuesAsStrings(descriptor, info);
                     yield return new KeyValuePair<string, IEnumerable<string>>(descriptor.Name, values);
                 }
+            }
+        }
+
+        internal IEnumerable<KeyValuePair<string, string[]>> EnumerateWithoutValidation()
+        {
+            if (_headerStore == null)
+            {
+                yield break;
+            }
+
+            foreach (KeyValuePair<HeaderDescriptor, object> header in _headerStore)
+            {
+                string[] values = TryGetHeaderValue(header.Key, out object? info) ?
+                    GetValuesAsStrings(header.Key, info) :
+                    Array.Empty<string>();
+
+                yield return new KeyValuePair<string, string[]>(header.Key.Name, values);
             }
         }
 
