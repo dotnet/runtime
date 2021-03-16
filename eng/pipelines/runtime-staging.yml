@@ -265,7 +265,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
-    - ${{ if eq(variables['isFullMatrix'], false) }}:
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
       - OSX_arm64
     jobParameters:
       testGroup: innerloop
@@ -277,7 +277,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - ${{ if eq(variables['isFullMatrix'], false) }}:
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
       - OSX_arm64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
