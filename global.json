@@ -8,7 +8,7 @@
     "dotnet": "6.0.100-preview.2.21155.3"
   },
   "native-tools": {
-    "cmake": "3.16.4",
+    "cmake": "3.19.7",
     "python3": "3.7.1"
   },
   "msbuild-sdks": {
