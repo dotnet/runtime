@@ -33,19 +33,19 @@ public class RuntimeConfigParserTask : Task
     {
         if (string.IsNullOrEmpty(RuntimeConfigFile))
         {
-            throw new ArgumentException($"'{nameof(RuntimeConfigFile)}' is required.", nameof(RuntimeConfigFile));
+            Log.LogError($"'{nameof(RuntimeConfigFile)}' is required.");
         }
 
         if (string.IsNullOrEmpty(OutputFile))
         {
-            throw new ArgumentException($"'{nameof(OutputFile)}' is required.", nameof(OutputFile));
+            Log.LogError($"'{nameof(OutputFile)}' is required.");
         }
 
         Dictionary<string, string> configProperties = ConvertInputToDictionary(RuntimeConfigFile);
 
         if (ReservedProperties.Length != 0)
         {
-            checkDuplicateProperties(configProperties, ReservedProperties);
+            CheckDuplicateProperties(configProperties, ReservedProperties);
         }
 
         var blobBuilder = new BlobBuilder();
@@ -54,7 +54,7 @@ public class RuntimeConfigParserTask : Task
         using var stream = File.OpenWrite(OutputFile);
         blobBuilder.WriteContentTo(stream);
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
     /// Reads a json file from the given path and extracts the "configProperties" key (assumed to be a string to string dictionary)
