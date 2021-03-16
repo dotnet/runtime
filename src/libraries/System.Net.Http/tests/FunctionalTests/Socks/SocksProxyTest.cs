@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                 using (var proxy = LoopbackSocksServer.Create())
                 {
                     using (var handler = CreateHttpClientHandler())
-                    using (var client = CreateHttpClient())
+                    using (var client = CreateHttpClient(handler))
                     {
                         client.DefaultRequestVersion = UseVersion;
                         handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
@@ -52,7 +52,7 @@ namespace System.Net.Http.Functional.Tests.Socks
                 using (var proxy = LoopbackSocksServer.Create())
                 {
                     using (var handler = CreateHttpClientHandler())
-                    using (var client = CreateHttpClient())
+                    using (var client = CreateHttpClient(handler))
                     {
                         client.DefaultRequestVersion = UseVersion;
                         handler.Proxy = new WebProxy($"{schema}://localhost:{proxy.Port}");
