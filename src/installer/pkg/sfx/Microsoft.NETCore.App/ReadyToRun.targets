@@ -70,7 +70,12 @@
       <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
       <ToolsetDir>$([MSBuild]::NormalizePath('$(RepoRoot)', 'artifacts', 'toolset'))</ToolsetDir>
       <DotnetSdkRootFile>$([MSBuild]::NormalizePath('$(ToolsetDir)', 'sdk.txt'))</DotnetSdkRootFile>
+      <ScriptExt>.sh</ScriptExt>
+      <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     </PropertyGroup>
+
+    <Message Importance="High" Text="Initializing DotNet CLI" />
+    <Exec Command="$(RepoRoot)/dotnet$(ScriptExt) --version" />
 
     <Message Importance="High" Condition="Exists('$(ToolsetDir)')" Text="ToolsetDir exists: $(ToolsetDir)" />
     <Message Importance="High" Condition="Exists('$(DotnetSdkRootFile)')" Text="sdk.txt file exists: $(DotnetSdkRootFile)" />
