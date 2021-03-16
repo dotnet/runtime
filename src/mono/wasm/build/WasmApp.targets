@@ -122,7 +122,7 @@
       References="@(ReferencePath)"
       ToolExe="$(CscToolExe)"
       ToolPath="$(CscToolPath)" />
-    <ItemGroup Condition="'$(WasmDedup)' == 'true'">
+    <ItemGroup Condition="'$(WasmDedup)' == 'false'">
       <_AotInputAssemblies Include="$(_WasmDedupAssembly)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
