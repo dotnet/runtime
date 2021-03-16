@@ -209,7 +209,7 @@ namespace System.Text.Encodings.Web
                 }
                 ref byte rDest = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(span));
                 Unsafe.WriteUnaligned<ulong>(ref rDest, abcd64);
-                Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref rDest, sizeof(ulong)), ef32);
+                Unsafe.WriteUnaligned<uint>(ref Unsafe.AddByteOffset(ref rDest, (nint)sizeof(ulong)), ef32);
                 return true;
             }
             else
