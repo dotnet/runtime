@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class BrowserCrypto
     {
-        internal enum ShaHash
+        internal enum SimpleDigest
         {
             Sha1,
             Sha256,
@@ -17,9 +17,9 @@ internal static partial class Interop
             Sha512,
         };
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_SHAHash")]
-        internal static extern unsafe int SHAHash(
-            ShaHash hash,
+        [DllImport(Libraries.CryptoNative, EntryPoint = "SystemCryptoNativeBrowser_SimpleDigestHash")]
+        internal static extern unsafe int SimpleDigestHash(
+            SimpleDigest hash,
             byte* input_buffer,
             int input_len,
             byte* output_buffer,

@@ -131,26 +131,20 @@ var ChannelWorker = {
     }
 };
 
-async function sha_hash(type, data) {
-    var sha_type = "";
+async function call_digest(type, data) {
+    var digest_type = "";
     switch(type) {
-        case 0: sha_type = "SHA-1"; break;
-        case 1: sha_type = "SHA-256"; break;
-        case 2: sha_type = "SHA-384"; break;
-        case 3: sha_type = "SHA-512"; break;
+        case 0: digest_type = "SHA-1"; break;
+        case 1: digest_type = "SHA-256"; break;
+        case 2: digest_type = "SHA-384"; break;
+        case 3: digest_type = "SHA-512"; break;
         default:
-            throw "CRYPTO: Unknown SHA: " + type;
+            throw "CRYPTO: Unknown digest: " + type;
     }
 
-    // [TODO] The 'crypto' API is not available within the current
-    // v8 test harness. The following were tried:
-    //      self
-    //      document
-    //      this
-    //      globalThis
-    //
-    // The below works in the browser scenario.
-    var digest = await crypto.subtle.digest(sha_type, data);
+    // The 'crypto' API is not available in non-browser
+    // environments (for example, v8 server).
+    var digest = await crypto.subtle.digest(digest_type, data);
     return Array.from(new Uint8Array(digest));
 }
 
@@ -158,8 +152,8 @@ async function sha_hash(type, data) {
 async function async_call(msg) {
     const req = JSON.parse(msg);
 
-    if (req.func === "sha") {
-        var digestArr = await sha_hash(req.type, new Uint8Array(req.data));
+    if (req.func === "digest") {
+        var digestArr = await call_digest(req.type, new Uint8Array(req.data));
         return JSON.stringify(digestArr);
     } else {
         throw "CRYPTO: Unknown request: " + req.func;

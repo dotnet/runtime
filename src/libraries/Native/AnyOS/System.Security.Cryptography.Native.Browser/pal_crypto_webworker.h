@@ -5,16 +5,16 @@
 
 #include <stdint.h>
 
-enum sha_hash
+enum simple_digest
 {
-    sha_hash_1,
-    sha_hash_256,
-    sha_hash_384,
-    sha_hash_512,
+    sd_sha_1,
+    sd_sha_256,
+    sd_sha_384,
+    sd_sha_512,
 };
 
-PALEXPORT int32_t SystemCryptoNativeBrowser_SHAHash(
-    enum sha_hash ver,
+PALEXPORT int32_t SystemCryptoNativeBrowser_SimpleDigestHash(
+    enum simple_digest ver,
     uint8_t* input_buffer,
     int32_t input_len,
     uint8_t* output_buffer,

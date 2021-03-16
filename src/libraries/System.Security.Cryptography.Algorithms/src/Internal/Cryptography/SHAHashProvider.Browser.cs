@@ -12,7 +12,7 @@ namespace Internal.Cryptography
     internal sealed class SHAHashProvider : HashProvider
     {
         private readonly int hashSizeInBytes;
-        private readonly Interop.BrowserCrypto.ShaHash impl;
+        private readonly Interop.BrowserCrypto.SimpleDigest impl;
         private MemoryStream buffer;
 
         public SHAHashProvider(string hashAlgorithmId)
@@ -20,19 +20,19 @@ namespace Internal.Cryptography
             switch (hashAlgorithmId)
             {
                 case HashAlgorithmNames.SHA1:
-                    impl = Interop.BrowserCrypto.ShaHash.Sha1;
+                    impl = Interop.BrowserCrypto.SimpleDigest.Sha1;
                     hashSizeInBytes = 20;
                     break;
                 case HashAlgorithmNames.SHA256:
-                    impl = Interop.BrowserCrypto.ShaHash.Sha256;
+                    impl = Interop.BrowserCrypto.SimpleDigest.Sha256;
                     hashSizeInBytes = 32;
                     break;
                 case HashAlgorithmNames.SHA384:
-                    impl = Interop.BrowserCrypto.ShaHash.Sha384;
+                    impl = Interop.BrowserCrypto.SimpleDigest.Sha384;
                     hashSizeInBytes = 48;
                     break;
                 case HashAlgorithmNames.SHA512:
-                    impl = Interop.BrowserCrypto.ShaHash.Sha512;
+                    impl = Interop.BrowserCrypto.SimpleDigest.Sha512;
                     hashSizeInBytes = 64;
                     break;
                 default:
@@ -75,7 +75,7 @@ namespace Internal.Cryptography
                 fixed (byte* src = srcArray)
                 fixed (byte* dest = destination)
                 {
-                    Interop.BrowserCrypto.SHAHash(impl, src, srcLength, dest, destination.Length);
+                    Interop.BrowserCrypto.SimpleDigestHash(impl, src, srcLength, dest, destination.Length);
                 }
             }
 
