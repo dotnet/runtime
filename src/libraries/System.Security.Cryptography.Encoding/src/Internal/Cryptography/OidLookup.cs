@@ -99,7 +99,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>Expected size of <see cref="s_friendlyNameToOid"/>.</summary>
-        private const int FriendlyNameToOidCount = 110;
+        private const int FriendlyNameToOidCount = 111;
 
         /// <summary>Expected size of <see cref="s_oidToFriendlyName"/>.</summary>
         private const int OidToFriendlyNameCount = 103;
@@ -238,7 +238,7 @@ namespace Internal.Cryptography
             AddEntry("1.2.840.113549.1.1.1", "RSA");
             AddEntry("1.2.840.113549.1.1.7", "RSAES_OAEP");
             AddEntry("1.2.840.113549.1.1.10", "RSASSA-PSS");
-            AddEntry("2.5.4.8", "S");
+            AddEntry("2.5.4.8", "S", new[] { "ST" });
             AddEntry("1.3.132.0.9", "secP160k1");
             AddEntry("1.3.132.0.8", "secP160r1");
             AddEntry("1.3.132.0.30", "secP160r2");
