@@ -231,8 +231,9 @@ namespace System.Diagnostics.Tests
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
-            Assert.Contains(fileToOpen, e.Message);
+            AssertExtensions.ThrowsContains<Win32Exception>(
+                () => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }),
+                fileToOpen);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
