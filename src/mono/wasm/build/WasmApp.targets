@@ -65,7 +65,7 @@
 
   <PropertyGroup>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">$(RunAOTCompilation)</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -122,7 +122,7 @@
       References="@(ReferencePath)"
       ToolExe="$(CscToolExe)"
       ToolPath="$(CscToolPath)" />
-    <ItemGroup Condition="'$(WasmDedup)' == 'false'">
+    <ItemGroup Condition="'$(WasmDedup)' == 'true'">
       <_AotInputAssemblies Include="$(_WasmDedupAssembly)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
