@@ -97,7 +97,7 @@ jobs:
         displayName: 'Coreclr product build'
 
     # Download mono 
-    - ${{ if eq(parameters.runtimeType, 'mono') }}:
+    - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)
