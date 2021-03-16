@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[]? buf, int cBuf);
+        internal delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
         internal static extern int CryptoNative_BioTell(SafeBioHandle bio);
@@ -39,29 +39,14 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
         internal static extern SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotBefore")]
-        internal static extern IntPtr GetX509NotBefore(SafeX509Handle x509);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotAfter")]
-        internal static extern IntPtr GetX509NotAfter(SafeX509Handle x509);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509CrlNextUpdate")]
         internal static extern IntPtr GetX509CrlNextUpdate(SafeX509CrlHandle crl);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Version")]
         internal static extern int GetX509Version(SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SignatureAlgorithm")]
-        internal static extern IntPtr GetX509SignatureAlgorithm(SafeX509Handle x509);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyAlgorithm")]
-        internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
         private static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyBytes")]
-        internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EkuFieldCount")]
         internal static extern int GetX509EkuFieldCount(SafeEkuExtensionHandle eku);
@@ -161,7 +146,7 @@ internal static partial class Interop
             }
         }
 
-        private static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
+        internal static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
         {
             int negativeSize = method(handle, null, 0);
 

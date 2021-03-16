@@ -28,7 +28,7 @@ dotnet run --framework netcoreapp3.1 -- "path_to_UnicodeData.txt" ../../src/Syst
 dotnet run --framework netcoreapp3.1 -- "path_to_Blocks.txt" ../../src/System/Text/Unicode/UnicodeRanges.generated.cs ../../tests/UnicodeRangesTests.generated.cs
 ```
 
-5. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
+5. Update the __ref__ APIs to reflect any new `UnicodeRanges` static properties which were added in the previous step, otherwise the unit test project will not be able to reference them. See https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/updating-ref-source.md for instructions on how to update the reference assemblies.
 
 6. Update the __src/libraries/System.Text.Encodings.Web/tests/System.Text.Encodings.Web.Tests.csproj__ file to reference the new __UnicodeData.txt__ file that was added to the [runtime-assets](https://github.com/dotnet/runtime-assets) repo in step (1). Open the .csproj file in a text editor and replace the `<UnicodeUcdVersion>` property value near the top of the file to reference the new UCD version being consumed.
 

@@ -12,7 +12,7 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
-    public class Rfc2898DeriveBytes : DeriveBytes
+    public partial class Rfc2898DeriveBytes : DeriveBytes
     {
         private const int MinimumSaltSize = 8;
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
+            :this(password, salt, iterations, hashAlgorithm, clearPassword: false, requireMinimumSaltLength: true)
         {
         }
 
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
+            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true, requireMinimumSaltLength: true)
         {
         }
 
@@ -89,11 +89,11 @@ namespace System.Security.Cryptography
             Initialize();
         }
 
-        private Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword)
+        internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword, bool requireMinimumSaltLength)
         {
             if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
-            if (salt.Length < MinimumSaltSize)
+            if (requireMinimumSaltLength && salt.Length < MinimumSaltSize)
                 throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);

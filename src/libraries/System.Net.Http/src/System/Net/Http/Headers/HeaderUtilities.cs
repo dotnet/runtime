@@ -390,5 +390,19 @@ namespace System.Net.Http.Headers
         {
             CheckValidToken(value, "item");
         }
+
+        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        {
+            if (source == null)
+                return null;
+
+            var copy = new ObjectCollection<NameValueHeaderValue>();
+            foreach (NameValueHeaderValue item in source)
+            {
+                copy.Add(new NameValueHeaderValue(item));
+            }
+
+            return copy;
+        }
     }
 }

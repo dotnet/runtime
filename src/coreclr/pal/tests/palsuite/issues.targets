@@ -32,4 +32,21 @@
             <Issue>https://github.com/dotnet/runtime/issues/42292</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">
+        <ExcludeList Include="miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1">
+            <Issue>https://github.com/dotnet/runtime/issues/7639</Issue>
+        </ExcludeList>
+        <ExcludeList Include="exception_handling/pal_sxs/test1/paltest_pal_sxs_test1">
+            <Issue>https://github.com/dotnet/runtime/issues/42292</Issue>
+        </ExcludeList>
+        <ExcludeList Include="file_io/ReadFile/test2/paltest_readfile_test2">
+            <!-- Test hard codes PAGE_SIZE = 4096. Apple Silicon does not have 4K pages. -->
+            <Issue>https://github.com/dotnet/runtime/issues/42292</Issue>
+        </ExcludeList>
+        <ExcludeList Include="filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4">
+            <!-- Test tries to set RWX on general memory page -->
+            <Issue>https://github.com/dotnet/runtime/issues/7639</Issue>
+        </ExcludeList>
+    </ItemGroup>
 </Project>

@@ -1517,26 +1517,23 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
 
-        if ((argCnt == 1) ||
-            ((vecCns.i64[0] == vecCns.i64[1]) && ((simdSize <= 16) || (vecCns.i64[2] == vecCns.i64[3]))))
+        if (((simdSize == 16) || (simdSize == 32)) && VectorConstantIsBroadcastedI64(vecCns, simdSize / 8))
         {
             // If we are a single constant or if all parts are the same, we might be able to optimize
             // this even further for certain values, such as Zero or AllBitsSet.
 
             if (vecCns.i64[0] == 0)
             {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
-
-                node->gtHWIntrinsicId = NI_Vector128_get_Zero;
+                node->gtOp1           = nullptr;
+                node->gtOp2           = nullptr;
+                node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_Zero : NI_Vector256_get_Zero;
                 return;
             }
             else if (vecCns.i64[0] == -1)
             {
-                node->gtOp1 = nullptr;
-                node->gtOp2 = nullptr;
-
-                node->gtHWIntrinsicId = NI_Vector128_get_AllBitsSet;
+                node->gtOp1           = nullptr;
+                node->gtOp2           = nullptr;
+                node->gtHWIntrinsicId = (simdSize == 16) ? NI_Vector128_get_AllBitsSet : NI_Vector256_get_AllBitsSet;
                 return;
             }
         }

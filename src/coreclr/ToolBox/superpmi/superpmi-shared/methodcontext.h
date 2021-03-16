@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // MethodContext.h - Primary structure to store all the EE-JIT details required to replay creation of a method
@@ -108,18 +106,30 @@ public:
     void dmpGetMethodAttribs(DWORDLONG key, DWORD value);
     DWORD repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle);
 
+    void recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod);
+    void dmpGetClassModule(DWORDLONG key, DWORDLONG value);
+    CORINFO_MODULE_HANDLE repGetClassModule(CORINFO_CLASS_HANDLE cls);
+
+    void recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem);
+    void dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value);
+    CORINFO_ASSEMBLY_HANDLE repGetModuleAssembly(CORINFO_MODULE_HANDLE mod);
+
+    void recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName);
+    void dmpGetAssemblyName(DWORDLONG key, DWORD value);
+    const char* repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem);
+
     void recGetVars(CORINFO_METHOD_HANDLE ftn, ULONG32* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
     void dmpGetVars(DWORDLONG key, const Agnostic_GetVars& value);
     void repGetVars(CORINFO_METHOD_HANDLE ftn, ULONG32* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers);
 
     void recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
-                          DWORD**                       pILOffsets,
+                          uint32_t**                       pILOffsets,
                           ICorDebugInfo::BoundaryTypes* implictBoundaries);
     void dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries& value);
     void repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                           unsigned int*                 cILOffsets,
-                          DWORD**                       pILOffsets,
+                          uint32_t**                    pILOffsets,
                           ICorDebugInfo::BoundaryTypes* implictBoundaries);
 
     void recInitClass(CORINFO_FIELD_HANDLE   field,
@@ -156,13 +166,13 @@ public:
 
     void recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                       CORINFO_METHOD_HANDLE calleeHnd,
-                      DWORD*                pRestrictions,
+                      uint32_t*                pRestrictions,
                       CorInfoInline         response,
                       DWORD                 exceptionCode);
     void dmpCanInline(DLDL key, const Agnostic_CanInline& value);
     CorInfoInline repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                CORINFO_METHOD_HANDLE calleeHnd,
-                               DWORD*                pRestrictions,
+                               uint32_t*             pRestrictions,
                                DWORD*                exceptionCode);
 
     void recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD exceptionCode);
@@ -511,9 +521,9 @@ public:
     void dmpGetInlinedCallFrameVptr(DWORD key, DLDL value);
     const void* repGetInlinedCallFrameVptr(void** ppIndirection);
 
-    void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, LONG* result);
+    void recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result);
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
-    LONG* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
+    int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
 
     void recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result);
     void dmpGetClassDomainID(DWORDLONG key, DLD value);
@@ -569,9 +579,9 @@ public:
     void dmpIsValidStringRef(DLD key, DWORD value);
     bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result);
+    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result);
     void dmpGetStringLiteral(DLD key, DD value);
-    LPCWSTR repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    const char16_t* repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
@@ -756,7 +766,7 @@ public:
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
     void recAppendClassName(
-        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const WCHAR* result);
+        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result);
     void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
     const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly);
 
@@ -871,7 +881,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 188
+// Highest packet number: 191
 // *************************************************************************************
 enum mcPackets
 {
@@ -1036,6 +1046,9 @@ enum mcPackets
     Packet_SigInstHandleMap                              = 184,
     Packet_AllocPgoInstrumentationBySchema               = 186, // Added 1/4/2021
     Packet_GetPgoInstrumentationResults                  = 187, // Added 1/4/2021
+    Packet_GetClassModule                                = 189, // Added 2/19/2021
+    Packet_GetModuleAssembly                             = 190, // Added 2/19/2021
+    Packet_GetAssemblyName                               = 191, // Added 2/19/2021
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocGCInfo                       = 114,

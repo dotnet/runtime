@@ -369,7 +369,7 @@ mono_arch_get_delegate_invoke_impls (void)
 }
 
 gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
+mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
 {
 	g_error ("mono_arch_get_gsharedvt_call_info");
 	return NULL;
@@ -467,7 +467,7 @@ mono_arch_get_cie_program (void)
 }
 
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp)
 {
 	g_error ("mono_arch_build_imt_trampoline");
 }
@@ -484,6 +484,13 @@ host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	g_error ("mono_arch_context_get_int_reg");
+	return 0;
+}
+
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	g_error ("mono_arch_context_get_int_reg_address");
 	return 0;
 }
 
@@ -627,17 +634,12 @@ mono_arch_register_icall (void)
 }
 
 void
-mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	g_error ("mono_arch_patch_code_new");
 }
 
 #ifdef HOST_WASM
-
-/*
-The following functions don't belong here, but are due to laziness.
-*/
-gboolean mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize);
 
 G_BEGIN_DECLS
 
@@ -649,25 +651,6 @@ int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
 int sem_timedwait (sem_t *sem, const struct timespec *abs_timeout);
 
 G_END_DECLS
-
-//w32file-wasm.c
-gboolean
-mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)
-{
-	glong len;
-	gboolean status = FALSE;
-
-	gunichar2 *ret = g_utf8_to_utf16 ("memfs", -1, NULL, &len, NULL);
-	if (ret != NULL && len < fsbuffersize) {
-		memcpy (fsbuffer, ret, len * sizeof (gunichar2));
-		fsbuffer [len] = 0;
-		status = TRUE;
-	}
-	if (ret != NULL)
-		g_free (ret);
-
-	return status;
-}
 
 G_BEGIN_DECLS
 

@@ -113,8 +113,8 @@ private:
 
     Crst                        m_HashTableCrstGlobal;
 
-    // The large heap handle table.
-    LargeHeapHandleTable        m_LargeHeapHandleTable;
+    // The pinned heap handle table.
+    PinnedHeapHandleTable        m_PinnedHeapHandleTable;
 
 };
 

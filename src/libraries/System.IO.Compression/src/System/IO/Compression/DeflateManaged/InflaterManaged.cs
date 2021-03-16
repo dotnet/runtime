@@ -86,6 +86,8 @@ namespace System.IO.Compression
             _state = InflaterState.ReadingBFinal; // start by reading BFinal bit
         }
 
+        public void SetInput(Memory<byte> inputBytes) => _input.SetInput(inputBytes);
+
         public void SetInput(byte[] inputBytes, int offset, int length) =>
             _input.SetInput(inputBytes, offset, length); // append the bytes
 
@@ -93,7 +95,7 @@ namespace System.IO.Compression
 
         public int AvailableOutput => _output.AvailableBytes;
 
-        public int Inflate(byte[] bytes, int offset, int length)
+        public int Inflate(Memory<byte> bytes)
         {
             // copy bytes from output to outputbytes if we have available bytes
             // if buffer is not filled up. keep decoding until no input are available
@@ -104,14 +106,14 @@ namespace System.IO.Compression
                 int copied = 0;
                 if (_uncompressedSize == -1)
                 {
-                    copied = _output.CopyTo(bytes, offset, length);
+                    copied = _output.CopyTo(bytes);
                 }
                 else
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
-                        length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
-                        copied = _output.CopyTo(bytes, offset, length);
+                        bytes = bytes.Slice(0, (int)Math.Min(bytes.Length, _uncompressedSize - _currentInflatedCount));
+                        copied = _output.CopyTo(bytes);
                         _currentInflatedCount += copied;
                     }
                     else
@@ -122,13 +124,13 @@ namespace System.IO.Compression
                 }
                 if (copied > 0)
                 {
-                    offset += copied;
+                    bytes = bytes.Slice(copied, bytes.Length - copied);
                     count += copied;
-                    length -= copied;
                 }
 
-                if (length == 0)
-                {   // filled in the bytes array
+                if (bytes.IsEmpty)
+                {
+                    // filled in the bytes buffer
                     break;
                 }
                 // Decode will return false when more input is needed
@@ -136,6 +138,8 @@ namespace System.IO.Compression
 
             return count;
         }
+
+        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsMemory(offset, length));
 
         //Each block of compressed data begins with 3 header bits
         // containing the following data:

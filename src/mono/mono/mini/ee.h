@@ -14,7 +14,7 @@
 #ifndef __MONO_EE_H__
 #define __MONO_EE_H__
 
-#define MONO_EE_API_VERSION 0x10
+#define MONO_EE_API_VERSION 0x11
 
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
@@ -30,7 +30,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, to_native_trampoline, (gpointer addr, gpointer ccontext)) \
 	MONO_EE_CALLBACK (gpointer, create_method_pointer, (MonoMethod *method, gboolean compile, MonoError *error)) \
 	MONO_EE_CALLBACK (MonoFtnDesc*, create_method_pointer_llvmonly, (MonoMethod *method, gboolean unbox, MonoError *error)) \
-	MONO_EE_CALLBACK (void, free_method, (MonoDomain *domain, MonoMethod *method)) \
+	MONO_EE_CALLBACK (void, free_method, (MonoMethod *method)) \
 	MONO_EE_CALLBACK (MonoObject*, runtime_invoke, (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)) \
 	MONO_EE_CALLBACK (void, init_delegate, (MonoDelegate *del, MonoError *error)) \
 	MONO_EE_CALLBACK (void, delegate_ctor, (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)) \
@@ -40,7 +40,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (gboolean, run_filter, (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
 	MONO_EE_CALLBACK (void, frame_iter_init, (MonoInterpStackIter *iter, gpointer interp_exit_data)) \
 	MONO_EE_CALLBACK (gboolean, frame_iter_next, (MonoInterpStackIter *iter, StackFrameInfo *frame)) \
-	MONO_EE_CALLBACK (MonoJitInfo*, find_jit_info, (MonoDomain *domain, MonoMethod *method)) \
+	MONO_EE_CALLBACK (MonoJitInfo*, find_jit_info, (MonoMethod *method)) \
 	MONO_EE_CALLBACK (void, set_breakpoint, (MonoJitInfo *jinfo, gpointer ip)) \
 	MONO_EE_CALLBACK (void, clear_breakpoint, (MonoJitInfo *jinfo, gpointer ip)) \
 	MONO_EE_CALLBACK (MonoJitInfo*, frame_get_jit_info, (MonoInterpFrameHandle frame)) \
@@ -57,7 +57,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, free_context, (gpointer)) \
 	MONO_EE_CALLBACK (void, set_optimizations, (guint32)) \
 	MONO_EE_CALLBACK (void, metadata_update_init, (MonoError *error)) \
-	MONO_EE_CALLBACK (void, invalidate_transformed, (MonoDomain *domain)) \
+	MONO_EE_CALLBACK (void, invalidate_transformed, (void)) \
 	MONO_EE_CALLBACK (void, cleanup, (void)) \
 	MONO_EE_CALLBACK (void, mark_stack, (gpointer thread_info, GcScanFunc func, gpointer gc_data, gboolean precise)) \
 

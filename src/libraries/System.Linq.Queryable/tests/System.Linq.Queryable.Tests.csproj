@@ -51,6 +51,7 @@
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="ThenByDescendingTests.cs" />
     <Compile Include="ThenByTests.cs" />
+    <Compile Include="TrimCompatibilityTests.cs" />
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />

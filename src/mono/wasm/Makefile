@@ -33,7 +33,7 @@ all: build-native icu-files source-files header-files
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=2.0.11
+EMSCRIPTEN_VERSION=2.0.12
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
 
@@ -63,7 +63,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s USE_ZLIB=1  -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
+EMCC_FLAGS=--profiling-funcs -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=1 -s FORCE_FILESYSTEM=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm
 ifneq ($(ENABLE_ES6),false)
     EMCC_FLAGS+=-s MODULARIZE=1 -s EXPORT_ES6=1
 endif
@@ -149,6 +149,7 @@ header-files: runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h | $(NATIVE_BIN
 
 # Helper targets
 .PHONY: runtime
+.PHONY: build
 
 build:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
@@ -180,6 +181,9 @@ run-tests-jsc-%:
 
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+
+run-build-tests:
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/tests/BuildWasmApps/Wasm.Build.Tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

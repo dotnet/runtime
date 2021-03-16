@@ -29,7 +29,7 @@ namespace Internal.Cryptography
             return new HmacHashProvider(evpType, key);
         }
 
-        private static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch {
+        public static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch {
             HashAlgorithmNames.SHA1 => s_evpSha1 == IntPtr.Zero ? (s_evpSha1 = Interop.Crypto.EvpSha1()) : s_evpSha1,
             HashAlgorithmNames.SHA256 => s_evpSha256 == IntPtr.Zero ? (s_evpSha256 = Interop.Crypto.EvpSha256()) : s_evpSha256,
             HashAlgorithmNames.SHA384 => s_evpSha384 == IntPtr.Zero ? (s_evpSha384 = Interop.Crypto.EvpSha384()) : s_evpSha384,

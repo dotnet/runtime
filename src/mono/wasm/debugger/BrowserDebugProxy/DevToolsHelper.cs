@@ -198,7 +198,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new MonoCommands($"MONO.mono_wasm_eval_member_access({scopeId}, {JsonConvert.SerializeObject(var_ids)}, '', '{expr}')");
         }
 
-        public static MonoCommands SetBreakpoint(string assemblyName, uint methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
+        public static MonoCommands SetBreakpoint(string assemblyName, int methodToken, int ilOffset) => new MonoCommands($"MONO.mono_wasm_set_breakpoint (\"{assemblyName}\", {methodToken}, {ilOffset})");
 
         public static MonoCommands RemoveBreakpoint(int breakpointId) => new MonoCommands($"MONO.mono_wasm_remove_breakpoint({breakpointId})");
 
@@ -244,7 +244,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int RemoteId { get; set; }
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
-
+        public string Condition { get; private set; }
+        public bool ConditionAlreadyEvaluatedWithError { get; set; }
         public static bool TryParseId(string stackId, out int id)
         {
             id = -1;
@@ -254,11 +255,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return int.TryParse(stackId.Substring("dotnet:".Length), out id);
         }
 
-        public Breakpoint(string stackId, SourceLocation loc, BreakpointState state)
+        public Breakpoint(string stackId, SourceLocation loc, string condition, BreakpointState state)
         {
             this.StackId = stackId;
             this.Location = loc;
             this.State = state;
+            this.Condition = condition;
+            this.ConditionAlreadyEvaluatedWithError = false;
         }
     }
 

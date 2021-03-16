@@ -388,7 +388,32 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode)
+        private bool FunctionJustThrows(MethodIL ilBody)
+        {
+            try
+            {
+                if (ilBody.GetExceptionRegions().Length != 0)
+                    return false;
+
+                ILReader reader = new ILReader(ilBody.GetILBytes());
+
+                while (reader.HasNext)
+                {
+                    var ilOpcode = reader.ReadILOpcode();
+                    if (ilOpcode == ILOpcode.throw_)
+                        return true;
+                    if (ilOpcode.IsBranch() || ilOpcode == ILOpcode.switch_)
+                        return false;
+                    reader.Skip(ilOpcode);
+                }
+            }
+            catch
+            { }
+
+            return false;
+        }
+
+        public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger)
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
@@ -398,10 +423,19 @@ namespace Internal.JitInterface
                 if (!ShouldSkipCompilation(MethodBeingCompiled) && !MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+
                     if (methodIL != null)
                     {
-                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
-                        codeGotPublished = true;
+                        if (!FunctionJustThrows(methodIL))
+                        {
+                            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                            codeGotPublished = true;
+                        }
+                        else
+                        {
+                            if (logger.IsVerbose)
+                                logger.Writer.WriteLine($"Warning: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
+                        }
                     }
                 }
             }
@@ -1012,6 +1046,9 @@ namespace Internal.JitInterface
             {
                 _debugVarInfos[i] = vars[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(vars);
         }
 
         /// <summary>
@@ -1026,6 +1063,9 @@ namespace Internal.JitInterface
             {
                 _debugLocInfos[i] = pMap[i];
             }
+            
+            // JIT gave the ownership of this to us, so need to free this.
+            freeArray(pMap);
         }
 
         private void PublishEmptyCode()

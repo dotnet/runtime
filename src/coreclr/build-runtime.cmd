@@ -8,25 +8,11 @@ set "__MsgPrefix=BUILD: "
 echo %__MsgPrefix%Starting Build at %TIME%
 
 set __ThisScriptFull="%~f0"
-set __ThisScriptDir="%~dp0"
-
-call %__ThisScriptDir%\setup_vs_tools.cmd
-if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
-
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
-)
 
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __TargetOS           -- default: windows
+::      __TargetOS          -- default: windows
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
@@ -181,8 +167,6 @@ if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!proc
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgenerateversion" (set __SkipGenerateVersion=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-REM Keep around usenmakemakefiles for usage by the jit-format tool
-if /i "%1" == "usenmakemakefiles"   (set __Ninja=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -207,6 +191,14 @@ if defined __Priority (
     ) else (
         set __PassThroughArgs=-priority=%__Priority%
     )
+)
+
+:: Initialize VS environment
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
+if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
+
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
 
 if defined __BuildAll goto BuildAll
@@ -612,12 +604,6 @@ if %__BuildNative% EQU 1 (
     call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     @if defined _echo @echo on
 
-    if not defined VSINSTALLDIR (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-        goto ExitWithError
-    )
-    if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
-
     if defined __SkipConfigure goto SkipConfigure
 
     echo %__MsgPrefix%Regenerating the Visual Studio solution
@@ -846,12 +832,4 @@ echo     build -all -x86
 echo        -- builds all build types for x86
 echo     build -all -x64 -x86 -Checked -Release
 echo        -- builds x64 and x86 architectures, Checked and Release build types for each
-exit /b 1
-
-:NoDIA
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
-Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
-may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -42,6 +44,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type for this object.
         /// </summary>
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
         object GetEditor(Type editorBaseType);
 
         /// <summary>
@@ -53,6 +56,7 @@ namespace System.ComponentModel
         /// Gets the events for this instance of a component using the attribute array as a
         /// filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         EventDescriptorCollection GetEvents(Attribute[] attributes);
 
         /// <summary>
@@ -63,6 +67,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the properties for this instance of a component using the attribute array as a filter.
         /// </summary>
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         PropertyDescriptorCollection GetProperties(Attribute[] attributes);
 
         /// <summary>

@@ -188,9 +188,9 @@ HRESULT ImportHelper::FindMethod(
     void *          pCompareContext)    // = NULL   // [IN] Optional context for the compare function
 {
     HRESULT     hr = S_OK;
-    ULONG       ridStart;               // Start of td's methods.
-    ULONG       ridEnd;                 // End of td's methods.
-    ULONG       index;                  // Loop control.
+    RID         ridStart;               // Start of td's methods.
+    RID         ridEnd;                 // End of td's methods.
+    RID         index;                  // Loop control.
     TypeDefRec  *pRec;                  // A TypeDef Record.
     MethodRec   *pMethod;               // A MethodDef Record.
     LPCUTF8     szNameUtf8Tmp;          // A found MethodDef's name.
@@ -294,9 +294,9 @@ HRESULT ImportHelper::FindField(
     RID             rid)    // = 0  // [IN] Optional rid to be ignored.
 {
     HRESULT     hr = S_OK;              // A result.
-    ULONG       ridStart;               // Start of td's methods.
-    ULONG       ridEnd;                 // End of td's methods.
-    ULONG       index;                  // Loop control.
+    RID         ridStart;               // Start of td's methods.
+    RID         ridEnd;                 // End of td's methods.
+    RID         index;                  // Loop control.
     TypeDefRec  *pRec;                  // A TypeDef Record.
     FieldRec    *pField;                // A FieldDef Record.
     LPCUTF8     szNameUtf8Tmp;          // A found FieldDef's name.
@@ -962,8 +962,8 @@ HRESULT ImportHelper::FindInterfaceImpl(
     RID         rid /* = 0*/)           // [IN] Optional rid to be ignored.
 {
     HRESULT hr;
-    ULONG       ridStart, ridEnd;
-    ULONG       i;
+    RID         ridStart, ridEnd;
+    RID         i;
     InterfaceImplRec    *pInterfaceImplRec;
 
     _ASSERTE(ptk);
@@ -1010,8 +1010,8 @@ HRESULT ImportHelper::FindPermission(
 {
     HRESULT hr;
     DeclSecurityRec *pRec;
-    ULONG       ridStart, ridEnd;
-    ULONG       i;
+    RID         ridStart, ridEnd;
+    RID         i;
     mdToken     tkParentTmp;
 
     _ASSERTE(ppm);
@@ -1058,13 +1058,13 @@ HRESULT ImportHelper::FindProperty(
     RID         ridPropertyMap;
     PropertyMapRec *pPropertyMapRec;
     PropertyRec *pRec;
-    ULONG       ridStart;
-    ULONG       ridEnd;
-    ULONG       i;
+    RID         ridStart;
+    RID         ridEnd;
+    RID         i;
     LPCUTF8     szNameTmp;
     PCCOR_SIGNATURE pbSigTmp;
     ULONG       cbSigTmp;
-    ULONG       pr;
+    RID         pr;
 
     IfFailRet(pMiniMd->FindPropertyMapFor(RidFromToken(tkTypeDef), &ridPropertyMap));
     if ( !InvalidRid(ridPropertyMap) )
@@ -1111,11 +1111,11 @@ HRESULT ImportHelper::FindEvent(
     RID         ridEventMap;
     EventMapRec *pEventMapRec;
     EventRec    *pRec;
-    ULONG       ridStart;
-    ULONG       ridEnd;
-    ULONG       i;
+    RID         ridStart;
+    RID         ridEnd;
+    RID         i;
     LPCUTF8     szNameTmp;
-    ULONG       ev;
+    RID         ev;
 
     IfFailRet(pMiniMd->FindEventMapFor(RidFromToken(tkTypeDef), &ridEventMap));
     if ( !InvalidRid(ridEventMap) )
@@ -2292,7 +2292,7 @@ HRESULT ImportHelper::CreateNesterHierarchy(
     mdTypeRef   *ptr)                   // [OUT] Token for the innermost TypeRef.
 {
     TypeRefRec  *pRecEmit;
-    ULONG       iRecord;
+    RID         iRecord;
     LPCUTF8     szName;
     LPCUTF8     szNamespace;
     mdTypeRef   trNester;

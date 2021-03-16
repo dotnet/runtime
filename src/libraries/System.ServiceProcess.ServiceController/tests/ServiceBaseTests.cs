@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
 using Xunit;
 
@@ -141,6 +142,11 @@ namespace System.ServiceProcess.Tests
         [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnExecuteCustomCommand()
         {
+            if (PlatformDetection.IsWindowsServerCore)
+            {
+                throw new SkipTestException("Skip on Windows Server Core"); // https://github.com/dotnet/runtime/issues/43207
+            }
+
             ServiceController controller = ConnectToServer();
 
             controller.ExecuteCommand(128);

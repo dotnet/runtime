@@ -1677,7 +1677,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
         EX_TRY
         {
-            typedef void (__stdcall* pjitStartup)(ICorJitHost*);
+            typedef void (* pjitStartup)(ICorJitHost*);
             pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
 
             if (jitStartupFn)

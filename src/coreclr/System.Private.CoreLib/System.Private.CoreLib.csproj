@@ -20,7 +20,6 @@
     <ILLinkDirectory>$(MSBuildThisFileDirectory)src\ILLink\</ILLinkDirectory>
 
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
-    <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
@@ -126,6 +125,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.PortableThreadPool.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />

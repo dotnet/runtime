@@ -213,7 +213,7 @@ private:
 protected:
 #ifndef DACCESS_COMPILE
     // Initialize the module
-    virtual void Initialize(AllocMemTracker *pamTracker);
+    virtual void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName = NULL);
 #endif
 
 public:
@@ -223,6 +223,8 @@ public:
     // wouldn't be called.
     virtual void Destruct();
 #endif
+
+    virtual BOOL IsEditAndContinueCapable() const { return TRUE; }
 
     // Apply an EnC edit
     HRESULT ApplyEditAndContinue(DWORD cbMetadata,

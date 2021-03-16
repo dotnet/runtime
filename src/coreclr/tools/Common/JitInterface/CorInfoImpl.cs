@@ -61,10 +61,10 @@ namespace Internal.JitInterface
 
         private ExceptionDispatchInfo _lastException;
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)] // stdcall in CoreCLR!
+        [DllImport(JitLibrary)]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport(JitLibrary, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(JitLibrary)]
         private extern static IntPtr getJit();
 
         [DllImport(JitSupportLibrary)]
@@ -301,6 +301,14 @@ namespace Internal.JitInterface
             MethodIL methodIL = HandleToObject(_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
+            _methodCodeNode.InitializeDebugInfo(_debugInfo);
+
+            LocalVariableDefinition[] locals = methodIL.GetLocals();
+            TypeDesc[] localTypes = new TypeDesc[locals.Length];
+            for (int i = 0; i < localTypes.Length; i++)
+                localTypes[i] = locals[i].Type;
+
+            _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
 
             PublishProfileData();
@@ -388,11 +396,7 @@ namespace Internal.JitInterface
             _ehClauses = null;
 
 #if !READYTORUN
-            _sequencePoints = null;
-            _variableToTypeDesc = null;
-
-            _parameterIndexToNameMap = null;
-            _localSlotToInfoMap = null;
+            _debugInfo = null;
 
             _additionalDependencies = null;
 #endif

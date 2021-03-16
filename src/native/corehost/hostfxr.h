@@ -311,10 +311,10 @@ struct hostfxr_dotnet_environment_info
     const char_t* hostfxr_version;
     const char_t* hostfxr_commit_hash;
 
-    int32_t sdk_count;
+    size_t sdk_count;
     const hostfxr_dotnet_environment_sdk_info* sdks;
 
-    int32_t framework_count;
+    size_t framework_count;
     const hostfxr_dotnet_environment_framework_info* frameworks;
 };
 

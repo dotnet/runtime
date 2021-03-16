@@ -564,7 +564,7 @@ namespace System.Threading.Tasks.Tests
 
             try
             {
-                await tcs.Task.TimeoutAfter(60_000);
+                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(60));
             }
             catch (Exception e)
             {

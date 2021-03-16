@@ -61,12 +61,12 @@
     <MonoThreadSuspend Condition="'$(MonoThreadSuspend)' == ''">hybrid</MonoThreadSuspend>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <!-- CI specific build options -->    
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true')">
+  <!-- CI specific build options -->
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
 
@@ -220,7 +220,8 @@
     </ItemGroup>
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent,assert_messages</_MonoMinimal>
+      <_MonoMinimal Condition="'$(Configuration)' == 'Release'">,debugger_agent</_MonoMinimal>
+      <_MonoMinimal Condition="'$(Configuration)' == 'Release' and '$(MonoEnableAssertMessages)' != 'true'">$(_MonoMinimal),assert_messages</_MonoMinimal>
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DENABLE_MINIMAL=jit,portability,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,eventpipe,qcalls$(_MonoMinimal)"/>
@@ -247,6 +248,7 @@
       <_MonoCMakeSystemName Condition="'$(TargetstvOS)' == 'true'">tvOS</_MonoCMakeSystemName>
       <_MonoCMakeVersionMin Condition="'$(TargetsiOS)' == 'true'">$(iOSVersionMin)</_MonoCMakeVersionMin>
       <_MonoCMakeVersionMin Condition="'$(TargetstvOS)' == 'true'">$(tvOSVersionMin)</_MonoCMakeVersionMin>
+      <_IcuLibdir>$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/lib</_IcuLibdir>
     </PropertyGroup>
     <ItemGroup Condition="('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true') and '$(Platform)' == 'arm64'">
       <_MonoCMakeArgs Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
@@ -255,11 +257,13 @@
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_NAME=$(_MonoCMakeSystemName)"/>
       <_MonoCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(_MonoCMakeVersionMin)" />
       <_MonoCMakeArgs Include="-DCMAKE_OSX_SYSROOT='$(_MonoCMakeSysroot)'" />
+      <_MonoCMakeArgs Include="-DICU_LIBDIR=$(_IcuLibdir)"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;"/>
       <_MonoCFLAGS Include="-Wl,-application_extension" />
+      <_MonoCFLAGS Include="-I$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/include" />
       <_MonoCXXFLAGS Include="-Wl,-application_extension" />
     </ItemGroup>
     <!-- iOS simulator specific options -->
@@ -356,9 +360,9 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
 
@@ -366,7 +370,7 @@
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' != 'Windows_NT'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -499,16 +503,16 @@
 
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
-    </ItemGroup> 
+    </ItemGroup>
 
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
-      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
+      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
       <_MonoAotPrebuiltOffsetsFile>$(ArtifactsObjDir)\mono\offsetfiles\$(PlatformConfigPathPart)\cross\$([System.IO.Path]::GetFileName('$(MonoAotOffsetsFile)'))</_MonoAotPrebuiltOffsetsFile>
     </PropertyGroup>
 
@@ -554,6 +558,7 @@
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoIncludeInterpStaticFiles Condition="'$(TargetsBrowser)' == 'true'">true</_MonoIncludeInterpStaticFiles>
+      <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
       <_MonoAotCrossFilePath>$(MonoObjDir)cross\out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>
@@ -595,7 +600,18 @@
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
         <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
+
+      <_IcuArtifacts  Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
+                      Include="$(_IcuLibdir)\libicuuc.a;
+                               $(_IcuLibdir)\libicui18n.a;
+                               $(_IcuLibdir)\libicudata.a;
+                               $(_IcuLibdir)\*.dat" />
     </ItemGroup>
+
+    <Copy Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
+          SourceFiles="@(_IcuArtifacts)"
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"

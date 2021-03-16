@@ -440,6 +440,7 @@ FCFuncEnd()
 
 FCFuncStart(gAssemblyExtensionsFuncs)
     QCFuncElement("InternalTryGetRawMetadata", AssemblyNative::InternalTryGetRawMetadata)
+    QCFuncElement("ApplyUpdate", AssemblyNative::ApplyUpdate)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
@@ -989,13 +990,15 @@ FCFuncStart(gStreamFuncs)
 FCFuncEnd()
 
 
-#if defined(FEATURE_EVENTSOURCE_XPLAT) || defined(FEATURE_PERFTRACING)
-FCFuncStart(gEventLogger)
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
+FCFuncStart(gEventLogger)
     QCFuncElement("IsEventSourceLoggingEnabled", XplatEventSourceLogger::IsEventSourceLoggingEnabled)
     QCFuncElement("LogEventSource", XplatEventSourceLogger::LogEventSource)
+FCFuncEnd()
 #endif // defined(FEATURE_EVENTSOURCE_XPLAT)
+
 #if defined(FEATURE_PERFTRACING)
+FCFuncStart(gNativeEventLogger)
     QCFuncElement("LogThreadPoolWorkerThreadStart", NativeEventLogger::LogThreadPoolWorkerThreadStart)
     QCFuncElement("LogThreadPoolWorkerThreadStop", NativeEventLogger::LogThreadPoolWorkerThreadStop)
     QCFuncElement("LogThreadPoolWorkerThreadWait", NativeEventLogger::LogThreadPoolWorkerThreadWait)
@@ -1005,9 +1008,8 @@ FCFuncStart(gEventLogger)
     QCFuncElement("LogThreadPoolIOEnqueue", NativeEventLogger::LogThreadPoolIOEnqueue)
     QCFuncElement("LogThreadPoolIODequeue", NativeEventLogger::LogThreadPoolIODequeue)
     QCFuncElement("LogThreadPoolWorkingThreadCount", NativeEventLogger::LogThreadPoolWorkingThreadCount)
-#endif // defined(FEATURE_PERFTRACING)
 FCFuncEnd()
-#endif // defined(FEATURE_EVENTSOURCE_XPLAT) || defined(FEATURE_PERFTRACING)
+#endif // defined(FEATURE_PERFTRACING)
 
 #ifdef FEATURE_PERFTRACING
 FCFuncStart(gEventPipeInternalFuncs)
@@ -1165,6 +1167,9 @@ FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
 FCClassElement("NativeLibrary", "System.Runtime.InteropServices", gInteropNativeLibraryFuncs)
+#if defined(FEATURE_PERFTRACING)
+FCClassElement("NativeRuntimeEventSource", "System.Diagnostics.Tracing", gNativeEventLogger)
+#endif //defined(FEATURE_PERFTRACING)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
@@ -1213,7 +1218,7 @@ FCClassElement("WeakReference`1", "System", gWeakReferenceOfTFuncs)
 FCClassElement("X86Base", "System.Runtime.Intrinsics.X86", gX86BaseFuncs)
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#if defined(FEATURE_EVENTSOURCE_XPLAT) || defined(FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 

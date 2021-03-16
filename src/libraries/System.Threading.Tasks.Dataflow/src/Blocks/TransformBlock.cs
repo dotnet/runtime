@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Dataflow
         private void ProcessMessage(Func<TInput, TOutput> transform, KeyValuePair<TInput, long> messageWithId)
         {
             // Process the input message to get the output message
-            TOutput outputItem = default(TOutput);
+            TOutput? outputItem = default(TOutput);
             bool itemIsValid = false;
             try
             {
@@ -272,7 +272,7 @@ namespace System.Threading.Tasks.Dataflow
 
             bool isBounded = _target.IsBounded;
             bool gotOutputItem = false;
-            TOutput outputItem = default(TOutput);
+            TOutput? outputItem = default(TOutput);
 
             switch (completed.Status)
             {

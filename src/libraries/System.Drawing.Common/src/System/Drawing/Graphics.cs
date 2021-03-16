@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
@@ -329,6 +329,54 @@ namespace System.Drawing
             {
                 Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
                     new HandleRef(this, NativeGraphics), new HandleRef(value, value.NativeMatrix)));
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the world transform elements for this <see cref="Graphics"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is a more performant alternative to <see cref="Transform"/> that does not need disposal.
+        /// </remarks>
+        public unsafe Matrix3x2 TransformElements
+        {
+            get
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateMatrix(out IntPtr nativeMatrix));
+
+                try
+                {
+                    Gdip.CheckStatus(Gdip.GdipGetWorldTransform(
+                        new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
+
+                    Matrix3x2 matrix = default;
+                    Gdip.CheckStatus(Gdip.GdipGetMatrixElements(new HandleRef(null, nativeMatrix), (float*)&matrix));
+                    return matrix;
+                }
+                finally
+                {
+                    if (nativeMatrix != IntPtr.Zero)
+                    {
+                        Gdip.GdipDeleteMatrix(new HandleRef(null, nativeMatrix));
+                    }
+                }
+            }
+            set
+            {
+                IntPtr nativeMatrix = Matrix.CreateNativeHandle(value);
+
+                try
+                {
+                    Gdip.CheckStatus(Gdip.GdipSetWorldTransform(
+                        new HandleRef(this, NativeGraphics), new HandleRef(null, nativeMatrix)));
+                }
+                finally
+                {
+                    if (nativeMatrix != IntPtr.Zero)
+                    {
+                        Gdip.GdipDeleteMatrix(new HandleRef(null, nativeMatrix));
+                    }
+                }
             }
         }
 
@@ -2403,40 +2451,6 @@ namespace System.Drawing
                     p,
                     pts.Length));
             }
-        }
-
-        /// <summary>
-        /// GDI+ will return a 'generic error' with specific win32 last error codes when
-        /// a terminal server session has been closed, minimized, etc... We don't want
-        /// to throw when this happens, so we'll guard against this by looking at the
-        /// 'last win32 error code' and checking to see if it is either 1) access denied
-        /// or 2) proc not found and then ignore it.
-        ///
-        /// The problem is that when you lock the machine, the secure desktop is enabled and
-        /// rendering fails which is expected (since the app doesn't have permission to draw
-        /// on the secure desktop). Not sure if there's anything you can do, short of catching
-        /// the desktop switch message and absorbing all the exceptions that get thrown while
-        /// it's the secure desktop.
-        /// </summary>
-        private void CheckErrorStatus(int status)
-        {
-            if (status == Gdip.Ok)
-                return;
-
-            // Generic error from GDI+ can be GenericError or Win32Error.
-            if (status == Gdip.GenericError || status == Gdip.Win32Error)
-            {
-                int error = Marshal.GetLastWin32Error();
-                if (error == SafeNativeMethods.ERROR_ACCESS_DENIED || error == SafeNativeMethods.ERROR_PROC_NOT_FOUND ||
-                        // Here, we'll check to see if we are in a terminal services session...
-                        (((UnsafeNativeMethods.GetSystemMetrics(NativeMethods.SM_REMOTESESSION) & 0x00000001) != 0) && (error == 0)))
-                {
-                    return;
-                }
-            }
-
-            // Legitimate error, throw our status exception.
-            throw Gdip.StatusException(status);
         }
 
         /// <summary>

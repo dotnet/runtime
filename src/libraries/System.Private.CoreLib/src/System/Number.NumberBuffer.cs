@@ -69,6 +69,7 @@ namespace System
 
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
                 Debug.Assert(numDigits < Digits.Length, "Null terminator not found in Number");
+
 #endif // DEBUG
             }
 

@@ -5,7 +5,8 @@
 
 #include "pal_jni.h"
 
-PALEXPORT void CryptoNative_BigNumDestroy(jobject bignum);
-PALEXPORT jobject CryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len);
-PALEXPORT int32_t CryptoNative_BigNumToBinary(jobject bignum, uint8_t* output);
-PALEXPORT int32_t CryptoNative_GetBigNumBytes(jobject bignum);
+PALEXPORT jobject AndroidCryptoNative_BigNumFromBinary(uint8_t* bytes, int32_t len);
+PALEXPORT int32_t AndroidCryptoNative_BigNumToBinary(jobject bignum, uint8_t* output);
+PALEXPORT int32_t AndroidCryptoNative_GetBigNumBytes(jobject bignum);
+
+int32_t AndroidCryptoNative_GetBigNumBytesIncludingPaddingByteForSign(jobject bignum);

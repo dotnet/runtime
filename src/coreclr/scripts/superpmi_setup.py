@@ -256,20 +256,21 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _exit_on_fail=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False):
     """ Runs the command.
 
     Args:
         command_to_run ([string]): Command to run along with arguments.
+        _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
-        (string, string): Returns a tuple of stdout and stderr
+        (string, string, int): Returns a tuple of stdout, stderr, and command return code
     """
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
     return_code = 1
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=_cwd) as proc:
         command_stdout, command_stderr = proc.communicate()
         return_code = proc.returncode
 
@@ -386,7 +387,7 @@ def get_python_name():
     """Gets the python name
 
     Returns:
-        string: Returns the appropriate python name depending on the OS.
+        [string]: Returns the appropriate python name depending on the OS.
     """
     if is_windows:
         return ["py", "-3"]
@@ -461,6 +462,12 @@ def main(main_args):
             with tempfile.TemporaryDirectory() as jitutils_directory:
                 run_command(
                     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
+
+                # Make sure ".dotnet" directory exists, by running the script at least once
+                dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
+                dotnet_script_path = path.join(source_directory, dotnet_script_name)
+                run_command([dotnet_script_path, "--info"], jitutils_directory)
+
                 # Set dotnet path to run bootstrap
                 os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
                 bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"

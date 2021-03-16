@@ -429,10 +429,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 
-		if (!m_class_get_rank (klass) && !cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
+		if (!m_class_get_rank (klass) && !cfg->compile_aot && mono_class_is_sealed (klass)) {
 			/* the remoting code is broken, access the class for now */
 			if (0) { /*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-				MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+				MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
 				if (!is_ok (cfg->error)) {
 					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 					return NULL;
@@ -585,11 +585,11 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 			/* the is_null_bb target simply copies the input register to the output */
 			mini_emit_isninst_cast (cfg, klass_reg, m_class_get_cast_class (klass), false_bb, is_null_bb);
 		} else {
-			if (!cfg->compile_aot && !(cfg->opt & MONO_OPT_SHARED) && mono_class_is_sealed (klass)) {
+			if (!cfg->compile_aot && mono_class_is_sealed (klass)) {
 				g_assert (!context_used);
 				/* the remoting code is broken, access the class for now */
 				if (0) {/*FIXME what exactly is broken? This change refers to r39380 from 2005 and mention some remoting fixes were due.*/
-					MonoVTable *vt = mono_class_vtable_checked (cfg->domain, klass, cfg->error);
+					MonoVTable *vt = mono_class_vtable_checked (klass, cfg->error);
 					if (!is_ok (cfg->error)) {
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						return NULL;

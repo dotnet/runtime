@@ -67,6 +67,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = value.GetEnumerator();
                 if (!enumerator.MoveNext())
                 {
+                    enumerator.Dispose();
                     return true;
                 }
             }
@@ -102,6 +103,7 @@ namespace System.Text.Json.Serialization.Converters
                 state.Current.EndDictionaryElement();
             } while (enumerator.MoveNext());
 
+            enumerator.Dispose();
             return true;
         }
 

@@ -652,7 +652,7 @@ namespace Microsoft.VisualBasic
         public static string RTrim(string? str) { throw null; }
         public static string Space(int Number) { throw null; }
         public static string[] Split(string? Expression, string? Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static int StrComp(string? String1, string? String2, Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static int StrComp(string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string? StrConv(string? str, Microsoft.VisualBasic.VbStrConv Conversion, int LocaleID = 0) { throw null; }
         public static string StrDup(int Number, char Character) { throw null; }

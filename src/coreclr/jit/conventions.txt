@@ -3,7 +3,7 @@ Coding Conventions" document, that can be used as a template when writing new
 comments in the JIT source code. The definitive coding conventions document is
 located here:
 
-https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/clr-jit-coding-conventions.md
+https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-jit-coding-conventions.md
 
 
 ********** Section 7.1.5 TODO comments

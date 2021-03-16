@@ -14,6 +14,8 @@
 #import <os/log.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static char *bundle_path;
 
@@ -21,6 +23,8 @@ static char *bundle_path;
 // watchOS is not supported yet.
 #define MONO_ENTER_GC_UNSAFE
 #define MONO_EXIT_GC_UNSAFE
+
+#define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
 const char *
 get_bundle_path (void)
@@ -209,12 +213,14 @@ void register_aot_modules (void);
 void
 mono_ios_runtime_init (void)
 {
-    // for now, only Invariant Mode is supported (FIXME: integrate ICU)
+#if INVARIANT_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
-    // uncomment for debug output:
-    //
-    // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
-    // setenv ("MONO_LOG_MASK", "all", TRUE);
+#endif
+
+#if ENABLE_RUNTIME_LOGGING
+    setenv ("MONO_LOG_LEVEL", "debug", TRUE);
+    setenv ("MONO_LOG_MASK", "all", TRUE);
+#endif
 
     id args_array = [[NSProcessInfo processInfo] arguments];
     assert ([args_array count] <= 128);
@@ -230,8 +236,29 @@ mono_ios_runtime_init (void)
     const char* bundle = get_bundle_path ();
     chdir (bundle);
 
+    char icu_dat_path [1024];
+    int res;
+
+    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
+    assert (res > 0);
+
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-    monovm_initialize(0, NULL, NULL);
+    const char *appctx_keys [] = {
+        "RUNTIME_IDENTIFIER", 
+        "APP_CONTEXT_BASE_DIRECTORY",
+#ifndef INVARIANT_GLOBALIZATION
+        "ICU_DAT_FILE_PATH"
+#endif
+    };
+    const char *appctx_values [] = {
+        APPLE_RUNTIME_IDENTIFIER,
+        bundle,
+#ifndef INVARIANT_GLOBALIZATION
+        icu_dat_path
+#endif
+    };
+
+    monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
 #if FORCE_INTERPRETER
     os_log_info (OS_LOG_DEFAULT, "INTERP Enabled");
@@ -269,7 +296,7 @@ mono_ios_runtime_init (void)
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
+    res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 

@@ -421,8 +421,10 @@ enum infoHdrAdjust2 {
 #define HAS_UNTRACKED               ((unsigned int) -1)
 #define HAS_VARPTR                  ((unsigned int) -1)
 
-#define INVALID_REV_PINVOKE_OFFSET   0
-#define HAS_REV_PINVOKE_FRAME_OFFSET ((unsigned int) -1)
+// 0 is a valid offset for the Reverse P/Invoke block
+// So use -1 as the sentinel for invalid and -2 as the sentinel for present.
+#define INVALID_REV_PINVOKE_OFFSET   ((unsigned int) -1)
+#define HAS_REV_PINVOKE_FRAME_OFFSET ((unsigned int) -2)
 // 0 is not a valid offset for EBP-frames as all locals are at a negative offset
 // For ESP frames, the cookie is above (at a higher address than) the buffers,
 // and so cannot be at offset 0.

@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // lwmlist.h - List of all LightWeightMap in MethodContext.
@@ -104,6 +102,9 @@ LWM(GetLazyStringLiteralHelper, DWORDLONG, DWORD)
 LWM(GetLikelyClass, Agnostic_GetLikelyClass, Agnostic_GetLikelyClassResult)
 LWM(GetLocationOfThisType, DWORDLONG, Agnostic_CORINFO_LOOKUP_KIND)
 LWM(GetMethodAttribs, DWORDLONG, DWORD)
+LWM(GetClassModule, DWORDLONG, DWORDLONG)
+LWM(GetModuleAssembly, DWORDLONG, DWORDLONG)
+LWM(GetAssemblyName, DWORDLONG, DWORD)
 LWM(GetMethodClass, DWORDLONG, DWORDLONG)
 LWM(GetMethodModule, DWORDLONG, DWORDLONG)
 LWM(GetMethodDefFromMethod, DWORDLONG, DWORD)

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public class HttpClient : HttpMessageInvoker
+    public partial class HttpClient : HttpMessageInvoker
     {
         #region Fields
 
@@ -127,7 +127,7 @@ namespace System.Net.Http
 
         #region Constructors
 
-        public HttpClient() : this(new HttpClientHandler())
+        public HttpClient() : this(CreateDefaultHandler())
         {
         }
 
@@ -811,6 +811,16 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(HttpUtilities.InvalidUriMessage, parameterName);
             }
+        }
+
+        private static bool IsNativeHandlerEnabled()
+        {
+            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
+            {
+                return false;
+            }
+
+            return isEnabled;
         }
 
         private Uri? CreateUri(string? uri) =>

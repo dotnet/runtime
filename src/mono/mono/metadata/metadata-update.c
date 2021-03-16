@@ -13,6 +13,7 @@
 #ifdef ENABLE_METADATA_UPDATE
 
 #include <glib.h>
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
 #include "mono/metadata/object-internals.h"
@@ -61,6 +62,71 @@ typedef struct _DeltaInfo {
 	delta_row_count count [MONO_TABLE_NUM];
 } DeltaInfo;
 
+
+#define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
+
+/**
+ * mono_metadata_update_enable:
+ * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
+ *
+ * Returns \c TRUE if metadata updates are enabled at runtime.  False otherwise.
+ *
+ * If \p modifiable_assemblies_out is not \c NULL, it's set on return.
+ *
+ * The result depends on the value of the DOTNET_MODIFIABLE_ASSEMBLIES
+ * environment variable.  "debug" means debuggable assemblies are modifiable,
+ * all other values are ignored and metadata updates are disabled.
+ */
+gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out)
+{
+	static gboolean inited = FALSE;
+	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+
+	if (!inited) {
+		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+		if (!g_strcasecmp (val, "debug"))
+			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		g_free (val);
+		inited = TRUE;
+	}
+	if (modifiable_assemblies_out)
+		*modifiable_assemblies_out = modifiable;
+	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+}
+
+static gboolean
+assembly_update_supported (MonoAssembly *assm)
+{
+	int modifiable = 0;
+	if (!mono_metadata_update_enabled (&modifiable))
+		return FALSE;
+	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
+	    mono_assembly_is_jit_optimizer_disabled (assm))
+		return TRUE;
+	return FALSE;
+}
+
+/**
+ * mono_metadata_update_no_inline:
+ * \param caller: the calling method
+ * \param callee: the method being called
+ *
+ * Returns \c TRUE if \p callee should not be inlined into \p caller.
+ *
+ * If metadata updates are enabled either for the caller or callee's module,
+ * the callee should not be inlined.
+ *
+ */
+gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+	if (!mono_metadata_update_enabled (NULL))
+		return FALSE;
+	MonoAssembly *caller_assm = m_class_get_image(caller->klass)->assembly;
+	MonoAssembly *callee_assm = m_class_get_image(callee->klass)->assembly;
+	return mono_assembly_is_jit_optimizer_disabled (caller_assm) || mono_assembly_is_jit_optimizer_disabled (callee_assm);
+}
 
 static void
 mono_metadata_update_ee_init (MonoError *error);
@@ -203,10 +269,10 @@ mono_metadata_update_ee_init (MonoError *error)
 
 static
 void
-mono_metadata_update_invoke_hook (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation)
+mono_metadata_update_invoke_hook (MonoAssemblyLoadContext *alc, uint32_t generation)
 {
 	if (mono_get_runtime_callbacks ()->metadata_update_published)
-		mono_get_runtime_callbacks ()->metadata_update_published (domain, alc, generation);
+		mono_get_runtime_callbacks ()->metadata_update_published (alc, generation);
 }
 
 static uint32_t update_published, update_alloc_frontier;
@@ -248,7 +314,8 @@ metadata_update_set_has_updates (void)
 }
 
 uint32_t
-mono_metadata_update_prepare (MonoDomain *domain) {
+mono_metadata_update_prepare (void)
+{
 	mono_lazy_initialize (&metadata_update_lazy_init, initialize);
 	/*
 	 * TODO: assert that the updater isn't depending on current metadata, else publishing might block.
@@ -263,7 +330,8 @@ mono_metadata_update_prepare (MonoDomain *domain) {
 }
 
 gboolean
-mono_metadata_update_available (void) {
+mono_metadata_update_available (void)
+{
 	return update_published < update_alloc_frontier;
 }
 
@@ -304,10 +372,11 @@ mono_metadata_wait_for_update (uint32_t timeout_ms)
 }
 
 void
-mono_metadata_update_publish (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation) {
+mono_metadata_update_publish (MonoAssemblyLoadContext *alc, uint32_t generation)
+{
 	g_assert (update_published < generation && generation <= update_alloc_frontier);
 	/* TODO: wait for all threads that are using old metadata to update. */
-	mono_metadata_update_invoke_hook (domain, alc, generation);
+	mono_metadata_update_invoke_hook (alc, generation);
 	update_published = update_alloc_frontier;
 	mono_memory_write_barrier ();
 	publish_unlock ();
@@ -872,11 +941,16 @@ apply_enclog_pass2 (MonoImage *image_base, uint32_t generation, MonoImage *image
  * LOCKING: Takes the publish_lock
  */
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
+mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes, uint32_t dil_length, MonoError *error)
 {
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
 		return;
+
+	if (!assembly_update_supported (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+		return;
+	}
 
 	const char *basename = image_base->filename;
 	/* FIXME:
@@ -891,7 +965,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 		mono_dump_mem (dil_bytes, dil_length);
 	}
 
-	uint32_t generation = mono_metadata_update_prepare (domain);
+	uint32_t generation = mono_metadata_update_prepare ();
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: 0x%08x", image_base->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string size: 0x%08x", image_base->heap_us.size);
@@ -954,7 +1028,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	mono_error_assert_ok (error);
 
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
-	mono_metadata_update_publish (domain, alc, generation);
+	mono_metadata_update_publish (alc, generation);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }

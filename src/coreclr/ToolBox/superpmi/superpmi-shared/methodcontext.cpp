@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // MethodContext.cpp - Primary structure to store all the EE-JIT details required to replay creation of a method
@@ -634,7 +632,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
         case CORINFO_TYPE_CLASS:
-            return sizeof(void*);
+            return (int)SpmiTargetPointerSize();
 
         case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_VALUECLASS:
@@ -720,9 +718,8 @@ CORINFO_CLASS_HANDLE MethodContext::repGetMethodClass(CORINFO_METHOD_HANDLE meth
 {
     AssertCodeMsg(GetMethodClass != nullptr, EXCEPTIONCODE_MC,
                   "Found a null GetMethodClass.  Probably missing a fatTrigger for %016llX.", CastHandle(methodHandle));
-    int index = GetMethodClass->GetIndex(CastHandle(methodHandle));
-    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
-                  CastHandle(methodHandle));
+    AssertCodeMsg(GetMethodClass->GetIndex(CastHandle(methodHandle)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX.  Probably missing a fatTrigger", CastHandle(methodHandle));
     CORINFO_CLASS_HANDLE value = (CORINFO_CLASS_HANDLE)GetMethodClass->Get(CastHandle(methodHandle));
     DEBUG_REP(dmpGetMethodClass(CastHandle(methodHandle), CastHandle(value)));
     return value;
@@ -744,9 +741,8 @@ CORINFO_MODULE_HANDLE MethodContext::repGetMethodModule(CORINFO_METHOD_HANDLE me
 {
     AssertCodeMsg(GetMethodModule != nullptr, EXCEPTIONCODE_MC,
                   "Found a null GetMethodModule.  Probably missing a fatTrigger for %016llX.", CastHandle(methodHandle));
-    int index = GetMethodModule->GetIndex(CastHandle(methodHandle));
-    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
-                  CastHandle(methodHandle));
+    AssertCodeMsg(GetMethodModule->GetIndex(CastHandle(methodHandle)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX.  Probably missing a fatTrigger", CastHandle(methodHandle));
     CORINFO_MODULE_HANDLE value = (CORINFO_MODULE_HANDLE)GetMethodModule->Get(CastHandle(methodHandle));
     DEBUG_REP(dmpGetMethodModule(CastHandle(methodHandle), CastHandle(value)));
     return value;
@@ -768,9 +764,8 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
     AssertCodeMsg(GetClassAttribs != nullptr, EXCEPTIONCODE_MC,
                   "Found a null GetClassAttribs.  Probably missing a fatTrigger for %016llX.", CastHandle(classHandle));
-    int index = GetClassAttribs->GetIndex(CastHandle(classHandle));
-    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
-                  CastHandle(classHandle));
+    AssertCodeMsg(GetClassAttribs->GetIndex(CastHandle(classHandle)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX.  Probably missing a fatTrigger", CastHandle(classHandle));
     DWORD value = (DWORD)GetClassAttribs->Get(CastHandle(classHandle));
     DEBUG_REP(dmpGetClassAttribs(CastHandle(classHandle), value));
     return value;
@@ -791,16 +786,102 @@ void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
     AssertCodeMsg(GetMethodAttribs != nullptr, EXCEPTIONCODE_MC,
-                  "Found a null GetMethodAttribs.  Probably missing a fatTrigger for %016llX.",
-                  CastHandle(methodHandle));
-    int index = GetMethodAttribs->GetIndex(CastHandle(methodHandle));
-    AssertCodeMsg(index != -1, EXCEPTIONCODE_MC, "Didn't find %016llX.  Probably missing a fatTrigger",
-                  CastHandle(methodHandle));
+                  "Found a null GetMethodAttribs.  Probably missing a fatTrigger for %016llX.", CastHandle(methodHandle));
+    AssertCodeMsg(GetMethodAttribs->GetIndex(CastHandle(methodHandle)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX.  Probably missing a fatTrigger", CastHandle(methodHandle));
     DWORD value = (DWORD)GetMethodAttribs->Get(CastHandle(methodHandle));
     DEBUG_REP(dmpGetMethodAttribs(CastHandle(methodHandle), value));
     if (cr->repSetMethodAttribs(methodHandle) == CORINFO_FLG_BAD_INLINEE)
         value ^= CORINFO_FLG_DONT_INLINE;
     return value;
+}
+
+void MethodContext::recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod)
+{
+    if (GetClassModule == nullptr)
+        GetClassModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetClassModule->Add(CastHandle(cls), CastHandle(mod));
+    DEBUG_REC(dmpGetClassModule(CastHandle(cls), CastHandle(mod)));
+}
+void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetClassModule cls-%016llX, mod-%016llX", key, value);
+}
+CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
+{
+    AssertCodeMsg(GetClassModule != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetClassModule for %016llX.", CastHandle(cls));
+    AssertCodeMsg(GetClassModule->GetIndex(CastHandle(cls)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(cls));
+    CORINFO_MODULE_HANDLE value = (CORINFO_MODULE_HANDLE)GetClassModule->Get(CastHandle(cls));
+    DEBUG_REP(dmpGetClassModule(CastHandle(cls), CastHandle(value)));
+    return value;
+}
+
+void MethodContext::recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem)
+{
+    if (GetModuleAssembly == nullptr)
+        GetModuleAssembly = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    GetModuleAssembly->Add(CastHandle(mod), CastHandle(assem));
+    DEBUG_REC(dmpGetModuleAssembly(CastHandle(mod), CastHandle(assem)));
+}
+void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetModuleAssembly mod-%016llX, assem-%016llX", key, value);
+}
+CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
+{
+    AssertCodeMsg(GetModuleAssembly != nullptr, EXCEPTIONCODE_MC,
+                  "Found a null GetModuleAssembly for %016llX.", CastHandle(mod));
+    AssertCodeMsg(GetModuleAssembly->GetIndex(CastHandle(mod)) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find %016llX", CastHandle(mod));
+    CORINFO_ASSEMBLY_HANDLE value = (CORINFO_ASSEMBLY_HANDLE)GetModuleAssembly->Get(CastHandle(mod));
+    DEBUG_REP(dmpGetModuleAssembly(CastHandle(mod), CastHandle(assem)));
+    return value;
+}
+
+void MethodContext::recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName)
+{
+    if (GetAssemblyName == nullptr)
+        GetAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORD value;
+    if (assemblyName != nullptr)
+    {
+        value = GetAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
+    }
+    else
+    {
+        value = (DWORD)-1;
+    }
+
+    GetAssemblyName->Add(CastHandle(assem), value);
+    DEBUG_REC(dmpGetAssemblyName(CastHandle(mod), value));
+}
+void MethodContext::dmpGetAssemblyName(DWORDLONG key, DWORD value)
+{
+    const char* assemblyName = (const char*)GetAssemblyName->GetBuffer(value);
+    printf("GetAssemblyName assem-%016llX, value-%u '%s'", key, value, assemblyName);
+    GetAssemblyName->Unlock();
+}
+const char* MethodContext::repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
+{
+    const char* result = "hackishAssemblyName";
+    DWORD value = (DWORD)-1;
+    int itemIndex = -1;
+    if (GetAssemblyName != nullptr)
+    {
+        itemIndex = GetAssemblyName->GetIndex(CastHandle(assem));
+    }
+    if (itemIndex >= 0)
+    {
+        value = GetAssemblyName->Get(CastHandle(assem));
+        result = (const char*)GetAssemblyName->GetBuffer(value);
+    }
+    DEBUG_REP(dmpGetAssemblyName(CastHandle(assem), value));
+    return result;
 }
 
 // Note - the jit will call freearray on the array we give back....
@@ -853,7 +934,7 @@ void MethodContext::repGetVars(CORINFO_METHOD_HANDLE      ftn,
 // Note - the jit will call freearray on the array we give back....
 void MethodContext::recGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
-                                     DWORD**                       pILOffsets,
+                                     uint32_t**                    pILOffsets,
                                      ICorDebugInfo::BoundaryTypes* implictBoundaries)
 {
     if (GetBoundaries == nullptr)
@@ -884,7 +965,7 @@ void MethodContext::dmpGetBoundaries(DWORDLONG key, const Agnostic_GetBoundaries
 }
 void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
                                      unsigned int*                 cILOffsets,
-                                     DWORD**                       pILOffsets,
+                                     uint32_t**                    pILOffsets,
                                      ICorDebugInfo::BoundaryTypes* implictBoundaries)
 {
     Agnostic_GetBoundaries value;
@@ -893,7 +974,7 @@ void MethodContext::repGetBoundaries(CORINFO_METHOD_HANDLE         ftn,
 
     *cILOffsets = (unsigned int)value.cILOffsets;
     if (*cILOffsets > 0)
-        *pILOffsets    = (DWORD*)GetBoundaries->GetBuffer(value.pILOffset_offset);
+        *pILOffsets    = (uint32_t*)GetBoundaries->GetBuffer(value.pILOffset_offset);
     *implictBoundaries = (ICorDebugInfo::BoundaryTypes)value.implicitBoundaries;
 
     DEBUG_REP(dmpGetBoundaries(CastHandle(ftn), value));
@@ -934,8 +1015,12 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method      = CastHandle(method);
     key.context     = CastHandle(context);
 
-    AssertCodeMsg(InitClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", key.method);
-    AssertCodeMsg(InitClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key.method);
+    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
+    {
+        // We could try additional inlines with stress modes, just reject them.
+        return CORINFO_INITCLASS_DONT_INLINE;
+    }
+
     CorInfoInitClassResult result = (CorInfoInitClassResult)InitClass->Get(key);
 
     DEBUG_REP(dmpInitClass(key, result));
@@ -1166,7 +1251,7 @@ LPCWSTR MethodContext::repGetJitTimeLogFilename()
 
 void MethodContext::recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                  CORINFO_METHOD_HANDLE calleeHnd,
-                                 DWORD*                pRestrictions,
+                                 uint32_t*                pRestrictions,
                                  CorInfoInline         response,
                                  DWORD                 exceptionCode)
 {
@@ -1198,7 +1283,7 @@ void MethodContext::dmpCanInline(DLDL key, const Agnostic_CanInline& value)
 }
 CorInfoInline MethodContext::repCanInline(CORINFO_METHOD_HANDLE callerHnd,
                                           CORINFO_METHOD_HANDLE calleeHnd,
-                                          DWORD*                pRestrictions,
+                                          uint32_t*             pRestrictions,
                                           DWORD*                exceptionCode)
 {
     DLDL key;
@@ -2635,6 +2720,13 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
     key.A = CastHandle(ftn);
     key.B = CastHandle(memberParent);
 
+
+    AssertCodeMsg(GetMethodSig != nullptr, EXCEPTIONCODE_MC,
+                  "Didn't find anything anything for ftn-%016llX prt-%016llX", key.A, key.B);
+
+    AssertCodeMsg(GetMethodSig->GetIndex(key) != -1, EXCEPTIONCODE_MC,
+                  "Didn't find anything anything for ftn-%016llX prt-%016llX", key.A, key.B);
+
     value = GetMethodSig->Get(key);
 
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap);
@@ -2683,9 +2775,6 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
                                                    CORINFO_ARG_LIST_HANDLE args,
                                                    DWORD*                  exceptionCode)
 {
-    AssertCodeMsg(GetArgClass != nullptr, EXCEPTIONCODE_MC,
-                  "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", CastHandle(sig->scope), CastHandle(args));
-
     Agnostic_GetArgClass_Key key;
     ZeroMemory(&key, sizeof(Agnostic_GetArgClass_Key)); // We use the input structs as a key and use memcmp to compare.. so
                                                         // we need to zero out padding too
@@ -2695,9 +2784,11 @@ CORINFO_CLASS_HANDLE MethodContext::repGetArgClass(CORINFO_SIG_INFO*       sig,
     key.methodSignature        = CastPointer(sig->methodSignature);
     key.scope                  = CastHandle(sig->scope);
     key.args                   = CastHandle(args);
-
     key.sigInst_classInst_Index = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap);
     key.sigInst_methInst_Index  = SpmiRecordsHelper::ContainsHandleMap(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap);
+
+    AssertCodeMsg(GetArgClass != nullptr, EXCEPTIONCODE_MC,
+                  "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", key.scope, key.args);
 
     AssertCodeMsg(GetArgClass->GetIndex(key) != -1, EXCEPTIONCODE_MC,
                   "Didn't find %016llx, %016llx.  probably a missing exception in getArgClass", key.scope, key.args);
@@ -3114,7 +3205,10 @@ void MethodContext::dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value)
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
 {
-    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultComparerClass->Get(CastHandle(cls));
+    DWORDLONG key = CastHandle(cls);
+    AssertCodeMsg(GetDefaultComparerClass != nullptr, EXCEPTIONCODE_MC, "Didn't find map for %016llX", key);
+    AssertCodeMsg(GetDefaultComparerClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key);
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultComparerClass->Get(key);
     return result;
 }
 
@@ -3131,7 +3225,10 @@ void MethodContext::dmpGetDefaultEqualityComparerClass(DWORDLONG key, DWORDLONG 
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE cls)
 {
-    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultEqualityComparerClass->Get(CastHandle(cls));
+    DWORDLONG key = CastHandle(cls);
+    AssertCodeMsg(GetDefaultEqualityComparerClass != nullptr, EXCEPTIONCODE_MC, "Didn't find map for %016llX", key);
+    AssertCodeMsg(GetDefaultEqualityComparerClass->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", key);
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)GetDefaultEqualityComparerClass->Get(key);
     return result;
 }
 
@@ -3461,6 +3558,9 @@ void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
+    AssertCodeMsg(GetStaticFieldCurrentClass != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", CastHandle(field));
+    AssertCodeMsg(GetStaticFieldCurrentClass->GetIndex(CastHandle(field)) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", CastHandle(field));
+
     Agnostic_GetStaticFieldCurrentClass value = GetStaticFieldCurrentClass->Get(CastHandle(field));
 
     if (pIsSpeculative != nullptr)
@@ -4005,6 +4105,7 @@ void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
     else
         value.B = 0;
     GetGSCookie->Add((DWORD)0, value);
+    DEBUG_REC(dmpGetGSCookie(0, value));
 }
 void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 {
@@ -4012,6 +4113,21 @@ void MethodContext::dmpGetGSCookie(DWORD key, DLDL value)
 }
 void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
+    if (GetGSCookie == nullptr)
+    {
+        // fake the result because for the codegen it is just a constant.
+        if (pCookieVal != nullptr)
+        {
+            *pCookieVal = (GSCookie)0x06000000;
+        }
+        if (ppCookieVal != nullptr)
+        {
+            *ppCookieVal = (GSCookie*)0x06000001;
+        }
+        return;
+    }
+
+    AssertCodeMsg(GetGSCookie->GetIndex(0) != -1, EXCEPTIONCODE_MC, "Didn't find GetGSCookie");
     DLDL value;
 
     value = GetGSCookie->Get((DWORD)0);
@@ -4157,7 +4273,7 @@ const void* MethodContext::repGetInlinedCallFrameVptr(void** ppIndirection)
     return (const void*)value.B;
 }
 
-void MethodContext::recGetAddrOfCaptureThreadGlobal(void** ppIndirection, LONG* result)
+void MethodContext::recGetAddrOfCaptureThreadGlobal(void** ppIndirection, int32_t* result)
 {
     if (GetAddrOfCaptureThreadGlobal == nullptr)
         GetAddrOfCaptureThreadGlobal = new LightWeightMap<DWORD, DLDL>();
@@ -4177,15 +4293,17 @@ void MethodContext::dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value)
 {
     printf("GetAddrOfCaptureThreadGlobal key %u, value ppi-%016llX res-%016llX", key, value.A, value.B);
 }
-LONG* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
+int32_t* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
 {
     DLDL value;
 
     if ((GetAddrOfCaptureThreadGlobal == nullptr) || (GetAddrOfCaptureThreadGlobal->GetIndex((DWORD)0) == -1))
     {
 #ifdef sparseMC
-        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning 0xCAFE0001");
-        return (LONG*)(size_t)0xCAFE0001;
+        LogDebug("Sparse - repGetAddrOfCaptureThreadGlobal returning nullptr and 0xCAFE0001");
+        if (ppIndirection != nullptr)
+            *ppIndirection = nullptr;
+        return (int32_t*)(size_t)0xCAFE0001;
 #else
         LogException(EXCEPTIONCODE_MC, "Didn't find anything for GetAddrOfCaptureThreadGlobal", "");
 #endif
@@ -4195,7 +4313,7 @@ LONG* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
     DEBUG_REP(dmpGetAddrOfCaptureThreadGlobal((DWORD)0, value));
-    return (LONG*)value.B;
+    return (int32_t*)value.B;
 }
 
 void MethodContext::recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result)
@@ -4580,7 +4698,7 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
 }
 
 
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result)
 {
     if (GetStringLiteral == nullptr)
         GetStringLiteral = new LightWeightMap<DLD, DD>();
@@ -4594,7 +4712,7 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
 
     DWORD strBuf = (DWORD)-1;
     if (result != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen(result) * 2) + 2));
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
 
     DD value;
     value.A = (DWORD)length;
@@ -4609,7 +4727,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
         GetStringLiteral->GetBuffer(value.B), value.A);
 }
 
-LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
 {
     if (GetStringLiteral == nullptr)
     {
@@ -4634,7 +4752,7 @@ LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigne
     {
         DD result = GetStringLiteral->Get(key);
         *length = (int)result.A;
-        return (LPCWSTR)GetStringLiteral->GetBuffer(itemIndex);
+        return (const char16_t*)GetStringLiteral->GetBuffer(itemIndex);
     }
 }
 
@@ -6181,7 +6299,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
 }
 
 void MethodContext::recAppendClassName(
-    CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const WCHAR* result)
+    CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result)
 {
     if (AppendClassName == nullptr)
         AppendClassName = new LightWeightMap<Agnostic_AppendClassName, DWORD>();
@@ -6196,7 +6314,7 @@ void MethodContext::recAppendClassName(
 
     DWORD temp = (DWORD)-1;
     if (result != nullptr)
-        temp = (DWORD)AppendClassName->AddBuffer((unsigned char*)result, (unsigned int)((wcslen(result) * 2) + 2));
+        temp = (DWORD)AppendClassName->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
 
     AppendClassName->Add(key, (DWORD)temp);
     DEBUG_REC(dmpAppendClassName(key, (DWORD)temp));
@@ -6562,6 +6680,58 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     t = sprintf_s(buff, len, " ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
+
+    // Fingerprint the root method PGO data (if any) and append it to the ID info.
+    //
+    if ((GetPgoInstrumentationResults != nullptr) &&
+        (GetPgoInstrumentationResults->GetIndex(CastHandle(pInfo->ftn)) != -1))
+    {
+        ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
+        UINT32 schemaCount = 0;
+        BYTE* schemaData = nullptr;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData);
+
+        size_t minOffset = (size_t) ~0;
+        size_t maxOffset = 0;
+        uint32_t totalCount = 0;
+
+        if (SUCCEEDED(pgoHR))
+        {
+            // Locate the range of the counter data.
+            //
+            for (UINT32 i = 0; i < schemaCount; i++)
+            {
+                if ((schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
+                    || (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount))
+                {
+                    if (schema[i].Offset < minOffset)
+                    {
+                        minOffset = schema[i].Offset;
+                    }
+
+                    if (schema[i].Offset > maxOffset)
+                    {
+                        maxOffset = schema[i].Offset;
+                    }
+
+                    totalCount += *(uint32_t*)(schemaData + schema[i].Offset);
+                }
+            }
+
+            // Hash the counter values.
+            //
+            if (minOffset < maxOffset)
+            {
+                char pgoHash[MD5_HASH_BUFFER_SIZE];
+                dumpMD5HashToBuffer(schemaData + minOffset, (int)(maxOffset + sizeof(int) - minOffset), pgoHash,
+                                    MD5_HASH_BUFFER_SIZE);
+
+                t = sprintf_s(buff, len, " Pgo Counters %u, Count %u, Hash: %s", schemaCount, totalCount, pgoHash);
+                buff += t;
+                len -= t;
+            }
+        }
+    }
 
     return (int)(buff - obuff);
 }

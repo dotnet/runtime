@@ -348,14 +348,14 @@ else()
   clr_unknown_arch()
 endif()
 
-set(SOURCES
+set(JIT_CORE_SOURCES
   ${JIT_SOURCES}
   ${JIT_HEADERS}
-  ${JIT_RESOURCES}
 )
 
-convert_to_absolute_path(SOURCES ${SOURCES})
+convert_to_absolute_path(JIT_CORE_SOURCES ${JIT_CORE_SOURCES})
 convert_to_absolute_path(JIT_ARCH_SOURCES ${JIT_ARCH_SOURCES})
+convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
 
 # Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
 
@@ -371,7 +371,6 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  set(JIT_CORE_SOURCES ${SOURCES})
   set(JIT_DEF_FILE ${JIT_EXPORTS_FILE})
 else()
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
@@ -386,7 +385,6 @@ else()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})
   set(JIT_EXPORTS_LINKER_OPTION ${EXPORTS_LINKER_OPTION})
-  set(JIT_CORE_SOURCES ${SOURCES})
 endif()
 
 add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
@@ -432,6 +430,7 @@ function(add_jit jitName)
     add_library_clr(${jitName}
         SHARED
         ${JIT_CORE_SOURCES}
+        ${JIT_RESOURCES}
         ${JIT_ARCH_SOURCES}
         ${JIT_DEF_FILE}
         ${JIT_DLL_MAIN_FILE}
