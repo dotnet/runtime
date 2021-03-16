@@ -90,7 +90,7 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private void checkDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private void CheckDuplicateProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
     {
         foreach (var key in keys)
         {
