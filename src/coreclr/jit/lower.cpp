@@ -5170,11 +5170,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
-        size_t    magic;
-        bool      increment;
-        int       preShift;
-        int       postShift;
-        var_types mulType = type;
+        size_t magic;
+        bool   increment;
+        int    preShift;
+        int    postShift;
+        bool   simpleMul = false;
 
         if (type == TYP_INT)
         {
@@ -5182,13 +5182,22 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift, &postShift);
 
 #ifdef TARGET_64BIT
-            // avoid inc_saturate/multiple shifts by widening the multiplication to 32x64
-            if (increment || preShift && postShift)
+            // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
+            if (increment || (preShift
+#ifdef TARGET_XARCH
+                              // IMUL reg,reg,imm32 can't be used if magic<0 because of sign-extension
+                              && static_cast<int32_t>(magic) < 0
+#endif
+                              ))
             {
-                mulType         = TYP_LONG;
-                divisor->gtType = TYP_LONG;
                 magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
                                                         &postShift, 32);
+            }
+            // otherwise just widen to regular multiplication
+            else
+            {
+                postShift += 32;
+                simpleMul = true;
             }
 #endif
         }
@@ -5231,9 +5240,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (mulType != type)
+        else if (type != TYP_I_IMPL)
         {
-            adjustedDividend = comp->gtNewCastNode(mulType, adjustedDividend, true, TYP_ULONG);
+            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
             firstNode = adjustedDividend;
         }
@@ -5241,12 +5250,13 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 #ifdef TARGET_XARCH
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
         // reduntant copies otherwise
-        if (firstNode)
+        if (firstNode && !simpleMul)
             adjustedDividend->SetRegNum(REG_RAX);
 #endif
 
+        divisor->gtType = TYP_I_IMPL;
         divisor->AsIntCon()->SetIconValue(magic);
-        if (isDiv && !postShift && mulType == type)
+        if (isDiv && !postShift && type == TYP_I_IMPL)
         {
             divMod->SetOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
@@ -5258,7 +5268,15 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
-            GenTree* mulhi = comp->gtNewOperNode(GT_MULHI, mulType, adjustedDividend, divisor);
+            GenTree* mulhi;
+            if (simpleMul)
+            {
+                mulhi = comp->gtNewOperNode(GT_MUL, TYP_I_IMPL, adjustedDividend, divisor);
+            }
+            else
+            {
+                mulhi = comp->gtNewOperNode(GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
+            }
             mulhi->gtFlags |= GTF_UNSIGNED;
             BlockRange().InsertBefore(divMod, mulhi);
             if (!firstNode)
@@ -5269,7 +5287,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 GenTree* shiftBy = comp->gtNewIconNode(postShift, TYP_INT);
                 BlockRange().InsertBefore(divMod, shiftBy);
 
-                if (isDiv)
+                if (isDiv && type == TYP_I_IMPL)
                 {
                     divMod->SetOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
@@ -5277,18 +5295,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 }
                 else
                 {
-                    mulhi = comp->gtNewOperNode(GT_RSZ, type, mulhi, shiftBy);
+                    mulhi = comp->gtNewOperNode(GT_RSZ, TYP_I_IMPL, mulhi, shiftBy);
                     BlockRange().InsertBefore(divMod, mulhi);
                 }
-            }
-            else if (isDiv)
-            {
-                assert(mulType != type);
-                divMod->SetOper(GT_CAST);
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
-                divMod->gtFlags |= GTF_UNSIGNED;
-                divMod->AsCast()->gtCastType = TYP_UINT;
             }
 
             if (!isDiv)
@@ -5303,6 +5312,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 divMod->gtOp2 = mul;
 
                 BlockRange().InsertBefore(divMod, divisor, mul, dividend);
+            }
+            else if (type != TYP_I_IMPL)
+            {
+                divMod->SetOper(GT_CAST);
+                divMod->gtOp1 = mulhi;
+                divMod->gtOp2 = nullptr;
+                divMod->gtFlags |= GTF_UNSIGNED;
+                divMod->AsCast()->gtCastType = TYP_UINT;
             }
         }
 
