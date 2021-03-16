@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -116,7 +117,7 @@
           DependsOnTargets="BuildPInvokeTable;BundleTimezones">
 
     <PropertyGroup>
-      <EmccCmd>$(EMSDK_PATH)/emsdk_env.bat &amp;&amp; emcc</EmccCmd>
+      <EmccCmd>emcc</EmccCmd>
       <EmccFlags>--profiling-funcs -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s ALIASING_FUNCTION_POINTERS=0 -s NO_EXIT_RUNTIME=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']" -s "EXPORTED_FUNCTIONS=['_putchar']" --source-map-base http://example.com  -emit-llvm -s FORCE_FILESYSTEM=1 -s USE_ZLIB=1</EmccFlags>
       <EmccFlags Condition="'$(WasmEnableES6)' == 'true'">$(EmccFlags) -s MODULARIZE=1 -s EXPORT_ES6=1</EmccFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
@@ -140,23 +141,28 @@
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
 
-    <Exec Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I$(MonoIncludeDir) runtime/corebindings.c -c -o $(MonoObjDir)corebindings.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -I$(MonoIncludeDir) runtime/corebindings.c -c -o $(MonoObjDir)corebindings.o"
+          EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Exec Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/driver.c -c -o $(MonoObjDir)driver.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DCORE_BINDINGS -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/driver.c -c -o $(MonoObjDir)driver.o"
+          EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Copy SourceFiles="@(PInvokeTableFile)"
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <Exec Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/pinvoke.c -c -o $(MonoObjDir)pinvoke.o"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) -Oz -DGEN_PINVOKE=1 -I$(MonoObjDir) -I$(MonoIncludeDir) runtime/pinvoke.c -c -o $(MonoObjDir)pinvoke.o"
+          EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Exec Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SystemNativeDir)\pal_random.js $(MonoObjDir)/driver.o $(MonoObjDir)/pinvoke.o $(MonoObjDir)/corebindings.o @(MonoLibFiles->'%(FullPath)', ' ') -o $(NativeBinDir)/dotnet.js &amp;&amp; $(StripCmd)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) $(EmccFlags) $(EmccConfigurationFlags) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SystemNativeDir)\pal_random.js $(MonoObjDir)/driver.o $(MonoObjDir)/pinvoke.o $(MonoObjDir)/corebindings.o @(MonoLibFiles->'%(FullPath)', ' ') -o $(NativeBinDir)/dotnet.js &amp;&amp; $(StripCmd)"
+          EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Exec Command="$(EmccCmd) --version > $(WasmVersionFile)"
+    <RunWithEmSdkEnv Command="$(EmccCmd) --version > $(WasmVersionFile)"
+          EmSdkPath="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
     
     <GenerateWasmVersionFile SourceFile="$(WasmVersionFile)"
