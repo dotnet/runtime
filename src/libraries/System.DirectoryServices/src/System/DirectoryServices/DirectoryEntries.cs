@@ -63,11 +63,11 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Returns the child with the given name and of the given type.
         /// </devdoc>
-        public DirectoryEntry Find(string name, string schemaClassName)
+        public DirectoryEntry Find(string name, string? schemaClassName)
         {
             CheckIsContainer();
             // Note: schemaClassName == null does not work for IIS: provider.
-            object o = null;
+            object? o = null;
             try
             {
                 o = _container.ContainerObject.GetObject(schemaClassName, name);
@@ -104,8 +104,8 @@ namespace System.DirectoryServices
         private class ChildEnumerator : IEnumerator
         {
             private readonly DirectoryEntry _container;
-            private SafeNativeMethods.EnumVariant _enumVariant;
-            private DirectoryEntry _currentEntry;
+            private SafeNativeMethods.EnumVariant? _enumVariant;
+            private DirectoryEntry? _currentEntry;
 
             internal ChildEnumerator(DirectoryEntry container)
             {

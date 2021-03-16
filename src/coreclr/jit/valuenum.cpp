@@ -790,6 +790,29 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
                 break;
         }
     }
+    else // must be a VNF_ function
+    {
+        if (hasNanArg)
+        {
+            // unordered comparisons with NaNs always return true
+            return true;
+        }
+
+        switch (vnf)
+        {
+            case VNF_GT_UN:
+                return v0 > v1;
+            case VNF_GE_UN:
+                return v0 >= v1;
+            case VNF_LT_UN:
+                return v0 < v1;
+            case VNF_LE_UN:
+                return v0 <= v1;
+            default:
+                // For any other value of 'vnf', we will assert below
+                break;
+        }
+    }
     noway_assert(!"Unhandled operation in EvalComparison<double>");
     return 0;
 }
@@ -835,8 +858,8 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
     {
         if (hasNanArg)
         {
-            // always returns true
-            return false;
+            // unordered comparisons with NaNs always return true
+            return true;
         }
 
         switch (vnf)
@@ -1922,18 +1945,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
 
         if (arg0IsFloating != arg1IsFloating)
-        {
-            canFold = false;
-        }
-
-        // NaNs are unordered wrt to other floats. While an ordered
-        // comparison would return false, an unordered comparison
-        // will return true if any operands are a NaN. We only perform
-        // ordered NaN comparison in EvalComparison.
-        if ((arg0IsFloating && (((arg0VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg0VN))) ||
-                                ((arg0VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg0VN))))) ||
-            (arg1IsFloating && (((arg1VNtyp == TYP_FLOAT) && _isnanf(GetConstantSingle(arg1VN))) ||
-                                ((arg1VNtyp == TYP_DOUBLE) && _isnan(GetConstantDouble(arg1VN))))))
         {
             canFold = false;
         }
@@ -3117,13 +3128,10 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         // some VNF_ that we can evaluate
         switch (vnf)
         {
-            // Consider adding:
-            //   case VNF_GT_UN:
-            //   case VNF_GE_UN:
-            //   case VNF_LT_UN:
-            //   case VNF_LE_UN:
-            //
-
+            case VNF_GT_UN:
+            case VNF_GE_UN:
+            case VNF_LT_UN:
+            case VNF_LE_UN:
             case VNF_Cast:
                 // We can evaluate these.
                 return true;

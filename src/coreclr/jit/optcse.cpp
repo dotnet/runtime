@@ -484,28 +484,38 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     else if (enableSharedConstCSE && tree->IsIntegralConst())
     {
         assert(vnStore->IsVNConstant(vnLibNorm));
-        key = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
 
-        // We don't share small offset constants when we require a reloc
+        // We don't share small offset constants when they require a reloc
         //
         if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
-            // Make constants that have the same upper bits use the same key
-            key           = Encode_Shared_Const_CSE_Value(key);
-            isSharedConst = true;
+            // Here we make constants that have the same upper bits use the same key
+            //
+            // We create a key that encodes just the upper bits of the constant by
+            // shifting out some of the low bits, (12 or 16 bits)
+            //
+            // This is the only case where the hash key is not a ValueNumber
+            //
+            size_t constVal = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
+            key             = Encode_Shared_Const_CSE_Value(constVal);
+            isSharedConst   = true;
         }
         else
         {
-            // Since we are using the sign bit as a discriminator
-            // we don't allow/expect it to be set when we need a reloc
-            //
-            assert((key & TARGET_SIGN_BIT) == 0);
+            // Use the vnLibNorm value as the key
+            key = vnLibNorm;
         }
     }
     else // Not a GT_COMMA or a GT_CNS_INT
     {
         key = vnLibNorm;
     }
+
+    // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst
+    // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
+    // and otherwise we require that we never create a ValueNumber with the TARGET_SIGN_BIT set.
+    //
+    assert(isSharedConst == Is_Shared_Const_CSE(key));
 
     // Compute the hash value for the expression
 

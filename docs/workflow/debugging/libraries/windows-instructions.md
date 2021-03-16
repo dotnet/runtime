@@ -150,7 +150,7 @@ The following EventSources are built-in to CoreFX. The ones that are not marked 
 
 #### System.Net namespaces
 
-Helper scripts are available at https://github.com/dotnet/runtime/tree/master/src/libraries/Common/tests/Scripts/Tools. Run `net_startlog.cmd` as Administrator, run the application, then run `net_stoplog.cmd`. Open the `.etl` file with PerfView.
+Helper scripts are available at https://github.com/dotnet/runtime/tree/main/src/libraries/Common/tests/Scripts/Tools. Run `net_startlog.cmd` as Administrator, run the application, then run `net_stoplog.cmd`. Open the `.etl` file with PerfView.
 
 * `*Microsoft-System-Net-Http {bdd9a83e-1929-5482-0d73-2fe5e1c0e16d}`: HTTP-related traces.
 * `*Microsoft-System-Net-Http-WinHttpHandler {b71555b1-9566-5ce3-27f5-98405bbfde9d}`: WinHttpHandler-related traces.

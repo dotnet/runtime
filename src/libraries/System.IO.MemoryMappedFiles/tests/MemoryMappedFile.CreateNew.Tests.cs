@@ -11,6 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedFile.CreateNew.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
     {
         /// <summary>

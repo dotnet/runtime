@@ -30,7 +30,7 @@ using Xunit;
 
 namespace System.Drawing.Drawing2D.Tests
 {
-    public class MatrixTests
+    public partial class MatrixTests
     {
         private static Matrix CreateDisposedMatrix()
         {
@@ -67,20 +67,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [InlineData(1, 0, 0, 1, 0, 0, true, true)]
-        [InlineData(0, 1, 2, 1, 3, 4, false, true)]
-        [InlineData(0, 0, 0, 0, 0, 0, false, false)]
-        [InlineData(1, 2, 3, 4, 5, 6, false, true)]
-        [InlineData(-1, -2, -3, -4, -5, -6, false, true)]
-        [InlineData(123, 24, 82, 16, 47, 30, false, false)]
-        [InlineData(156, 46, 0, 0, 106, 19, false, false)]
-        [InlineData(146, 66, 158, 104, 42, 150, false, true)]
-        [InlineData(119, 140, 145, 74, 102, 58, false, true)]
-        [InlineData(1.1f, 0.1f, -0.1f, 0.9f, 0, 0, false, true)]
-        [InlineData(1.01f, 0.01f, -0.01f, 0.99f, 0, 0, false, true)]
-        [InlineData(1.001f, 0.001f, -0.001f, 0.999f, 0, 0, false, true)]
-        [InlineData(1.0001f, 0.0001f, -0.0001f, 0.9999f, 0, 0, true, true)]
-        [InlineData(1.0009f, 0.0009f, -0.0009f, 0.99995f, 0, 0, false, true)]
+        [MemberData(nameof(MatrixElements_TestData))]
         public void Ctor_Elements(float m11, float m12, float m21, float m22, float dx, float dy, bool isIdentity, bool isInvertible)
         {
             using (var matrix = new Matrix(m11, m12, m21, m22, dx, dy))
@@ -92,6 +79,25 @@ namespace System.Drawing.Drawing2D.Tests
                 Assert.Equal(dy, matrix.OffsetY);
             }
         }
+
+        public static TheoryData<float, float, float, float, float, float, bool, bool> MatrixElements_TestData
+            => new TheoryData<float, float, float, float, float, float, bool, bool>
+            {
+                { 1, 0, 0, 1, 0, 0, true, true },
+                { 0, 1, 2, 1, 3, 4, false, true },
+                { 0, 0, 0, 0, 0, 0, false, false },
+                { 1, 2, 3, 4, 5, 6, false, true },
+                { -1, -2, -3, -4, -5, -6, false, true },
+                { 123, 24, 82, 16, 47, 30, false, false },
+                { 156, 46, 0, 0, 106, 19, false, false },
+                { 146, 66, 158, 104, 42, 150, false, true },
+                { 119, 140, 145, 74, 102, 58, false, true },
+                { 1.1f, 0.1f, -0.1f, 0.9f, 0, 0, false, true },
+                { 1.01f, 0.01f, -0.01f, 0.99f, 0, 0, false, true },
+                { 1.001f, 0.001f, -0.001f, 0.999f, 0, 0, false, true },
+                { 1.0001f, 0.0001f, -0.0001f, 0.9999f, 0, 0, true, true },
+                { 1.0009f, 0.0009f, -0.0009f, 0.99995f, 0, 0, false, true }
+            };
 
         public static IEnumerable<object[]> Ctor_Rectangle_Points_TestData()
         {

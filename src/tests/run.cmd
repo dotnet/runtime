@@ -11,7 +11,7 @@ set __BuildType=Debug
 set __TargetOS=windows
 
 set "__ProjectDir=%~dp0"
-set "__RepoRootDir=%~dp0\..\.."
+set "__RepoRootDir=%~dp0..\.."
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
@@ -25,7 +25,6 @@ set __Sequential=
 set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
-set __JitDisasm=
 set __IlasmRoundTrip=
 set __DoCrossgen=
 set __CrossgenAltJit=
@@ -55,7 +54,6 @@ if /i "%1" == "vs2017"                                  (set __VSVersion=%1&shif
 if /i "%1" == "vs2019"                                  (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "TestEnv"                                 (set __TestEnv=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "AgainstPackages"                         (echo error: Remove /AgainstPackages switch&&echo /b 1)
 if /i "%1" == "sequential"                              (set __Sequential=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"                                (set __DoCrossgen=1&shift&goto Arg_Loop)
 if /i "%1" == "crossgenaltjit"                          (set __DoCrossgen=1&set __CrossgenAltJit=%2&shift&shift&goto Arg_Loop)
@@ -65,7 +63,6 @@ if /i "%1" == "jitstress"                               (set COMPlus_JitStress=%
 if /i "%1" == "jitstressregs"                           (set COMPlus_JitStressRegs=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "jitminopts"                              (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
-if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
@@ -75,11 +72,8 @@ REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgentests"      (set RunCrossGen=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
-REM tieredcompilation is on by default now, but setting this environment variable is harmless and I didn't want to break any automation that might be using it just yet
-if /i "%1" == "tieredcompilation"                       (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shift&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -132,10 +126,6 @@ if defined __GCSimulatorTests (
     set __RuntestPyArgs=%__RuntestPyArgs% --gcsimulator
 )
 
-if defined __JitDisasm (
-    set __RuntestPyArgs=%__RuntestPyArgs% --jitdisasm
-)
-
 if defined __IlasmRoundTrip (
     set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
 )
@@ -168,17 +158,24 @@ if defined __PrintLastResultsOnly (
     set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only
 )
 
-if defined __AltJitArch (
-    set __RuntestPyArgs=%__RuntestPyArgs% -altjit_arch %__AltJitArch%
-)
-
 if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-set NEXTCMD=python "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
-echo !NEXTCMD!
-!NEXTCMD!
+REM Find python and set it to the variable PYTHON
+set _C=-c "import sys; sys.stdout.write(sys.executable)"
+(py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > %TEMP%\pythonlocation.txt 2> NUL
+set _C=
+set /p PYTHON=<%TEMP%\pythonlocation.txt
+
+if NOT DEFINED PYTHON (
+    echo %__MsgPrefix%Error: Could not find a Python installation.
+    exit /b 1
+)
+
+set NEXTCMD="%PYTHON%" "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
+echo %NEXTCMD%
+%NEXTCMD%
 
 exit /b %ERRORLEVEL%
 
@@ -297,8 +294,6 @@ REM ============================================================================
 
 :PrecompileAssembly
 
-if defined __JitDisasm goto :jitdisasm
-
 REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
@@ -316,27 +311,6 @@ if %__exitCode% neq 0 (
 )
 
 echo %__MsgPrefix%Successfully precompiled %2
-exit /b 0
-
-:jitdisasm
-
-if /I "%3" == "mscorlib.ni.dll" exit /b 0
-
-echo "%1\corerun" "%1\jit-dasm.dll" --crossgen %1\crossgen.exe --platform %CORE_ROOT% --output %__TestWorkingDir%\dasm "%2"
-"%1\corerun" "%1\jit-dasm.dll" --crossgen %1\crossgen.exe --platform %CORE_ROOT% --output %__TestWorkingDir%\dasm "%2"
-set /a __exitCode = %errorlevel%
-
-if "%__exitCode%" == "-2146230517" (
-    echo %2 is not a managed assembly.
-    exit /b 0
-)
-
-if %__exitCode% neq 0 (
-    echo Unable to precompile %2
-    exit /b 0
-)
-
-echo %__MsgPrefix%Successfully precompiled and generated dasm for %2
 exit /b 0
 
 :PrecompileFX
@@ -429,16 +403,6 @@ if defined __GCSimulatorTests (
     set RunningGCSimulatorTests=1
 )
 
-if defined __JitDisasm (
-    if defined __DoCrossgen (
-        echo %__MsgPrefix%Running jit disasm on framework and test assemblies
-    )
-    if not defined __DoCrossgen (
-       echo %__MsgPrefix%Running jit disasm on test assemblies only
-    )
-    set RunningJitDisasm=1
-)
-
 if defined __IlasmRoundTrip (
     echo %__MsgPrefix%Running Ilasm round trip
     set RunningIlasmRoundTrip=1
@@ -488,28 +452,27 @@ echo TestEnv ^<test_env_script^> - Run a custom script before every test to set 
 echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
 echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
-echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
 echo RunCrossgenTests          - Runs ReadytoRun tests
+echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
 echo jitminopts                - Runs the tests with COMPlus_JITMinOpts=1
 echo jitforcerelocs            - Runs the tests with COMPlus_ForceRelocs=1
-echo jitdisasm                 - Runs jit-dasm on the tests
-echo ilasmroundtrip            - Runs ilasm round trip on the tests
-echo longgc                    - Run the long-running GC tests
-echo gcsimulator               - Run the GC Simulator tests
+echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
 echo gcstresslevel ^<n^>         - Runs the tests with COMPlus_GCStress=n. n=0 means no GC Stress. Otherwise, n is a bitmask of the following:
 echo                               1: GC on all allocations and 'easy' places
 echo                               2: GC on transitions to preemptive GC
 echo                               4: GC on every allowable JITed instruction
 echo                               8: GC on every allowable NGEN instruction
 echo                              16: GC only on a unique stack trace
-echo tieredcompilation         - Run the tests with COMPlus_TieredCompilation=1
-echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
-echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
-echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
+echo gcsimulator               - Run the GC Simulator tests
+echo longgc                    - Run the long-running GC tests
+echo ilasmroundtrip            - Runs ilasm round trip on the tests
+echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
 echo printlastresultsonly      - Print the last test results without running tests.
 echo runincontext              - Run each tests in an unloadable AssemblyLoadContext
+echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
+echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo.

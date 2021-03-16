@@ -2456,6 +2456,9 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE 
 //    This method only computes the arg table and arg entries for the call (the fgArgInfo),
 //    and makes no modification of the args themselves.
 //
+//    The IR for the call args can change for calls with non-standard arguments: some non-standard
+//    arguments add new call argument IR nodes.
+//
 void Compiler::fgInitArgInfo(GenTreeCall* call)
 {
     GenTreeCall::Use* args;
@@ -6490,7 +6493,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             assert(pFldAddr == nullptr);
 
 #ifdef TARGET_64BIT
-            if (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr))
+            bool isStaticReadOnlyInited = false;
+            bool plsSpeculative         = true;
+            if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+            {
+                isStaticReadOnlyInited = !plsSpeculative;
+            }
+
+            // even if RelocTypeHint is REL32 let's still prefer IND over GT_CLS_VAR
+            // for static readonly fields of statically initialized classes - thus we can
+            // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
+            if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
                 // The address is not directly addressible, so force it into a
                 // constant, so we handle it properly
@@ -6509,6 +6522,14 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
                 tree->SetOper(GT_IND);
                 tree->AsOp()->gtOp1 = addr;
+
+                if (isStaticReadOnlyInited)
+                {
+                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+                    tree->gtFlags |= GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_ICON_INITCLASS;
+                    addr->gtFlags = GTF_ICON_CONST_PTR;
+                }
 
                 return fgMorphSmpOp(tree);
             }
@@ -6759,6 +6780,9 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //    This function is target specific and each target will make the fastTailCall
 //    decision differently. See the notes below.
 //
+//    This function calls fgInitArgInfo() to initialize the arg info table, which
+//    is used to analyze the argument. This function can alter the call arguments
+//    by adding argument IR nodes for non-standard arguments.
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
@@ -7659,10 +7683,90 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-    // This block is not longer any block's predecessor. If we end up
-    // converting this tail call to a branch, we'll add appropriate
-    // successor information then.
-    fgRemoveBlockAsPred(compCurBB);
+    // If this block has a flow successor, make suitable updates.
+    //
+    BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
+
+    if (nextBlock == nullptr)
+    {
+        // No unique successor. compCurBB should be a return.
+        //
+        assert(compCurBB->bbJumpKind == BBJ_RETURN);
+    }
+    else
+    {
+        // Flow no longer reaches nextBlock from here.
+        //
+        fgRemoveRefPred(nextBlock, compCurBB);
+
+        // Adjust profile weights.
+        //
+        // Note if this is a tail call to loop, further updates
+        // are needed once we install the loop edge.
+        //
+        if (compCurBB->hasProfileWeight() && nextBlock->hasProfileWeight())
+        {
+            // Since we have linear flow we can update the next block weight.
+            //
+            BasicBlock::weight_t const blockWeight   = compCurBB->bbWeight;
+            BasicBlock::weight_t const nextWeight    = nextBlock->bbWeight;
+            BasicBlock::weight_t const newNextWeight = nextWeight - blockWeight;
+
+            // If the math would result in a negative weight then there's
+            // no local repair we can do; just leave things inconsistent.
+            //
+            if (newNextWeight >= 0)
+            {
+                // Note if we'd already morphed the IR in nextblock we might
+                // have done something profile sensitive that we should arguably reconsider.
+                //
+                JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
+                        nextWeight, newNextWeight);
+
+                nextBlock->setBBProfileWeight(newNextWeight);
+            }
+            else
+            {
+                JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                        " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                        nextBlock->bbNum, nextWeight, compCurBB->bbNum, blockWeight);
+            }
+
+            // If nextBlock is not a BBJ_RETURN, it should have a unique successor that
+            // is a BBJ_RETURN, as we allow a little bit of flow after a tail call.
+            //
+            if (nextBlock->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const nextNextBlock = nextBlock->GetUniqueSucc();
+                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+
+                if (nextNextBlock->hasProfileWeight())
+                {
+                    // Do similar updates here.
+                    //
+                    BasicBlock::weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    BasicBlock::weight_t const newNextNextWeight = nextNextWeight - blockWeight;
+
+                    // If the math would result in an negative weight then there's
+                    // no local repair we can do; just leave things inconsistent.
+                    //
+                    if (newNextNextWeight >= 0)
+                    {
+                        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+
+                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+                    }
+                    else
+                    {
+                        JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
+                                " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
+                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                    }
+                }
+            }
+        }
+    }
 
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // We enable shared-ret tail call optimization for recursive calls even if
@@ -7906,7 +8010,10 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     bool virtualCall = call->IsVirtual();
 
@@ -7917,11 +8024,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     {
         JITDUMP("This is a VSD\n");
 #if FEATURE_FASTTAILCALL
-        // fgInitArgInfo has been called from fgCanFastTailCall and it added the stub address
-        // to the arg list. Remove it now.
-        call->gtCallArgs = call->gtCallArgs->GetNext();
-        // We changed args so recompute info.
-        call->fgArgInfo = nullptr;
+        call->ResetArgInfo();
 #endif
 
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
@@ -8536,7 +8639,10 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // We come this route only for tail prefixed calls that cannot be dispatched as
     // fast tail calls
     assert(!call->IsImplicitTailCall());
-    assert(!fgCanFastTailCall(call, nullptr));
+
+    // We want to use the following assert, but it can modify the IR in some cases, so we
+    // can't do that in an assert.
+    // assert(!fgCanFastTailCall(call, nullptr));
 
     // First move the 'this' pointer (if any) onto the regular arg list. We do this because
     // we are going to prepend special arguments onto the argument list (for non-x86 platforms),
@@ -9038,7 +9144,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             //     ret temp
 
             // Force re-evaluating the argInfo as the return argument has changed.
-            call->fgArgInfo = nullptr;
+            call->ResetArgInfo();
 
             // Create a new temp.
             unsigned tmpNum =
@@ -9331,15 +9437,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // BBJ_THROW would result in the tail call being dropped as the epilog is generated
         // only for BBJ_RETURN blocks.
         //
-        // Currently this doesn't work for non-void callees. Some of the code that handles
-        // fgRemoveRestOfBlock expects the tree to have GTF_EXCEPT flag set but call nodes
-        // do not have this flag by default. We could add the flag here but the proper solution
-        // would be to replace the return expression with a local var node during inlining
-        // so the rest of the call tree stays in a separate statement. That statement can then
-        // be removed by fgRemoveRestOfBlock without needing to add GTF_EXCEPT anywhere.
-        //
 
-        if (!call->IsTailCall() && call->TypeGet() == TYP_VOID)
+        if (!call->IsTailCall())
         {
             fgRemoveRestOfBlock = true;
         }
@@ -14818,7 +14917,6 @@ DONE_MORPHING_CHILDREN:
                 if (fgIsCommaThrow(op1, true))
                 {
                     GenTree* throwNode = op1->AsOp()->gtOp1;
-                    noway_assert(throwNode->gtType == TYP_VOID);
 
                     JITDUMP("Removing [%06d] GT_JTRUE as the block now unconditionally throws an exception.\n",
                             dspTreeID(tree));
@@ -14871,7 +14969,6 @@ DONE_MORPHING_CHILDREN:
             }
 
             GenTree* throwNode = op1->AsOp()->gtOp1;
-            noway_assert(throwNode->gtType == TYP_VOID);
 
             if (oper == GT_COMMA)
             {
@@ -16336,7 +16433,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     // The edge weights for (block -> bTaken) are 100% of block's weight
 
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight);
+                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
 
                     if (!bTaken->hasProfileWeight())
                     {
@@ -16353,7 +16450,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                     if (bTaken->countOfInEdges() == 1)
                     {
                         // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight);
+                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
 
                         // Update the weight of block
                         block->inheritWeight(bTaken);
@@ -16374,21 +16471,21 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         case BBJ_COND:
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
                             break;
 
                         default:
@@ -17137,13 +17234,22 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
 
             fgRemoveStmt(block, lastStmt);
         }
-#ifdef DEBUG
-        if (verbose)
+
+        JITDUMP("\nUpdate " FMT_BB " to jump to common return block.\n", block->bbNum);
+        DISPBLOCK(block);
+
+        if (block->hasProfileWeight())
         {
-            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-            fgTableDispBasicBlock(block);
+            BasicBlock::weight_t const oldWeight =
+                genReturnBB->hasProfileWeight() ? genReturnBB->bbWeight : BB_ZERO_WEIGHT;
+            BasicBlock::weight_t const newWeight = oldWeight + block->bbWeight;
+
+            JITDUMP("merging profile weight " FMT_WT " from " FMT_BB " to common return " FMT_BB "\n", block->bbWeight,
+                    block->bbNum, genReturnBB->bbNum);
+
+            genReturnBB->setBBProfileWeight(newWeight);
+            DISPBLOCK(genReturnBB);
         }
-#endif
     }
 }
 
@@ -17590,6 +17696,11 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Finally remove the nested qmark stmt.
     fgRemoveStmt(block, stmt);
+
+    if (true2Expr->OperIs(GT_CALL) && (true2Expr->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN))
+    {
+        fgConvertBBToThrowBB(helperBlock);
+    }
 
 #ifdef DEBUG
     if (verbose)
@@ -18401,6 +18512,18 @@ void Compiler::fgRetypeImplicitByRefArgs()
 
                 bool undoPromotion = ((lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
                                       (nonCallAppearances <= varDsc->lvFieldCnt));
+
+#ifdef DEBUG
+                // Above is a profitability heurisic; either value of
+                // undoPromotion should lead to correct code. So,
+                // under stress, make different decisions at times.
+                if (compStressCompile(STRESS_BYREF_PROMOTION, 25))
+                {
+                    undoPromotion = !undoPromotion;
+                    JITDUMP("Stress -- changing byref undo promotion for V%02u to %s undo\n", lclNum,
+                            undoPromotion ? "" : "NOT");
+                }
+#endif // DEBUG
 
                 JITDUMP("%s promotion of implicit by-ref V%02u: %s total: %u non-call: %u fields: %u\n",
                         undoPromotion ? "Undoing" : "Keeping", lclNum,

@@ -14,6 +14,9 @@
     <MonoAOTCompilerDefaultProcessArguments Include="-O=-float32" />
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Android'">
+    <MonoAOTCompilerDefaultAotArguments Include="static" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />

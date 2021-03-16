@@ -159,7 +159,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 -->
 <!-- BEGIN generated table -->
 
-| Platform | Master |
+| Platform | Main |
 | --- |  :---: |
 | **Windows (x64)** | [![][win-x64-badge-6.0.X]][win-x64-version-6.0.X]<br>[Installer][win-x64-installer-6.0.X] ([Checksum][win-x64-installer-checksum-6.0.X])<br>[zip][win-x64-zip-6.0.X] ([Checksum][win-x64-zip-checksum-6.0.X])<br>[NetHost (zip)][win-x64-nethost-zip-6.0.X]<br>[Symbols (zip)][win-x64-symbols-zip-6.0.X] |
 | **Windows (x86)** | [![][win-x86-badge-6.0.X]][win-x86-version-6.0.X]<br>[Installer][win-x86-installer-6.0.X] ([Checksum][win-x86-installer-checksum-6.0.X])<br>[zip][win-x86-zip-6.0.X] ([Checksum][win-x86-zip-checksum-6.0.X])<br>[NetHost (zip)][win-x86-nethost-zip-6.0.X]<br>[Symbols (zip)][win-x86-symbols-zip-6.0.X] |

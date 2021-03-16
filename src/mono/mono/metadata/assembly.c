@@ -95,6 +95,8 @@ static const MonoBundledAssembly **bundles;
 static const MonoBundledSatelliteAssembly **satellite_bundles;
 
 /* Class lazy loading functions */
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
+
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (internals_visible, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute")
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyLoadContext *alc, MonoAssembly *requesting, MonoAssemblyName *aname, gboolean postload);
@@ -1080,7 +1082,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (!is_default && !is_satellite) {
-		reference = mono_assembly_loaded_internal (mono_domain_default_alc (mono_alc_domain (alc)), aname);
+		reference = mono_assembly_loaded_internal (mono_alc_get_default (), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly already loaded in the default ALC: '%s'.", aname->name);
 			goto leave;
@@ -1088,7 +1090,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (bundles != NULL && !is_satellite) {
-		reference = search_bundle_for_assembly (mono_domain_default_alc (mono_alc_domain (alc)), aname);
+		reference = search_bundle_for_assembly (mono_alc_get_default (), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
 			goto leave;
@@ -1120,7 +1122,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	}
 
 	if (is_default || !is_satellite) {
-		reference = invoke_assembly_preload_hook (mono_domain_default_alc (mono_alc_domain (alc)), aname, assemblies_path);
+		reference = invoke_assembly_preload_hook (mono_alc_get_default (), aname, assemblies_path);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the filesystem probing logic: '%s'.", aname->name);
 			goto leave;
@@ -1397,7 +1399,7 @@ mono_assembly_invoke_load_hook_internal (MonoAssemblyLoadContext *alc, MonoAssem
 void
 mono_assembly_invoke_load_hook (MonoAssembly *ass)
 {
-	mono_assembly_invoke_load_hook_internal (mono_domain_default_alc (mono_domain_get ()), ass);
+	mono_assembly_invoke_load_hook_internal (mono_alc_get_default (), ass);
 }
 
 static void
@@ -1934,7 +1936,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req,
 	                               MONO_ASMCTX_DEFAULT,
-	                               mono_domain_default_alc (mono_domain_get ()));
+	                               mono_alc_get_default ());
 	res = mono_assembly_request_open (filename, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2265,7 +2267,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_open (filename, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2305,7 +2307,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -2498,7 +2500,7 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_load (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
@@ -3053,7 +3055,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	MonoImageOpenStatus def_status;
 	if (!status)
 		status = &def_status;
-	result = mono_assembly_load_with_partial_name_internal (name, mono_domain_default_alc (mono_domain_get ()), status);
+	result = mono_assembly_load_with_partial_name_internal (name, mono_alc_get_default (), status);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -3114,7 +3116,7 @@ mono_assembly_load_corlib (MonoImageOpenStatus *status)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 
 	if (corlib) {
 		/* g_print ("corlib already loaded\n"); */
@@ -3178,8 +3180,7 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 MonoAssembly*
 mono_assembly_request_byname (MonoAssemblyName *aname, const MonoAssemblyByNameRequest *req, MonoImageOpenStatus *status)
 {
-	MonoDomain *domain = mono_alc_domain (req->request.alc);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in (domain %p, alc %p)", aname->name, domain, (gpointer)req->request.alc);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Request to load %s in alc %p", aname->name, (gpointer)req->request.alc);
 	MonoAssembly *result;
 	if (status)
 		*status = MONO_IMAGE_OK;
@@ -3231,8 +3232,8 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
 	mono_assembly_request_prepare_byname (&req,
-				       MONO_ASMCTX_DEFAULT,
-				       mono_domain_default_alc (mono_domain_get ()));
+										  MONO_ASMCTX_DEFAULT,
+										  mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
 	res = mono_assembly_request_byname (aname, &req, status);
@@ -3256,7 +3257,7 @@ MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
 	MonoAssemblyByNameRequest req;
-	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, mono_domain_default_alc (mono_domain_get ()));
+	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
 	return mono_assembly_request_byname (aname, &req, status);
@@ -3276,7 +3277,7 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	if (refonly)
 		return NULL;
-	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 	return mono_assembly_loaded_internal (alc, aname);
 }
 
@@ -3307,7 +3308,7 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 {
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
-	res = mono_assembly_loaded_internal (mono_domain_default_alc (mono_domain_get ()), aname);
+	res = mono_assembly_loaded_internal (mono_alc_get_default (), aname);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
@@ -3720,4 +3721,78 @@ mono_asmctx_get_name (const MonoAssemblyContext *asmctx)
 	};
 	g_assert (asmctx->kind >= 0 && asmctx->kind <= MONO_ASMCTX_LAST);
 	return names [asmctx->kind];
+}
+
+/**
+ * mono_assembly_is_jit_optimizer_disabled:
+ *
+ * \param assm the assembly
+ *
+ * Returns TRUE if the System.Diagnostics.DebuggableAttribute has the
+ *  DebuggingModes.DisableOptimizations bit set.
+ *
+ */
+gboolean
+mono_assembly_is_jit_optimizer_disabled (MonoAssembly *ass)
+{
+	ERROR_DECL (error);
+
+	g_assert (ass);
+	if (ass->jit_optimizer_disabled_inited)
+		return ass->jit_optimizer_disabled;
+
+	MonoClass *klass = mono_class_try_get_debuggable_attribute_class ();
+
+	if (!klass) {
+		/* Linked away */
+		ass->jit_optimizer_disabled = FALSE;
+		mono_memory_barrier ();
+		ass->jit_optimizer_disabled_inited = TRUE;
+		return FALSE;
+	}
+
+	gboolean disable_opts = FALSE;
+	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
+	mono_error_cleanup (error); /* FIXME don't swallow the error */
+	if (attrs) {
+		for (int i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			const gchar *p;
+			MonoMethodSignature *sig;
+
+			if (!attr->ctor || attr->ctor->klass != klass)
+				continue;
+			/* Decode the attribute. See reflection.c */
+			p = (const char*)attr->data;
+			g_assert (read16 (p) == 0x0001);
+			p += 2;
+
+			// FIXME: Support named parameters
+			sig = mono_method_signature_internal (attr->ctor);
+			MonoClass *param_class;
+			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_BOOLEAN && sig->params [1]->type == MONO_TYPE_BOOLEAN) {
+
+				/* Two boolean arguments */
+				p ++;
+				disable_opts = *p;
+			} else if (sig->param_count == 1 &&
+				   sig->params[0]->type == MONO_TYPE_VALUETYPE &&
+				   (param_class = mono_class_from_mono_type_internal (sig->params[0])) != NULL &&
+				   m_class_is_enumtype (param_class) &&
+				   !strcmp (m_class_get_name (param_class), "DebuggingModes")) {
+				/* System.Diagnostics.DebuggableAttribute+DebuggingModes */
+				int32_t flags = read32 (p);
+				p += 4;
+				disable_opts = (flags & 0x0100) != 0;
+			}
+		}
+		mono_custom_attrs_free (attrs);
+	}
+
+	ass->jit_optimizer_disabled = disable_opts;
+	mono_memory_barrier ();
+	ass->jit_optimizer_disabled_inited = TRUE;
+
+	return disable_opts;
+
 }

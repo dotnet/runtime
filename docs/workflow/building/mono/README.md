@@ -85,7 +85,7 @@ The following packages will be created under `artifacts\packages\<configuration>
 Try the sample at `src/mono/sample/HelloWorld`.
 To run this sample, from the above folder
 ```cd ../..
-make run-sample
+make run
 ```
 
 ## Important Notes

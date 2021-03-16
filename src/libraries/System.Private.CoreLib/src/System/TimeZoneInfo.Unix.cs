@@ -34,6 +34,8 @@ namespace System
             bool[] StandardTime;
             bool[] GmtTime;
             string? futureTransitionsPosixFormat;
+            string? standardAbbrevName = null;
+            string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
@@ -52,11 +54,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -69,14 +71,18 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
+
+            // Use abbrev as the fallback
+            _standardDisplayName = standardAbbrevName;
+            _daylightDisplayName = daylightAbbrevName;
             _displayName = _standardDisplayName;
 
             string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
@@ -156,6 +162,36 @@ namespace System
             {
                 TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
             }
+        }
+
+        private static unsafe string? GetAlternativeId(string id)
+        {
+            if (!GlobalizationMode.Invariant)
+            {
+                if (id.Equals("utc", StringComparison.OrdinalIgnoreCase))
+                {
+                    //special case UTC as ICU will convert it to "Etc/GMT" which is incorrect name for UTC.
+                    return "Etc/UTC";
+                }
+                foreach (char c in id)
+                {
+                    // ICU uses some characters as a separator and trim the id at that character.
+                    // while we should fail if the Id contained one of these characters.
+                    if (c == '\\' || c == '\n' || c == '\r')
+                    {
+                        return null;
+                    }
+                }
+
+                char* buffer = stackalloc char[100];
+                int length = Interop.Globalization.WindowsIdToIanaId(id, buffer, 100);
+                if (length > 0)
+                {
+                    return new string(buffer, 0, length);
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
