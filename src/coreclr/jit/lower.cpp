@@ -5256,6 +5256,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         divisor->gtType = TYP_I_IMPL;
         divisor->AsIntCon()->SetIconValue(magic);
+
         if (isDiv && !postShift && type == TYP_I_IMPL)
         {
             divMod->SetOper(GT_MULHI);
@@ -5268,15 +5269,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
-            GenTree* mulhi;
-            if (simpleMul)
-            {
-                mulhi = comp->gtNewOperNode(GT_MUL, TYP_I_IMPL, adjustedDividend, divisor);
-            }
-            else
-            {
-                mulhi = comp->gtNewOperNode(GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
-            }
+            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
             mulhi->gtFlags |= GTF_UNSIGNED;
             BlockRange().InsertBefore(divMod, mulhi);
             if (!firstNode)
