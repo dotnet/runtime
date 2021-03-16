@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Buffers.Binary;
 
 namespace System.Diagnostics
 {
@@ -19,7 +20,6 @@ namespace System.Diagnostics
     {
         public const int METHODS_TO_SKIP = 0;
 
-        private static readonly bool s_ilOffsetToStackTrace = Environment.GetEnvironmentVariable("COMPlus_ILOffsetToStackTrace") == "1";
         private int _numOfFrames;
         private int _methodsToSkip;
 
@@ -208,6 +208,7 @@ namespace System.Diagnostics
             // We also want to pass in a default for inFileLineNumber.
             string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
             string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1}+0x{2}");
+            Span<byte> bytes = stackalloc byte[4];
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -325,12 +326,14 @@ namespace System.Diagnostics
                             sb.Append(' ');
                             sb.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, fileName, sf.GetFileLineNumber());
                         }
-                        else if (s_ilOffsetToStackTrace)
+                        else if (LocalAppContextSwitches.ILOffsetToStackTrace)
                         {
                             try
                             {
-                                string methodToken = Convert.ToString(mb.MetadataToken, 16);
-                                string ilOffset = Convert.ToString(sf.GetILOffset(), 16);
+                                BinaryPrimitives.WriteInt32BigEndian(bytes, mb.MetadataToken);
+                                string methodToken = HexConverter.ToString(bytes.Slice(0, 4), HexConverter.Casing.Lower).TrimStart('0');
+                                BinaryPrimitives.WriteInt32BigEndian(bytes, sf.GetILOffset());
+                                string ilOffset = HexConverter.ToString(bytes.Slice(0, 4), HexConverter.Casing.Lower).TrimStart('0');
                                 string? assemblyName = System.IO.Path.GetFileName(mb.ReflectedType?.Assembly.Location);
                                 if (assemblyName != null)
                                 {

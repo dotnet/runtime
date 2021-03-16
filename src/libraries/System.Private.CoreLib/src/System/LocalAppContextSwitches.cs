@@ -47,5 +47,13 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard);
         }
+
+        private static int s_ilOffsetToStackTrace;
+        public static bool ILOffsetToStackTrace
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetCachedSwitchValue("Switch.System.Diagnostics.StackTrace.ILOffsetToStackTrace", ref s_ilOffsetToStackTrace);
+        }
+
     }
 }

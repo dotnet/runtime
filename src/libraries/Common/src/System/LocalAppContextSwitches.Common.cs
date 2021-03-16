@@ -56,6 +56,11 @@ namespace System
                 return true;
             }
 
+            if (switchName == "Switch.System.Diagnostics.StackTrace.ILOffsetToStackTrace")
+            {
+                return Environment.GetEnvironmentVariable("COMPlus_ILOffsetToStackTrace") == "1" ? true : false;
+            }
+
             return false;
         }
     }
