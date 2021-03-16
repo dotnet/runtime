@@ -568,14 +568,14 @@ namespace System.Linq
 
         public static MethodInfo SingleOrDefault_TSource_3(Type TSource) =>
             (s_SingleOrDefault_TSource_3 ??
-            (s_SingleOrDefault_TSource_3 = new Func<IQueryable<object>, object, object?>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_SingleOrDefault_TSource_4;
 
         public static MethodInfo SingleOrDefault_TSource_4(Type TSource) =>
             (s_SingleOrDefault_TSource_4 ??
-            (s_SingleOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object?>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
+            (s_SingleOrDefault_TSource_4 = new Func<IQueryable<object>, Expression<Func<object, bool>>, object, object>(Queryable.SingleOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
              .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_Skip_TSource_2;
