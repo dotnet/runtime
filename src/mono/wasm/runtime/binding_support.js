@@ -1181,8 +1181,10 @@ var BindingSupportLib = {
 			}
 
 			var unboxer = this._struct_unboxer_cache.get (classPtr);
-			if (!unboxer)
-				throw new Error ("No managed-to-js converter found for struct type " + classPtr);
+			if (!unboxer) {
+				var className = this.mono_wasm_get_type_name(this.mono_wasm_class_get_type(classPtr));
+				throw new Error ("No managed-to-js converter found for struct type " + className);
+			}
 
 			// FIXME: Pass a ReadOnlySpan or ReadOnlyMemory instead of a bare pointer
 			return unboxer (dataOffset);

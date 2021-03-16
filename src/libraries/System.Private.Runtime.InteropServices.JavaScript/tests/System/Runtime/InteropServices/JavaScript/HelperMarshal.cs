@@ -6,49 +6,57 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
+namespace System.Runtime.InteropServices.JavaScript {
+    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+    public class CustomMarshalerAttribute : Attribute {
+        public Type MarshalerType;
+        
+        public CustomMarshalerAttribute (Type marshalerType)
+            : base () {
+            MarshalerType = marshalerType;
+        }
+    }
+}
+
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        public class CustomClass {
-            public double D;
-
-            private static CustomClass JSToManaged (double d) {
-                // Console.WriteLine("CustomClass.JSToManaged {0}", d);
+        public static class CustomClassMarshaler {
+            static CustomClass JSToManaged (double d) {
                 return new CustomClass { D = d };
             }
 
-            private static double ManagedToJS (CustomClass ct) {
-                // Console.WriteLine("CustomClass.ManagedToJS {0}", ct?.D);
+            static double ManagedToJS (CustomClass ct) {
                 return ct?.D ?? -1;
             }
         }
 
-        public struct CustomStruct {
+        [CustomMarshaler(typeof(CustomClassMarshaler))]
+        public class CustomClass {
             public double D;
+        }
 
-            private static CustomStruct JSToManaged (double d) {
-                // Console.WriteLine("CustomStruct.JSToManaged {0}", d);
+        public static class CustomStructMarshaler {
+            static CustomStruct JSToManaged (double d) {
                 return new CustomStruct { D = d };
             }
 
-            private static unsafe double ManagedToJS (ref CustomStruct ct) {
-                // Console.WriteLine("CustomStruct.ManagedToJS {0}", ct.D);
-                /*
-                fixed (CustomStruct *pCt = &ct)
-                    Console.WriteLine("arg ptr {0}", (uint)(UIntPtr)pCt);
-                */
+            static double ManagedToJS (ref CustomStruct ct) {
                 return ct.D;
             }
         }
 
-        public struct CustomDate {
-            public DateTime Date;
+        [CustomMarshaler(typeof(CustomStructMarshaler))]
+        public struct CustomStruct {
+            public double D;
+        }
 
-            private static string JSToManaged_PreFilter { get; } = "value.toISOString()";
-            private static string ManagedToJS_PostFilter { get; } = "new Date(value)";
+        public static class CustomDateMarshaler {
+            static string JSToManaged_PreFilter { get; } = "value.toISOString()";
+            static string ManagedToJS_PostFilter { get; } = "new Date(value)";
 
-            private static CustomDate JSToManaged (string s) {
+            static CustomDate JSToManaged (string s) {
                 Console.WriteLine($"CustomDate.JSToManaged({s})");
                 var newDate = DateTime.Parse(s).ToUniversalTime();
                 Console.WriteLine($"newDate={newDate}");
@@ -57,11 +65,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             }
 
-            private static string ManagedToJS (ref CustomDate cd) {
+            static string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
                 Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;
             }
+        }
+
+        [CustomMarshaler(typeof(CustomDateMarshaler))]
+        public struct CustomDate {
+            public DateTime Date;
         }
 
         internal const string INTEROP_CLASS = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:";
