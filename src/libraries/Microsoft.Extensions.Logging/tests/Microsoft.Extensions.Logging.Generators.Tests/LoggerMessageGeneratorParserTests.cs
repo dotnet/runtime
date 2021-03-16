@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0000", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorInvalidMethodName.Id, d[0].Id);
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0017", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMissingLogLevel.Id, d[0].Id);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0016", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMethodHasBody.Id, d[0].Id);
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0015", d[0].Id);
+            Assert.Equal(DiagDescriptors.ArgumentHasNoCorrespondingTemplate.Id, d[0].Id);
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0011", d[0].Id);
+            Assert.Equal(DiagDescriptors.RedundantQualifierInMessage.Id, d[0].Id);
         }
 
         [Fact]
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0002", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorInvalidParameterName.Id, d[0].Id);
         }
 
         [Fact]
@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0012", d[0].Id);
+            Assert.Equal(DiagDescriptors.PassingDateTime.Id, d[0].Id);
         }
 
         [Fact]
@@ -197,7 +197,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0003", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorNestedType.Id, d[0].Id);
         }
 
         [Fact]
@@ -206,16 +206,20 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 namespace System
                 {
-                    public class Object
-                    {
-                    }
-
-                    public class Void
-                    {
-                    }
+                    public class Object {}
+                    public class Void {}
+                    public class String {}
+                    public struct DateTime {}
+                }
+                namespace System.Collections
+                {
+                    public interface IEnumerable {}
                 }
                 namespace Microsoft.Extensions.Logging
                 {
+                    public enum LogLevel {}
+                    public class LoggerMessageAttribute {}
+                    public interface ILogger {}
                 }
                 partial class C
                 {
@@ -223,7 +227,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
             Assert.Single(d);
-            Assert.Equal("LG0004", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
         [Fact]
@@ -232,20 +236,20 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             var d = await RunGenerator(@"
                 namespace System
                 {
-                    public class Object
-                    {
-                    }
-
-                    public class Void
-                    {
-                    }
-
-                    public class Exception
-                    {
-                    }
+                    public class Object {}
+                    public class Void {}
+                    public class Exception {}
+                    public class String {}
+                }
+                namespace System.Collections
+                {
+                    public interface IEnumerable {}
                 }
                 namespace Microsoft.Extensions.Logging
                 {
+                    public enum LogLevel {}
+                    public class LoggerMessageAttribute {}
+                    public interface ILogger {}
                 }
                 partial class C
                 {
@@ -253,7 +257,64 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
             Assert.Single(d);
-            Assert.Equal("LG0004", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
+        }
+
+        [Fact]
+        public async Task MissingStringType()
+        {
+            var d = await RunGenerator(@"
+                namespace System
+                {
+                    public class Object {}
+                    public class Void {}
+                    public class Exception {}
+                    public struct DateTime {}
+                }
+                namespace System.Collections
+                {
+                    public interface IEnumerable {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public enum LogLevel {}
+                    public class LoggerMessageAttribute {}
+                    public interface ILogger {}
+                }
+                partial class C
+                {
+                }
+            ", false, includeBaseReferences: false, includeLoggingReferences: false);
+
+            Assert.Single(d);
+            Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
+        }
+
+        [Fact]
+        public async Task MissingEnumerableType()
+        {
+            var d = await RunGenerator(@"
+                namespace System
+                {
+                    public class Object {}
+                    public class Void {}
+                    public class Exception {}
+                    public struct DateTime {}
+                    public class String {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public enum LogLevel {}
+                    public class LoggerMessageAttribute {}
+                    public interface ILogger {}
+                }
+                partial class C
+                {
+                }
+            ", false, includeBaseReferences: false, includeLoggingReferences: false);
+
+            Assert.Single(d);
+            Assert.Equal(DiagDescriptors.ErrorMissingRequiredType.Id, d[0].Id);
         }
 
         [Fact]

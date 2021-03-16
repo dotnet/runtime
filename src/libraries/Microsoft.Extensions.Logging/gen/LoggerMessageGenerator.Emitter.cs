@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     return string.Empty;
                 }
-                
+
                 var sb = GetStringBuilder();
                 try
                 {
@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     if (lm.RegularParameters[index].IsEnumerable)
                                     {
-                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate(_holder[{index}].Value);\n");
+                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder[{index}].Value);\n");
                                     }
                                     else
                                     {
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     if (lm.RegularParameters[index].IsEnumerable)
                                     {
-                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate(_holder.Value{index + 1});\n");
+                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder.Value{index + 1});\n");
                                     }
                                     else
                                     {

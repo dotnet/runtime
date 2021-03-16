@@ -32,57 +32,56 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
-                var results = new List<LoggerClass>();
-
-                var exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
-                if (exceptionSymbol == null)
-                {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Exception");
-                    return results;
-                }
-
-                var enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
-                if (enumerableSymbol == null)
-                {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Collections.IEnumerable");
-                    return results;
-                }
-
-                var stringSymbol = _compilation.GetTypeByMetadataName("System.String");
-                if (stringSymbol == null)
-                {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.String");
-                    return results;
-                }
-
-                var dateTimeSymbol = _compilation.GetTypeByMetadataName("System.DateTime");
-                if (dateTimeSymbol == null)
-                {
-                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.DateTime");
-                    return results;
-                }
-
                 var loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute is null)
                 {
                     // nothing to do if this type isn't available
-                    return results;
+                    return Array.Empty<LoggerClass>();
                 }
 
                 var loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     // nothing to do if this type isn't available
-                    return results;
+                    return Array.Empty<LoggerClass>();
                 }
 
                 var logLevelSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
                 if (logLevelSymbol == null)
                 {
                     // nothing to do if this type isn't available
-                    return results;
+                    return Array.Empty<LoggerClass>();
                 }
 
+                var exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
+                if (exceptionSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Exception");
+                    return Array.Empty<LoggerClass>();
+                }
+
+                var enumerableSymbol = _compilation.GetTypeByMetadataName("System.Collections.IEnumerable");
+                if (enumerableSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.Collections.IEnumerable");
+                    return Array.Empty<LoggerClass>();
+                }
+
+                var stringSymbol = _compilation.GetTypeByMetadataName("System.String");
+                if (stringSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.String");
+                    return Array.Empty<LoggerClass>();
+                }
+
+                var dateTimeSymbol = _compilation.GetTypeByMetadataName("System.DateTime");
+                if (dateTimeSymbol == null)
+                {
+                    Diag(DiagDescriptors.ErrorMissingRequiredType, null, "System.DateTime");
+                    return Array.Empty<LoggerClass>();
+                }
+
+                var results = new List<LoggerClass>();
                 var ids = new HashSet<int>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
@@ -232,7 +231,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
-                                            var paramSymbol = sm.GetTypeInfo(p.Type!).Type;
+                                            var paramSymbol = sm.GetDeclaredSymbol(p)!.Type;
                                             if (paramSymbol is IErrorTypeSymbol)
                                             {
                                                 // semantic problem, just bail quietly

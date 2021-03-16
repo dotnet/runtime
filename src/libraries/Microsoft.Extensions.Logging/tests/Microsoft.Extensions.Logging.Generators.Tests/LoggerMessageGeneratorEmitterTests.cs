@@ -54,25 +54,32 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             // attained by processing Definitions.cs. The functionality of the
             // resulting code is tested via LoggerMessageGeneratedCodeTests.cs
 
-            var testSourceCode = await File.ReadAllTextAsync(@"..\..\..\TestClasses\MiscTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\LevelTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\ArgTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\EventNameTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\SignatureTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\MessageTestExtensions.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\TestInstances.cs")
-                + await File.ReadAllTextAsync(@"..\..\..\TestClasses\CollectionTestExtensions.cs");
+            var sources = new[]
+            {
+                @"..\..\..\TestClasses\MiscTestExtensions.cs",
+                @"..\..\..\TestClasses\LevelTestExtensions.cs",
+                @"..\..\..\TestClasses\ArgTestExtensions.cs",
+                @"..\..\..\TestClasses\EventNameTestExtensions.cs",
+                @"..\..\..\TestClasses\SignatureTestExtensions.cs",
+                @"..\..\..\TestClasses\MessageTestExtensions.cs",
+                @"..\..\..\TestClasses\EnumerableTestExtensions.cs",
+                @"..\..\..\TestClasses\TestInstances.cs",
+                @"..\..\..\TestClasses\CollectionTestExtensions.cs",
+            };
 
-            var (d, r) = await RoslynTestUtils.RunGenerator(
-                new LoggerMessageGenerator(),
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-                new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
-                new[] { testSourceCode },
-                optionsProvider: new OptionsProvider(response)).ConfigureAwait(false);
+            foreach (var src in sources)
+            { 
+                var testSourceCode = await File.ReadAllTextAsync(src);
 
-            Assert.Empty(d);
-            Assert.Single(r);
+                var (d, r) = await RoslynTestUtils.RunGenerator(
+                    new LoggerMessageGenerator(),
+                    new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
+                    new[] { testSourceCode },
+                    optionsProvider: new OptionsProvider(response)).ConfigureAwait(false);
+
+                Assert.Empty(d);
+                _ = Assert.Single(r);
+            }
         }
     }
 }
