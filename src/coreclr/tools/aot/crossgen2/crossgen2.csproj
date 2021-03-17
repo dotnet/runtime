@@ -63,7 +63,7 @@
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
 
     <TargetArchitectureForSharedLibraries>$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitecture)=='armel'">arm</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForSharedLibraries>
 
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
     <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(CrossHostArch)</CrossTargetSpec>
