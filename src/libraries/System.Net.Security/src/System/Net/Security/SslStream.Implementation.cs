@@ -41,6 +41,7 @@ namespace System.Net.Security
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
+        private bool receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
         // 0 = no handshake
@@ -745,6 +746,7 @@ namespace System.Net.Security
             {
                 // We should always consume all decrypted data when using external buffer.
                 Debug.Assert(_decryptedBytesCount == 0);
+                _decryptedBytesOffset = 0;
 
                 // If we have any leftovers we need to preserve them internally.
                 if (_internalBufferCount > 0)
@@ -754,6 +756,10 @@ namespace System.Net.Security
                     _internalBuffer = new Memory<byte>(_rentedBuffer);
                     _internalOffset = 0;
                 }
+            }
+            else if (_decryptedBytesCount == 0)
+            {
+                _decryptedBytesOffset = 0;
             }
         }
 
@@ -772,7 +778,15 @@ namespace System.Net.Security
             {
                 if (_decryptedBytesCount != 0)
                 {
-                    return CopyDecryptedData(buffer);
+                    int length = CopyDecryptedData(buffer, 0);
+                    ReturnReadBufferIfEmpty();
+                    return length;
+                }
+
+                if (receivedEOF)
+                {
+                    // We received EOF during previous read but had buffered data to return.
+                    return 0;
                 }
 
                 if (buffer.Length == 0)
@@ -819,7 +833,8 @@ namespace System.Net.Security
                         int readBytes = await adapter.ReadAsync(_internalBuffer.Slice(_internalBufferCount)).ConfigureAwait(false);
                         if (readBytes == 0)
                         {
-                            return 0;
+                            receivedEOF = true;
+                            break;
                         }
 
                         _internalBufferCount += readBytes;
@@ -851,6 +866,9 @@ namespace System.Net.Security
                     int decryptedCount = 0;
                     lock (_handshakeLock)
                     {
+                        ThrowIfExceptionalOrNotAuthenticated();
+                        Debug.Assert(_decryptedBytesCount == 0);
+
                         status = _context!.Decrypt(_internalBuffer.Span.Slice(_internalOffset, payloadBytes), _internalBuffer.Span.Slice(_decryptedBytesOffset), ref decryptedOffset, ref decryptedCount);
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
@@ -878,16 +896,11 @@ namespace System.Net.Security
                         }
                     }
 
-                    Debug.Assert(_decryptedBytesOffset == 0);
                     _decryptedBytesCount = decryptedCount;
                     if (decryptedCount > 0 && decryptedOffset > 0)
                     {
                         // schannel can change offset without providing decrypted data.
                         _decryptedBytesOffset = _internalOffset + decryptedOffset;
-                    }
-                    else
-                    {
-                        _decryptedBytesOffset = 0;
                     }
 
                     // Treat the bytes we just decrypted as consumed
@@ -924,7 +937,8 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
-                            return 0;
+                            receivedEOF = true;
+                            break;
                         }
 
                         throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
@@ -945,7 +959,7 @@ namespace System.Net.Security
 
                     // This will either copy data from rented buffer or adjust final buffer as needed.
                     // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.
-                    processedLength += CopyDecryptedData(buffer);
+                    processedLength += CopyDecryptedData(buffer, decryptedOffset);
 
                     if (_decryptedBytesCount > 0)
                     {
@@ -953,17 +967,16 @@ namespace System.Net.Security
                         break;
                     }
 
-                    Debug.Assert(_decryptedBytesCount == 0);
-
                     // Check if we have enough data to process next TLS frame
                     if (_internalBufferCount > SecureChannel.ReadHeaderSize && _framing == Framing.SinceSSL3)
                     {
                         TlsFrameHelper.TryGetFrameHeader(_internalBuffer.Span.Slice(_internalOffset), ref _lastFrame.Header);
                         payloadBytes = _lastFrame.Header.GetFrameSize();
-                        if (payloadBytes <= _internalBufferCount && _lastFrame.Header.Type == TlsContentType.AppData)
+                        if (payloadBytes <= _internalBufferCount && _lastFrame.Header.Type == TlsContentType.AppData && buffer.Length > decryptedCount)
                         {
                             // skip over the already written decrypted data.
                             buffer = buffer.Slice(decryptedCount);
+                            Debug.Assert(_decryptedBytesOffset <= _internalOffset);
                             goto haveFullTlsFrame;
                         }
                     }
@@ -1105,9 +1118,13 @@ namespace System.Net.Security
 
             _internalOffset += byteCount;
             _internalBufferCount -= byteCount;
+            if (_internalBufferCount ==0)
+            {
+                _internalOffset = 0;
+            }
         }
 
-        private int CopyDecryptedData(Memory<byte> buffer)
+        private int CopyDecryptedData(Memory<byte> buffer, int decryptedOffset)
         {
             Debug.Assert(_decryptedBytesCount > 0);
 
@@ -1117,23 +1134,19 @@ namespace System.Net.Security
                 if (_rentedBuffer != null)
                 {
                     // if we use internal rented buffer we need to copy data
-                    _internalBuffer.Span.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
-                    _decryptedBytesOffset += copyBytes;
+                    _internalBuffer.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer);
                 }
-                else if (_decryptedBytesOffset != 0)
+                else if (decryptedOffset != 0)
                 {
                     // If not using rented buffer we should always have enough space to copy all decrypted data.
                     Debug.Assert(buffer.Length >= _decryptedBytesCount);
                     // We used user's buffer directly but decrypted data did not landed where we need them.
-                    _internalBuffer.Span.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                    _internalBuffer.Slice(_decryptedBytesOffset, copyBytes).CopyTo(buffer);
                     _decryptedBytesOffset = 0;
                 }
 
                 _decryptedBytesCount -= copyBytes;
-                if (_decryptedBytesCount == 0)
-                {
-                    _decryptedBytesOffset = 0;
-                }
+                _decryptedBytesOffset += copyBytes;
             }
 
             return copyBytes;
@@ -1142,8 +1155,7 @@ namespace System.Net.Security
         private void ResetReadBuffer(Memory<byte> outputBuffer)
         {
             Debug.Assert(_decryptedBytesCount == 0);
-
-            if (_rentedBuffer == null)
+            if (_internalBuffer.Length == 0)
             {
                 if (outputBuffer.Length > ReadBufferSize)
                 {
@@ -1166,11 +1178,10 @@ namespace System.Net.Security
             else if (_internalOffset > 0)
             {
                 Debug.Assert(_decryptedBytesCount == 0);
-                Debug.Assert(_rentedBuffer != null);
                 // We have buffered data at a non-zero offset.
                 // To maximize the buffer space available for the next read,
                 // copy the existing data down to the beginning of the buffer.
-                Buffer.BlockCopy(_rentedBuffer, _internalOffset, _rentedBuffer, 0, _internalBufferCount);
+                _internalBuffer.Slice(_internalOffset, _internalBufferCount).CopyTo(_internalBuffer);
                 _internalOffset = 0;
             }
         }
