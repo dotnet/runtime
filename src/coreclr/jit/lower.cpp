@@ -5308,11 +5308,15 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
+#ifdef TARGET_ARM
                 divMod->SetOper(GT_CAST);
-                divMod->gtOp1 = mulhi;
-                divMod->gtOp2 = nullptr;
                 divMod->gtFlags |= GTF_UNSIGNED;
                 divMod->AsCast()->gtCastType = TYP_UINT;
+#else
+                divMod->SetOper(GT_BITCAST);
+#endif
+                divMod->gtOp1 = mulhi;
+                divMod->gtOp2 = nullptr;
             }
         }
 
