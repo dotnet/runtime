@@ -8,7 +8,6 @@ namespace System.IO
     internal partial struct FileStatus
     {
         internal void SetCreationTime(string path, DateTimeOffset time) => SetTimeOnFile(path, time, Interop.libc.AttrList.ATTR_CMN_CRTIME);
-
         internal void SetLastWriteTime(string path, DateTimeOffset time) => SetTimeOnFile(path, time, Interop.libc.AttrList.ATTR_CMN_MODTIME);
 
         private unsafe void SetTimeOnFile(string path, DateTimeOffset time, uint commonAttr)
@@ -49,6 +48,8 @@ namespace System.IO
                     SetLastWriteTime_OtherUnix(path, time);
                 }
             }
+
+            _fileStatusInitialized = -1;
         }
     }
 }
