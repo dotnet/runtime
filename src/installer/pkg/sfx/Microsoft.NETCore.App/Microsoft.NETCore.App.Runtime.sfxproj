@@ -121,11 +121,11 @@
     <!-- DiaSymReader for the target architecture, which is placed into the package -->
     <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
     <_diaSymTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymTargetArch>
-    <_diaSymReaderTargetPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetPath>
+    <_diaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetArchPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="Exists('$(_diaSymReaderTargetPath)')">
-    <NativeRuntimeAsset Include="$(_diaSymReaderTargetPath)" />
+  <ItemGroup Condition="Exists('$(_diaSymReaderTargetArchPath)')">
+    <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" />
   </ItemGroup>
 
   <!-- VS uses this file to show the target framework in the drop down. -->
