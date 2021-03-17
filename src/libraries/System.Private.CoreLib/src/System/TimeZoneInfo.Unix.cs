@@ -139,7 +139,7 @@ namespace System
             // as the rules now is public, we should fill it properly so the caller doesn't have to know how we use it internally
             // and can use it as it is used in Windows
 
-            List<AdjustmentRule> rulesList = new List<AdjustmentRule>();
+            List<AdjustmentRule> rulesList = new List<AdjustmentRule>(_adjustmentRules.Length);
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
