@@ -62,12 +62,13 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the properties for this instance of a component.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         PropertyDescriptorCollection GetProperties();
 
         /// <summary>
         /// Gets the properties for this instance of a component using the attribute array as a filter.
         /// </summary>
-        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         PropertyDescriptorCollection GetProperties(Attribute[] attributes);
 
         /// <summary>
