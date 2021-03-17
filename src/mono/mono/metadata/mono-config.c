@@ -22,6 +22,7 @@
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 
+#define ICU_TRACING 1
 #if defined(TARGET_PS3)
 #define CONFIG_OS "CellOS"
 #elif defined(__linux__)

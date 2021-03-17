@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using System.Globalization;
 
 public class Test
 {
@@ -10,6 +11,10 @@ public class Test
     {
         await Task.Delay(1);
         Console.WriteLine("Hello World!");
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles");
+        Console.WriteLine(tz.DisplayName);
+        Console.WriteLine(tz.StandardName);
+        Console.WriteLine(tz.DaylightName);
         for (int i = 0; i < args.Length; i++) {
             Console.WriteLine($"args[{i}] = {args[i]}");
         }

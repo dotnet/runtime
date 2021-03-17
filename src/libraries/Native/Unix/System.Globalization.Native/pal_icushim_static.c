@@ -47,7 +47,7 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-static int32_t load_icu_data(void* pData);
+static int32_t load_icu_data(void* pData, int32_t type);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
@@ -56,11 +56,11 @@ EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
     return GlobalizationNative_GetICUDTName(culture);
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData);
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData, int32_t type);
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData)
+EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(void* pData, int32_t type)
 {
-    return load_icu_data(pData);
+    return load_icu_data(pData, type);
 }
 
 
@@ -77,22 +77,30 @@ void mono_wasm_link_icu_shim(void)
 
 #endif
 
-static int32_t load_icu_data(void* pData)
+static int32_t load_icu_data(void* pData, int32_t type)
 {
 
     UErrorCode status = 0;
-    udata_setCommonData(pData, &status);
+    if (type == 0) {
+        udata_setAppData(NULL, pData, &status);
+    }
+    if (type == 1) {
+        udata_setCommonData(pData, &status);
+    }
 
     if (U_FAILURE(status)) {
-        log_icu_error("udata_setCommonData", status);
+        if (type)
+            log_icu_error("udata_setCommonData", status);
+        else
+            log_icu_error("udata_setAppData", status);
         return 0;
     } else {
 
-#if defined(ICU_TRACING)
+// #if defined(ICU_TRACING)
         // see https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/tracing.md
-        utrace_setFunctions(0, 0, 0, icu_trace_data);
-        utrace_setLevel(UTRACE_VERBOSE);
-#endif
+    utrace_setFunctions(0, 0, 0, icu_trace_data);
+    utrace_setLevel(UTRACE_VERBOSE);
+// #endif
         isDataSet = 1;
         return 1;
     }
@@ -146,7 +154,7 @@ int32_t GlobalizationNative_LoadICUData(const char* path)
 
     fclose(fp);
 
-    if (load_icu_data(icu_data) == 0) {
+    if (load_icu_data(icu_data, strcasecmp("icudt.dat", path)) == 0) {
         log_shim_error("ICU BAD EXIT %d.", ret);
         return ret;
     }

@@ -1581,7 +1581,7 @@ var MonoSupportLib = {
 				}
 			}
 			else if (asset.behavior === "icu") {
-				if (this.mono_wasm_load_icu_data (offset))
+				if (this.mono_wasm_load_icu_data (offset, +(asset.data_type == "common")))
 					ctx.num_icu_assets_loaded_successfully += 1;
 				else
 					console.error ("Error loading ICU asset", asset.name);
@@ -1683,9 +1683,9 @@ var MonoSupportLib = {
 
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
-		mono_wasm_load_icu_data: function (offset) {
-			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
-			var ok = (fn (offset)) === 1;
+		mono_wasm_load_icu_data: function (offset, type) {
+			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number', 'number']);
+			var ok = (fn (offset, type)) === 1;
 			if (ok)
 				this.num_icu_assets_loaded_successfully++;
 			return ok;

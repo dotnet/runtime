@@ -41,7 +41,8 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string? IcuDataFileName { get; set; }
+    // public ITaskItem[]? IcuDataFileNames { get; set; }
+    public string? IcuShardData { get; set; }
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -119,14 +120,17 @@ public class WasmAppBuilder : Task
         public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
         public bool LoadRemote { get; set; }
+        [JsonPropertyName("data_type")]
+        public string? DataType { get; set; }
     }
 
     public override bool Execute ()
     {
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
-        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuShardData))
+        // if (!InvariantGlobalization && IcuShardData == null)
+            throw new ArgumentException("IcuShardData property shouldn't be empty if InvariantGlobalization=false");
 
         if (Assemblies?.Length == 0)
         {
@@ -226,7 +230,28 @@ public class WasmAppBuilder : Task
         }
 
         if (!InvariantGlobalization)
-            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
+        {
+            string[] icuConfig = IcuShardData!.ToLower().Split(',');
+            string[] localeFilters = new string[]{ "efigs", "en", "zh", "cjk", "no_cjk" };
+            string[] nonLocaleSpecific = new string[]{ "currency", "normalization" };
+            string? localeFilter = Array.Find(icuConfig, x => (Array.IndexOf(localeFilters, x)) > -1);
+            foreach (var icu in icuConfig)
+            {
+                string? icuDataFileName;
+                if (icu == localeFilter)
+                {
+                    icuDataFileName = $"icudt_{icu}_base.dat";
+                } else
+                {
+                    icuDataFileName = (localeFilter is null) || (Array.IndexOf(nonLocaleSpecific, icu) > -1) ? $"icudt_{icu}.dat" : $"icudt_{localeFilter}_{icu}.dat";
+                }
+                config.Assets.Add(new IcuData(icuDataFileName) { LoadRemote = RemoteSources?.Length > 0, DataType="common" });
+            }
+            // foreach (ITaskItem item in IcuDataFileNames!)
+            // {
+            //     config.Assets.Add(new IcuData(item!.ItemSpec) { LoadRemote = RemoteSources?.Length > 0, "common" });
+            // }
+        }
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
 

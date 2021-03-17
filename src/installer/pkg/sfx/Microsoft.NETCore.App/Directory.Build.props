@@ -185,6 +185,14 @@
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_normalization.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_base.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_efigs_base.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_currency.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_zones.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_en_zones.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_coll.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="icudt_efigs_zones.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="binding_support.js" IsNative="true" />

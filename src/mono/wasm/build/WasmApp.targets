@@ -360,18 +360,26 @@
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
-
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
+      <IcuData Condition="'$(InvariantGlobalization)' != 'true'">efigs,zones</IcuData>
     </PropertyGroup>
+
+    <ItemGroup>
+      <WasmIcuDataFileNames Include="icudt_efigs_base.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="app"/>
+      <WasmIcuDataFileNames Include="icudt_normalization.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="common"/>
+      <WasmIcuDataFileNames Include="icudt_currency.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="common"/>
+      <WasmIcuDataFileNames Include="icudt_efigs_zones.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="common"/>
+      <WasmIcuDataFileNames Include="icudt_coll.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="common"/>
+      <WasmIcuDataFileNames Include="icudt_base.dat" Condition="'$(InvariantGlobalization)' != 'true'" Type="common"/>
+    </ItemGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(WasmIcuDataFileNames.Identity)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
     </ItemGroup>
 
@@ -382,7 +390,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
+      IcuShardData="$(IcuData)"
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
