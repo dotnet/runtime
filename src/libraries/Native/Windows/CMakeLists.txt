@@ -130,7 +130,3 @@ if(STATIC_LIBS_ONLY)
 endif()
 
 add_subdirectory(System.IO.Compression.Native)
-
-if (CLR_CMAKE_TARGET_BROWSER)
-    add_subdirectory(System.SecurityCryptography.Native.Browser)
-endif (CLR_CMAKE_TARGET_BROWSER)

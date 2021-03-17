@@ -10,7 +10,6 @@ set (NATIVE_SOURCES
 add_library (System.Security.Cryptography.Native.Browser-Static
     STATIC
     ${NATIVE_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 set_target_properties(System.Security.Cryptography.Native.Browser-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Browser CLEAN_DIRECT_OUTPUT 1)
