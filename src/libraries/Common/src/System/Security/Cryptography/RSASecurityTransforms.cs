@@ -7,6 +7,7 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
 using Internal.Cryptography;
@@ -87,6 +88,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override RSAParameters ExportParameters(bool includePrivateParameters)
             {
                 // Apple requires all private keys to be exported encrypted, but since we're trying to export
@@ -261,6 +264,8 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
                 if (data == null)
@@ -288,6 +293,8 @@ namespace System.Security.Cryptography
                 return output;
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
@@ -366,6 +373,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
                 if (data == null)
@@ -417,6 +426,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
@@ -487,6 +498,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
                 if (hash == null)
@@ -543,6 +556,8 @@ namespace System.Security.Cryptography
                 return output;
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
             {
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
@@ -631,6 +646,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override bool VerifyHash(
                 byte[] hash,
                 byte[] signature,
@@ -649,6 +666,8 @@ namespace System.Security.Cryptography
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
@@ -780,6 +799,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             internal SecKeyPair GetKeys()
             {
                 ThrowIfDisposed();
