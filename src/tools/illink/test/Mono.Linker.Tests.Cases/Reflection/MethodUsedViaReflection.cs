@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
 #if NETCOREAPP
-			GetMethod_Name_BindingAttr_Binder_Types.TestNameBindingFlagsAndTypes ();
+			GetMethod_Name_BindingAttr_Types.TestNameBindingFlagsAndTypes ();
 			GetMethod_Name_GenericParameterCount_Types.TestNameWithIntAndType ();
 			GetMethod_Name_GenericParameterCount_Types_Modifiers.TestNameWithIntAndTypeAndModifiers ();
 			GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers.TestNameWithIntAndBindingFlags ();
@@ -314,9 +314,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 #if NETCOREAPP
-		// GetMethod(string name, BindingFlags bindingAttr, Binder binder, Type[] types)
+		// GetMethod(string name, BindingFlags bindingAttr, Type[] types)
 		[Kept]
-		class GetMethod_Name_BindingAttr_Binder_Types
+		class GetMethod_Name_BindingAttr_Types
 		{
 			private static int OnlyCalledViaReflection ()
 			{
@@ -342,7 +342,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[RecognizedReflectionAccessPattern]
 			public static void TestNameBindingFlagsAndTypes ()
 			{
-				var method = typeof (GetMethod_Name_BindingAttr_Binder_Types).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, new Type[] { });
+				var method = typeof (GetMethod_Name_BindingAttr_Types).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, new Type[] { });
 				method.Invoke (null, new object[] { });
 			}
 		}
