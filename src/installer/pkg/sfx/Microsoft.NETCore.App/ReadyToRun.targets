@@ -62,15 +62,10 @@
   </UsingTask>
 
   <PropertyGroup>
-    <OriginalDotnetRootValue />
+    <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
   </PropertyGroup>
 
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="DOTNET_INSTALL_DIR: $(DOTNET_INSTALL_DIR)" />
     <SetEnvVar Name="DOTNET_ROOT" Value="$(DOTNET_INSTALL_DIR)" />
   </Target>
 
