@@ -5344,6 +5344,7 @@
       "BaselineVersion": "6.0.0",
       "InboxOn": {
         "netcoreapp3.0": "4.0.5.0",
+        "netcoreapp3.1": "4.0.6.0",
         "net5.0": "5.0.0.0"
       },
       "AssemblyVersionInPackageVersion": {
@@ -5574,6 +5575,7 @@
     "System.Runtime.Intrinsics": {
       "InboxOn": {
         "netcoreapp3.0": "4.0.0.0",
+        "netcoreapp3.1": "4.0.1.0",
         "net5.0": "5.0.0.0"
       }
     },
