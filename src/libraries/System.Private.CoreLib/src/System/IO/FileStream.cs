@@ -66,17 +66,25 @@ namespace System.IO
         private static void ValidateHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             if (handle.IsInvalid)
+            {
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
-
-            if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+            }
+            else if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+            {
                 throw new ArgumentOutOfRangeException(nameof(access), SR.ArgumentOutOfRange_Enum);
-            if (bufferSize <= 0)
+            }
+            else if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-
-            if (handle.IsClosed)
+            }
+            else if (handle.IsClosed)
+            {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
+            }
+            else if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.GetValueOrDefault())
+            {
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
+            }
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -96,53 +104,73 @@ namespace System.IO
             _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
-        public FileStream(string path, FileMode mode) :
-            this(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, DefaultShare, DefaultBufferSize, DefaultIsAsync)
-        { }
+        public FileStream(string path, FileMode mode)
+            : this(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, DefaultShare, DefaultBufferSize, DefaultIsAsync)
+        {
+        }
 
-        public FileStream(string path, FileMode mode, FileAccess access) :
-            this(path, mode, access, DefaultShare, DefaultBufferSize, DefaultIsAsync)
-        { }
+        public FileStream(string path, FileMode mode, FileAccess access)
+            : this(path, mode, access, DefaultShare, DefaultBufferSize, DefaultIsAsync)
+        {
+        }
 
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share) :
-            this(path, mode, access, share, DefaultBufferSize, DefaultIsAsync)
-        { }
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share)
+            : this(path, mode, access, share, DefaultBufferSize, DefaultIsAsync)
+        {
+        }
 
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize) :
-            this(path, mode, access, share, bufferSize, DefaultIsAsync)
-        { }
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize)
+            : this(path, mode, access, share, bufferSize, DefaultIsAsync)
+        {
+        }
 
-        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, bool useAsync) :
-            this(path, mode, access, share, bufferSize, useAsync ? FileOptions.Asynchronous : FileOptions.None)
-        { }
+        public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, bool useAsync)
+            : this(path, mode, access, share, bufferSize, useAsync ? FileOptions.Asynchronous : FileOptions.None)
+        {
+        }
 
         public FileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (path == null)
+            {
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            if (path.Length == 0)
+            }
+            else if (path.Length == 0)
+            {
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+            }
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
             string? badArg = null;
 
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
+            {
                 badArg = nameof(mode);
+            }
             else if (access < FileAccess.Read || access > FileAccess.ReadWrite)
+            {
                 badArg = nameof(access);
+            }
             else if (tempshare < FileShare.None || tempshare > (FileShare.ReadWrite | FileShare.Delete))
+            {
                 badArg = nameof(share);
+            }
 
             if (badArg != null)
+            {
                 throw new ArgumentOutOfRangeException(badArg, SR.ArgumentOutOfRange_Enum);
+            }
 
             // NOTE: any change to FileOptions enum needs to be matched here in the error validation
             if (options != FileOptions.None && (options & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_Enum);
-
-            if (bufferSize <= 0)
+            }
+            else if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             // Write access validation
             if ((access & FileAccess.Write) == 0)
@@ -155,9 +183,10 @@ namespace System.IO
             }
 
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
+            {
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
-
-            if ((access & FileAccess.Write) == FileAccess.Write)
+            }
+            else if ((access & FileAccess.Write) == FileAccess.Write)
             {
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
@@ -175,8 +204,7 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-
-            if (_strategy.IsClosed)
+            else if (_strategy.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
@@ -191,8 +219,7 @@ namespace System.IO
             {
                 throw new ArgumentOutOfRangeException(position < 0 ? nameof(position) : nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
-
-            if (_strategy.IsClosed)
+            else if (_strategy.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
@@ -206,7 +233,7 @@ namespace System.IO
             {
                 return Task.FromCanceled(cancellationToken);
             }
-            if (_strategy.IsClosed)
+            else if (_strategy.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
@@ -228,10 +255,13 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
+            {
                 return Task.FromCanceled<int>(cancellationToken);
-
-            if (_strategy.IsClosed)
+            }
+            else if (_strategy.IsClosed)
+            {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
 
             return _strategy.ReadAsync(buffer, offset, count, cancellationToken);
         }
@@ -242,8 +272,7 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
-
-            if (_strategy.IsClosed)
+            else if (_strategy.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
@@ -265,10 +294,13 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
 
             if (cancellationToken.IsCancellationRequested)
+            {
                 return Task.FromCanceled(cancellationToken);
-
-            if (_strategy.IsClosed)
+            }
+            else if (_strategy.IsClosed)
+            {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
 
             return _strategy.WriteAsync(buffer, offset, count, cancellationToken);
         }
@@ -279,8 +311,7 @@ namespace System.IO
             {
                 return ValueTask.FromCanceled(cancellationToken);
             }
-
-            if (_strategy.IsClosed)
+            else if (_strategy.IsClosed)
             {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
@@ -303,7 +334,10 @@ namespace System.IO
         /// </summary>
         public virtual void Flush(bool flushToDisk)
         {
-            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (_strategy.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
 
             _strategy.Flush(flushToDisk);
         }
@@ -322,7 +356,9 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
             if (_strategy.IsClosed)
+            {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
         }
 
         /// <summary>Sets the length of this stream to the given value.</summary>
@@ -330,13 +366,21 @@ namespace System.IO
         public override void SetLength(long value)
         {
             if (value < 0)
+            {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            if (_strategy.IsClosed)
+            }
+            else if (_strategy.IsClosed)
+            {
                 ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (!CanSeek)
+            }
+            else if (!CanSeek)
+            {
                 ThrowHelper.ThrowNotSupportedException_UnseekableStream();
-            if (!CanWrite)
+            }
+            else if (!CanWrite)
+            {
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+            }
 
             _strategy.SetLength(value);
         }
@@ -354,8 +398,15 @@ namespace System.IO
         {
             get
             {
-                if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
-                if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+                else if (!CanSeek)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
+
                 return _strategy.Length;
             }
         }
@@ -366,17 +417,22 @@ namespace System.IO
             get
             {
                 if (_strategy.IsClosed)
+                {
                     ThrowHelper.ThrowObjectDisposedException_FileClosed();
-
-                if (!CanSeek)
+                }
+                else if (!CanSeek)
+                {
                     ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
 
                 return _strategy.Position;
             }
             set
             {
                 if (value < 0)
+                {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                }
 
                 _strategy.Seek(value, SeekOrigin.Begin);
             }
@@ -409,8 +465,15 @@ namespace System.IO
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+
+            if (_strategy.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if (!CanRead)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+            }
 
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
@@ -418,7 +481,9 @@ namespace System.IO
         public override int EndRead(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
+            {
                 throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             return _strategy.EndRead(asyncResult);
         }
@@ -426,8 +491,15 @@ namespace System.IO
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             ValidateBufferArguments(buffer, offset, count);
-            if (_strategy.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+
+            if (_strategy.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if (!CanWrite)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+            }
 
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
@@ -435,7 +507,9 @@ namespace System.IO
         public override void EndWrite(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
+            {
                 throw new ArgumentNullException(nameof(asyncResult));
+            }
 
             _strategy.EndWrite(asyncResult);
         }
