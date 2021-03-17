@@ -257,6 +257,17 @@ jobs:
       enablePublisTestResults: true
       testResultsFormat: xunit
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+    - Browser_wasm_win
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Browser_wasm_Windows
+      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop
 #

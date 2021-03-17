@@ -32,6 +32,156 @@ namespace System.IO.Pipes
         /// <summary>Prefix to prepend to all pipe names.</summary>
         private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
 
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+            CheckReadOperations();
+
+            return ReadCore(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+            CheckReadOperations();
+
+            return ReadCore(buffer);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckReadOperations();
+
+            if (count == 0)
+            {
+                UpdateMessageCompletion(false);
+                return Task.FromResult(0);
+            }
+
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!CanRead)
+            {
+                throw Error.GetReadNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckReadOperations();
+
+            if (buffer.Length == 0)
+            {
+                UpdateMessageCompletion(false);
+                return new ValueTask<int>(0);
+            }
+
+            return ReadAsyncCore(buffer, cancellationToken);
+        }
+
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override int EndRead(IAsyncResult asyncResult)
+            => TaskToApm.End<int>(asyncResult);
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+            CheckWriteOperations();
+
+            WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+            CheckWriteOperations();
+
+            WriteCore(buffer);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!CanWrite)
+            {
+                throw Error.GetWriteNotSupported();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (buffer.Length == 0)
+            {
+                return default;
+            }
+
+            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+        }
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
+            => TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+
+        public override void EndWrite(IAsyncResult asyncResult)
+            => TaskToApm.End(asyncResult);
+
         internal static string GetPipePath(string serverName, string pipeName)
         {
             if (serverName != "." && serverName != Interop.Sys.GetHostName())
@@ -80,17 +230,14 @@ namespace System.IO.Pipes
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            if (safePipeHandle.NamedPipeSocket == null)
+            Interop.Sys.FileStatus status;
+            int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
+            if (result == 0)
             {
-                Interop.Sys.FileStatus status;
-                int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
-                if (result == 0)
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
+                    (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFSOCK)
                 {
-                    if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
-                        (status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFSOCK)
-                    {
-                        throw new IOException(SR.IO_InvalidPipeHandle);
-                    }
+                    throw new IOException(SR.IO_InvalidPipeHandle);
                 }
             }
         }
@@ -98,9 +245,7 @@ namespace System.IO.Pipes
         /// <summary>Initializes the handle to be used asynchronously.</summary>
         /// <param name="handle">The handle.</param>
         private void InitializeAsyncHandle(SafePipeHandle handle)
-        {
-            // nop
-        }
+        { }
 
         internal virtual void DisposeCore(bool disposing)
         {
@@ -112,30 +257,22 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            // For named pipes, receive on the socket.
-            Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
+            if (buffer.Length == 0)
             {
-                // For a blocking socket, we could simply use the same Read syscall as is done
-                // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
-                // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
-                // is already handled by Socket.Receive, so we use it here.
-                try
-                {
-                    return socket.Receive(buffer, SocketFlags.None);
-                }
-                catch (SocketException e)
-                {
-                    throw GetIOExceptionForSocketException(e);
-                }
+                return 0;
             }
 
-            // For anonymous pipes, read from the file descriptor.
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            // For a blocking socket, we could simply use the same Read syscall as is done
+            // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
+            // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
+            // is already handled by Socket.Receive, so we use it here.
+            try
             {
-                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr, buffer.Length));
-                Debug.Assert(result <= buffer.Length);
-                return result;
+                return _handle!.PipeSocket.Receive(buffer, SocketFlags.None);
+            }
+            catch (SocketException e)
+            {
+                throw GetIOExceptionForSocketException(e);
             }
         }
 
@@ -144,46 +281,29 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            // For named pipes, send to the socket.
-            Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
-            {
-                // For a blocking socket, we could simply use the same Write syscall as is done
-                // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
-                // end up returning EWOULDBLOCK rather than blocking waiting for space available.
-                // Such a case is already handled by Socket.Send, so we use it here.
-                try
-                {
-                    while (buffer.Length > 0)
-                    {
-                        int bytesWritten = socket.Send(buffer, SocketFlags.None);
-                        buffer = buffer.Slice(bytesWritten);
-                    }
-                }
-                catch (SocketException e)
-                {
-                    throw GetIOExceptionForSocketException(e);
-                }
-            }
-
-            // For anonymous pipes, write the file descriptor.
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            // For a blocking socket, we could simply use the same Write syscall as is done
+            // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
+            // end up returning EWOULDBLOCK rather than blocking waiting for space available.
+            // Such a case is already handled by Socket.Send, so we use it here.
+            try
             {
                 while (buffer.Length > 0)
                 {
-                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr, buffer.Length));
+                    int bytesWritten = _handle!.PipeSocket.Send(buffer, SocketFlags.None);
                     buffer = buffer.Slice(bytesWritten);
                 }
+            }
+            catch (SocketException e)
+            {
+                throw GetIOExceptionForSocketException(e);
             }
         }
 
         private async ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
-
             try
             {
-                return await InternalHandle!.NamedPipeSocket!.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                return await InternalHandle!.PipeSocket.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
             catch (SocketException e)
             {
@@ -193,13 +313,11 @@ namespace System.IO.Pipes
 
         private async Task WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
-
             try
             {
                 while (source.Length > 0)
                 {
-                    int bytesWritten = await _handle!.NamedPipeSocket!.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    int bytesWritten = await _handle!.PipeSocket.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                     Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);
                     source = source.Slice(bytesWritten);
                 }
@@ -350,8 +468,8 @@ namespace System.IO.Pipes
             Interop.CheckIo(Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC));
 
             // Store the file descriptors into our safe handles
-            reader.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
-            writer.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
+            reader.SetHandle(new IntPtr(fds[Interop.Sys.ReadEndOfPipe]));
+            writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
         internal int CheckPipeCall(int result)

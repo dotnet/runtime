@@ -23,6 +23,7 @@ namespace System.Net.Sockets
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
         internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
+        internal bool IsSocket { get; set; } = true; // (ab)use Socket class for performing async I/O on non-socket fds.
 
         internal void RegisterConnectResult(SocketError error)
         {
@@ -43,6 +44,7 @@ namespace System.Net.Sockets
             target.LastConnectFailed = LastConnectFailed;
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
+            target.IsSocket = IsSocket;
         }
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
@@ -238,6 +240,11 @@ namespace System.Net.Sockets
         {
             Interop.Error errorCode = Interop.Error.SUCCESS;
 
+            if (!IsSocket)
+            {
+                return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
+            }
+
             // If abortive is not set, we're not running on the finalizer thread, so it's safe to block here.
             // We can honor the linger options set on the socket.  It also means closesocket() might return
             // EWOULDBLOCK, in which case we need to do some recovery.
@@ -281,6 +288,7 @@ namespace System.Net.Sockets
                 case Interop.Error.SUCCESS:
                 case Interop.Error.EINVAL:
                 case Interop.Error.ENOPROTOOPT:
+                case Interop.Error.ENOTSOCK:
                     errorCode = CloseHandle(handle);
                     break;
 

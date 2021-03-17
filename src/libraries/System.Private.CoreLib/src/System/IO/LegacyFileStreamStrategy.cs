@@ -61,7 +61,7 @@ namespace System.IO
         /// <summary>Whether the file stream's handle has been exposed.</summary>
         private bool _exposedHandle;
 
-        internal LegacyFileStreamStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) : base(fileStream)
+        internal LegacyFileStreamStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             _exposedHandle = true;
             _bufferLength = bufferSize;
@@ -78,7 +78,7 @@ namespace System.IO
             _fileHandle = handle;
         }
 
-        internal LegacyFileStreamStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options) : base(fileStream)
+        internal LegacyFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -105,12 +105,7 @@ namespace System.IO
             }
         }
 
-        ~LegacyFileStreamStrategy()
-        {
-            // it looks like having this finalizer is mandatory,
-            // as we can not guarantee that the Strategy won't be null in FileStream finalizer
-            Dispose(false);
-        }
+        ~LegacyFileStreamStrategy() => Dispose(false); // mandatory to Flush the write buffer
 
         internal override void DisposeInternal(bool disposing) => Dispose(disposing);
 
@@ -149,7 +144,7 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw Error.GetFileNotOpen();
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
 
                 return ReadSpan(buffer);
@@ -229,7 +224,7 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw Error.GetFileNotOpen();
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
 
                 WriteSpan(buffer);
@@ -272,8 +267,7 @@ namespace System.IO
             return WriteAsyncInternal(buffer, cancellationToken);
         }
 
-        // this method might call Derived type implenentation of Flush(flushToDisk)
-        public override void Flush() => _fileStream.Flush();
+        public override void Flush() => Flush(flushToDisk: false);
 
         internal override void Flush(bool flushToDisk)
         {
@@ -351,9 +345,9 @@ namespace System.IO
         private void PrepareForReading()
         {
             if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             if (_readLength == 0 && !CanRead)
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             AssertBufferInvariants();
         }
@@ -382,22 +376,6 @@ namespace System.IO
         }
 
         internal override bool IsClosed => _fileHandle.IsClosed;
-
-        private static bool IsIoRelatedException(Exception e) =>
-            // These all derive from IOException
-            //     DirectoryNotFoundException
-            //     DriveNotFoundException
-            //     EndOfStreamException
-            //     FileLoadException
-            //     FileNotFoundException
-            //     PathTooLongException
-            //     PipeException
-            e is IOException ||
-            // Note that SecurityException is only thrown on runtimes that support CAS
-            // e is SecurityException ||
-            e is UnauthorizedAccessException ||
-            e is NotSupportedException ||
-            (e is ArgumentException && !(e is ArgumentNullException));
 
         /// <summary>
         /// Gets the array used for buffering reading and writing.
@@ -502,14 +480,14 @@ namespace System.IO
         private void PrepareForWriting()
         {
             if (_fileHandle.IsClosed)
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
 
             // Make sure we're good to write.  We only need to do this if there's nothing already
             // in our write buffer, since if there is something in the buffer, we've already done
             // this checking and flushing.
             if (_writePos == 0)
             {
-                if (!CanWrite) throw Error.GetWriteNotSupported();
+                if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 FlushReadBuffer();
                 Debug.Assert(_bufferLength > 0, "_bufferSize > 0");
             }

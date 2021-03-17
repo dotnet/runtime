@@ -3243,38 +3243,41 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 //
 void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 {
-#if defined(FEATURE_HFA) && defined(TARGET_ARM64)
-    if (varTypeIsSIMD(ret))
+#ifdef TARGET_ARM64
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        if (comp->info.compRetNativeType == TYP_STRUCT)
+        if (varTypeIsSIMD(ret))
         {
-            assert(varTypeIsSIMD(ret->gtGetOp1()));
-            assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
-            if (!comp->compDoOldStructRetyping())
+            if (comp->info.compRetNativeType == TYP_STRUCT)
             {
-                ret->ChangeType(comp->info.compRetNativeType);
+                assert(varTypeIsSIMD(ret->gtGetOp1()));
+                assert(comp->compMethodReturnsMultiRegRegTypeAlternate());
+                if (!comp->compDoOldStructRetyping())
+                {
+                    ret->ChangeType(comp->info.compRetNativeType);
+                }
+                else
+                {
+                    // With old struct retyping a value that is returned as HFA
+                    // could have both SIMD* or STRUCT types, keep it as it.
+                    return;
+                }
             }
             else
             {
-                // With old struct retyping a value that is returned as HFA
-                // could have both SIMD* or STRUCT types, keep it as it.
+                assert(comp->info.compRetNativeType == ret->TypeGet());
+                GenTree* retVal = ret->gtGetOp1();
+                if (retVal->TypeGet() != ret->TypeGet())
+                {
+                    assert(retVal->OperIs(GT_LCL_VAR));
+                    assert(!comp->compDoOldStructRetyping());
+                    LowerRetSingleRegStructLclVar(ret);
+                }
                 return;
             }
         }
-        else
-        {
-            assert(comp->info.compRetNativeType == ret->TypeGet());
-            GenTree* retVal = ret->gtGetOp1();
-            if (retVal->TypeGet() != ret->TypeGet())
-            {
-                assert(retVal->OperIs(GT_LCL_VAR));
-                assert(!comp->compDoOldStructRetyping());
-                LowerRetSingleRegStructLclVar(ret);
-            }
-            return;
-        }
     }
-#endif
+#endif // TARGET_ARM64
 
     if (comp->compMethodReturnsMultiRegRegTypeAlternate())
     {
@@ -3461,25 +3464,26 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
         return;
     }
 
-#if defined(FEATURE_HFA)
-    if (comp->IsHfa(call))
+    if (GlobalJitOptions::compFeatureHfa)
     {
-#if defined(TARGET_ARM64)
-        assert(comp->GetHfaCount(call) == 1);
-#elif defined(TARGET_ARM)
-        // ARM returns double in 2 float registers, but
-        // `call->HasMultiRegRetVal()` count double registers.
-        assert(comp->GetHfaCount(call) <= 2);
-#elif  // !TARGET_ARM64 && !TARGET_ARM
-        unreached();
-#endif // !TARGET_ARM64 && !TARGET_ARM
-        var_types hfaType = comp->GetHfaType(call);
-        if (call->TypeIs(hfaType))
+        if (comp->IsHfa(call))
         {
-            return;
+#if defined(TARGET_ARM64)
+            assert(comp->GetHfaCount(call) == 1);
+#elif defined(TARGET_ARM)
+            // ARM returns double in 2 float registers, but
+            // `call->HasMultiRegRetVal()` count double registers.
+            assert(comp->GetHfaCount(call) <= 2);
+#else  // !TARGET_ARM64 && !TARGET_ARM
+            NYI("Unknown architecture");
+#endif // !TARGET_ARM64 && !TARGET_ARM
+            var_types hfaType = comp->GetHfaType(call);
+            if (call->TypeIs(hfaType))
+            {
+                return;
+            }
         }
     }
-#endif // FEATURE_HFA
 
     assert(!comp->compDoOldStructRetyping());
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;

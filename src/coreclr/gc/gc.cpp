@@ -33533,6 +33533,9 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
                 low = (chunk_index_within_seg == 0) ? start : (aligned_start + (size_t)chunk_index_within_seg * CARD_MARKING_STEALING_GRANULARITY);
                 high = (chunk_index_within_seg + 1 == chunk_count_within_seg) ? end : (aligned_start + (size_t)(chunk_index_within_seg + 1) * CARD_MARKING_STEALING_GRANULARITY);
                 chunk_high = high;
+
+                dprintf (3, ("cme:mn ci: %u, low: %Ix, high: %Ix", chunk_index, low, high));
+
                 return true;
             }
             else
@@ -33549,16 +33552,24 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
 
                 // keep the chunk index for later
                 old_chunk_index = chunk_index;
+
+                dprintf (3, ("cme:mn oci: %u, seg mismatch seg: %Ix, segment: %Ix", old_chunk_index, heap_segment_mem (segment), heap_segment_mem (seg)));
+
                 return false;
             }
         }
 
         segment = heap_segment_next_in_range(segment);
+        segment_start_chunk_index += chunk_count_within_seg;
         if (segment == nullptr)
         {
+            // keep the chunk index for later
+            old_chunk_index = chunk_index;
+
+            dprintf (3, ("cme:mn oci: %u no more segments", old_chunk_index));
+
             return false;
         }
-        segment_start_chunk_index += chunk_count_within_seg;
     }
 }
 
@@ -33740,7 +33751,10 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 {
                     // Switch to regions for this generation.
                     seg = generation_start_segment (generation_of (curr_gen_number));
-                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix", 
+#ifdef FEATURE_CARD_MARKING_STEALING
+                    card_mark_enumerator.switch_to_segment(seg);
+#endif // FEATURE_CARD_MARKING_STEALING
+                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix",
                         heap_number, curr_gen_number, (size_t)seg));
                 }
             }
