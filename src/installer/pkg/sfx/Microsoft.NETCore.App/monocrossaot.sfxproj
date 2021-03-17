@@ -6,7 +6,7 @@
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' == 'Windows_NT'">$(MonoAotTargets);android-x64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);browser-wasm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvos-sim-x64;tvos-sim-arm64;tvos-arm64</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);ios-sim-x64;ios-sim-arm64;ios-arm64;ios-sim-x86;ios-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iossimulator-x64;iossimulator-arm64;iossimulator-x86;ios-arm64;ios-arm</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>

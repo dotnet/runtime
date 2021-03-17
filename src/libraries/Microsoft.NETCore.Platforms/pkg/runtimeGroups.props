@@ -91,13 +91,13 @@
       <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
 
-    <RuntimeGroup Include="ios-sim">
-      <Parent>ios</Parent>
+    <RuntimeGroup Include="iossimulator">
+      <Parent>unix</Parent>
       <Architectures>x86</Architectures>
       <Versions>8;9;10</Versions>
     </RuntimeGroup>
-    <RuntimeGroup Include="ios-sim">
-      <Parent>ios</Parent>
+    <RuntimeGroup Include="iossimulator">
+      <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
       <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
@@ -221,8 +221,8 @@
       <Versions>10;11;12;13</Versions>
     </RuntimeGroup>
 
-    <RuntimeGroup Include="tvos-sim">
-      <Parent>tvos</Parent>
+    <RuntimeGroup Include="tvossimulator">
+      <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
       <Versions>10;11;12;13</Versions>
     </RuntimeGroup>

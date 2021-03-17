@@ -76,15 +76,15 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'tvOS') }}:
       - name: osOverride
         value: -os tvOS
-    - ${{ if and(eq(parameters.osGroup, 'tvOS'),eq(parameters.osSubGroup, '_sim')) }}:
+    - ${{ if eq(parameters.osGroup, 'tvOSSimulator') }}:
       - name: osOverride
-        value: -os tvOS-sim
+        value: -os tvOSSimulator
     - ${{ if eq(parameters.osGroup, 'iOS') }}:
       - name: osOverride
         value: -os iOS
-    - ${{ if and(eq(parameters.osGroup, 'iOS'),eq(parameters.osSubGroup, '_sim')) }}:
+    - ${{ if eq(parameters.osGroup, 'iOSSimulator') }}:
       - name: osOverride
-        value: -os iOS-sim
+        value: -os iOSSimulator
     - ${{ if eq(parameters.osGroup, 'Android') }}:
       - name: osOverride
         value: -os Android

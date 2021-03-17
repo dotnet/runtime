@@ -63,13 +63,6 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
           value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
-      - ${{ if and(eq(parameters.osGroup, 'tvOS'), eq(parameters.osSubGroup, '_sim')) }}:
-        - name: _osParameter
-          value: -os tvOS-sim
-      - ${{ if and(eq(parameters.osGroup, 'iOS'), eq(parameters.osSubGroup, '_sim')) }}:
-        - name: _osParameter
-          value: -os iOS-sim
-
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg

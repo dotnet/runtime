@@ -225,8 +225,8 @@ jobs:
     - Android_x86
     - MacCatalyst_x64
     - MacCatalyst_arm64
-    - tvOS_sim_x64
-    - iOS_sim_x86
+    - tvOSSimulator_x64
+    - iOSSimulator_x86
     - iOS_arm64
     - Linux_arm
     jobParameters:

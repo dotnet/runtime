@@ -4,8 +4,8 @@
 internal class TargetNames
 {
     public const string iOS = "iOS";
-    public const string iOSsim = "iOS-sim";
+    public const string iOSsim = "iOSSimulator";
     public const string tvOS = "tvOS";
-    public const string tvOSsim = "tvOS-sim";
+    public const string tvOSsim = "tvOSSimulator";
     public const string MacCatalyst = "MacCatalyst";
 }

@@ -105,12 +105,12 @@ stages:
       - Android_arm64
       - MacCatalyst_x64
       - MacCatalyst_arm64
-      - tvOS_sim_x64
-      - tvOS_sim_arm64
+      - tvOSSimulator_x64
+      - tvOSSimulator_arm64
       - tvOS_arm64
-      - iOS_sim_x64
-      - iOS_sim_x86
-      - iOS_sim_arm64
+      - iOSSimulator_x64
+      - iOSSimulator_x86
+      - iOSSimulator_arm64
       - iOS_arm
       - iOS_arm64
       - OSX_x64

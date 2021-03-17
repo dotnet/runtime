@@ -388,17 +388,16 @@ jobs:
 
 # tvOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS_sim_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
-      osSubGroup: _sim
+      osGroup: tvOSSimulator
       archType: x64
-      targetRid: tvos-sim-x64
-      platform: tvOS_sim_x64
+      targetRid: tvossimulator-x64
+      platform: tvOSSimulatorim_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -410,17 +409,16 @@ jobs:
 
 # tvOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'tvOS_sim_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'tvOSSimulator_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: tvOS
-      osSubGroup: _sim
+      osGroup: tvOSSimulator
       archType: arm64
-      targetRid: tvos-sim-arm64
-      platform: tvOS_sim_arm64
+      targetRid: tvossimulator-arm64
+      platform: tvOSSimulator_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -474,17 +472,16 @@ jobs:
 
 # iOS Simulator x64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_sim_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOSSimulator
       archType: x64
-      targetRid: ios-sim-x64
-      platform: iOS_sim_x64
+      targetRid: iossimulator-x64
+      platform: iOSSimulator_x64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -496,17 +493,16 @@ jobs:
 
 # iOS Simulator x86
 
-- ${{ if containsValue(parameters.platforms, 'iOS_sim_x86') }}:
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_x86') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOSSimulator
       archType: x86
-      targetRid: ios-sim-x86
-      platform: iOS_sim_x86
+      targetRid: iossimulator-x86
+      platform: iOSsimulator_x86
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -519,17 +515,16 @@ jobs:
 
 # iOS Simulator arm64
 
-- ${{ if containsValue(parameters.platforms, 'iOS_sim_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'iOSSimulator_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: iOS
-      osSubGroup: _sim
+      osGroup: iOSSimulator
       archType: arm64
-      targetRid: ios-sim-arm64
-      platform: iOS_sim_arm64
+      targetRid: iossimulator-arm64
+      platform: iOSSimulator_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
