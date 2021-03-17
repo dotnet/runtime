@@ -139,6 +139,9 @@
       <!-- Filter executables on Windows -->
       <NativeProjectBinariesExeFilter Condition="'%(Extension)' == '.exe'" Include="@(NativeProjectBinariesMatched)" />
 
+      <!-- Filter executables on Windows -->
+      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.manifest'" Include="@(NativeProjectBinariesMatched)" />
+
       <!-- Filter out the *Make* files -->
       <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'%(FileName)' != 'Makefile'" Include="@(NativeProjectBinariesExeFilter)" />
 
@@ -165,6 +168,7 @@
       <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
     </ItemGroup>
 
      <!-- There are currently no native project binaries on wasm or Android -->
