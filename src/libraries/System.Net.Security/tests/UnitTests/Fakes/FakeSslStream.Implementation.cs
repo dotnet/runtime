@@ -10,6 +10,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private byte[]? _rentedBuffer;
+
         private class FakeOptions
         {
             public string TargetHost;
@@ -33,6 +35,7 @@ namespace System.Net.Security
             _internalOffset = 0;
             _nestedWrite = 0;
             _handshakeCompleted = false;
+            _rentedBuffer = null;
         }
 
         private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
