@@ -396,7 +396,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncoder_NonEmptySource_EmptyDest_Throws()
+        public void JavaScriptEncoder_NonEmptySource_EmptyDest_Throws()
         {
             OperationStatus status = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(
                 "\U0001f4a9".AsSpan(), destination: null, out int _, out int _, isFinalBlock: true);
@@ -405,7 +405,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncoder_EmptySource_EmptyDest()
+        public void JavaScriptEncoder_EmptySource_EmptyDest()
         {
             OperationStatus status = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(
                 "".AsSpan(), destination: null, out int _, out int _, isFinalBlock: true);
@@ -509,14 +509,14 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple_Escaping()
+        public void JavaScriptEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple_Escaping()
         {
             // The following two calls could be simply InlineData to the Theory below
             // Unfortunately, the xUnit logger fails to escape the inputs when logging the test results,
             // and so the suite fails despite all tests passing.
             // TODO: I will try to fix it in xUnit, but for now this is a workaround to enable these tests.
-            JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\b", @"\b");
-            JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\f", @"\f");
+            JavaScriptEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\b", @"\b");
+            JavaScriptEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\f", @"\f");
         }
 
         [Theory]
@@ -530,7 +530,7 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("\n", @"\n")]
         [InlineData("\t", @"\t")]
         [InlineData("\r", @"\r")]
-        public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
+        public void JavaScriptEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
@@ -543,7 +543,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Extended()
+        public void JavaScriptEncode_AllRangesAllowed_StillEncodesForbiddenChars_Extended()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
@@ -616,7 +616,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_NoRangesAllowed_EmitsShortFormForCertainCodePoints()
+        public void JavaScriptEncode_NoRangesAllowed_EmitsShortFormForCertainCodePoints()
         {
             // This test ensures that when we're encoding, we always emit the "\uXXXX" form of the
             // code point except for very specific code points where we allow a shorter representation.
@@ -645,7 +645,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_BadSurrogates_ReturnsUnicodeReplacementChar()
+        public void JavaScriptEncode_BadSurrogates_ReturnsUnicodeReplacementChar()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All); // allow all codepoints
@@ -745,7 +745,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_EmptyStringInput_ReturnsEmptyString()
+        public void JavaScriptEncode_EmptyStringInput_ReturnsEmptyString()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Default;
@@ -755,7 +755,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_InputDoesNotRequireEncoding_ReturnsOriginalStringInstance()
+        public void JavaScriptEncode_InputDoesNotRequireEncoding_ReturnsOriginalStringInstance()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Default;
@@ -766,7 +766,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_NullInput_Throws()
+        public void JavaScriptEncode_NullInput_Throws()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Default;
@@ -775,31 +775,31 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingAtBeginning()
+        public void JavaScriptEncode_WithCharsRequiringEncodingAtBeginning()
         {
             Assert.Equal(@"\u0026Hello, there!", JavaScriptEncoder.Default.Encode("&Hello, there!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingAtEnd()
+        public void JavaScriptEncode_WithCharsRequiringEncodingAtEnd()
         {
             Assert.Equal(@"Hello, there!\u0026", JavaScriptEncoder.Default.Encode("Hello, there!&"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingInMiddle()
+        public void JavaScriptEncode_WithCharsRequiringEncodingInMiddle()
         {
             Assert.Equal(@"Hello, \u0026there!", JavaScriptEncoder.Default.Encode("Hello, &there!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingInterspersed()
+        public void JavaScriptEncode_WithCharsRequiringEncodingInterspersed()
         {
             Assert.Equal(@"Hello, \u003Cthere\u003E!", JavaScriptEncoder.Default.Encode("Hello, <there>!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_CharArray()
+        public void JavaScriptEncode_CharArray()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Default;
@@ -813,7 +813,7 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_StringSubstring()
+        public void JavaScriptEncode_StringSubstring()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Default;
@@ -829,7 +829,7 @@ namespace System.Text.Encodings.Web.Tests
         [Theory]
         [InlineData("\"", @"\u0022")]
         [InlineData("'", @"\u0027")]
-        public void JavaScriptStringEncode_Quotes(string input, string expected)
+        public void JavaScriptEncode_Quotes(string input, string expected)
         {
             // Per the design document, we provide additional defense-in-depth
             // against breaking out of HTML attributes by having the encoders
@@ -847,13 +847,13 @@ namespace System.Text.Encodings.Web.Tests
         }
 
         [Fact]
-        public void JavaScriptStringEncode_DoesNotOutputHtmlSensitiveCharacters()
+        public void JavaScriptEncode_DoesNotOutputHtmlSensitiveCharacters()
         {
             // Per the design document, we provide additional defense-in-depth
             // by never emitting HTML-sensitive characters unescaped.
 
             // Arrange
-            JavaScriptEncoder javaScriptStringEncoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+            JavaScriptEncoder javaScriptEncoder = JavaScriptEncoder.Create(UnicodeRanges.All);
             HtmlEncoder htmlEncoder = HtmlEncoder.Create(UnicodeRanges.All);
 
             // Act & assert
@@ -864,9 +864,9 @@ namespace System.Text.Encodings.Web.Tests
                     continue; // surrogates don't matter here
                 }
 
-                string javaScriptStringEncoded = javaScriptStringEncoder.Encode(char.ConvertFromUtf32(i));
-                string thenHtmlEncoded = htmlEncoder.Encode(javaScriptStringEncoded);
-                Assert.Equal(javaScriptStringEncoded, thenHtmlEncoded); // should have contained no HTML-sensitive characters
+                string javaScriptEncoded = javaScriptEncoder.Encode(char.ConvertFromUtf32(i));
+                string thenHtmlEncoded = htmlEncoder.Encode(javaScriptEncoded);
+                Assert.Equal(javaScriptEncoded, thenHtmlEncoded); // should have contained no HTML-sensitive characters
             }
         }
 

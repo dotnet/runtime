@@ -69,7 +69,7 @@ namespace System.Text.Encodings.Web
         }
 
         [Fact]
-        public void JavaScriptStringEncode_PositiveTestCase()
+        public void JavaScriptEncode_PositiveTestCase()
         {
             // Arrange
             JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
