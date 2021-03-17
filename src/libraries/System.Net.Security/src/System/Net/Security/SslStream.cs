@@ -63,7 +63,6 @@ namespace System.Net.Security
         internal int _decryptedBytesOffset;         // Offset of decrypted data relative to _internalBuffer.
         internal int _decryptedBytesCount;          // Number of already decrypted bytes. Really valid only ion combination with _rentedBuffer.
         internal Memory<byte> _internalBuffer;      // This can be rented buffer or block provided to ReadAsyncInternal.
-        internal byte[]? _rentedBuffer;             // Byte array if _internalBuffer is backed by ArrayPoll rent.
 
         private int _nestedWrite;
         private int _nestedRead;
