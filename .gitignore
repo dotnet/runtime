@@ -294,9 +294,6 @@ parts/
 prime/
 stage/
 
-# CLR prebuilt generated files
-!pal/prebuilt/idl/*_i.c
-
 # Valid 'debug' folder, that contains CLR debugging code
 !src/coreclr/debug
 
