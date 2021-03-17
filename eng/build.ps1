@@ -229,7 +229,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                     { $os = $($PSBoundParameters[$argument]); $arguments += " /p:TargetOS=$os" }
+    "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
