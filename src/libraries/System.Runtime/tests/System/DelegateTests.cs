@@ -102,6 +102,28 @@ namespace System.Tests
             emptyDelegate.DynamicInvoke(null);
         }
 
+        private class SomeCustomConstantAttribute : CustomConstantAttribute
+        {
+            private const string DEFAULT_VALUE = "SomeValue";
+
+            public static void Do(object o)
+            {
+                //Check the default value is assigned to the parameter as expected
+                Assert.Equal(DEFAULT_VALUE, o);
+            }
+
+            public override object Value => DEFAULT_VALUE;
+        }
+
+        private delegate void ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
+
+        [Fact]
+        public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
+        {
+            Delegate m = new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do);
+            m.DynamicInvoke(Type.Missing);
+        }
+
         [Fact]
         public static void DynamicInvoke_MissingTypeForDefaultParameter_Succeeds()
         {
