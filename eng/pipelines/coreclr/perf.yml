@@ -117,6 +117,7 @@ jobs:
       runtimeFlavor: mono
       platforms:
       - Linux_x64
+      - Linux_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AOT
@@ -201,6 +202,7 @@ jobs:
       runtimeFlavor: aot
       platforms:
       - Linux_x64
+      - Linux_arm64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
