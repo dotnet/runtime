@@ -198,15 +198,21 @@
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
+    <Error Condition="'$(WasmBuildNative)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
+           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
 
     <PropertyGroup>
-      <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
-
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
 
+    <Error Condition="'$(WasmBuildNative)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
+           Text="Cannot find emscripten sdk, required for building native files. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
+    <PropertyGroup>
+      <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmAppDir Condition="'$(WasmAppDir)' == ''">$(OutputPath)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
