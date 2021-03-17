@@ -54,6 +54,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_invoke_getter_on_value (void *value, Mon
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_get_deref_ptr_value (void *value_addr, MonoClass *klass);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_set_is_debugger_attached (gboolean is_attached);
 EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_variable_value_native (int scope, int index, const char* name, const char* value);
+EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_set_value_on_object (int object_id, const char* name, const char* value);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, int frame_id, const char *assembly_name, const char *method_name);
@@ -1559,8 +1560,8 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	ERROR_DECL (error);
 	SetVariableValueData *data = (SetVariableValueData*)ud;
 	gboolean is_arg = FALSE;
-	MonoType *t;
-	guint8 *val_buf;
+	MonoType *t = NULL;
+	guint8 *val_buf = NULL;
 
 	++data->cur_frame;
 
@@ -1594,11 +1595,14 @@ set_variable_value_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_arg (frame, pos);
 	else
 		addr = (guint8*)mini_get_interp_callbacks ()->frame_get_local (frame, pos);
+	
 	val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
+	
 	if (!decode_value(t, val_buf, data->new_value)) {
 		data->error = TRUE;
 		return TRUE;
 	}
+
 	mono_de_set_interp_var (t, addr, val_buf);
 	return TRUE;
 }
@@ -1715,6 +1719,62 @@ mono_wasm_invoke_getter_on_object (int object_id, const char* name)
 		return FALSE;
 
 	return invoke_getter (obj, mono_object_class (obj), name);
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_set_value_on_object (int object_id, const char* name, const char* value)
+{
+	PRINT_DEBUG_MSG (1,  "mono_wasm_set_value_on_object %d, name: %s, value: %s\n", object_id, name, value);
+	MonoObject *obj = get_object_from_id (object_id);
+	
+	if (!obj || !name) {
+		PRINT_DEBUG_MSG (2, "mono_wasm_set_value_on_object: none of the arguments can be null");
+		return FALSE;
+	}
+	MonoClass* klass = mono_object_class (obj);
+
+	gpointer iter;
+handle_parent:
+	iter = NULL;
+	MonoClassField *f;
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (!f->name || strcasecmp (f->name, name) != 0)
+			continue;
+		guint8 *val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
+	
+		if (!decode_value(f->type, val_buf, value)) {
+			return FALSE;
+		}		
+		mono_de_set_interp_var (f->type, (guint8*)obj + f->offset, val_buf);
+		return TRUE;
+	}
+
+	iter = NULL;
+	MonoProperty *p;
+	MonoObject *exc;
+	ERROR_DECL (error);
+	while ((p = mono_class_get_properties (klass, &iter))) {
+		if (!p->name || strcasecmp (p->name, name) != 0)
+			continue;
+		if (!p->set)
+			continue;
+		MonoType *type = mono_method_signature_internal(p->set)->params[0];
+		guint8 *val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (type)));
+	
+		if (!decode_value(type, val_buf, value)) {
+			return FALSE;
+		}					
+		mono_runtime_try_invoke (p->set, obj, &val_buf, &exc, error);
+		if (!is_ok (error) && exc == NULL)
+			exc = (MonoObject*) mono_error_convert_to_exception (error);
+		if (exc)
+			return FALSE;
+		return TRUE;
+	}
+
+	if ((klass = m_class_get_parent(klass)))
+		goto handle_parent;
+	return FALSE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean

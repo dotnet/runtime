@@ -389,6 +389,21 @@ namespace DebuggerTests
             return res;
         }
 
+        internal async Task<Result> SetValueOnObject(JToken obj, string property, string newvalue, string fn = "function(a, b) { this[a] = b; }", bool expect_ok = true)
+        {
+            var req = JObject.FromObject(new
+            {
+                functionDeclaration = fn,
+                objectId = obj["value"]?["objectId"]?.Value<string>(),
+                arguments = new[] { new { value = property } , new { value = newvalue } },
+                silent = true
+            });
+            var res = await cli.SendCommand("Runtime.callFunctionOn", req, token);
+            Assert.True(expect_ok == res.IsOk, $"SetValueOnObject failed for {req} with {res}");
+
+            return res;
+        }
+
         internal async Task<JObject> StepAndCheck(StepKind kind, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, int times = 1)
         {

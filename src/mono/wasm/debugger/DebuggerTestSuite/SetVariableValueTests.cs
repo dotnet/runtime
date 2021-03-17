@@ -93,7 +93,46 @@ namespace DebuggerTests
                 }
             );
         }
+        [Theory]
+        [InlineData("A", 10, "20", true)]
+        [InlineData("A", 10, "error", false)]
+        [InlineData("d", 15, "20", true)]
+        [InlineData("d", 15, "error", false)]
+        public async Task TestSetValueOnObject(string prop_name, int prop_value, string prop_new_value, bool expect_ok)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "Math", "UseComplex", 5);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_use_complex(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "UseComplex");
 
+
+            var frame = pause_location["callFrames"][0];
+            var props = await GetObjectOnFrame(frame, "complex");
+            var locals = await GetProperties(frame["callFrameId"].Value<string>());
+            var obj = GetAndAssertObjectWithName(locals, "complex");
+            Assert.Equal(4, props.Count());
+            CheckNumber(props, prop_name, prop_value);
+            CheckString(props, "B", "xx");
+
+            await SetValueOnObject(obj, prop_name, prop_new_value, expect_ok: expect_ok);
+
+            pause_location = await StepAndCheck(
+                StepKind.Over,
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>()+1,
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "UseComplex");
+
+            frame = pause_location["callFrames"][0];
+            props = await GetObjectOnFrame(frame, "complex");
+            locals = await GetProperties(frame["callFrameId"].Value<string>());
+            Assert.Equal(4, props.Count());
+            CheckNumber(props, prop_name, expect_ok ? Int32.Parse(prop_new_value) : prop_value);
+            CheckString(props, "B", "xx");
+        }
     }
 
 }

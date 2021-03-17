@@ -1233,6 +1233,32 @@ var MonoSupportLib = {
 			return getter_res.length > 0 ? getter_res [0] : {};
 		},
 
+		/**
+		 * @param  {string} objectIdStr objectId
+		 * @param  {string} name property name
+		 * @returns {object} return true if it works and false if it doesn't
+		 */
+		_set_value_on_object: function (objectIdStr, name, newvalue) {
+			const id = this._parse_object_id (objectIdStr);
+			if (id === undefined)
+				throw new Error (`Invalid object id: ${objectIdStr}`);
+
+			let getter_res;
+			if (id.scheme == 'object') {
+				if (isNaN (id.o) || id.o < 0)
+					throw new Error (`Invalid object id: ${objectIdStr}`);
+
+				let { res_ok, res } = this.mono_wasm_set_value_on_object_info (id.o, name, newvalue);
+				if (!res_ok)
+					throw new Error (`Invoking setter on ${objectIdStr} failed`);
+
+				getter_res = res;
+			}
+			else
+				throw new Error (`Only object is supported for setters, id: ${objectIdStr}`);
+			return getter_res;
+		},
+
 		_create_proxy_from_object_id: function (objectId) {
 			const details = this.mono_wasm_get_details(objectId);
 
@@ -1254,7 +1280,10 @@ var MonoSupportLib = {
 				}
 			});
 
-			return proxy;
+			const handler1 = {
+				set (obj, prop, newValue) {return MONO._set_value_on_object (objectId, prop, newValue.toString());},
+			};
+			return new Proxy(proxy, handler1);
 		},
 
 		mono_wasm_call_function_on: function (request) {
@@ -1399,6 +1428,7 @@ var MonoSupportLib = {
 			this._register_c_var_fn ('mono_wasm_invoke_getter_on_value',  'bool', [ 'number', 'number', 'string' ]);
 			this._register_c_var_fn ('mono_wasm_get_local_vars',          'bool', [ 'number', 'number', 'number']);
 			this._register_c_var_fn ('mono_wasm_get_deref_ptr_value',     'bool', [ 'number', 'number']);
+			this._register_c_var_fn ('mono_wasm_set_value_on_object', 'bool', [ 'number', 'string', 'string' ]);
 			// DO NOT REMOVE - magic debugger init function
 			if (globalThis.dotnetDebugger)
 				debugger;
