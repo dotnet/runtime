@@ -791,17 +791,9 @@ int local_BIO_up_ref(BIO *bio)
 
 int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, int32_t p1, void* p2)
 {
-    if (ctx != NULL)
-    {
-        EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
-
-        if (EVP_PKEY_base_id(pkey) != NID_rsaEncryption)
-        {
-            return -1;
-        }
-    }
-
-    return EVP_PKEY_CTX_ctrl(ctx, -1, optype, cmd, p1, p2);
+    // On OpenSSL 1.0.2 there aren't two different identifiers for RSA,
+    // so just pass the request on th EVP_PKEY_CTX_ctrl with the only identifier defined.
+    return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
 }
 
 #endif
