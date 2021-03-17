@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static class FileStreamHelpers

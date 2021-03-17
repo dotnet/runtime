@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.CompilerServices;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type serves some basic functionality that is common for Async and Sync Windows File Stream Strategies
     internal abstract class WindowsFileStreamStrategy : FileStreamStrategy

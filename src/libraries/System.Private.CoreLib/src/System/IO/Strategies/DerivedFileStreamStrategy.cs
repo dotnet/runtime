@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type exists so we can avoid GetType() != typeof(FileStream) checks in FileStream
     // when FileStream was supposed to call base.Method() for such cases, we just call _fileStream.BaseMethod()

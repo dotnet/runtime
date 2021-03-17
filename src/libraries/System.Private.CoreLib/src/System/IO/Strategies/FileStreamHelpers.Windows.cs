@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static class FileStreamHelpers

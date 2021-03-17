@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type exists so we can avoid duplicating the buffering logic in every FileStreamStrategy implementation
     internal sealed class BufferedFileStreamStrategy : FileStreamStrategy

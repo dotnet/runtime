@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
     internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
