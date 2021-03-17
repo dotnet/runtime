@@ -65,7 +65,7 @@
 
   <PropertyGroup>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">$(RunAOTCompilation)</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -409,7 +409,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 
-    <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
   <Target Name="_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">

@@ -341,6 +341,8 @@ cleanup:
     return keyPair;
 }
 
+#define CURVE_NOT_SUPPORTED -1
+
 int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 const char* oid,
                                                 uint8_t* qx,
@@ -365,7 +367,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     *key = AndroidCryptoNative_EcKeyCreateByOid(oid);
     if (*key == NULL)
     {
-        return FAIL;
+        return CURVE_NOT_SUPPORTED;
     }
 
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.

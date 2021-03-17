@@ -386,6 +386,27 @@ typedef ptrdiff_t ssize_t;
 #define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
 #define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
 
+class GlobalJitOptions
+{
+public:
+#ifdef FEATURE_HFA
+#define FEATURE_HFA_FIELDS_PRESENT
+#ifdef CONFIGURABLE_ARM_ABI
+    // These are safe to have globals as they cannot change once initialized within the process.
+    static LONG compUseSoftFPConfigured;
+    static bool compFeatureHfa;
+#else  // !CONFIGURABLE_ARM_ABI
+    static const bool compFeatureHfa = true;
+#endif // CONFIGURABLE_ARM_ABI
+#else  // !FEATURE_HFA
+    static const bool compFeatureHfa = false;
+#endif // FEATURE_HFA
+
+#ifdef FEATURE_HFA
+#undef FEATURE_HFA
+#endif
+};
+
 /*****************************************************************************/
 
 #include "vartype.h"
@@ -508,7 +529,7 @@ typedef ptrdiff_t ssize_t;
 
 #if DUMP_GC_TABLES
 #pragma message("NOTE: this non-debug build has GC ptr table dumping always enabled!")
-const bool dspGCtbls = true;
+const bool            dspGCtbls      = true;
 #endif
 
 /*****************************************************************************/
