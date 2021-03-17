@@ -14373,13 +14373,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             if ((id->idOpSize() == EA_8BYTE))
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_52C;
-                result.insLatency += PERFSCORE_LATENCY_62C;
+                result.insLatency    = PERFSCORE_LATENCY_62C;
             }
             else
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency += PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
@@ -14388,13 +14388,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             if ((id->idOpSize() == EA_8BYTE))
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_57C;
-                result.insLatency += PERFSCORE_LATENCY_69C;
+                result.insLatency    = PERFSCORE_LATENCY_69C;
             }
             else
             {
                 assert(id->idOpSize() == EA_4BYTE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-                result.insLatency += PERFSCORE_LATENCY_26C;
+                result.insLatency    = PERFSCORE_LATENCY_26C;
             }
             break;
 
