@@ -29,6 +29,39 @@ namespace System.IO.Tests
         protected override Task<Stream> CreateWriteOnlyStreamCore(byte[] initialData) => CreateStream(initialData, FileAccess.Write);
 
         protected override bool NopFlushCompletesSynchronously => OperatingSystem.IsWindows();
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Reads(ReadWriteMode mode)
+        {
+            byte[] initialData = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            using FileStream stream = (FileStream)await CreateReadOnlyStreamCore(initialData);
+            byte[] buffer = new byte[5];
+            int bytesRead = await ReadAsync(mode, stream, buffer, 0, buffer.Length);
+
+            Assert.Equal(bytesRead, stream.Position);
+
+            using FileStream createdFromHandle = new FileStream(stream.SafeFileHandle, FileAccess.Read);
+
+            Assert.Equal(bytesRead, stream.Position); // accessing SafeFileHandle must not change the position
+            Assert.Equal(stream.Position, createdFromHandle.Position); // but it should sync the offset with OS
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Writes(ReadWriteMode mode)
+        {
+            using FileStream stream = (FileStream)await CreateWriteOnlyStreamCore(Array.Empty<byte>());
+            byte[] buffer = new byte[] { 0, 1, 2, 3, 4 };
+            await WriteAsync(mode, stream, buffer, 0, buffer.Length);
+
+            Assert.Equal(buffer.Length, stream.Position);
+
+            using FileStream createdFromHandle = new FileStream(stream.SafeFileHandle, FileAccess.Write);
+
+            Assert.Equal(buffer.Length, stream.Position); 
+            Assert.Equal(stream.Position, createdFromHandle.Position);
+        }
     }
 
     public class UnbufferedSyncFileStreamStandaloneConformanceTests : FileStreamStandaloneConformanceTests
