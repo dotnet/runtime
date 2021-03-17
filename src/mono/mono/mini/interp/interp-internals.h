@@ -125,7 +125,10 @@ struct InterpMethod {
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
 
-	guint32 locals_size;
+	// This doesn't include the size of stack locals
+	guint32 total_locals_size;
+	// The size of locals that map to the execution stack
+	guint32 stack_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
 	int transformed; // boolean
