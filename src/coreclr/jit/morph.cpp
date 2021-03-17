@@ -11766,7 +11766,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                                 srcLclVarTree->gtFlags |= GTF_VAR_CAST;
                                 srcLclVarTree->ChangeOper(GT_LCL_FLD);
                                 srcLclVarTree->gtType = destType;
-                                if (varTypeIsStruct(srcLclVar) && curFieldSeq->CheckFldBelongsToCls(this, srcLclVar->GetStructHnd()))
+                                if (varTypeIsStruct(srcLclVar) &&
+                                    curFieldSeq->CheckFldBelongsToCls(this, srcLclVar->GetStructHnd()))
                                 {
                                     srcLclVarTree->AsLclFld()->SetFieldSeq(curFieldSeq);
                                 }
