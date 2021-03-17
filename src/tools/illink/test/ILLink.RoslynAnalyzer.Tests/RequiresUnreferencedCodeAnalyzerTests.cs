@@ -106,5 +106,32 @@ class C
 				VerifyCS.Diagnostic ().WithSpan (8, 3, 8, 19).WithArguments ("C.PropertyRequires.set", "Message for --setter PropertyRequires--", "")
 				);
 		}
+
+		[Fact]
+		public Task TypeIsBeforeFieldInit ()
+		{
+			var TypeIsBeforeFieldInit = @"
+using System.Diagnostics.CodeAnalysis;
+
+class C
+{
+	class TypeIsBeforeFieldInit
+	{
+		public static int field = AnnotatedMethod ();
+
+		[RequiresUnreferencedCode (""Message from --TypeIsBeforeFieldInit.AnnotatedMethod--"")]
+		public static int AnnotatedMethod () => 42;
+	}
+
+	static void TestTypeIsBeforeFieldInit ()
+	{
+		var x = TypeIsBeforeFieldInit.field + 42;
+	}
+}";
+			return VerifyRequiresUnreferencedCodeAnalyzer (TypeIsBeforeFieldInit,
+				// (8,29): warning IL2026: Using method 'C.TypeIsBeforeFieldInit.AnnotatedMethod()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. Message from --TypeIsBeforeFieldInit.AnnotatedMethod--.
+				VerifyCS.Diagnostic ().WithSpan (8, 29, 8, 47).WithArguments ("C.TypeIsBeforeFieldInit.AnnotatedMethod()", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", "")
+				);
+		}
 	}
 }
