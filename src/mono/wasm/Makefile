@@ -34,9 +34,9 @@ all: build-native icu-files source-files header-files
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
 
-EMSCRIPTEN_VERSION=2.0.12
+EMSCRIPTEN_VERSION=`cat emscripten-version.txt`
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(EMSDK_PATH)/emsdk_env.sh && emcc
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
@@ -122,7 +122,7 @@ $(NATIVE_BIN_DIR)/dotnet_crypto_worker.js: runtime/dotnet_crypto_worker.js | $(N
 	cp runtime/dotnet_crypto_worker.js $(NATIVE_BIN_DIR)/dotnet_crypto_worker.js
 
 $(NATIVE_BIN_DIR)/src/emcc-flags.txt: | $(NATIVE_BIN_DIR)/src Makefile
-	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1) -Oz" > $$@
+	echo "$(call escape_quote,$(EMCC_FLAGS)) $(1)" > $$@
 
 $(NATIVE_BIN_DIR)/src/emcc-version.txt: $(EMSDK_PATH)/upstream/.emsdk_version | $(NATIVE_BIN_DIR)/src
 	$(EMCC) --version | head -1 > $$@
@@ -164,6 +164,10 @@ build-all:
 
 runtime:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+mono.wasmruntime+libs.native+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+
+# Rebuild only the mono runtime+cross compiler, don't build dotnet.wasm
+mono-runtime:
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.runtime+libs.native+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 corlib:
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.corelib+mono.wasmruntime+libs.pretest -os Browser -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)

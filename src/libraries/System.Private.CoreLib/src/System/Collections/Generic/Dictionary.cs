@@ -352,7 +352,7 @@ namespace System.Collections.Generic
             }
         }
 
-        private ref TValue FindValue(TKey key)
+        internal ref TValue FindValue(TKey key)
         {
             if (key == null)
             {

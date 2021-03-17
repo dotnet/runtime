@@ -9719,7 +9719,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#endif //  FEATURE_MULTIREG_RET && FEATURE_HFA
+#endif //  FEATURE_MULTIREG_RET && TARGET_ARM64
 
     if (!compDoOldStructRetyping() && (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this)))
     {
@@ -21503,6 +21503,15 @@ void Compiler::considerGuardedDevirtualization(
 #endif
 
     JITDUMP("Considering guarded devirtualization\n");
+
+    // We currently only get likely class guesses when there is PGO data. So if we've disabled
+    // PGO, just bail out.
+
+    if (JitConfig.JitDisablePGO() != 0)
+    {
+        JITDUMP("Not guessing for class; pgo disabled\n");
+        return;
+    }
 
     // See if there's a likely guess for the class.
     //

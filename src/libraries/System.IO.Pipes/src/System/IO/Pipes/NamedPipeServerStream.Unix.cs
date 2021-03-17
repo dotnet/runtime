@@ -134,7 +134,7 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
@@ -155,7 +155,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanRead) throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-                return InternalHandle?.NamedPipeSocket?.ReceiveBufferSize ?? _inBufferSize;
+                return InternalHandle?.PipeSocket.ReceiveBufferSize ?? _inBufferSize;
             }
         }
 
@@ -165,7 +165,7 @@ namespace System.IO.Pipes
             {
                 CheckPipePropertyOperations();
                 if (!CanWrite) throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-                return InternalHandle?.NamedPipeSocket?.SendBufferSize ?? _outBufferSize;
+                return InternalHandle?.PipeSocket.SendBufferSize ?? _outBufferSize;
             }
         }
 
@@ -173,7 +173,7 @@ namespace System.IO.Pipes
         public void RunAsClient(PipeStreamImpersonationWorker impersonationWorker)
         {
             CheckWriteOperations();
-            SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
+            SafeHandle? handle = InternalHandle?.PipeSocketHandle;
             if (handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);

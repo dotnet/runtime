@@ -373,8 +373,6 @@ public:
         return GetManifestFile()->HashIdentity();
     }
 
-    BOOL IsDisabledPrivateReflection();
-
     //****************************************************************************************
     //
     // Uses the given token to load a module or another assembly. Returns the module in
@@ -583,7 +581,6 @@ private:
 #endif // FEATURE_COLLECTIBLE_TYPES
     DWORD                 m_nextAvailableModuleIndex;
     PTR_LoaderAllocator   m_pLoaderAllocator;
-    DWORD                 m_isDisabledPrivateReflection;
 
 #ifdef FEATURE_COMINTEROP
     // If a TypeLib is ever required for this module, cache the pointer here.

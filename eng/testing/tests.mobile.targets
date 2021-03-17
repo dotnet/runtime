@@ -259,6 +259,7 @@
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmNativeStrip>false</WasmNativeStrip>
     </PropertyGroup>
 
     <ItemGroup>

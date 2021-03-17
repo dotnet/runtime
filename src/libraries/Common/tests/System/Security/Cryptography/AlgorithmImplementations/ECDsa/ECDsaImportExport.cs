@@ -188,6 +188,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [PlatformSpecific(~TestPlatforms.Android)] // Android does not validate curve parameters
         public static void TestExplicitImportValidationNegative()
         {
             unchecked
