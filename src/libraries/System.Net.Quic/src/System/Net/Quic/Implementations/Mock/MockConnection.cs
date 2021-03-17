@@ -91,8 +91,8 @@ namespace System.Net.Quic.Implementations.Mock
         }
 
         // TODO: Should clone the endpoint since it is mutable
-		// TODO: could this be made back to non-nullable? 
-		//       For inbound we have it immidiatelly, for outbound after connect.
+        // TODO: could this be made back to non-nullable?
+        //       For inbound we have it immediately, for outbound after connect.
         internal override IPEndPoint? LocalEndPoint => _localEndPoint;
 
         // TODO: Should clone the endpoint since it is mutable
