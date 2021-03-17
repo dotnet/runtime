@@ -34,4 +34,41 @@
 
   </Target>
 
+
+  <ItemGroup>
+    <!-- Mibc data to use when exact architecture match is available -->
+    <MIBCPackageDef Include="optimization.windows_nt-x86.MIBC.Runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows/x86"/>
+    <MIBCPackageDef Include="optimization.windows_nt-x64.MIBC.Runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows/x64"/>
+    <MIBCPackageDef Include="optimization.linux-x64.MIBC.Runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="Linux/x64"/>
+
+    <!-- Mibc data to use when exact architecture match not available -->
+    <MIBCPackageDef Include="optimization.windows_nt-x64.MIBC.Runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows"/>
+    <MIBCPackageDef Include="optimization.linux-x64.MIBC.Runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="Linux"/>
+    <MIBCPackageDef Include="optimization.linux-x64.MIBC.Runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="OSX"/>
+
+    <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)/$(TargetArchitecture)'))" />
+    <MIBCPackage Include="@(MIBCPackageDef->HasMetadata('MibcArchitecture')->WithMetadataValue('MibcArchitecture','$(TargetOS)'))" Condition="'@(MIBCPackage)' == ''" />
+
+    <PackageDownload Include="@(MIBCPackage)" Version="[%(Version)]" />
+  </ItemGroup>
+
+  <!-- IBC data packages don't follow NuGet conventions.  -->
+  <Target Name="GetMIBCData"
+          AfterTargets="Restore">
+
+    <ItemGroup>
+      <MIBCPackage>
+        <PackagePath>$(NuGetPackageRoot)%(MIBCPackage.Identity)\%(MIBCPackage.Version)</PackagePath>
+      </MIBCPackage>
+      <_optimizationMibcFile Include="%(MIBCPackage.PackagePath)\**\*.mibc" SubdirectoryName="$(TargetOS)/$(TargetArchitecture)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_optimizationMibcFile)' == ''" Text="Failed to restore Mibc optimization data" />
+
+    <Copy SourceFiles="@(_optimizationMibcFile)"
+          DestinationFiles="@(_optimizationMibcFile->'$(MibcOptimizationDataDir)%(SubdirectoryName)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
 </Project>
