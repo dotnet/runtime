@@ -31,8 +31,8 @@
     <Compile Include="EncoderExtensionsTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HtmlEncoderTests.cs" />
-    <Compile Include="JavaScriptStringEncoderTests.cs" />
-    <Compile Include="JavaScriptStringEncoderTests.Relaxed.cs" />
+    <Compile Include="JavaScriptEncoderTests.cs" />
+    <Compile Include="JavaScriptEncoderTests.Relaxed.cs" />
     <Compile Include="TextEncoderSettingsTests.cs" />
     <Compile Include="UnicodeHelpersTests.cs" />
     <Compile Include="UnicodeRangesTests.cs" />

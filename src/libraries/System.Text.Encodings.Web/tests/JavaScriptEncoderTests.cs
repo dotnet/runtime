@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Text.Encodings.Web.Tests
 {
-    public partial class JavaScriptStringEncoderTests
+    public partial class JavaScriptEncoderTests
     {
         [Fact]
         public void Factory_NullArgs_Throws()
