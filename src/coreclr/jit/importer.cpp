@@ -21504,6 +21504,15 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization\n");
 
+    // We currently only get likely class guesses when there is PGO data. So if we've disabled
+    // PGO, just bail out.
+
+    if (JitConfig.JitDisablePGO() != 0)
+    {
+        JITDUMP("Not guessing for class; pgo disabled\n");
+        return;
+    }
+
     // See if there's a likely guess for the class.
     //
     const unsigned       likelihoodThreshold = isInterface ? 25 : 30;

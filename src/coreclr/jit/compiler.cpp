@@ -2830,11 +2830,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     // Profile data
     //
-    fgPgoSchema                  = nullptr;
-    fgPgoData                    = nullptr;
-    fgPgoSchemaCount             = 0;
-    fgPgoQueryResult             = E_FAIL;
-    fgProfileData_ILSizeMismatch = false;
+    fgPgoSchema      = nullptr;
+    fgPgoData        = nullptr;
+    fgPgoSchemaCount = 0;
+    fgPgoQueryResult = E_FAIL;
+    fgPgoFailReason  = nullptr;
+
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         fgPgoQueryResult = info.compCompHnd->getPgoInstrumentationResults(info.compMethodHnd, &fgPgoSchema,
@@ -2846,12 +2847,22 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(fgPgoQueryResult) && (fgPgoSchema != nullptr))
+        if (FAILED(fgPgoQueryResult))
         {
-            fgProfileData_ILSizeMismatch = true;
-            fgPgoData                    = nullptr;
-            fgPgoSchema                  = nullptr;
+            fgPgoFailReason = (fgPgoSchema != nullptr) ? "No matching PGO data" : "No PGO data";
+            fgPgoData       = nullptr;
+            fgPgoSchema     = nullptr;
         }
+        // Optionally, discard the profile data.
+        //
+        else if (JitConfig.JitDisablePGO() != 0)
+        {
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO != 0";
+            fgPgoQueryResult = E_FAIL;
+            fgPgoData        = nullptr;
+            fgPgoSchema      = nullptr;
+        }
+
 #ifdef DEBUG
         // A successful result implies a non-NULL fgPgoSchema
         //
@@ -3364,9 +3375,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: optimized using profile data\n");
         }
 
-        if (fgProfileData_ILSizeMismatch)
+        if (fgPgoFailReason != nullptr)
         {
-            printf("OPTIONS: discarded IBC profile data due to mismatch in ILSize\n");
+            printf("OPTIONS: %s\n", fgPgoFailReason);
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
