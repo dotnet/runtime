@@ -1,9 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
@@ -19,6 +23,22 @@ namespace System.Text.Json
         /// The number of stack frames including Current. _previous will contain _count-1 higher frames.
         /// </summary>
         private int _count;
+
+        /// <summary>
+        /// Cancellation token used by converters performing async serialization (e.g. IAsyncEnumerable)
+        /// </summary>
+        public CancellationToken CancellationToken;
+
+        /// <summary>
+        /// Stores a pending task that a resumable converter depends on to continue work.
+        /// It must be awaited by the root context before serialization is resumed.
+        /// </summary>
+        public Task? PendingTask;
+
+        /// <summary>
+        /// List of IAsyncDisposables that have been scheduled for disposal by converters.
+        /// </summary>
+        public List<IAsyncDisposable>? PendingAsyncDisposables;
 
         private List<WriteStackFrame> _previous;
 
@@ -172,11 +192,169 @@ namespace System.Text.Json
             else
             {
                 Debug.Assert(_continuationCount == 0);
+
+                if (Current.AsyncEnumerator is not null)
+                {
+                    // we have completed serialization of an AsyncEnumerator,
+                    // pop from the stack and schedule for async disposal.
+                    PendingAsyncDisposables ??= new();
+                    PendingAsyncDisposables.Add(Current.AsyncEnumerator);
+                }
             }
 
             if (_count > 1)
             {
                 Current = _previous[--_count - 1];
+            }
+        }
+
+        // asynchronously await any pending stacks that resumable converters depend on.
+        public async ValueTask AwaitPendingTask()
+        {
+            Debug.Assert(PendingTask != null);
+
+            if (!PendingTask.IsCompleted)
+            {
+                // wrap with Task.WhenAny to avoid surfacing any exceptions here
+                await Task.WhenAny(PendingTask).ConfigureAwait(false);
+            }
+
+            // Do not clear the `PendingTask` field here since the result
+            // will need to be consumed by a resumable converter.
+        }
+
+        // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
+        public async ValueTask DisposePendingAsyncDisposables()
+        {
+            Debug.Assert(PendingAsyncDisposables?.Count > 0);
+            List<Exception>? exceptions = null;
+
+            foreach (IAsyncDisposable asyncDisposable in PendingAsyncDisposables)
+            {
+                try
+                {
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception exn)
+                {
+                    exceptions ??= new();
+                    exceptions.Add(exn);
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+
+                throw new AggregateException(exceptions);
+            }
+
+            PendingAsyncDisposables.Clear();
+        }
+
+        /// <summary>
+        /// Walks the stack cleaning up any leftover IDisposables
+        /// in the event of an exception on serialization
+        /// </summary>
+        public void DisposePendingDisposablesOnException()
+        {
+            List<Exception>? exceptions = null;
+
+            Debug.Assert(Current.AsyncEnumerator is null);
+            DisposeFrame(Current.CollectionEnumerator);
+
+            int stackSize = Math.Max(_count, _continuationCount);
+            if (stackSize > 1)
+            {
+                for (int i = 0; i < stackSize - 1; i++)
+                {
+                    Debug.Assert(_previous[i].AsyncEnumerator is null);
+                    DisposeFrame(_previous[i].CollectionEnumerator);
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+
+                throw new AggregateException(exceptions);
+            }
+
+            void DisposeFrame(IEnumerator? collectionEnumerator)
+            {
+                try
+                {
+                    if (collectionEnumerator is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    exceptions ??= new();
+                    exceptions.Add(e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Walks the stack cleaning up any leftover I(Async)Disposables
+        /// in the event of an exception on async serialization
+        /// </summary>
+        public async ValueTask DisposePendingDisposablesOnExceptionAsync()
+        {
+            List<Exception>? exceptions = null;
+
+            await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator).ConfigureAwait(false);
+
+            int stackSize = Math.Max(_count, _continuationCount);
+            if (stackSize > 1)
+            {
+                for (int i = 0; i < stackSize - 1; i++)
+                {
+                    await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator).ConfigureAwait(false);
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+
+                throw new AggregateException(exceptions);
+            }
+
+            async ValueTask DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable)
+            {
+                Debug.Assert(!(collectionEnumerator is not null && asyncDisposable is not null));
+
+                try
+                {
+                    if (collectionEnumerator is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                        return;
+                    }
+
+                    if (asyncDisposable is not null)
+                    {
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+                catch (Exception e)
+                {
+                    exceptions ??= new();
+                    exceptions.Add(e);
+                }
             }
         }
 

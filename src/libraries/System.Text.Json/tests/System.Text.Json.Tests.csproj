@@ -40,6 +40,7 @@
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
+    <Compile Include="Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.Write.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />

@@ -46,8 +46,11 @@ namespace System.Text.Json
             {
                 if (_elementClassInfo == null && ElementType != null)
                 {
-                    Debug.Assert(ClassType == ClassType.Enumerable ||
-                        ClassType == ClassType.Dictionary);
+                    Debug.Assert(
+                        ClassType == ClassType.Enumerable ||
+                        ClassType == ClassType.Dictionary ||
+                       (ClassType == ClassType.Object &&
+                            IAsyncEnumerableConverterFactory.TryGetAsyncEnumerableInterface(Type, out _)));
 
                     _elementClassInfo = Options.GetOrAddClass(ElementType);
                 }
@@ -246,6 +249,11 @@ namespace System.Text.Json
                         {
                             InitializeConstructorParameters(converter.ConstructorInfo!);
                         }
+
+                        // Types like IAsyncEnumerable can default to the Object class type
+                        // but still require the ElementType for other converters specified
+                        // via JsonConverterAttribute.
+                        ElementType = converter.ElementType;
                     }
                     break;
                 case ClassType.Enumerable:
