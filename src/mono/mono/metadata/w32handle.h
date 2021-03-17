@@ -23,8 +23,6 @@
 typedef enum {
 	MONO_W32TYPE_UNUSED = 0,
 	MONO_W32TYPE_EVENT,
-	MONO_W32TYPE_PROCESS,
-	MONO_W32TYPE_NAMEDEVENT,
 	MONO_W32TYPE_COUNT
 } MonoW32Type;
 
@@ -125,9 +123,6 @@ mono_w32handle_lookup_and_ref (gpointer handle, MonoW32Handle **handle_data);
 
 void
 mono_w32handle_unref (MonoW32Handle *handle_data);
-
-void
-mono_w32handle_foreach (gboolean (*on_each)(MonoW32Handle *handle_data, gpointer user_data), gpointer user_data);
 
 void
 mono_w32handle_register_capabilities (MonoW32Type type, MonoW32HandleCapability caps);

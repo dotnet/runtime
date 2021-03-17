@@ -170,8 +170,6 @@ set(metadata_common_sources
     handle.c
     handle.h
     w32event.h
-    w32handle-namespace.h
-    w32handle-namespace.c
     w32handle.h
     w32handle.c
     w32error.h

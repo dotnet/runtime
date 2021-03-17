@@ -514,12 +514,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
-#ifdef ENABLE_METADATA_UPDATE
-	if (monoeg_g_hasenv ("MONO_METADATA_UPDATE")) {
-		interp_opts = "-inline";
-	}
-#endif
-
 	/*
 	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
 	 * debug_level == 0 disables debugging and enables interpreter optimizations

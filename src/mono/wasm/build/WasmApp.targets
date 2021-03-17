@@ -65,7 +65,7 @@
 
   <PropertyGroup>
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">$(RunAOTCompilation)</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'AotInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -119,6 +119,7 @@
       Sources="$(_WasmIntermediateOutputPath)\aot-instances.cs"
       OutputAssembly="$(_WasmDedupAssembly)"
       TargetType="library"
+      Deterministic="true"
       References="@(ReferencePath)"
       ToolExe="$(CscToolExe)"
       ToolPath="$(CscToolPath)" />
@@ -277,7 +278,8 @@
     </ReadLinesFromFile>
 
     <PropertyGroup>
-      <EmccFlags>$(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
+      <EmccFlags Condition="'$(_WasmDevel)' == 'true'">-O0 $(EmccFlags)</EmccFlags>
+      <EmccFlags>$(EmccFlags) $(_DefaultEmccFlags) $(EmccFlags)</EmccFlags>
       <EmccFlags>$(EmccFlags) -s DISABLE_EXCEPTION_CATCHING=0</EmccFlags>
       <EmccFlags Condition="'$(RunAOTCompilation)' == 'true'">$(EmccFlags) -DENABLE_AOT=1 -DDRIVER_GEN=1</EmccFlags>
       <EmccFlags Condition="'$(InvariantGlobalization)' == 'true'">$(EmccFlags) -DINVARIANT_GLOBALIZATION=1</EmccFlags>
@@ -316,8 +318,6 @@
      <_WasmRuntimePackNativeLibs Include="libmono-profiler-aot.a"/>
      <_WasmRuntimePackNativeLibs Include="libicuuc.a" />
      <_WasmRuntimePackNativeLibs Include="libicui18n.a" />
-     <_WasmObjects Include="@(_WasmRuntimePackNativeLibs->'$(MicrosoftNetCoreAppRuntimePackRidDir)\native\%(FileName)%(Extension)')" />
-
 
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)driver.o"/>
      <_WasmObjectsToBuild Include="$(_WasmIntermediateOutputPath)pinvoke.o"/>

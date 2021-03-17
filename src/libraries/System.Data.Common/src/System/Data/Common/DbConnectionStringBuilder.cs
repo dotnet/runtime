@@ -576,6 +576,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetAttributes(this, true);
         }
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return TypeDescriptor.GetEditor(this, editorBaseType, true);

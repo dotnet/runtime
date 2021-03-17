@@ -22,12 +22,12 @@ namespace System.Security.Policy
         public void AddAssembly(object id) { }
         public void AddAssemblyEvidence<T>(T evidence) where T : EvidenceBase { }
         public void AddHostEvidence<T>(T evidence) where T : EvidenceBase { }
-        public T GetAssemblyEvidence<T>() where T : EvidenceBase { return default(T); }
-        public T GetHostEvidence<T>() where T : EvidenceBase { return default(T); }
+        public T? GetAssemblyEvidence<T>() where T : EvidenceBase { return default(T); }
+        public T? GetHostEvidence<T>() where T : EvidenceBase { return default(T); }
         [Obsolete("This method is obsolete. Please use AddHostEvidence instead.")]
         public void AddHost(object id) { }
         public void Clear() { }
-        public Evidence Clone() { return default(Evidence); }
+        public Evidence? Clone() { return default(Evidence); }
         [Obsolete("Evidence should not be treated as an ICollection. Please use the GetHostEnumerator and GetAssemblyEnumerator methods rather than using CopyTo.")]
         public void CopyTo(Array array, int index) { }
         public IEnumerator GetAssemblyEnumerator() { return Array.Empty<object>().GetEnumerator(); }

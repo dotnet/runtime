@@ -53,6 +53,7 @@ option (ENABLE_CHECKED_BUILD_GC "Enable runtime GC Safe / Unsafe mode assertion 
 option (ENABLE_CHECKED_BUILD_THREAD "Enable runtime history of per-thread coop state transitions (must set env var MONO_CHECK_MODE=thread)")
 option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata)")
 option (ENABLE_METADATA_UPDATE "Enable runtime support for metadata updates")
+option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
 
 set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")
 set (CHECKED_BUILD "" CACHE STRING "Set ENABLE_CHECKED_BUILD_ options at once.  Comma-separated list of lowercase ENABLE_CHECKED_BUILD_ options ie. 'gc,threads,private_types' etc.")

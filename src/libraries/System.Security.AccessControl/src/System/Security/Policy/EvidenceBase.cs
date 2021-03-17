@@ -6,6 +6,6 @@ namespace System.Security.Policy
     public abstract partial class EvidenceBase
     {
         protected EvidenceBase() { }
-        public virtual EvidenceBase Clone() { return default(EvidenceBase); }
+        public virtual EvidenceBase? Clone() { return default(EvidenceBase); }
     }
 }

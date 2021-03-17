@@ -350,6 +350,10 @@
       <_MonoCMakeArgs Include="-DENABLE_METADATA_UPDATE=1" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
+      <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
       <_MonoCXXFLAGSOption>-DCMAKE_CXX_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCXXFLAGS, ' ')"</_MonoCXXFLAGSOption>
@@ -362,15 +366,15 @@
     <PropertyGroup>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) $(MonoProjectRoot)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoCMakeBuildCommand) --verbose</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoCMakeBuildCommand>
       <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' != 'Windows_NT'">@(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
-      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
+      <_MonoCMakeBuildCommand Condition="'$(TargetsBrowser)' != 'true' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeBuildCommand)</_MonoCMakeBuildCommand>
     </PropertyGroup>
 
     <MakeDir Directories="$(MonoObjDir)" />
@@ -508,11 +512,11 @@
     <PropertyGroup>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoProjectRoot)</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(MonoVerboseBuild)' == 'true'">$(_MonoAotCMakeBuildCommand) --verbose</_MonoAotCMakeBuildCommand>
       <_MonoAotCMakeBuildCommand Condition="'$(_MonoUseNinja)' != 'true'">$(_MonoAotCMakeBuildCommand) --parallel $([System.Environment]::ProcessorCount)</_MonoAotCMakeBuildCommand>
-      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">set __repoRoot=&quot;$(RepoRoot)&quot; &amp;&amp; call &quot;$(RepositoryEngineeringDir)native\init-compiler-and-cmake.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
+      <_MonoAotCMakeBuildCommand Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(Platform) &amp;&amp; cd /D &quot;$(MonoObjDir)\cross&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoAotCMakeBuildCommand)</_MonoAotCMakeBuildCommand>
       <_MonoAotPrebuiltOffsetsFile>$(ArtifactsObjDir)\mono\offsetfiles\$(PlatformConfigPathPart)\cross\$([System.IO.Path]::GetFileName('$(MonoAotOffsetsFile)'))</_MonoAotPrebuiltOffsetsFile>
     </PropertyGroup>
 
