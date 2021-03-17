@@ -247,6 +247,7 @@ namespace Mono.Linker.Dataflow
 			Type_GetMembers,
 			Type_get_AssemblyQualifiedName,
 			Type_get_UnderlyingSystemType,
+			Type_get_BaseType,
 			Expression_Call,
 			Expression_Field,
 			Expression_Property,
@@ -461,6 +462,12 @@ namespace Mono.Linker.Dataflow
 					&& !calledMethod.HasParameters
 					&& calledMethod.HasThis
 					=> IntrinsicId.Type_get_UnderlyingSystemType,
+
+				// System.Type.BaseType
+				"get_BaseType" when calledMethod.IsDeclaredOnType ("System", "Type")
+					&& !calledMethod.HasParameters
+					&& calledMethod.HasThis
+					=> IntrinsicId.Type_get_BaseType,
 
 				// System.Type.GetProperty (string)
 				// System.Type.GetProperty (string, BindingFlags)
@@ -1153,7 +1160,6 @@ namespace Mono.Linker.Dataflow
 				// AssemblyQualifiedName
 				//
 				case IntrinsicId.Type_get_AssemblyQualifiedName: {
-
 						ValueNode transformedResult = null;
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is LeafValueWithDynamicallyAccessedMemberNode dynamicallyAccessedThing) {
@@ -1177,6 +1183,53 @@ namespace Mono.Linker.Dataflow
 				case IntrinsicId.Type_get_UnderlyingSystemType: {
 						// This is identity for the purposes of the analysis.
 						methodReturnValue = methodParams[0];
+					}
+					break;
+
+				//
+				// Type.BaseType
+				//
+				case IntrinsicId.Type_get_BaseType: {
+						foreach (var value in methodParams[0].UniqueValues ()) {
+							if (value is LeafValueWithDynamicallyAccessedMemberNode dynamicallyAccessedMemberNode) {
+								DynamicallyAccessedMemberTypes propagatedMemberTypes = DynamicallyAccessedMemberTypes.None;
+								if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.All)
+									propagatedMemberTypes = DynamicallyAccessedMemberTypes.All;
+								else {
+									// PublicConstructors are not propagated to base type
+
+									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
+										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicEvents;
+
+									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
+										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicFields;
+
+									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
+										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicMethods;
+
+									// PublicNestedTypes are not propagated to base type
+
+									// PublicParameterlessConstructor is not propagated to base type
+
+									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
+										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
+								}
+
+								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (calledMethod.MethodReturnType, propagatedMemberTypes));
+							} else if (value is SystemTypeValue systemTypeValue) {
+								TypeDefinition baseTypeDefinition = systemTypeValue.TypeRepresented.BaseType.Resolve ();
+								if (baseTypeDefinition != null)
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (baseTypeDefinition));
+								else
+									methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (calledMethod.MethodReturnType, DynamicallyAccessedMemberTypes.None));
+							} else if (value == NullValue.Instance) {
+								// Ignore nulls - null.BaseType will fail at runtime, but it has no effect on static analysis
+								continue;
+							} else {
+								// Unknown input - propagate a return value without any annotation - we know it's a Type but we know nothing about it
+								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (calledMethod.MethodReturnType, DynamicallyAccessedMemberTypes.None));
+							}
+						}
 					}
 					break;
 
