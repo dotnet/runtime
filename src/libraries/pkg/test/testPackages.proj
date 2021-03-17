@@ -13,9 +13,11 @@
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
-    <TestPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
-    <TestPackages Remove="@(SymbolsPackages)" />
+    <ExcludePackagesList Include="@(SymbolsPackages)" />
+    <ExcludePackagesList Include="@(ExcludePackages->'$(LibrariesAllConfigShippingPackagesDir)%(Identity).$(Version).nupkg')" />
+    <TestPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(ExcludePackagesList)" Condition="'$(PackagesToTest)' == ''"/>
+    <TestPackages Condition="'$(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(LibrariesAllConfigShippingPackagesDir)%(Identity).$(Version).nupkg')" />
     <!-- we don't build alpine or older OSX versions -->
     <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64;freebsd-x64" />
 
@@ -72,7 +74,7 @@
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
 
-  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(NuGetPackageRoot)microsoft.dotnet.packagevalidation\$(MicrosoftDotNetPackageValidationVersion)\tools\netcoreapp3.1\Microsoft.DotNet.PackageValidation.dll"/>
+  <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageValidationAssembly)"/>
 
   <Target Name="GetSupportedPackages">
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackages)">
