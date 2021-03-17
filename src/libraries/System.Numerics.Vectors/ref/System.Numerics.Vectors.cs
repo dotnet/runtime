@@ -192,6 +192,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Abs<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Add<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         public static System.Numerics.Vector<T> AndNot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
+        public static System.Numerics.Vector<TTo> As<TFrom, TTo>(this System.Numerics.Vector<TFrom> vector) where TFrom : struct where TTo : struct { throw null; }
         public static System.Numerics.Vector<System.Byte> AsVectorByte<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Double> AsVectorDouble<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<System.Int16> AsVectorInt16<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }

@@ -13,7 +13,10 @@ namespace System.Net.Sockets.Tests
 {
     public abstract class SendTo<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        protected static readonly IPEndPoint ValidUdpRemoteEndpoint = new IPEndPoint(IPAddress.Parse("10.20.30.40"), 1234);
+        protected static Socket CreateSocket(AddressFamily addressFamily = AddressFamily.InterNetwork) => new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+
+        protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
+            addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
         protected SendTo(ITestOutputHelper output) : base(output)
         {
@@ -23,34 +26,41 @@ namespace System.Net.Sockets.Tests
         [InlineData(1, -1, 0)] // offset low
         [InlineData(1, 2, 0)] // offset high
         [InlineData(1, 0, -1)] // count low
-        [InlineData(1, 1, 2)] // count high
-        public async Task OutOfRange_Throws(int length, int offset, int count)
+        [InlineData(1, 0, 2)] // count high
+        [InlineData(1, 1, 1)] // count high
+        public async Task OutOfRange_Throws_ArgumentOutOfRangeException(int length, int offset, int count)
         {
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var socket = CreateSocket();
 
             ArraySegment<byte> buffer = new FakeArraySegment
             {
                 Array = new byte[length], Count = count, Offset = offset
             }.ToActual();
 
-            await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, ValidUdpRemoteEndpoint));
+            await AssertThrowsSynchronously<ArgumentOutOfRangeException>(() => SendToAsync(socket, buffer, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
-        public async Task NullBuffer_Throws()
+        public async Task NullBuffer_Throws_ArgumentNullException()
         {
             if (!ValidatesArrayArguments) return;
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using var socket = CreateSocket();
 
-            await Assert.ThrowsAsync<ArgumentNullException>(() => SendToAsync(socket, null, ValidUdpRemoteEndpoint));
+            await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, null, GetGetDummyTestEndpoint()));
         }
 
         [Fact]
-        public async Task NullEndpoint_Throws()
+        public async Task NullEndpoint_Throws_ArgumentException()
         {
-            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            await Assert.ThrowsAnyAsync<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
+            using Socket socket = CreateSocket();
+            if (UsesEap)
+            {
+                await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(socket, new byte[1], null));
+            }
+            else
+            {
+                await AssertThrowsSynchronously<ArgumentNullException>(() => SendToAsync(socket, new byte[1], null));
+            }
         }
 
         [Fact]
@@ -59,7 +69,7 @@ namespace System.Net.Sockets.Tests
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             byte[] buffer = new byte[32];
 
-            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), ValidUdpRemoteEndpoint);
+            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), GetGetDummyTestEndpoint());
 
             // Asynchronous calls shall alter the property immediately:
             if (!UsesSync)
@@ -91,7 +101,7 @@ namespace System.Net.Sockets.Tests
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             socket.Dispose();
 
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], ValidUdpRemoteEndpoint));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => SendToAsync(socket, new byte[1], GetGetDummyTestEndpoint()));
         }
     }
 
@@ -118,11 +128,35 @@ namespace System.Net.Sockets.Tests
     public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
         public SendTo_Apm(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        public void EndSendTo_NullAsyncResult_Throws_ArgumentNullException()
+        {
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+            Assert.Throws<ArgumentNullException>(() => socket.EndSendTo(null));
+        }
+
+        [Fact]
+        public void EndSendTo_UnrelatedAsyncResult_Throws_ArgumentException()
+        {
+            EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
+            using Socket socket = CreateSocket();
+
+            Assert.Throws<ArgumentException>(() => socket.EndSendTo(Task.CompletedTask));
+        }
     }
 
     public sealed class SendTo_Eap : SendTo<SocketHelperEap>
     {
         public SendTo_Eap(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        public void SendToAsync_NullAsyncEventArgs_Throws_ArgumentNullException()
+        {
+            using Socket socket = CreateSocket();
+            Assert.Throws<ArgumentNullException>(() => socket.SendToAsync(null));
+        }
     }
 
     public sealed class SendTo_Task : SendTo<SocketHelperTask>
@@ -142,7 +176,7 @@ namespace System.Net.Sockets.Tests
             cts.Cancel();
 
             OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => sender.SendToAsync(new byte[1], SocketFlags.None, ValidUdpRemoteEndpoint, cts.Token).AsTask());
+                () => sender.SendToAsync(new byte[1], SocketFlags.None, GetGetDummyTestEndpoint(), cts.Token).AsTask());
 
             Assert.Equal(cts.Token, ex.CancellationToken);
         }

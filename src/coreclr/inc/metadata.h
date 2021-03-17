@@ -88,14 +88,14 @@ typedef enum tagEnumType
 struct HENUMInternal
 {
     DWORD       m_tkKind;                   // kind of tables that the enum is holding the result
-    ULONG       m_ulCount;                  // count of total entries holding by the enumerator
+    uint32_t    m_ulCount;                  // count of total entries holding by the enumerator
 
     EnumType    m_EnumType;
 
     struct {
-        ULONG   m_ulStart;
-        ULONG   m_ulEnd;
-        ULONG   m_ulCur;
+        uint32_t   m_ulStart;
+        uint32_t   m_ulEnd;
+        uint32_t   m_ulCur;
     } u;
 
     // m_cursor will go away when we no longer support running EE with uncompressed

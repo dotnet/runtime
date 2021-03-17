@@ -283,7 +283,7 @@ namespace System.Xml.Serialization
             {
                 if (separator >= 0)
                 {
-                    sb.Append(originalIdentifier.Substring(separator, 1));
+                    sb.Append(originalIdentifier[separator]);
                 }
                 separator++;
                 separator += names[i].Length;

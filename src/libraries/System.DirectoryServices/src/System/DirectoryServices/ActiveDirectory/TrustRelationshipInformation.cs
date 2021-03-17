@@ -23,15 +23,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class TrustRelationshipInformation
     {
-        internal string source;
-        internal string target;
+        internal string? source;
+        internal string? target;
         internal TrustType type;
         internal TrustDirection direction;
-        internal DirectoryContext context;
+        internal DirectoryContext context = null!;
 
         internal TrustRelationshipInformation() { }
 
-        internal TrustRelationshipInformation(DirectoryContext context, string source, TrustObject obj)
+        internal TrustRelationshipInformation(DirectoryContext context, string? source, TrustObject obj)
         {
             // security context
             this.context = context;
@@ -51,9 +51,9 @@ namespace System.DirectoryServices.ActiveDirectory
             this.type = obj.TrustType;
         }
 
-        public string SourceName => source;
+        public string? SourceName => source;
 
-        public string TargetName => target;
+        public string? TargetName => target;
 
         public TrustType TrustType => type;
 

@@ -69,6 +69,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct MethodSignatureInfo
+    {
+    }
+
     public enum _EXCEPTION_POINTERS
     { }
 
@@ -91,16 +95,17 @@ namespace Internal.JitInterface
     public unsafe struct CORINFO_SIG_INFO
     {
         public CorInfoCallConv callConv;
-        public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
-        public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
+        public CORINFO_CLASS_STRUCT_* retTypeClass;     // if the return type is a value class, this is its handle (enums are normalized)
+        public CORINFO_CLASS_STRUCT_* retTypeSigClass;  // returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public CorInfoSigInfoFlags flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;               // used by IL stubs code
         public ushort numArgs;
-        public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
+        public CORINFO_SIG_INST sigInst;                // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
         public byte* pSig;
         public uint cbSig;
-        public CORINFO_MODULE_STRUCT_* scope;          // passed to getArgClass
+        public MethodSignatureInfo* methodSignature;    // used in place of pSig and cbSig to reference a method signature object handle
+        public CORINFO_MODULE_STRUCT_* scope;           // passed to getArgClass
         public mdToken token;
 
         public CorInfoType retType { get { return (CorInfoType)_retType; } set { _retType = (byte)value; } }
@@ -1060,7 +1065,7 @@ namespace Internal.JitInterface
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? 1 : 0; } }
+        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
         public CORINFO_CONTEXT_STRUCT* exactContext;
     }
 
@@ -1329,6 +1334,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
+        CORJIT_FLAG_SOFTFP_ABI = 43, // On ARM should enable armel calling convention
     }
 
     public struct CORJIT_FLAGS

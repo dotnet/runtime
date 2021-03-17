@@ -1381,6 +1381,10 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 {
     WRAPPER_NO_CONTRACT;
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // Allocate the breakpoint instruction info in executable memory.
     m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
 

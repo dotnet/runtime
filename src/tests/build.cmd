@@ -15,17 +15,11 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\src\coreclr\setup_vs_tools.cmd
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-if defined VS160COMNTOOLS (
-    set "__VSToolsRoot=%VS160COMNTOOLS%"
-    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2019
-) else if defined VS150COMNTOOLS (
-    set "__VSToolsRoot=%VS150COMNTOOLS%"
-    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
-    set __VSVersion=vs2017
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
 )
 
 :: Set the default arguments for build
@@ -219,12 +213,6 @@ echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildA
 call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
-if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-    exit /b 1
-)
-if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
-
 set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
 call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 
@@ -307,10 +295,6 @@ if defined __SkipManaged goto SkipManagedBuild
 
 echo %__MsgPrefix%Starting the Managed Tests Build
 
-if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
-    exit /b 1
-)
 set __AppendToLog=false
 set __BuildLogRootName=Tests_Managed
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
@@ -569,14 +553,6 @@ echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
 echo allTargets: Build managed tests for all target platforms.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
-exit /b 1
-
-:NoDIA
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
-Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
-Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
-may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
 :PrecompileFX

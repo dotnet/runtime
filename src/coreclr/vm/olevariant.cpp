@@ -4710,7 +4710,21 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
 
     // Retrieve the ITypeInfo for the value class.
     MethodTable *pValueClassMT = (*pBoxedValueClass)->GetMethodTable();
-    IfFailThrow(GetITypeInfoForEEClass(pValueClassMT, &pTypeInfo, true /* bClassInfo */));
+    hr = GetITypeInfoForEEClass(pValueClassMT, &pTypeInfo, true /* bClassInfo */);
+    if (FAILED(hr))
+    {
+        if (hr == TLBX_E_LIBNOTREGISTERED)
+        {
+            // Indicate that conversion of the class to variant without a registered type lib is not supported
+            StackSString className;
+            pValueClassMT->_GetFullyQualifiedNameForClass(className);
+            COMPlusThrow(kNotSupportedException, IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG, className.GetUnicode());
+        }
+        else
+        {
+            COMPlusThrowHR(hr);
+        }
+    }
 
     // Convert the ITypeInfo to an IRecordInfo.
     hr = GetRecordInfoFromTypeInfo(pTypeInfo, &V_RECORDINFO(pRecHolder));

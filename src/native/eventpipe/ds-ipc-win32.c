@@ -1,4 +1,7 @@
-#ifdef FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#ifdef FEATURE_PERFTRACING_STANDALONE_PAL
 #define EP_NO_RT_DEPENDENCY
 #endif
 
@@ -14,7 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL
+#ifndef FEATURE_PERFTRACING_STANDALONE_PAL
 #include "ds-rt.h"
 #else
 #ifndef ep_raise_error_if_nok
@@ -52,7 +55,7 @@ ep_rt_object_free (void *ptr)
 	if (ptr)
 		free (ptr);
 }
-#endif /* !FEATURE_PERFTRACING_C_LIB_STANDALONE_PAL */
+#endif /* !FEATURE_PERFTRACING_STANDALONE_PAL */
 
 /*
  * Forward declares of all static functions.

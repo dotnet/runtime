@@ -46,6 +46,8 @@ namespace System
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
+        // As we support IANA and Windows Ids, it is possible we create equivalent zone objects which differ only in the Ids.
+        private List<TimeZoneInfo>? _equivalentZones;
 
         // constants for TimeZoneInfo.Local and TimeZoneInfo.Utc
         private const string UtcId = "UTC";
@@ -827,38 +829,15 @@ namespace System
                 return false;
             }
 
-            bool sameRules;
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            sameRules =
-                (currentRules == null && otherRules == null) ||
-                (currentRules != null && otherRules != null);
-
-            if (!sameRules)
+            if (currentRules is null || otherRules is null)
             {
-                // AdjustmentRule array mismatch
-                return false;
+                return currentRules == otherRules;
             }
 
-            if (currentRules != null)
-            {
-                if (currentRules.Length != otherRules!.Length)
-                {
-                    // AdjustmentRule array length mismatch
-                    return false;
-                }
-
-                for (int i = 0; i < currentRules.Length; i++)
-                {
-                    if (!(currentRules[i]).Equals(otherRules[i]))
-                    {
-                        // AdjustmentRule value-equality mismatch
-                        return false;
-                    }
-                }
-            }
-            return sameRules;
+            return currentRules.AsSpan().SequenceEqual(otherRules);
         }
 
         /// <summary>
@@ -1811,6 +1790,58 @@ namespace System
         /// assumes cachedData lock is taken
         /// </summary>
         private static TimeZoneInfoResult TryGetTimeZone(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData, bool alwaysFallbackToLocalMachine = false)
+        {
+            TimeZoneInfoResult result = TryGetTimeZoneUsingId(id, dstDisabled, out value, out e, cachedData, alwaysFallbackToLocalMachine);
+            if (result != TimeZoneInfoResult.Success)
+            {
+                string? alternativeId = GetAlternativeId(id);
+                if (alternativeId != null)
+                {
+                    result = TryGetTimeZoneUsingId(alternativeId, dstDisabled, out value, out e, cachedData, alwaysFallbackToLocalMachine);
+                    if (result == TimeZoneInfoResult.Success)
+                    {
+                        TimeZoneInfo? zone = null;
+                        if (value!._equivalentZones == null)
+                        {
+                            zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
+                                                    value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime);
+                            value!._equivalentZones = new List<TimeZoneInfo>();
+                            lock (value!._equivalentZones)
+                            {
+                                value!._equivalentZones.Add(zone);
+                            }
+                        }
+                        else
+                        {
+                            foreach (TimeZoneInfo tzi in value!._equivalentZones)
+                            {
+                                if (tzi.Id == id)
+                                {
+                                    zone = tzi;
+                                    break;
+                                }
+                            }
+                            if (zone == null)
+                            {
+                                zone = new TimeZoneInfo(id, value!._baseUtcOffset, value!._displayName, value!._standardDisplayName,
+                                                        value!._daylightDisplayName, value!._adjustmentRules, dstDisabled && value!._supportsDaylightSavingTime);
+                                lock (value!._equivalentZones)
+                                {
+                                    value!._equivalentZones.Add(zone);
+                                }
+                            }
+                        }
+
+                        Debug.Assert(zone != null);
+                        value = zone;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static TimeZoneInfoResult TryGetTimeZoneUsingId(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData, bool alwaysFallbackToLocalMachine)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 

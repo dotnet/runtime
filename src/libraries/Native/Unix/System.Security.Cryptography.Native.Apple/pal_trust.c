@@ -4,7 +4,7 @@
 #include "pal_trust.h"
 #include "pal_utilities.h"
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static bool CheckTrustMatch(SecCertificateRef cert,
                             SecTrustSettingsDomain domain,
                             SecTrustSettingsResult result,

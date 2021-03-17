@@ -289,7 +289,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
 : m_StringToEntryHashTable(NULL)
 , m_MemoryPool(NULL)
 , m_HashTableCrstGlobal(CrstGlobalStrLiteralMap)
-, m_LargeHeapHandleTable(SystemDomain::System(), GLOBAL_STRING_TABLE_BUCKET_SIZE)
+, m_PinnedHeapHandleTable(SystemDomain::System(), GLOBAL_STRING_TABLE_BUCKET_SIZE)
 {
     CONTRACTL
     {
@@ -299,7 +299,7 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    m_LargeHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
+    m_PinnedHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
 #endif
 }
 
@@ -487,7 +487,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     StringLiteralEntry *pRet;
 
     {
-    LargeHeapHandleBlockHolder pStrObj(&m_LargeHeapHandleTable,1);
+    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
     // Create the COM+ string object.
     STRINGREF strObj = AllocateStringObject(pStringData);
 
@@ -528,7 +528,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     StringLiteralEntry *pRet;
 
     {
-    LargeHeapHandleBlockHolder pStrObj(&m_LargeHeapHandleTable,1);
+    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
     SetObjectReference(pStrObj[0], (OBJECTREF) *pString);
 
     // Since the allocation might have caused a GC we need to re-get the
@@ -583,7 +583,7 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
 
         // Release the object handle that the entry was using.
         STRINGREF *pObjRef = pEntry->GetStringObject();
-        m_LargeHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
+        m_PinnedHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
     }
 
     // We do not delete the StringLiteralEntry itself that will be done in the

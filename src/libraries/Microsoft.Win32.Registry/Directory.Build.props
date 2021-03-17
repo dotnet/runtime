@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <IsWindowsSpecific>true</IsWindowsSpecific>
     <PackageDescription>Provides support for accessing and modifying the Windows Registry.
 

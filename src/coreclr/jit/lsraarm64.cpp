@@ -425,6 +425,8 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_LOCKADD:
+        case GT_XORR:
+        case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
@@ -439,6 +441,11 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     buildInternalIntRegisterDefForNode(tree);
                 }
+            }
+            else if (tree->OperIs(GT_XAND))
+            {
+                // for ldclral we need an internal register.
+                buildInternalIntRegisterDefForNode(tree);
             }
 
             assert(!tree->gtGetOp1()->isContained());

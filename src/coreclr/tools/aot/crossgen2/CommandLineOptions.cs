@@ -32,6 +32,7 @@ namespace ILCompiler
         public bool Verbose;
         public bool Composite;
         public bool CompileNoMethods;
+        public bool EmbedPgoData;
 
         public string DgmlLogFileName;
         public bool GenerateFullDgmlLog;
@@ -102,6 +103,7 @@ namespace ILCompiler
                 syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
+                syntax.DefineOption("embed-pgo-data", ref EmbedPgoData, SR.EmbedPgoDataOption);
                 syntax.DefineOption("dgmllog|dgml-log-file-name", ref DgmlLogFileName, SR.SaveDependencyLogOption);
                 syntax.DefineOption("fulllog|generate-full-dmgl-log", ref GenerateFullDgmlLog, SR.SaveDetailedLogOption);
                 syntax.DefineOption("verbose", ref Verbose, SR.VerboseLoggingOption);

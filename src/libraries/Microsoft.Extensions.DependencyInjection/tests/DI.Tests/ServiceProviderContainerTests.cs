@@ -281,7 +281,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHangAndDisposeAsyncGetsCalled()
         {
             // Arrange
@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.True(asyncDisposableResource.DisposeAsyncCalled);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void GetService_DisposeOnSameThread_ThrowsAndDoesNotHangAndDisposeGetsCalled()
         {
             // Arrange
@@ -434,7 +434,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task GetRequiredService_ResolvingSameSingletonInTwoThreads_SameServiceReturned()
         {
             using (var mreForThread1 = new ManualResetEvent(false))
@@ -490,7 +490,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
         {
             using (var mreForThread1 = new ManualResetEvent(false))
@@ -578,7 +578,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
         {
             // Test is similar to GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock (but for open generics and a larger object graph)

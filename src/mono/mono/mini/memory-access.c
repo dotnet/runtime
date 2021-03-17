@@ -17,11 +17,7 @@
 #include "ir-emit.h"
 #include "jit-icalls.h"
 
-#ifdef ENABLE_NETCORE
 #define MAX_INLINE_COPIES 16
-#else
-#define MAX_INLINE_COPIES 10
-#endif
 #define MAX_INLINE_COPY_SIZE 10000
 
 void 

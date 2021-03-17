@@ -33,9 +33,7 @@
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/cominterop.h"
-#include "mono/metadata/remoting.h"
 #include "mono/metadata/reflection-internals.h"
-#include "mono/metadata/threadpool.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/icall-internals.h"
@@ -1526,7 +1524,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, NULL, "Marshal Dummy String");
 
-		MonoStringHandle string_dummy_handle = mono_string_new_utf8_len (mono_get_root_domain (), "dummy", 5, error);
+		MonoStringHandle string_dummy_handle = mono_string_new_utf8_len ("dummy", 5, error);
 		string_dummy = MONO_HANDLE_RAW (string_dummy_handle);
 		mono_error_assert_ok (error);
 
@@ -1645,13 +1643,11 @@ handle_enum:
 
 	if (sig->ret->byref) {
 		/* perform indirect load and return by value */
-#ifdef ENABLE_NETCORE
 		int pos;
 		mono_mb_emit_byte (mb, CEE_DUP);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
 		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
 		mono_mb_patch_branch (mb, pos);
-#endif
 
 		int ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
@@ -2061,7 +2057,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
-#ifdef ENABLE_NETCORE
 	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
@@ -2094,7 +2089,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_stloc (mb, func_addr_local);
 	}
-#endif
 
 	/*
 	 * cookie = mono_threads_enter_gc_safe_region_unbalanced (ref dummy);
@@ -4574,7 +4568,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *cleanup_native, *cleanup_managed;
 	static MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
 	MonoMethodBuilder *mb = m->mb;
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 	guint32 loc1;
 	int pos2;
 
@@ -6513,11 +6507,7 @@ emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig,
 {
 	int i;
 
-#ifdef ENABLE_NETCORE
 	g_assert (!mono_method_signature_internal (res)->hasthis);
-#else
-	mono_mb_emit_byte (mb, CEE_LDARG_0);
-#endif
 	for (i = 1; i <= csig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i);
 	mono_mb_emit_managed_call (mb, res, NULL);

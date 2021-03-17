@@ -21,15 +21,10 @@ namespace NetClient
             try
             {
                 RunTests();
-                Console.WriteLine("Testing COM object lifetime control methods.");
-                Thread.CurrentThread.DisableComObjectEagerCleanup();
-                RunTests();
-                Marshal.CleanupUnusedObjectsInCurrentContext();
-                Assert.IsFalse(Marshal.AreComObjectsAvailableForCleanup());
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Test Failure: {e}");
+                Console.WriteLine($"Test object interop failure: {e}");
                 return 101;
             }
 

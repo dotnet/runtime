@@ -44,7 +44,6 @@ MONO_JIT_ICALL (generic_trampoline_rgctx_lazy_fetch)	\
 MONO_JIT_ICALL (generic_trampoline_aot)	\
 MONO_JIT_ICALL (generic_trampoline_aot_plt)	\
 MONO_JIT_ICALL (generic_trampoline_delegate)	\
-MONO_JIT_ICALL (generic_trampoline_generic_virtual_remoting)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
 /* These must be ordered like MonoTlsKey (alphabetical). */ \
@@ -212,7 +211,6 @@ MONO_JIT_ICALL (mono_init_vtable_slot) \
 MONO_JIT_ICALL (mono_interp_entry_from_trampoline) \
 MONO_JIT_ICALL (mono_interp_to_native_trampoline) \
 MONO_JIT_ICALL (mono_isfinite_double) \
-MONO_JIT_ICALL (mono_jit_set_domain) \
 MONO_JIT_ICALL (mono_ldftn) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper_generic_shared) \
@@ -253,7 +251,6 @@ MONO_JIT_ICALL (mono_marshal_set_last_error) \
 MONO_JIT_ICALL (mono_marshal_set_last_error_windows) \
 MONO_JIT_ICALL (mono_marshal_string_to_utf16) \
 MONO_JIT_ICALL (mono_marshal_string_to_utf16_copy) \
-MONO_JIT_ICALL (mono_marshal_xdomain_copy_out_value) \
 MONO_JIT_ICALL (mono_monitor_enter_fast) \
 MONO_JIT_ICALL (mono_monitor_enter_internal) \
 MONO_JIT_ICALL (mono_monitor_enter_v4_fast) \
@@ -268,8 +265,6 @@ MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
-MONO_JIT_ICALL (mono_remoting_update_exception) \
-MONO_JIT_ICALL (mono_remoting_wrapper) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mono_resolve_iface_call_gsharedvt) \
@@ -311,6 +306,7 @@ MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
+MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
@@ -327,13 +323,10 @@ MONO_JIT_ICALL (rgctx_fetch_trampoline_general)	\
 MONO_JIT_ICALL (sdb_breakpoint_trampoline)	\
 MONO_JIT_ICALL (sdb_single_step_trampoline)	\
 MONO_JIT_ICALL (type_from_handle) \
-MONO_JIT_ICALL (ves_icall_array_new) \
 MONO_JIT_ICALL (ves_icall_array_new_specific) \
 MONO_JIT_ICALL (ves_icall_marshal_alloc) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor_interp) \
-MONO_JIT_ICALL (ves_icall_mono_ldstr) \
-MONO_JIT_ICALL (ves_icall_mono_marshal_xdomain_copy_value) \
 MONO_JIT_ICALL (ves_icall_mono_string_from_utf16) \
 MONO_JIT_ICALL (ves_icall_mono_string_to_utf8) \
 MONO_JIT_ICALL (ves_icall_object_new) \

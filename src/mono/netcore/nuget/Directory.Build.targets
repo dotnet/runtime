@@ -1,4 +1,0 @@
-<Project>
-  <Import Project="..\..\Directory.Build.targets" />
-  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
-</Project>

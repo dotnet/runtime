@@ -987,7 +987,7 @@ namespace System.DirectoryServices.Protocols
                 int certError = LdapPal.SetClientCertOption(_ldapHandle, LdapOption.LDAP_OPT_CLIENT_CERTIFICATE, _clientCertificateRoutine);
                 if (certError != (int)ResultCode.Success)
                 {
-                    if (Utility.IsLdapError((LdapError)certError))
+                    if (LdapErrorMappings.IsLdapError(certError))
                     {
                         string certerrorMessage = LdapErrorMappings.MapResultCode(certError);
                         throw new LdapException(certError, certerrorMessage);
@@ -1012,7 +1012,7 @@ namespace System.DirectoryServices.Protocols
             // Failed, throw an exception.
             if (error != (int)ResultCode.Success)
             {
-                if (Utility.IsLdapError((LdapError)error))
+                if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     throw new LdapException(error, errorMessage);
@@ -1156,7 +1156,7 @@ namespace System.DirectoryServices.Protocols
                     string errorMessage = OperationErrorMappings.MapResultCode(error);
                     throw new DirectoryOperationException(null, errorMessage);
                 }
-                else if (Utility.IsLdapError((LdapError)error))
+                else if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     string serverErrorMessage = SessionOptions.ServerErrorMessage;
@@ -1942,7 +1942,7 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                if (Utility.IsLdapError((LdapError)error))
+                if (LdapErrorMappings.IsLdapError(error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
                     string serverErrorMessage = SessionOptions.ServerErrorMessage;

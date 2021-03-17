@@ -118,6 +118,7 @@ namespace Internal.Cryptography.Pal
             try
             {
                 AddCertToStore(certPal);
+                ChainPal.FlushStores();
             }
             catch (CryptographicException)
             {
@@ -223,6 +224,7 @@ namespace Internal.Cryptography.Pal
                         }
 
                         File.Delete(currentFilename);
+                        ChainPal.FlushStores();
                     }
                 } while (currentFilename != null);
             }

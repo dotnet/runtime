@@ -5,4 +5,5 @@ internal class TargetNames
 {
     public const string iOS = "iOS";
     public const string tvOS = "tvOS";
+    public const string MacCatalyst = "MacCatalyst";
 }

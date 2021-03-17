@@ -11,7 +11,8 @@
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+browser+'))">$(_MonoCrossAOTTargetOS)+browser+</_MonoCrossAOTTargetOS>
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+tvos+'))">$(_MonoCrossAOTTargetOS)+tvos+</_MonoCrossAOTTargetOS>
     <_MonoCrossAOTTargetOS Condition="$(_MonoGenerateOffsetsOSGroups.contains('+ios+'))">$(_MonoCrossAOTTargetOS)+ios+</_MonoCrossAOTTargetOS>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' != 'Windows_NT'">$(MonoAotTargets);Android-x64;Android-arm64;Android-x86;Android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+')) and '$(OS)' == 'Windows_NT'">$(MonoAotTargets);Android-x64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);Browser-wasm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOS-x64;tvOS-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOS-x64;iOS-arm64;iOS-x86;iOS-arm</MonoAotTargets>

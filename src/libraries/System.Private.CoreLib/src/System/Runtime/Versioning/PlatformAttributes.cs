@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 namespace System.Runtime.Versioning
 {
     /// <summary>
@@ -56,6 +55,7 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
+                    AttributeTargets.Interface |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
@@ -86,6 +86,7 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Enum |
                     AttributeTargets.Event |
                     AttributeTargets.Field |
+                    AttributeTargets.Interface |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |

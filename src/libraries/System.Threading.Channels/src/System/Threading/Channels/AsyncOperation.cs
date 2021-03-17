@@ -269,7 +269,14 @@ namespace System.Threading.Channels
                 // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
                 if (_schedulingContext == null)
                 {
-                    QueueUserWorkItem(continuation, state);
+                    if (_executionContext == null)
+                    {
+                        UnsafeQueueUserWorkItem(continuation, state);
+                    }
+                    else
+                    {
+                        QueueUserWorkItem(continuation, state);
+                    }
                 }
                 else if (sc != null)
                 {

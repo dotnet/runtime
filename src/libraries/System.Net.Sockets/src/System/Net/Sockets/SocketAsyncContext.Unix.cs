@@ -565,6 +565,31 @@ namespace System.Net.Sockets
                 Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
+        private sealed unsafe class BufferPtrReceiveMessageFromOperation : ReadOperation
+        {
+            public byte* BufferPtr;
+            public int Length;
+            public SocketFlags Flags;
+            public int BytesTransferred;
+            public SocketFlags ReceivedFlags;
+
+            public bool IsIPv4;
+            public bool IsIPv6;
+            public IPPacketInformation IPPacketInformation;
+
+            public BufferPtrReceiveMessageFromOperation(SocketAsyncContext context) : base(context) { }
+
+            protected sealed override void Abort() { }
+
+            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
+
+            protected override bool DoTryComplete(SocketAsyncContext context) =>
+                SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+
+            public override void InvokeCallback(bool allowPooling) =>
+                Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
+        }
+
         private sealed class AcceptOperation : ReadOperation
         {
             public IntPtr AcceptedFileDescriptor;
@@ -762,9 +787,12 @@ namespace System.Net.Sockets
             {
                 Trace(context, $"Enter");
 
-                if (!context.IsRegistered)
+                if (!context.IsRegistered && !context.TryRegister(out Interop.Error error))
                 {
-                    context.Register();
+                    HandleFailedRegistration(context, operation, error);
+
+                    Trace(context, "Leave, not registered");
+                    return false;
                 }
 
                 while (true)
@@ -840,6 +868,31 @@ namespace System.Net.Sockets
                     {
                         Trace(context, $"Leave, retry succeeded");
                         return false;
+                    }
+                }
+
+                static void HandleFailedRegistration(SocketAsyncContext context, TOperation operation, Interop.Error error)
+                {
+                    Debug.Assert(error != Interop.Error.SUCCESS);
+
+                    // macOS: kevent returns EPIPE when adding pipe fd for which the other end is closed.
+                    if (error == Interop.Error.EPIPE)
+                    {
+                        // Because the other end close, we expect the operation to complete when we retry it.
+                        // If it doesn't, we fall through and throw an Exception.
+                        if (operation.TryComplete(context))
+                        {
+                            return;
+                        }
+                    }
+
+                    if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
+                    {
+                        throw new OutOfMemoryException();
+                    }
+                    else
+                    {
+                        throw new InternalException(error);
                     }
                 }
             }
@@ -1199,7 +1252,7 @@ namespace System.Net.Sockets
             get => _socket.PreferInlineCompletions;
         }
 
-        private void Register()
+        private bool TryRegister(out Interop.Error error)
         {
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
@@ -1211,9 +1264,18 @@ namespace System.Net.Sockets
                     {
                         _socket.DangerousAddRef(ref addedRef);
                         IntPtr handle = _socket.DangerousGetHandle();
-                        Volatile.Write(ref _asyncEngine, SocketAsyncEngine.RegisterSocket(handle, this));
+                        if (SocketAsyncEngine.TryRegisterSocket(handle, this, out SocketAsyncEngine? engine, out error))
+                        {
+                            Volatile.Write(ref _asyncEngine, engine);
 
-                        Trace("Registered");
+                            Trace("Registered");
+                            return true;
+                        }
+                        else
+                        {
+                            Trace("Registration failed");
+                            return false;
+                        }
                     }
                     finally
                     {
@@ -1223,6 +1285,8 @@ namespace System.Net.Sockets
                         }
                     }
                 }
+                error = Interop.Error.SUCCESS;
+                return true;
             }
         }
 
@@ -1696,7 +1760,7 @@ namespace System.Net.Sockets
         }
 
         public SocketError ReceiveMessageFrom(
-            Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+            Memory<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1704,7 +1768,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
+                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, null, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1714,7 +1778,7 @@ namespace System.Net.Sockets
             var operation = new ReceiveMessageFromOperation(this)
             {
                 Buffer = buffer,
-                Buffers = buffers,
+                Buffers = null,
                 Flags = flags,
                 SocketAddress = socketAddress,
                 SocketAddressLen = socketAddressLen,
@@ -1729,6 +1793,45 @@ namespace System.Net.Sockets
             ipPacketInformation = operation.IPPacketInformation;
             bytesReceived = operation.BytesTransferred;
             return operation.ErrorCode;
+        }
+
+        public unsafe SocketError ReceiveMessageFrom(
+            Span<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+        {
+            Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
+
+            SocketFlags receivedFlags;
+            SocketError errorCode;
+            int observedSequenceNumber;
+            if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
+                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, null, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
+                !ShouldRetrySyncOperation(out errorCode)))
+            {
+                flags = receivedFlags;
+                return errorCode;
+            }
+
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                var operation = new BufferPtrReceiveMessageFromOperation(this)
+                {
+                    BufferPtr = bufferPtr,
+                    Length = buffer.Length,
+                    Flags = flags,
+                    SocketAddress = socketAddress,
+                    SocketAddressLen = socketAddressLen,
+                    IsIPv4 = isIPv4,
+                    IsIPv6 = isIPv6,
+                };
+
+                PerformSyncOperation(ref _receiveQueue, operation, timeout, observedSequenceNumber);
+
+                socketAddressLen = operation.SocketAddressLen;
+                flags = operation.ReceivedFlags;
+                ipPacketInformation = operation.IPPacketInformation;
+                bytesReceived = operation.BytesTransferred;
+                return operation.ErrorCode;
+            }
         }
 
         public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback, CancellationToken cancellationToken = default)

@@ -343,15 +343,10 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
+                    if (_name != value)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
-                    }
-
-                    _name = value;
-                    ThreadNameChanged(value);
-                    if (value != null)
-                    {
+                        _name = value;
+                        ThreadNameChanged(value);
                         _mayNeedResetForThreadPool = true;
                     }
                 }
@@ -365,10 +360,8 @@ namespace System.Threading
 
             lock (this)
             {
-                // Bypass the exception from setting the property
                 _name = ThreadPool.WorkerThreadName;
                 ThreadNameChanged(ThreadPool.WorkerThreadName);
-                _name = null;
             }
         }
 
@@ -395,7 +388,7 @@ namespace System.Threading
 
             _mayNeedResetForThreadPool = false;
 
-            if (_name != null)
+            if (_name != ThreadPool.WorkerThreadName)
             {
                 SetThreadPoolWorkerThreadName();
             }

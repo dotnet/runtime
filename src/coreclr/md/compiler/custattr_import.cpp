@@ -106,8 +106,8 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
-    ULONG           ridStart;
-    ULONG           ridEnd;
+    RID             ridStart;
+    RID             ridEnd;
     HENUMInternal   *pEnum = *ppmdEnum;
     CustomAttributeRec  *pRec;
     ULONG           index;

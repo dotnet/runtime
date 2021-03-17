@@ -204,7 +204,10 @@ namespace System.IO
                             object[] inputArgs = (object[])args!;
                             WatchForFileSystemEventsThreadStart((ManualResetEventSlim)inputArgs[0], (SafeEventStreamHandle)inputArgs[1]);
                         })
-                        { IsBackground = true }.UnsafeStart(new object[] { runLoopStarted, eventStream });
+                        {
+                            IsBackground = true,
+                            Name = ".NET File Watcher"
+                        }.UnsafeStart(new object[] { runLoopStarted, eventStream });
 
                         runLoopStarted.Wait();
                     }
