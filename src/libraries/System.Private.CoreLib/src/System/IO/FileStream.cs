@@ -395,7 +395,7 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
+        protected override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
 
         internal void DisposeInternal(bool disposing) => Dispose(disposing);
 
