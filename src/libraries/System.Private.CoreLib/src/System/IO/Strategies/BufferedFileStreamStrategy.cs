@@ -23,7 +23,7 @@ namespace System.IO.Strategies
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
-            Debug.Assert(bufferSize > 1);
+            Debug.Assert(bufferSize > 1, "Buffering must not be enabled for smaller buffer sizes");
 
             _strategy = strategy;
             _bufferSize = bufferSize;
@@ -1055,8 +1055,6 @@ namespace System.IO.Strategies
 
         private void EnsureBufferAllocated()
         {
-            Debug.Assert(_bufferSize > 1);
-
             // BufferedFileStreamStrategy is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
             {
