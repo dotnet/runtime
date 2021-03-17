@@ -353,6 +353,7 @@ namespace Mono.Linker.Dataflow
 					=> IntrinsicId.Type_GetType,
 
 				// System.Type.GetConstructor (Type[])
+				// System.Type.GetConstructor (BindingFlags, Type[])
 				// System.Type.GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
 				// System.Type.GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 				"GetConstructor" when calledMethod.IsDeclaredOnType ("System", "Type")
@@ -370,8 +371,9 @@ namespace Mono.Linker.Dataflow
 				// System.Type.GetMethod (string, BindingFlags)
 				// System.Type.GetMethod (string, Type[])
 				// System.Type.GetMethod (string, Type[], ParameterModifier[])
-				// System.Type.GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[]) 6
-				// System.Type.GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[]) 7
+				// System.Type.GetMethod (string, BindingFlags, Binder, Type[])
+				// System.Type.GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
+				// System.Type.GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
 				// System.Type.GetMethod (string, int, Type[])
 				// System.Type.GetMethod (string, int, Type[], ParameterModifier[]?)
 				// System.Type.GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
@@ -983,6 +985,7 @@ namespace Mono.Linker.Dataflow
 
 				//
 				// GetConstructor (Type[])
+				// GetConstructor (BindingFlags, Type[])
 				// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
 				// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 				//
@@ -999,6 +1002,7 @@ namespace Mono.Linker.Dataflow
 
 						int? ctorParameterCount = parameters.Count switch {
 							1 => (methodParams[1] as ArrayValue)?.Size.AsConstInt (),
+							2 => (methodParams[2] as ArrayValue)?.Size.AsConstInt (),
 							4 => (methodParams[3] as ArrayValue)?.Size.AsConstInt (),
 							5 => (methodParams[4] as ArrayValue)?.Size.AsConstInt (),
 							_ => null,
@@ -1007,10 +1011,16 @@ namespace Mono.Linker.Dataflow
 						// Go over all types we've seen
 						foreach (var value in methodParams[0].UniqueValues ()) {
 							if (value is SystemTypeValue systemTypeValue) {
-								if (BindingFlagsAreUnsupported (bindingFlags))
+								if (BindingFlagsAreUnsupported (bindingFlags)) {
 									RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors, value, calledMethodDefinition);
-								else
-									MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, null, bindingFlags);
+								} else {
+									if (HasBindingFlag (bindingFlags, BindingFlags.Public) && !HasBindingFlag (bindingFlags, BindingFlags.NonPublic)
+										&& ctorParameterCount == 0) {
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, m => m.IsPublic && m.Parameters.Count == 0, bindingFlags);
+									} else {
+										MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, null, bindingFlags);
+									}
+								}
 								reflectionContext.RecordHandledPattern ();
 							} else {
 								// Otherwise fall back to the bitfield requirements
@@ -1030,6 +1040,7 @@ namespace Mono.Linker.Dataflow
 				// GetMethod (string, BindingFlags)
 				// GetMethod (string, Type[])
 				// GetMethod (string, Type[], ParameterModifier[])
+				// GetMethod (string, BindingFlags, Binder, Type[])
 				// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
 				// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
 				// GetMethod (string, int, Type[])
