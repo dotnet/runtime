@@ -231,7 +231,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
-                                            var paramSymbol = sm.GetDeclaredSymbol(p)!.Type;
+                                            var declSymbol = sm.GetDeclaredSymbol(p);
+                                            var paramSymbol = declSymbol!.Type;
                                             if (paramSymbol is IErrorTypeSymbol)
                                             {
                                                 // semantic problem, just bail quietly

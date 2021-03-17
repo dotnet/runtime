@@ -7,14 +7,6 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
 {
-    public class Foo : IEnumerable
-    {
-        public IEnumerator GetEnumerator()
-        {
-            return null!;
-        }
-    }
-
     internal static partial class EnumerableTestExtensions
     {
         [LoggerMessage(0, LogLevel.Error, "M0")]
@@ -47,6 +39,6 @@ namespace Microsoft.Extensions.Logging.Generators.Test.TestClasses
         public static partial void M8(ILogger logger, int p0, IEnumerable<int> p1, int p2, int p3, int p4, int p5, int p6, int p7);
 
         [LoggerMessage(9, LogLevel.Error, "M9{p0}{p1}{p2}{p3}{p4}{p5}{p6}{p7}{p8}")]
-        public static partial void M9(ILogger logger, int p0, IEnumerable p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8);
+        public static partial void M9(ILogger logger, int p0, IEnumerable<int> p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8);
     }
 }

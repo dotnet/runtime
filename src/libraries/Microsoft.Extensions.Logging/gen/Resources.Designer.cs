@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Logging.Generators {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Multiple logging messages are using event id {0}.
+        ///   Looks up a localized string similar to Multiple logging methods are using event id {0}.
         /// </summary>
         internal static string ErrorEventIdReuseMessage {
             get {
@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Logging.Generators {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Multiple logging messages cannot use the same event id.
+        ///   Looks up a localized string similar to Multiple logging methods cannot use the same event id.
         /// </summary>
         internal static string ErrorEventIdReuseTitle {
             get {

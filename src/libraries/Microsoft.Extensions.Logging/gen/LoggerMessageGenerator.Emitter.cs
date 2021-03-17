@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -13,9 +12,9 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             // The maximum arity of the LogValues-family of types. Beyond this number, parameters are just kepts in an array (which implies an allocation
             // for the array and boxing of all logging method arguments.
-            private const int MaxStateHolderArity = 6;
-            private const int MinStateHolderWithNameArray = 2;
-            private const string StateHolderNamespace = "Microsoft.Extensions.Logging.Internal";
+            private const int MaxLogValuesArity = 6;
+            private const int MinLogValuesWithNameArray = 2;
+            private const string InternalNamespace = "Microsoft.Extensions.Logging.Internal";
 
             private readonly Stack<StringBuilder> _builders = new ();
             private readonly bool _pascalCaseArguments;
@@ -123,15 +122,15 @@ namespace Microsoft.Extensions.Logging.Generators
                     string typeName;
                     if (lm.RegularParameters.Count == 1)
                     {
-                        typeName = $"global::{StateHolderNamespace}.LogValues<{lm.RegularParameters[0].Type}>";
+                        typeName = $"global::{InternalNamespace}.LogValues<{lm.RegularParameters[0].Type}>";
                     }
-                    else if (lm.RegularParameters.Count > MaxStateHolderArity)
+                    else if (lm.RegularParameters.Count > MaxLogValuesArity)
                     {
-                        typeName = $"global::{StateHolderNamespace}.LogValuesN";
+                        typeName = $"global::{InternalNamespace}.LogValuesN";
                     }
                     else
                     {
-                        _ = sb.Append($"global::{StateHolderNamespace}.LogValues<");
+                        _ = sb.Append($"global::{InternalNamespace}.LogValues<");
 
                         foreach (var p in lm.RegularParameters)
                         {
@@ -154,7 +153,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             if (lm.RegularParameters[0].IsEnumerable)
                             {
-                                _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate(_holder.Value);\n");
+                                _ = sb.Append($"                                var {t} = global::{InternalNamespace}.ArgumentFormatter.Enumerate(_holder.Value);\n");
                             }
                             else
                             {
@@ -174,13 +173,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                 index++;
                             }
 
-                            if (index < lm.RegularParameters.Count) // can happen in some cases of malformed input
+                            // check for an index that's too big, this can happen in some cases of malformed input
+                            if (index < lm.RegularParameters.Count)
                             {
-                                if (lm.RegularParameters.Count > MaxStateHolderArity)
+                                if (lm.RegularParameters.Count > MaxLogValuesArity)
                                 {
                                     if (lm.RegularParameters[index].IsEnumerable)
                                     {
-                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder[{index}].Value);\n");
+                                        _ = sb.Append($"                                var {t} = "
+                                            + $"global::{InternalNamespace}.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder[{index}].Value);\n");
                                     }
                                     else
                                     {
@@ -191,7 +192,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                 {
                                     if (lm.RegularParameters[index].IsEnumerable)
                                     {
-                                        _ = sb.Append($"                                var {t} = global::Microsoft.Extensions.Logging.Internal.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder.Value{index + 1});\n");
+                                        _ = sb.Append($"                                var {t} = "
+                                            + $"global::{InternalNamespace}.ArgumentFormatter.Enumerate((global::System.Collections.IEnumerable ?)_holder.Value{index + 1});\n");
                                     }
                                     else
                                     {
@@ -207,7 +209,8 @@ namespace Microsoft.Extensions.Logging.Generators
                             private static readonly global::System.Func<{typeName}, global::System.Exception?, string> _format{lm.Name} = (_holder, _) =>
                             {{
 {sb}
-                                return $""{EscapeMessageString(lm.Message!)}"";
+                                global::System.FormattableString fs = $""{EscapeMessageString(lm.Message!)}"";
+                                return global::System.FormattableString.Invariant(fs);
                             }};
                 ";
                 }
@@ -219,7 +222,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private string GenNameArray(LoggerMethod lm)
             {
-                if (lm.RegularParameters.Count is < MinStateHolderWithNameArray or > MaxStateHolderArity)
+                if (lm.RegularParameters.Count is < MinLogValuesWithNameArray or > MaxLogValuesArity)
                 {
                     return string.Empty;
                 }
@@ -407,21 +410,21 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (lm.RegularParameters.Count == 0)
                 {
-                    return $"new global::{StateHolderNamespace}.LogValues({formatFunc}, \"{originalFormat}\")";
+                    return $"new global::{InternalNamespace}.LogValues({formatFunc}, \"{originalFormat}\")";
                 }
 
                 if (lm.RegularParameters.Count == 1)
                 {
-                    return $"new global::{StateHolderNamespace}.LogValues<{lm.RegularParameters[0].Type}>" +
+                    return $"new global::{InternalNamespace}.LogValues<{lm.RegularParameters[0].Type}>" +
                             $"({formatFunc}, \"{originalFormat}\", \"{NormalizeArgumentName(lm.RegularParameters[0].Name)}\", {lm.RegularParameters[0].Name})";
                 }
 
                 var sb = GetStringBuilder();
                 try
                 {
-                    if (lm.RegularParameters.Count > MaxStateHolderArity)
+                    if (lm.RegularParameters.Count > MaxLogValuesArity)
                     {
-                        _ = sb.Append($"new global::{StateHolderNamespace}.LogValuesN({formatFunc}, \"{originalFormat}\", new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
+                        _ = sb.Append($"new global::{InternalNamespace}.LogValuesN({formatFunc}, \"{originalFormat}\", new global::System.Collections.Generic.KeyValuePair<string, object?>[] {{ ");
                         foreach (var p in lm.RegularParameters)
                         {
                             _ = sb.Append($"new (\"{NormalizeArgumentName(p.Name)}\", {p.Name}), ");
@@ -444,7 +447,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         var tp = sb.ToString();
 
                         _ = sb.Clear();
-                        _ = sb.Append($"new global::{StateHolderNamespace}.LogValues<{tp}>({formatFunc}, \"{originalFormat}\", _names{lm.Name}, ");
+                        _ = sb.Append($"new global::{InternalNamespace}.LogValues<{tp}>({formatFunc}, \"{originalFormat}\", _names{lm.Name}, ");
                         foreach (var p in lm.RegularParameters)
                         {
                             if (p != lm.RegularParameters[0])

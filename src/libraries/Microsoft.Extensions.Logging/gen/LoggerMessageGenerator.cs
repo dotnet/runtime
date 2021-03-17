@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging.Generators
             var pascalCaseArguments = false;
             var fieldName = "_logger";
             var emitDefaultMessage = true;
-            
+
             if (context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("PascalCaseArguments", out var pca))
             {
                 pascalCaseArguments = (pca.ToUpperInvariant() == "TRUE") || (pca.ToUpperInvariant() == "YES");

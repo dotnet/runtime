@@ -68,12 +68,14 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             };
 
             foreach (var src in sources)
-            { 
+            {
                 var testSourceCode = await File.ReadAllTextAsync(src);
 
                 var (d, r) = await RoslynTestUtils.RunGenerator(
                     new LoggerMessageGenerator(),
+#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
                     new[] { Assembly.GetAssembly(typeof(ILogger))!, Assembly.GetAssembly(typeof(LoggerMessageAttribute))! },
+#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
                     new[] { testSourceCode },
                     optionsProvider: new OptionsProvider(response)).ConfigureAwait(false);
 

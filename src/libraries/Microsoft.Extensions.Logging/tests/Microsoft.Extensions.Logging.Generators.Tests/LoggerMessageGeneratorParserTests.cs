@@ -218,8 +218,11 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 namespace Microsoft.Extensions.Logging
                 {
                     public enum LogLevel {}
-                    public class LoggerMessageAttribute {}
                     public interface ILogger {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public class LoggerMessageAttribute {}
                 }
                 partial class C
                 {
@@ -248,8 +251,11 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 namespace Microsoft.Extensions.Logging
                 {
                     public enum LogLevel {}
-                    public class LoggerMessageAttribute {}
                     public interface ILogger {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public class LoggerMessageAttribute {}
                 }
                 partial class C
                 {
@@ -278,8 +284,11 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 namespace Microsoft.Extensions.Logging
                 {
                     public enum LogLevel {}
-                    public class LoggerMessageAttribute {}
                     public interface ILogger {}
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    public class LoggerMessageAttribute {}
                 }
                 partial class C
                 {
@@ -305,10 +314,13 @@ namespace Microsoft.Extensions.Logging.Generators.Test
                 namespace Microsoft.Extensions.Logging
                 {
                     public enum LogLevel {}
-                    public class LoggerMessageAttribute {}
                     public interface ILogger {}
                 }
-                partial class C
+                namespace Microsoft.Extensions.Logging
+                {
+                    public class LoggerMessageAttribute {}
+                }
+R9                partial class C
                 {
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
@@ -380,7 +392,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0005", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorEventIdReuse.Id, d[0].Id);
         }
 
         [Fact]
@@ -397,7 +409,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0006", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorInvalidMethodReturnType.Id, d[0].Id);
         }
 
         [Fact]
@@ -412,7 +424,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0007", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMissingLogger.Id, d[0].Id);
         }
 
         [Fact]
@@ -427,7 +439,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0008", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorNotStaticMethod.Id, d[0].Id);
         }
 
         [Fact]
@@ -442,8 +454,8 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Equal(2, d.Count);
-            Assert.Equal("LG0009", d[0].Id);
-            Assert.Equal("LG0016", d[1].Id);
+            Assert.Equal(DiagDescriptors.ErrorNotPartialMethod.Id, d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMethodHasBody.Id, d[1].Id);
         }
 
         [Fact]
@@ -458,7 +470,7 @@ namespace Microsoft.Extensions.Logging.Generators.Test
             ");
 
             Assert.Single(d);
-            Assert.Equal("LG0010", d[0].Id);
+            Assert.Equal(DiagDescriptors.ErrorMethodIsGeneric.Id, d[0].Id);
         }
 
         [Fact]
