@@ -257,7 +257,6 @@ if %__Ninja% EQU 1 (
     set __CmakeBuildToolArgs=/nologo /m !__Logging!
 )
 
-REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
 "%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
 
 if errorlevel 1 (

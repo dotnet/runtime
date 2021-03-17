@@ -131,7 +131,7 @@
       <!-- ############################################################### -->
 
       <!-- Include everything and then filter. -->
-      <NativeProjectBinariesMatched Include="$(NativeProjectOutputFolder)\*.*" />
+      <NativeProjectBinariesMatched Include="$(NativeProjectOutputFolder)\**\*.*" />
 
       <!-- Filter executables on unix -->
       <NativeProjectBinariesExeFilter Condition="'%(Extension)' == ''" Include="@(NativeProjectBinariesMatched)" />
