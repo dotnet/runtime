@@ -1157,25 +1157,6 @@ leave:
 	return reference;
 }
 
-static MonoImage *
-open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
-{
-	if (!satellite_bundles)
-		return NULL;
-
-	MonoImage *image = NULL;
-	char *name = g_strdup (filename);
-	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, name, NULL);
-			break;
-		}
-	}
-
-	g_free (name);
-	return image;
-}
-
 /**
  * mono_assembly_get_assemblyref_checked:
  * \param image pointer to the \c MonoImage to extract the information from.
@@ -1870,6 +1851,28 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	return image;
 }
 
+static MonoImage *
+open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
+{
+	if (!satellite_bundles)
+		return NULL;
+
+	MonoImage *image = NULL;
+	char *name = g_strdup (filename);
+
+	for (int i = 0; !image && satellite_bundles [i]; ++i) {
+		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+			char *bundle_name = g_strconcat (culture, "/", name, (const char *)NULL);
+			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
+			g_free (bundle_name);
+			break;
+		}
+	}
+
+	g_free (name);
+	return image;
+}
+
 /** 
  * mono_assembly_open_from_bundle:
  * \param filename Filename requested
@@ -1883,7 +1886,7 @@ MonoImage *
 mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
 	/*
-	 * we do a very simple search for bundled assemblies: it's not a general 
+	 * we do a very simple search for bundled assemblies: it's not a general
 	 * purpose assembly loading mechanism.
 	 */
 	MonoImage *image = NULL;

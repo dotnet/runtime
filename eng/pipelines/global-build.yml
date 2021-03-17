@@ -36,7 +36,6 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
-    timeoutInMinutes: 90
     platforms:
     - windows_x86
     - OSX_x64
@@ -44,6 +43,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
+      timeoutInMinutes: 90
 
 #
 # Build with Debug config and Release runtimeConfiguration
@@ -52,13 +52,13 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
-    timeoutInMinutes: 90
     platforms:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Runtime_Release
       buildArgs: -c debug -runtimeConfiguration release
+      timeoutInMinutes: 90
 
 #
 # Build with RuntimeFlavor only. This excercise code paths where only Configuration is
@@ -68,13 +68,13 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
-    timeoutInMinutes: 90
     platforms:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
+      timeoutInMinutes: 90
 
 #
 # Build Mono + Libraries. This excercises the code path where we build libraries without
@@ -84,13 +84,13 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
-    timeoutInMinutes: 90
     platforms:
     - windows_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
       buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+      timeoutInMinutes: 90
 
 #
 # SourceBuild Build
@@ -99,9 +99,9 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
-    timeoutInMinutes: 90
     platforms:
     - Linux_x64
     jobParameters:
       nameSuffix: SourceBuild
       buildArgs: /p:DotNetBuildFromSource=true
+      timeoutInMinutes: 90

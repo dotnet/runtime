@@ -230,14 +230,19 @@ void GenTree::InitNodeSize()
     // Now set all of the appropriate entries to 'large'
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-// clang-format off
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-    // On ARM32, ARM64 and System V for struct returning
-    // there is code that does GT_ASG-tree.CopyObj call.
-    // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-    GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-#endif // defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
+    // clang-format off
+    if (GlobalJitOptions::compFeatureHfa
+#if defined(UNIX_AMD64_ABI)
+        || true
+#endif // defined(UNIX_AMD64_ABI)
+        )
+    {
+        // On ARM32, ARM64 and System V for struct returning
+        // there is code that does GT_ASG-tree.CopyObj call.
+        // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
+        GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
+        GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
+    }
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CAST]             = TREE_NODE_SZ_LARGE;

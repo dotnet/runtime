@@ -920,32 +920,35 @@ namespace System.Tests
 
             // Finally, ensure that GetPinnableReference matches the legacy 'fixed' keyword.
 
-            DynamicMethod dynamicMethod = new DynamicMethod("tester", typeof(bool), new[] { typeof(string) });
-            ILGenerator ilGen = dynamicMethod.GetILGenerator();
-            LocalBuilder pinnedLocal = ilGen.DeclareLocal(typeof(object), pinned: true);
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                DynamicMethod dynamicMethod = new DynamicMethod("tester", typeof(bool), new[] { typeof(string) });
+                ILGenerator ilGen = dynamicMethod.GetILGenerator();
+                LocalBuilder pinnedLocal = ilGen.DeclareLocal(typeof(object), pinned: true);
 
-            ilGen.Emit(OpCodes.Ldarg_0); // load 'input' and pin it
-            ilGen.Emit(OpCodes.Stloc, pinnedLocal);
+                ilGen.Emit(OpCodes.Ldarg_0); // load 'input' and pin it
+                ilGen.Emit(OpCodes.Stloc, pinnedLocal);
 
-            ilGen.Emit(OpCodes.Ldloc, pinnedLocal); // get the address of field 0 from pinned 'input'
-            ilGen.Emit(OpCodes.Conv_I);
+                ilGen.Emit(OpCodes.Ldloc, pinnedLocal); // get the address of field 0 from pinned 'input'
+                ilGen.Emit(OpCodes.Conv_I);
 
-            ilGen.Emit(OpCodes.Call, typeof(RuntimeHelpers).GetProperty("OffsetToStringData").GetMethod); // get pointer to start of string data
-            ilGen.Emit(OpCodes.Add);
+                ilGen.Emit(OpCodes.Call, typeof(RuntimeHelpers).GetProperty("OffsetToStringData").GetMethod); // get pointer to start of string data
+                ilGen.Emit(OpCodes.Add);
 
-            ilGen.Emit(OpCodes.Ldarg_0); // get value of input.GetPinnableReference()
-            ilGen.Emit(OpCodes.Callvirt, typeof(string).GetMethod("GetPinnableReference"));
+                ilGen.Emit(OpCodes.Ldarg_0); // get value of input.GetPinnableReference()
+                ilGen.Emit(OpCodes.Callvirt, typeof(string).GetMethod("GetPinnableReference"));
 
-            // At this point, the top of the evaluation stack is traditional (fixed char* = input) and input.GetPinnableReference().
-            // Compare for equality and return.
+                // At this point, the top of the evaluation stack is traditional (fixed char* = input) and input.GetPinnableReference().
+                // Compare for equality and return.
 
-            ilGen.Emit(OpCodes.Ceq);
-            ilGen.Emit(OpCodes.Ret);
+                ilGen.Emit(OpCodes.Ceq);
+                ilGen.Emit(OpCodes.Ret);
 
-            Assert.True((bool)dynamicMethod.Invoke(null, new[] { input }));
+                Assert.True((bool)dynamicMethod.Invoke(null, new[] { input }));
+            }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static unsafe void GetPinnableReference_WithNullInput_ThrowsNullRef()
         {
             // This test uses an explicit call instead of the normal callvirt that C# would emit.

@@ -205,6 +205,10 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     }
 #endif  // FEATURE_READYTORUN_COMPILER
 
+#ifdef ARM_SOFTFP
+    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
+#endif
+
     return jitFlags;
 }
 

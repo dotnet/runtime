@@ -61,11 +61,25 @@ namespace System.Reflection.Metadata.Tests
                            Assert.Contains(vector.FieldType, new[] { typeof(uint), typeof(ulong) });
                            if (vector.FieldType == typeof(uint))
                            {
-                               return BitConverter.GetBytes((uint)vector.GetValue(null)).Select(t => (uint)t << TokenTypeIds.RowIdBitCount).ToArray();
+                               uint value = (uint)vector.GetValue(null);
+                               uint[] ret = new uint[4];
+                               for (uint i = 0; i < 4; i++)
+                               {
+                                   ret[i] = ((uint)(byte)value) << TokenTypeIds.RowIdBitCount;
+                                   value >>= 8;
+                               }
+                               return ret;
                            }
                            else
                            {
-                               return BitConverter.GetBytes((ulong)vector.GetValue(null)).Select(t => (uint)t << TokenTypeIds.RowIdBitCount).ToArray();
+                               ulong value = (ulong)vector.GetValue(null);
+                               uint[] ret = new uint[8];
+                               for (uint i = 0; i < 8; i++)
+                               {
+                                   ret[i] = ((uint)(byte)value) << TokenTypeIds.RowIdBitCount;
+                                   value >>= 8;
+                               }
+                               return ret;
                            }
                        },
 

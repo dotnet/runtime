@@ -306,6 +306,10 @@ CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 #endif // defined(TARGET_ARM64)
 
+#if defined(CONFIGURABLE_ARM_ABI)
+CONFIG_INTEGER(JitSoftFP, W("JitSoftFP"), 0)
+#endif // defined(CONFIGURABLE_ARM_ABI)
+
 // clang-format on
 
 #ifdef FEATURE_SIMD
