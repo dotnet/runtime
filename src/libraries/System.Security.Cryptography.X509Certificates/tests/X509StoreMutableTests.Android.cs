@@ -5,32 +5,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [PlatformSpecific(TestPlatforms.Android)]
     public static partial class X509StoreMutableTests
     {
         public static bool PermissionsAllowStoreWrite { get; } = true;
-
-        [Fact]
-        public static void AddRemove_Cert()
-        {
-            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-            using (var cert = new X509Certificate2(TestData.MsCertificate))
-            {
-                store.Open(OpenFlags.ReadWrite);
-
-                // Make sure cert is not already in the store
-                store.Remove(cert);
-                Assert.False(IsCertInStore(cert, store), "Certificate should not be found on pre-condition");
-
-                // Add
-                store.Add(cert);
-                Assert.True(IsCertInStore(cert, store), "Certificate should be found after add");
-
-                // Remove
-                store.Remove(cert);
-                Assert.False(IsCertInStore(cert, store), "Certificate should not be found after remove");
-            }
-        }
 
         [Theory]
         [InlineData(nameof(TestData.RsaCertificate), TestData.RsaCertificate, TestData.RsaPkcs8Key)]

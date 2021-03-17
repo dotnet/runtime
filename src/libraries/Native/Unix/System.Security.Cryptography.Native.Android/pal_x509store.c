@@ -256,6 +256,7 @@ static void* HandleFromKeys(JNIEnv* env,
     }
 
     LOG_INFO("Ignoring unknown privake key type");
+    *algorithm = PAL_UnknownAlgorithm;
     return NULL;
 }
 
@@ -299,10 +300,11 @@ EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesC
 
             PAL_KeyAlgorithm keyAlgorithm = PAL_UnknownAlgorithm;
             void* keyHandle = HandleFromKeys(env, loc[publicKey], loc[privateKey], &keyAlgorithm);
-            if (keyHandle != NULL)
-            {
-                cb(AddGRef(env, loc[cert]), keyHandle, keyAlgorithm, context);
-            }
+
+            // Private key entries always have a certificate.
+            // For key algorithms we recognize, the certificate and private key handle are given to the callback.
+            // For key algorithms we do not recognize, only the certificate will be given to the callback.
+            cb(AddGRef(env, loc[cert]), keyHandle, keyAlgorithm, context);
         }
         else if ((*env)->IsInstanceOf(env, loc[entry], g_TrustedCertificateEntryClass))
         {
