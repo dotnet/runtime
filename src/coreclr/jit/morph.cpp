@@ -11642,10 +11642,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
                     FieldSeqNode* curFieldSeq;
 
-                    if (srcClassHnd == dstClassHnd)
+                    if ((srcClassHnd == dstClassHnd) || (dstClassHnd == nullptr))
                     {
                         CORINFO_FIELD_HANDLE fieldHnd =
-                            info.compCompHnd->getFieldInClass(dstClassHnd, srcFieldVarDsc->lvFldOrdinal);
+                            info.compCompHnd->getFieldInClass(srcClassHnd, srcFieldVarDsc->lvFldOrdinal);
                         curFieldSeq = GetFieldSeqStore()->CreateSingleton(fieldHnd);
                     }
                     else
@@ -11734,7 +11734,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
                     FieldSeqNode* curFieldSeq;
 
-                    if (srcClassHnd == dstClassHnd)
+                    if ((srcClassHnd == dstClassHnd) || (srcClassHnd == nullptr))
                     {
                         CORINFO_FIELD_HANDLE fieldHnd =
                             info.compCompHnd->getFieldInClass(dstClassHnd, lvaTable[dstFieldLclNum].lvFldOrdinal);
@@ -11766,7 +11766,14 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                                 srcLclVarTree->gtFlags |= GTF_VAR_CAST;
                                 srcLclVarTree->ChangeOper(GT_LCL_FLD);
                                 srcLclVarTree->gtType = destType;
-                                srcLclVarTree->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+                                if (varTypeIsStruct(srcLclVar) && curFieldSeq->CheckFldBelongsToCls(this, srcLclVar->GetStructHnd()))
+                                {
+                                    srcLclVarTree->AsLclFld()->SetFieldSeq(curFieldSeq);
+                                }
+                                else
+                                {
+                                    srcLclVarTree->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+                                }
                                 srcFld = srcLclVarTree;
                                 done   = true;
                             }
