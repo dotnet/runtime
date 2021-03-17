@@ -2674,6 +2674,12 @@
         <!-- End interpreter issues -->
     </ItemGroup>
 
+    <!-- MacOS specific Mono -->
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX' and '$(RuntimeFlavor)' == 'mono'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/regressions/**">
+            <Issue>https://github.com/dotnet/runtime/issues/49773</Issue>
+        </ExcludeList>
+    </ItemGroup>
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ThrowHelper/NonVoidThrowHelper/**">
