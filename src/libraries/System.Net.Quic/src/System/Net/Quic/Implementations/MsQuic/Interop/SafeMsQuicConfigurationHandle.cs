@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return true;
         }
 
-        // Mana: Move the code from here. Inconsistency with other handles.
+        // TODO: consider moving the static code from here to keep all the handle classes small and simple.
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             // TODO: lots of ClientAuthenticationOptions are not yet supported by MsQuic.
@@ -39,6 +39,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return Create(options, QUIC_CREDENTIAL_FLAGS.NONE, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ApplicationProtocols);
         }
 
+        // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.
+        //       Consider moving bigger logic like this outside of constructor call chains.
         private static unsafe SafeMsQuicConfigurationHandle Create(QuicOptions options, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, List<SslApplicationProtocol>? alpnProtocols)
         {
             // TODO: some of these checks should be done by the QuicOptions type.

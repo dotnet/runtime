@@ -162,6 +162,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             state.Connection = null;
 
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
+
+            // Stop accepting new streams.
+            state.AcceptQueue.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
 

@@ -110,9 +110,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             StopAcceptingConnections();
-            _state.Handle.Dispose();
+            _state?.Handle?.Dispose();
             if (_stateHandle.IsAllocated) _stateHandle.Free();
-            _state.ConnectionConfiguration.Dispose();
+            _state?.ConnectionConfiguration?.Dispose();
             _disposed = true;
         }
 
@@ -150,7 +150,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void StopAcceptingConnections()
         {
-            _state.AcceptConnectionQueue.Writer.TryComplete();
+            // TODO finalizers are called even if the object construction fails.
+            if (_state != null)
+            {
+                _state.AcceptConnectionQueue.Writer.TryComplete();
+            }
         }
 
         private static unsafe uint NativeCallbackHandler(

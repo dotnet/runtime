@@ -343,7 +343,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataConnected
         {
-            internal bool SessionResumed;
+            internal byte SessionResumed;
             internal byte NegotiatedAlpnLength;
             // byte[]
             internal IntPtr NegotiatedAlpn;
@@ -479,7 +479,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             SafeMsQuicConnectionHandle connection,
             QUIC_CONNECTION_SHUTDOWN_FLAGS flags,
             long errorCode);
-        // Mana: missing SendResumptionTicket
+
+        // TODO: missing SendResumptionTicket
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataReceive
@@ -494,7 +495,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataSendComplete
         {
-            internal bool Canceled;
+            internal byte Canceled;
             internal IntPtr ClientContext;
         }
 
@@ -513,7 +514,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataSendShutdownComplete
         {
-            internal bool Graceful;
+            internal byte Graceful;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -603,7 +604,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        // Mana: why charset? rename to something C#-like, including fields.
+        // Mana: rename to C#-like
         [StructLayout(LayoutKind.Explicit)]
         internal struct SOCKADDR_INET
         {
@@ -660,7 +661,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint StreamReceiveSetEnabledDelegate(
             SafeMsQuicStreamHandle stream,
-            // Mana: do I need this? Should I add it over all booleans?
             [MarshalAs(UnmanagedType.U1)]
             bool enabled);
 
@@ -671,6 +671,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal byte* Buffer;
         }
 
-        // Mana: DatagramSend missing
+        // TODO: DatagramSend missing
     }
 }

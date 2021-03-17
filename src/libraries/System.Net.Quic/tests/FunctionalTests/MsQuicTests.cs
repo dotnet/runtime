@@ -49,14 +49,14 @@ namespace System.Net.Quic.Tests
             ValueTask clientTask = clientConnection.ConnectAsync();
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
-            Assert.Equal(20, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
-            Assert.Equal(10, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
-            Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(100, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(100, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
+            Assert.Equal(10, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
+            Assert.Equal(20, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
         }
 
         [Fact]
-        [OuterLoop("May take serveral seconds")]
+        [OuterLoop("May take several seconds")]
         public async Task SetListenerTimeoutWorksWithSmallTimeout()
         {
             var quicOptions = new QuicListenerOptions();

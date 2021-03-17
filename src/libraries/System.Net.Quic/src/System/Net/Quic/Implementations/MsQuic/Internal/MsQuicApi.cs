@@ -170,7 +170,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal MsQuicNativeMethods.ListenerStartDelegate ListenerStartDelegate { get; }
         internal MsQuicNativeMethods.ListenerStopDelegate ListenerStopDelegate { get; }
 
-        // Mana: missing SendResumptionTicket
+        // TODO: missing SendResumptionTicket
         internal MsQuicNativeMethods.ConnectionOpenDelegate ConnectionOpenDelegate { get; }
         internal MsQuicNativeMethods.ConnectionCloseDelegate ConnectionCloseDelegate { get; }
         internal MsQuicNativeMethods.ConnectionShutdownDelegate ConnectionShutdownDelegate { get; }
