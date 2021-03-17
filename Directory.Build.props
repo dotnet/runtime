@@ -123,9 +123,9 @@
     <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iOSSimulator</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iossimulator</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'tvos'">tvos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvOSSimulator'">tvOSSimulator</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'tvOSSimulator'">tvossimulator</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'android'">android</_portableOS>
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
