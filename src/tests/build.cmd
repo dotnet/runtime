@@ -331,6 +331,12 @@ echo %__MsgPrefix%Building tests divided into %__NumberOfTestGroups% test groups
 
 set __CommonMSBuildCmdPrefix=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "!__RepoRootDir!\eng\common\msbuild.ps1" !__ArcadeScriptArgs!
 
+set __NativeBinariesLayoutTypeArg=
+
+if %__Ninja% EQ 0 (
+    set __NativeBinariesLayoutTypeArg=/p:UseVisualStudioNativeBinariesLayout=true
+)
+
 for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
@@ -352,6 +358,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__SkipFXRestoreArg!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__NativeBinariesLayoutTypeArg!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -366,7 +373,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__RepoRootDir!\src\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__NativeBinariesLayoutTypeArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
