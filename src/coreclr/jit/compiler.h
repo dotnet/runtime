@@ -139,7 +139,6 @@ const int BAD_STK_OFFS = 0xBAADF00D; // for LclVarDsc::lvStkOffs
 //------------------------------------------------------------------------
 // HFA info shared by LclVarDsc and fgArgTabEntry
 //------------------------------------------------------------------------
-#ifdef FEATURE_HFA
 inline bool IsHfa(CorInfoHFAElemType kind)
 {
     return kind != CORINFO_HFA_ELEM_NONE;
@@ -186,7 +185,6 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_NONE;
     }
 }
-#endif // FEATURE_HFA
 
 // The following holds the Local var info (scope information)
 typedef const char* VarName; // Actual ASCII string
@@ -489,9 +487,9 @@ public:
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
 
-#ifdef FEATURE_HFA
+#ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _lvHfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
-#endif                                     // FEATURE_HFA
+#endif                                     // FEATURE_HFA_FIELDS_PRESENT
 
 #ifdef DEBUG
     // TODO-Cleanup: See the note on lvSize() - this flag is only in use by asserts that are checking for struct
@@ -561,22 +559,47 @@ public:
     }
 #endif // FEATURE_MULTIREG_ARGS
 
+    CorInfoHFAElemType GetLvHfaElemKind() const
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        return _lvHfaElemKind;
+#else
+        NOWAY_MSG("GetLvHfaElemKind");
+        return CORINFO_HFA_ELEM_NONE;
+#endif // FEATURE_HFA_FIELDS_PRESENT
+    }
+
+    void SetLvHfaElemKind(CorInfoHFAElemType elemKind)
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        _lvHfaElemKind = elemKind;
+#else
+        NOWAY_MSG("SetLvHfaElemKind");
+#endif // FEATURE_HFA_FIELDS_PRESENT
+    }
+
     bool lvIsHfa() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_lvHfaElemKind);
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetLvHfaElemKind());
+        }
+        else
+        {
+            return false;
+        }
     }
 
     bool lvIsHfaRegArg() const
     {
-#ifdef FEATURE_HFA
-        return lvIsRegArg && lvIsHfa();
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return lvIsRegArg && lvIsHfa();
+        }
+        else
+        {
+            return false;
+        }
     }
 
     //------------------------------------------------------------------------------
@@ -595,7 +618,7 @@ public:
         slots = lvExactSize / sizeof(float);
         assert(slots <= 8);
 #elif defined(TARGET_ARM64)
-        switch (_lvHfaElemKind)
+        switch (GetLvHfaElemKind())
         {
             case CORINFO_HFA_ELEM_NONE:
                 assert(!"lvHfaSlots called for non-HFA");
@@ -921,22 +944,26 @@ public:
 
     var_types GetHfaType() const
     {
-#ifdef FEATURE_HFA
-        assert(lvIsHfa());
-        return HfaTypeFromElemKind(_lvHfaElemKind);
-#else
-        return TYP_UNDEF;
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            assert(lvIsHfa());
+            return HfaTypeFromElemKind(GetLvHfaElemKind());
+        }
+        else
+        {
+            return TYP_UNDEF;
+        }
     }
 
     void SetHfaType(var_types type)
     {
-#ifdef FEATURE_HFA
-        CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-        _lvHfaElemKind              = elemKind;
-        // Ensure we've allocated enough bits.
-        assert(_lvHfaElemKind == elemKind);
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+            SetLvHfaElemKind(elemKind);
+            // Ensure we've allocated enough bits.
+            assert(GetLvHfaElemKind() == elemKind);
+        }
     }
 
     var_types lvaArgType();
@@ -1481,9 +1508,27 @@ public:
 #ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
-#ifdef FEATURE_HFA
+#ifdef FEATURE_HFA_FIELDS_PRESENT
     CorInfoHFAElemType _hfaElemKind : 3; // What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).
 #endif
+    CorInfoHFAElemType GetHfaElemKind() const
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        return _hfaElemKind;
+#else
+        NOWAY_MSG("GetHfaElemKind");
+        return CORINFO_HFA_ELEM_NONE;
+#endif
+    }
+
+    void SetHfaElemKind(CorInfoHFAElemType elemKind)
+    {
+#ifdef FEATURE_HFA_FIELDS_PRESENT
+        _hfaElemKind = elemKind;
+#else
+        NOWAY_MSG("SetHfaElemKind");
+#endif
+    }
 
     bool isLateArg() const
     {
@@ -1557,20 +1602,26 @@ public:
 
     bool IsHfaArg() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_hfaElemKind);
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetHfaElemKind());
+        }
+        else
+        {
+            return false;
+        }
     }
 
     bool IsHfaRegArg() const
     {
-#ifdef FEATURE_HFA
-        return IsHfa(_hfaElemKind) && isPassedInRegisters();
-#else
-        return false;
-#endif
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return IsHfa(GetHfaElemKind()) && isPassedInRegisters();
+        }
+        else
+        {
+            return false;
+        }
     }
 
     unsigned intRegCount() const
@@ -1626,57 +1677,61 @@ public:
 
     var_types GetHfaType() const
     {
-#ifdef FEATURE_HFA
-        return HfaTypeFromElemKind(_hfaElemKind);
-#else
-        return TYP_UNDEF;
-#endif // FEATURE_HFA
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            return HfaTypeFromElemKind(GetHfaElemKind());
+        }
+        else
+        {
+            return TYP_UNDEF;
+        }
     }
 
     void SetHfaType(var_types type, unsigned hfaSlots)
     {
-#ifdef FEATURE_HFA
-        if (type != TYP_UNDEF)
+        if (GlobalJitOptions::compFeatureHfa)
         {
-            // We must already have set the passing mode.
-            assert(numRegs != 0 || GetStackByteSize() != 0);
-            // We originally set numRegs according to the size of the struct, but if the size of the
-            // hfaType is not the same as the pointer size, we need to correct it.
-            // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
-            // the number of "double registers".
-            unsigned numHfaRegs = hfaSlots;
-#ifdef TARGET_ARM
-            if (type == TYP_DOUBLE)
+            if (type != TYP_UNDEF)
             {
-                // Must be an even number of registers.
-                assert((numRegs & 1) == 0);
-                numHfaRegs = hfaSlots / 2;
-            }
+                // We must already have set the passing mode.
+                assert(numRegs != 0 || GetStackByteSize() != 0);
+                // We originally set numRegs according to the size of the struct, but if the size of the
+                // hfaType is not the same as the pointer size, we need to correct it.
+                // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
+                // the number of "double registers".
+                unsigned numHfaRegs = hfaSlots;
+#ifdef TARGET_ARM
+                if (type == TYP_DOUBLE)
+                {
+                    // Must be an even number of registers.
+                    assert((numRegs & 1) == 0);
+                    numHfaRegs = hfaSlots / 2;
+                }
 #endif // TARGET_ARM
 
-            if (!IsHfaArg())
-            {
-                // We haven't previously set this; do so now.
-                CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
-                _hfaElemKind                = elemKind;
-                // Ensure we've allocated enough bits.
-                assert(_hfaElemKind == elemKind);
-                if (isPassedInRegisters())
+                if (!IsHfaArg())
                 {
-                    numRegs = numHfaRegs;
+                    // We haven't previously set this; do so now.
+                    CorInfoHFAElemType elemKind = HfaElemKindFromType(type);
+                    SetHfaElemKind(elemKind);
+                    // Ensure we've allocated enough bits.
+                    assert(GetHfaElemKind() == elemKind);
+                    if (isPassedInRegisters())
+                    {
+                        numRegs = numHfaRegs;
+                    }
                 }
-            }
-            else
-            {
-                // We've already set this; ensure that it's consistent.
-                if (isPassedInRegisters())
+                else
                 {
-                    assert(numRegs == numHfaRegs);
+                    // We've already set this; ensure that it's consistent.
+                    if (isPassedInRegisters())
+                    {
+                        assert(numRegs == numHfaRegs);
+                    }
+                    assert(type == HfaTypeFromElemKind(GetHfaElemKind()));
                 }
-                assert(type == HfaTypeFromElemKind(_hfaElemKind));
             }
         }
-#endif // FEATURE_HFA
     }
 
 #ifdef TARGET_ARM
@@ -1749,33 +1804,34 @@ public:
     unsigned getSize() const
     {
         unsigned size = getSlotCount();
-#ifdef FEATURE_HFA
-        if (IsHfaRegArg())
+        if (GlobalJitOptions::compFeatureHfa)
         {
+            if (IsHfaRegArg())
+            {
 #ifdef TARGET_ARM
-            // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
-            if (GetHfaType() == TYP_DOUBLE)
-            {
-                assert(!IsSplit());
-                size <<= 1;
-            }
+                // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
+                if (GetHfaType() == TYP_DOUBLE)
+                {
+                    assert(!IsSplit());
+                    size <<= 1;
+                }
 #elif defined(TARGET_ARM64)
-            // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size,
-            // or if they are SIMD16 vector hfa regs we have to double the size.
-            if (GetHfaType() == TYP_FLOAT)
-            {
-                // Round up in case of odd HFA count.
-                size = (size + 1) >> 1;
-            }
+                // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size,
+                // or if they are SIMD16 vector hfa regs we have to double the size.
+                if (GetHfaType() == TYP_FLOAT)
+                {
+                    // Round up in case of odd HFA count.
+                    size = (size + 1) >> 1;
+                }
 #ifdef FEATURE_SIMD
-            else if (GetHfaType() == TYP_SIMD16)
-            {
-                size <<= 1;
-            }
+                else if (GetHfaType() == TYP_SIMD16)
+                {
+                    size <<= 1;
+                }
 #endif // FEATURE_SIMD
 #endif // TARGET_ARM64
+            }
         }
-#endif // FEATURE_HFA
         return size;
     }
 
@@ -2272,10 +2328,6 @@ public:
 #endif // FEATURE_MULTIREG_RET
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
-
-#ifdef ARM_SOFTFP
-    bool isSingleFloat32Struct(CORINFO_CLASS_HANDLE hClass);
-#endif // ARM_SOFTFP
 
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
@@ -9169,11 +9221,15 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
+#ifdef CONFIGURABLE_ARM_ABI
+        bool compUseSoftFP = false;
+#else
 #ifdef ARM_SOFTFP
         static const bool compUseSoftFP = true;
-#else // !ARM_SOFTFP
+#else  // !ARM_SOFTFP
         static const bool compUseSoftFP = false;
-#endif
+#endif // ARM_SOFTFP
+#endif // CONFIGURABLE_ARM_ABI
     } opts;
 
     static bool                s_pAltJitExcludeAssembliesListInitialized;
@@ -9267,6 +9323,8 @@ public:
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
+        STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
+        STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9312,6 +9370,8 @@ public:
     {
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
     }
+
+    bool compPromoteFewerStructs(unsigned lclNum);
 
 #endif // DEBUG
 

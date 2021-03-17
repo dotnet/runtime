@@ -13,7 +13,15 @@ namespace System.SpanTests
         [Fact]
         public static void CastSpanUIntToUShort()
         {
-            uint[] a = { 0x44332211, 0x88776655 };
+            uint[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new uint[] { 0x44332211, 0x88776655 };
+            }
+            else
+            {
+                a = new uint[] { 0x22114433, 0x66558877 };
+            }
             Span<uint> span = new Span<uint>(a);
             Span<ushort> asUShort = MemoryMarshal.Cast<uint, ushort>(span);
 
@@ -35,7 +43,15 @@ namespace System.SpanTests
         [Fact]
         public static void CastSpanShortToLong()
         {
-            short[] a = { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            short[] a;
+            if (BitConverter.IsLittleEndian)
+            {
+                a = new short[] { 0x1234, 0x2345, 0x3456, 0x4567, 0x5678 };
+            }
+            else
+            {
+                a = new short[] { 0x4567, 0x3456, 0x2345, 0x1234, 0x5678 };
+            }
             Span<short> span = new Span<short>(a);
             Span<long> asLong = MemoryMarshal.Cast<short, long>(span);
 

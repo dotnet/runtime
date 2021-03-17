@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,7 +39,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo genMethod = type.GetMethod("Get");
             byte[] il = genMethod.GetMethodBody().GetILAsByteArray();
 
-            int ilMethodMetadataToken = BitConverter.ToInt32(il, 1);
+            int ilMethodMetadataToken = BinaryPrimitives.ReadInt32LittleEndian(new Span<byte>(il, 1, 4));
             MethodBase resolvedMethod = type.Module.ResolveMethod(ilMethodMetadataToken);
             Assert.Equal(method, resolvedMethod);
             var methodBase = (MethodBase)genMethod.Invoke(null, null);

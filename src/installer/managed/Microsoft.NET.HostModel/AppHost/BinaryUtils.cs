@@ -174,15 +174,16 @@ namespace Microsoft.NET.HostModel.AppHost
             File.Copy(sourcePath, destinationPath, overwrite: true);
         }
 
-        internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream)
+        internal static void WriteToStream(MemoryMappedViewAccessor sourceViewAccessor, FileStream fileStream, long length)
         {
             int pos = 0;
             int bufSize = 16384; //16K
 
             byte[] buf = new byte[bufSize];
+            length = Math.Min(length, sourceViewAccessor.Capacity);
             do
             {
-                int bytesRequested = Math.Min((int)sourceViewAccessor.Capacity - pos, bufSize);
+                int bytesRequested = Math.Min((int)length - pos, bufSize);
                 if (bytesRequested <= 0)
                 {
                     break;
