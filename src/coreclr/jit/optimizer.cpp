@@ -7914,7 +7914,6 @@ void Compiler::optOptimizeBoolsBbjCond(BasicBlock* b1, BasicBlock* b2, bool* cha
         printf("\n");
     }
 #endif
-
 }
 
 /*
@@ -7963,7 +7962,7 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
 
     GenTree* t2 = s2->GetRootNode();
     GenTree* t3 = s3->GetRootNode();
-    if(t2->gtOper != GT_RETURN || t3->gtOper!= GT_RETURN)
+    if (t2->gtOper != GT_RETURN || t3->gtOper != GT_RETURN)
     {
         return;
     }
@@ -8145,7 +8144,7 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
     b1->bbJumpKind = b2->bbJumpKind;
     b1->bbJumpSwt  = b2->bbJumpSwt;
 
-    //fgAddRefPred(b2->bbJumpDest, b1);
+    // fgAddRefPred(b2->bbJumpDest, b1);
 
     /* Get rid of the second & third block (which is a BBJ_RETURN) */
 
@@ -8176,14 +8175,13 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n", c2->OperIsLeaf() ? "" : "non-leaf ",
-               b1->bbNum, b2->bbNum, b3->bbNum);
+        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n",
+               c2->OperIsLeaf() ? "" : "non-leaf ", b1->bbNum, b2->bbNum, b3->bbNum);
         gtDispStmt(s1);
         printf("\n");
     }
 #endif
 }
-
 
 /******************************************************************************
  *
