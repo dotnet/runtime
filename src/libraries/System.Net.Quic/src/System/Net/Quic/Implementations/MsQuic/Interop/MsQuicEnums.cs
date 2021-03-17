@@ -36,6 +36,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         USE_TLS_BUILTIN_CERTIFICATE_VALIDATION = 0x00000080,
     }
 
+    internal enum QUIC_CERTIFICATE_HASH_STORE_FLAGS
+    {
+        QUIC_CERTIFICATE_HASH_STORE_FLAG_NONE = 0x0000,
+        QUIC_CERTIFICATE_HASH_STORE_FLAG_MACHINE_STORE = 0x0001,
+    }
+
     [Flags]
     internal enum QUIC_CONNECTION_SHUTDOWN_FLAGS : uint
     {

@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _stateHandle;
         private bool _disposed;
 
-        private IPEndPoint? _localEndPoint;
+        private readonly IPEndPoint? _localEndPoint;
         private readonly EndPoint _remoteEndPoint;
         private SslApplicationProtocol _negotiatedAlpnProtocol;
 
@@ -106,8 +106,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override IPEndPoint LocalEndPoint =>
-            new IPEndPoint(_localEndPoint!.Address, _localEndPoint!.Port);
+        internal override IPEndPoint? LocalEndPoint => _localEndPoint ?? _state.LocalEndPoint;
 
         internal override EndPoint RemoteEndPoint => _remoteEndPoint;
 

@@ -200,13 +200,73 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal QUIC_CREDENTIAL_TYPE Type;
             internal QUIC_CREDENTIAL_FLAGS Flags;
-            // Mana: define struct for the union in C
             internal IntPtr Certificate;
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string Principal;
             internal IntPtr Reserved; // Currently unused
             // Mana: define delegate for the async callback
             internal IntPtr AsyncHandler;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        internal struct CredentialConfigCertificateUnion
+        {
+            [FieldOffset(0)]
+            internal CredentialConfigCertificateCertificateHash CertificateHash;
+
+            [FieldOffset(0)]
+            internal CredentialConfigCertificateCertificateHashStore CertificateHashStore;
+
+            [FieldOffset(0)]
+            internal IntPtr CertificateContext;
+
+            [FieldOffset(0)]
+            internal CredentialConfigCertificateCertificateFile CertificateFile;
+
+            [FieldOffset(0)]
+            internal CredentialConfigCertificateCertificateFileProtected CertificateFileProtected;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CredentialConfigCertificateCertificateHash
+        {
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
+            internal byte[] ShaHash;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct CredentialConfigCertificateCertificateHashStore
+        {
+            internal QUIC_CERTIFICATE_HASH_STORE_FLAGS Flags;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
+            internal byte[] ShaHash;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            internal char[] StoreName;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CredentialConfigCertificateCertificateFile
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal string PrivateKeyFile;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal string CertificateFile;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CredentialConfigCertificateCertificateFileProtected
+        {
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal string PrivateKeyFile;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal string CertificateFile;
+
+            [MarshalAs(UnmanagedType.LPUTF8Str)]
+            internal string PrivateKeyPassword;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -226,8 +286,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ListenerEventDataNewConnection
         {
-            // Mana: struct QUIC_NEW_CONNECTION_INFO / NewConnectionInfo
-            internal IntPtr Info;
+            internal NewConnectionInfo* Info;
             internal IntPtr Connection;
         }
 
@@ -545,7 +604,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         // Mana: why charset? rename to something C#-like, including fields.
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Explicit)]
         internal struct SOCKADDR_INET
         {
             [FieldOffset(0)]

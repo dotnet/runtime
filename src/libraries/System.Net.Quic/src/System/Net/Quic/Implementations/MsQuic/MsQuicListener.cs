@@ -168,7 +168,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
-                ref NewConnectionInfo connectionInfo = ref *(NewConnectionInfo*)evt.Data.NewConnection.Info;
+                ref NewConnectionInfo connectionInfo = ref *evt.Data.NewConnection.Info;
 
                 IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.LocalAddress);
                 IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref *(SOCKADDR_INET*)connectionInfo.RemoteAddress);

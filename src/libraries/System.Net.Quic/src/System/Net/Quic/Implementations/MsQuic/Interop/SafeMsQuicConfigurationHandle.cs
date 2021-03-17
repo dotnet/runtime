@@ -110,12 +110,14 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     // If using stub TLS.
                     config.Type = QUIC_CREDENTIAL_TYPE.STUB_NULL;
 #else
+					// TODO: doesn't work on non-Windows
                     config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
                     config.Certificate = certificate.Handle;
 #endif
                 }
                 else
                 {
+                    // TODO: not allowed for OpenSSL and server
                     config.Type = QUIC_CREDENTIAL_TYPE.NONE;
                 }
 

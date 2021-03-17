@@ -18,7 +18,6 @@ namespace System.Net.Quic.Tests
         {
             using QuicListener listener = CreateQuicListener();
 
-            listener.Start();
             IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
             using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);

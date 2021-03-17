@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
 {
+    // TODO: why do we hawe 2 base clase with some duplicated methods?
     public class MsQuicTestBase
     {
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
@@ -15,6 +16,7 @@ namespace System.Net.Quic.Tests
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
                 // TODO: use a cert. MsQuic currently only allows certs that are trusted.
+                //ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
             };
         }
 
