@@ -99,8 +99,9 @@ namespace System.Xml.Serialization
         private readonly ModelScope _scope;
 
         protected TypeModel(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-            Type type, TypeDesc typeDesc, ModelScope scope)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            TypeDesc typeDesc,
+            ModelScope scope)
         {
             _scope = scope;
             _type = type;

@@ -1394,12 +1394,8 @@ namespace System.Xml.Serialization
             return indexer;
         }
         private static Type GetCollectionElementType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors
-                | DynamicallyAccessedMemberTypes.PublicMethods
-                | DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.PublicNestedTypes
-                | DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.PublicEvents)] Type type, string? memberInfo)
+            [DynamicallyAccessedMembers(TrimmerConstants.PublicMembers)] Type type,
+            string? memberInfo)
         {
             return GetDefaultIndexer(type, memberInfo).PropertyType;
         }

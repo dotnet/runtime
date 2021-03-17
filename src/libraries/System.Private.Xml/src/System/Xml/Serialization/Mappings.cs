@@ -1173,11 +1173,10 @@ namespace System.Xml.Serialization
             set { _next = value; }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         internal Type? Type
         {
-            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             get { return _type; }
-            [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             set { _type = value; }
         }
 

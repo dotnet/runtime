@@ -8,6 +8,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Xml.Serialization.Configuration;
     using System.Collections.Specialized;
@@ -15,7 +16,6 @@ namespace System.Xml.Serialization
 
 #if DEBUG
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
 #endif
 
     public class XmlSchemaImporter : SchemaImporter

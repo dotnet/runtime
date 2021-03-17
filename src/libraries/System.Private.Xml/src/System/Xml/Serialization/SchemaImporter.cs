@@ -7,13 +7,13 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System.Collections;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Configuration;
     using System.Xml.Serialization.Configuration;
 
 #if DEBUG
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
 #endif
 
     public abstract class SchemaImporter
