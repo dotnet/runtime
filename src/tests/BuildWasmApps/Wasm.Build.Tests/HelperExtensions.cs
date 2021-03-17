@@ -6,12 +6,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
+#nullable enable
+
 namespace Wasm.Build.Tests
 {
     public static class HelperExtensions
     {
         public static IEnumerable<object?[]> UnwrapItemsAsArrays(this IEnumerable<IEnumerable<object?>> enumerable)
             => enumerable.Select(e => e.ToArray());
+
+        public static IEnumerable<object?[]> Dump(this IEnumerable<object?[]> enumerable)
+        {
+            foreach (var row in enumerable)
+            {
+                Console.WriteLine ("{");
+                foreach (var param in row)
+                    Console.WriteLine ($"\t{param}");
+                Console.WriteLine ("}");
+            }
+            return enumerable;
+        }
 
         /// <summary>
         /// Cartesian product
@@ -36,16 +50,23 @@ namespace Wasm.Build.Tests
         ///
         /// </summary>
         /// <param name="data"></param>
-        /// <param name="options"></param>
+        /// <param name="rowsWithColumnArrays"></param>
         /// <returns></returns>
-        public static IEnumerable<IEnumerable<object?>> Multiply(this IEnumerable<IEnumerable<object?>> data, object?[] options)
-            => data?.SelectMany(d => options.Select(o => d.Append(o)));
+        public static IEnumerable<IEnumerable<object?>> Multiply(this IEnumerable<IEnumerable<object?>> data, params object?[][] rowsWithColumnArrays)
+            => data.SelectMany(row =>
+                        rowsWithColumnArrays.Select(new_cols => row.Concat(new_cols)));
 
         public static object?[] Enumerate(this RunHost host)
         {
+            if (host == RunHost.None)
+                return Array.Empty<object?>();
+
             var list = new List<object?>();
             foreach (var value in Enum.GetValues<RunHost>())
             {
+                if (value == RunHost.None)
+                    continue;
+
                 // Ignore any combos like RunHost.All from Enum.GetValues
                 // by ignoring any @value that has more than 1 bit set
                 if (((int)value & ((int)value - 1)) != 0)
@@ -60,7 +81,10 @@ namespace Wasm.Build.Tests
         public static IEnumerable<IEnumerable<object?>> WithRunHosts(this IEnumerable<IEnumerable<object?>> data, RunHost hosts)
         {
             IEnumerable<object?> hostsEnumerable = hosts.Enumerate();
-            return data?.SelectMany(d =>
+            if (hosts == RunHost.None)
+                return data.Select(d => d.Append((object?) Path.GetRandomFileName()));
+
+            return data.SelectMany(d =>
             {
                 string runId = Path.GetRandomFileName();
                 return hostsEnumerable.Select(o =>

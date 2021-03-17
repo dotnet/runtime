@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
@@ -62,26 +61,58 @@ namespace Wasm.Build.Tests
                 }", buildArgs, host, id);
 
         [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void Bug49588_RegressionTest(BuildArgs buildArgs, RunHost host, string id)
-            => TestMain("bug49588", @"
-                using Sytem;
-                public class TestClass {
-                    public static int Main()
-                    {
-                        Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
-                        return 42;
-                    }
-                }", buildArgs, host, id);
+        [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
+                        { "", "error : Cannot find emscripten sdk, required for AOT'ing assemblies. $(EMSDK_PATH)=" })]
+        [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
+                        { "/non-existant/foo", "error : Cannot find emscripten sdk, required for AOT'ing assemblies. $(EMSDK_PATH)=/non-existant/foo" })]
+        public void AOT_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorMessage, string id)
+        {
+            string projectName = $"missing_emsdk";
+            buildArgs = buildArgs with {
+                            ProjectName = projectName,
+                            ExtraBuildArgs = $"/p:EMSDK_PATH={emsdkPath}"
+            };
+            buildArgs = GetBuildArgsWith(buildArgs);
 
-        void TestMain(string projectName, string programText, BuildArgs buildArgs, RunHost host, string id)
+            (_, string buildOutput) = BuildProject(buildArgs,
+                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                        id: id,
+                        expectSuccess: false);
+
+            Assert.Contains(errorMessage, buildOutput);
+        }
+
+        private static string s_bug49588_ProgramCS = @"
+            using System;
+            public class TestClass {
+                public static int Main()
+                {
+                    Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
+                    return 42;
+                }
+            }";
+
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        public void Bug49588_RegressionTest_AOT(BuildArgs buildArgs, RunHost host, string id)
+            => TestMain("bug49588_aot", s_bug49588_ProgramCS, buildArgs, host, id);
+
+        [Theory]
+        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        public void Bug49588_RegressionTest_NativeRelinking(BuildArgs buildArgs, RunHost host, string id)
+            => TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, buildArgs, host, id,
+                        extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
+                        dotnetWasmFromRuntimePack: false);
+
+        void TestMain(string projectName, string programText, BuildArgs buildArgs, RunHost host, string id, string? extraProperties=null, bool? dotnetWasmFromRuntimePack=true)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs);
+            buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id);
+                        id: id,
+                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("Hello, World!", output), host: host, id: id);

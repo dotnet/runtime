@@ -77,8 +77,8 @@
 
   <Target Name="_WasmAotCompileApp" Condition="'$(RunAOTCompilation)' == 'true'">
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
-    <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
-    <Error Condition="!Exists($(EMSDK_PATH))" Text="Cannot find EMSDK_PATH=$(EMSDK_PATH)" />
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)')"
+           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -199,6 +199,11 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="@(WasmAssembliesToBundle->Count()) == 0" Text="WasmAssembliesToBundle item is empty. No assemblies to process" />
 
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
+           Text="Cannot find emscripten sdk, required for AOT'ing assemblies. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+    <Error Condition="'$(WasmBuildNative)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
+           Text="Cannot find emscripten sdk, required for native relinking. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
+
     <PropertyGroup>
       <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
@@ -265,7 +270,8 @@
   </Target>
 
   <Target Name="_WasmBuildNative" DependsOnTargets="_WasmAotCompileApp;_WasmStripAOTAssemblies;_GenerateDriverGenC;_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
-    <Error Condition="'$(EMSDK_PATH)' == ''" Text="%24(EMSDK_PATH) should be set to emscripten sdk" />
+    <Error Condition="'$(WasmBuildNative)' == 'true' and ('$(EMSDK_PATH)' == '' or !Exists('$(EMSDK_PATH)'))"
+           Text="Cannot find emscripten sdk, required for native relinking. %24(EMSDK_PATH)=$(EMSDK_PATH)" />
 
     <PropertyGroup>
       <EmccFlagsFile>$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-flags.txt'))</EmccFlagsFile>
@@ -406,7 +412,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
     <Exec Command="chmod a+x $(WasmRunV8ScriptPath)" />
   </Target>
 
-  <Target Name="_CheckEmccIsExpectedVersion">
+  <Target Name="_CheckEmccIsExpectedVersion" Condition="'$(WasmBuildNative)' == 'true'">
     <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
         <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
     </ReadLinesFromFile>

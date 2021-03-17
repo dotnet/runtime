@@ -16,15 +16,12 @@ namespace Wasm.Build.Tests
         public MainWithArgsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
-            _buildContext = buildContext;
         }
 
         public static IEnumerable<object?[]> MainWithArgsTestData(bool aot, RunHost host)
             => ConfigWithAOTData(aot).Multiply(
-                    new object?[] {
-                        new object?[] { "abc", "foobar"},
-                        new object?[0]
-                    }
+                        new object?[] { new object?[] { "abc", "foobar"} },
+                        new object?[] { new object?[0] }
             ).WithRunHosts(host).UnwrapItemsAsArrays();
 
         [Theory]

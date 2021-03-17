@@ -131,8 +131,13 @@ namespace Wasm.Build.Tests
                     new object?[] { new BuildArgs("placeholder", "Release", aot, "placeholder", string.Empty) }.AsEnumerable()
                 }.AsEnumerable();
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, RunHost host)
-            => ConfigWithAOTData(aot).WithRunHosts(host);
+        public static IEnumerable<object?[]> BuildAndRunData(bool aot = false,
+                                                                        RunHost host = RunHost.All,
+                                                                        params object[] parameters)
+            => ConfigWithAOTData(aot)
+                    .Multiply(parameters)
+                    .WithRunHosts(host)
+                    .UnwrapItemsAsArrays();
 
         protected void RunAndTestWasmApp(BuildArgs buildArgs, RunHost host, string id, Action<string> test, string? buildDir=null, int expectedExitCode=0, string? args=null)
         {
@@ -257,12 +262,13 @@ namespace Wasm.Build.Tests
             return buildArgs with { ProjectFileContents = projectContents };
         }
 
-        public string BuildProject(BuildArgs buildArgs,
+        public (string projectDir, string buildOutput) BuildProject(BuildArgs buildArgs,
                                   Action initProject,
                                   string id,
                                   bool? dotnetWasmFromRuntimePack = null,
                                   bool hasIcudt = true,
-                                  bool useCache = true)
+                                  bool useCache = true,
+                                  bool expectSuccess = true)
         {
             if (useCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -273,7 +279,7 @@ namespace Wasm.Build.Tests
 
                 // use this test's id for the run logs
                 _logPath = Path.Combine(s_logRoot, id);
-                return _projectDir;
+                return (_projectDir, "FIXME");
             }
 
             InitPaths(id);
@@ -297,14 +303,24 @@ namespace Wasm.Build.Tests
 
             Console.WriteLine($"Building {buildArgs.ProjectName} in {_projectDir}");
 
+            (int exitCode, string buildOutput) result;
             try
             {
-                AssertBuild(sb.ToString(), id);
+                result = AssertBuild(sb.ToString(), id, expectSuccess: expectSuccess);
+                if (expectSuccess)
+                {
+                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config), "AppBundle");
+                    dotnetWasmFromRuntimePack ??= !buildArgs.AOT;
+                    AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, hasIcudt, dotnetWasmFromRuntimePack.Value);
+                }
+
                 if (useCache)
                 {
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
                     Console.WriteLine($"caching build for {buildArgs}");
                 }
+
+                return (_projectDir, result.buildOutput);
             }
             catch
             {
@@ -312,12 +328,6 @@ namespace Wasm.Build.Tests
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false));
                 throw;
             }
-
-            string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config), "AppBundle");
-            dotnetWasmFromRuntimePack ??= !buildArgs.AOT;
-            AssertBasicAppBundle(bundleDir, buildArgs.ProjectName, buildArgs.Config, hasIcudt, dotnetWasmFromRuntimePack.Value);
-
-            return _projectDir;
         }
 
         protected static void AssertBasicAppBundle(string bundleDir, string projectName, string config, bool hasIcudt=true, bool dotnetWasmFromRuntimePack=true)
@@ -407,10 +417,15 @@ namespace Wasm.Build.Tests
                 Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected void AssertBuild(string args, string label="build")
+        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true)
         {
-            (int exitCode, _) = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: label);
-            Assert.True(0 == exitCode, $"Build process exited with non-zero exit code: {exitCode}");
+            var result = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: label);
+            if (expectSuccess)
+                Assert.True(0 == result.exitCode, $"Build process exited with non-zero exit code: {result.exitCode}");
+            else
+                Assert.True(0 != result.exitCode, $"Build should have failed, but it didn't. Process exited with exitCode : {result.exitCode}");
+
+            return result;
         }
 
         // protected string GetObjDir(string targetFramework=s_targetFramework, string? baseDir=null, string config="Debug")
@@ -429,7 +444,7 @@ namespace Wasm.Build.Tests
             => Path.Combine(GetRuntimePackDir(), "runtimes", "browser-wasm", "native");
 
 
-        public static (int, string) RunProcess(string path,
+        public static (int exitCode, string buildOutput) RunProcess(string path,
                                          ITestOutputHelper _testOutput,
                                          string args = "",
                                          IDictionary<string, string>? envVars = null,
@@ -516,6 +531,14 @@ namespace Wasm.Build.Tests
             if (_projectDir != null)
                 _buildContext.RemoveFromCache(_projectDir);
         }
+
+        protected static string s_mainReturns42 = @"
+            public class TestClass {
+                public static int Main()
+                {
+                    return 42;
+                }
+            }";
 
         protected static string s_directoryBuildProps = @"<Project>
   <PropertyGroup>

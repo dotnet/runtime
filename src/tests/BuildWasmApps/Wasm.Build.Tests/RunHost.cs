@@ -8,6 +8,7 @@ namespace Wasm.Build.Tests
     [Flags]
     public enum RunHost
     {
+        None = 0,
         V8 = 1,
         Chrome = 2,
         Safari = 4,

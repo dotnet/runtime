@@ -1,8 +1,12 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Xunit;
 using Xunit.Abstractions;
+
+#nullable enable
 
 namespace Wasm.Build.Tests
 {
@@ -15,7 +19,10 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> InvariantGlobalizationTestData(bool aot, RunHost host)
             => ConfigWithAOTData(aot)
-                .Multiply(new object?[] { null, false, true })
+                .Multiply(
+                    new object?[] { null },
+                    new object?[] { false },
+                    new object?[] { true })
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
 
