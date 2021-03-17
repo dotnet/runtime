@@ -333,7 +333,7 @@ set __CommonMSBuildCmdPrefix=powershell -NoProfile -ExecutionPolicy ByPass -NoLo
 
 set __NativeBinariesLayoutTypeArg=
 
-if %__Ninja% EQ 0 (
+if %__Ninja% == 0 (
     set __NativeBinariesLayoutTypeArg=/p:UseVisualStudioNativeBinariesLayout=true
 )
 
