@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void BuildChainWithSBystemTrustAndCustomTrustCertificates()
+        public static void BuildChainWithSystemTrustAndCustomTrustCertificates()
         {
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())

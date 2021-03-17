@@ -543,7 +543,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // the leading period. It checks expects the period as part of the left-side
                 // labels and not the constraint when doing validation.
                 // Use an excluded DNS name constraint without the period: example.com
-                nameConstraints = "3012A110300E820C6578616D706C652E636F6D";
+                nameConstraints = "3011A10F300D820B6578616D706C652E636F6D";
             }
 
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
