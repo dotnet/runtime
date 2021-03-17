@@ -13,15 +13,20 @@ namespace System.Xml.Serialization
 {
     internal sealed class ReflectionXmlSerializationWriter : XmlSerializationWriter
     {
-        private readonly XmlMapping _mapping;
-
-#pragma warning disable IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
-        internal static TypeDesc StringTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(string));
-        internal static TypeDesc QnameTypeDesc { get; private set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
-#pragma warning restore IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
+        internal static readonly TypeDesc StringTypeDesc;
+        internal static readonly TypeDesc QnameTypeDesc;
 
         [RequiresUnreferencedCode("class GetTypeDesc")]
-        static ReflectionXmlSerializationWriter() { }
+        // Initialize in static constructor to suppress RequiresUnreferencedCode warning
+#pragma warning disable CA1810
+        static ReflectionXmlSerializationWriter()
+        {
+            StringTypeDesc = (new TypeScope()).GetTypeDesc(typeof(string));
+            QnameTypeDesc = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
+        }
+#pragma warning restore CA1810
+
+        private readonly XmlMapping _mapping;
 
         public ReflectionXmlSerializationWriter(XmlMapping xmlMapping, XmlWriter xmlWriter, XmlSerializerNamespaces namespaces, string? encodingStyle, string? id)
         {

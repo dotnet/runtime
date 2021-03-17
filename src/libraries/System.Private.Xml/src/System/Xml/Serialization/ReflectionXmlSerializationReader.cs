@@ -18,15 +18,20 @@ namespace System.Xml.Serialization
 
     internal sealed class ReflectionXmlSerializationReader : XmlSerializationReader
     {
-#pragma warning disable IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
-        private static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
-        private static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
-#pragma warning restore IL2026 // Methods annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
-
-        private readonly XmlMapping _mapping;
+        private static readonly TypeDesc StringTypeDesc;
+        private static readonly TypeDesc QnameTypeDesc;
 
         [RequiresUnreferencedCode("Calls GetTypeDesc")]
-        static ReflectionXmlSerializationReader() { }
+        // Initialize in static constructor to suppress RequiresUnreferencedCode warning
+#pragma warning disable CA1810
+        static ReflectionXmlSerializationReader()
+        {
+            StringTypeDesc = (new TypeScope()).GetTypeDesc(typeof(string));
+            QnameTypeDesc = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
+        }
+#pragma warning restore CA1810
+
+        private readonly XmlMapping _mapping;
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
