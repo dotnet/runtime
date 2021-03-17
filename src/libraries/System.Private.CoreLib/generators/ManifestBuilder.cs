@@ -149,7 +149,7 @@ namespace Generators
                 INamedTypeSymbol? underlyingEnumType = ((INamedTypeSymbol)type).EnumUnderlyingType;
                 if (underlyingEnumType is not null)
                 {
-                    if (underlyingEnumType.SpecialType == SpecialType.System_Int64)
+                    if (underlyingEnumType.SpecialType != SpecialType.System_Int64)
                     {
                         templates.Append(" map=\"").Append(type.Name).Append('"');
                     }

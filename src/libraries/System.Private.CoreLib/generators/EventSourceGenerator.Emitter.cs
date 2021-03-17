@@ -25,6 +25,9 @@ namespace Generators
 
             public void Emit(EventSourceClass[] eventSources, CancellationToken cancellationToken, ITypeSymbol stringTypeSymbol)
             {
+                File.WriteAllText(@"D:\sourcegen-manifest.txt", "Manifests\n");
+                File.WriteAllText(@"D:\sourcegen-debug.txt", "Debug Prints\n");
+
                 foreach (EventSourceClass? ec in eventSources)
                 {
                     if (cancellationToken.IsCancellationRequested)
@@ -54,7 +57,7 @@ namespace {ec.Namespace}
                 }
 
                 _builder.AppendLine($@"
-    partialll class {ec.ClassName}
+    partiall class {ec.ClassName}
     {{");
                 GenerateConstructor(ec);
 
@@ -66,15 +69,14 @@ namespace {ec.Namespace}
                 if (!string.IsNullOrWhiteSpace(ec.Namespace))
                 {
                     _builder.AppendLine($@"
-}},");
+}}");
                 }
             }
-
 
             private void GenerateEventMetadata(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
                 string metadataString = MetadataForProvider(ec, stringTypeSymbol);
-                File.WriteAllText(@"D:\sourcegen-debug.txt", metadataString);
+                File.AppendAllText(@"D:\sourcegen-manifest.txt", metadataString);
                 foreach (string debugStr in ec.DebugStrings)
                 {
                     File.AppendAllText(@"D:\sourcegen-debug.txt", debugStr+"\n");
@@ -116,7 +118,7 @@ namespace {ec.Namespace}
 
             private string MetadataForProvider(EventSourceClass ec, ITypeSymbol stringTypeSymbol)
             {
-                ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid);
+                ManifestBuilder manifest = new ManifestBuilder(_builder, ec.Namespace + "." + ec.ClassName, ec.Guid, ec.Maps);
                                 // Add an entry unconditionally for event ID 0 which will be for a string message.
                 manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
                 manifest.AddEventParameter(stringTypeSymbol, "message");
@@ -133,20 +135,23 @@ namespace {ec.Namespace}
                 {
                     EventAttribute eventAttribute = new EventAttribute(Int32.Parse(evt.Id));
 
-                    eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
-                    eventAttribute.Keywords = (EventKeywords)(1);
-                    eventAttribute.Version = 0; // TODO: FIX 
+                    try
+                    {
+                        eventAttribute.Level = (EventLevel)(Int32.Parse(evt.Level));
+                        eventAttribute.Keywords = (EventKeywords)(1);
+                        eventAttribute.Version = 0; // TODO: FIX 
+                    }
+                    catch (Exception)
+                    {
+                        ec.DebugStrings.Add("FAILED.....");
+                        ec.DebugStrings.Add(ec.ClassName);
+                        ec.DebugStrings.Add(evt.Name);
+                        ec.DebugStrings.Add(evt.Level);
+                        ec.DebugStrings.Add("-------");
+                    }
 
-
-                    //manifest.StartEvent(evt.Name, new EventAttribute(Int32.Parse(evt.Id)) { Level = EventLevel.LogAlways });
+                    manifest.StartEvent(evt.Name, eventAttribute);
                     
-                    
-                    manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
-                    manifest.AddEventParameter(stringTypeSymbol, "message");
-                    manifest.EndEvent("EventSourceMessage");
-
-
-                    /*
                     if (evt.Parameters is not null)
                     {
                         foreach (EventParameter param in evt.Parameters)
@@ -157,9 +162,8 @@ namespace {ec.Namespace}
                             }
                         }
                     }
-                    */
 
-                    //manifest.EndEvent(evt.Name);
+                    manifest.EndEvent(evt.Name);
                 }
                 return manifest.CreateManifestString();
             }

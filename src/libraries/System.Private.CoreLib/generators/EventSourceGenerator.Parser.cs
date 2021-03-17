@@ -193,8 +193,8 @@ namespace Generators
                     AttributeSyntax? eventAttribute = null;
                     string eventName;
                     string eventId = string.Empty;
-                    string eventLevel = string.Empty;;
-                    string eventKeywords = string.Empty;
+                    string eventLevel = "4"; // default is Informational
+                    string eventKeywords = "0";
                     string opcode;
                     string task;
                     List<EventParameter>? parameters = null;

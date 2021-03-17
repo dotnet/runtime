@@ -137,8 +137,8 @@ namespace Generators
         {
             public string Name = string.Empty;
             public string Id = string.Empty;
-            public string Keywords = string.Empty;
-            public string Level = string.Empty;
+            public string Keywords = "0";
+            public string Level = "4"; // Default level for Events is Informational
             public List<EventParameter>? Parameters = null;
         }
 
