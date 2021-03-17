@@ -18,7 +18,6 @@
     <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
-    <ExeExt Condition="'$(OS)' == 'Windows_NT'">.exe</ExeExt>
     <CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</CoreClrFileName>
     <CoreClrFileName Condition="'$(TargetsMacCatalyst)' == 'true'">libcoreclr.dylib</CoreClrFileName>
