@@ -7973,6 +7973,17 @@ void Compiler::optOptimizeBoolsBbjReturn(BasicBlock* b1, BasicBlock* b2, BasicBl
         return;
     }
 
+    /* The third block is Return with "CNS_INT int 0/1" */
+    if (t3->AsOp()->gtOp1->gtOper != GT_CNS_INT)
+    {
+        return;
+    }
+
+    if (t3->AsOp()->gtOp1->gtType != TYP_INT)
+    {
+        return;
+    }
+
     /* Find the condition for the first block */
 
     Statement* s1 = b1->lastStmt();
