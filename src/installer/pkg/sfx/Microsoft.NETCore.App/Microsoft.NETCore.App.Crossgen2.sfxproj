@@ -62,14 +62,19 @@
   </Target>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <_diaSymArch>$(TargetArchitecture)</_diaSymArch>
-    <_diaSymArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymArch>
+    <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
+    <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
     <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
+
+    <!-- DiaSymReader for the target architecture, which is placed into the package -->
+    <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
+    <_diaSymTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymTargetArch>
+    <_diaSymReaderTargetPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
-    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" TargetPath="tools/" />
+  <ItemGroup Condition="Exists('$(_diaSymReaderTargetPath)')">
+    <NativeRuntimeAsset Include="$(_diaSymReaderTargetPath)" TargetPath="tools/" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
