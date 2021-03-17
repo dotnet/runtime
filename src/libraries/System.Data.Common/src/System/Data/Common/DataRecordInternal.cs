@@ -324,12 +324,13 @@ namespace System.Data.Common
             return null;
         }
 
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
         {
             return null;
         }
 
-
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
         {
             return null;

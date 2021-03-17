@@ -57,11 +57,13 @@ namespace System.Data
         /// <summary>
         /// Retrieves the default event.
         /// </summary>
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
 
         /// <summary>
         /// Retrieves the default property.
         /// </summary>
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
 
         /// <summary>

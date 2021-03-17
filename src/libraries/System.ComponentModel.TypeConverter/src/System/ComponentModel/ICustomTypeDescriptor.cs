@@ -35,11 +35,13 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default event for this object.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         EventDescriptor GetDefaultEvent();
 
         /// <summary>
         /// Gets the default property for this object.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         PropertyDescriptor GetDefaultProperty();
 
         /// <summary>

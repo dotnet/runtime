@@ -84,12 +84,14 @@ namespace System.ComponentModel
         /// The GetDefaultEvent method returns the event descriptor for the default
         /// event on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
         public virtual EventDescriptor GetDefaultEvent() => _parent?.GetDefaultEvent();
 
         /// <summary>
         /// The GetDefaultProperty method returns the property descriptor for the
         /// default property on the object this type descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public virtual PropertyDescriptor GetDefaultProperty() => _parent?.GetDefaultProperty();
 
         /// <summary>

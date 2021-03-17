@@ -586,6 +586,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetConverter(this, true);
         }
+        [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
         {
             return TypeDescriptor.GetDefaultProperty(this, true);
@@ -600,6 +601,7 @@ namespace System.Data.Common
         {
             return GetProperties(attributes);
         }
+        [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
         {
             return TypeDescriptor.GetDefaultEvent(this, true);
