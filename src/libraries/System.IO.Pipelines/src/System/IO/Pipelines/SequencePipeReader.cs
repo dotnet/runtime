@@ -61,9 +61,7 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
-            ThrowIfCompleted();
-
-            if (TryReadInternal(out ReadResult result))
+            if (TryRead(out ReadResult result))
             {
                 return new ValueTask<ReadResult>(result);
             }
@@ -77,11 +75,6 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            return TryReadInternal(out result);
-        }
-
-        private bool TryReadInternal(out ReadResult result)
-        {
             bool isCancellationRequested = Interlocked.Exchange(ref _cancelNext, 0) == 1;
             if (isCancellationRequested || _sequence.Length > 0)
             {
