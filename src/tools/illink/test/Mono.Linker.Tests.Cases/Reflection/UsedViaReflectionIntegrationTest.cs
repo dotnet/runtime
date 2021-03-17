@@ -26,7 +26,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public OnlyUsedViaReflection ()
 			{ }
 
-			[Kept]
 			public OnlyUsedViaReflection (string bar)
 			{ }
 

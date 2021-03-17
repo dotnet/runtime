@@ -12,153 +12,526 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
-			TestName ();
-			TestNamePrivate ();
-			TestNameAndExplicitBindingFlags ();
-			TestNameAndUnknownBindingFlags (BindingFlags.Public);
-			TestNameAndUnknownNullBindingFlags (BindingFlags.Public);
-			TestNameAndType ();
-			TestNameBindingFlagsAndParameterModifier ();
-			TestNameBindingFlagsCallingConventionParameterModifier ();
+			GetMethod_Name.TestName ();
+			GetMethod_Name.TestNamePrivate ();
+			GetMethod_Name_Types.TestNameAndType ();
+			GetMethod_Name_BindingAttr.TestExplicitBindingFlags ();
+			GetMethod_Name_BindingAttr.TestUnknownBindingFlags (BindingFlags.Public);
+			GetMethod_Name_BindingAttr.TestUnknownNullBindingFlags (BindingFlags.Public);
+			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
+			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
 #if NETCOREAPP
-			TestNameWithIntAndType ();
-			TestNameWithIntAndBindingFlags ();
-			TestNameWithIntBindingFlagsCallingConventionParameter ();
+			GetMethod_Name_BindingAttr_Binder_Types.TestNameBindingFlagsAndTypes ();
+			GetMethod_Name_GenericParameterCount_Types.TestNameWithIntAndType ();
+			GetMethod_Name_GenericParameterCount_Types_Modifiers.TestNameWithIntAndTypeAndModifiers ();
+			GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers.TestNameWithIntAndBindingFlags ();
+			GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers_PrivateBinding.TestNameWithIntAndPrivateBindingFlags ();
+			GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameWithIntBindingFlagsCallingConventionParameter ();
 #endif
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
 			TestNullType ();
 			TestDataFlowType ();
-			TestIfElse (1);
-			TestMethodInBaseType ();
-			TestIgnoreCaseBindingFlags ();
-			TestFailIgnoreCaseBindingFlags ();
-			TestUnsupportedBindingFlags ();
+			IfElse.TestIfElse (1);
+			DerivedAndBase.TestMethodInBaseType ();
+			IgnoreCaseBindingFlags.TestIgnoreCaseBindingFlags ();
+			FailIgnoreCaseBindingFlags.TestFailIgnoreCaseBindingFlags ();
+			UnsupportedBindingFlags.TestUnsupportedBindingFlags ();
 		}
 
+		// GetMethod(string name)
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) },
-			typeof (MethodUsedViaReflection), nameof (MethodUsedViaReflection.OnlyCalledViaReflection), new Type[0])]
-		static void TestName ()
+		class GetMethod_Name
 		{
-			var method = typeof (MethodUsedViaReflection).GetMethod ("OnlyCalledViaReflection");
-			method.Invoke (null, new object[] { });
+			[Kept]
+			public static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			[Kept]
+			public int OnlyCalledViaReflection (int _, int __)
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int _)
+			{
+				return 42;
+			}
+
+			private static int PrivateMethod ()
+			{
+				return 42;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) },
+				typeof (GetMethod_Name), nameof (GetMethod_Name.OnlyCalledViaReflection), new Type[0])]
+			public static void TestName ()
+			{
+				var method = typeof (GetMethod_Name).GetMethod ("OnlyCalledViaReflection");
+				method.Invoke (null, new object[] { });
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestNamePrivate ()
+			{
+				// This should fail at runtime, since GetMethod(name) only works on public methods
+				// also means linker should not mark the PrivateMethod in this case
+				var method = typeof (GetMethod_Name).GetMethod ("PrivateMethod");
+				method.Invoke (null, new object[] { });
+			}
 		}
 
+		// GetMethod(string name, Type[] types)
 		[Kept]
-		static void TestNamePrivate ()
+		class GetMethod_Name_Types
 		{
-			var method = typeof (MethodUsedViaReflection).GetMethod ("PrivateMethod");
-			method.Invoke (null, new object[] { });
+			[Kept]
+			public static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (Type[]) },
+				typeof (GetMethod_Name_Types), nameof (GetMethod_Name_Types.OnlyCalledViaReflection), new Type[0])]
+			public static void TestNameAndType ()
+			{
+				// Currently linker doesn't analyze the Type[] parameter and thus it marks all methods with the name and matching binding flags (public in this case)
+				var method = typeof (GetMethod_Name_Types).GetMethod ("OnlyCalledViaReflection", new Type[] { });
+				method.Invoke (null, new object[] { });
+			}
 		}
 
+		// GetMethod(string name, BindingFlags bindingAttr)
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
-			typeof (TestNameAndExplicitBindingClass), nameof (TestNameAndExplicitBindingClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestNameAndExplicitBindingFlags ()
+		class GetMethod_Name_BindingAttr
 		{
-			var method = typeof (TestNameAndExplicitBindingClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			public static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
+				typeof (GetMethod_Name_BindingAttr), nameof (GetMethod_Name_BindingAttr.OnlyCalledViaReflection), new Type[0])]
+			public static void TestExplicitBindingFlags ()
+			{
+				var method = typeof (GetMethod_Name_BindingAttr).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.Public);
+				method.Invoke (null, new object[] { });
+			}
+
+			[Kept]
+			class UnknownBindingFlags
+			{
+				[Kept]
+				private static int OnlyCalledViaReflection ()
+				{
+					return 42;
+				}
+
+				[Kept]
+				private int OnlyCalledViaReflection (int foo)
+				{
+					return 43;
+				}
+
+				[Kept]
+				public int OnlyCalledViaReflection (int foo, int bar)
+				{
+					return 44;
+				}
+
+				[Kept]
+				public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+				{
+					return 45;
+				}
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestUnknownBindingFlags (BindingFlags bindingFlags)
+			{
+				// Since the binding flags are not known linker should mark all methods on the type
+				var method = typeof (UnknownBindingFlags).GetMethod ("OnlyCalledViaReflection", bindingFlags);
+				method.Invoke (null, new object[] { });
+			}
+
+			[Kept]
+			private class NullBindingFlags
+			{
+				[Kept]
+				private static int OnlyCalledViaReflection ()
+				{
+					return 42;
+				}
+
+				[Kept]
+				private int OnlyCalledViaReflection (int foo)
+				{
+					return 43;
+				}
+
+				[Kept]
+				public int OnlyCalledViaReflection (int foo, int bar)
+				{
+					return 44;
+				}
+
+				[Kept]
+				public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+				{
+					return 45;
+				}
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestUnknownNullBindingFlags (BindingFlags bindingFlags)
+			{
+				// The case here is a pattern which linker doesn't recognize (unlike the test case above, which passes a recognized
+				// method parameter with unknown value). Unrecognized patterns are internally represented as unknown values which are passed
+				// around as nulls in some cases. So there's a potential risk of hitting a nullref. The test here is to validate that
+				// linker can accept such value for binding flags.
+				// The semantic is exactly the same as above, that is unknown value and thus all methods should be marked.
+
+				// One way to produce unrecognized pattern is to use some bitfield arithmetics - linker currently doesn't do constexpr evaluation
+				// and then store it in a local.
+				var bf = bindingFlags | BindingFlags.Static;
+
+				var method = typeof (NullBindingFlags).GetMethod ("OnlyCalledViaReflection", bf);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
+		// GetMethod(string name, BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers)
 		[Kept]
-		[RecognizedReflectionAccessPattern]
-		static void TestNameAndUnknownBindingFlags (BindingFlags bindingFlags)
+		class GetMethod_Name_BindingAttr_Binder_Types_Modifiers
 		{
-			// Since the binding flags are not known linker should mark all methods on the type
-			var method = typeof (TestNameAndUnknownBindingClass).GetMethod ("OnlyCalledViaReflection", bindingFlags);
-			method.Invoke (null, new object[] { });
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestNameBindingFlagsAndParameterModifier ()
+			{
+				var method = typeof (GetMethod_Name_BindingAttr_Binder_Types_Modifiers).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, null, new Type[] { }, null);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
+		// GetMethod(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		[Kept]
-		[RecognizedReflectionAccessPattern]
-		static void TestNameAndUnknownNullBindingFlags (BindingFlags bindingFlags)
+		class GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers
 		{
-			// The case here is a pattern which linker doesn't not recognize (unlike the test case above, which passes a recognized
-			// method parameter with unknown value). Unrecognized patterns are internally represented as unknown values which are passed
-			// around as nulls in some cases. So there's a potential risk of hitting a nullref. The test here is to validate that
-			// linker can accept such value for binding flags.
-			// The semantic is exactly the same as above, that is unknown value and thus all methods should be marked.
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
 
-			// One way to produce unrecognized pattern is to use some bitfield arithmetics - linker currently doesn't do constexpr evaluation
-			// and then store it in a local.
-			var bf = bindingFlags | BindingFlags.Static;
-
-			var method = typeof (TestNameAndUnknownNullBindingClass).GetMethod ("OnlyCalledViaReflection", bf);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers), nameof (GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.OnlyCalledViaReflection), new Type[0])]
+			public static void TestNameBindingFlagsCallingConventionParameterModifier ()
+			{
+				var method = typeof (GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers).GetMethod ("OnlyCalledViaReflection", BindingFlags.NonPublic, null, CallingConventions.Standard, new Type[] { }, null);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
-		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (Type[]) },
-			typeof (TestNameAndTypeClass), nameof (TestNameAndTypeClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestNameAndType ()
-		{
-			var method = typeof (TestNameAndTypeClass).GetMethod ("OnlyCalledViaReflection", new Type[] { });
-			method.Invoke (null, new object[] { });
-		}
-
-		[Kept]
-		static void TestNameBindingFlagsAndParameterModifier ()
-		{
-			var method = typeof (TestNameBindingFlagsAndParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, null, new Type[] { }, null);
-			method.Invoke (null, new object[] { });
-		}
-
-		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (TestNameBindingFlagsCallingConventionParameterClass), nameof (TestNameBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestNameBindingFlagsCallingConventionParameterModifier ()
-		{
-			var method = typeof (TestNameBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.NonPublic, null, CallingConventions.Standard, new Type[] { }, null);
-			method.Invoke (null, new object[] { });
-		}
 #if NETCOREAPP
+		// GetMethod(string name, BindingFlags bindingAttr, Binder binder, Type[] types)
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (Type[]) },
-			typeof (TestNameWithIntAndTypeClass), nameof (TestNameWithIntAndTypeClass.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) })]
-		static void TestNameWithIntAndType ()
+		class GetMethod_Name_BindingAttr_Binder_Types
 		{
-			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type[] { typeof (int) });
-			method.Invoke (null, new object[] { });
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestNameBindingFlagsAndTypes ()
+			{
+				var method = typeof (GetMethod_Name_BindingAttr_Binder_Types).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, new Type[] { });
+				method.Invoke (null, new object[] { });
+			}
+		}
+
+		// GetMethod(string name, int genericParameterCount, Type[] types)
+		[Kept]
+		class GetMethod_Name_GenericParameterCount_Types
+		{
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (Type[]) },
+				typeof (GetMethod_Name_GenericParameterCount_Types), nameof (GetMethod_Name_GenericParameterCount_Types.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) })]
+			public static void TestNameWithIntAndType ()
+			{
+				var method = typeof (GetMethod_Name_GenericParameterCount_Types).GetMethod ("OnlyCalledViaReflection", 1, new Type[] { typeof (int) });
+				method.Invoke (null, new object[] { });
+			}
+		}
+
+		// GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[] modifiers)
+		[Kept]
+		class GetMethod_Name_GenericParameterCount_Types_Modifiers
+		{
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (GetMethod_Name_GenericParameterCount_Types_Modifiers), nameof (GetMethod_Name_GenericParameterCount_Types_Modifiers.OnlyCalledViaReflection), new Type[] { typeof (int), typeof (int) })]
+			public static void TestNameWithIntAndTypeAndModifiers ()
+			{
+				var method = typeof (GetMethod_Name_GenericParameterCount_Types_Modifiers).GetMethod ("OnlyCalledViaReflection", 1, new Type[] { typeof (int) }, null);
+				method.Invoke (null, new object[] { });
+			}
+		}
+
+		// GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers)
+		[Kept]
+		class GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers
+		{
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestNameWithIntAndBindingFlags ()
+			{
+				var method = typeof (GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers)
+					.GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type[] { }, null);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
-		static void TestNameWithIntAndBindingFlags ()
+		class GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers_PrivateBinding
 		{
-			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type[] { }, null);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern]
+			public static void TestNameWithIntAndPrivateBindingFlags ()
+			{
+				var method = typeof (GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers_PrivateBinding)
+					.GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.NonPublic, null, new Type[] { typeof (int) }, null);
+				method.Invoke (null, new object[] { 42 });
+			}
 		}
 
+		// GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass), nameof (TestNameWithIntBindingFlagsCallingConventionParameterClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestNameWithIntBindingFlagsCallingConventionParameter ()
+		class GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers
 		{
-			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { }, null);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (int), typeof (BindingFlags), typeof (Binder), typeof (CallingConventions), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers), nameof (GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers.OnlyCalledViaReflection), new Type[0])]
+			public static void TestNameWithIntBindingFlagsCallingConventionParameter ()
+			{
+				var method = typeof (GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type[] { }, null);
+				method.Invoke (null, new object[] { });
+			}
 		}
 #endif
 
 		[Kept]
+		[RecognizedReflectionAccessPattern]
 		static void TestNullName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod (null);
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern]
 		static void TestEmptyName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod (string.Empty);
 		}
 
 		[Kept]
+		[RecognizedReflectionAccessPattern]
 		static void TestNonExistingName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod ("NonExisting");
@@ -188,75 +561,197 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (IfClass), nameof (IfClass.OnlyCalledViaReflection), new Type[0])]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (IfClass), nameof (IfClass.ElseIfCall), new Type[0])]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (ElseIfClass), nameof (ElseIfClass.OnlyCalledViaReflection), new Type[0])]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (ElseIfClass), nameof (ElseIfClass.ElseIfCall), new Type[0])]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
-			typeof (ElseClass), nameof (ElseClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestIfElse (int i)
+		class IfElse
 		{
-			Type myType;
-			if (i == 1) {
-				myType = typeof (IfClass);
-			} else if (i == 2) {
-				myType = typeof (ElseIfClass);
-			} else {
-				myType = typeof (ElseClass);
+			[Kept]
+			private class IfClass
+			{
+				[Kept]
+				public static int OnlyCalledViaReflection ()
+				{
+					return 42;
+				}
+
+				private int OnlyCalledViaReflection (int foo)
+				{
+					return 43;
+				}
+				[Kept]
+				public static int ElseIfCall ()
+				{
+					return 44;
+				}
 			}
-			string mystring;
-			if (i == 1) {
-				mystring = "OnlyCalledViaReflection";
-			} else if (i == 2) {
-				mystring = "ElseIfCall";
-			} else {
-				mystring = null;
+
+			[Kept]
+			private class ElseIfClass
+			{
+				[Kept]
+				public static int OnlyCalledViaReflection ()
+				{
+					return 45;
+				}
+				[Kept]
+				private static int OnlyCalledViaReflection (int foo)
+				{
+					return 46;
+				}
+				[Kept]
+				public static int ElseIfCall ()
+				{
+					return 47;
+				}
 			}
-			var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type[] { typeof (int) }, null);
-			method.Invoke (null, new object[] { });
+
+			[Kept]
+			private class ElseClass
+			{
+				[Kept]
+				public static int OnlyCalledViaReflection ()
+				{
+					return 48;
+				}
+				[Kept]
+				private static int OnlyCalledViaReflection (int foo)
+				{
+					return 49;
+				}
+				private int ElseIfCall ()
+				{
+					return 50;
+				}
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (IfClass), nameof (IfClass.OnlyCalledViaReflection), new Type[0])]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (IfClass), nameof (IfClass.ElseIfCall), new Type[0])]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (ElseIfClass), nameof (ElseIfClass.OnlyCalledViaReflection), new Type[0])]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (ElseIfClass), nameof (ElseIfClass.ElseIfCall), new Type[0])]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags), typeof (Binder), typeof (Type[]), typeof (ParameterModifier[]) },
+				typeof (ElseClass), nameof (ElseClass.OnlyCalledViaReflection), new Type[0])]
+			public static void TestIfElse (int i)
+			{
+				Type myType;
+				if (i == 1) {
+					myType = typeof (IfClass);
+				} else if (i == 2) {
+					myType = typeof (ElseIfClass);
+				} else {
+					myType = typeof (ElseClass);
+				}
+				string mystring;
+				if (i == 1) {
+					mystring = "OnlyCalledViaReflection";
+				} else if (i == 2) {
+					mystring = "ElseIfCall";
+				} else {
+					mystring = null;
+				}
+				var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type[] { typeof (int) }, null);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) },
-			typeof (BaseClass), nameof (BaseClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestMethodInBaseType ()
+		class DerivedAndBase
 		{
-			var method = typeof (DerivedClass).GetMethod ("OnlyCalledViaReflection");
-			method.Invoke (null, new object[] { });
+			[Kept]
+			class BaseClass
+			{
+				[Kept]
+				public int OnlyCalledViaReflection ()
+				{
+					return 51;
+				}
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (BaseClass))]
+			class DerivedClass : BaseClass
+			{ }
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) },
+				typeof (BaseClass), nameof (BaseClass.OnlyCalledViaReflection), new Type[0])]
+			public static void TestMethodInBaseType ()
+			{
+				var method = typeof (DerivedClass).GetMethod ("OnlyCalledViaReflection");
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
-			typeof (IgnoreCaseClass), nameof (IgnoreCaseClass.OnlyCalledViaReflection), new Type[0])]
-		static void TestIgnoreCaseBindingFlags ()
+		class IgnoreCaseBindingFlags
 		{
-			var method = typeof (IgnoreCaseClass).GetMethod ("onlycalledviareflection", BindingFlags.IgnoreCase | BindingFlags.Public);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			public int OnlyCalledViaReflection ()
+			{
+				return 52;
+			}
+			[Kept]
+			public string MarkedDueToIgnoreCase ()
+			{
+				return "52";
+			}
+
+			[Kept]
+			[RecognizedReflectionAccessPattern (
+				typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string), typeof (BindingFlags) },
+				typeof (IgnoreCaseBindingFlags), nameof (IgnoreCaseBindingFlags.OnlyCalledViaReflection), new Type[0])]
+			public static void TestIgnoreCaseBindingFlags ()
+			{
+				var method = typeof (IgnoreCaseBindingFlags).GetMethod ("onlycalledviareflection", BindingFlags.IgnoreCase | BindingFlags.Public);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
-		static void TestFailIgnoreCaseBindingFlags ()
+		class FailIgnoreCaseBindingFlags
 		{
-			var method = typeof (FailIgnoreCaseClass).GetMethod ("onlycalledviareflection", BindingFlags.Public);
-			method.Invoke (null, new object[] { });
+			public int OnlyCalledViaReflection ()
+			{
+				return 53;
+			}
+
+			[Kept]
+			public static void TestFailIgnoreCaseBindingFlags ()
+			{
+				var method = typeof (FailIgnoreCaseBindingFlags).GetMethod ("onlycalledviareflection", BindingFlags.Public);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
-		static void TestUnsupportedBindingFlags ()
+		class UnsupportedBindingFlags
 		{
-			var method = typeof (InvokeMethodClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.InvokeMethod);
-			method.Invoke (null, new object[] { });
+			[Kept]
+			public int OnlyCalledViaReflection ()
+			{
+				return 54;
+			}
+
+			[Kept]
+			private bool MarkedDueToInvokeMethod ()
+			{
+				return true;
+			}
+
+			[Kept]
+			public static void TestUnsupportedBindingFlags ()
+			{
+				var method = typeof (UnsupportedBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.InvokeMethod);
+				method.Invoke (null, new object[] { });
+			}
 		}
 
 		[Kept]
@@ -286,341 +781,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public static int OnlyCalledViaReflection (int foo, int bar, int baz)
 		{
 			return 45;
-		}
-		[Kept]
-		private class TestNameAndExplicitBindingClass
-		{
-			[Kept]
-			public static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameAndUnknownBindingClass
-		{
-			[Kept]
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-
-			[Kept]
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameAndUnknownNullBindingClass
-		{
-			[Kept]
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-
-			[Kept]
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameAndTypeClass
-		{
-			[Kept]
-			public static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameBindingFlagsAndParameterClass
-		{
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-		[Kept]
-		private class TestNameBindingFlagsCallingConventionParameterClass
-		{
-			[Kept]
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			[Kept]
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-#if NETCOREAPP
-		[Kept]
-		private class TestNameWithIntAndTypeClass
-		{
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameWithIntAndBindingClass
-		{
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-
-		[Kept]
-		private class TestNameWithIntBindingFlagsCallingConventionParameterClass
-		{
-			[Kept]
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-#endif
-
-		[Kept]
-		private class IfClass
-		{
-			[Kept]
-			public static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public static int ElseIfCall ()
-			{
-				return 44;
-			}
-		}
-
-		[Kept]
-		private class ElseIfClass
-		{
-			[Kept]
-			public static int OnlyCalledViaReflection ()
-			{
-				return 45;
-			}
-			[Kept]
-			private static int OnlyCalledViaReflection (int foo)
-			{
-				return 46;
-			}
-			[Kept]
-			public static int ElseIfCall ()
-			{
-				return 47;
-			}
-		}
-
-		[Kept]
-		private class ElseClass
-		{
-			[Kept]
-			public static int OnlyCalledViaReflection ()
-			{
-				return 48;
-			}
-			[Kept]
-			private static int OnlyCalledViaReflection (int foo)
-			{
-				return 49;
-			}
-			private int ElseIfCall ()
-			{
-				return 50;
-			}
-		}
-
-		[Kept]
-		class BaseClass
-		{
-			[Kept]
-			public int OnlyCalledViaReflection ()
-			{
-				return 51;
-			}
-		}
-
-		[Kept]
-		[KeptBaseType (typeof (BaseClass))]
-		class DerivedClass : BaseClass
-		{ }
-
-		[Kept]
-		private class IgnoreCaseClass
-		{
-			[Kept]
-			public int OnlyCalledViaReflection ()
-			{
-				return 52;
-			}
-			[Kept]
-			public string MarkedDueToIgnoreCase ()
-			{
-				return "52";
-			}
-		}
-
-		[Kept]
-		private class FailIgnoreCaseClass
-		{
-			public int OnlyCalledViaReflection ()
-			{
-				return 53;
-			}
-		}
-
-		[Kept]
-		private class InvokeMethodClass
-		{
-			[Kept]
-			public int OnlyCalledViaReflection ()
-			{
-				return 54;
-			}
-
-			[Kept]
-			private bool MarkedDueToInvokeMethod ()
-			{
-				return true;
-			}
 		}
 	}
 }
