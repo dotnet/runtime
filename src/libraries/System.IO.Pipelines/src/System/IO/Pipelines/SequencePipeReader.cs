@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
-    internal class SequencePipeReader : PipeReader
+    internal sealed class SequencePipeReader : PipeReader
     {
         private ReadOnlySequence<byte> _sequence;
         private bool _isReaderCompleted;
@@ -63,7 +63,7 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            if (TryReadInternal(out var result))
+            if (TryReadInternal(out ReadResult result))
             {
                 return new ValueTask<ReadResult>(result);
             }
@@ -82,7 +82,7 @@ namespace System.IO.Pipelines
 
         private bool TryReadInternal(out ReadResult result)
         {
-            var isCancellationRequested = Interlocked.Exchange(ref _cancelNext, 0) == 1;
+            bool isCancellationRequested = Interlocked.Exchange(ref _cancelNext, 0) == 1;
             if (isCancellationRequested || _sequence.Length > 0)
             {
                 result = new ReadResult(_sequence, isCancellationRequested, isCompleted: true);
