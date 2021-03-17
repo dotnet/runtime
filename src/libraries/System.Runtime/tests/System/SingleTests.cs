@@ -418,6 +418,63 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
+        {
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
+
+            const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+
+            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (float)123 };
+            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (float)-12 };
+            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, (float)1E2 };
+            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), (float)12 };
+            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, (float)10 };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, (float)123 };
+            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, float.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            float result;
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(float.TryParse(value.AsSpan(offset, count), out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, float.Parse(value.AsSpan(offset, count)));
+                }
+
+                Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), provider: provider));
+            }
+
+            Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(float.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
+
+                Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
+                Assert.Equal(0, result);
+            }
+        }
+
         [Fact]
         public static void PositiveInfinity()
         {
@@ -606,63 +663,6 @@ namespace System.Tests
         public static void IsSubnormal(float d, bool expected)
         {
             Assert.Equal(expected, float.IsSubnormal(d));
-        }
-
-        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
-        {
-            foreach (object[] inputs in Parse_Valid_TestData())
-            {
-                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
-            }
-
-            const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
-
-            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (float)123 };
-            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (float)-12 };
-            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, (float)1E2 };
-            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), (float)12 };
-            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, (float)10 };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, (float)123 };
-            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, float.PositiveInfinity };
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
-        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expected)
-        {
-            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            float result;
-            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
-            {
-                // Use Parse(string) or Parse(string, IFormatProvider)
-                if (isDefaultProvider)
-                {
-                    Assert.True(float.TryParse(value.AsSpan(offset, count), out result));
-                    Assert.Equal(expected, result);
-
-                    Assert.Equal(expected, float.Parse(value.AsSpan(offset, count)));
-                }
-
-                Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), provider: provider));
-            }
-
-            Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), style, provider));
-
-            Assert.True(float.TryParse(value.AsSpan(offset, count), style, provider, out result));
-            Assert.Equal(expected, result);
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
-        {
-            if (value != null)
-            {
-                Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
-
-                Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
-                Assert.Equal(0, result);
-            }
         }
 
         [Fact]
