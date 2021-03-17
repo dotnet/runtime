@@ -38,6 +38,7 @@ namespace System.ComponentModel
         public AmbientValueAttribute(object value) { }
         public AmbientValueAttribute(float value) { }
         public AmbientValueAttribute(string value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public AmbientValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string value) { }
         public object Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
@@ -287,6 +288,7 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.AttributeCollection GetAttributes() { throw null; }
         public virtual string GetClassName() { throw null; }
         public virtual string GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public virtual System.ComponentModel.TypeConverter GetConverter() { throw null; }
         public virtual System.ComponentModel.EventDescriptor GetDefaultEvent() { throw null; }
         public virtual System.ComponentModel.PropertyDescriptor GetDefaultProperty() { throw null; }
@@ -567,6 +569,7 @@ namespace System.ComponentModel
         System.ComponentModel.AttributeCollection GetAttributes();
         string GetClassName();
         string GetComponentName();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter GetConverter();
         System.ComponentModel.EventDescriptor GetDefaultEvent();
         System.ComponentModel.PropertyDescriptor GetDefaultProperty();
@@ -1004,6 +1007,7 @@ namespace System.ComponentModel
     }
     public partial class NullableConverter : System.ComponentModel.TypeConverter
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The UnderlyingType cannot be statically discovered.")]
         public NullableConverter(System.Type type) { }
         public System.Type NullableType { get { throw null; } }
         public System.Type UnderlyingType { get { throw null; } }
@@ -1422,11 +1426,12 @@ namespace System.ComponentModel
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static string GetComponentName(object component, bool noCustomTypeDesc) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.TypeConverter GetConverter(object component) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All. The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.TypeConverter GetConverter(object component, bool noCustomTypeDesc) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated.")]
         public static System.ComponentModel.TypeConverter GetConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of component cannot be statically discovered.")]
         public static System.ComponentModel.EventDescriptor GetDefaultEvent(object component) { throw null; }

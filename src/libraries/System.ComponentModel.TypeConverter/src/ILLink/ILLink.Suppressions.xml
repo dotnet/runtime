@@ -5,12 +5,6 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetConverter</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetDefaultEvent</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -19,15 +13,6 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.ComponentModel.TypeDescriptor.TypeDescriptionNode.DefaultTypeDescriptor.System#ComponentModel#ICustomTypeDescriptor#GetDefaultProperty</property>
     </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2072</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.ComponentModel.NullableConverter.#ctor(System.Type)</property>
-    </attribute>
-  </assembly>
-  <!-- Can't be worked on now -->
-  <assembly fullname="System.ComponentModel.TypeConverter, PublicKeyToken=b03f5f7f11d50a3a">
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
       <argument>IL2062</argument>

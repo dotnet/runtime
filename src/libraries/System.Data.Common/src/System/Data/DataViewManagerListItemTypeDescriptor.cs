@@ -51,6 +51,7 @@ namespace System.Data
         /// <summary>
         /// Retrieves the type converter for this object.
         /// </summary>
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter() => null;
 
         /// <summary>

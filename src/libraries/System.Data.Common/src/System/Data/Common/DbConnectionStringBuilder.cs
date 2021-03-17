@@ -581,6 +581,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetEditor(this, editorBaseType, true);
         }
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
             return TypeDescriptor.GetConverter(this, true);

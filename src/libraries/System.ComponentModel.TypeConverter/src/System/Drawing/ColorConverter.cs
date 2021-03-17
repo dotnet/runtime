@@ -78,7 +78,7 @@ namespace System.Drawing
                     }
 
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
                     string[] args;
                     int nArg = 0;
 

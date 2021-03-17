@@ -18,6 +18,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Nullable converter is initialized with the underlying simple type.
         /// </summary>
+        [RequiresUnreferencedCode("The UnderlyingType cannot be statically discovered.")]
         public NullableConverter(Type type)
         {
             NullableType = type;

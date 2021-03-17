@@ -69,6 +69,7 @@ namespace System.ComponentModel
         /// The GetConverter method returns a type converter for the type this type
         /// descriptor is representing.
         /// </summary>
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public virtual TypeConverter GetConverter()
         {
             if (_parent != null)

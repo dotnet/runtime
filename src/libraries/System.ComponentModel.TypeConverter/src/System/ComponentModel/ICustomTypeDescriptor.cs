@@ -29,6 +29,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type converter for this object.
         /// </summary>
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         TypeConverter GetConverter();
 
         /// <summary>

@@ -236,6 +236,7 @@ namespace System.Data
         AttributeCollection ICustomTypeDescriptor.GetAttributes() => new AttributeCollection(null);
         string ICustomTypeDescriptor.GetClassName() => null;
         string ICustomTypeDescriptor.GetComponentName() => null;
+        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter() => null;
         EventDescriptor ICustomTypeDescriptor.GetDefaultEvent() => null;
         PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty() => null;
