@@ -289,7 +289,7 @@ namespace System.Linq
         public static MethodInfo FirstOrDefault_TSource_3(Type TSource) =>
             (s_FirstOrDefault_TSource_3 ??
             (s_FirstOrDefault_TSource_3 = new Func<IQueryable<object>, object, object>(Queryable.FirstOrDefault).GetMethodInfo().GetGenericMethodDefinition()))
-            .MakeGenericMethod();
+            .MakeGenericMethod(TSource);
 
         private static MethodInfo? s_FirstOrDefault_TSource_4;
 

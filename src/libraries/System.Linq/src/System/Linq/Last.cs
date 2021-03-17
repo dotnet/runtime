@@ -45,7 +45,7 @@ namespace System.Linq
 
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
         {
-            var last = source.TryGetLast(out bool found);
+            var last = source.TryGetLast(predicate, out bool found);
             return found ? last! : defaultValue;
         }
 
