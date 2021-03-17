@@ -1102,149 +1102,6 @@
         "unix-arm64"
       ]
     },
-    "ios-sim": {
-      "#import": [
-        "ios"
-      ]
-    },
-    "ios-sim-arm64": {
-      "#import": [
-        "ios-sim",
-        "ios-arm64"
-      ]
-    },
-    "ios-sim-x64": {
-      "#import": [
-        "ios-sim",
-        "ios-x64"
-      ]
-    },
-    "ios-sim-x86": {
-      "#import": [
-        "ios-sim",
-        "ios-x86"
-      ]
-    },
-    "ios-sim.10": {
-      "#import": [
-        "ios-sim.9"
-      ]
-    },
-    "ios-sim.10-arm64": {
-      "#import": [
-        "ios-sim.10",
-        "ios-sim.9-arm64"
-      ]
-    },
-    "ios-sim.10-x64": {
-      "#import": [
-        "ios-sim.10",
-        "ios-sim.9-x64"
-      ]
-    },
-    "ios-sim.10-x86": {
-      "#import": [
-        "ios-sim.10",
-        "ios-sim.9-x86"
-      ]
-    },
-    "ios-sim.11": {
-      "#import": [
-        "ios-sim.10"
-      ]
-    },
-    "ios-sim.11-arm64": {
-      "#import": [
-        "ios-sim.11",
-        "ios-sim.10-arm64"
-      ]
-    },
-    "ios-sim.11-x64": {
-      "#import": [
-        "ios-sim.11",
-        "ios-sim.10-x64"
-      ]
-    },
-    "ios-sim.12": {
-      "#import": [
-        "ios-sim.11"
-      ]
-    },
-    "ios-sim.12-arm64": {
-      "#import": [
-        "ios-sim.12",
-        "ios-sim.11-arm64"
-      ]
-    },
-    "ios-sim.12-x64": {
-      "#import": [
-        "ios-sim.12",
-        "ios-sim.11-x64"
-      ]
-    },
-    "ios-sim.13": {
-      "#import": [
-        "ios-sim.12"
-      ]
-    },
-    "ios-sim.13-arm64": {
-      "#import": [
-        "ios-sim.13",
-        "ios-sim.12-arm64"
-      ]
-    },
-    "ios-sim.13-x64": {
-      "#import": [
-        "ios-sim.13",
-        "ios-sim.12-x64"
-      ]
-    },
-    "ios-sim.8": {
-      "#import": [
-        "ios-sim"
-      ]
-    },
-    "ios-sim.8-arm64": {
-      "#import": [
-        "ios-sim.8",
-        "ios-sim-arm64"
-      ]
-    },
-    "ios-sim.8-x64": {
-      "#import": [
-        "ios-sim.8",
-        "ios-sim-x64"
-      ]
-    },
-    "ios-sim.8-x86": {
-      "#import": [
-        "ios-sim.8",
-        "ios-sim-x86"
-      ]
-    },
-    "ios-sim.9": {
-      "#import": [
-        "ios-sim.8"
-      ]
-    },
-    "ios-sim.9-arm64": {
-      "#import": [
-        "ios-sim.9",
-        "ios-sim.8-arm64"
-      ]
-    },
-    "ios-sim.9-x64": {
-      "#import": [
-        "ios-sim.9",
-        "ios-sim.8-x64"
-      ]
-    },
-    "ios-sim.9-x86": {
-      "#import": [
-        "ios-sim.9",
-        "ios-sim.8-x86"
-      ]
-    },
     "ios-x64": {
       "#import": [
         "ios",
@@ -1393,6 +1250,149 @@
       "#import": [
         "ios.9",
         "ios.8-x86"
+      ]
+    },
+    "iossimulator": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "iossimulator-arm64": {
+      "#import": [
+        "iossimulator",
+        "unix-arm64"
+      ]
+    },
+    "iossimulator-x64": {
+      "#import": [
+        "iossimulator",
+        "unix-x64"
+      ]
+    },
+    "iossimulator-x86": {
+      "#import": [
+        "iossimulator",
+        "unix-x86"
+      ]
+    },
+    "iossimulator.10": {
+      "#import": [
+        "iossimulator.9"
+      ]
+    },
+    "iossimulator.10-arm64": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator.9-arm64"
+      ]
+    },
+    "iossimulator.10-x64": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator.9-x64"
+      ]
+    },
+    "iossimulator.10-x86": {
+      "#import": [
+        "iossimulator.10",
+        "iossimulator.9-x86"
+      ]
+    },
+    "iossimulator.11": {
+      "#import": [
+        "iossimulator.10"
+      ]
+    },
+    "iossimulator.11-arm64": {
+      "#import": [
+        "iossimulator.11",
+        "iossimulator.10-arm64"
+      ]
+    },
+    "iossimulator.11-x64": {
+      "#import": [
+        "iossimulator.11",
+        "iossimulator.10-x64"
+      ]
+    },
+    "iossimulator.12": {
+      "#import": [
+        "iossimulator.11"
+      ]
+    },
+    "iossimulator.12-arm64": {
+      "#import": [
+        "iossimulator.12",
+        "iossimulator.11-arm64"
+      ]
+    },
+    "iossimulator.12-x64": {
+      "#import": [
+        "iossimulator.12",
+        "iossimulator.11-x64"
+      ]
+    },
+    "iossimulator.13": {
+      "#import": [
+        "iossimulator.12"
+      ]
+    },
+    "iossimulator.13-arm64": {
+      "#import": [
+        "iossimulator.13",
+        "iossimulator.12-arm64"
+      ]
+    },
+    "iossimulator.13-x64": {
+      "#import": [
+        "iossimulator.13",
+        "iossimulator.12-x64"
+      ]
+    },
+    "iossimulator.8": {
+      "#import": [
+        "iossimulator"
+      ]
+    },
+    "iossimulator.8-arm64": {
+      "#import": [
+        "iossimulator.8",
+        "iossimulator-arm64"
+      ]
+    },
+    "iossimulator.8-x64": {
+      "#import": [
+        "iossimulator.8",
+        "iossimulator-x64"
+      ]
+    },
+    "iossimulator.8-x86": {
+      "#import": [
+        "iossimulator.8",
+        "iossimulator-x86"
+      ]
+    },
+    "iossimulator.9": {
+      "#import": [
+        "iossimulator.8"
+      ]
+    },
+    "iossimulator.9-arm64": {
+      "#import": [
+        "iossimulator.9",
+        "iossimulator.8-arm64"
+      ]
+    },
+    "iossimulator.9-x64": {
+      "#import": [
+        "iossimulator.9",
+        "iossimulator.8-x64"
+      ]
+    },
+    "iossimulator.9-x86": {
+      "#import": [
+        "iossimulator.9",
+        "iossimulator.8-x86"
       ]
     },
     "linux": {
@@ -2500,91 +2500,6 @@
         "unix-arm64"
       ]
     },
-    "tvos-sim": {
-      "#import": [
-        "tvos"
-      ]
-    },
-    "tvos-sim-arm64": {
-      "#import": [
-        "tvos-sim",
-        "tvos-arm64"
-      ]
-    },
-    "tvos-sim-x64": {
-      "#import": [
-        "tvos-sim",
-        "tvos-x64"
-      ]
-    },
-    "tvos-sim.10": {
-      "#import": [
-        "tvos-sim"
-      ]
-    },
-    "tvos-sim.10-arm64": {
-      "#import": [
-        "tvos-sim.10",
-        "tvos-sim-arm64"
-      ]
-    },
-    "tvos-sim.10-x64": {
-      "#import": [
-        "tvos-sim.10",
-        "tvos-sim-x64"
-      ]
-    },
-    "tvos-sim.11": {
-      "#import": [
-        "tvos-sim.10"
-      ]
-    },
-    "tvos-sim.11-arm64": {
-      "#import": [
-        "tvos-sim.11",
-        "tvos-sim.10-arm64"
-      ]
-    },
-    "tvos-sim.11-x64": {
-      "#import": [
-        "tvos-sim.11",
-        "tvos-sim.10-x64"
-      ]
-    },
-    "tvos-sim.12": {
-      "#import": [
-        "tvos-sim.11"
-      ]
-    },
-    "tvos-sim.12-arm64": {
-      "#import": [
-        "tvos-sim.12",
-        "tvos-sim.11-arm64"
-      ]
-    },
-    "tvos-sim.12-x64": {
-      "#import": [
-        "tvos-sim.12",
-        "tvos-sim.11-x64"
-      ]
-    },
-    "tvos-sim.13": {
-      "#import": [
-        "tvos-sim.12"
-      ]
-    },
-    "tvos-sim.13-arm64": {
-      "#import": [
-        "tvos-sim.13",
-        "tvos-sim.12-arm64"
-      ]
-    },
-    "tvos-sim.13-x64": {
-      "#import": [
-        "tvos-sim.13",
-        "tvos-sim.12-x64"
-      ]
-    },
     "tvos-x64": {
       "#import": [
         "tvos",
@@ -2657,6 +2572,91 @@
       "#import": [
         "tvos.13",
         "tvos.12-x64"
+      ]
+    },
+    "tvossimulator": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "tvossimulator-arm64": {
+      "#import": [
+        "tvossimulator",
+        "unix-arm64"
+      ]
+    },
+    "tvossimulator-x64": {
+      "#import": [
+        "tvossimulator",
+        "unix-x64"
+      ]
+    },
+    "tvossimulator.10": {
+      "#import": [
+        "tvossimulator"
+      ]
+    },
+    "tvossimulator.10-arm64": {
+      "#import": [
+        "tvossimulator.10",
+        "tvossimulator-arm64"
+      ]
+    },
+    "tvossimulator.10-x64": {
+      "#import": [
+        "tvossimulator.10",
+        "tvossimulator-x64"
+      ]
+    },
+    "tvossimulator.11": {
+      "#import": [
+        "tvossimulator.10"
+      ]
+    },
+    "tvossimulator.11-arm64": {
+      "#import": [
+        "tvossimulator.11",
+        "tvossimulator.10-arm64"
+      ]
+    },
+    "tvossimulator.11-x64": {
+      "#import": [
+        "tvossimulator.11",
+        "tvossimulator.10-x64"
+      ]
+    },
+    "tvossimulator.12": {
+      "#import": [
+        "tvossimulator.11"
+      ]
+    },
+    "tvossimulator.12-arm64": {
+      "#import": [
+        "tvossimulator.12",
+        "tvossimulator.11-arm64"
+      ]
+    },
+    "tvossimulator.12-x64": {
+      "#import": [
+        "tvossimulator.12",
+        "tvossimulator.11-x64"
+      ]
+    },
+    "tvossimulator.13": {
+      "#import": [
+        "tvossimulator.12"
+      ]
+    },
+    "tvossimulator.13-arm64": {
+      "#import": [
+        "tvossimulator.13",
+        "tvossimulator.12-arm64"
+      ]
+    },
+    "tvossimulator.13-x64": {
+      "#import": [
+        "tvossimulator.13",
+        "tvossimulator.12-x64"
       ]
     },
     "ubuntu": {
