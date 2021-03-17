@@ -233,7 +233,7 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoMono"
 fi
 
-if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "true" ]]; then
+if [[ "$monoaot" == "true" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
@@ -266,7 +266,7 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
     mv $mono_dotnet $mono_dotnet_path
 fi
 
-if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "true" ]]; then
+if [[ "$monoaot" == "true" ]]; then
     using_aot=true
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
