@@ -47,7 +47,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(safeHandle, access, bufferSize, isAsync));
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
             }
             catch
             {
@@ -79,9 +79,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
         }
 
-        private FileStreamStrategy WrapIfDerivedType(FileStreamStrategy impl)
-            => GetType() == typeof(FileStream) ? impl : new DerivedFileStreamStrategy(this, impl);
-
         public FileStream(SafeFileHandle handle, FileAccess access)
             : this(handle, access, DefaultBufferSize)
         {
@@ -96,7 +93,7 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(handle, access, bufferSize, isAsync));
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode) :
@@ -165,7 +162,7 @@ namespace System.IO
                 SerializationInfo.ThrowIfDeserializationInProgress("AllowFileWrites", ref s_cachedSerializationSwitch);
             }
 
-            _strategy = WrapIfDerivedType(FileStreamHelpers.ChooseStrategy(path, mode, access, share, bufferSize, options));
+            _strategy = FileStreamHelpers.ChooseStrategy(this, path, mode, access, share, bufferSize, options);
         }
 
         [Obsolete("This property has been deprecated.  Please use FileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
@@ -480,21 +477,5 @@ namespace System.IO
             => base.BeginWrite(buffer, offset, count, callback, state);
 
         internal void BaseEndWrite(IAsyncResult asyncResult) => base.EndWrite(asyncResult);
-
-        internal static bool IsIoRelatedException(Exception e) =>
-            // These all derive from IOException
-            //     DirectoryNotFoundException
-            //     DriveNotFoundException
-            //     EndOfStreamException
-            //     FileLoadException
-            //     FileNotFoundException
-            //     PathTooLongException
-            //     PipeException
-            e is IOException ||
-            // Note that SecurityException is only thrown on runtimes that support CAS
-            // e is SecurityException ||
-            e is UnauthorizedAccessException ||
-            e is NotSupportedException ||
-            (e is ArgumentException && !(e is ArgumentNullException));
     }
 }

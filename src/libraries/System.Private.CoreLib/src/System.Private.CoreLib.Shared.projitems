@@ -424,6 +424,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStreamWrapper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\BufferedFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\DerivedFileStreamStrategy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\LegacyFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs" />

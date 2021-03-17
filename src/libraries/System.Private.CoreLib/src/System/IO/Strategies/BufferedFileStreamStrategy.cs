@@ -37,7 +37,7 @@ namespace System.IO.Strategies
                 // so we enforce it by passing always true
                 Dispose(true);
             }
-            catch (Exception e) when (FileStream.IsIoRelatedException(e))
+            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
             {
                 // On finalization, ignore failures from trying to flush the write buffer,
                 // e.g. if this stream is wrapping a pipe and the pipe is now broken.
