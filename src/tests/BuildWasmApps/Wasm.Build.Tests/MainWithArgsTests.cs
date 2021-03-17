@@ -59,7 +59,13 @@ namespace Wasm.Build.Tests
                     }
                 }", buildArgs, args, host, id);
 
-        void TestMainWithArgs(string projectNamePrefix, string projectContents, BuildArgs buildArgs, string[] args, RunHost host, string id)
+        void TestMainWithArgs(string projectNamePrefix,
+                              string projectContents,
+                              BuildArgs buildArgs,
+                              string[] args,
+                              RunHost host,
+                              string id,
+                              bool? dotnetWasmFromRuntimePack=null)
         {
             string projectName = $"{projectNamePrefix}_{buildArgs.Config}_{buildArgs.AOT}";
             string code = @"
@@ -72,11 +78,15 @@ namespace Wasm.Build.Tests
 
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
             buildArgs = GetBuildArgsWith(buildArgs);
+            if (dotnetWasmFromRuntimePack == null)
+                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+
             Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id);
+                        id: id,
+                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
                 test: output =>

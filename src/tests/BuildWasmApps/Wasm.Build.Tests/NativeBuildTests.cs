@@ -19,6 +19,7 @@ namespace Wasm.Build.Tests
 
         // TODO:     - check dotnet.wasm, js have changed
         //           - icall? pinvoke?
+        //           - test defaults
         //
 
         [Theory]
@@ -28,10 +29,10 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.None, parameters: new object[]
-                        { "", "error : Cannot find emscripten sdk, required for native relinking. $(EMSDK_PATH)=" })]
+                        { "", "error.*emscripten.*\\(EMSDK_PATH\\)=" })]
         [BuildAndRun(host: RunHost.None, parameters: new object[]
-                        { "/non-existant/foo", "error : Cannot find emscripten sdk, required for native relinking. $(EMSDK_PATH)=/non-existant/foo" })]
-        public void Relinking_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorMessage, string id)
+                        { "/non-existant/foo", "error.*emscripten sdk.*\\(EMSDK_PATH\\)=/non-existant/foo" })]
+        public void Relinking_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorPattern, string id)
         {
             string projectName = $"simple_native_build";
             buildArgs = buildArgs with {
@@ -45,7 +46,7 @@ namespace Wasm.Build.Tests
                         id: id,
                         expectSuccess: false);
 
-            Assert.Contains(errorMessage, buildOutput);
+            Assert.Matches(errorPattern, buildOutput);
         }
 
         private void NativeBuild(string projectNamePrefix, string projectContents, BuildArgs buildArgs, RunHost host, string id)

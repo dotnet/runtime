@@ -104,10 +104,19 @@ namespace Wasm.Build.Tests
                         extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
                         dotnetWasmFromRuntimePack: false);
 
-        void TestMain(string projectName, string programText, BuildArgs buildArgs, RunHost host, string id, string? extraProperties=null, bool? dotnetWasmFromRuntimePack=true)
+        void TestMain(string projectName,
+                      string programText,
+                      BuildArgs buildArgs,
+                      RunHost host,
+                      string id,
+                      string? extraProperties = null,
+                      bool? dotnetWasmFromRuntimePack = null)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+
+            if (dotnetWasmFromRuntimePack == null)
+                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
