@@ -46,6 +46,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestBaseTypeVirtualMethodRequiresUnreferencedCode ();
 			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode ();
 			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCodeOnBase ();
+			TestTypeWhichOverridesVirtualPropertyRequiresUnreferencedCode ();
 			TestStaticCctorRequiresUnreferencedCode ();
 			TestStaticCtorMarkingIsTriggeredByFieldAccess ();
 			TestStaticCtorTriggeredByMethodCall ();
@@ -218,6 +219,27 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			BaseType tmp = new TypeWhichOverridesMethod ();
 			tmp.VirtualMethodRequiresUnreferencedCode ();
+		}
+
+		class PropertyBaseType
+		{
+			public virtual int VirtualPropertyRequiresUnreferencedCode { [RequiresUnreferencedCode ("Message for --PropertyBaseType.VirtualPropertyRequiresUnreferencedCode--")] get; }
+		}
+
+		class TypeWhichOverridesProperty : PropertyBaseType
+		{
+			public override int VirtualPropertyRequiresUnreferencedCode {
+				[RequiresUnreferencedCode ("Message for --TypeWhichOverridesProperty.VirtualPropertyRequiresUnreferencedCode--")]
+				get { return 1; }
+			}
+		}
+
+		[LogDoesNotContain ("TypeWhichOverridesProperty.VirtualPropertyRequiresUnreferencedCode")]
+		[ExpectedWarning ("IL2026", "--PropertyBaseType.VirtualPropertyRequiresUnreferencedCode--")]
+		static void TestTypeWhichOverridesVirtualPropertyRequiresUnreferencedCode ()
+		{
+			var tmp = new TypeWhichOverridesProperty ();
+			_ = tmp.VirtualPropertyRequiresUnreferencedCode;
 		}
 
 		class StaticCtor

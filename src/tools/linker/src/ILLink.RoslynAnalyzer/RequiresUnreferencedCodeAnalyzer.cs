@@ -45,9 +45,6 @@ namespace ILLink.RoslynAnalyzer
 
 				context.RegisterOperationAction (operationContext => {
 					var call = (IInvocationOperation) operationContext.Operation;
-					if (call.IsVirtual && call.TargetMethod.OverriddenMethod != null)
-						return;
-
 					CheckMethodOrCtorCall (operationContext, call.TargetMethod);
 				}, OperationKind.Invocation);
 
@@ -55,6 +52,14 @@ namespace ILLink.RoslynAnalyzer
 					var call = (IObjectCreationOperation) operationContext.Operation;
 					CheckMethodOrCtorCall (operationContext, call.Constructor);
 				}, OperationKind.ObjectCreation);
+
+				context.RegisterOperationAction (operationContext => {
+					var fieldAccess = (IFieldReferenceOperation) operationContext.Operation;
+					if (fieldAccess.Field.ContainingType is INamedTypeSymbol { StaticConstructors: var ctors } &&
+						!SymbolEqualityComparer.Default.Equals (operationContext.ContainingSymbol.ContainingType, fieldAccess.Field.ContainingType)) {
+						CheckStaticConstructors (operationContext, ctors);
+					}
+				}, OperationKind.FieldReference);
 
 				context.RegisterOperationAction (operationContext => {
 					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
@@ -67,6 +72,23 @@ namespace ILLink.RoslynAnalyzer
 						CheckMethodOrCtorCall (operationContext, prop.SetMethod);
 				}, OperationKind.PropertyReference);
 
+				static void CheckStaticConstructors (OperationAnalysisContext operationContext,
+					ImmutableArray<IMethodSymbol> constructors)
+				{
+					foreach (var constructor in constructors) {
+						if (constructor.Parameters.Length == 0 && constructor.HasAttribute (RequiresUnreferencedCodeAttribute) && constructor.MethodKind == MethodKind.StaticConstructor) {
+							if (constructor.TryGetAttributeWithMessageOnCtor (FullyQualifiedRequiresUnreferencedCodeAttribute, out AttributeData? requiresUnreferencedCode)) {
+								operationContext.ReportDiagnostic (Diagnostic.Create (
+									s_requiresUnreferencedCodeRule,
+									operationContext.Operation.Syntax.GetLocation (),
+									constructor.ToString (),
+									(string) requiresUnreferencedCode!.ConstructorArguments[0].Value!,
+									requiresUnreferencedCode!.NamedArguments.FirstOrDefault (na => na.Key == "Url").Value.Value?.ToString ()));
+							}
+						}
+					}
+				}
+
 				static void CheckMethodOrCtorCall (
 					OperationAnalysisContext operationContext,
 					IMethodSymbol method)
@@ -76,8 +98,16 @@ namespace ILLink.RoslynAnalyzer
 						operationContext.ContainingSymbol.HasAttribute (RequiresUnreferencedCodeAttribute))
 						return;
 
+					// If calling an instance constructor, check first for any static constructor since it will be called implicitly
+					if (method.ContainingType is { } containingType && operationContext.Operation is IObjectCreationOperation)
+						CheckStaticConstructors (operationContext, containingType.StaticConstructors);
+
 					if (!method.HasAttribute (RequiresUnreferencedCodeAttribute))
 						return;
+
+					// Warn on the most derived base method taking into account covariant returns
+					while (method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
+						method = method.OverriddenMethod;
 
 					if (method.TryGetAttributeWithMessageOnCtor (FullyQualifiedRequiresUnreferencedCodeAttribute, out AttributeData? requiresUnreferencedCode)) {
 						operationContext.ReportDiagnostic (Diagnostic.Create (

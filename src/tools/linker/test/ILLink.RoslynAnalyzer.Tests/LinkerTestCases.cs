@@ -19,14 +19,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			switch (m.Identifier.ValueText) {
 			case "MethodWithDuplicateRequiresAttribute":
-			case "TestCovariantReturnCallOnDerived":
 			case "TestRequiresUnreferencedCodeOnlyThroughReflection":
-			case "TestStaticCctorRequiresUnreferencedCode":
-			case "TestStaticCtorMarkingIsTriggeredByFieldAccess":
-			case "TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode":
 			case "TestRequiresInMethodFromCopiedAssembly":
 			case "TestRequiresThroughReflectionInMethodFromCopiedAssembly":
-			case "TestStaticCtorTriggeredByMethodCall":
+			// There is a discrepancy between the way linker and the analyzer represent the location of the error,
+			// linker will point to the method caller and the analyzer will point to a line of code.
+			// The TestTypeIsBeforeFieldInit scenario is supported by the analyzer, just the diagnostic message is different
+			// We verify the analyzer generating the right diagnostic in RequiresUnreferencedCodeAnalyzerTests.cs
 			case "TestTypeIsBeforeFieldInit":
 				return;
 			}
