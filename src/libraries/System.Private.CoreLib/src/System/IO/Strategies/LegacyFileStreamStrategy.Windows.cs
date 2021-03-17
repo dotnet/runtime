@@ -434,7 +434,7 @@ namespace System.IO.Strategies
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
+                        ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }

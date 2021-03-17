@@ -142,7 +142,7 @@ namespace System.IO.Strategies
 
             // If we can't check the handle, just assume it is ok.
             if (!(IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
-                throw new ArgumentException(SR.Arg_HandleNotSync, nameof(handle));
+                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
         }
 
         private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
