@@ -116,11 +116,10 @@ jmethodID g_keyPairGenGenKeyPairMethod;
 jclass    g_KeyStoreClass;
 jmethodID g_KeyStoreGetInstance;
 jmethodID g_KeyStoreAliases;
+jmethodID g_KeyStoreContainsAlias;
 jmethodID g_KeyStoreDeleteEntry;
 jmethodID g_KeyStoreGetCertificate;
-jmethodID g_KeyStoreGetCertificateAlias;
 jmethodID g_KeyStoreGetEntry;
-jmethodID g_KeyStoreIsCertificateEntry;
 jmethodID g_KeyStoreLoad;
 jmethodID g_KeyStoreSetCertificateEntry;
 jmethodID g_KeyStoreSetKeyEntry;
@@ -158,9 +157,9 @@ jmethodID g_CertPathGetEncoded;
 
 // java/security/cert/X509Certificate
 jclass    g_X509CertClass;
+jmethodID g_X509CertEquals;
 jmethodID g_X509CertGetEncoded;
 jmethodID g_X509CertGetPublicKey;
-jmethodID g_X509CertHashCode;
 
 // java/security/interfaces/RSAPrivateCrtKey
 jclass    g_RSAPrivateCrtKeyClass;
@@ -560,10 +559,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_CertPathClass =       GetClassGRef(env, "java/security/cert/CertPath");
     g_CertPathGetEncoded =  GetMethod(env, false, g_CertPathClass, "getEncoded", "(Ljava/lang/String;)[B");
 
-    g_X509CertClass =                       GetClassGRef(env, "java/security/cert/X509Certificate");
-    g_X509CertGetEncoded =                  GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
-    g_X509CertGetPublicKey =                GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
-    g_X509CertHashCode =                    GetMethod(env, false, g_X509CertClass, "hashCode", "()I");
+    g_X509CertClass =           GetClassGRef(env, "java/security/cert/X509Certificate");
+    g_X509CertEquals =          GetMethod(env, false, g_X509CertClass, "equals", "(Ljava/lang/Object;)Z");
+    g_X509CertGetEncoded =      GetMethod(env, false, g_X509CertClass, "getEncoded", "()[B");
+    g_X509CertGetPublicKey =    GetMethod(env, false, g_X509CertClass, "getPublicKey", "()Ljava/security/PublicKey;");
 
     g_DSAKeyClass = GetClassGRef(env, "java/security/interfaces/DSAKey");
 
@@ -589,11 +588,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyStoreClass =               GetClassGRef(env, "java/security/KeyStore");
     g_KeyStoreGetInstance =         GetMethod(env, true, g_KeyStoreClass, "getInstance", "(Ljava/lang/String;)Ljava/security/KeyStore;");
     g_KeyStoreAliases =             GetMethod(env, false, g_KeyStoreClass, "aliases", "()Ljava/util/Enumeration;");
+    g_KeyStoreContainsAlias =       GetMethod(env, false, g_KeyStoreClass, "containsAlias", "(Ljava/lang/String;)Z");
     g_KeyStoreDeleteEntry =         GetMethod(env, false, g_KeyStoreClass, "deleteEntry", "(Ljava/lang/String;)V");
     g_KeyStoreGetCertificate =      GetMethod(env, false, g_KeyStoreClass, "getCertificate", "(Ljava/lang/String;)Ljava/security/cert/Certificate;");
-    g_KeyStoreGetCertificateAlias = GetMethod(env, false, g_KeyStoreClass, "getCertificateAlias", "(Ljava/security/cert/Certificate;)Ljava/lang/String;");
     g_KeyStoreGetEntry =            GetMethod(env, false, g_KeyStoreClass, "getEntry", "(Ljava/lang/String;Ljava/security/KeyStore$ProtectionParameter;)Ljava/security/KeyStore$Entry;");
-    g_KeyStoreIsCertificateEntry =  GetMethod(env, false, g_KeyStoreClass, "isCertificateEntry", "(Ljava/lang/String;)Z");
     g_KeyStoreLoad =                GetMethod(env, false, g_KeyStoreClass, "load", "(Ljava/io/InputStream;[C)V");
     g_KeyStoreSetCertificateEntry = GetMethod(env, false, g_KeyStoreClass, "setCertificateEntry", "(Ljava/lang/String;Ljava/security/cert/Certificate;)V");
     g_KeyStoreSetKeyEntry =         GetMethod(env, false, g_KeyStoreClass, "setKeyEntry", "(Ljava/lang/String;Ljava/security/Key;[C[Ljava/security/cert/Certificate;)V");

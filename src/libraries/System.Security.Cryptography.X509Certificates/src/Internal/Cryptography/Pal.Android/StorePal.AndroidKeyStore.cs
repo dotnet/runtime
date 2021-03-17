@@ -49,6 +49,7 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
                 AndroidCertificatePal certPal = (AndroidCertificatePal)cert;
+                string hashString = GetCertificateHashString(cert);
 
                 bool success;
                 if (certPal.HasPrivateKey)
@@ -64,11 +65,11 @@ namespace Internal.Cryptography.Pal
                         _ => throw new NotSupportedException(SR.NotSupported_KeyAlgorithm)
                     };
 
-                    success = Interop.AndroidCrypto.X509StoreAddCertificateWithPrivateKey(_keyStoreHandle, certPal.SafeHandle, certPal.PrivateKeyHandle, algorithm);
+                    success = Interop.AndroidCrypto.X509StoreAddCertificateWithPrivateKey(_keyStoreHandle, certPal.SafeHandle, certPal.PrivateKeyHandle, algorithm, hashString);
                 }
                 else
                 {
-                    success = Interop.AndroidCrypto.X509StoreAddCertificate(_keyStoreHandle, certPal.SafeHandle);
+                    success = Interop.AndroidCrypto.X509StoreAddCertificate(_keyStoreHandle, certPal.SafeHandle, hashString);
                 }
 
                 if (!success)
@@ -77,10 +78,11 @@ namespace Internal.Cryptography.Pal
 
             public void Remove(ICertificatePal cert)
             {
+                string hashString = GetCertificateHashString(cert);
                 AndroidCertificatePal certPal = (AndroidCertificatePal)cert;
                 if (_readOnly)
                 {
-                    bool containsCert = Interop.AndroidCrypto.X509StoreContainsCertificate(_keyStoreHandle, certPal.SafeHandle);
+                    bool containsCert = Interop.AndroidCrypto.X509StoreContainsCertificate(_keyStoreHandle, certPal.SafeHandle, hashString);
                     if (containsCert)
                         throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
@@ -88,7 +90,7 @@ namespace Internal.Cryptography.Pal
                     return;
                 }
 
-                bool success = Interop.AndroidCrypto.X509StoreRemoveCertificate(_keyStoreHandle, certPal.SafeHandle);
+                bool success = Interop.AndroidCrypto.X509StoreRemoveCertificate(_keyStoreHandle, certPal.SafeHandle, hashString);
                 if (!success)
                     throw new CryptographicException(SR.Cryptography_X509_StoreRemoveFailure);
             }
@@ -113,6 +115,11 @@ namespace Internal.Cryptography.Pal
                 {
                     collection.Add(cert);
                 }
+            }
+
+            private static string GetCertificateHashString(ICertificatePal certPal)
+            {
+                return X509Certificate.GetCertHashString(HashAlgorithmName.SHA256, certPal);
             }
 
             private struct EnumCertificatesContext

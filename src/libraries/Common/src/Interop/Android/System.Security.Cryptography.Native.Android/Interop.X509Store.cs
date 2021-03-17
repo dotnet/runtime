@@ -15,7 +15,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreAddCertificate(
             SafeX509StoreHandle store,
-            SafeX509Handle cert);
+            SafeX509Handle cert,
+            string hashString);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -23,13 +24,15 @@ internal static partial class Interop
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             SafeKeyHandle key,
-            PAL_KeyAlgorithm algorithm);
+            PAL_KeyAlgorithm algorithm,
+            string hashString);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreContainsCertificate(
             SafeX509StoreHandle store,
-            SafeX509Handle cert);
+            SafeX509Handle cert,
+            string hashString);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -52,7 +55,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern unsafe bool X509StoreRemoveCertificate(
             SafeX509StoreHandle store,
-            SafeX509Handle cert);
+            SafeX509Handle cert,
+            string hashString);
     }
 }
 

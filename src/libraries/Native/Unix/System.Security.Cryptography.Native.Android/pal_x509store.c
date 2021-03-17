@@ -24,53 +24,105 @@ do { \
     } \
 } while (0)
 
-static jstring CreateAliasForCertificate(JNIEnv* env, jobject /*X509Certificate*/ cert)
+typedef enum
 {
-    // Use the certificate's hash code as a unique alias
-    int hashCode = (*env)->CallIntMethod(env, cert, g_X509CertHashCode);
+    EntryFlags_None = 0,
+    EntryFlags_HasCertificate = 1,
+    EntryFlags_HasPrivateKey = 2,
+    EntryFlags_MatchesCertificate = 4,
+} EntryFlags;
 
-    char buffer[9] = {0}; // 8-character hex + null terminator
-    size_t written = (size_t)snprintf(buffer, sizeof(buffer), "%08X", hashCode);
-    assert(written == sizeof(buffer) - 1);
-    (void)written;
-
-    return (*env)->NewStringUTF(env, buffer);
-}
-
-static bool TryGetExistingCertificateAlias(JNIEnv* env,
-                                           jobject /*KeyStore*/ store,
-                                           jobject /*X509Certificate*/ cert,
-                                           jobject* outAlias)
+// Returns whether or not the store contains the specified alias
+// If the entry exists, the flags parameter is set based on the contents of the entry
+static bool ContainsEntryForAlias(
+    JNIEnv* env, jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert, jstring alias, EntryFlags* flags)
 {
-    // String alias = store.getCertificateAlias(cert);
-    jstring alias = (*env)->CallObjectMethod(env, store, g_KeyStoreGetCertificateAlias, cert);
-    bool containsCert = alias != NULL;
-    if (outAlias != NULL)
+    bool ret = false;
+    EntryFlags flagsLocal = EntryFlags_None;
+
+    INIT_LOCALS(loc, entry, existingCert);
+
+    bool containsAlias = (*env)->CallBooleanMethod(env, store, g_KeyStoreContainsAlias, alias);
+    if (!containsAlias)
+        goto cleanup;
+
+    ret = true;
+
+    // KeyStore.Entry entry = store.getEntry(alias, null);
+    // if (entry instanceof KeyStore.PrivateKeyEntry) {
+    //     existingCert = ((KeyStore.PrivateKeyEntry)entry).getCertificate();
+    // } else if (entry instanceof KeyStore.TrustedCertificateEntry) {
+    //     existingCert = ((KeyStore.TrustedCertificateEntry)entry).getTrustedCertificate();
+    // }
+    loc[entry] = (*env)->CallObjectMethod(env, store, g_KeyStoreGetEntry, alias, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    if ((*env)->IsInstanceOf(env, loc[entry], g_PrivateKeyEntryClass))
     {
-        *outAlias = alias;
+        // Private key entries always have a certificate
+        flagsLocal |= EntryFlags_HasCertificate;
+        flagsLocal |= EntryFlags_HasPrivateKey;
+        loc[existingCert] = (*env)->CallObjectMethod(env, loc[entry], g_PrivateKeyEntryGetCertificate);
+    }
+    else if ((*env)->IsInstanceOf(env, loc[entry], g_TrustedCertificateEntryClass))
+    {
+        flagsLocal |= EntryFlags_HasCertificate;
+        loc[existingCert] = (*env)->CallObjectMethod(env, loc[entry], g_TrustedCertificateEntryGetTrustedCertificate);
     }
     else
     {
-        (*env)->DeleteLocalRef(env, alias);
+        // Entry for alias exists, but doesn't represent a certificate or private key + certificate
+        goto cleanup;
     }
 
-    return containsCert;
+    assert(loc[existingCert] != NULL);
+    if ((*env)->CallBooleanMethod(env, cert, g_X509CertEquals, loc[existingCert]))
+    {
+        flagsLocal |= EntryFlags_MatchesCertificate;
+    }
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    *flags = flagsLocal;
+    return ret;
 }
 
-int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert)
+static bool ContainsMatchingCertificateForAlias(JNIEnv* env,
+                                                jobject /*KeyStore*/ store,
+                                                jobject /*X509Certificate*/ cert,
+                                                jstring alias)
+{
+    EntryFlags flags;
+    if (!ContainsEntryForAlias(env, store, cert, alias, &flags))
+        return false;
+
+    EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
+    return (flags & matchesFlags) == matchesFlags;
+}
+
+int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
+                                                    jobject /*X509Certificate*/ cert,
+                                                    const char* hashString)
 {
     assert(store != NULL);
     assert(cert != NULL);
 
     JNIEnv* env = GetJNIEnv();
 
-    if (TryGetExistingCertificateAlias(env, store, cert, NULL /*outAlias*/))
+    jstring alias = JSTRING(hashString);
+    EntryFlags flags;
+    if (ContainsEntryForAlias(env, store, cert, alias, &flags))
     {
+        EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
+        if ((flags & matchesFlags) != matchesFlags)
+        {
+            LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
+            return FAIL;
+        }
+
         // Certificate is already in store - nothing to do
+        LOG_DEBUG("Store already contains certificate");
         return SUCCESS;
     }
-
-    jstring alias = CreateAliasForCertificate(env, cert);
 
     // store.setCertificateEntry(alias, cert);
     (*env)->CallVoidMethod(env, store, g_KeyStoreSetCertificateEntry, alias, cert);
@@ -82,7 +134,8 @@ int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store, 
 int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyStore*/ store,
                                                                   jobject /*X509Certificate*/ cert,
                                                                   void* key,
-                                                                  PAL_KeyAlgorithm algorithm)
+                                                                  PAL_KeyAlgorithm algorithm,
+                                                                  const char* hashString)
 {
     assert(store != NULL);
     assert(cert != NULL);
@@ -92,9 +145,33 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
     JNIEnv* env = GetJNIEnv();
 
     INIT_LOCALS(loc, alias, certs);
+    jobject privateKey = NULL;
+
+    loc[alias] = JSTRING(hashString);
+
+    EntryFlags flags;
+    if (ContainsEntryForAlias(env, store, cert, loc[alias], &flags))
+    {
+        EntryFlags matchesFlags = EntryFlags_HasCertificate & EntryFlags_MatchesCertificate;
+        if ((flags & matchesFlags) != matchesFlags)
+        {
+            LOG_ERROR("Store already contains alias with entry that does not match the expected certificate");
+            return FAIL;
+        }
+
+        if ((flags & EntryFlags_HasPrivateKey) == EntryFlags_HasPrivateKey)
+        {
+            // Certificate with private key is already in store - nothing to do
+            LOG_DEBUG("Store already contains certificate with private key");
+            return SUCCESS;
+        }
+
+        // Delete existing entry. We will replace the existing cert with the cert + private key.
+        // store.deleteEntry(alias);
+        (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, alias);
+    }
 
     bool releasePrivateKey = true;
-    jobject privateKey;
     switch (algorithm)
     {
         case PAL_EC:
@@ -117,10 +194,12 @@ int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyS
             break;
         }
         default:
-            return FAIL;
+        {
+            releasePrivateKey = false;
+            LOG_ERROR("Unknown algorithm for private key");
+            goto cleanup;
+        }
     }
-
-    loc[alias] = CreateAliasForCertificate(env, cert);
 
     // X509Certificate[] certs = new X509Certificate[] { cert };
     // store.setKeyEntry(alias, privateKey, null, certs);
@@ -140,13 +219,19 @@ cleanup:
     return ret;
 }
 
-bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert)
+bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store,
+                                                      jobject /*X509Certificate*/ cert,
+                                                      const char* hashString)
 {
     assert(store != NULL);
     assert(cert != NULL);
 
     JNIEnv* env = GetJNIEnv();
-    return TryGetExistingCertificateAlias(env, store, cert, NULL /*outAlias*/);
+    jstring alias = JSTRING(hashString);
+
+    bool containsCert = ContainsMatchingCertificateForAlias(env, store, cert, alias);
+    (*env)->DeleteLocalRef(env, alias);
+    return containsCert;
 }
 
 static void* HandleFromKeys(JNIEnv* env,
@@ -174,7 +259,8 @@ static void* HandleFromKeys(JNIEnv* env,
     return NULL;
 }
 
-static int32_t EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesCallback cb, void* context)
+static int32_t
+EnumerateCertificates(JNIEnv* env, jobject /*KeyStore*/ store, EnumCertificatesCallback cb, void* context)
 {
     int32_t ret = FAIL;
 
@@ -239,8 +325,8 @@ cleanup:
 }
 
 int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ store,
-                                                        EnumCertificatesCallback cb,
-                                                        void* context)
+                                                           EnumCertificatesCallback cb,
+                                                           void* context)
 {
     assert(store != NULL);
     assert(cb != NULL);
@@ -354,14 +440,16 @@ cleanup:
     return ret;
 }
 
-int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store, jobject /*X509Certificate*/ cert)
+int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store,
+                                                       jobject /*X509Certificate*/ cert,
+                                                       const char* hashString)
 {
     assert(store != NULL);
 
     JNIEnv* env = GetJNIEnv();
 
-    jstring alias = NULL;
-    if (!TryGetExistingCertificateAlias(env, store, cert, &alias))
+    jstring alias = JSTRING(hashString);
+    if (!ContainsMatchingCertificateForAlias(env, store, cert, alias))
     {
         // Certificate is not in store - nothing to do
         return SUCCESS;

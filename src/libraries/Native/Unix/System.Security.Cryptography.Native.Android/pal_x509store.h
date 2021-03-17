@@ -11,7 +11,8 @@ If the certificate is already in the store, this function simply returns success
 Returns 1 on success, 0 otherwise.
 */
 PALEXPORT int32_t AndroidCryptoNative_X509StoreAddCertificate(jobject /*KeyStore*/ store,
-                                                              jobject /*X509Certificate*/ cert);
+                                                              jobject /*X509Certificate*/ cert,
+                                                              const char* hashString);
 
 /*
 Add a certificate with a private key to the specified key store
@@ -23,13 +24,15 @@ Returns 1 on success, 0 otherwise.
 PALEXPORT int32_t AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey(jobject /*KeyStore*/ store,
                                                                             jobject /*X509Certificate*/ cert,
                                                                             void* key,
-                                                                            PAL_KeyAlgorithm algorithm);
+                                                                            PAL_KeyAlgorithm algorithm,
+                                                                            const char* hashString);
 
 /*
 Get whether or not a certificate is contained in the specified key store
 */
 PALEXPORT bool AndroidCryptoNative_X509StoreContainsCertificate(jobject /*KeyStore*/ store,
-                                                                jobject /*X509Certificate*/ cert);
+                                                                jobject /*X509Certificate*/ cert,
+                                                                const char* hashString);
 
 /*
 Enumerate certificates for the specified key store
@@ -40,8 +43,8 @@ typedef void (*EnumCertificatesCallback)(jobject /*X509Certificate*/ cert,
                                          PAL_KeyAlgorithm algorithm,
                                          void* context);
 PALEXPORT int32_t AndroidCryptoNative_X509StoreEnumerateCertificates(jobject /*KeyStore*/ store,
-                                                                  EnumCertificatesCallback cb,
-                                                                  void* context);
+                                                                     EnumCertificatesCallback cb,
+                                                                     void* context);
 
 /*
 Enumerate trusted certificates
@@ -65,4 +68,5 @@ If the certificate is not in the store, this function returns success.
 Returns 1 on success, 0 otherwise.
 */
 PALEXPORT int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeyStore*/ store,
-                                                                 jobject /*X509Certificate*/ cert);
+                                                                 jobject /*X509Certificate*/ cert,
+                                                                 const char* hashString);
