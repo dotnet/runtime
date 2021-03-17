@@ -7,9 +7,21 @@ namespace System.IO.Strategies
 {
     internal static partial class FileStreamHelpers
     {
-        // It's enabled by default. We are going to change that (by removing !) once we fix #16354, #25905 and #24847.
-        internal static bool UseLegacyStrategy { get; }
-            = !AppContextConfigHelper.GetBooleanConfig("System.IO.UseLegacyFileStream", "DOTNET_SYSTEM_IO_USELEGACYFILESTREAM");
+        // It's enabled by default. We are going to change that once we fix #16354, #25905 and #24847.
+        internal static bool UseLegacyStrategy { get; } = GetLegacyFileStreamSetting();
+
+        private static bool GetLegacyFileStreamSetting()
+        {
+            if (AppContext.TryGetSwitch("System.IO.UseNet5CompatFileStream", out bool fileConfig))
+            {
+                return fileConfig;
+            }
+
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
+            return envVar is null
+                ? true // legacy is currently enabled by default;
+                : bool.IsTrueStringIgnoreCase(envVar) || envVar.Equals("1");
+        }
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
             => WrapIfDerivedType(fileStream, ChooseStrategy(handle, access, bufferSize, isAsync));
