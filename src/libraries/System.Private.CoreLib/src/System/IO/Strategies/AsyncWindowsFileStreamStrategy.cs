@@ -397,7 +397,7 @@ namespace System.IO.Strategies
             finally
             {
                 // Make sure the stream's current position reflects where we ended up
-                if (!_fileHandle.IsClosed && CanSeek)
+                if (!_fileHandle.IsClosed && canSeek)
                 {
                     SeekCore(_fileHandle, 0, SeekOrigin.End);
                 }

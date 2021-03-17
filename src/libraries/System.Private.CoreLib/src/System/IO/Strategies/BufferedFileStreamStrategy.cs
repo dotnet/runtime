@@ -74,7 +74,7 @@ namespace System.IO.Strategies
             {
                 Debug.Assert(!(_writePos > 0 && _readPos != _readLen), "Read and Write buffers cannot both have data in them at the same time.");
 
-                return _strategy.Position + (_readPos - _readLen + _writePos);
+                return _strategy.Position + _readPos - _readLen + _writePos;
             }
             set
             {
@@ -598,7 +598,7 @@ namespace System.IO.Strategies
                 ClearReadBufferBeforeWrite();
                 EnsureBufferAllocated();
             }
-            else if (_writePos >= _bufferSize - 1)
+            else if (_writePos == _bufferSize - 1)
             {
                 FlushWrite();
             }
@@ -1055,7 +1055,7 @@ namespace System.IO.Strategies
 
         private void EnsureBufferAllocated()
         {
-            Debug.Assert(_bufferSize > 0);
+            Debug.Assert(_bufferSize > 1);
 
             // BufferedFileStreamStrategy is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
