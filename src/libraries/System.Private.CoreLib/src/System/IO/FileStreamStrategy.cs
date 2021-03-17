@@ -7,10 +7,6 @@ namespace System.IO
 {
     internal abstract class FileStreamStrategy : Stream
     {
-        protected readonly FileStream _fileStream;
-
-        protected FileStreamStrategy(FileStream fileStream) => _fileStream = fileStream;
-
         internal abstract bool IsAsync { get; }
 
         internal abstract string Name { get; }
@@ -21,6 +17,8 @@ namespace System.IO
 
         internal abstract bool IsClosed { get; }
 
+        internal virtual bool IsPipe => false;
+
         internal abstract void Lock(long position, long length);
 
         internal abstract void Unlock(long position, long length);
@@ -28,5 +26,7 @@ namespace System.IO
         internal abstract void Flush(bool flushToDisk);
 
         internal abstract void DisposeInternal(bool disposing);
+
+        internal virtual void OnBufferAllocated(byte[] buffer) { }
     }
 }

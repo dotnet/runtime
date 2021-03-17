@@ -108,13 +108,13 @@ namespace System.IO
         private void EnsureNotClosed()
         {
             if (!_isOpen)
-                throw Error.GetStreamIsClosed();
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureWriteable()
         {
             if (!CanWrite)
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
         }
 
         protected override void Dispose(bool disposing)
@@ -233,7 +233,7 @@ namespace System.IO
             if ((uint)newPos > (uint)_length)
             {
                 _position = _length;
-                throw Error.GetEndOfFile();
+                ThrowHelper.ThrowEndOfFileException();
             }
 
             var span = new ReadOnlySpan<byte>(_buffer, origPos, count);
