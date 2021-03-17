@@ -25,7 +25,6 @@ run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
 using_mono=false
-using_aot=false
 wasm_runtime_loc=
 using_wasm=false
 use_latest_dotnet=false
@@ -267,7 +266,6 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then
 fi
 
 if [[ "$monoaot" == "true" ]]; then
-    using_aot=true
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
