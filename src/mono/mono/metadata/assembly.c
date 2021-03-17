@@ -653,7 +653,7 @@ mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	gint32 machine, flags;
 
-	if (!t->rows)
+	if (!table_info_get_rows (t))
 		return FALSE;
 
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
@@ -1237,8 +1237,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (!image->references) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
-		image->references = g_new0 (MonoAssembly *, t->rows + 1);
-		image->nreferences = t->rows;
+		int n = table_info_get_rows (t);
+		image->references = g_new0 (MonoAssembly *, n + 1);
+		image->nreferences = n;
 	}
 	reference = image->references [index];
 	mono_image_unlock (image);
@@ -2334,7 +2335,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	predicate = req->predicate;
 	user_data = req->predicate_ud;
 
-	if (!image->tables [MONO_TABLE_ASSEMBLY].rows) {
+	if (!table_info_get_rows (&image->tables [MONO_TABLE_ASSEMBLY])) {
 		/* 'image' doesn't have a manifest -- maybe someone is trying to Assembly.Load a .netmodule */
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
@@ -3685,7 +3686,8 @@ mono_assembly_has_skip_verification (MonoAssembly *assembly)
 
 	t = &assembly->image->tables [MONO_TABLE_DECLSECURITY];
 
-	for (i = 0; i < t->rows; ++i) {
+	int rows = table_info_get_rows (t);
+	for (i = 0; i < rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 		if ((cols [MONO_DECL_SECURITY_PARENT] & MONO_HAS_DECL_SECURITY_MASK) != MONO_HAS_DECL_SECURITY_ASSEMBLY)
 			continue;

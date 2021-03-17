@@ -1476,10 +1476,10 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 		param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx < methodt->rows)
+		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
@@ -1571,10 +1571,10 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx < methodt->rows)
+		if (idx < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
@@ -1625,10 +1625,10 @@ mono_method_has_marshal_info (MonoMethod *method)
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
 
-		if (idx + 1 < methodt->rows)
+		if (idx + 1 < table_info_get_rows (methodt))
 			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows + 1;
+			lastp = table_info_get_rows (paramt) + 1;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
