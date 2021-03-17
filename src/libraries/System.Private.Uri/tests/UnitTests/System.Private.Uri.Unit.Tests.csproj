@@ -7,7 +7,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Fakes\FakeUri.cs" />
     <Compile Include="IriEscapeUnescapeTest.cs" />
   </ItemGroup>
