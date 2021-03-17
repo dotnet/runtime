@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.CompilerServices;
 
 /*
  * Win32FileStream supports different modes of accessing the disk - async mode
@@ -39,13 +36,11 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
+    internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy, IFileStreamCompletionSourceStrategy
     {
         private bool _canSeek;
         private bool _isPipe;      // Whether to disable async buffering code.
         private long _appendStart; // When appending, prevent overwriting file.
-
-        private static readonly unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
 
         private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
@@ -53,28 +48,7 @@ namespace System.IO
 
         private void Init(FileMode mode, FileShare share, string originalPath, FileOptions options)
         {
-            if (!PathInternal.IsExtended(originalPath))
-            {
-                // To help avoid stumbling into opening COM/LPT ports by accident, we will block on non file handles unless
-                // we were explicitly passed a path that has \\?\. GetFullPath() will turn paths like C:\foo\con.txt into
-                // \\.\CON, so we'll only allow the \\?\ syntax.
-
-                int fileType = Interop.Kernel32.GetFileType(_fileHandle);
-                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
-                {
-                    int errorCode = fileType == Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                        ? Marshal.GetLastWin32Error()
-                        : Interop.Errors.ERROR_SUCCESS;
-
-                    _fileHandle.Dispose();
-
-                    if (errorCode != Interop.Errors.ERROR_SUCCESS)
-                    {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                    }
-                    throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
-                }
-            }
+            FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
 
             // This is necessary for async IO using IO Completion ports via our
             // managed Threadpool API's.  This (theoretically) calls the OS's
@@ -139,11 +113,7 @@ namespace System.IO
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            int handleType = Interop.Kernel32.GetFileType(handle);
-            Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
-
-            _canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
-            _isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
+            FileStreamHelpers.GetFileTypeSpecificInformation(handle, out _canSeek, out _isPipe);
 
             // This is necessary for async IO using IO Completion ports via our
             // managed Threadpool API's.  This calls the OS's
@@ -189,11 +159,7 @@ namespace System.IO
         {
             get
             {
-                Interop.Kernel32.FILE_STANDARD_INFO info;
-
-                if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-                long len = info.EndOfFile;
+                long len = FileStreamHelpers.GetFileLength(_fileHandle, _path);
 
                 // If we're writing near the end of the file, we must include our
                 // internal buffer in our Length calculation.  Don't flush because
@@ -226,7 +192,7 @@ namespace System.IO
                     {
                         FlushWriteBuffer(!disposing);
                     }
-                    catch (Exception e) when (IsIoRelatedException(e) && !disposing)
+                    catch (Exception e) when (!disposing && FileStream.IsIoRelatedException(e))
                     {
                         // On finalization, ignore failures from trying to flush the write buffer,
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
@@ -275,13 +241,7 @@ namespace System.IO
             }
         }
 
-        private void FlushOSBuffer()
-        {
-            if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
+        private void FlushOSBuffer() => FileStreamHelpers.FlushToDisk(_fileHandle, _path);
 
         // Returns a task that flushes the internal write buffer
         private Task FlushWriteAsync(CancellationToken cancellationToken)
@@ -368,33 +328,13 @@ namespace System.IO
             Debug.Assert(value >= 0, "value >= 0");
             VerifyOSHandlePosition();
 
-            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
-            {
-                EndOfFile = value
-            };
-
-            if (!Interop.Kernel32.SetFileInformationByHandle(
-                _fileHandle,
-                Interop.Kernel32.FileEndOfFileInfo,
-                &eofInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
-            {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-            }
+            FileStreamHelpers.SetLength(_fileHandle, _path, value);
 
             if (_filePosition > value)
             {
                 SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
-
-        // Instance method to help code external to this MarshalByRefObject avoid
-        // accessing its fields by ref.  This avoids a compiler warning.
-        private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource) =>
-            Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private int ReadSpan(Span<byte> destination)
         {
@@ -408,7 +348,7 @@ namespace System.IO
             // buffer, depending on number of bytes user asked for and buffer size.
             if (n == 0)
             {
-                if (!CanRead) throw Error.GetReadNotSupported();
+                if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 if (_writePos > 0) FlushWriteBuffer();
                 if (!CanSeek || (destination.Length >= _bufferLength))
                 {
@@ -509,8 +449,8 @@ namespace System.IO
         {
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
-            if (_fileHandle.IsClosed) throw Error.GetFileNotOpen();
-            if (!CanSeek) throw Error.GetSeekNotSupported();
+            if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
@@ -594,22 +534,8 @@ namespace System.IO
         private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
 
-            if (!Interop.Kernel32.SetFilePointerEx(fileHandle, offset, out long ret, (uint)origin))
-            {
-                if (closeInvalidHandle)
-                {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(), _path);
-                }
-                else
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-                }
-            }
-
-            _filePosition = ret;
-            return ret;
+            return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
         }
 
         partial void OnBufferAllocated()
@@ -618,8 +544,15 @@ namespace System.IO
             Debug.Assert(_preallocatedOverlapped == null);
 
             if (_useAsyncIO)
-                _preallocatedOverlapped = new PreAllocatedOverlapped(s_ioCallback, this, _buffer);
+                _preallocatedOverlapped = new PreAllocatedOverlapped(FileStreamCompletionSource.s_ioCallback, this, _buffer);
         }
+
+        SafeFileHandle IFileStreamCompletionSourceStrategy.FileHandle => _fileHandle;
+
+        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CurrentOverlappedOwner => _currentOverlappedOwner;
+
+        FileStreamCompletionSource? IFileStreamCompletionSourceStrategy.CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource)
+            => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private void WriteSpan(ReadOnlySpan<byte> source)
         {
@@ -628,7 +561,7 @@ namespace System.IO
             if (_writePos == 0)
             {
                 // Ensure we can write to the stream, and ready buffer for writing.
-                if (!CanWrite) throw Error.GetWriteNotSupported();
+                if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 if (_readPos < _readLength) FlushReadBuffer();
                 _readPos = 0;
                 _readLength = 0;
@@ -722,7 +655,7 @@ namespace System.IO
         private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
-            if (!CanRead) throw Error.GetReadNotSupported();
+            if (!CanRead) ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
@@ -828,7 +761,7 @@ namespace System.IO
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, numBufferedBytesRead, destination);
+            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, numBufferedBytesRead, destination);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -905,7 +838,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -938,7 +871,7 @@ namespace System.IO
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
             Debug.Assert(!_isPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
-            if (!CanWrite) throw Error.GetWriteNotSupported();
+            if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             bool writeDataStoredInBuffer = false;
             if (!_isPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
@@ -1046,7 +979,7 @@ namespace System.IO
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, 0, source);
+            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, _preallocatedOverlapped, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (CanSeek)
@@ -1107,7 +1040,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     }
                     else
                     {
@@ -1144,85 +1077,16 @@ namespace System.IO
         // __ConsoleStream also uses this code.
         private unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            int r;
-            int numBytesRead = 0;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
-            {
-                r = _useAsyncIO ?
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesRead;
-            }
+            return FileStreamHelpers.ReadFileNative(handle, bytes, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            int numBytesWritten = 0;
-            int r;
-
-            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
-            {
-                r = _useAsyncIO ?
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
-                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
-            }
-
-            if (r == 0)
-            {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
-                return -1;
-            }
-            else
-            {
-                errorCode = 0;
-                return numBytesWritten;
-            }
-        }
-
-        private int GetLastWin32ErrorAndDisposeHandleIfInvalid()
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-
-            // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
-            // the handle as invalid; the handle must also be closed.
-            //
-            // Marking the handle as invalid but not closing the handle
-            // resulted in exceptions during finalization and locked column
-            // values (due to invalid but unclosed handle) in SQL Win32FileStream
-            // scenarios.
-            //
-            // A more mainstream scenario involves accessing a file on a
-            // network share. ERROR_INVALID_HANDLE may occur because the network
-            // connection was dropped and the server closed the handle. However,
-            // the client side handle is still open and even valid for certain
-            // operations.
-            //
-            // Note that _parent.Dispose doesn't throw so we don't need to special case.
-            // SetHandleAsInvalid only sets _closed field to true (without
-            // actually closing handle) so we don't need to call that as well.
-            if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-            {
-                _fileHandle.Dispose();
-            }
-
-            return errorCode;
+            return FileStreamHelpers.WriteFileNative(handle, buffer, overlapped, out errorCode);
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
@@ -1239,11 +1103,11 @@ namespace System.IO
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
-                throw Error.GetFileNotOpen();
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
             }
             if (!CanRead)
             {
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
             // Bail early for cancellation if cancellation has been requested
@@ -1281,164 +1145,20 @@ namespace System.IO
                 }
             }
 
-            // For efficiency, we avoid creating a new task and associated state for each asynchronous read.
-            // Instead, we create a single reusable awaitable object that will be triggered when an await completes
-            // and reset before going again.
-            var readAwaitable = new AsyncCopyToAwaitable(this);
-
-            // Make sure we are reading from the position that we think we are.
-            // Only set the position in the awaitable if we can seek (e.g. not for pipes).
             bool canSeek = CanSeek;
             if (canSeek)
             {
                 VerifyOSHandlePosition();
-                readAwaitable._position = _filePosition;
             }
 
-            // Get the buffer to use for the copy operation, as the base CopyToAsync does. We don't try to use
-            // _buffer here, even if it's not null, as concurrent operations are allowed, and another operation may
-            // actually be using the buffer already. Plus, it'll be rare for _buffer to be non-null, as typically
-            // CopyToAsync is used as the only operation performed on the stream, and the buffer is lazily initialized.
-            // Further, typically the CopyToAsync buffer size will be larger than that used by the FileStream, such that
-            // we'd likely be unable to use it anyway.  Instead, we rent the buffer from a pool.
-            byte[] copyBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-
-            // Allocate an Overlapped we can use repeatedly for all operations
-            var awaitableOverlapped = new PreAllocatedOverlapped(AsyncCopyToAwaitable.s_callback, readAwaitable, copyBuffer);
-            var cancellationReg = default(CancellationTokenRegistration);
             try
             {
-                // Register for cancellation.  We do this once for the whole copy operation, and just try to cancel
-                // whatever read operation may currently be in progress, if there is one.  It's possible the cancellation
-                // request could come in between operations, in which case we flag that with explicit calls to ThrowIfCancellationRequested
-                // in the read/write copy loop.
-                if (cancellationToken.CanBeCanceled)
-                {
-                    cancellationReg = cancellationToken.UnsafeRegister(static s =>
-                    {
-                        Debug.Assert(s is AsyncCopyToAwaitable);
-                        var innerAwaitable = (AsyncCopyToAwaitable)s;
-                        unsafe
-                        {
-                            lock (innerAwaitable.CancellationLock) // synchronize with cleanup of the overlapped
-                            {
-                                if (innerAwaitable._nativeOverlapped != null)
-                                {
-                                    // Try to cancel the I/O.  We ignore the return value, as cancellation is opportunistic and we
-                                    // don't want to fail the operation because we couldn't cancel it.
-                                    Interop.Kernel32.CancelIoEx(innerAwaitable._fileStream._fileHandle, innerAwaitable._nativeOverlapped);
-                                }
-                            }
-                        }
-                    }, readAwaitable);
-                }
-
-                // Repeatedly read from this FileStream and write the results to the destination stream.
-                while (true)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    readAwaitable.ResetForNextOperation();
-
-                    try
-                    {
-                        bool synchronousSuccess;
-                        int errorCode;
-                        unsafe
-                        {
-                            // Allocate a native overlapped for our reusable overlapped, and set position to read based on the next
-                            // desired address stored in the awaitable.  (This position may be 0, if either we're at the beginning or
-                            // if the stream isn't seekable.)
-                            readAwaitable._nativeOverlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(awaitableOverlapped);
-                            if (canSeek)
-                            {
-                                readAwaitable._nativeOverlapped->OffsetLow = unchecked((int)readAwaitable._position);
-                                readAwaitable._nativeOverlapped->OffsetHigh = (int)(readAwaitable._position >> 32);
-                            }
-
-                            // Kick off the read.
-                            synchronousSuccess = ReadFileNative(_fileHandle, copyBuffer, readAwaitable._nativeOverlapped, out errorCode) >= 0;
-                        }
-
-                        // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
-                        if (!synchronousSuccess)
-                        {
-                            switch (errorCode)
-                            {
-                                case ERROR_IO_PENDING:
-                                    // Async operation in progress.
-                                    break;
-                                case ERROR_BROKEN_PIPE:
-                                case ERROR_HANDLE_EOF:
-                                    // We're at or past the end of the file, and the overlapped callback
-                                    // won't be raised in these cases. Mark it as completed so that the await
-                                    // below will see it as such.
-                                    readAwaitable.MarkCompleted();
-                                    break;
-                                default:
-                                    // Everything else is an error (and there won't be a callback).
-                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
-                            }
-                        }
-
-                        // Wait for the async operation (which may or may not have already completed), then throw if it failed.
-                        await readAwaitable;
-                        switch (readAwaitable._errorCode)
-                        {
-                            case 0: // success
-                                break;
-                            case ERROR_BROKEN_PIPE: // logically success with 0 bytes read (write end of pipe closed)
-                            case ERROR_HANDLE_EOF:  // logically success with 0 bytes read (read at end of file)
-                                Debug.Assert(readAwaitable._numBytes == 0, $"Expected 0 bytes read, got {readAwaitable._numBytes}");
-                                break;
-                            case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
-                                throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
-                            default: // error
-                                throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, _path);
-                        }
-
-                        // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.
-                        int numBytesRead = (int)readAwaitable._numBytes;
-                        if (numBytesRead == 0)
-                        {
-                            break;
-                        }
-
-                        // Otherwise, update the read position for next time accordingly.
-                        if (canSeek)
-                        {
-                            readAwaitable._position += numBytesRead;
-                        }
-                    }
-                    finally
-                    {
-                        // Free the resources for this read operation
-                        unsafe
-                        {
-                            NativeOverlapped* overlapped;
-                            lock (readAwaitable.CancellationLock) // just an Exchange, but we need this to be synchronized with cancellation, so using the same lock
-                            {
-                                overlapped = readAwaitable._nativeOverlapped;
-                                readAwaitable._nativeOverlapped = null;
-                            }
-                            if (overlapped != null)
-                            {
-                                _fileHandle.ThreadPoolBinding!.FreeNativeOverlapped(overlapped);
-                            }
-                        }
-                    }
-
-                    // Write out the read data.
-                    await destination.WriteAsync(new ReadOnlyMemory<byte>(copyBuffer, 0, (int)readAwaitable._numBytes), cancellationToken).ConfigureAwait(false);
-                }
+                await FileStreamHelpers
+                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .ConfigureAwait(false);
             }
             finally
             {
-                // Cleanup from the whole copy operation
-                cancellationReg.Dispose();
-                awaitableOverlapped.Dispose();
-
-                ArrayPool<byte>.Shared.Return(copyBuffer);
-
                 // Make sure the stream's current position reflects where we ended up
                 if (!_fileHandle.IsClosed && CanSeek)
                 {
@@ -1447,112 +1167,8 @@ namespace System.IO
             }
         }
 
-        /// <summary>Used by CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
-        private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
-        {
-            /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
-            private static readonly Action s_sentinel = () => { };
-            /// <summary>Cached delegate to IOCallback.</summary>
-            internal static readonly IOCompletionCallback s_callback = IOCallback;
+        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
 
-            /// <summary>The FileStream that owns this instance.</summary>
-            internal readonly LegacyFileStreamStrategy _fileStream;
-
-            /// <summary>Tracked position representing the next location from which to read.</summary>
-            internal long _position;
-            /// <summary>The current native overlapped pointer.  This changes for each operation.</summary>
-            internal NativeOverlapped* _nativeOverlapped;
-            /// <summary>
-            /// null if the operation is still in progress,
-            /// s_sentinel if the I/O operation completed before the await,
-            /// s_callback if it completed after the await yielded.
-            /// </summary>
-            internal Action? _continuation;
-            /// <summary>Last error code from completed operation.</summary>
-            internal uint _errorCode;
-            /// <summary>Last number of read bytes from completed operation.</summary>
-            internal uint _numBytes;
-
-            /// <summary>Lock object used to protect cancellation-related access to _nativeOverlapped.</summary>
-            internal object CancellationLock => this;
-
-            /// <summary>Initialize the awaitable.</summary>
-            internal AsyncCopyToAwaitable(LegacyFileStreamStrategy fileStream)
-            {
-                _fileStream = fileStream;
-            }
-
-            /// <summary>Reset state to prepare for the next read operation.</summary>
-            internal void ResetForNextOperation()
-            {
-                Debug.Assert(_position >= 0, $"Expected non-negative position, got {_position}");
-                _continuation = null;
-                _errorCode = 0;
-                _numBytes = 0;
-            }
-
-            /// <summary>Overlapped callback: store the results, then invoke the continuation delegate.</summary>
-            internal static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOVERLAP)
-            {
-                var awaitable = (AsyncCopyToAwaitable?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOVERLAP);
-                Debug.Assert(awaitable != null);
-
-                Debug.Assert(!ReferenceEquals(awaitable._continuation, s_sentinel), "Sentinel must not have already been set as the continuation");
-                awaitable._errorCode = errorCode;
-                awaitable._numBytes = numBytes;
-
-                (awaitable._continuation ?? Interlocked.CompareExchange(ref awaitable._continuation, s_sentinel, null))?.Invoke();
-            }
-
-            /// <summary>
-            /// Called when it's known that the I/O callback for an operation will not be invoked but we'll
-            /// still be awaiting the awaitable.
-            /// </summary>
-            internal void MarkCompleted()
-            {
-                Debug.Assert(_continuation == null, "Expected null continuation");
-                _continuation = s_sentinel;
-            }
-
-            public AsyncCopyToAwaitable GetAwaiter() => this;
-            public bool IsCompleted => ReferenceEquals(_continuation, s_sentinel);
-            public void GetResult() { }
-            public void OnCompleted(Action continuation) => UnsafeOnCompleted(continuation);
-            public void UnsafeOnCompleted(Action continuation)
-            {
-                if (ReferenceEquals(_continuation, s_sentinel) ||
-                    Interlocked.CompareExchange(ref _continuation, continuation, null) != null)
-                {
-                    Debug.Assert(ReferenceEquals(_continuation, s_sentinel), $"Expected continuation set to s_sentinel, got ${_continuation}");
-                    Task.Run(continuation);
-                }
-            }
-        }
-
-        internal override void Lock(long position, long length)
-        {
-            int positionLow = unchecked((int)(position));
-            int positionHigh = unchecked((int)(position >> 32));
-            int lengthLow = unchecked((int)(length));
-            int lengthHigh = unchecked((int)(length >> 32));
-
-            if (!Interop.Kernel32.LockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
-
-        internal override void Unlock(long position, long length)
-        {
-            int positionLow = unchecked((int)(position));
-            int positionHigh = unchecked((int)(position >> 32));
-            int lengthLow = unchecked((int)(length));
-            int lengthHigh = unchecked((int)(length >> 32));
-
-            if (!Interop.Kernel32.UnlockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
-            }
-        }
+        internal override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
     }
 }

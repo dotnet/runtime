@@ -79,7 +79,7 @@ namespace System.Text
         public override long Position
         {
             get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-            set => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            set => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -185,7 +185,7 @@ namespace System.Text
             {
                 if (!CanRead)
                 {
-                    throw Error.GetReadNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnreadableStream();
                 }
 
                 _innerDecoder = _innerEncoding.GetDecoder();
@@ -217,7 +217,7 @@ namespace System.Text
             {
                 if (!CanWrite)
                 {
-                    throw Error.GetWriteNotSupported();
+                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
                 }
 
                 _innerEncoder = _innerEncoding.GetEncoder();
@@ -428,7 +428,7 @@ namespace System.Text
             => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         public override void SetLength(long value)
-            => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            => ThrowHelper.ThrowNotSupportedException_UnseekableStream();
 
         [StackTraceHidden]
         private void ThrowIfDisposed()
@@ -443,9 +443,7 @@ namespace System.Text
         [StackTraceHidden]
         private void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(
-                objectName: GetType().Name,
-                message: SR.ObjectDisposed_StreamClosed);
+            ThrowHelper.ThrowObjectDisposedException_StreamClosed(GetType().Name);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
