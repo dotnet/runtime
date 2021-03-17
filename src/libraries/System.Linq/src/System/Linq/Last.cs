@@ -30,8 +30,8 @@ namespace System.Linq
             return last!;
         }
 
-        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source)
-            => source.TryGetLast(out _);
+        public static TSource? LastOrDefault<TSource>(this IEnumerable<TSource> source) =>
+            source.TryGetLast(out _);
 
 
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
