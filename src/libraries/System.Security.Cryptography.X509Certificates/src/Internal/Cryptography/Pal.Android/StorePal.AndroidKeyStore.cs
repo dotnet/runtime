@@ -22,7 +22,10 @@ namespace Internal.Cryptography.Pal
             {
                 SafeX509StoreHandle store = Interop.AndroidCrypto.X509StoreOpenDefault();
                 if (store.IsInvalid)
+                {
+                    store.Dispose();
                     throw new CryptographicException();
+                }
 
                 return new AndroidKeyStore(store, openFlags);
             }
