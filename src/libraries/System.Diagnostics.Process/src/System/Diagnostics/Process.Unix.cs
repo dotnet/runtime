@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Pipes;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -439,20 +440,20 @@ namespace System.Diagnostics
             if (startInfo.RedirectStandardInput)
             {
                 Debug.Assert(stdinFd >= 0);
-                _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
+                _standardInput = new StreamWriter(OpenStream(stdinFd, PipeDirection.Out),
                     startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
                 { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
                 Debug.Assert(stdoutFd >= 0);
-                _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
+                _standardOutput = new StreamReader(OpenStream(stdoutFd, PipeDirection.In),
                     startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
             if (startInfo.RedirectStandardError)
             {
                 Debug.Assert(stderrFd >= 0);
-                _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
+                _standardError = new StreamReader(OpenStream(stderrFd, PipeDirection.In),
                     startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
             }
 
@@ -747,14 +748,12 @@ namespace System.Diagnostics
 
         /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
         /// <param name="fd">The file descriptor.</param>
-        /// <param name="access">The access mode.</param>
+        /// <param name="direction">The pipe direction.</param>
         /// <returns>The opened stream.</returns>
-        private static FileStream OpenStream(int fd, FileAccess access)
+        private static Stream OpenStream(int fd, PipeDirection direction)
         {
             Debug.Assert(fd >= 0);
-            return new FileStream(
-                new SafeFileHandle((IntPtr)fd, ownsHandle: true),
-                access, StreamBufferSize, isAsync: false);
+            return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>

@@ -7230,8 +7230,6 @@ copy_imethod_for_frame (InterpFrame *frame)
 static void
 interp_metadata_update_init (MonoError *error)
 {
-	if ((mono_interp_opt & INTERP_OPT_INLINE) != 0)
-		mono_error_set_execution_engine (error, "Interpreter inlining must be turned off for metadata updates");
 }
 
 #ifdef ENABLE_METADATA_UPDATE

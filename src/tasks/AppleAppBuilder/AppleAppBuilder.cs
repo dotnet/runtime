@@ -182,7 +182,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(TargetOS);
+            Xcode generator = new Xcode(TargetOS, Arch);
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
 
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles,

@@ -54,6 +54,12 @@ bool       Compiler::s_pJitFunctionFileInitialized = false;
 MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 #endif // DEBUG
 
+#ifdef CONFIGURABLE_ARM_ABI
+// static
+bool GlobalJitOptions::compFeatureHfa          = false;
+LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
+#endif // CONFIGURABLE_ARM_ABI
+
 /*****************************************************************************
  *
  *  Little helpers to grab the current cycle counter value; this is done
@@ -468,49 +474,6 @@ var_types Compiler::getJitGCType(BYTE gcType)
     return result;
 }
 
-#ifdef ARM_SOFTFP
-//---------------------------------------------------------------------------
-// IsSingleFloat32Struct:
-//    Check if the given struct type contains only one float32 value type
-//
-// Arguments:
-//    clsHnd     - the handle for the struct type
-//
-// Return Value:
-//    true if the given struct type contains only one float32 value type,
-//    false otherwise.
-//
-
-bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
-{
-    for (;;)
-    {
-        // all of class chain must be of value type and must have only one field
-        if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) != 1)
-        {
-            return false;
-        }
-
-        CORINFO_CLASS_HANDLE* pClsHnd   = &clsHnd;
-        CORINFO_FIELD_HANDLE  fldHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
-        CorInfoType           fieldType = info.compCompHnd->getFieldType(fldHnd, pClsHnd);
-
-        switch (fieldType)
-        {
-            case CORINFO_TYPE_VALUECLASS:
-                clsHnd = *pClsHnd;
-                break;
-
-            case CORINFO_TYPE_FLOAT:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-}
-#endif // ARM_SOFTFP
-
 #ifdef TARGET_X86
 //---------------------------------------------------------------------------
 // isTrivialPointerSizedStruct:
@@ -623,53 +586,44 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
     var_types useType = TYP_UNKNOWN;
 
-// Start by determining if we have an HFA/HVA with a single element.
-#ifdef FEATURE_HFA
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-    // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
-    // as if they are not HFA types.
-    if (!isVarArg)
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+    // Start by determining if we have an HFA/HVA with a single element.
+    if (GlobalJitOptions::compFeatureHfa)
     {
-        switch (structSize)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
+        // as if they are not HFA types.
+        if (!isVarArg)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         {
-            case 4:
-            case 8:
-#ifdef TARGET_ARM64
-            case 16:
-#endif // TARGET_ARM64
+            switch (structSize)
             {
-                var_types hfaType;
-#ifdef ARM_SOFTFP
-                // For ARM_SOFTFP, HFA is unsupported so we need to check in another way.
-                // This matters only for size-4 struct because bigger structs would be processed with RetBuf.
-                if (isSingleFloat32Struct(clsHnd))
+                case 4:
+                case 8:
+#ifdef TARGET_ARM64
+                case 16:
+#endif // TARGET_ARM64
                 {
-                    hfaType = TYP_FLOAT;
-                }
-#else  // !ARM_SOFTFP
-                hfaType = GetHfaType(clsHnd);
-#endif // ARM_SOFTFP
-                // We're only interested in the case where the struct size is equal to the size of the hfaType.
-                if (varTypeIsValidHfaType(hfaType))
-                {
-                    if (genTypeSize(hfaType) == structSize)
+                    var_types hfaType = GetHfaType(clsHnd);
+                    // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                    if (varTypeIsValidHfaType(hfaType))
                     {
-                        useType = hfaType;
-                    }
-                    else
-                    {
-                        return TYP_UNKNOWN;
+                        if (genTypeSize(hfaType) == structSize)
+                        {
+                            useType = hfaType;
+                        }
+                        else
+                        {
+                            return TYP_UNKNOWN;
+                        }
                     }
                 }
             }
-        }
-        if (useType != TYP_UNKNOWN)
-        {
-            return useType;
+            if (useType != TYP_UNKNOWN)
+            {
+                return useType;
+            }
         }
     }
-#endif // FEATURE_HFA
 
     // Now deal with non-HFA/HVA structs.
     switch (structSize)
@@ -3273,6 +3227,27 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_FASTTAILCALL
 
+#ifdef CONFIGURABLE_ARM_ABI
+    opts.compUseSoftFP        = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
+    unsigned int softFPConfig = opts.compUseSoftFP ? 2 : 1;
+    unsigned int oldSoftFPConfig =
+        InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured, softFPConfig, 0);
+    if (oldSoftFPConfig != softFPConfig && oldSoftFPConfig != 0)
+    {
+        // There are no current scenarios where the abi can change during the lifetime of a process
+        // that uses the JIT. If such a change occurs, either compFeatureHfa will need to change to a TLS static
+        // or we will need to have some means to reset the flag safely.
+        NO_WAY("SoftFP ABI setting changed during lifetime of process");
+    }
+
+    GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
+#elif defined(ARM_SOFTFP)
+    // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
+    assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
+#elif TARGET_ARM
+    assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
+#endif // CONFIGURABLE_ARM_ABI
+
     opts.compScopeInfo = opts.compDbgInfo;
 
 #ifdef LATE_DISASM
@@ -3592,6 +3567,31 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
     assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
     return (hash < weight);
+}
+
+//------------------------------------------------------------------------
+// compPromoteFewerStructs: helper to determine if the local
+//   should not be promoted under a stress mode.
+//
+// Arguments:
+//   lclNum - local number to test
+//
+// Returns:
+//   true if this local should not be promoted.
+//
+// Notes:
+//   Reject ~50% of the potential promotions if STRESS_PROMOTE_FEWER_STRUCTS is active.
+//
+bool Compiler::compPromoteFewerStructs(unsigned lclNum)
+{
+    bool       rejectThisPromo = false;
+    const bool promoteLess     = compStressCompile(STRESS_PROMOTE_FEWER_STRUCTS, 50);
+    if (promoteLess)
+    {
+
+        rejectThisPromo = (((info.compMethodHash() ^ lclNum) & 1) == 0);
+    }
+    return rejectThisPromo;
 }
 
 #endif // DEBUG
