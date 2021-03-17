@@ -44,6 +44,7 @@
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/runtime.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -99,6 +100,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading",
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
 static MonoCoopMutex ldstr_section;
+/* Used by remoting proxies */
+static MonoMethod *create_proxy_for_type_method;
+static MonoGHashTable *ldstr_table;
 
 static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
@@ -329,9 +333,8 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	ERROR_DECL (error);
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	MonoException *ex;
 	gchar *full_name;
 
@@ -444,8 +447,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
-	MonoDomain *domain = mono_get_root_domain ();
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor (klass_image, error)) {
@@ -791,14 +793,14 @@ mono_runtime_create_delegate_trampoline (MonoClass *klass)
  * methods that were used only temporarily (for example, used in marshalling)
  */
 void
-mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
+mono_runtime_free_method (MonoMethod *method)
 {
 	MONO_REQ_GC_NEUTRAL_MODE
 
 	if (callbacks.free_method)
 		callbacks.free_method (method);
 
-	mono_method_clear_object (domain, method);
+	mono_method_clear_object (method);
 
 	mono_free_method (method);
 }
@@ -1198,8 +1200,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
  * @fklass: The MonoClass to look up.
  * @field: The MonoClassField describing the field.
  *
- * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
- * SPECIAL_STATIC_NONE otherwise.
+ * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_NONE otherwise.
  */
 static gint32
 field_is_special_static (MonoClass *fklass, MonoClassField *field)
@@ -2076,6 +2077,8 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
 
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
+
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -2107,9 +2110,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 				}
 				size = mono_type_size (field->type, &align);
 				offset = mono_alloc_special_static_data (special_static, size, align, (uintptr_t*)bitmap, numbits);
-				if (!domain->special_static_fields)
-					domain->special_static_fields = g_hash_table_new (NULL, NULL);
-				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
+
+				mono_mem_manager_lock (mem_manager);
+				if (!mem_manager->special_static_fields)
+					mem_manager->special_static_fields = g_hash_table_new (NULL, NULL);
+				g_hash_table_insert (mem_manager->special_static_fields, field, GUINT_TO_POINTER (offset));
+				mono_mem_manager_unlock (mem_manager);
 				if (bitmap != default_bitmap)
 					g_free (bitmap);
 				/* 
@@ -2199,7 +2205,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	memory_manager = mono_domain_ambient_memory_manager (domain);
+	memory_manager = mono_mem_manager_get_ambient ();
 	mono_mem_manager_lock (memory_manager);
 	g_ptr_array_add (memory_manager->class_vtable_array, vt);
 	mono_mem_manager_unlock (memory_manager);
@@ -2799,12 +2805,10 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 		return;
 
 	if (field->offset == -1) {
+		ERROR_DECL (error);
 		/* Special static */
-		gpointer addr;
-
-		mono_domain_lock (vt->domain);
-		addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
-		mono_domain_unlock (vt->domain);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
 		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
@@ -2815,14 +2819,13 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 gpointer
 mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
 {
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (field->parent);
 	gpointer addr = NULL;
-	MonoDomain *domain = mono_get_root_domain ();
 
-	mono_domain_lock (domain);
-	if (domain->special_static_fields)
-		addr = g_hash_table_lookup (domain->special_static_fields, field);
-	mono_domain_unlock (domain);
-
+	mono_mem_manager_lock (mem_manager);
+	if (mem_manager->special_static_fields)
+		addr = g_hash_table_lookup (mem_manager->special_static_fields, field);
+	mono_mem_manager_unlock (mem_manager);
 	return addr;
 }
 
@@ -2867,11 +2870,9 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 		if (field->offset == -1) {
 			/* Special static */
-			gpointer addr;
-
-			mono_domain_lock (vt->domain);
-			addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
-			mono_domain_unlock (vt->domain);
+			ERROR_DECL (error);
+			gpointer addr = mono_special_static_field_get_offset (field, error);
+			mono_error_assert_ok (error);
 			src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 		} else {
 			src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
@@ -3228,7 +3229,8 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 
 	if (field->offset == -1) {
 		/* Special static */
-		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
 		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
 	} else {
 		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
@@ -4367,7 +4369,7 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 	MONO_ENTER_GC_UNSAFE;
 
 	ERROR_DECL (error);
-	mono_thread_create_checked (domain, mfunc, margs, error);
+	mono_thread_create_checked ((MonoThreadStart)mfunc, margs, error);
 	mono_error_assert_ok (error);
 
 	mono_thread_manage_internal ();
@@ -4376,15 +4378,15 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 }
 
 static void
-prepare_thread_to_exec_main (MonoDomain *domain, MonoMethod *method)
+prepare_thread_to_exec_main (MonoMethod *method)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoInternalThread* thread = mono_thread_internal_current ();
 	MonoCustomAttrInfo* cinfo;
 	gboolean has_stathread_attribute;
 
-	if (!domain->entry_assembly)
-		mono_domain_ensure_entry_assembly (domain, m_class_get_image (method->klass)->assembly);
+	if (!mono_runtime_get_entry_assembly ())
+		mono_runtime_ensure_entry_assembly (m_class_get_image (method->klass)->assembly);
 
 	ERROR_DECL (cattr_error);
 	cinfo = mono_custom_attrs_from_method_checked (method, cattr_error);
@@ -4502,7 +4504,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	int rval;
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	if (exc) {
 		rval = do_try_exec_main (method, args, exc);
 	} else {
@@ -4524,7 +4526,7 @@ int
 mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error)
 {
 	error_init (error);
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	return do_exec_main_checked (method, args, error);
 }
 
@@ -4537,7 +4539,7 @@ mono_runtime_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *
 int
 mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
-	prepare_thread_to_exec_main (mono_object_domain (args), method);
+	prepare_thread_to_exec_main (method);
 	return do_try_exec_main (method, args, exc);
 }
 
@@ -5143,7 +5145,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	/* check for is_com_object for COM Interop */
 	if (mono_class_is_com_object (vtable->klass)) {
 		gpointer pa [1];
-		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+		MonoMethod *im = create_proxy_for_type_method;
 
 		if (im == NULL) {
 			MonoClass *klass = mono_class_get_activation_services_class ();
@@ -5157,7 +5159,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 				mono_error_set_not_supported (error, "Linked away.");
 				return NULL;
 			}
-			vtable->domain->create_proxy_for_type_method = im;
+			create_proxy_for_type_method = im;
 		}
 	
 		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
@@ -5189,7 +5191,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 
 	/* check for is_com_object for COM Interop */
 	if (mono_class_is_com_object (vtable->klass)) {
-		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+		MonoMethod *im = create_proxy_for_type_method;
 
 		if (im == NULL) {
 			MonoClass *klass = mono_class_get_activation_services_class ();
@@ -5203,7 +5205,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 				mono_error_set_not_supported (error, "Linked away.");
 				return MONO_HANDLE_NEW (MonoObject, NULL);
 			}
-			vtable->domain->create_proxy_for_type_method = im;
+			create_proxy_for_type_method = im;
 		}
 
 		// FIXMEcoop
@@ -6715,8 +6717,13 @@ MonoStringHandle
 mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	
-	MonoGHashTable *ldstr_table = MONO_HANDLE_DOMAIN (str)->ldstr_table;
+
+	if (!ldstr_table) {
+		MonoGHashTable *table = mono_g_hash_table_new_type_internal ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, mono_get_root_domain (), "Domain String Pool Table");
+		mono_memory_barrier ();
+		ldstr_table = table;
+	}
+
 	ldstr_lock ();
 	MonoString *res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	ldstr_unlock ();

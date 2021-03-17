@@ -215,19 +215,19 @@ namespace System.IO
         private void EnsureNotClosed()
         {
             if (!_isOpen)
-                throw Error.GetStreamIsClosed();
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureReadable()
         {
             if (!CanRead)
-                throw Error.GetReadNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
         }
 
         private void EnsureWriteable()
         {
             if (!CanWrite)
-                throw Error.GetWriteNotSupported();
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
         }
 
         /// <summary>
@@ -290,13 +290,13 @@ namespace System.IO
         {
             get
             {
-                if (!CanSeek) throw Error.GetStreamIsClosed();
+                if (!CanSeek) ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
                 return Interlocked.Read(ref _position);
             }
             set
             {
                 if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-                if (!CanSeek) throw Error.GetStreamIsClosed();
+                if (!CanSeek) ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
 
                 Interlocked.Exchange(ref _position, value);
             }

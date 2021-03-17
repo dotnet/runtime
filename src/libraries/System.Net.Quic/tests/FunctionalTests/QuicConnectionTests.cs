@@ -17,7 +17,6 @@ namespace System.Net.Quic.Tests
         public async Task TestConnect()
         {
             using QuicListener listener = CreateQuicListener();
-
             IPEndPoint listenEndPoint = listener.ListenEndPoint;
 
             using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);

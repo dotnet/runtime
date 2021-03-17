@@ -31,12 +31,11 @@ guint
 mono_reflected_hash (gconstpointer a);
 
 static inline ReflectedEntry*
-alloc_reflected_entry (MonoDomain *domain)
+alloc_reflected_entry (MonoMemoryManager *mem_manager)
 {
 	if (!mono_gc_is_moving ())
 		return g_new0 (ReflectedEntry, 1);
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
-	return (ReflectedEntry *)mono_mem_manager_alloc_nolock (memory_manager, sizeof (ReflectedEntry));
+	return (ReflectedEntry *)mono_mem_manager_alloc0 (mem_manager, sizeof (ReflectedEntry));
 }
 
 static inline void
@@ -47,10 +46,10 @@ free_reflected_entry (ReflectedEntry *entry)
 }
 
 static inline MonoObject*
-cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o)
+cache_object (MonoClass *klass, gpointer item, MonoObject* o)
 {
 	MonoObject *obj;
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
@@ -58,7 +57,7 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 	mono_mem_manager_lock (memory_manager);
 	obj = (MonoObject *)mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe);
 	if (obj == NULL) {
-		ReflectedEntry *e = alloc_reflected_entry (domain);
+		ReflectedEntry *e = alloc_reflected_entry (memory_manager);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, o);
@@ -70,9 +69,9 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 
 
 static inline MonoObjectHandle
-cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObjectHandle o)
+cache_object_handle (MonoClass *klass, gpointer item, MonoObjectHandle o)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
@@ -80,7 +79,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	mono_mem_manager_lock (memory_manager);
 	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
-		ReflectedEntry *e = alloc_reflected_entry (domain);
+		ReflectedEntry *e = alloc_reflected_entry (memory_manager);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
@@ -90,13 +89,13 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	return obj;
 }
 
-#define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
-#define CACHE_OBJECT_HANDLE(t,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle (domain, (k), (p), (o))))
+#define CACHE_OBJECT(t,p,o,k) ((t) (cache_object ((k), (p), (o))))
+#define CACHE_OBJECT_HANDLE(t,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle ((k), (p), (o))))
 
 static inline MonoObjectHandle
-check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
+check_object_handle (MonoClass *klass, gpointer item)
 {
-	MonoMemoryManager *memory_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	MonoObjectHandle obj_handle;
 	ReflectedEntry e;
 	e.item = item;
@@ -115,10 +114,8 @@ typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoClass*, gpo
 static inline MonoObjectHandle
 check_or_construct_handle (MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
 {
-	MonoDomain *domain = mono_get_root_domain ();
-
 	error_init (error);
-	MonoObjectHandle obj = check_object_handle (domain, klass, item);
+	MonoObjectHandle obj = check_object_handle (klass, item);
 	if (!MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	MONO_HANDLE_ASSIGN (obj, construct (klass, item, user_data, error));
@@ -126,7 +123,7 @@ check_or_construct_handle (MonoClass *klass, gpointer item, gpointer user_data, 
 	if (MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	/* note no caching if there was an error in construction */
-	return cache_object_handle (domain, klass, item, obj);
+	return cache_object_handle (klass, item, obj);
 }
 
 #define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) \

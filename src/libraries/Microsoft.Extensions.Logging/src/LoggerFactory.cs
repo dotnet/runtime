@@ -66,7 +66,9 @@ namespace Microsoft.Extensions.Logging
             _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
 
             const ActivityTrackingOptions ActivityTrackingOptionsMask = ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId |
-                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState);
+                                                                          ActivityTrackingOptions.TraceFlags | ActivityTrackingOptions.TraceState | ActivityTrackingOptions.Tags
+                                                                          | ActivityTrackingOptions.Baggage);
+
 
             if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
             {

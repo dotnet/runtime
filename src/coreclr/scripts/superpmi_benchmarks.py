@@ -157,8 +157,10 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
+    # Disable ReadyToRun so we always JIT R2R methods and collect them
     collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
                          f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
+                         " COMPlus_ZapDisable:1  COMPlus_ReadyToRun:0 " \
                          "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
 
     # Generate the execution script in Temp location
@@ -190,8 +192,6 @@ def build_and_run(coreclr_args, output_mch_name):
 
         run_command([
             python_path, path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
-            # Disable ReadyToRun so we always JIT R2R methods and collect them
-            "--use_zapdisable",
             "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
             script_name], _exit_on_fail=True)
 

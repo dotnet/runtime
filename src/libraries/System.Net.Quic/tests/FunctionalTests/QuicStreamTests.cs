@@ -63,6 +63,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
@@ -228,6 +229,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, clientStream.StreamId);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
         public async Task LargeDataSentAndReceived()
         {
@@ -508,7 +510,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).TimeoutAfter(millisecondsTimeout: 5_000);
+            }).WaitAsync(TimeSpan.FromSeconds(5));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]
@@ -538,7 +540,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).TimeoutAfter(millisecondsTimeout: 5_000);
+            }).WaitAsync(TimeSpan.FromSeconds(5));
         }
     }
 

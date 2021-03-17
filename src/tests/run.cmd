@@ -173,7 +173,7 @@ if NOT DEFINED PYTHON (
     exit /b 1
 )
 
-set NEXTCMD=%PYTHON% "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
+set NEXTCMD="%PYTHON%" "%__RepoRootDir%\src\tests\run.py" %__RuntestPyArgs%
 echo %NEXTCMD%
 %NEXTCMD%
 

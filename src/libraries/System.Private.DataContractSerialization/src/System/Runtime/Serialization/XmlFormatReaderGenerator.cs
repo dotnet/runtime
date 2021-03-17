@@ -942,7 +942,7 @@ namespace System.Runtime.Serialization
 
         internal static object UnsafeGetUninitializedObject(Type type)
         {
-            return FormatterServices.GetUninitializedObject(type);
+            return RuntimeHelpers.GetUninitializedObject(type);
         }
 
         /// <SecurityNote>

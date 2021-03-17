@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>dotnet-pgo</AssemblyName>
@@ -21,10 +21,15 @@
     <PackageTags>Optimization</PackageTags>
     <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
     <RootNamespace>Microsoft.Diagnostics.Tools.Pgo</RootNamespace>
+    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="MIbcProfileParser.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
+    <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,21 +37,21 @@
       <GenerateSource>true</GenerateSource>
       <ClassName>Internal.CommandLine.Strings</ClassName>
     </EmbeddedResource>
-    <Compile Include="..\Common\CommandLine\Argument.cs" />
-    <Compile Include="..\Common\CommandLine\Argument_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\Common\CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\Common\CommandLine\Enumerable.cs" />
-    <Compile Include="..\Common\CommandLine\HelpTextGenerator.cs" />
+    <Compile Include="..\Common\CommandLine\Argument.cs" Link="CommandLine\Argument.cs" />
+    <Compile Include="..\Common\CommandLine\Argument_1.cs" Link="CommandLine\Argument_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentCommand.cs" Link="CommandLine\ArgumentCommand.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentCommand_1.cs" Link="CommandLine\ArgumentCommand_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentLexer.cs" Link="CommandLine\ArgumentLexer.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentList_1.cs" Link="CommandLine\ArgumentList_1.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentParser.cs" Link="CommandLine\ArgumentParser.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntax.cs" Link="CommandLine\ArgumentSyntax.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntax_Definers.cs" Link="CommandLine\ArgumentSyntax_Definers.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentSyntaxException.cs" Link="CommandLine\ArgumentSyntaxException.cs" />
+    <Compile Include="..\Common\CommandLine\ArgumentToken.cs" Link="CommandLine\ArgumentToken.cs" />
+    <Compile Include="..\Common\CommandLine\CommandLineException.cs" Link="CommandLine\CommandLineException.cs" />
+    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs" Link="CommandLine\CommandLineHelpers.cs" />
+    <Compile Include="..\Common\CommandLine\Enumerable.cs" Link="CommandLine\Enumerable.cs" />
+    <Compile Include="..\Common\CommandLine\HelpTextGenerator.cs" Link="CommandLine\HelpTextGenerator.cs" />
   </ItemGroup>
 
   <ItemGroup>

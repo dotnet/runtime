@@ -198,7 +198,12 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
-            yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new[] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
+
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new[] { Array.CreateInstance(typeof(int), new[] { 1 }, new[] { 1 }).GetType(), typeof(ArgumentException) }; // variable-length type (non-szarray)
+            }
+
             yield return new[] { typeof(Array), typeof(MemberAccessException) }; // abstract type
             yield return new[] { typeof(Enum), typeof(MemberAccessException) }; // abstract type
 

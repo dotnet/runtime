@@ -176,6 +176,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     // Determine the property.
+                    TKey key;
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         if (reader.TokenType == JsonTokenType.EndObject)
@@ -197,7 +198,12 @@ namespace System.Text.Json.Serialization.Converters
                             }
                         }
 
-                        state.Current.DictionaryKey = ReadDictionaryKey(ref reader, ref state);
+                        key = ReadDictionaryKey(ref reader, ref state);
+                    }
+                    else
+                    {
+                        // DictionaryKey is assigned before all return false cases, null value is unreachable
+                        key = (TKey)state.Current.DictionaryKey!;
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
@@ -206,6 +212,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (!SingleValueReadWithReadAhead(elementConverter.ClassType, ref reader, ref state))
                         {
+                            state.Current.DictionaryKey = key;
                             value = default;
                             return false;
                         }
@@ -217,11 +224,11 @@ namespace System.Text.Json.Serialization.Converters
                         bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element);
                         if (!success)
                         {
+                            state.Current.DictionaryKey = key;
                             value = default;
                             return false;
                         }
 
-                        TKey key = (TKey)state.Current.DictionaryKey!;
                         Add(key, element!, options, ref state);
                         state.Current.EndElement();
                     }

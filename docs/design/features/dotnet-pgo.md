@@ -35,16 +35,16 @@ dotnet build -p:Configuration=Release
 set COMPLUS_TieredPGO=1
 set COMPLUS_TC_QuickJitForLoops=1
 set COMPLUS_TC_CallCountThreshold=10000
-set COMPLUS_ZapDisable=1
+set COMPLUS_ReadyToRun=0
 
 dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
 
 set COMPLUS_TieredPGO=
 set COMPLUS_TC_QuickJitForLoops=
 set COMPLUS_TC_CallCountThreshold=
-set COMPLUS_ZapDisable=
+set COMPLUS_ReadyToRun=
 
-dotnet-pgo --trace trace.nettrace --output trace.mibc
+dotnet-pgo create-mibc --trace trace.nettrace --output trace.mibc
 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -p:ReadyToRunOptimizationData=trace.mibc
 ```
@@ -94,9 +94,9 @@ Merge multiple Mibc profile data files into one file.
 ```
 usage: dotnet-pgo merge --input <arg>... --output-file-name <arg> [--exclude-reference <arg>] [--verbosity <arg>] [--compressed] [-h]
 
-    -i, --input <arg>                Specify the trace file to be parsed.
+    -i, --input <arg>                Specify the input file(s) to be parsed. Multiple --input options may be specified. The wild cards * and ? are supported by this option.
     -o, --output-file-name <arg>     Specify the output filename to be created.
-    --exclude-reference <arg>        Exclude references to the specified assembly from the output.
+    --include-reference <arg>        If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, "System.Private.CoreLib" not "System.Private.CoreLib.dll". Multiple --include-reference options may be specified.
     -v, --verbosity <arg>            Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic.
     --compressed                     Generate compressed mibc
     -h, --help                       Display this usage message.
@@ -106,6 +106,6 @@ usage: dotnet-pgo merge --input <arg>... --output-file-name <arg> [--exclude-ref
 
 At least one `--input` switch must be specified. Only one `--output-file-name` may be specified.
 
-The `--exclude-reference` switch may be used to remove any references to the specified assembly from the output mibc.
+The `--include-reference` switch may be used to restrict the contents of the mibc file to only refer to a specific set of assemblies.
 
 The mibc file format may be compressed. This will require slightly more time to create and process, but it will produce a smaller binary if the mibc files needs to be distributed to multiple developers. Create a compressed mibc by using the `--compressed` switch.

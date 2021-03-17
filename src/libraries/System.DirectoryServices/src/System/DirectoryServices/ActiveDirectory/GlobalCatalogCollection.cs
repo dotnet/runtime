@@ -17,7 +17,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public GlobalCatalog this[int index] => (GlobalCatalog)InnerList[index];
+        public GlobalCatalog this[int index] => (GlobalCatalog)InnerList[index]!;
 
         public bool Contains(GlobalCatalog globalCatalog)
         {
@@ -26,7 +26,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                GlobalCatalog tmp = (GlobalCatalog)InnerList[i];
+                GlobalCatalog tmp = (GlobalCatalog)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, globalCatalog.Name) == 0)
                 {
                     return true;
@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             for (int i = 0; i < InnerList.Count; i++)
             {
-                GlobalCatalog tmp = (GlobalCatalog)InnerList[i];
+                GlobalCatalog tmp = (GlobalCatalog)InnerList[i]!;
                 if (Utils.Compare(tmp.Name, globalCatalog.Name) == 0)
                 {
                     return i;

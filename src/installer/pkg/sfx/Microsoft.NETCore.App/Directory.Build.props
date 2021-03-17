@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
-    <SharedFrameworkName Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
@@ -12,13 +11,18 @@
     <PackageOverridesFile Include="$(MSBuildThisFileDirectory)PackageOverrides.txt" />
   </ItemGroup>
 
+  <!--
+  Native files that are always included in the singlefile bundle can be listed here.
+
+  Example:
+    <SingleFileHostIncludeFilename Include="somefile.dll" />
+  -->
   <ItemGroup>
     <!-- LINUX -->
 
     <!-- OSX -->
 
     <!-- Windows -->
-    <SingleFileHostIncludeFilename Include="mscordaccore.dll" />
   </ItemGroup>
 
   <!--
@@ -180,8 +184,6 @@
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
-    <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libicuuc.a" IsNative="true" />
     <PlatformManifestFileEntry Include="binding_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet_support.js" IsNative="true" />
     <PlatformManifestFileEntry Include="library_mono.js" IsNative="true" />
@@ -193,6 +195,10 @@
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-flags.txt" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-version.txt" IsNative="true" />
+    <!-- ICU-specific files -->
+    <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libicuuc.a" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

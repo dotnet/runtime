@@ -128,7 +128,7 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TLeftKey> _leftSource; // Left data source.
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private readonly IEqualityComparer<TInputOutput>? _comparer; // Comparer to use for equality/hash-coding.
-            private Set<TInputOutput>? _hashLookup; // The hash lookup, used to produce the intersection.
+            private HashSet<TInputOutput>? _hashLookup; // The hash lookup, used to produce the intersection.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount;
 
@@ -164,7 +164,7 @@ namespace System.Linq.Parallel
                 if (_hashLookup == null)
                 {
                     _outputLoopCount = new Shared<int>(0);
-                    _hashLookup = new Set<TInputOutput>(_comparer);
+                    _hashLookup = new HashSet<TInputOutput>(_comparer);
 
                     Pair<TInputOutput, NoKeyMemoizationRequired> rightElement = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
                     int rightKeyUnused = default(int);
