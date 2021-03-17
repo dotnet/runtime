@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -75,6 +76,8 @@ namespace Internal.Cryptography.Pal
             return key;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
         {
             if (key == null)

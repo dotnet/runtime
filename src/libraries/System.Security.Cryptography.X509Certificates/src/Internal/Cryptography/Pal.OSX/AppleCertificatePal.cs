@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
@@ -72,6 +73,8 @@ namespace Internal.Cryptography.Pal
             return pal;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromBlob(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
@@ -150,6 +153,8 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException();
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
@@ -521,6 +526,8 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
             var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
@@ -540,6 +547,8 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
             var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
@@ -559,6 +568,8 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
             var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;

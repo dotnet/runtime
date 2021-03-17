@@ -11,6 +11,8 @@
   <PropertyGroup>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
+    <IncludeAppleCryptoOnMobile Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">false</IncludeAppleCryptoOnMobile>
+    <IncludeAppleCryptoOnMobile Condition="'$(IncludeAppleCryptoOnMobile)' == ''">true</IncludeAppleCryptoOnMobile>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetsBrowser)' == 'true'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
@@ -491,7 +493,9 @@
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Digest.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs"
+    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' == 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
+    <Compile Condition="'$(IncludeAppleCryptoOnMobile)' != 'true'" Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.Mobile.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />

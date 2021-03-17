@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 
 namespace System.Security.Cryptography
@@ -74,6 +75,8 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override ECParameters ExportParameters(bool includePrivateParameters)
             {
                 return _ecc.ExportParameters(includePrivateParameters, KeySize);
@@ -109,19 +112,27 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override void GenerateKey(ECCurve curve)
             {
                 KeySizeValue = _ecc.GenerateKey(curve);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             internal SecKeyPair GetKeys()
             {
                 return _ecc.GetOrGenerateKeys(KeySize);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
                 DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256, null, null);
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
@@ -143,6 +154,8 @@ namespace System.Security.Cryptography
                     (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] DeriveKeyFromHmac(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
@@ -166,6 +179,8 @@ namespace System.Security.Cryptography
                     (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel,
                 byte[] prfSeed)
             {
@@ -185,6 +200,8 @@ namespace System.Security.Cryptography
                     (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 if (!(otherPartyPublicKey is ECDiffieHellmanSecurityTransformsPublicKey secTransPubKey))
@@ -253,6 +270,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override ECDiffieHellmanPublicKey PublicKey =>
                 new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
 
@@ -294,9 +313,13 @@ namespace System.Security.Cryptography
                 public override ECParameters ExportExplicitParameters() =>
                     throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
 
+                [UnsupportedOSPlatform("ios")]
+                [UnsupportedOSPlatform("tvos")]
                 public override ECParameters ExportParameters() =>
                     _ecc.ExportParameters(includePrivateParameters: false, keySizeInBits: -1);
 
+                [UnsupportedOSPlatform("ios")]
+                [UnsupportedOSPlatform("tvos")]
                 internal SafeSecKeyRefHandle KeyHandle =>
                     _ecc.GetOrGenerateKeys(-1).PublicKey;
             }

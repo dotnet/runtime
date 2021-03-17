@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using Internal.Cryptography;
@@ -299,6 +300,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   Other errors during the certificate creation process.
         /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2 CreateSelfSigned(DateTimeOffset notBefore, DateTimeOffset notAfter)
         {
             if (notAfter < notBefore)
@@ -377,6 +380,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
         ///   which does not accept a <see cref="RSASignaturePadding"/> value.
         /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
@@ -428,6 +433,8 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
         ///   which does not accept a <see cref="RSASignaturePadding"/> value.
         /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
             DateTimeOffset notBefore,
@@ -565,6 +572,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
@@ -606,6 +615,8 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,

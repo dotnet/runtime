@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -11,6 +12,8 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         private static AppleCertificatePal ImportPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,

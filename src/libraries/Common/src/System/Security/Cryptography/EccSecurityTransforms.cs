@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Apple;
 
 namespace System.Security.Cryptography
@@ -33,6 +34,8 @@ namespace System.Security.Cryptography
             _disposed = true;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal int GenerateKey(ECCurve curve)
         {
             curve.Validate();
@@ -65,6 +68,8 @@ namespace System.Security.Cryptography
             return keySize;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         private SecKeyPair GenerateKey(int keySizeInBits)
         {
             SafeSecKeyRefHandle publicKey;
@@ -85,6 +90,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal SecKeyPair GetOrGenerateKeys(int keySizeInBits)
         {
             ThrowIfDisposed();
@@ -126,6 +133,8 @@ namespace System.Security.Cryptography
             return key;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
         {
             // Apple requires all private keys to be exported encrypted, but since we're trying to export

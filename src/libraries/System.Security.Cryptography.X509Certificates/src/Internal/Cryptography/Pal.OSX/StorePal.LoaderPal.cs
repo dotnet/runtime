@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
@@ -90,6 +91,8 @@ namespace Internal.Cryptography.Pal
                 password?.DangerousRelease();
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public void MoveTo(X509Certificate2Collection collection)
             {
                 foreach (UnixPkcs12Reader.CertAndKey certAndKey in _pkcs12.EnumerateAll())
