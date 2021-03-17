@@ -75,7 +75,11 @@ namespace Internal.Cryptography
                 fixed (byte* src = srcArray)
                 fixed (byte* dest = destination)
                 {
-                    Interop.BrowserCrypto.SimpleDigestHash(impl, src, srcLength, dest, destination.Length);
+                    int res = Interop.BrowserCrypto.SimpleDigestHash(impl, src, srcLength, dest, destination.Length);
+                    if (res == 0)
+                    {
+                        throw new PlatformNotSupportedException(SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported);
+                    }
                 }
             }
 

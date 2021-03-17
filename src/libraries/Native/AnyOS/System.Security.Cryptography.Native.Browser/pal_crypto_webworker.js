@@ -4,6 +4,10 @@
 var CryptoWebWorkerLib = {
     $CRYPTOWEBWORKER: {
         call_digest: function (hash, input_buffer, input_len, output_buffer, output_len) {
+            if (MONO.mono_wasm_crypto.channel === null) {
+                return 0; // Not supported
+            }
+
             var msg = {
                 func: "digest",
                 type: hash,
