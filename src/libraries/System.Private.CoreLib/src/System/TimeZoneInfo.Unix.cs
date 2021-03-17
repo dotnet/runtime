@@ -149,7 +149,7 @@ namespace System
                     rule.DaylightTransitionStart != s_daylightRuleMarker &&
                     rule.DaylightDelta == TimeSpan.Zero && rule.BaseUtcOffsetDelta == TimeSpan.Zero)
                 {
-                    // This rule has no any time transition, ignore it.
+                    // This rule has no time transition, ignore it.
                     continue;
                 }
 
@@ -174,10 +174,9 @@ namespace System
                 {
                     // For rules spanning more than one year. The time transition inside this rule would apply for the whole time spanning these years
                     // and not for partial time of every year.
-                    // AdjustmentRule cannot express express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
-                    // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year in the rule year range.
-                    // We split the rule into more rules. The first rule will start from the start of the original rule and ends at the end of the same year.
-                    // The transition for this rule will cover the whole time from the start to the end of the rule year.
+                    // AdjustmentRule cannot express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
+                    // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year.
+                    // We split the rule into more rules. The first rule will start from the start year of the original rule and ends at the end of the same year.
                     // The second splitted rule would cover the middle range of the original rule and ranging from the year start+1 to
                     // year end-1. The transition time in this rule would start from Jan 1st to end of December.
                     // The last splitted rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
