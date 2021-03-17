@@ -514,6 +514,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection propertyDescriptors = GetProperties();
@@ -575,6 +576,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetAttributes(this, true);
         }
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return TypeDescriptor.GetEditor(this, editorBaseType, true);
@@ -591,6 +593,7 @@ namespace System.Data.Common
         {
             return GetProperties();
         }
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
             return GetProperties(attributes);
@@ -603,6 +606,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetEvents(this, true);
         }
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
         {
             return TypeDescriptor.GetEvents(this, attributes, true);

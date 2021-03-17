@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -59,6 +60,7 @@ namespace System.ComponentModel
         private static readonly int s_bitSetOnDemand = InterlockedBitVector32.CreateMask(s_bitAmbientValueQueried);
 
         private InterlockedBitVector32 _state;             // Contains the state bits for this proeprty descriptor.
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private readonly Type _componentClass;             // used to determine if we should all on us or on the designer
         private readonly Type _type;                       // the data type of the property
         private object _defaultValue;               // the default value of the property (or noValue)
@@ -75,7 +77,11 @@ namespace System.ComponentModel
         /// <summary>
         /// The main constructor for ReflectPropertyDescriptors.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Attribute[] attributes)
             : base(name, attributes)
         {
             Debug.WriteLine($"Creating ReflectPropertyDescriptor for {componentClass?.FullName}.{name}");
@@ -106,7 +112,15 @@ namespace System.ComponentModel
         /// <summary>
         /// A constructor for ReflectPropertyDescriptors that have no attributes.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, PropertyInfo propInfo, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            PropertyInfo propInfo,
+            MethodInfo getMethod,
+            MethodInfo setMethod,
+            Attribute[] attrs)
+            : this(componentClass, name, type, attrs)
         {
             _propInfo = propInfo;
             _getMethod = getMethod;
@@ -120,7 +134,15 @@ namespace System.ComponentModel
         /// <summary>
         /// A constructor for ReflectPropertyDescriptors that creates an extender property.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, string name, Type type, Type receiverType, MethodInfo getMethod, MethodInfo setMethod, Attribute[] attrs) : this(componentClass, name, type, attrs)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            string name,
+            Type type,
+            Type receiverType,
+            MethodInfo getMethod,
+            MethodInfo setMethod,
+            Attribute[] attrs)
+            : this(componentClass, name, type, attrs)
         {
             _receiverType = receiverType;
             _getMethod = getMethod;
@@ -132,7 +154,10 @@ namespace System.ComponentModel
         /// This constructor takes an existing ReflectPropertyDescriptor and modifies it by merging in the
         /// passed-in attributes.
         /// </summary>
-        public ReflectPropertyDescriptor(Type componentClass, PropertyDescriptor oldReflectPropertyDescriptor, Attribute[] attributes)
+        public ReflectPropertyDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            PropertyDescriptor oldReflectPropertyDescriptor,
+            Attribute[] attributes)
             : base(oldReflectPropertyDescriptor, attributes)
         {
             _componentClass = componentClass;
@@ -221,7 +246,7 @@ namespace System.ComponentModel
             {
                 if (!_state[s_bitChangedQueried])
                 {
-                    _realChangedEvent = TypeDescriptor.GetEvents(ComponentType)[Name + "Changed"];
+                    _realChangedEvent = TypeDescriptor.GetEvents(_componentClass)[Name + "Changed"];
                     _state[s_bitChangedQueried] = true;
                 }
 
@@ -371,6 +396,8 @@ namespace System.ComponentModel
         /// </summary>
         private MethodInfo SetMethodValue
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "_componentClass is annotated with All, but the trimmer is still warning on getting properties on BaseType. https://github.com/mono/linker/issues/1882")]
             get
             {
                 if (!_state[s_bitSetQueried] && _state[s_bitSetOnDemand])
@@ -379,7 +406,7 @@ namespace System.ComponentModel
 
                     if (_setMethod == null)
                     {
-                        for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
+                        for (Type t = _componentClass.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
                             PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Type.EmptyTypes, null);
@@ -639,7 +666,7 @@ namespace System.ComponentModel
                     }
                     catch { }
                 }
-                return Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
+                return AttributesContainsDesignerVisibilityContent();
             }
             else if (DefaultValue == s_noValue)
             {
@@ -655,6 +682,10 @@ namespace System.ComponentModel
             }
             return !Equals(DefaultValue, ExtenderGetValue(provider, component));
         }
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(DesignerSerializationVisibilityAttribute))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
+        private bool AttributesContainsDesignerVisibilityContent() => Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
 
         /// <summary>
         /// Indicates whether reset will change the value of the component. If there
@@ -1139,7 +1170,7 @@ namespace System.ComponentModel
                     }
                     catch { }
                 }
-                return Attributes.Contains(DesignerSerializationVisibilityAttribute.Content);
+                return AttributesContainsDesignerVisibilityContent();
             }
             else if (DefaultValue == s_noValue)
             {

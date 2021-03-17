@@ -34,24 +34,16 @@ set(metadata_win32_sources
     icall-windows.c
     marshal-windows.c
     mono-security-windows.c
-    w32mutex-win32.c
-    w32semaphore-win32.c
     w32event-win32.c
-    w32socket-win32.c
     w32error-win32.c)
 
 set(metadata_unix_sources
-    w32mutex-unix.c
-    w32semaphore-unix.c
     w32event-unix.c
     w32process-unix-osx.c
     w32process-unix-bsd.c
     w32process-unix-haiku.c
     w32process-unix-default.c
-    w32socket-unix.c
     w32file-unix.c
-    w32file-unix-glob.c
-    w32file-unix-glob.h
     w32error-unix.c)
 
 if(HOST_WIN32)
@@ -94,7 +86,6 @@ set(metadata_common_sources
     exception.h
     exception-internals.h
     w32file.h
-    w32file-internals.h
     gc-internals.h
     icall.c
     icall-internals.h
@@ -137,17 +128,13 @@ set(metadata_common_sources
     mono-perfcounters.h
     mono-perfcounters-def.h
     mono-ptr-array.h
-    mono-route.c
     monitor.h
-    number-ms.h
     object.c
     object-forward.h
     object-internals.h
     opcodes.c
     property-bag.h
     property-bag.c
-    w32socket.h
-    w32socket-internals.h
     w32process.h
     profiler.c
     profiler-private.h
@@ -182,11 +169,7 @@ set(metadata_common_sources
     seq-points-data.c
     handle.c
     handle.h
-    w32mutex.h
-    w32semaphore.h
     w32event.h
-    w32handle-namespace.h
-    w32handle-namespace.c
     w32handle.h
     w32handle.c
     w32error.h

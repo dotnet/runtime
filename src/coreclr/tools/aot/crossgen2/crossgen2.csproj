@@ -95,6 +95,7 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
+      Condition="'$(PgoInstrument)' != ''"
       />
   </ItemGroup>
 

@@ -117,7 +117,7 @@ struct _MonoClass {
 
 	MonoGCDescriptor gc_descr;
 
-	MonoClassRuntimeInfo *runtime_info;
+	MonoVTable *runtime_vtable;
 
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
 	MonoMethod **vtable;

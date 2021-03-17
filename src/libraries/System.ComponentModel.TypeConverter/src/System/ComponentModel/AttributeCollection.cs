@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
@@ -11,6 +12,8 @@ namespace System.ComponentModel
     /// </summary>
     public class AttributeCollection : ICollection, IEnumerable
     {
+        internal const string FilterRequiresUnreferencedCodeMessage = "The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.";
+
         /// <summary>
         /// An empty AttributeCollection that can used instead of creating a new one.
         /// </summary>
@@ -132,7 +135,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute this[Type attributeType]
+        public virtual Attribute this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
             get
             {
@@ -215,6 +218,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines if this collection of attributes has the specified attribute.
         /// </summary>
+        [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
         public bool Contains(Attribute attribute)
         {
             if (attribute == null)
@@ -230,6 +234,7 @@ namespace System.ComponentModel
         /// Determines if this attribute collection contains the all
         /// the specified attributes in the attribute array.
         /// </summary>
+        [RequiresUnreferencedCode(FilterRequiresUnreferencedCodeMessage)]
         public bool Contains(Attribute[] attributes)
         {
             if (attributes == null)
@@ -252,7 +257,7 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute GetDefaultAttribute(Type attributeType)
+        protected Attribute GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
         {
             if (attributeType == null)
             {

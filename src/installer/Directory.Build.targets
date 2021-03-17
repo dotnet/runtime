@@ -1,5 +1,10 @@
 <Project>
 
+  <PropertyGroup>
+    <InstallerName Condition="'$(PgoInstrument)' != ''">$(InstallerName)-pgo</InstallerName>
+    <ArchiveName Condition="'$(PgoInstrument)' != ''">$(ArchiveName)-pgo</ArchiveName>
+  </PropertyGroup>
+
   <!--
     Import stubs for compatibility with packaging tools, if not building a pkgproj. Ordinarily,
     listing this before the ../Directory.Build.targets import would be sufficient, but the packaging
@@ -11,13 +16,6 @@
 
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" />
-
-  <!-- Common target to find all sfxproj. In a target to avoid evaluating for every project. -->
-  <Target Name="GetSharedFrameworkProjects">
-    <ItemGroup>
-      <SharedFrameworkProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
-    </ItemGroup>
-  </Target>
 
   <!--
     Arcade SDK versioning is defined by static properties in a targets file: work around this by
@@ -39,11 +37,8 @@
       <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
 
       <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
-
-      <RuntimeDepsRpmVersion Condition="'$(RuntimeDepsRpmVersion)'==''">$(ProductVersion)</RuntimeDepsRpmVersion>
-      <RuntimeDepsDebVersion Condition="'$(RuntimeDepsDebVersion)'==''">$(ProductVersion)</RuntimeDepsDebVersion>
-
       <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
+      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
 
       <!--
         By default, we are always building the nuget packages for HostPolicy, HostFXR and
@@ -82,68 +77,6 @@
       <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
       <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
       <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
-
-      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <HostPackageVersion>$(HostVersion)</HostPackageVersion>
-      <HostPackageRelease>1</HostPackageRelease>
-      <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
-      <HostResolverPackageRelease>1</HostResolverPackageRelease>
-      <RuntimePackageVersion>$(SharedFrameworkNugetVersion)</RuntimePackageVersion>
-      <RuntimePackageRelease>1</RuntimePackageRelease>
-      <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsDebPackageVersion>
-      <RuntimeDepsDebPackageRelease>1</RuntimeDepsDebPackageRelease>
-      <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
-      <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
-      <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-      <HostPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostPackageVersion>
-
-      <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-      <HostResolverPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostResolverPackageVersion>
-
-      <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
-      <RuntimePackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</RuntimePackageVersion>
-
-      <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
-      <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
-      <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-
-      <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
-      <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
-
-      <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
-
-      <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
-      <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
-
-      <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
-      <RuntimePackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimePackageRelease>
-      <RuntimePackageRelease>$([System.String]::Copy('$(RuntimePackageRelease)').Replace('-', '_'))</RuntimePackageRelease>
-
-      <RuntimeDepsRpmPackageVersion>$(ProductionVersion)</RuntimeDepsRpmPackageVersion>
-      <RuntimeDepsRpmPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimeDepsRpmPackageRelease>
-      <RuntimeDepsRpmPackageRelease>$([System.String]::Copy('$(RuntimeDepsRpmPackageRelease)').Replace('-', '_'))</RuntimeDepsRpmPackageRelease>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="GetLatestCommitHash"
-          Condition="'$(LatestCommit)' == ''">
-    <!-- Get the latest commit hash -->
-    <Exec Command="git rev-parse HEAD 2>&amp;1" StandardOutputImportance="Low" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
-      <Output TaskParameter="ExitCode" PropertyName="LatestCommitExitCode" />
-    </Exec>
-    <!-- We shouldn't fail the build if we can't retreive the commit hash, so in this case just set it to N/A -->
-    <PropertyGroup Condition="'$(LatestCommitExitCode)'!='0'">
-      <LatestCommit>N/A</LatestCommit>
     </PropertyGroup>
   </Target>
 </Project>

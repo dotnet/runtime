@@ -2011,6 +2011,7 @@ FORCEINLINE ULONG CorSigUncompressData(
     return CorSigUncompressBigData(pData);
 }
 
+#ifdef HOST_WINDOWS
 inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the signature is bad
     PCCOR_SIGNATURE pData,          // [IN] compressed data
     DWORD           len,            // [IN] length of the signature
@@ -2061,6 +2062,70 @@ inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the si
         else
         {
             *pDataOut = (ULONG)(((*pBytes & 0x1f) << 24 | *(pBytes+1) << 16 | *(pBytes+2) << 8 | *(pBytes+3)));
+            *pDataLen = 4;
+        }
+    }
+    else // We don't recognize this encoding
+    {
+        *pDataOut = 0;
+        *pDataLen = 0;
+        hr = META_E_BAD_SIGNATURE;
+    }
+
+    return hr;
+}
+#endif // HOST_WINDOWS
+
+inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the signature is bad
+    PCCOR_SIGNATURE pData,          // [IN] compressed data
+    DWORD           len,            // [IN] length of the signature
+    uint32_t *      pDataOut,       // [OUT] the expanded *pData
+    uint32_t *      pDataLen)       // [OUT] length of the expanded *pData
+{
+    HRESULT hr = S_OK;
+    BYTE const  *pBytes = reinterpret_cast<BYTE const*>(pData);
+
+    // Smallest.
+    if ((*pBytes & 0x80) == 0x00)       // 0??? ????
+    {
+        if (len < 1)
+        {
+            *pDataOut = 0;
+            *pDataLen = 0;
+            hr = META_E_BAD_SIGNATURE;
+        }
+        else
+        {
+            *pDataOut = *pBytes;
+            *pDataLen = 1;
+        }
+    }
+    // Medium.
+    else if ((*pBytes & 0xC0) == 0x80)  // 10?? ????
+    {
+        if (len < 2)
+        {
+            *pDataOut = 0;
+            *pDataLen = 0;
+            hr = META_E_BAD_SIGNATURE;
+        }
+        else
+        {
+            *pDataOut = (uint32_t)(((*pBytes & 0x3f) << 8 | *(pBytes+1)));
+            *pDataLen = 2;
+        }
+    }
+    else if ((*pBytes & 0xE0) == 0xC0)      // 110? ????
+    {
+        if (len < 4)
+        {
+            *pDataOut = 0;
+            *pDataLen = 0;
+            hr = META_E_BAD_SIGNATURE;
+        }
+        else
+        {
+            *pDataOut = (uint32_t)(((*pBytes & 0x1f) << 24 | *(pBytes+1) << 16 | *(pBytes+2) << 8 | *(pBytes+3)));
             *pDataLen = 4;
         }
     }
@@ -2128,14 +2193,14 @@ inline ULONG CorSigUncompressToken( // return number of bytes of that compressed
 
 inline HRESULT CorSigUncompressToken(
     PCCOR_SIGNATURE pData,          // [IN] compressed data
-    DWORD           dwLen,          // [IN] Remaining length of sigature
+    uint32_t        dwLen,          // [IN] Remaining length of sigature
     mdToken *       pToken,         // [OUT] the expanded *pData
-    DWORD *         dwTokenLength)  // [OUT] The length of the token in the sigature
+    uint32_t *      dwTokenLength)  // [OUT] The length of the token in the sigature
 {
     mdToken tk;
     mdToken tkType;
 
-    HRESULT hr = CorSigUncompressData(pData, dwLen, (ULONG *)&tk, dwTokenLength);
+    HRESULT hr = CorSigUncompressData(pData, dwLen, (uint32_t *)&tk, dwTokenLength);
 
     if (SUCCEEDED(hr))
     {
@@ -2161,7 +2226,7 @@ FORCEINLINE ULONG CorSigUncompressCallingConv(
 FORCEINLINE HRESULT CorSigUncompressCallingConv(
     PCCOR_SIGNATURE pData,      // [IN] Signature
     DWORD           dwLen,      // [IN] Length of signature
-    ULONG *         data)       // [OUT] Compressed data
+    uint32_t *      data)       // [OUT] Compressed data
 {
     if (dwLen > 0)
     {

@@ -6,6 +6,7 @@
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
+#include <shellapi.h>
 
 namespace
 {

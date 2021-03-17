@@ -70,6 +70,7 @@ var BindingSupportLib = {
 			this.mono_wasm_intern_string = Module.cwrap ('mono_wasm_intern_string', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
+			this.mono_wasm_string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
 
 			this._box_buffer = Module._malloc(16);
 			this._unbox_buffer = Module._malloc(16);
@@ -171,8 +172,8 @@ var BindingSupportLib = {
 		_store_string_in_intern_table: function (string, ptr, internIt) {
 			if (!ptr)
 				throw new Error ("null pointer passed to _store_string_in_intern_table");
-
-			var originalArg = ptr;
+			else if (typeof (ptr) !== "number")
+				throw new Error (`non-pointer passed to _store_string_in_intern_table: ${typeof(ptr)}`);
 			
 			const internBufferSize = 8192;
 
@@ -300,13 +301,13 @@ var BindingSupportLib = {
 
 			var arrayRoot = MONO.mono_wasm_new_root (mono_array);
 			try {
-				return this._mono_array_to_js_array_rooted (arrayRoot);
+				return this._mono_array_root_to_js_array (arrayRoot);
 			} finally {
 				arrayRoot.release();
 			}
 		},
 
-		_mono_array_to_js_array_rooted: function (arrayRoot) {
+		_mono_array_root_to_js_array: function (arrayRoot) {
 			if (arrayRoot.value === 0)
 				return null;
 
@@ -320,9 +321,9 @@ var BindingSupportLib = {
 					elemRoot.value = this.mono_array_get (arrayRoot.value, i);
 
 					if (this.is_nested_array (elemRoot.value))
-						res[i] = this._mono_array_to_js_array_rooted (elemRoot);
+						res[i] = this._mono_array_root_to_js_array (elemRoot);
 					else
-						res[i] = this._unbox_mono_obj_rooted (elemRoot);
+						res[i] = this._unbox_mono_obj_root (elemRoot);
 				}
 			} finally {
 				elemRoot.release ();
@@ -331,13 +332,17 @@ var BindingSupportLib = {
 			return res;
 		},
 
-		js_array_to_mono_array: function (js_array) {
-			var mono_array = this.mono_obj_array_new (js_array.length);
+		js_array_to_mono_array: function (js_array, asString = false) {
+			var mono_array = asString ? this.mono_wasm_string_array_new (js_array.length) : this.mono_obj_array_new (js_array.length);
 			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
 
 			try {
 				for (var i = 0; i < js_array.length; ++i) {
-					elemRoot.value = this.js_to_mono_obj (js_array [i]);
+					var obj = js_array[i];
+					if (asString)
+						obj = obj.toString ();
+
+					elemRoot.value = this.js_to_mono_obj (obj);
 					this.mono_obj_array_set (arrayRoot.value, i, elemRoot.value);
 				}
 
@@ -353,7 +358,7 @@ var BindingSupportLib = {
 
 			var root = MONO.mono_wasm_new_root (mono_obj);
 			try {
-				return this._unbox_mono_obj_rooted (root);
+				return this._unbox_mono_obj_root (root);
 			} finally {
 				root.release();
 			}
@@ -442,12 +447,14 @@ var BindingSupportLib = {
 					return uriValue;
 				case 23: // clr .NET SafeHandle
 					return this._unbox_safehandle_rooted (mono_obj);
+				case 30:
+					return undefined;
 				default:
 					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
 			}
 		},
 
-		_unbox_mono_obj_rooted: function (root) {
+		_unbox_mono_obj_root: function (root) {
 			var mono_obj = root.value;
 			if (mono_obj === 0)
 				return undefined;
@@ -1295,7 +1302,7 @@ var BindingSupportLib = {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
 			if (is_result_marshaled)
-				result = this._unbox_mono_obj_rooted (resultRoot);
+				result = this._unbox_mono_obj_root (resultRoot);
 			else
 				result = resultRoot.value;
 
@@ -1428,7 +1435,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultRoot, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
 				"    }",
 				"}",
 				"",
@@ -1536,7 +1543,7 @@ var BindingSupportLib = {
 			return BINDING.bind_method (method, null, signature, fqn);
 		},
 
-		bind_assembly_entry_point: function (assembly) {
+		bind_assembly_entry_point: function (assembly, signature) {
 			this.bindings_lazy_init ();
 
 			var asm = this.assembly_load (assembly);
@@ -1551,24 +1558,20 @@ var BindingSupportLib = {
 				signature = Module.mono_method_get_call_signature (method);
 
 			return function() {
-				return BINDING.call_method (method, null, signature, arguments);
+				try {
+					var args = [...arguments];
+					if (args.length > 0 && Array.isArray (args[0]))
+						args[0] = BINDING.js_array_to_mono_array (args[0], true);
+
+					let result = BINDING.call_method (method, null, signature, args);
+					return Promise.resolve (result);
+				} catch (error) {
+					return Promise.reject (error);
+				}
 			};
 		},
 		call_assembly_entry_point: function (assembly, args, signature) {
-			this.bindings_lazy_init ();
-
-			var asm = this.assembly_load (assembly);
-			if (!asm)
-				throw new Error ("Could not find assembly: " + assembly);
-
-			var method = this.assembly_get_entry_point(asm);
-			if (!method)
-				throw new Error ("Could not find entry point for assembly: " + assembly);
-
-			if (typeof signature === "undefined")
-				signature = Module.mono_method_get_call_signature (method);
-
-			return this.call_method (method, null, signature, args);
+			return this.bind_assembly_entry_point (assembly, signature) (...args)
 		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.

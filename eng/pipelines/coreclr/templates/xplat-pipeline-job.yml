@@ -41,6 +41,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
+    pgoType: ${{ parameters.pgoType }}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -66,7 +67,7 @@ jobs:
 
     # Build product defines what we are trying to build, either coreclr or mono
     - name: buildProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
@@ -98,13 +99,13 @@ jobs:
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: coreClrProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: corelibProductArtifactName
-      value: 'CoreLib_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      value: 'CoreLib_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: managedGenericTestArtifactName
       value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -14,8 +15,10 @@ namespace System.SpanTests
 
             Span<byte> first = new Span<byte>(a, 1, 0);
             Span<byte> second = new Span<byte>(a, 2, 0);
-            bool b = first.SequenceEqual<byte>(second);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<byte>(second));
+            Assert.True(first.SequenceEqual<byte>(second, null));
+            Assert.True(first.SequenceEqual<byte>(second, EqualityComparer<byte>.Default));
         }
 
         [Fact]
@@ -23,8 +26,10 @@ namespace System.SpanTests
         {
             byte[] a = { 4, 5, 6 };
             Span<byte> span = new Span<byte>(a);
-            bool b = span.SequenceEqual<byte>(span);
-            Assert.True(b);
+
+            Assert.True(span.SequenceEqual<byte>(span));
+            Assert.True(span.SequenceEqual<byte>(span, null));
+            Assert.True(span.SequenceEqual<byte>(span, EqualityComparer<byte>.Default));
         }
 
         [Fact]
@@ -32,8 +37,10 @@ namespace System.SpanTests
         {
             byte[] a = { 4, 5, 6 };
             Span<byte> first = new Span<byte>(a, 0, 3);
-            bool b = first.SequenceEqual<byte>(a);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<byte>(a));
+            Assert.True(first.SequenceEqual<byte>(a, null));
+            Assert.True(first.SequenceEqual<byte>(a, EqualityComparer<byte>.Default));
         }
 
         [Fact]
@@ -44,8 +51,10 @@ namespace System.SpanTests
             var segment = new ArraySegment<byte>(dst, 1, 3);
 
             Span<byte> first = new Span<byte>(src, 0, 3);
-            bool b = first.SequenceEqual<byte>(segment);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<byte>(segment));
+            Assert.True(first.SequenceEqual<byte>(segment, null));
+            Assert.True(first.SequenceEqual<byte>(segment, EqualityComparer<byte>.Default));
         }
 
         [Fact]
@@ -54,8 +63,10 @@ namespace System.SpanTests
             byte[] a = { 4, 5, 6 };
             Span<byte> first = new Span<byte>(a, 0, 3);
             Span<byte> second = new Span<byte>(a, 0, 2);
-            bool b = first.SequenceEqual<byte>(second);
-            Assert.False(b);
+
+            Assert.False(first.SequenceEqual<byte>(second));
+            Assert.False(first.SequenceEqual<byte>(second, null));
+            Assert.False(first.SequenceEqual<byte>(second, EqualityComparer<byte>.Default));
         }
 
         [Fact]
@@ -76,8 +87,10 @@ namespace System.SpanTests
 
                     Span<byte> firstSpan = new Span<byte>(first);
                     ReadOnlySpan<byte> secondSpan = new ReadOnlySpan<byte>(second);
-                    bool b = firstSpan.SequenceEqual<byte>(secondSpan);
-                    Assert.False(b);
+
+                    Assert.False(firstSpan.SequenceEqual<byte>(secondSpan));
+                    Assert.False(firstSpan.SequenceEqual<byte>(secondSpan, null));
+                    Assert.False(firstSpan.SequenceEqual<byte>(secondSpan, EqualityComparer<byte>.Default));
                 }
             }
         }
@@ -95,8 +108,10 @@ namespace System.SpanTests
                 second[length + 1] = 100;
                 Span<byte> span1 = new Span<byte>(first, 1, length);
                 ReadOnlySpan<byte> span2 = new ReadOnlySpan<byte>(second, 1, length);
-                bool b = span1.SequenceEqual<byte>(span2);
-                Assert.True(b);
+
+                Assert.True(span1.SequenceEqual<byte>(span2));
+                Assert.True(span1.SequenceEqual<byte>(span2, null));
+                Assert.True(span1.SequenceEqual<byte>(span2, EqualityComparer<byte>.Default));
             }
         }
     }

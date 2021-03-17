@@ -1524,7 +1524,7 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, NULL, "Marshal Dummy String");
 
-		MonoStringHandle string_dummy_handle = mono_string_new_utf8_len (mono_get_root_domain (), "dummy", 5, error);
+		MonoStringHandle string_dummy_handle = mono_string_new_utf8_len ("dummy", 5, error);
 		string_dummy = MONO_HANDLE_RAW (string_dummy_handle);
 		mono_error_assert_ok (error);
 
@@ -4568,7 +4568,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *cleanup_native, *cleanup_managed;
 	static MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
 	MonoMethodBuilder *mb = m->mb;
-	MonoAssemblyLoadContext *alc = mono_domain_ambient_alc (mono_domain_get ());
+	MonoAssemblyLoadContext *alc = mono_alc_get_ambient ();
 	guint32 loc1;
 	int pos2;
 

@@ -10,6 +10,7 @@ using System.Reflection;
 using System.DirectoryServices.Design;
 using System.Globalization;
 using System.Net;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices
 {
@@ -22,7 +23,7 @@ namespace System.DirectoryServices
     public class DirectoryEntry : Component
     {
         private string _path = "";
-        private UnsafeNativeMethods.IAds _adsObject;
+        private UnsafeNativeMethods.IAds? _adsObject;
         private bool _useCache = true;
         private bool _cacheFilled;
         // disable csharp compiler warning #0414: field assigned unused value
@@ -31,16 +32,16 @@ namespace System.DirectoryServices
 #pragma warning restore 0414
         private bool _disposed;
         private AuthenticationTypes _authenticationType = AuthenticationTypes.Secure;
-        private NetworkCredential _credentials;
+        private NetworkCredential? _credentials;
         private readonly DirectoryEntryConfiguration _options;
 
-        private PropertyCollection _propertyCollection;
+        private PropertyCollection? _propertyCollection;
         internal bool allowMultipleChange;
         private bool _userNameIsNull;
         private bool _passwordIsNull;
         private bool _objectSecurityInitialized;
         private bool _objectSecurityModified;
-        private ActiveDirectorySecurity _objectSecurity;
+        private ActiveDirectorySecurity? _objectSecurity;
         private const string SecurityDescriptorProperty = "ntSecurityDescriptor";
 
         /// <devdoc>
@@ -55,7 +56,7 @@ namespace System.DirectoryServices
         /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class that will bind
         /// to the directory entry at <paramref name="path"/>.
         /// </devdoc>
-        public DirectoryEntry(string path) : this()
+        public DirectoryEntry(string? path) : this()
         {
             Path = path;
         }
@@ -63,14 +64,14 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         /// </devdoc>
-        public DirectoryEntry(string path, string username, string password) : this(path, username, password, AuthenticationTypes.Secure)
+        public DirectoryEntry(string? path, string? username, string? password) : this(path, username, password, AuthenticationTypes.Secure)
         {
         }
 
         /// <devdoc>
         /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectoryEntry'/> class.
         /// </devdoc>
-        public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path)
+        public DirectoryEntry(string? path, string? username, string? password, AuthenticationTypes authenticationType) : this(path)
         {
             _credentials = new NetworkCredential(username, password);
             if (username == null)
@@ -82,7 +83,7 @@ namespace System.DirectoryServices
             _authenticationType = authenticationType;
         }
 
-        internal DirectoryEntry(string path, bool useCache, string username, string password, AuthenticationTypes authenticationType)
+        internal DirectoryEntry(string path, bool useCache, string? username, string? password, AuthenticationTypes authenticationType)
         {
             _path = path;
             _useCache = useCache;
@@ -107,12 +108,12 @@ namespace System.DirectoryServices
         {
         }
 
-        internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType)
+        internal DirectoryEntry(object adsObject, bool useCache, string? username, string? password, AuthenticationTypes authenticationType)
             : this(adsObject, useCache, username, password, authenticationType, false)
         {
         }
 
-        internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
+        internal DirectoryEntry(object adsObject, bool useCache, string? username, string? password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
         {
             _adsObject = adsObject as UnsafeNativeMethods.IAds;
             if (_adsObject == null)
@@ -170,6 +171,7 @@ namespace System.DirectoryServices
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_adsObject))]
         private bool Bound => _adsObject != null;
 
         /// <devdoc>
@@ -222,7 +224,7 @@ namespace System.DirectoryServices
                     _objectSecurityInitialized = true;
                 }
 
-                return _objectSecurity;
+                return _objectSecurity!;
             }
             set
             {
@@ -303,7 +305,7 @@ namespace System.DirectoryServices
         /// Gets or sets the password to use when authenticating the client.
         /// </devdoc>
         [DefaultValue(null)]
-        public string Password
+        public string? Password
         {
             set
             {
@@ -332,6 +334,7 @@ namespace System.DirectoryServices
         /// Gets or sets the path for this <see cref='System.DirectoryServices.DirectoryEntry'/>.
         /// </devdoc>
         [DefaultValue("")]
+        [AllowNull]
         public string Path
         {
             get => _path;
@@ -423,7 +426,7 @@ namespace System.DirectoryServices
         /// Gets or sets the username to use when authenticating the client.
         /// </devdoc>
         [DefaultValue(null)]
-        public string Username
+        public string? Username
         {
             get
             {
@@ -454,7 +457,7 @@ namespace System.DirectoryServices
             }
         }
 
-        public DirectoryEntryConfiguration Options
+        public DirectoryEntryConfiguration? Options
         {
             get
             {
@@ -473,7 +476,7 @@ namespace System.DirectoryServices
                 //--------------------------------------------
                 // Check if ACCUMULATE_MODIFICATION is available
                 //--------------------------------------------
-                object o = null;
+                object? o = null;
                 int unmanagedResult = 0;
                 // check whether the new option is available
 
@@ -505,9 +508,11 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Binds to the ADs object (if not already bound).
         /// </devdoc>
+        [MemberNotNull(nameof(_adsObject))]
         private void Bind()
         {
             Bind(true);
+            Debug.Assert(_adsObject != null);
         }
 
         internal void Bind(bool throwIfFail)
@@ -527,7 +532,7 @@ namespace System.DirectoryServices
 
                     //SECREVIEW: Looking at the root of the DS will demand browse permissions
                     //                     on "*" or "LDAP://RootDSE".
-                    string defaultNamingContext = (string)rootDSE.Properties["defaultNamingContext"][0];
+                    string defaultNamingContext = (string)rootDSE.Properties["defaultNamingContext"][0]!;
                     rootDSE.Dispose();
 
                     pathToUse = "LDAP://" + defaultNamingContext;
@@ -538,7 +543,7 @@ namespace System.DirectoryServices
                     Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
 
                 Guid g = new Guid("00000000-0000-0000-c000-000000000046"); // IID_IUnknown
-                object value = null;
+                object? value = null;
                 int hr = UnsafeNativeMethods.ADsOpenObject(pathToUse, GetUsername(), GetPassword(), (int)_authenticationType, ref g, out value);
 
                 if (hr != 0)
@@ -587,7 +592,7 @@ namespace System.DirectoryServices
                     //
                     SetObjectSecurityInCache();
 
-                    _adsObject.SetInfo();
+                    _adsObject!.SetInfo();
                 }
                 catch (COMException e)
                 {
@@ -620,7 +625,7 @@ namespace System.DirectoryServices
                 // Write the security descriptor to the cache
                 //
                 SetObjectSecurityInCache();
-                _adsObject.SetInfo();
+                _adsObject!.SetInfo();
                 _objectSecurityInitialized = false;
                 _objectSecurityModified = false;
             }
@@ -650,7 +655,7 @@ namespace System.DirectoryServices
                 //
                 SetObjectSecurityInCache();
 
-                _adsObject.SetInfo();
+                _adsObject!.SetInfo();
                 _objectSecurityInitialized = false;
                 _objectSecurityModified = false;
             }
@@ -670,12 +675,12 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Creates a copy of this entry as a child of the given parent and gives it a new name.
         /// </devdoc>
-        public DirectoryEntry CopyTo(DirectoryEntry newParent, string newName)
+        public DirectoryEntry CopyTo(DirectoryEntry newParent, string? newName)
         {
             if (!newParent.IsContainer)
                 throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
 
-            object copy = null;
+            object? copy = null;
             try
             {
                 copy = newParent.ContainerObject.CopyHere(Path, newName);
@@ -751,12 +756,16 @@ namespace System.DirectoryServices
         /// If UsePropertyCache is true, calls GetInfo the first time it's necessary.
         /// If it's false, calls GetInfoEx on the given property name.
         /// </devdoc>
+        [MemberNotNull(nameof(_adsObject))]
         internal void FillCache(string propertyName)
         {
             if (UsePropertyCache)
             {
                 if (_cacheFilled)
+                {
+                    Debug.Assert(_adsObject != null);
                     return;
+                }
 
                 RefreshCache();
                 _cacheFilled = true;
@@ -781,11 +790,11 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Calls a method on the native Active Directory.
         /// </devdoc>
-        public object Invoke(string methodName, params object[] args)
+        public object? Invoke(string methodName, params object?[]? args)
         {
             object target = this.NativeObject;
             Type type = target.GetType();
-            object result = null;
+            object? result = null;
             try
             {
                 result = type.InvokeMember(methodName, BindingFlags.InvokeMethod, null, target, args, CultureInfo.InvariantCulture);
@@ -810,7 +819,6 @@ namespace System.DirectoryServices
             }
 
             if (result is UnsafeNativeMethods.IAds)
-
                 return new DirectoryEntry(result, UsePropertyCache, GetUsername(), GetPassword(), AuthenticationType);
             else
                 return result;
@@ -819,11 +827,11 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Reads a property on the native Active Directory object.
         /// </devdoc>
-        public object InvokeGet(string propertyName)
+        public object? InvokeGet(string propertyName)
         {
             object target = this.NativeObject;
             Type type = target.GetType();
-            object result = null;
+            object? result = null;
             try
             {
                 result = type.InvokeMember(propertyName, BindingFlags.GetProperty, null, target, null, CultureInfo.InvariantCulture);
@@ -853,7 +861,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Sets a property on the native Active Directory object.
         /// </devdoc>
-        public void InvokeSet(string propertyName, params object[] args)
+        public void InvokeSet(string propertyName, params object?[]? args)
         {
             object target = this.NativeObject;
             Type type = target.GetType();
@@ -889,9 +897,9 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Moves this entry to the given parent, and gives it a new name.
         /// </devdoc>
-        public void MoveTo(DirectoryEntry newParent, string newName)
+        public void MoveTo(DirectoryEntry newParent, string? newName)
         {
-            object newEntry = null;
+            object? newEntry = null;
             if (!(newParent.AdsObject is UnsafeNativeMethods.IAdsContainer))
                 throw new InvalidOperationException(SR.Format(SR.DSNotAContainer, newParent.Path));
             try
@@ -947,6 +955,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Loads the property values for this directory entry into the property cache.
         /// </devdoc>
+        [MemberNotNull(nameof(_adsObject))]
         public void RefreshCache()
         {
             Bind();
@@ -1035,7 +1044,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Changes the name of this entry.
         /// </devdoc>
-        public void Rename(string newName) => MoveTo(Parent, newName);
+        public void Rename(string? newName) => MoveTo(Parent, newName);
 
         private void Unbind()
         {
@@ -1050,7 +1059,7 @@ namespace System.DirectoryServices
             _objectSecurityModified = false;
         }
 
-        internal string GetUsername()
+        internal string? GetUsername()
         {
             if (_credentials == null || _userNameIsNull)
                 return null;
@@ -1058,7 +1067,7 @@ namespace System.DirectoryServices
             return _credentials.UserName;
         }
 
-        internal string GetPassword()
+        internal string? GetPassword()
         {
             if (_credentials == null || _passwordIsNull)
                 return null;
@@ -1066,7 +1075,7 @@ namespace System.DirectoryServices
             return _credentials.Password;
         }
 
-        private ActiveDirectorySecurity GetObjectSecurityFromCache()
+        private ActiveDirectorySecurity? GetObjectSecurityFromCache()
         {
             try
             {
@@ -1094,7 +1103,7 @@ namespace System.DirectoryServices
                     // the security descriptor, we will retrieve the "ntSecurityDescriptor" each time
                     // while initializing the ObjectSecurity property
                     //
-                    securityMasksUsedInRetrieval = this.Options.SecurityMasks;
+                    securityMasksUsedInRetrieval = this.Options!.SecurityMasks;
                     RefreshCache(new string[] { SecurityDescriptorProperty });
 
                     //

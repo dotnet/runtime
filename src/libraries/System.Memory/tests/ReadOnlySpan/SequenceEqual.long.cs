@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -14,8 +15,10 @@ namespace System.SpanTests
 
             ReadOnlySpan<long> first = new ReadOnlySpan<long>(a, 1, 0);
             ReadOnlySpan<long> second = new ReadOnlySpan<long>(a, 2, 0);
-            bool b = first.SequenceEqual<long>(second);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<long>(second));
+            Assert.True(first.SequenceEqual<long>(second, null));
+            Assert.True(first.SequenceEqual<long>(second, EqualityComparer<long>.Default));
         }
 
         [Fact]
@@ -23,8 +26,10 @@ namespace System.SpanTests
         {
             long[] a = { 488238291, 52498989823, 619890289890 };
             ReadOnlySpan<long> span = new ReadOnlySpan<long>(a);
-            bool b = span.SequenceEqual<long>(span);
-            Assert.True(b);
+
+            Assert.True(span.SequenceEqual<long>(span));
+            Assert.True(span.SequenceEqual<long>(span, null));
+            Assert.True(span.SequenceEqual<long>(span, EqualityComparer<long>.Default));
         }
 
         [Fact]
@@ -32,8 +37,10 @@ namespace System.SpanTests
         {
             long[] a = { 488238291, 52498989823, 619890289890 };
             ReadOnlySpan<long> first = new ReadOnlySpan<long>(a, 0, 3);
-            bool b = first.SequenceEqual<long>(a);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<long>(a));
+            Assert.True(first.SequenceEqual<long>(a, null));
+            Assert.True(first.SequenceEqual<long>(a, EqualityComparer<long>.Default));
         }
 
         [Fact]
@@ -44,8 +51,10 @@ namespace System.SpanTests
             ArraySegment<long> segment = new ArraySegment<long>(dst, 1, 3);
 
             ReadOnlySpan<long> first = new ReadOnlySpan<long>(src, 0, 3);
-            bool b = first.SequenceEqual<long>(segment);
-            Assert.True(b);
+
+            Assert.True(first.SequenceEqual<long>(segment));
+            Assert.True(first.SequenceEqual<long>(segment, null));
+            Assert.True(first.SequenceEqual<long>(segment, EqualityComparer<long>.Default));
         }
 
         [Fact]
@@ -54,8 +63,10 @@ namespace System.SpanTests
             long[] a = { 488238291, 52498989823, 619890289890 };
             ReadOnlySpan<long> first = new ReadOnlySpan<long>(a, 0, 3);
             ReadOnlySpan<long> second = new ReadOnlySpan<long>(a, 0, 2);
-            bool b = first.SequenceEqual<long>(second);
-            Assert.False(b);
+
+            Assert.False(first.SequenceEqual<long>(second));
+            Assert.False(first.SequenceEqual<long>(second, null));
+            Assert.False(first.SequenceEqual<long>(second, EqualityComparer<long>.Default));
         }
 
         [Fact]
@@ -76,8 +87,10 @@ namespace System.SpanTests
 
                     ReadOnlySpan<long> firstSpan = new ReadOnlySpan<long>(first);
                     ReadOnlySpan<long> secondSpan = new ReadOnlySpan<long>(second);
-                    bool b = firstSpan.SequenceEqual<long>(secondSpan);
-                    Assert.False(b);
+
+                    Assert.False(firstSpan.SequenceEqual<long>(secondSpan));
+                    Assert.False(firstSpan.SequenceEqual<long>(secondSpan, null));
+                    Assert.False(firstSpan.SequenceEqual<long>(secondSpan, EqualityComparer<long>.Default));
                 }
             }
         }
@@ -95,8 +108,10 @@ namespace System.SpanTests
                 second[length + 1] = 100;
                 ReadOnlySpan<long> span1 = new ReadOnlySpan<long>(first, 1, length);
                 ReadOnlySpan<long> span2 = new ReadOnlySpan<long>(second, 1, length);
-                bool b = span1.SequenceEqual<long>(span2);
-                Assert.True(b);
+
+                Assert.True(span1.SequenceEqual<long>(span2));
+                Assert.True(span1.SequenceEqual<long>(span2, null));
+                Assert.True(span1.SequenceEqual<long>(span2, EqualityComparer<long>.Default));
             }
         }
     }

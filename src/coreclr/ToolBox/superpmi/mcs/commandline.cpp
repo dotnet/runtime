@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 //----------------------------------------------------------
 // CommandLine.cpp - tiny very specific command line parser
@@ -130,6 +128,10 @@ void CommandLine::DumpHelp(const char* program)
     printf("     to the mch file.\n");
     printf("     e.g. '-toc a.mch' creates a.mch.mct\n");
     printf("\n");
+    printf(" -jitflags inputfile\n");
+    printf("     Summarize interesting jitflags for the method contexts\n");
+    printf("     e.g. '-jitflags a.mch'\n");
+    printf("\n");
     printf("Range descriptions are either a single number, or a text file with .mcl extension\n");
     printf("containing a sorted list of line delimited numbers.\n");
     printf("     e.g. -strip 2 a.mc b.mc\n");
@@ -234,6 +236,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 tempLen          = strlen(argv[i]);
                 foundVerb        = true;
                 o->actionDumpToc = true;
+            }
+            else if ((_strnicmp(&argv[i][1], "jitflags", argLen) == 0))
+            {
+                tempLen           = strlen(argv[i]);
+                foundVerb         = true;
+                o->actionJitFlags = true;
             }
             else if ((_strnicmp(&argv[i][1], "ildump", argLen) == 0))
             {
@@ -546,6 +554,16 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         if (!foundFile1)
         {
             LogError("CommandLine::Parse() '-dumpToc' needs one input.");
+            DumpHelp(argv[0]);
+            return false;
+        }
+        return true;
+    }
+    if (o->actionJitFlags)
+    {
+        if (!foundFile1)
+        {
+            LogError("CommandLine::Parse() '-jitFlags' needs one input.");
             DumpHelp(argv[0]);
             return false;
         }

@@ -6,8 +6,7 @@ trigger:
   batch: true
   branches:
     include:
-    - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -28,8 +27,7 @@ trigger:
 pr:
   branches:
     include:
-    - master
-    - dev/infrastructure
+    - main
     - release/*.*
   paths:
     include:
@@ -151,19 +149,19 @@ jobs:
 #
 # Build PGO CoreCLR release
 #
-#- template: /eng/pipelines/common/platform-matrix.yml
-#  parameters:
-#    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-#    buildConfig: release
-#    platforms:
-#    - windows_x64
-#    jobParameters:
-#      testGroup: innerloop
-#      pgoType: 'PGO'
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platforms:
+    - windows_x64
+    jobParameters:
+      testGroup: innerloop
+      pgoType: 'PGO'
 
 #
 # Build CoreCLR Formatting Job
-# Only when CoreCLR is changed, and only in the 'master' branch (no release branches;
+# Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
 # both CI and PR builds).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -171,14 +169,13 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    # Issue: https://github.com/dotnet/runtime/issues/40034
-    #- windows_x64
+    - windows_x64
     jobParameters:
       condition: >-
         and(
           or(
-            eq(variables['Build.SourceBranchName'], 'master'),
-            eq(variables['System.PullRequest.TargetBranch'], 'master')),
+            eq(variables['Build.SourceBranchName'], 'main'),
+            eq(variables['System.PullRequest.TargetBranch'], 'main')),
           or(
             eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
@@ -285,7 +282,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -439,6 +436,7 @@ jobs:
     buildConfig: debug
     platforms:
     - OSX_x64
+    - OSX_arm64
     - Linux_x64
     - Linux_arm64
     # - Linux_musl_arm64
@@ -698,19 +696,19 @@ jobs:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
-  #
-  # PGO Build
-  #
-#- template: /eng/pipelines/installer/installer-matrix.yml
-#  parameters:
-#    buildConfig: Release
-#    jobParameters:
-#      isOfficialBuild: ${{ variables.isOfficialBuild }}
-#      liveRuntimeBuildConfig: release
-#      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-#      pgoType: 'PGO'
-#    platforms:
-#    - windows_x64
+#
+# PGO Build
+#
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: Release
+    jobParameters:
+      isOfficialBuild: ${{ variables.isOfficialBuild }}
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      pgoType: 'PGO'
+    platforms:
+    - windows_x64
 
 #
 # Crossgen-comparison jobs
@@ -793,6 +791,22 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
 #
 # Mono Test builds with CoreCLR runtime tests using live libraries debug build
 # Only when Mono is changed
@@ -870,7 +884,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - windows_x64
+    # - windows_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64

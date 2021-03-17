@@ -12,7 +12,6 @@
 #include <glib.h>
 
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
@@ -43,8 +42,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 4, size = 16;
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 	GSList *unwind_ops;
 
 	start = code = mono_mem_manager_code_reserve (mem_manager, size);
@@ -57,7 +55,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
 
 	return start;
 }
@@ -67,7 +65,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 {
 	guint8 *code, *start;
 	GSList *unwind_ops;
-	MonoDomain *domain = mono_domain_get ();
 
 	const int buf_len = 10;
 
@@ -82,7 +79,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
 
 	return start;
 }
@@ -501,7 +498,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, GUINT_TO_POINTER (slot));
 		x86_jump_reg (code, X86_EAX);
 	} else {
-		MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, NULL);
 
 		/* jump to the actual trampoline */
@@ -596,11 +593,11 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *co
  *   Return a trampoline which passes ARG to the gsharedvt in/out trampoline ADDR.
  */
 gpointer
-mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
+mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	GSList *unwind_ops;
-	MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (domain);
+	MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 
 	const int buf_len = 10;
 
@@ -615,7 +612,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), NULL);
 
 	return start;
 }

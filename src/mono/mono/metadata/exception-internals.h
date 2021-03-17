@@ -30,7 +30,7 @@ mono_exception_from_token_two_strings_checked (MonoImage *image, uint32_t token,
 					       MonoStringHandle a1, MonoStringHandle a2,
 					       MonoError *error);
 
-typedef int (*MonoGetSeqPointFunc) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
+typedef int (*MonoGetSeqPointFunc) (MonoMethod *method, gint32 native_offset);
 
 void
 mono_install_get_seq_point (MonoGetSeqPointFunc func);

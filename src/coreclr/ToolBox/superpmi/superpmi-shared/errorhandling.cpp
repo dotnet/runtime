@@ -1,7 +1,5 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include "standardpch.h"
 #include "errorhandling.h"
@@ -31,14 +29,8 @@ void MSC_ONLY(__declspec(noreturn)) ThrowException(DWORD exceptionCode, const ch
     ThrowException(exceptionCode, ap, msg);
 }
 
-SpmiException::SpmiException(PEXCEPTION_POINTERS exp) : exCode(exp->ExceptionRecord->ExceptionCode)
-{
-    exMessage =
-        (exp->ExceptionRecord->NumberParameters != 1) ? nullptr : (char*)exp->ExceptionRecord->ExceptionInformation[0];
-}
-
-SpmiException::SpmiException(DWORD exceptionCode, char* exceptionMessage)
-    : exCode(exceptionCode), exMessage(exceptionMessage)
+SpmiException::SpmiException(FilterSuperPMIExceptionsParam_CaptureException* e)
+    : exCode(e->exceptionCode), exMessage(e->exceptionMessage)
 {
 }
 
@@ -60,13 +52,13 @@ void SpmiException::ShowAndDeleteMessage()
     if (exMessage != nullptr)
     {
         LogError("Exception thrown: %s", exMessage);
-        delete[] exMessage;
-        exMessage = nullptr;
     }
     else
     {
         LogError("Unexpected exception was thrown.");
     }
+
+    DeleteMessage();
 }
 
 void SpmiException::DeleteMessage()
@@ -90,19 +82,15 @@ LONG FilterSuperPMIExceptions_CatchMC(PEXCEPTION_POINTERS pExceptionPointers, LP
 // This filter function captures the exception pointers and continues searching.
 LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam =
-        (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
-    pSPMIEParam->exceptionPointers = *pExceptionPointers; // Capture the exception pointers for use later
-    pSPMIEParam->exceptionCode     = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
+    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam = (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
+    pSPMIEParam->Initialize(pExceptionPointers);
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
 LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
-    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam =
-        (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
-    pSPMIEParam->exceptionPointers = *pExceptionPointers; // Capture the exception pointers for use later
-    pSPMIEParam->exceptionCode     = pSPMIEParam->exceptionPointers.ExceptionRecord->ExceptionCode;
+    FilterSuperPMIExceptionsParam_CaptureException* pSPMIEParam = (FilterSuperPMIExceptionsParam_CaptureException*)lpvParam;
+    pSPMIEParam->Initialize(pExceptionPointers);
     return EXCEPTION_EXECUTE_HANDLER;
 }
 

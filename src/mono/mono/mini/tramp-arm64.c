@@ -354,8 +354,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	guint32 size = 32;
-	MonoDomain *domain = mono_domain_get ();
-	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (m);
 
 	start = code = mono_mem_manager_code_reserve (mem_manager, size);
 
@@ -479,7 +478,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	if (aot) {
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, GUINT_TO_POINTER (slot));
 	} else {
-		MonoMemoryManager *mem_manager = mono_domain_ambient_memory_manager (mono_get_root_domain ());
+		MonoMemoryManager *mem_manager = mini_get_default_mem_manager ();
 		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mem_manager, &code_len);
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
 	}

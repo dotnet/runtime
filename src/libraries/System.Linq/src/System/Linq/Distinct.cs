@@ -28,7 +28,7 @@ namespace System.Linq
         {
             private readonly IEnumerable<TSource> _source;
             private readonly IEqualityComparer<TSource>? _comparer;
-            private Set<TSource>? _set;
+            private HashSet<TSource>? _set;
             private IEnumerator<TSource>? _enumerator;
 
             public DistinctIterator(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
@@ -53,7 +53,7 @@ namespace System.Linq
                         }
 
                         TSource element = _enumerator.Current;
-                        _set = new Set<TSource>(_comparer);
+                        _set = new HashSet<TSource>(DefaultInternalSetCapacity, _comparer);
                         _set.Add(element);
                         _current = element;
                         _state = 2;

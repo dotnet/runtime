@@ -177,11 +177,12 @@ namespace System.Net.Sockets.Tests
                 {
                     int bytesSent = sender.Send(sendBuffer);
                     Assert.Equal(SegmentCount, bytesSent);
-                    await Task.WhenAny(receiveTask, Task.Delay(3));
-                    if (receiveTask.IsCompleted)
+                    try
                     {
+                        await receiveTask.WaitAsync(TimeSpan.FromMilliseconds(3));
                         break;
                     }
+                    catch (TimeoutException) { }
                 }
             }
 
@@ -249,7 +250,7 @@ namespace System.Net.Sockets.Tests
                 args.SocketFlags = SocketFlags.Peek;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
                 Assert.Equal(1, receiveBufer[0]);
@@ -261,7 +262,7 @@ namespace System.Net.Sockets.Tests
                 args.SocketFlags = SocketFlags.None;
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.None, args.SocketFlags);
                 Assert.Equal(1, receiveBufer[0]);
@@ -273,7 +274,7 @@ namespace System.Net.Sockets.Tests
                 args.SetBuffer(receiveBufer, 0, 100);
                 if (receiver.ReceiveAsync(args))
                 {
-                    await tcs.Task.TimeoutAfter(TestSettings.PassingTestTimeout);
+                    await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 }
                 Assert.Equal(SocketFlags.Truncated, args.SocketFlags);
                 Assert.Equal(2, receiveBufer[0]);

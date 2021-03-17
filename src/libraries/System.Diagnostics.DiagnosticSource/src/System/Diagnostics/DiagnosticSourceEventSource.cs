@@ -223,6 +223,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
@@ -243,6 +247,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -252,6 +260,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -261,6 +273,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -270,6 +286,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -279,6 +299,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -288,6 +312,10 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -311,6 +339,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(11, Keywords = Keywords.Events)]
 #else
@@ -325,6 +357,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Arguments parameter is trimmer safe")]
+#endif
 #if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         [Event(12, Keywords = Keywords.Events)]
 #else
@@ -1260,10 +1296,12 @@ namespace System.Diagnostics
                     Type? objType = obj?.GetType();
                     if (fetch == null || fetch.Type != objType)
                     {
-                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(
-                            objType, _propertyName);
+                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(objType, _propertyName);
                     }
-                    return fetch!.Fetch(obj);
+                    object? ret = null;
+                    // Avoid the exception which can be thrown during accessing the object properties.
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                    return ret;
                 }
 
                 /// <summary>

@@ -42,6 +42,20 @@ include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
 include(../../hostcommon/files.cmake)
 
+if(MSVC)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4267>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4018>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
+    # Host components don't try to handle asynchronous exceptions
+    add_compile_options(/EHsc)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    # Prevents libc from calling pthread_cond_destroy on static objects in
+    # dlopen()'ed library which we dlclose() in pal::unload_library.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-use-cxa-atexit>)
+endif()
+
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
@@ -84,59 +98,18 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
     add_linker_flag("/MANIFEST:NO")
 
-    get_property(ALL_COMPILE_OPTIONS TARGET ${PROJECT_NAME} PROPERTY COMPILE_OPTIONS)
-    string(TOUPPER ${RUNTIME_CONFIG} UPPERCASE_RUNTIME_CONFIG)
-
-    # make sure that certain compiler and linker settings match the runtime config
-    # we need to ensure that to be able to link with coreclr in mixed builds (ex: Debug with Release runtime)
-    if(UPPERCASE_RUNTIME_CONFIG STREQUAL DEBUG OR UPPERCASE_RUNTIME_CONFIG STREQUAL CHECKED)
-        # add_compile_options(/MTd)
-        # per-config options will win, so we have to use this syntax to override
-        set_property(TARGET ${PROJECT_NAME} PROPERTY
-            COMPILE_OPTIONS "${ALL_COMPILE_OPTIONS};$<$<CONFIG:DEBUG>:/MTd>"
-        )
-
-        remove_definitions(-DNDEBUG)
-        add_definitions(-DDEBUG -D_DEBUG -D_DBG)
-
-        # ignore runtime libraries that could have been added so far based on the config
-        add_linker_flag("/NODEFAULTLIB:ucrt.lib")
-        add_linker_flag("/NODEFAULTLIB:libucrt.lib")
-        add_linker_flag("/NODEFAULTLIB:libcmt.lib")
-
-        # make sure we use statically linked crt
-        add_linker_flag("/DEFAULTLIB:libucrtd.lib")
-    else()
-        # add_compile_options(/MT)
-        # per-config options will win, so we have to use this syntax to override
-        set_property(TARGET ${PROJECT_NAME} PROPERTY
-            COMPILE_OPTIONS "${ALL_COMPILE_OPTIONS};$<$<CONFIG:DEBUG>:/MT>"
-        )
-
-        remove_definitions(-DDEBUG -D_DEBUG -D_DBG)
-        add_definitions(-DNDEBUG)
-
-        # Force uCRT to be dynamically linked for Release build
-        add_linker_flag("/NODEFAULTLIB:libucrt.lib")
-        add_linker_flag("/DEFAULTLIB:ucrt.lib")
-    endif()
-
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
 endif()
 
-# Path like: artifacts/bin/coreclr/windows.x64.Release/lib  or
-#            /root/runtime/artifacts/transport/coreclr/lib
-set(CORECLR_STATIC_LIB_LOCATION "${CORECLR_ARTIFACTS}/lib")
-
-message ("Looking for coreclr_static lib at location: '${CORECLR_STATIC_LIB_LOCATION}'.")
-
 if(CLR_CMAKE_TARGET_WIN32)
     set(NATIVE_LIBS
-        ${CORECLR_STATIC_LIB_LOCATION}/coreclr_static.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/System.Globalization.Native-Static.lib
-        ${CORECLR_STATIC_LIB_LOCATION}/System.IO.Compression.Native-Static.lib
+        coreclr_static
+
+        System.Globalization.Native-Static
+        System.IO.Compression.Native-Static
+
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -145,24 +118,27 @@ if(CLR_CMAKE_TARGET_WIN32)
         user32.lib
         version.lib
         shlwapi.lib
+        shell32.lib
         bcrypt.lib
         RuntimeObject.lib
     )
 
-    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/runtimeinfo.lib)
+    set(RUNTIMEINFO_LIB runtimeinfo)
 
 else()
     set(NATIVE_LIBS
-        ${CORECLR_STATIC_LIB_LOCATION}/libcoreclr_static.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Globalization.Native.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.IO.Compression.Native.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Net.Security.Native.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Native.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.OpenSsl.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libpalrt.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libcoreclrpal.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libeventprovider.a
-        ${CORECLR_STATIC_LIB_LOCATION}/libnativeresourcestring.a
+        coreclr_static
+
+        System.Globalization.Native-Static
+        System.IO.Compression.Native-Static
+        System.Net.Security.Native-Static
+        System.Native-Static
+        System.Security.Cryptography.Native.OpenSsl-Static
+
+        palrt
+        coreclrpal
+        eventprovider
+        nativeresourcestring
     )
 
     # additional requirements for System.IO.Compression.Native
@@ -181,13 +157,13 @@ else()
     include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
     append_extra_cryptography_libs(NATIVE_LIBS)
 
-    set(RUNTIMEINFO_LIB ${CORECLR_STATIC_LIB_LOCATION}/libruntimeinfo.a)
+    set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
 
 if(CLR_CMAKE_TARGET_OSX)
     LIST(APPEND NATIVE_LIBS
-        ${CORECLR_STATIC_LIB_LOCATION}/libSystem.Security.Cryptography.Native.Apple.a
+        System.Security.Cryptography.Native.Apple-Static
     )
 
     # Additional requirements for System.Security.Cryptography.Native.Apple
@@ -198,15 +174,6 @@ endif()
 #
 # Additional requirements for coreclr
 #
-
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
-    LIST(APPEND NATIVE_LIBS
-      Advapi32.lib
-      shell32.lib
-    )
-endif()
-
 if(CLR_CMAKE_TARGET_OSX)
    find_library(COREFOUNDATION CoreFoundation)
    find_library(CORESERVICES CoreServices)

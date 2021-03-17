@@ -197,7 +197,7 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 header->syncStartOffset ^= HAS_SYNC_OFFSET;
                 break;
             case FLIP_REV_PINVOKE_FRAME:
-                header->revPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
+                header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET ? HAS_REV_PINVOKE_FRAME_OFFSET : INVALID_REV_PINVOKE_OFFSET;
                 break;
 
             case NEXT_OPCODE:

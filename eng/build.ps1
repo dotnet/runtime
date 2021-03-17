@@ -111,7 +111,7 @@ function Get-Help() {
   Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
   Write-Host ""
   Write-Host ""
-  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
+  Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
 if ($help) {
@@ -244,6 +244,11 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 $failedBuilds = @()
+
+if (($os -eq "Browser") -and ($arch -ne "wasm")) {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+}
 
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";

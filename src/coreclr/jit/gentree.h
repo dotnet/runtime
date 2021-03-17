@@ -2189,10 +2189,12 @@ private:
 public:
     bool Precedes(GenTree* other);
 
+    bool IsInvariant() const;
+
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
+        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
         {
             return true;
         }
@@ -2200,12 +2202,12 @@ public:
     }
     void SetReuseRegVal()
     {
-        assert(OperIsConst());
+        assert(IsInvariant());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
     void ResetReuseRegVal()
     {
-        assert(OperIsConst());
+        assert(IsInvariant());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 
@@ -4545,6 +4547,8 @@ struct GenTreeCall final : public GenTree
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
+
+    void ResetArgInfo();
 
     unsigned gtCallMoreFlags; // in addition to gtFlags
 

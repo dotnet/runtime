@@ -1,5 +1,4 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <!--
     Add basic project properties for NuGet restore, needed to import the SourceLink MSBuild tool
@@ -8,27 +7,21 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
+    <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(DisableSourceLink)' != 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
   </PropertyGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
   -->
-  <Target Name="Build"
-          DependsOnTargets="
-            GetProductVersions;
-            GenerateNativeVersionFile;
-            BuildCoreHostUnix;
-            BuildCoreHostWindows" />
-
   <Target Name="BuildCoreHostUnix"
           Condition="'$(TargetOS)' != 'windows'"
-          DependsOnTargets="GetLatestCommitHash;GenerateNativeVersionFile">
+          AfterTargets="Build"
+          DependsOnTargets="$(BuildCoreHostDependsOn)">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
 
-      <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$(LatestCommit)" -os $(TargetOS)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) -apphostver "$(AppHostVersion)" -hostver "$(HostVersion)" -fxrver "$(HostResolverVersion)" -policyver "$(HostPolicyVersion)" -commithash "$([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A'))" -os $(TargetOS)</BuildArgs>
       <BuildArgs>$(BuildArgs) -cmakeargs "-DVERSION_FILE_PATH=$(NativeVersionFile)"</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' != 'true'">$(BuildArgs) -portablebuild=false</BuildArgs>
       <BuildArgs Condition="'$(KeepNativeSymbols)' != 'false'">$(BuildArgs) -keepnativesymbols</BuildArgs>
@@ -36,7 +29,6 @@
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs>$(BuildArgs) -coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
-      <BuildArgs>$(BuildArgs) -nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
     </PropertyGroup>
@@ -45,14 +37,14 @@
       Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
       warning in the macOS build when dsymutil tries to strip symbols.
     -->
-    <Message Text="$(SharedNativeRoot)\corehost\build.sh $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(SharedNativeRoot)\corehost\build.sh $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="$(SharedNativeRoot)corehost\build.sh $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(SharedNativeRoot)corehost\build.sh $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="BuildCoreHostWindows"
           Condition="'$(TargetOS)' == 'windows'"
-          DependsOnTargets="GetLatestCommitHash">
-
+          AfterTargets="Build"
+          DependsOnTargets="$(BuildCoreHostDependsOn)">
     <!-- Generate Version files -->
     <ItemGroup>
       <HostFiles Include="dotnet">
@@ -87,12 +79,11 @@
         !Exists('$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h')"/>
 
     <PropertyGroup>
-      <BuildArgs>$(Configuration) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
+      <BuildArgs>$(Configuration) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $([MSBuild]::ValueOrDefault('$(SourceRevisionId)', 'N/A')) rid $(OutputRid)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <BuildArgs>$(BuildArgs) rootdir $(RepoRoot)</BuildArgs>
       <BuildArgs>$(BuildArgs) coreclrartifacts $(CoreCLRArtifactsPath)</BuildArgs>
-      <BuildArgs>$(BuildArgs) nativelibsartifacts $(LibrariesArtifactsPath)/bin/native/$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</BuildArgs>
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs>$(BuildArgs) runtimeconfiguration $(RuntimeConfiguration)</BuildArgs>
@@ -103,8 +94,8 @@
       IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing
       warning in the native build.
     -->
-    <Message Text="$(SharedNativeRoot)\corehost\build.cmd $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(SharedNativeRoot)\corehost\build.cmd $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
+    <Message Text="$(SharedNativeRoot)corehost\build.cmd $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(SharedNativeRoot)corehost\build.cmd $(BuildArgs)" IgnoreStandardErrorWarningFormat="true"/>
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"

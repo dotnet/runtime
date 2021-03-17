@@ -5,6 +5,7 @@
 #nullable disable
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -65,6 +66,7 @@ namespace System.Data
         /// <summary>
         /// Retrieves the an editor for this object.
         /// </summary>
+        [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object ICustomTypeDescriptor.GetEditor(Type editorBaseType) => null;
 
         /// <summary>
@@ -82,6 +84,7 @@ namespace System.Data
         /// additional events.  The returned array of events will be
         /// filtered by the given set of attributes.
         /// </summary>
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) =>
             new EventDescriptorCollection(null);
 
@@ -91,6 +94,7 @@ namespace System.Data
         ///     provides.  If the component is sited, the site may add or remove
         ///     additional properties.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "No Attributes are supplied.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() =>
             ((ICustomTypeDescriptor)this).GetProperties(null);
 
@@ -101,6 +105,7 @@ namespace System.Data
         ///     additional properties.  The returned array of properties will be
         ///     filtered by the given set of attributes.
         /// </summary>
+        [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
             if (_propsCollection == null)

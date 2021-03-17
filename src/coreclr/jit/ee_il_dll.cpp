@@ -39,7 +39,7 @@ bool           g_jitInitialized = false;
 
 /*****************************************************************************/
 
-extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
+extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
 {
     if (g_jitInitialized)
     {
@@ -164,7 +164,7 @@ void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
     return CILJitBuff;
 }
 
-DLLEXPORT ICorJitCompiler* __stdcall getJit()
+DLLEXPORT ICorJitCompiler* getJit()
 {
     if (!g_jitInitialized)
     {
@@ -251,8 +251,11 @@ void JitTls::SetCompiler(Compiler* compiler)
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
-CorJitResult CILJit::compileMethod(
-    ICorJitInfo* compHnd, CORINFO_METHOD_INFO* methodInfo, unsigned flags, BYTE** entryAddress, ULONG* nativeSizeOfCode)
+CorJitResult CILJit::compileMethod(ICorJitInfo*         compHnd,
+                                   CORINFO_METHOD_INFO* methodInfo,
+                                   unsigned             flags,
+                                   uint8_t**            entryAddress,
+                                   uint32_t*            nativeSizeOfCode)
 {
     JitFlags jitFlags;
 
@@ -537,7 +540,7 @@ unsigned Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
 void Compiler::eeGetStmtOffsets()
 {
     ULONG32                      offsetsCount;
-    DWORD*                       offsets;
+    uint32_t*                    offsets;
     ICorDebugInfo::BoundaryTypes offsetsImplicit;
 
     info.compCompHnd->getBoundaries(info.compMethodHnd, &offsetsCount, &offsets, &offsetsImplicit);

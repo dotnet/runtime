@@ -428,11 +428,11 @@ mono_arm_resume_unwind (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, g
  * See exceptions-amd64.c for docs;
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls, 
+						MonoJitInfo *ji, MonoContext *ctx, 
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
@@ -487,7 +487,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
-		ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->pc, NULL);
+		ji = mini_jit_info_table_find ((gpointer)(*lmf)->pc);
 		if (!ji)
 			return FALSE;
 

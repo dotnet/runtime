@@ -11,7 +11,7 @@ The first thing to do is setup the .NET Core app we want to dump. Here are the s
 * Cd into `src/coreclr`
 * Perform a release build of the runtime by passing `release` to the build command. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster. Note: the release build can be skipped, but in order to see optimized code of the core library it is needed.
 * Perform a debug build of the runtime. Tests aren't needed as in the release build, so you can pass `skiptests` to the build command. Note: the debug build is necessary, so that the JIT recognizes the configuration knobs.
-* Install the (latest) [.NET CLI](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md), which we'll use to compile/publish our app.
+* Install the (latest) [.NET CLI](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md), which we'll use to compile/publish our app.
 * `cd` to where you want your app to be placed, and run `dotnet new console`.
 * Modify your `csproj` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `<RuntimeIdentifier>` tag. For example, for Windows 10 x64 machine, the project file is:
 

@@ -11,7 +11,7 @@ namespace Internal.IO
 {
     //
     // Subsetted clone of System.IO.File for internal runtime use.
-    // Keep in sync with https://github.com/dotnet/runtime/tree/master/src/libraries/System.IO.FileSystem.
+    // Keep in sync with https://github.com/dotnet/runtime/tree/main/src/libraries/System.IO.FileSystem.
     //
     internal static partial class File
     {
@@ -64,7 +64,7 @@ namespace Internal.IO
                 {
                     int n = fs.Read(bytes, index, count);
                     if (n == 0)
-                        throw Error.GetEndOfFile();
+                        ThrowHelper.ThrowEndOfFileException();
                     index += n;
                     count -= n;
                 }

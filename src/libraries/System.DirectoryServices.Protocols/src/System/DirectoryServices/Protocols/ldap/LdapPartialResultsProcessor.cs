@@ -19,6 +19,7 @@ namespace System.DirectoryServices.Protocols
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
             _workThreadWaitHandle = eventHandle;
+            _ = new PartialResultsRetriever(eventHandle, this);
         }
 
         public void Add(LdapPartialAsyncResult asyncResult)

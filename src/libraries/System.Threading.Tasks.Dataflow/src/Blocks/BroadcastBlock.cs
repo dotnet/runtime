@@ -191,7 +191,7 @@ namespace System.Threading.Tasks.Dataflow
                         Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
-                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
+                        messageValue = source.ConsumeMessage(messageHeader, this, out consumed)!;
                         if (!consumed) return DataflowMessageStatus.NotAvailable;
                     }
 
@@ -352,7 +352,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool consumed = false;
                 try
                 {
-                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
+                    T? consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
                     if (consumed)
                     {
                         _source.AddMessage(consumedValue!);
@@ -577,7 +577,7 @@ namespace System.Threading.Tasks.Dataflow
                 // synchronizing with other activities on the block.
                 // We don't want to execute the user-provided cloning delegate
                 // while holding the lock.
-                TOutput message;
+                TOutput? message;
                 bool isValid;
                 lock (OutgoingLock)
                 {
@@ -607,7 +607,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Try to receive the one item this block may have.
                 // If we can, give back an array of one item. Otherwise, give back null.
-                TOutput item;
+                TOutput? item;
                 if (TryReceive(null, out item))
                 {
                     items = new TOutput[] { item };
@@ -683,7 +683,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
                 // Get the current message if there is one
-                TOutput currentMessage;
+                TOutput? currentMessage;
                 bool isValid;
                 lock (ValueLock)
                 {
@@ -725,7 +725,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
                 DataflowMessageHeader header = default(DataflowMessageHeader);
-                TOutput message = default(TOutput);
+                TOutput? message = default(TOutput);
                 int numDequeuedMessages = 0;
                 lock (ValueLock)
                 {
@@ -1053,7 +1053,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
 
-                TOutput valueToClone;
+                TOutput? valueToClone;
                 lock (OutgoingLock) // We may currently be calling out under this lock to the target; requires it to be reentrant
                 {
                     lock (ValueLock)
@@ -1125,7 +1125,7 @@ namespace System.Threading.Tasks.Dataflow
                     // If someone else holds the reservation, bail.
                     if (_nextMessageReservedFor != target) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
-                    TOutput messageToReoffer;
+                    TOutput? messageToReoffer;
                     lock (ValueLock)
                     {
                         // If this is not the message at the head of the queue, bail

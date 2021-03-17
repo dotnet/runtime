@@ -73,6 +73,17 @@ pPrivateKeyOut: Receives a SecKeyRef for the private key associated with the ide
 */
 PALEXPORT int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity, SecKeyRef* pPrivateKeyOut);
 
+/*
+Extract the DER encoded value of a certificate (public portion only).
+
+Returns 1 on success, 0 on failure, any other value indicates invalid state.
+
+Output:
+ppDataOut: Receives a CFDataRef with the exported blob
+pOSStatus: Receives the result of SecItemExport
+*/
+PALEXPORT int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus);
+
 #if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Read cbData bytes of data from pbData and interpret it to a collection of certificates (or identities).
@@ -146,17 +157,6 @@ PALEXPORT int32_t AppleCryptoNative_X509ExportData(CFArrayRef data,
                                                     CFStringRef cfExportPassphrase,
                                                     CFDataRef* pExportOut,
                                                     int32_t* pOSStatus);
-
-/*
-Extract the DER encoded value of a certificate (public portion only).
-
-Returns 1 on success, 0 on failure, any other value indicates invalid state.
-
-Output:
-ppDataOut: Receives a CFDataRef with the exported blob
-pOSStatus: Receives the result of SecItemExport
-*/
-PALEXPORT int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus);
 
 /*
 Find a SecIdentityRef for the given cert and private key in the target keychain.

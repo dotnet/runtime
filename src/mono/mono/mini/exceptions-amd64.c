@@ -27,7 +27,6 @@
 
 #include <mono/arch/amd64/amd64-codegen.h>
 #include <mono/metadata/abi-details.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -136,7 +135,6 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	CONTEXT* ctx;
 	LONG res;
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	MonoDomain* domain = mono_domain_get ();
 	MonoWindowsSigHandlerInfo info = { TRUE, ep };
 
 	/* If the thread is not managed by the runtime return early */
@@ -151,7 +149,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	switch (er->ExceptionCode) {
 	case EXCEPTION_STACK_OVERFLOW:
 		if (!mono_aot_only && restore_stack) {
-			if (mono_arch_handle_exception (ctx, domain->stack_overflow_ex)) {
+			if (mono_arch_handle_exception (ctx, mini_get_stack_overflow_ex ())) {
 				/* need to restore stack protection once stack is unwound
 				 * restore_stack will restore stack protection and then
 				 * resume control to the saved stack_restore_ctx */
@@ -615,11 +613,11 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
  * Returns TRUE on success, FALSE otherwise.
  */
 gboolean
-mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
-							 MonoJitInfo *ji, MonoContext *ctx, 
-							 MonoContext *new_ctx, MonoLMF **lmf,
-							 host_mgreg_t **save_locations,
-							 StackFrameInfo *frame)
+mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
+						MonoJitInfo *ji, MonoContext *ctx,
+						MonoContext *new_ctx, MonoLMF **lmf,
+						host_mgreg_t **save_locations,
+						StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 	int i;
@@ -695,7 +693,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
 		}
 
-		ji = mini_jit_info_table_find (domain, (char *)rip, NULL);
+		ji = mini_jit_info_table_find ((char *)rip);
 		/*
 		 * FIXME: ji == NULL can happen when a managed-to-native wrapper is interrupted
 		 * in the soft debugger suspend code, since (*lmf)->rsp no longer points to the
@@ -840,9 +838,8 @@ restore_soft_guard_pages (void)
 		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
 
 	if (jit_tls->stack_ovf_pending) {
-		MonoDomain *domain = mono_domain_get ();
 		jit_tls->stack_ovf_pending = 0;
-		return (MonoObject *) domain->stack_overflow_ex;
+		return (MonoObject *)mini_get_stack_overflow_ex ();
 	}
 
 	return NULL;
@@ -870,7 +867,7 @@ static void
 altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (MONO_CONTEXT_GET_IP (ctx));
 	gboolean stack_ovf = (flags & 1) != 0;
 	gboolean nullref = (flags & 2) != 0;
 
@@ -918,7 +915,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 		nullref = FALSE;
 
 	if (stack_ovf)
-		exc = mono_domain_get ()->stack_overflow_ex;
+		exc = mini_get_stack_overflow_ex ();
 
 	/* setup the call frame on the application stack so that control is
 	 * returned there and exception handling can continue. we want the call

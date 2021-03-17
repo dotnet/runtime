@@ -784,13 +784,13 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
 
-    DWORD methodFlags;
+    uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
     if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
     {
         PCCOR_SIGNATURE pSigType;
-        DWORD cbSigType;
+        uint32_t cbSigType;
         sig.GetSignature(&pSigType, &cbSigType);
         if (!ZapSig::CompareSignatureToTypeHandle(pSigType, pModule, TypeHandle(pMD->GetMethodTable()), pZapSigContext))
             return false;
@@ -808,16 +808,16 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
 
     if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
     {
-        DWORD numGenericArgs;
+        uint32_t numGenericArgs;
         IfFailThrow(sig.GetData(&numGenericArgs));
         Instantiation inst = pMD->GetMethodInstantiation();
         if (numGenericArgs != inst.GetNumArgs())
             return false;
 
-        for (DWORD i = 0; i < numGenericArgs; i++)
+        for (uint32_t i = 0; i < numGenericArgs; i++)
         {
             PCCOR_SIGNATURE pSigArg;
-            DWORD cbSigArg;
+            uint32_t cbSigArg;
             sig.GetSignature(&pSigArg, &cbSigArg);
             if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pModule, inst[i], pZapSigContext))
                 return false;
@@ -1046,7 +1046,7 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
     PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)m_genericParser.GetBlob();
     SigPointer sig(pBlob);
 
-    DWORD methodFlags = 0;
+    uint32_t methodFlags = 0;
     // Skip the signature so we can get to the offset
     hr = sig.GetData(&methodFlags);
     if (FAILED(hr))
@@ -1074,7 +1074,7 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
 
     if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
     {
-        DWORD numGenericArgs;
+        uint32_t numGenericArgs;
         hr = sig.GetData(&numGenericArgs);
         if (FAILED(hr))
         {
@@ -1093,7 +1093,7 @@ void ReadyToRunInfo::MethodIterator::ParseGenericMethodSignatureAndRid(uint *pOf
 
     // Now that we have the size of the signature we can grab the offset and decode it
     PCCOR_SIGNATURE pSigNew;
-    DWORD cbSigNew;
+    uint32_t cbSigNew;
     sig.GetSignature(&pSigNew, &cbSigNew);
 
     m_genericCurrentSig = pBlob;

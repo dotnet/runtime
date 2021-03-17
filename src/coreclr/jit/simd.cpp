@@ -258,7 +258,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
             int    len            = _countof(className);
-            info.compCompHnd->appendClassName(&pbuf, &len, typeHnd, TRUE, FALSE, FALSE);
+            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, TRUE, FALSE, FALSE);
             noway_assert(pbuf < &className[256]);
             JITDUMP("SIMD Candidate Type %S\n", className);
 

@@ -98,6 +98,7 @@
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
+    <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
@@ -202,6 +203,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" BuildInParallel="false" Category="clr" />
   </ItemGroup>
 
   <!-- Mono sets -->
@@ -214,7 +216,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" Category="mono" />
+    <ProjectToBuild Include="$(MonoProjectRoot)mono.proj" AdditionalProperties="%(AdditionalProperties);MonoMsCorDbi=$(_subset.Contains('+mono.mscordbi+'))" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.aotcross+'))">
@@ -269,7 +271,7 @@
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
@@ -305,7 +307,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+publish+'))">
-    <ProjectToBuild Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)prepare-artifacts.proj" Pack="true" BuildInParallel="false" Category="publish" />
   </ItemGroup>
 
   <!-- Utility -->

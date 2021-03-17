@@ -211,7 +211,6 @@ MONO_JIT_ICALL (mono_init_vtable_slot) \
 MONO_JIT_ICALL (mono_interp_entry_from_trampoline) \
 MONO_JIT_ICALL (mono_interp_to_native_trampoline) \
 MONO_JIT_ICALL (mono_isfinite_double) \
-MONO_JIT_ICALL (mono_jit_set_domain) \
 MONO_JIT_ICALL (mono_ldftn) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper) \
 MONO_JIT_ICALL (mono_ldtoken_wrapper_generic_shared) \
@@ -307,6 +306,7 @@ MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
+MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
@@ -323,12 +323,10 @@ MONO_JIT_ICALL (rgctx_fetch_trampoline_general)	\
 MONO_JIT_ICALL (sdb_breakpoint_trampoline)	\
 MONO_JIT_ICALL (sdb_single_step_trampoline)	\
 MONO_JIT_ICALL (type_from_handle) \
-MONO_JIT_ICALL (ves_icall_array_new) \
 MONO_JIT_ICALL (ves_icall_array_new_specific) \
 MONO_JIT_ICALL (ves_icall_marshal_alloc) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor) \
 MONO_JIT_ICALL (ves_icall_mono_delegate_ctor_interp) \
-MONO_JIT_ICALL (ves_icall_mono_ldstr) \
 MONO_JIT_ICALL (ves_icall_mono_string_from_utf16) \
 MONO_JIT_ICALL (ves_icall_mono_string_to_utf8) \
 MONO_JIT_ICALL (ves_icall_object_new) \

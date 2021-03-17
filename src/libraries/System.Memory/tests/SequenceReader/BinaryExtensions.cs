@@ -51,19 +51,19 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Equal(BitConverter.ToInt32(new byte[] { 0, 1, 0, 2 }), intValue);
 
             Assert.True(reader.TryReadBigEndian(out intValue));
-            Assert.Equal(BitConverter.ToInt32(new byte[] { 4, 3, 2, 1 }), intValue);
+            Assert.Equal(0x01020304, intValue);
 
             Assert.True(reader.TryReadLittleEndian(out long longValue));
-            Assert.Equal(BitConverter.ToInt64(new byte[] { 5, 6, 7, 8, 9, 0, 1, 2 }), longValue);
+            Assert.Equal(0x0201000908070605L, longValue);
 
             Assert.True(reader.TryReadBigEndian(out longValue));
-            Assert.Equal(BitConverter.ToInt64(new byte[] { 0, 9, 8, 7, 6, 5, 4, 3 }), longValue);
+            Assert.Equal(0x0304050607080900L, longValue);
 
             Assert.True(reader.TryReadLittleEndian(out short shortValue));
-            Assert.Equal(BitConverter.ToInt16(new byte[] { 1, 2 }), shortValue);
+            Assert.Equal(0x0201, shortValue);
 
             Assert.True(reader.TryReadBigEndian(out shortValue));
-            Assert.Equal(BitConverter.ToInt16(new byte[] { 4, 3 }), shortValue);
+            Assert.Equal(0x0304, shortValue);
         }
     }
 }
