@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -61,6 +62,41 @@ namespace System.IO.Tests
 
             Assert.Equal(buffer.Length, stream.Position); 
             Assert.Equal(stream.Position, createdFromHandle.Position);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public async Task WriteAsyncStartsWherePreviousReadAsyncHasFinished(ReadWriteMode mode)
+        {
+            if (mode == ReadWriteMode.SyncByte)
+            {
+                // it reads a single byte even if buffer.Length > 1
+                return;
+            }
+
+            byte[] initialData = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            byte[] readBuffer = new byte[initialData.Length * 2]; // the edge case: reading more than available
+            byte[] writeBuffer = new byte[] { 10, 11, 12, 13, 14, 15 };
+            string filePath;
+
+            using (FileStream stream = (FileStream)await CreateReadWriteStreamCore(initialData))
+            {
+                filePath = stream.Name;
+
+                int bytesRead = await ReadAsync(mode, stream, readBuffer, 0, readBuffer.Length);
+
+                Assert.Equal(bytesRead, initialData.Length);
+                Assert.Equal(initialData.Length, stream.Position);
+                Assert.Equal(stream.Position, stream.Length);
+
+                await WriteAsync(mode, stream, writeBuffer, 0, writeBuffer.Length);
+
+                Assert.Equal(initialData.Length + writeBuffer.Length, stream.Position);
+                Assert.Equal(stream.Position, stream.Length);
+            }
+
+            byte[] allBytes = File.ReadAllBytes(filePath);
+            Assert.Equal(initialData.Concat(writeBuffer), allBytes);
         }
     }
 
