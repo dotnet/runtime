@@ -456,7 +456,7 @@ void    AsmMan::EndAssembly()
                     // into the public key buffer).
                     if (m_sStrongName.m_cbPublicKey >= sizeof(PublicKeyBlob) &&
                         (offsetof(PublicKeyBlob, PublicKey) +
-                         ((PublicKeyBlob*)m_sStrongName.m_pbPublicKey)->cbPublicKey) == m_sStrongName.m_cbPublicKey)
+                         VAL32(((PublicKeyBlob*)m_sStrongName.m_pbPublicKey)->cbPublicKey)) == m_sStrongName.m_cbPublicKey)
                         m_sStrongName.m_fFullSign = FALSE;
                     else
                         m_sStrongName.m_fFullSign = TRUE;
