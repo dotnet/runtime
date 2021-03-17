@@ -475,7 +475,7 @@ namespace System.Text.Json
 
             // Verify key contains the embedded bytes as expected.
             // Note: the expected properties do not hold true on big-endian platforms
-            if (BitConverted.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
                 const int BitsInByte = 8;
                 Debug.Assert(
