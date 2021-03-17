@@ -62,7 +62,7 @@ namespace System.Buffers
         public SequencePosition Start
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_startObject, _startInteger & ReadOnlySequence.IndexBitMask);
+            get => new SequencePosition(_startObject, GetIndex(_startInteger));
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace System.Buffers
         public SequencePosition End
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new SequencePosition(_endObject, _endInteger & ReadOnlySequence.IndexBitMask);
+            get => new SequencePosition(_endObject, GetIndex(_endInteger));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
