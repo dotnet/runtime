@@ -4432,16 +4432,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         return FALSE;
     }
 
-    if (pTargetMT && pTargetMT->GetAssembly()->IsDisabledPrivateReflection())
-    {
-        if (m_fThrowIfTargetIsInaccessible)
-        {
-            ThrowAccessException(pContext, pTargetMT, NULL);
-        }
-
-        return FALSE;
-    }
-
     BOOL canAccessTarget = FALSE;
 
 #ifndef CROSSGEN_COMPILE

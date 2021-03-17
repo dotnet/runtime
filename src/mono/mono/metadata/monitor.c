@@ -1386,10 +1386,6 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 
 	mon = lock_word_get_inflated_lock (lw);
 
-	/* Do this WaitSleepJoin check before creating the event handle */
-	if (mono_thread_current_check_pending_interrupt ())
-		return FALSE;
-	
 	event = mono_w32event_create (FALSE, FALSE);
 	if (event == NULL) {
 		ERROR_DECL (error);
@@ -1404,15 +1400,9 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 		return FALSE;
 	}
 #endif
-	
+
 	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, id, event));
 
-	/* This looks superfluous */
-	if (allow_interruption && mono_thread_current_check_pending_interrupt ()) {
-		mono_w32event_close (event);
-		return FALSE;
-	}
-	
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
 	mon->wait_list = g_slist_append (mon->wait_list, event);

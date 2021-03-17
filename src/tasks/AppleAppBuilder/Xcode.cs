@@ -9,10 +9,11 @@ using System.Text;
 
 internal class Xcode
 {
+    private string RuntimeIdentifier { get; set; }
     private string SysRoot { get; set; }
     private string Target { get; set; }
 
-    public Xcode(string target)
+    public Xcode(string target, string arch)
     {
         Target = target;
         switch (Target)
@@ -27,6 +28,8 @@ internal class Xcode
                 SysRoot = Utils.RunProcess("xcrun", "--sdk macosx --show-sdk-path");
                 break;
         }
+
+        RuntimeIdentifier = $"{Target}-{arch}";
     }
 
     public bool EnableRuntimeLogging { get; set; }
@@ -120,21 +123,21 @@ internal class Xcode
         var defines = new StringBuilder();
         if (forceInterpreter)
         {
-            defines.Append("add_definitions(-DFORCE_INTERPRETER=1)");
+            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (forceAOT)
         {
-            defines.Append("add_definitions(-DFORCE_AOT=1)");
+            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
         }
 
         if (invariantGlobalization)
         {
-            defines.Append("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+            defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
         }
 
         if (EnableRuntimeLogging)
         {
-            defines.Append("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
+            defines.AppendLine("add_definitions(-DENABLE_RUNTIME_LOGGING=1)");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
@@ -175,6 +178,7 @@ internal class Xcode
         File.WriteAllText(Path.Combine(binDir, "runtime.m"),
             Utils.GetEmbeddedResource("runtime.m")
                 .Replace("//%DllMap%", dllMap.ToString())
+                .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);

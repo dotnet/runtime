@@ -1489,7 +1489,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     //
     // We enable edge profiling by default, except when:
     // * disabled by option
-    // * we are prejitting via classic ngen
+    // * we are prejitting
     // * we are jitting osr methods
     //
     // Currently, OSR is incompatible with edge profiling. So if OSR is enabled,
@@ -1500,15 +1500,9 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    const bool r2r = opts.IsReadyToRun();
-#else
-    const bool r2r = false;
-#endif
-    const bool prejit      = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool classicNgen = prejit && !r2r;
-    const bool osr = (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
-    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !classicNgen && !osr;
+    const bool prejit = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool osr    = (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0));
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !osr;
 
     if (useEdgeProfiles)
     {
@@ -1517,7 +1511,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     else
     {
         JITDUMP("Using block profiling, because %s\n",
-                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : classicNgen ? "classic Ngen" : "OSR");
+                (JitConfig.JitEdgeProfiling() > 0) ? "edge profiles disabled" : prejit ? "prejitting" : "OSR");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }

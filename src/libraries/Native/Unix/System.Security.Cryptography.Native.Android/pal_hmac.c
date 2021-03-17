@@ -29,8 +29,22 @@ jobject CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, intptr_t type)
     else
         return FAIL;
 
-    jbyteArray keyBytes = (*env)->NewByteArray(env, keyLen);
-    (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
+    jbyteArray keyBytes;
+
+    if (key && keyLen > 0)
+    {
+        keyBytes = (*env)->NewByteArray(env, keyLen);
+        (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLen, (jbyte*)key);
+    }
+    else
+    {
+        // Java does not support zero-length byte arrays in the SecretKeySpec type,
+        // so instead create an empty 1-byte length byte array that's initalized to 0.
+        // the HMAC algorithm pads keys with zeros until the key is block-length,
+        // so this effectively creates the same key as if it were a zero byte-length key.
+        keyBytes = (*env)->NewByteArray(env, 1);
+    }
+
     jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, macName);
     if (CheckJNIExceptions(env))
     {

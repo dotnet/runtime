@@ -16,6 +16,9 @@
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
+    <type fullname="System.Threading.Timer">
+      <property name="AllTimers" />
+    </type>
     <type fullname="System.Threading.ThreadPool">
       <method name="GetQueuedWorkItemsForDebugger" />
       <method name="GetGloballyQueuedWorkItemsForDebugger" />

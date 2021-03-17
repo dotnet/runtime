@@ -77,3 +77,7 @@ jobs:
       nameSuffix: Runtime_Release
       buildArgs: -s mono+libs -c $(_BuildConfig)
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+      dependsOn:
+      - mono_browser_offsets
+      monoCrossAOTTargetOS:
+      - Browser

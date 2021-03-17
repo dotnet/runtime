@@ -119,7 +119,7 @@ namespace System.Linq.Parallel
         private class DistinctQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TInputOutput, int>
         {
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, TKey> _source; // The data source.
-            private readonly Set<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
+            private readonly HashSet<TInputOutput> _hashLookup; // The hash lookup, used to produce the distinct set.
             private readonly CancellationToken _cancellationToken;
             private Shared<int>? _outputLoopCount; // Allocated in MoveNext to avoid false sharing.
 
@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
             {
                 Debug.Assert(source != null);
                 _source = source;
-                _hashLookup = new Set<TInputOutput>(comparer);
+                _hashLookup = new HashSet<TInputOutput>(comparer);
                 _cancellationToken = cancellationToken;
             }
 

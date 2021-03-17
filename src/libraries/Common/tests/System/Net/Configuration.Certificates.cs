@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Net.Test.Common
@@ -36,9 +37,10 @@ namespace System.Net.Test.Common
                 {
                     try
                     {
-                        byte[] serverCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testservereku.contoso.com.pfx"));
-                        byte[] clientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testclienteku.contoso.com.pfx"));
-                        byte[] noEKUCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testnoeku.contoso.com.pfx"));
+                        string contosoPfxSuffix = PlatformSupport.IsRC2Supported ? ".pfx" : ".noRC2.pfx";
+                        byte[] serverCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testservereku.contoso.com{contosoPfxSuffix}"));
+                        byte[] clientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testclienteku.contoso.com{contosoPfxSuffix}"));
+                        byte[] noEKUCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, $"testnoeku.contoso.com{contosoPfxSuffix}"));
                         byte[] selfSignedServerCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testselfsignedservereku.contoso.com.pfx"));
                         byte[] selfSignedClientCertificateBytes = File.ReadAllBytes(Path.Combine(TestDataFolder, "testselfsignedclienteku.contoso.com.pfx"));
 

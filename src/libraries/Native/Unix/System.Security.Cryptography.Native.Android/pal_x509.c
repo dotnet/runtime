@@ -5,6 +5,7 @@
 
 #include "pal_eckey.h"
 #include "pal_rsa.h"
+#include "pal_misc.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -260,7 +261,7 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
             keyHandle = AndroidCryptoNative_NewEcKeyFromPublicKey(env, key);
             break;
         case PAL_DSA:
-            keyHandle = NULL;
+            keyHandle = AndroidCryptoNative_CreateKeyPair(env, key, NULL);
             break;
         case PAL_RSA:
             keyHandle = AndroidCryptoNative_NewRsaFromPublicKey(env, key);

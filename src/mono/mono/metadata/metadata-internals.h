@@ -1083,7 +1083,6 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 gboolean
 mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs);
 
-
 MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
 MonoGenericParam*

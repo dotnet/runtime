@@ -184,7 +184,8 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates an instance of the specified type.
         /// </summary>
-        protected object CreateInstance(Type type)
+        protected object CreateInstance(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
             ConstructorInfo ctor = type.GetConstructor(typeArgs);
@@ -241,7 +242,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets an editor of the specified type.
         /// </summary>
-        [RequiresUnreferencedCode("The PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public virtual object GetEditor(Type editorBaseType)
         {
             object editor = null;
@@ -342,7 +343,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a type using its name.
         /// </summary>
-        protected Type GetTypeFromName(string typeName)
+        [RequiresUnreferencedCode("Calls ComponentType.Assembly.GetType on the non-fully qualified typeName, which the trimmer cannot recognize.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        protected Type GetTypeFromName(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
             if (typeName == null || typeName.Length == 0)
             {

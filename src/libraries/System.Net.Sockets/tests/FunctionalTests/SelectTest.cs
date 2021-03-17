@@ -298,7 +298,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 // Give the task 5 seconds to complete; if not, assume it's hung.
-                await t.TimeoutAfter(5000);
+                await t.WaitAsync(TimeSpan.FromSeconds(5));
             }
         }
 

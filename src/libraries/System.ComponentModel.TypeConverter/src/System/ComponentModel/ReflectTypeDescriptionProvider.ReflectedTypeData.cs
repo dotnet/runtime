@@ -293,7 +293,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the editor for the given base type.
             /// </summary>
-            [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
+            [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode + " The Type of instance cannot be statically discovered.")]
             internal object GetEditor(object instance, Type editorBaseType)
             {
                 EditorAttribute typeAttr;
@@ -484,7 +484,14 @@ namespace System.ComponentModel
             /// that this PropertyDescriptor came from is first checked,
             /// then a global Type.GetType is performed.
             /// </summary>
-            private Type GetTypeFromName(string typeName)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
+                Justification = "Using the non-assembly qualified type name will still work.")]
+            private Type GetTypeFromName(
+                // this method doesn't create the type, but all callers are annotated with PublicConstructors,
+                // so use that value to ensure the Type will be preserved
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
             {
                 if (string.IsNullOrEmpty(typeName))
                 {
