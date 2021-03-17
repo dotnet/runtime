@@ -61,10 +61,14 @@
 
     <TargetOSComponent>unix</TargetOSComponent>
     <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(TargetArchitecture)</TargetSpec>
-    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitecture)_$(CrossHostArch)</CrossTargetSpec>
 
-    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)</JitInterfaceLibraryName>
+    <TargetArchitectureForSharedLibraries>$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitecture)=='armel'">arm</TargetArchitectureForSharedLibraries>
+
+    <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
+    <CrossTargetSpec>$(TargetOSComponent)_$(TargetArchitectureForSharedLibraries)_$(CrossHostArch)</CrossTargetSpec>
+
+    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -74,7 +78,7 @@
       Link="%(FileName)%(Extension)"
      />
 
-    <Content Include="$(RuntimeBinDir)$(NativeArchFolder)$(LibPrefix)clrjit_*_$(TargetArchitecture)$(LibSuffix)"
+    <Content Include="$(RuntimeBinDir)$(NativeArchFolder)$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
