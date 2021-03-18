@@ -22,16 +22,10 @@ namespace System.Linq
             List<TSource> matched = new List<TSource>();
             List<TSource> unmatched = new List<TSource>();
 
-            foreach (var element in source)
+            foreach (TSource element in source)
             {
-                if (predicate(element))
-                {
-                    matched.Add(element);
-                }
-                else
-                {
-                    unmatched.Add(element);
-                }
+                List<TSource> target = predicate(element) ? matched : unmatched;
+                target.Add(element);
             }
 
             return (matched, unmatched);
