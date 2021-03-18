@@ -135,6 +135,7 @@
                              $(MonoArtifactsPath)libmono-icall-table.a;
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a;
+                             $(NativeBinDir)libSystem.Security.Cryptography.Native.Browser.a;
                              $(ICULibDir)/libicuuc.a;
                              $(ICULibDir)/libicui18n.a" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
