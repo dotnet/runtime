@@ -103,9 +103,21 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 {
     FILE* file = create_extraction_file(entry.relative_path());
     reader.set_offset(entry.offset());
-    int64_t size = entry.size();
+    size_t size = entry.size();
     size_t cast_size = to_size_t_dbgchecked(size);
-    if (fwrite(reader, 1, cast_size, file) != cast_size)
+    size_t extracted_size;
+
+    if (entry.compressedSize() != 0)
+    {
+        // TODO: VS decompress
+        extracted_size = fwrite(reader, 1, size, file);
+    }
+    else
+    {
+        extracted_size = fwrite(reader, 1, cast_size, file);
+    }
+
+    if (extracted_size != cast_size)
     {
         trace::error(_X("Failure extracting contents of the application bundle."));
         trace::error(_X("I/O failure when writing extracted files."));
