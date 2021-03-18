@@ -126,7 +126,7 @@ namespace System.Numerics.Tests
 
         // A test for Distance (Vector3f, Vector3f)
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49824")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/49824")]
         public void Vector3DistanceTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
@@ -136,7 +136,7 @@ namespace System.Numerics.Tests
             float actual;
 
             actual = Vector3.Distance(a, b);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Distance did not return the expected value.");
+            Assert.True(MathHelper.Equal(expected, actual), $"Vector3f.Distance did not return the expected value. Expected = {expected}, actual = {actual}");
         }
 
         // A test for Distance (Vector3f, Vector3f)
