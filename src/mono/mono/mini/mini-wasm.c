@@ -218,7 +218,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr = ");
+			g_error ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
@@ -567,13 +567,13 @@ mono_set_timeout_exec (int id)
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
 	if (!is_ok (error)) {
-		printf ("timeout callback failed due to %s\n", mono_error_get_message (error));
+		g_error ("timeout callback failed due to %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("timeout callback threw a %s\n", type_name);
+		g_error ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
 }
@@ -605,13 +605,13 @@ tp_cb (void)
 	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	if (!is_ok (error)) {
-		printf ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
+		g_error ("ThreadPool Callback failed due to error: %s\n", mono_error_get_message (error));
 		mono_error_cleanup (error);
 	}
 
 	if (exc) {
 		char *type_name = mono_type_get_full_name (mono_object_class (exc));
-		printf ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
+		g_error ("ThreadPool Callback threw an unhandled exception of type %s\n", type_name);
 		g_free (type_name);
 	}
 }
