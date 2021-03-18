@@ -11299,7 +11299,6 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         // genConsumeReg will return the valid register, either from the COPY
         // or from the original source.
         assert(reg != REG_NA);
-        regNumber varReg = REG_NA;
         if (isMultiRegVar)
         {
             // Each field is passed in its own register, use the field types.
@@ -11409,7 +11408,6 @@ void CodeGen::genRegCopy(GenTree* treeNode)
         //
         // There should never be any circular dependencies, and we will check that here.
 
-        GenTreeCopyOrReload* copyNode = treeNode->AsCopyOrReload();
         // GenTreeCopyOrReload only reports the highest index that has a valid register.
         // However, we need to ensure that we consume all the registers of the child node,
         // so we use its regCount.
@@ -11535,7 +11533,6 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
     if (targetReg != REG_NA)
     {
         // We shouldn't specify a no-op move.
-        regMaskTP targetRegMask = genRegMask(targetReg);
         assert(sourceReg != targetReg);
         var_types type;
         if (op1->IsMultiRegLclVar())

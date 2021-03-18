@@ -2762,8 +2762,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (!altJitConfig || opts.altJit)
     {
-        LPCWSTR dumpIRFormat = nullptr;
-
         // We should only enable 'verboseDump' when we are actually compiling a matching method
         // and not enable it when we are just considering inlining a matching method.
         //
