@@ -3241,10 +3241,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
-#elif defined(ARM_SOFTFP)
+#elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
 #endif // CONFIGURABLE_ARM_ABI
 
