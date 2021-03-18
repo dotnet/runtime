@@ -445,6 +445,9 @@ namespace System.Security.Cryptography
                 return TryDecrypt(keys.PrivateKey, data, destination, padding, out bytesWritten);
             }
 
+
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             private bool TryDecrypt(
                 SafeSecKeyRefHandle privateKey,
                 ReadOnlySpan<byte> data,
