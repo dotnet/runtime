@@ -104,24 +104,18 @@ namespace System.Tests
 
         private class SomeCustomConstantAttribute : CustomConstantAttribute
         {
-            private const string DEFAULT_VALUE = "SomeValue";
-
-            public static void Do(object o)
-            {
-                //Check the default value is assigned to the parameter as expected
-                Assert.Equal(DEFAULT_VALUE, o);
-            }
-
-            public override object Value => DEFAULT_VALUE;
+            public static object Do(object o) => o;
+          
+            public override object Value => "SomeValue";
         }
 
-        private delegate void ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
+        private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
         public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
         {
-            Delegate m = new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do);
-            m.DynamicInvoke(Type.Missing);
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
         }
 
         [Fact]
