@@ -1800,14 +1800,32 @@ bool MethodSet::IsActiveMethod(const char* methodName, int methodHash)
 //
 double CachedCyclesPerSecond()
 {
-    static unsigned int s_CachedCyclesPerSecondInitialized = 0;
-    static double       s_CachedCyclesPerSecond            = 0.0;
+    static volatile unsigned int s_CachedCyclesPerSecondInitialized = 0;
+    static double                s_CachedCyclesPerSecond            = 0.0;
+    static CritSecObject         s_CachedCyclesPerSecondLock;
+
+    if (s_CachedCyclesPerSecondInitialized == 1)
+    {
+        return s_CachedCyclesPerSecond;
+    }
+
+    // It wasn't initialized yet, so initialize it. There might be a race,
+    // so lock the update.
+
+    CritSecHolder cachedCyclesPerSecondLock(s_CachedCyclesPerSecondLock);
+
+    if (s_CachedCyclesPerSecondInitialized == 1)
+    {
+        // Someone else initialized it first.
+        return s_CachedCyclesPerSecond;
+    }
+
+    s_CachedCyclesPerSecond = CycleTimer::CyclesPerSecond();
 
     unsigned int originalInitializedValue = InterlockedCompareExchange(&s_CachedCyclesPerSecondInitialized, 1, 0);
-    if (originalInitializedValue == 0)
+    if (originalInitializedValue == 1)
     {
-        // It wasn't initialized yet, so initialize it.
-        s_CachedCyclesPerSecond = CycleTimer::CyclesPerSecond();
+        // This is unexpected; the critical section should have protected us.
     }
 
     return s_CachedCyclesPerSecond;
