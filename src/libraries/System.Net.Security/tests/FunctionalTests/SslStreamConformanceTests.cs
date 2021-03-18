@@ -31,19 +31,16 @@ namespace System.Net.Security.Tests
                 ssl2.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
             }.WhenAllOrAnyFailed().ConfigureAwait(false);
 
-            if (GetSslProtocols() == SslProtocols.Tls13)
-            {
-                // TLS 1.3 can generate some extra messages and we may get reset if test sends unidirectional traffic
-                // and extra packet stays in socket buffer.
+            // TLS 1.3 can generate some extra messages and we may get reset if test sends unidirectional traffic
+            // and extra packet stays in socket buffer. For TLS 1.2 we may get extra session ticket and that breaks zero read.
 
-                // This ping-ping should flush leftovers from the handshake.
-                // We use sync method to preserve socket in default blocking state
-                // (as we don't go back once Async is used at least once)
-                ssl1.Write(new byte[1]);
-                ssl2.Write(new byte[1]);
-                Assert.Equal(1, ssl2.Read(new byte[1]));
-                Assert.Equal(1, ssl1.Read(new byte[1]));
-            }
+            // This ping-ping should flush leftovers from the handshake.
+            // We use sync method to preserve socket in default blocking state
+            // (as we don't go back once Async is used at least once)
+            ssl1.Write(new byte[1]);
+            ssl2.Write(new byte[1]);
+            Assert.Equal(1, ssl2.Read(new byte[1]));
+            Assert.Equal(1, ssl1.Read(new byte[1]));
 
             return new StreamPair(ssl1, ssl2);
         }
