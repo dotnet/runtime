@@ -33,6 +33,7 @@
     <Compile Include="LastTests.cs" />
     <Compile Include="LifecycleTests.cs" />
     <Compile Include="LongCountTests.cs" />
+    <Compile Include="MatchTests.cs" />
     <Compile Include="MaxTests.cs" />
     <Compile Include="MinTests.cs" />
     <Compile Include="OfTypeTests.cs" />

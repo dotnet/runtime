@@ -43,6 +43,7 @@ namespace System.Linq.Tests
                 nameof(Enumerable.ToList),
                 nameof(Enumerable.ToHashSet),
                 nameof(Enumerable.TryGetNonEnumeratedCount),
+                nameof(Enumerable.Match),
                 "Fold",
                 "LeftJoin",
             };
