@@ -3435,7 +3435,11 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 
 	mono_walk_stack_with_ctx (print_stack_frame_to_string, &ctx, MONO_UNWIND_LOOKUP_ALL, text);
 
+#if HOST_WASM
+	g_printerr ("%s", text->str);
+#else
 	mono_runtime_printf ("%s", text->str);
+#endif	
 
 #if HOST_WIN32 && TARGET_WIN32 && _DEBUG
 	OutputDebugStringA(text->str);
