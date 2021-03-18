@@ -263,7 +263,7 @@ namespace System.IO.Strategies
             Debug.Assert(value >= 0, "value >= 0");
             VerifyOSHandlePosition();
 
-            FileStreamHelpers.SetLength(_fileHandle, _path, value);
+            FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
 
             if (_filePosition > value)
             {

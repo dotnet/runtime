@@ -24,10 +24,10 @@ namespace System.IO.Strategies
         }
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            => WrapIfDerivedType(fileStream, ChooseStrategy(handle, access, bufferSize, isAsync));
+            => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, bufferSize, isAsync));
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => WrapIfDerivedType(fileStream, ChooseStrategy(path, mode, access, share, bufferSize, options));
+            => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options));
 
         private static FileStreamStrategy WrapIfDerivedType(FileStream fileStream, FileStreamStrategy strategy)
             => fileStream.GetType() == typeof(FileStream)

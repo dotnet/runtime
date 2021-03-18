@@ -19,7 +19,7 @@ namespace System.IO.Strategies
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        private static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             if (UseLegacyStrategy)
             {
@@ -33,7 +33,7 @@ namespace System.IO.Strategies
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        private static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (UseLegacyStrategy)
             {
@@ -312,7 +312,7 @@ namespace System.IO.Strategies
             isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
         }
 
-        internal static unsafe void SetLength(SafeFileHandle handle, string? path, long length)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
