@@ -406,8 +406,10 @@ mono_image_append_delta (MonoImage *base, MonoImage *delta)
 		return;
 	}
 	g_assert (((MonoImage*)base->delta_image_last->data)->generation < delta->generation);
-	/* FIXME: g_list_append returns the previous end of the list, not the newly appended element! */
-	base->delta_image_last = g_list_append (base->delta_image_last, delta);
+	/* g_list_append returns the given list, not the newly appended */
+	GList *l = g_list_append (base->delta_image_last, delta);
+	g_assert (l != NULL && l->next != NULL && l->next->next == NULL);
+	base->delta_image_last = l->next;
 }
 
 /**
@@ -579,6 +581,7 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 	 *
 	 * 1. Keep a table of inv
 	 */
+	int g = 0;
 
 	do {
 		g_assertf (list, "couldn't find idx=0x%08x in assembly=%s", *idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
@@ -586,9 +589,10 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 		list = list->next;
 		table = &dmeta->tables [tbl_index];
 		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, *idx + 1)) - 1;
+		g++;
 	} while (ridx < 0 || ridx >= table->rows);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (gen %d)", mono_meta_table_name (tbl_index), *idx, ridx, metadata_update_local_generation (base, dmeta));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "effective table for %s: 0x%08x -> 0x%08x (rows = 0x%08x) (gen %d, g %d)", mono_meta_table_name (tbl_index), *idx, ridx, table->rows, metadata_update_local_generation (base, dmeta), g);
 
 	*t = table;
 	*idx = ridx;
@@ -596,6 +600,8 @@ mono_image_effective_table_slow (const MonoTableInfo **t, int *idx)
 
 /*
  * The ENCMAP table contains the base of the relative offset.
+ *
+ * Returns -1 if the token does not resolve in this generation's ENCMAP.
  *
  * Example:
  * Say you have a base image with a METHOD table having 5 entries.  The minimal
@@ -639,17 +645,22 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 	}
 
 	if (mono_metadata_token_table (map_entry) == table) {
-#if 0
-		g_assert (mono_metadata_token_index (map_entry) == index);
-#endif
-		if (mono_metadata_token_index (map_entry) != index)
-			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
-				g_print ("warning: map_entry=0x%08x != index=0x%08x. is this a problem?\n", map_entry, index);
+		if (mono_metadata_token_index (map_entry) == index) {
+			/* token resolves to this generation */
+			int return_val = index_map - delta_info->enc_recs [table] + 1;
+			g_assert (return_val > 0 && return_val <= image_dmeta->tables[table].rows);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "relative index for token 0x%08x -> table 0x%02x row 0x%08x", token, table, return_val);
+			return return_val;
+		} else {
+			/* otherwise the last entry in the encmap is for this table, but is still less than the index - the index is in the next generation */
+			g_assert (mono_metadata_token_index (map_entry) < index && index_map == encmap->rows);
+			return -1;
+		}
+	} else {
+		/* otherwise there are no more encmap entries for this table, and we didn't see the index, so there index is in the next generation */
+		g_assert (mono_metadata_token_table (map_entry) > table);
+		return -1;
 	}
-
-	int return_val = index_map - delta_info->enc_recs [table] + 1;
-	g_assert (return_val > 0);
-	return return_val;
 }
 
 static DeltaInfo*
