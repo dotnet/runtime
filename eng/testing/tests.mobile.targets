@@ -12,8 +12,12 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' And '$(UseDefaultBlazorWASMFeatureSwitches)' != 'false'">
     <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
-    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
-    <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$XHARNESS_OUT --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
+    <HarnessCall Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER wasm $XHARNESS_COMMAND</HarnessCall>
+    <HarnessCall Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% wasm %XHARNESS_COMMAND%</HarnessCall>
+    <HarnessOut Condition="'$(OS)' != 'Windows_NT'">$XHARNESS_OUT</HarnessOut>
+    <HarnessOut Condition="'$(OS)' == 'Windows_NT'">%XHARNESS_OUT%</HarnessOut>
+    <RunScriptCommand Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">$(HarnessCall)   --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$(HarnessOut) --  $(RunTestsJSArguments) --run WasmTestRunner.dll $(AssemblyName).dll</RunScriptCommand>
+    <RunScriptCommand Condition="'$(IsFunctionalTest)' == 'true'">$(HarnessCall)  --app=. --engine=$(JSEngine) $(JSEngineArgs) --js-file=runtime.js --output-directory=$(HarnessOut) --expected-exit-code=$(ExpectedExitCode) --  $(RunTestsJSArguments) --run $(AssemblyName).dll --testing</RunScriptCommand>
     <EventSourceSupport>false</EventSourceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
