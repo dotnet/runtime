@@ -86,31 +86,51 @@ namespace ILCompiler.Diagnostics
         UIntPtr _pdbMod;
         ISymNGenWriter2 _ngenWriter;
 
-        private const string DiaSymReaderModuleName32 = "Microsoft.DiaSymReader.Native.x86.dll";
-        private const string DiaSymReaderModuleName64 = "Microsoft.DiaSymReader.Native.amd64.dll";
+        private const string DiaSymReaderModuleNameX86 = "Microsoft.DiaSymReader.Native.x86.dll";
+        private const string DiaSymReaderModuleNameX64 = "Microsoft.DiaSymReader.Native.amd64.dll";
+        private const string DiaSymReaderModuleNameArm = "Microsoft.DiaSymReader.Native.arm.dll";
+        private const string DiaSymReaderModuleNameArm64 = "Microsoft.DiaSymReader.Native.arm64.dll";
 
         private const string CreateNGenPdbWriterFactoryName = "CreateNGenPdbWriter";
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderModuleName32, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter32([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+        [DllImport(DiaSymReaderModuleNameX86, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriterX86([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderModuleName64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter64([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+        [DllImport(DiaSymReaderModuleNameX64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriterX64([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleNameArm, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriterArm([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
+        [DllImport(DiaSymReaderModuleNameArm64, EntryPoint = CreateNGenPdbWriterFactoryName, PreserveSig = false)]
+        private extern static void CreateNGenPdbWriterArm64([MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath, [MarshalAs(UnmanagedType.LPWStr)] string pdbPath, [MarshalAs(UnmanagedType.IUnknown)] out object ngenPdbWriter);
 
         private static ISymNGenWriter2 CreateNGenWriter(string ngenImagePath, string pdbPath)
         {
             object instance;
 
-            if (IntPtr.Size == 4)
+            switch (RuntimeInformation.ProcessArchitecture)
             {
-                CreateNGenPdbWriter32(ngenImagePath, pdbPath, out instance);
+                case Architecture.X86:
+                    CreateNGenPdbWriterX86(ngenImagePath, pdbPath, out instance);
+                    break;
+                case Architecture.X64:
+                    CreateNGenPdbWriterX64(ngenImagePath, pdbPath, out instance);
+                    break;
+                case Architecture.Arm:
+                    CreateNGenPdbWriterArm(ngenImagePath, pdbPath, out instance);
+                    break;
+                case Architecture.Arm64:
+                    CreateNGenPdbWriterArm64(ngenImagePath, pdbPath, out instance);
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
-            else
-            {
-                CreateNGenPdbWriter64(ngenImagePath, pdbPath, out instance);
-            }
+
             return (ISymNGenWriter2)instance;
         }
 
