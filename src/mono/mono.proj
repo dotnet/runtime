@@ -87,6 +87,16 @@
     <PropertyGroup>
       <_MonoUseNinja Condition="'$(Ninja)' == 'true' or '$(_MonoFindNinjaExitCode)' == '0'">true</_MonoUseNinja>
     </PropertyGroup>
+
+    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="cmake --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+      <Output TaskParameter="ExitCode" PropertyName="_MonoFindCmakeExitCode"/>
+    </Exec>
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindCmakeExitCode)' != '0'" Text="cmake tool is required to buils wasm on windows" />
+    <Exec Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT'" Command="ninja --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+      <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
+    </Exec>
+    <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(OS)' == 'Windows_NT' and '$(_MonoFindNinjaExitCode)' != '0'" Text="ninja tool is required to buils wasm on windows" />
+
   </Target>
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
