@@ -80,7 +80,7 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
       <MibcArgs>@(OptimizationMibcFiles->'-m:%(Identity)', ' ')</MibcArgs>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true'">$(CrossGenDllCmd) $(MibcArgs) --embed-pgo-data</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(Configuration)' == 'Release'">$(CrossGenDllCmd) $(MibcArgs) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) $(CoreLibInputPath)</CrossGenDllCmd>
     </PropertyGroup>
