@@ -41,6 +41,10 @@ namespace System.Net.Security.Tests
             ssl2.Write(new byte[1]);
             Assert.Equal(1, ssl2.Read(new byte[1]));
             Assert.Equal(1, ssl1.Read(new byte[1]));
+            ssl1.Write(new byte[1]);
+            ssl2.Write(new byte[1]);
+            Assert.Equal(1, ssl2.Read(new byte[1]));
+            Assert.Equal(1, ssl1.Read(new byte[1]));
 
             return new StreamPair(ssl1, ssl2);
         }
