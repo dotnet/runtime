@@ -41,6 +41,7 @@ namespace System.Net.Security
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
+        private byte[]? _rentedBuffer;             // Byte array if _internalBuffer is backed by ArrayPoll rent.
         private bool receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
