@@ -45,7 +45,7 @@
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
     <SupportedPlatform Condition="'$(TargetsMacCatalyst)' == 'true'" Include="MacCatalyst"/>
-    <SupportedPlatform Condition="'$(TargetsSolaris' == 'true'" Include="Solaris"/>
+    <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
     <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
   </ItemGroup>
 
@@ -53,11 +53,14 @@
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>
 
-  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild" Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false'">
+  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
+    Condition="'@(_unsupportedOSPlatforms)' != '' and '$(IsTestProject)' != 'true' and '$(IncludePlatformAttributes)' != 'false' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <ItemGroup>
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
+      <SupportedPlatform Include="browser" Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' or 
+        ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0')))"/>
     </ItemGroup>
   </Target>
 

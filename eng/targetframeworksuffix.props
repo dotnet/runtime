@@ -9,6 +9,7 @@
     <TargetPlatformIdentifier>$(TargetFrameworkSuffix)</TargetPlatformIdentifier>
     <TargetPlatformVersion>1.0</TargetPlatformVersion>
     <TargetPlatformMoniker>$(TargetFrameworkSuffix),Version=$(TargetPlatformVersion)</TargetPlatformMoniker>
+	<SupportedOSPlatformVersion>0.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   
   <Choose>
