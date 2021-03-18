@@ -47,7 +47,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
             TypeScope scope = _mapping.Scope!;

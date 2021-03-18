@@ -1281,7 +1281,7 @@ namespace System.Xml.Serialization
             return 0;
         }
 
-        [RequiresUnreferencedCode("creates XmlAttributes")]
+        [RequiresUnreferencedCode("Needs to mark members on the return type of the GetEnumerator method")]
         private static Type? GetEnumeratorElementType(Type type, ref TypeFlags flags)
         {
             if (typeof(IEnumerable).IsAssignableFrom(type))

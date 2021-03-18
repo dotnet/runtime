@@ -1757,10 +1757,10 @@ namespace System.Xml.Serialization
             return array;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected abstract void InitCallbacks();
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void ReadReferencedElements()
         {
             _r.MoveToContent();
@@ -1775,33 +1775,33 @@ namespace System.Xml.Serialization
             HandleUnreferencedObjects();
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement()
         {
             return ReadReferencedElement(null, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencedElement(string? name, string? ns)
         {
             string? dummy;
             return ReadReferencingElement(name, ns, out dummy);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(out string? fixupReference)
         {
             return ReadReferencingElement(null, null, out fixupReference);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, out string? fixupReference)
         {
             return ReadReferencingElement(name, ns, false, out fixupReference);
         }
 
         [MemberNotNull(nameof(_callbacks))]
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected object? ReadReferencingElement(string? name, string? ns, bool elementCanBeType, out string? fixupReference)
         {
             object? o = null;

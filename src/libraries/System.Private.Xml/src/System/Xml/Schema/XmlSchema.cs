@@ -89,13 +89,13 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -103,13 +103,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -117,13 +117,13 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));

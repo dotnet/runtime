@@ -88,7 +88,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void IncludeTypes(ICustomAttributeProvider provider)
         {
             IncludeTypes(provider, new RecursionLimiter());
@@ -108,7 +108,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void IncludeType(Type type)
         {
             IncludeType(type, new RecursionLimiter());
@@ -138,7 +138,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type)
         {
             return ImportTypeMapping(type, null, null);
@@ -147,7 +147,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, string? defaultNamespace)
         {
             return ImportTypeMapping(type, null, defaultNamespace);
@@ -156,7 +156,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root)
         {
             return ImportTypeMapping(type, root, null);
@@ -165,7 +165,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(Type type, XmlRootAttribute? root, string? defaultNamespace)
         {
             if (type == null)
@@ -179,7 +179,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, false);
@@ -188,7 +188,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, false);
@@ -198,7 +198,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         ///
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel)
         {
             return ImportMembersMapping(elementName, ns, members, hasWrapperElement, rpc, openModel, XmlMappingAccess.Read | XmlMappingAccess.Write);
@@ -208,7 +208,7 @@ namespace System.Xml.Serialization
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         ///
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string? elementName, string? ns, XmlReflectionMember[] members, bool hasWrapperElement, bool rpc, bool openModel, XmlMappingAccess access)
         {
             ElementAccessor element = new ElementAccessor();

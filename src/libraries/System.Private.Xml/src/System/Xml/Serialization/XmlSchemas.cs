@@ -645,7 +645,7 @@ namespace System.Xml.Serialization
             get { return _isCompiled; }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public void Compile(ValidationEventHandler? handler, bool fullCompile)
         {
             if (_isCompiled)

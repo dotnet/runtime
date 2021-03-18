@@ -151,8 +151,8 @@ namespace System.Xml.Serialization
         }
 
         // Linker warning messages
-        internal const string LinkerSerializationMessage = "Members from serialized types may be trimmed if not referenced directly";
-        private const string s_deserializationMessage = "Members from deserialized types may be trimmed if not referenced directly";
+        internal const string TrimSerializationWarning = "Members from serialized types may be trimmed if not referenced directly";
+        private const string s_trimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
 
         private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
 
@@ -160,28 +160,28 @@ namespace System.Xml.Serialization
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace) :
             this(type, overrides, extraTypes, root, defaultNamespace, null)
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, XmlRootAttribute? root) : this(type, null, Type.EmptyTypes, root, null, null)
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, Type[]? extraTypes) : this(type, null, extraTypes, null, null, null)
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, XmlAttributeOverrides? overrides) : this(type, overrides, Type.EmptyTypes, null, null, null)
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(XmlTypeMapping xmlTypeMapping)
         {
             if (xmlTypeMapping == null)
@@ -191,12 +191,12 @@ namespace System.Xml.Serialization
             _mapping = xmlTypeMapping;
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type) : this(type, (string?)null)
         {
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, string? defaultNamespace)
         {
             if (type == null)
@@ -254,7 +254,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public XmlSerializer(Type type, XmlAttributeOverrides? overrides, Type[]? extraTypes, XmlRootAttribute? root, string? defaultNamespace, string? location)
         {
             if (type == null)
@@ -308,13 +308,13 @@ namespace System.Xml.Serialization
             return new TempAssembly(new XmlMapping[] { xmlMapping }, new Type?[] { type }, defaultNamespace, location);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o)
         {
             Serialize(textWriter, o, null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(textWriter);
@@ -323,13 +323,13 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o)
         {
             Serialize(stream, o, null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -338,25 +338,25 @@ namespace System.Xml.Serialization
             Serialize(xmlWriter, o, namespaces);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(XmlWriter xmlWriter, object? o)
         {
             Serialize(xmlWriter, o, null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
             Serialize(xmlWriter, o, namespaces, null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle)
         {
             Serialize(xmlWriter, o, namespaces, encodingStyle, null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(XmlWriter xmlWriter, object? o, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? id)
         {
             try
@@ -418,7 +418,7 @@ namespace System.Xml.Serialization
             return _mapping;
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(Stream stream)
         {
             XmlTextReader xmlReader = new XmlTextReader(stream);
@@ -428,7 +428,7 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(TextReader textReader)
         {
             XmlTextReader xmlReader = new XmlTextReader(textReader);
@@ -438,25 +438,25 @@ namespace System.Xml.Serialization
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader)
         {
             return Deserialize(xmlReader, null);
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, XmlDeserializationEvents events)
         {
             return Deserialize(xmlReader, null, events);
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, string? encodingStyle)
         {
             return Deserialize(xmlReader, encodingStyle, _events);
         }
 
-        [RequiresUnreferencedCode(s_deserializationMessage)]
+        [RequiresUnreferencedCode(s_trimDeserializationWarning)]
         public object? Deserialize(XmlReader xmlReader, string? encodingStyle, XmlDeserializationEvents events)
         {
             events.sender = this;
@@ -540,13 +540,13 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public static XmlSerializer[] FromMappings(XmlMapping[]? mappings)
         {
             return FromMappings(mappings, (Type?)null);
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public static XmlSerializer[] FromMappings(XmlMapping[]? mappings, Type? type)
         {
             if (mappings == null || mappings.Length == 0) return Array.Empty<XmlSerializer>();
@@ -720,7 +720,7 @@ namespace System.Xml.Serialization
             return serializers!;
         }
 
-        [RequiresUnreferencedCode(LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(TrimSerializationWarning)]
         public static XmlSerializer[] FromTypes(Type[]? types)
         {
             if (types == null)

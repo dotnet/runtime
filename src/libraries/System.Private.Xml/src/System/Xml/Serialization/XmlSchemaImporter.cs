@@ -20,13 +20,13 @@ namespace System.Xml.Serialization
 
     public class XmlSchemaImporter : SchemaImporter
     {
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSchemaImporter(XmlSchemas schemas) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext()) { }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlSchemaImporter(XmlSchemas schemas, CodeIdentifiers? typeIdentifiers) : base(schemas, CodeGenerationOptions.GenerateProperties, new ImportContext(typeIdentifiers, false)) { }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type? baseType)
         {
             return ImportDerivedTypeMapping(name, baseType, false);
@@ -46,7 +46,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportDerivedTypeMapping(XmlQualifiedName name, Type? baseType, bool baseTypeCanBeIndirect)
         {
             ElementAccessor element = ImportElement(name, typeof(TypeMapping), baseType);
@@ -72,19 +72,19 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, element);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName)
         {
             return ImportSchemaType(typeName, null, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type? baseType)
         {
             return ImportSchemaType(typeName, baseType, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportSchemaType(XmlQualifiedName typeName, Type? baseType, bool baseTypeCanBeIndirect)
         {
             TypeMapping typeMapping = ImportType(typeName, typeof(TypeMapping), baseType, TypeFlags.CanBeElementValue, true)!;
@@ -122,19 +122,19 @@ namespace System.Xml.Serialization
             return new XmlTypeMapping(Scope, accessor);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlTypeMapping ImportTypeMapping(XmlQualifiedName name)
         {
             return ImportDerivedTypeMapping(name, null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName name)
         {
             return new XmlMembersMapping(Scope, ImportElement(name, typeof(MembersMapping), null), XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping? ImportAnyType(XmlQualifiedName typeName, string elementName)
         {
             TypeMapping? typeMapping = ImportType(typeName, typeof(MembersMapping), null, TypeFlags.CanBeElementValue, true);
@@ -174,13 +174,13 @@ namespace System.Xml.Serialization
             return members;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names)
         {
             return ImportMembersMapping(names, null, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(XmlQualifiedName[] names, Type? baseType, bool baseTypeCanBeIndirect)
         {
             CodeIdentifiers memberScope = new CodeIdentifiers();
@@ -209,7 +209,7 @@ namespace System.Xml.Serialization
             return new XmlMembersMapping(Scope, element, XmlMappingAccess.Read | XmlMappingAccess.Write);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public XmlMembersMapping ImportMembersMapping(string name, string? ns, SoapSchemaMember[] members)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();

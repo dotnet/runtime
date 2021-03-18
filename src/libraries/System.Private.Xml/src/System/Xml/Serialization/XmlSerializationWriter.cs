@@ -238,7 +238,7 @@ namespace System.Xml.Serialization
             return new XmlQualifiedName(typeName, typeNs);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType)
         {
             string? value = null;
@@ -773,13 +773,13 @@ namespace System.Xml.Serialization
                 _w.WriteEndElement();
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected Exception CreateUnknownTypeException(object o)
         {
             return CreateUnknownTypeException(o.GetType());
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected Exception CreateUnknownTypeException(Type type)
         {
             if (typeof(IXmlSerializable).IsAssignableFrom(type)) return new InvalidOperationException(SR.Format(SR.XmlInvalidSerializable, type.FullName));
@@ -1275,25 +1275,25 @@ namespace System.Xml.Serialization
             }
             _w.WriteEndElement();
         }
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o)
         {
             WritePotentiallyReferencingElement(n, ns, o, null, false, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o, Type? ambientType)
         {
             WritePotentiallyReferencingElement(n, ns, o, ambientType, false, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WritePotentiallyReferencingElement(string n, string? ns, object? o, Type? ambientType, bool suppressReference)
         {
             WritePotentiallyReferencingElement(n, ns, o, ambientType, suppressReference, false);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WritePotentiallyReferencingElement(string? n, string? ns, object? o, Type? ambientType, bool suppressReference, bool isNullable)
         {
             if (o == null)
@@ -1380,10 +1380,10 @@ namespace System.Xml.Serialization
             return (TypeEntry?)_typeEntries[t];
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected abstract void InitCallbacks();
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WriteReferencedElements()
         {
             if (_referencesToWrite == null) return;
@@ -1584,7 +1584,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.LinkerSerializationMessage)]
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private string WriteTypeInfo(TypeScope scope, TypeDesc typeDesc, Type type)
         {
             InitTheFirstTime();
