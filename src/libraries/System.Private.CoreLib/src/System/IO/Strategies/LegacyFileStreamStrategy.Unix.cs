@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
     internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy
@@ -172,7 +172,7 @@ namespace System.IO
                     {
                         FlushWriteBuffer();
                     }
-                    catch
+                    catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
                     {
                         // On finalization, ignore failures from trying to flush the write buffer,
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.

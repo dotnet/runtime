@@ -8,16 +8,16 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
-    internal static class FileStreamHelpers
+    internal static partial class FileStreamHelpers
     {
         // in the future we are most probably going to introduce more strategies (io_uring etc)
-        internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
             => new LegacyFileStreamStrategy(handle, access, bufferSize, isAsync);
 
-        internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
             => new LegacyFileStreamStrategy(path, mode, access, share, bufferSize, options);
 
         internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)

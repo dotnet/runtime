@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     internal sealed class SyncWindowsFileStreamStrategy : WindowsFileStreamStrategy
     {
@@ -33,7 +33,7 @@ namespace System.IO
 
             // If we can't check the handle, just assume it is ok.
             if (!(FileStreamHelpers.IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
-                throw new ArgumentException(SR.Arg_HandleNotSync, nameof(handle));
+                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
         }
 
         public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
@@ -119,7 +119,7 @@ namespace System.IO
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
+                        ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }

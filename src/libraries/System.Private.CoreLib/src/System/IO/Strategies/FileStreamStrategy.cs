@@ -3,7 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     internal abstract class FileStreamStrategy : Stream
     {
