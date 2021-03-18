@@ -468,12 +468,9 @@ function(generate_module_index Target ModuleIndexFile)
         set(scriptExt ".sh")
     endif()
 
-    set(index_timestamp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${Target}_index.timestamp)
-
     add_custom_command(
-        OUTPUT ${index_timestamp}
+        OUTPUT ${ModuleIndexFile}
         COMMAND ${CLR_ENG_NATIVE_DIR}/genmoduleindex${scriptExt} $<TARGET_FILE:${Target}> ${ModuleIndexFile}
-        COMMAND ${CMAKE_COMMAND} -E touch ${index_timestamp}
         DEPENDS ${Target}
         COMMENT "Generating ${Target} module index file -> ${ModuleIndexFile}"
     )
@@ -485,7 +482,6 @@ function(generate_module_index Target ModuleIndexFile)
 
     add_custom_target(
         ${Target}_module_index_header
-        DEPENDS ${index_timestamp}
     )
 endfunction(generate_module_index)
 
