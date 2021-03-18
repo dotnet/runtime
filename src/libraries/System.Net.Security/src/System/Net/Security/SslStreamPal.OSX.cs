@@ -27,6 +27,8 @@ namespace System.Net.Security
         // special case of an empty array being passed to the `fixed` statement.
         internal const bool CanEncryptEmptyMessage = false;
 
+        internal const bool DecryptsInPlace = false;
+
         public static void VerifyPackageInfo()
         {
         }
