@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void AOT_InvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization, RunHost host, string id)
-            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id, dotnetWasmFromRuntimePack: !buildArgs.AOT);
+            => TestInvariantGlobalization(buildArgs, invariantGlobalization, host, id);
 
         // TODO: What else should we use to verify a relinked build?
         [Theory]
@@ -42,7 +42,7 @@ namespace Wasm.Build.Tests
                                             dotnetWasmFromRuntimePack: false);
 
         private void TestInvariantGlobalization(BuildArgs buildArgs, bool? invariantGlobalization,
-                                                        RunHost host, string id, string extraProperties="", bool dotnetWasmFromRuntimePack=true)
+                                                        RunHost host, string id, string extraProperties="", bool? dotnetWasmFromRuntimePack=null)
         {
             string projectName = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             if (invariantGlobalization != null)
@@ -50,6 +50,9 @@ namespace Wasm.Build.Tests
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+
+            if (dotnetWasmFromRuntimePack == null)
+                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
             string programText = @"
                 using System;
