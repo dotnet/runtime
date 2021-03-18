@@ -29,9 +29,9 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures
 		{
 		}
 
-		//#if !NET6_0
+#if !NET6_0
 		[Kept]
-		//#endif
+#endif
 		protected C (SerializationInfo info, StreamingContext context)
 		{
 		}
