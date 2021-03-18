@@ -116,6 +116,8 @@
     <Rule Id="CA1836" Action="None" />          <!-- Prefer IsEmpty over Count -->
     <Rule Id="CA1837" Action="None" />          <!-- Use 'Environment.ProcessId' -->
     <Rule Id="CA1838" Action="None" />          <!-- Avoid 'StringBuilder' parameters for P/Invokes -->
+    <Rule Id="CA1839" Action="None" />          <!-- Use 'Environment.ProcessPath' -->
+    <Rule Id="CA1840" Action="None" />          <!-- Use 'Environment.CurrentManagedThreadId' -->
     <Rule Id="CA2000" Action="None" />          <!-- Dispose objects before losing scope -->
     <Rule Id="CA2002" Action="None" />          <!-- Do not lock on objects with weak identity -->
     <Rule Id="CA2007" Action="None" />          <!-- Consider calling ConfigureAwait on the awaited task -->
@@ -484,6 +486,9 @@
     <Rule Id="IDE0082" Action="Hidden" />       <!-- ConvertTypeOfToNameOf -->
     <Rule Id="IDE0083" Action="Hidden" />       <!-- UseNotPattern -->
     <Rule Id="IDE0084" Action="Hidden" />       <!-- UseIsNotExpression -->
+    <Rule Id="IDE0090" Action="Hidden" />       <!-- UseNew -->
+    <Rule Id="IDE0100" Action="Hidden" />       <!-- RemoveRedundantEquality -->
+    <Rule Id="IDE0110" Action="Hidden" />       <!-- RemoveUnnecessaryDiscard -->
     <Rule Id="IDE1001" Action="Hidden" />       <!-- AnalyzerChanged -->
     <Rule Id="IDE1002" Action="Hidden" />       <!-- AnalyzerDependencyConflict -->
     <Rule Id="IDE1003" Action="Hidden" />       <!-- MissingAnalyzerReference -->

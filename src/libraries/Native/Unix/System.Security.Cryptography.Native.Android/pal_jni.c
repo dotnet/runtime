@@ -487,6 +487,17 @@ bool CheckJNIExceptions(JNIEnv* env)
     return false;
 }
 
+bool TryClearJNIExceptions(JNIEnv* env)
+{
+    if ((*env)->ExceptionCheck(env))
+    {
+        (*env)->ExceptionClear(env);
+        return true;
+    }
+
+    return false;
+}
+
 bool TryGetJNIException(JNIEnv* env, jthrowable *ex, bool printException)
 {
     if (!(*env)->ExceptionCheck(env))

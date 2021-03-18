@@ -163,7 +163,7 @@ namespace System.Net.Sockets.Tests
                 client.Shutdown(SocketShutdown.Send);
             }
 
-            await serverTask.TimeoutAfter(TestTimeout);
+            await serverTask.WaitAsync(TimeSpan.FromMilliseconds(TestTimeout));
             Assert.Equal(bytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
@@ -304,7 +304,7 @@ namespace System.Net.Sockets.Tests
                     msDelay *= 2;
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
-                    await Task.WhenAny(disposeTask, socketOperation).TimeoutAfter(30000);
+                    await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));
                     await disposeTask;
 
                     SocketError? localSocketError = null;

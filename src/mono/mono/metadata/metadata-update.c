@@ -13,6 +13,7 @@
 #ifdef ENABLE_METADATA_UPDATE
 
 #include <glib.h>
+#include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
 #include "mono/metadata/object-internals.h"
@@ -61,6 +62,71 @@ typedef struct _DeltaInfo {
 	delta_row_count count [MONO_TABLE_NUM];
 } DeltaInfo;
 
+
+#define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
+
+/**
+ * mono_metadata_update_enable:
+ * \param modifiable_assemblies_out: set to MonoModifiableAssemblies value
+ *
+ * Returns \c TRUE if metadata updates are enabled at runtime.  False otherwise.
+ *
+ * If \p modifiable_assemblies_out is not \c NULL, it's set on return.
+ *
+ * The result depends on the value of the DOTNET_MODIFIABLE_ASSEMBLIES
+ * environment variable.  "debug" means debuggable assemblies are modifiable,
+ * all other values are ignored and metadata updates are disabled.
+ */
+gboolean
+mono_metadata_update_enabled (int *modifiable_assemblies_out)
+{
+	static gboolean inited = FALSE;
+	static int modifiable = MONO_MODIFIABLE_ASSM_NONE;
+
+	if (!inited) {
+		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
+		if (!g_strcasecmp (val, "debug"))
+			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		g_free (val);
+		inited = TRUE;
+	}
+	if (modifiable_assemblies_out)
+		*modifiable_assemblies_out = modifiable;
+	return modifiable != MONO_MODIFIABLE_ASSM_NONE;
+}
+
+static gboolean
+assembly_update_supported (MonoAssembly *assm)
+{
+	int modifiable = 0;
+	if (!mono_metadata_update_enabled (&modifiable))
+		return FALSE;
+	if (modifiable == MONO_MODIFIABLE_ASSM_DEBUG &&
+	    mono_assembly_is_jit_optimizer_disabled (assm))
+		return TRUE;
+	return FALSE;
+}
+
+/**
+ * mono_metadata_update_no_inline:
+ * \param caller: the calling method
+ * \param callee: the method being called
+ *
+ * Returns \c TRUE if \p callee should not be inlined into \p caller.
+ *
+ * If metadata updates are enabled either for the caller or callee's module,
+ * the callee should not be inlined.
+ *
+ */
+gboolean
+mono_metadata_update_no_inline (MonoMethod *caller, MonoMethod *callee)
+{
+	if (!mono_metadata_update_enabled (NULL))
+		return FALSE;
+	MonoAssembly *caller_assm = m_class_get_image(caller->klass)->assembly;
+	MonoAssembly *callee_assm = m_class_get_image(callee->klass)->assembly;
+	return mono_assembly_is_jit_optimizer_disabled (caller_assm) || mono_assembly_is_jit_optimizer_disabled (callee_assm);
+}
 
 static void
 mono_metadata_update_ee_init (MonoError *error);
@@ -880,6 +946,11 @@ mono_image_load_enc_delta (MonoImage *image_base, gconstpointer dmeta_bytes, uin
 	mono_metadata_update_ee_init (error);
 	if (!is_ok (error))
 		return;
+
+	if (!assembly_update_supported (image_base->assembly)) {
+		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
+		return;
+	}
 
 	const char *basename = image_base->filename;
 	/* FIXME:

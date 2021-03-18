@@ -109,11 +109,11 @@ namespace Microsoft.Extensions.Logging.Console
                 writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IEnumerable<KeyValuePair<string, object>> scopes)
+                    if (scope is IEnumerable<KeyValuePair<string, object>> scopeItems)
                     {
                         state.WriteStartObject();
                         state.WriteString("Message", scope.ToString());
-                        foreach (KeyValuePair<string, object> item in scopes)
+                        foreach (KeyValuePair<string, object> item in scopeItems)
                         {
                             WriteItem(state, item);
                         }

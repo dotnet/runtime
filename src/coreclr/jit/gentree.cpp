@@ -230,14 +230,19 @@ void GenTree::InitNodeSize()
     // Now set all of the appropriate entries to 'large'
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-// clang-format off
-#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
-    // On ARM32, ARM64 and System V for struct returning
-    // there is code that does GT_ASG-tree.CopyObj call.
-    // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-    GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-#endif // defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
+    // clang-format off
+    if (GlobalJitOptions::compFeatureHfa
+#if defined(UNIX_AMD64_ABI)
+        || true
+#endif // defined(UNIX_AMD64_ABI)
+        )
+    {
+        // On ARM32, ARM64 and System V for struct returning
+        // there is code that does GT_ASG-tree.CopyObj call.
+        // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
+        GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
+        GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
+    }
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CAST]             = TREE_NODE_SZ_LARGE;
@@ -1203,6 +1208,38 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
 
     return true;
+}
+
+//--------------------------------------------------------------------------
+// ResetArgInfo: The argument info needs to be reset so it can be recomputed based on some change
+// in conditions, such as changing the return type of a call due to giving up on doing a tailcall.
+// If there is no fgArgInfo computed yet for this call, then there is nothing to reset.
+//
+void GenTreeCall::ResetArgInfo()
+{
+    if (fgArgInfo == nullptr)
+    {
+        return;
+    }
+
+    // We would like to just set `fgArgInfo = nullptr`. But `fgInitArgInfo()` not
+    // only sets up fgArgInfo, it also adds non-standard args to the IR, and we need
+    // to remove that extra IR so it doesn't get added again.
+    //
+    // NOTE: this doesn't handle all possible cases. There might be cases where we
+    // should be removing non-standard arg IR but currently aren't.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(TARGET_X86)
+    if (IsVirtualStub())
+    {
+        JITDUMP("Removing VSD non-standard arg [%06u] to prepare for re-morphing call [%06u]\n",
+                Compiler::dspTreeID(gtCallArgs->GetNode()), gtTreeID);
+        gtCallArgs = gtCallArgs->GetNext();
+    }
+#endif // !defined(TARGET_X86)
+
+    fgArgInfo = nullptr;
 }
 
 #if !defined(FEATURE_PUT_STRUCT_ARG_STK)
