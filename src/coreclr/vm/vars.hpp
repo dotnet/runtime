@@ -472,6 +472,7 @@ EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
 EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
+GVAL_DECL(bool, g_metadataUpdatesApplied);
 EXTERN bool g_fManagedAttach;
 EXTERN bool g_fNoExceptions;
 

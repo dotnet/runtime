@@ -14019,6 +14019,13 @@ void CordbWin32EventThread::AttachProcess()
 
     EX_TRY
     {
+        // Don't allow attach if any metadata/IL updates have been applied
+        if (pProcess->GetDAC()->MetadataUpdatesApplied())
+        {
+            hr = CORDBG_E_DEBUGGING_NOT_POSSIBLE;
+            goto LExit;
+        }
+
         // Mark interop-debugging
         if (m_actionData.attachData.IsInteropDebugging())
         {

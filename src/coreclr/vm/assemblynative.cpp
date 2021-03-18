@@ -1447,6 +1447,7 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
         {
             COMPlusThrow(kInvalidOperationException, W("InvalidOperation_EditFailed"));
         }
+        g_metadataUpdatesApplied = true;
     }
 #else
     COMPlusThrow(kNotImplementedException);
