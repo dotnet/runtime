@@ -1254,25 +1254,25 @@
     },
     "iossimulator": {
       "#import": [
-        "unix"
+        "ios"
       ]
     },
     "iossimulator-arm64": {
       "#import": [
         "iossimulator",
-        "unix-arm64"
+        "ios-arm64"
       ]
     },
     "iossimulator-x64": {
       "#import": [
         "iossimulator",
-        "unix-x64"
+        "ios-x64"
       ]
     },
     "iossimulator-x86": {
       "#import": [
         "iossimulator",
-        "unix-x86"
+        "ios-x86"
       ]
     },
     "iossimulator.10": {
@@ -2576,19 +2576,19 @@
     },
     "tvossimulator": {
       "#import": [
-        "unix"
+        "tvos"
       ]
     },
     "tvossimulator-arm64": {
       "#import": [
         "tvossimulator",
-        "unix-arm64"
+        "tvos-arm64"
       ]
     },
     "tvossimulator-x64": {
       "#import": [
         "tvossimulator",
-        "unix-x64"
+        "tvos-x64"
       ]
     },
     "tvossimulator.10": {

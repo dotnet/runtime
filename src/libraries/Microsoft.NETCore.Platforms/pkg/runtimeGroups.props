@@ -92,12 +92,12 @@
     </RuntimeGroup>
 
     <RuntimeGroup Include="iossimulator">
-      <Parent>unix</Parent>
+      <Parent>ios</Parent>
       <Architectures>x86</Architectures>
       <Versions>8;9;10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="iossimulator">
-      <Parent>unix</Parent>
+      <Parent>ios</Parent>
       <Architectures>arm64;x64</Architectures>
       <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
@@ -222,7 +222,7 @@
     </RuntimeGroup>
 
     <RuntimeGroup Include="tvossimulator">
-      <Parent>unix</Parent>
+      <Parent>tvos</Parent>
       <Architectures>arm64;x64</Architectures>
       <Versions>10;11;12;13</Versions>
     </RuntimeGroup>
