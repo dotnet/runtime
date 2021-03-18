@@ -1563,9 +1563,8 @@ namespace Mono.Linker.Steps
 			// TODO: move after the check once SPC is correctly annotated
 			MarkDefaultConstructor (type, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 
-			// TODO: blocked for now by libraries build issue explained at https://github.com/mono/linker/issues/1603
-			//if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
-			//	return;
+			if (_context.GetTargetRuntimeVersion () > TargetRuntimeVersion.NET5)
+				return;
 
 			MarkMethodsIf (type.Methods, IsSpecialSerializationConstructor, new DependencyInfo (DependencyKind.SerializationMethodForType, type), type);
 		}
