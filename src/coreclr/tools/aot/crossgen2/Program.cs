@@ -632,6 +632,7 @@ namespace ILCompiler
 
                 if (_commandLineOptions.DgmlLogFileName != null)
                     compilation.WriteDependencyLog(_commandLineOptions.DgmlLogFileName);
+                compilation.Dispose();
             }
 
             return 0;
