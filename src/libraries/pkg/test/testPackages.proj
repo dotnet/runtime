@@ -3,9 +3,6 @@
 
   <ItemGroup>
     <PackagesToTest Condition="'$(PackagesToTest)' != ''" Include="$(PackagesToTest)" />
-    <!-- transport package not expected to be closure complete  -->
-    <ExcludePackages Include="Microsoft.AspNetCore.Internal.Transport" />
-    <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(PackagesToTest)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
     <PackageReports Condition="'@(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(PackageReportDir)%(Identity).json')" />
@@ -14,10 +11,16 @@
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
-    <ExcludePackagesList Include="@(SymbolsPackages)" />
-    <ExcludePackagesList Include="@(ExcludePackages->'$(LibrariesAllConfigShippingPackagesDir)%(Identity).$(Version).nupkg')" />
-    <TestPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(ExcludePackagesList)" Condition="'$(PackagesToTest)' == ''"/>
-    <TestPackages Condition="'$(PackagesToTest)' != ''" Include="@(PackagesToTest->'$(LibrariesAllConfigShippingPackagesDir)%(Identity).$(Version).nupkg')" />
+    <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)">
+      <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').Substring(0, $([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)').IndexOf('.$(MajorVersion)'))))</PackageName>   
+      <PackagePath>%(Identity)</PackagePath>
+    </AllPackagesFilePath>
+    <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
+    
+    <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
+    <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)"/>
+    <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />
+
     <!-- we don't build alpine or older OSX versions -->
     <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64;freebsd-x64" />
 
@@ -77,7 +80,7 @@
   <UsingTask TaskName="GetCompatiblePackageTargetFrameworks" AssemblyFile="$(DotNetPackageValidationAssembly)"/>
 
   <Target Name="GetSupportedPackages">
-    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackages)">
+    <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)">
       <Output TaskParameter="TestProjects" ItemName="SupportedPackage" />     
     </GetCompatiblePackageTargetFrameworks>
 
