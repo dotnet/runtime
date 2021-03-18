@@ -72,7 +72,7 @@ namespace bundle
         bool needs_extraction() const;
         bool matches(const pal::string_t& path) const { return (pal::pathcmp(relative_path(), path) == 0) && !is_disabled(); }
 
-        static file_entry_t read(reader_t &reader, uint32_t major_version, bool force_extraction);
+        static file_entry_t read(reader_t &reader, bool force_extraction);
 
     private:
         int64_t m_offset;
