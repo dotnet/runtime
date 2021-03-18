@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type exists so we can avoid duplicating the buffering logic in every FileStreamStrategy implementation
     internal sealed class BufferedFileStreamStrategy : FileStreamStrategy
@@ -23,7 +23,7 @@ namespace System.IO
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
-            Debug.Assert(bufferSize > 1);
+            Debug.Assert(bufferSize > 1, "Buffering must not be enabled for smaller buffer sizes");
 
             _strategy = strategy;
             _bufferSize = bufferSize;
@@ -37,7 +37,7 @@ namespace System.IO
                 // so we enforce it by passing always true
                 Dispose(true);
             }
-            catch (Exception e) when (FileStream.IsIoRelatedException(e))
+            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
             {
                 // On finalization, ignore failures from trying to flush the write buffer,
                 // e.g. if this stream is wrapping a pipe and the pipe is now broken.
@@ -74,7 +74,7 @@ namespace System.IO
             {
                 Debug.Assert(!(_writePos > 0 && _readPos != _readLen), "Read and Write buffers cannot both have data in them at the same time.");
 
-                return _strategy.Position + (_readPos - _readLen + _writePos);
+                return _strategy.Position + _readPos - _readLen + _writePos;
             }
             set
             {
@@ -598,7 +598,7 @@ namespace System.IO
                 ClearReadBufferBeforeWrite();
                 EnsureBufferAllocated();
             }
-            else if (_writePos >= _bufferSize - 1)
+            else if (_writePos == _bufferSize - 1)
             {
                 FlushWrite();
             }
@@ -1055,8 +1055,6 @@ namespace System.IO
 
         private void EnsureBufferAllocated()
         {
-            Debug.Assert(_bufferSize > 0);
-
             // BufferedFileStreamStrategy is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
             if (_buffer == null)
             {

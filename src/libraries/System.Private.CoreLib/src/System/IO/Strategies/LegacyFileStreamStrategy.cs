@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // This type is partial so we can avoid code duplication between Windows and Unix Legacy implementations
     internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy

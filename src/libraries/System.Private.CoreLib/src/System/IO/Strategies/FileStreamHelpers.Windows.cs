@@ -9,21 +9,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
-    internal static class FileStreamHelpers
+    internal static partial class FileStreamHelpers
     {
         internal const int ERROR_BROKEN_PIPE = 109;
         internal const int ERROR_NO_DATA = 232;
         private const int ERROR_HANDLE_EOF = 38;
         private const int ERROR_IO_PENDING = 997;
 
-        // It's enabled by default. We are going to change that (by removing !) once we fix #16354, #25905 and #24847.
-        internal static bool UseLegacyStrategy { get; }
-            = !AppContextConfigHelper.GetBooleanConfig("System.IO.UseLegacyFileStream", "DOTNET_SYSTEM_IO_USELEGACYFILESTREAM");
-
-        internal static FileStreamStrategy ChooseStrategy(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             if (UseLegacyStrategy)
             {
@@ -37,7 +33,7 @@ namespace System.IO
             return EnableBufferingIfNeeded(strategy, bufferSize);
         }
 
-        internal static FileStreamStrategy ChooseStrategy(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
         {
             if (UseLegacyStrategy)
             {
@@ -146,7 +142,7 @@ namespace System.IO
 
             // If we can't check the handle, just assume it is ok.
             if (!(IsHandleSynchronous(handle, ignoreInvalid: false) ?? true))
-                throw new ArgumentException(SR.Arg_HandleNotSync, nameof(handle));
+                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
         }
 
         private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
@@ -316,7 +312,7 @@ namespace System.IO
             isPipe = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
         }
 
-        internal static unsafe void SetLength(SafeFileHandle handle, string? path, long length)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {

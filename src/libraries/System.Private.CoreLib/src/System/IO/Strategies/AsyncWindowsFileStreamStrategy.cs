@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : WindowsFileStreamStrategy, IFileStreamCompletionSourceStrategy
     {
@@ -397,7 +397,7 @@ namespace System.IO
             finally
             {
                 // Make sure the stream's current position reflects where we ended up
-                if (!_fileHandle.IsClosed && CanSeek)
+                if (!_fileHandle.IsClosed && canSeek)
                 {
                     SeekCore(_fileHandle, 0, SeekOrigin.End);
                 }

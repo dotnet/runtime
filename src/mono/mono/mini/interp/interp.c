@@ -2333,16 +2333,16 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 		//  Sign/zero extend if necessary
 		switch (cinfo->ret_mt) {
 		case MINT_TYPE_I1:
-			ret_sp->data.i = *(gint8*)sp;
+			ret_sp->data.i = *(gint8*)ret_sp;
 			break;
 		case MINT_TYPE_U1:
-			ret_sp->data.i = *(guint8*)sp;
+			ret_sp->data.i = *(guint8*)ret_sp;
 			break;
 		case MINT_TYPE_I2:
-			ret_sp->data.i = *(gint16*)sp;
+			ret_sp->data.i = *(gint16*)ret_sp;
 			break;
 		case MINT_TYPE_U2:
-			ret_sp->data.i = *(guint16*)sp;
+			ret_sp->data.i = *(guint16*)ret_sp;
 			break;
 		case MINT_TYPE_I4:
 		case MINT_TYPE_I8:
