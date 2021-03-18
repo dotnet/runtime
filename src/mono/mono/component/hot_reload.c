@@ -5,7 +5,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mono/component/hot-reload.h>
+#include <mono/component/hot_reload.h>
 
 #include <mono/utils/mono-compiler.h>
 
@@ -14,7 +14,7 @@ MonoComponentHotReload *
 mono_component_hot_reload_init (void);
 
 static void
-hot_reload_cleanup (void);
+hot_reload_cleanup (MonoComponent *self);
 
 static void
 hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
@@ -25,15 +25,15 @@ static MonoComponentHotReload fn_table = {
 };
 
 MonoComponentHotReload *
-mono_component_hot_reload_init (void);
+mono_component_hot_reload_init (void)
 {
 	/* TODO: initialize things */
 	
 	return &fn_table;
 }
 
-static
-hot_reload_cleanup (void)
+static void
+hot_reload_cleanup (MonoComponent *self)
 {
 	static gboolean cleaned = FALSE;
 	if (cleaned)
@@ -42,4 +42,10 @@ hot_reload_cleanup (void)
 	/* TODO: implement me */
 
 	cleaned = TRUE;
+}
+
+static void
+hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
+{
+	printf ("it worked!\n");
 }

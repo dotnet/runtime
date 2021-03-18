@@ -29,6 +29,7 @@ include(../sgen/CMakeLists.txt)
 if(INTERNAL_ZLIB)  # TODO: hook up HAVE_SYS_ZLIB instead
   include(../zlib/CMakeLists.txt)
 endif()
+include(../component/CMakeLists.txt)
 
 if(ENABLE_PERFTRACING)
 
@@ -404,3 +405,4 @@ if(NOT DISABLE_EXECUTABLES)
   endif()
   install(TARGETS mono-sgen RUNTIME)
 endif()
+

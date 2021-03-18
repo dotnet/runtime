@@ -6,7 +6,14 @@
 #include <glib.h>
 #include "mono/component/component.h"
 #include "mono/component/hot_reload.h"
+#include "mono/metadata/components.h"
 #include "mono/utils/mono-error-internals.h"
+
+static void
+hot_reload_stub_cleanup (MonoComponent *self);
+
+static void
+hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 
 static MonoComponentHotReload fn_table = {
 	{ &hot_reload_stub_cleanup },
@@ -20,7 +27,7 @@ mono_component_hot_reload_stub_init (void)
 }
 
 void
-hot_reload_stub_cleanup (void)
+hot_reload_stub_cleanup (MonoComponent *self)
 {
 }
 

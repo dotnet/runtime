@@ -6,7 +6,7 @@
 #define _MONO_METADATA_COMPONENTS_H
 
 #include <mono/component/component.h>
-#include <mono/compoonent/hot_reload.h>
+#include <mono/component/hot_reload.h>
 
 void
 mono_components_init (void);

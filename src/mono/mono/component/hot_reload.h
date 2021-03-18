@@ -13,6 +13,6 @@
 typedef struct _MonoComponentHotReload {
 	MonoComponent component;
 	void (*apply_changes) (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
-}
+} MonoComponentHotReload;
 
 #endif/*_MONO_COMPONENT_HOT_RELOAD_H*/

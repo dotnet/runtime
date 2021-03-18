@@ -8,6 +8,7 @@
 #include "mono/component/hot_reload.h"
 #include "mono/metadata/components.h"
 #include "mono/utils/mono-dl.h"
+#include "mono/utils/mono-logger-internals.h"
 
 typedef MonoComponent * (*MonoComponentInitFn) (void);
 
@@ -47,7 +48,7 @@ mono_components_cleanup (void)
 {
 	/* call each components cleanup fn */
 	if (hot_reload) {
-		hot_reload->component.cleanup ();
+		hot_reload->component.cleanup (&hot_reload->component);
 		hot_reload = NULL;
 	}
 #ifndef STATIC_LINK_COMPONENTS
@@ -66,7 +67,7 @@ component_library_name (const char *component)
 static char*
 component_init_name (const char *component)
 {
-	return g_strdup_printf ("mono_component_%s_init", component_name);
+	return g_strdup_printf ("mono_component_%s_init", component);
 }
 
 MonoComponentInitFn
@@ -83,9 +84,9 @@ get_component (const char *component_name, MonoDl **lib_out)
 		goto done;
 	}
 
-	char *comoponent_init = component_init_name (component_name);
+	char *component_init = component_init_name (component_name);
 	gpointer sym = NULL;
-	error_msg = mono_dl_sym (lib, component_init, &sym);
+	error_msg = mono_dl_symbol (lib, component_init, &sym);
 	if (error_msg) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s library does not have symbol %s: %s", component_name, component_init, error_msg);
 		g_free (error_msg);
