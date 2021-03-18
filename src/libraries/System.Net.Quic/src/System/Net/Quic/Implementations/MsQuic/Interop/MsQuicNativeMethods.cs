@@ -193,18 +193,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             VersionNegotiationExtEnabled = 1 << 6,
         }
 
-        // Mana: get back to this, define delegate for AsyncHandler, define types fro IntPtr Certificate (union in C, plat dependent) and
-        // make proper use of it.
         [StructLayout(LayoutKind.Sequential)]
         internal struct CredentialConfig
         {
             internal QUIC_CREDENTIAL_TYPE Type;
             internal QUIC_CREDENTIAL_FLAGS Flags;
+            // CredentialConfigCertificateUnion*
             internal IntPtr Certificate;
             [MarshalAs(UnmanagedType.LPUTF8Str)]
             internal string Principal;
             internal IntPtr Reserved; // Currently unused
-            // Mana: define delegate for the async callback
+            // TODO: define delegate for AsyncHandler and make proper use of it.
             internal IntPtr AsyncHandler;
         }
 
@@ -361,10 +360,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong ErrorCode;
         }
 
-        // Mana: it's a trap, those are flags with fixed sized exactly 3 bits!!!
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataShutdownComplete
         {
+            // The flags have fixed sized exactly 3 bits
             internal ConnectionEventDataShutdownCompleteFlags Flags;
         }
 
@@ -431,7 +430,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             [FieldOffset(0)]
             internal ConnectionEventDataStreamsAvailable StreamsAvailable;
 
-            // Mana: missing IDEAL_PROCESSOR_CHANGED, ..., PEER_CERTIFICATE_RECEIVED (7 total)
+            // TODO: missing IDEAL_PROCESSOR_CHANGED, ..., PEER_CERTIFICATE_RECEIVED (7 total)
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -447,7 +446,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             IntPtr context,
             ref ConnectionEvent connectionEvent);
 
-        // Mana: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
+        // TODO: order is Open, Close, Shutdown, Start, SetConfiguration, SendResumptionTicket
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint ConnectionOpenDelegate(
             SafeMsQuicRegistrationHandle registration,
@@ -536,7 +535,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             [FieldOffset(0)]
             internal StreamEventDataSendShutdownComplete SendShutdownComplete;
 
-            // Mana: missing IDEAL_SEND_BUFFER_SIZE
+            // TODO: missing IDEAL_SEND_BUFFER_SIZE
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -546,7 +545,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal StreamEventDataUnion Data;
         }
 
-        // Mana: rename to C#-like
+        // TODO: rename to C#-like
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN
         {
@@ -566,7 +565,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        // Mana: rename to C#-like
+        // TODO: rename to C#-like
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN6
         {
@@ -604,7 +603,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        // Mana: rename to C#-like
+        // TODO: rename to C#-like
         [StructLayout(LayoutKind.Explicit)]
         internal struct SOCKADDR_INET
         {
