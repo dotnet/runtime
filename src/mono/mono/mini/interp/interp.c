@@ -1936,18 +1936,20 @@ interp_entry (InterpEntryData *data)
 
 	context->stack_pointer = (guchar*)sp;
 
-	g_assert (!context->has_resume_state);
+	if (mono_llvm_only) {
+		if (context->has_resume_state) {
+			MonoException *ex = (MonoException*)mono_gchandle_get_target_internal (context->exc_gchandle);
+			clear_resume_state (context);
+			mono_llvm_reraise_exception (ex);
+		}
+	} else {
+		g_assert (!context->has_resume_state);
+	}
+
 	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
-
-	if (mono_llvm_only) {
-		if (context->has_resume_state)
-			mono_llvm_reraise_exception ((MonoException*)mono_gchandle_get_target_internal (context->exc_gchandle));
-	} else {
-		g_assert (!context->has_resume_state);
-	}
 
 	// The return value is at the bottom of the stack, after the locals space
 	type = rmethod->rtype;
