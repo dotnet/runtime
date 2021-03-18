@@ -1800,9 +1800,9 @@ bool MethodSet::IsActiveMethod(const char* methodName, int methodHash)
 //
 double CachedCyclesPerSecond()
 {
-    static volatile unsigned int s_CachedCyclesPerSecondInitialized = 0;
-    static double                s_CachedCyclesPerSecond            = 0.0;
-    static CritSecObject         s_CachedCyclesPerSecondLock;
+    static volatile LONG s_CachedCyclesPerSecondInitialized = 0;
+    static double        s_CachedCyclesPerSecond            = 0.0;
+    static CritSecObject s_CachedCyclesPerSecondLock;
 
     if (s_CachedCyclesPerSecondInitialized == 1)
     {
@@ -1822,7 +1822,7 @@ double CachedCyclesPerSecond()
 
     s_CachedCyclesPerSecond = CycleTimer::CyclesPerSecond();
 
-    unsigned int originalInitializedValue = InterlockedCompareExchange(&s_CachedCyclesPerSecondInitialized, 1, 0);
+    LONG originalInitializedValue = InterlockedCompareExchange(&s_CachedCyclesPerSecondInitialized, 1, 0);
     if (originalInitializedValue == 1)
     {
         // This is unexpected; the critical section should have protected us.
