@@ -128,7 +128,7 @@
 
   <Target Name="GenerateProjects"
           DependsOnTargets="GetSupportedPackages;CreateTestDir"
-          Inputs="@(TestPackages);$(ProjectTemplate)"
+          Inputs="@(TestPackagesPath);$(ProjectTemplate)"
           Outputs="%(SupportedPackage.ProjectFile)">
     <PropertyGroup>
       <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>
