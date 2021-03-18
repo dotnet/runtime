@@ -11,8 +11,6 @@
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
 
-#define MAX_PROPERTY_COUNT 100
-
 typedef struct {
 	int assembly_count;
 	char **basenames; /* Foo.dll */
