@@ -54,18 +54,18 @@ namespace System.Xml.Xsl.Xslt
                     Justification = "The getter of the dictionary is not annotated to preserve the constructor, but the sources that are adding the items to " +
                     "the dictionary are annotated so we can supress the message as we know the constructor will be preserved.")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-                get => ((IDictionary<string, Type?>)_backingDictionary)[key];
+                get => _backingDictionary[key];
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-                set => ((IDictionary<string, Type?>)_backingDictionary)[key] = value;
+                set => _backingDictionary[key] = value;
             }
 
-            public ICollection<string> Keys => ((IDictionary<string, Type?>)_backingDictionary).Keys;
+            public ICollection<string> Keys => _backingDictionary.Keys;
 
-            public int Count => ((ICollection<KeyValuePair<string, Type?>>)_backingDictionary).Count;
+            public int Count => _backingDictionary.Count;
 
-            public bool ContainsKey(string key) => ((IDictionary<string, Type?>)_backingDictionary).ContainsKey(key);
+            public bool ContainsKey(string key) => _backingDictionary.ContainsKey(key);
 
-            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type? value) => ((IDictionary<string, Type?>)_backingDictionary).TryGetValue(key, out value);
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type? value) => _backingDictionary.TryGetValue(key, out value);
         }
     }
 }

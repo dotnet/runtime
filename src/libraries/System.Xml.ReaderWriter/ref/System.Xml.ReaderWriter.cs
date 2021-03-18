@@ -2787,7 +2787,7 @@ namespace System.Xml.Xsl
         public XslCompiledTransform() { }
         public XslCompiledTransform(bool enableDebug) { }
         public System.Xml.XmlWriterSettings? OutputSettings { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("This method will call into constructors of the earlyBoundTypes array which cannot be statically analized.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("This method will call into constructors of the earlyBoundTypes array which cannot be statically analyzed.")]
         public void Load(System.Reflection.MethodInfo executeMethod, byte[] queryData, System.Type[]? earlyBoundTypes) { }
         public void Load(string stylesheetUri) { }
         public void Load(string stylesheetUri, System.Xml.Xsl.XsltSettings? settings, System.Xml.XmlResolver? stylesheetResolver) { }

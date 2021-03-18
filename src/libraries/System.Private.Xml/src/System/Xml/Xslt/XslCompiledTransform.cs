@@ -238,7 +238,7 @@ namespace System.Xml.Xsl
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
         }
 
-        [RequiresUnreferencedCode("This method will call into constructors of the earlyBoundTypes array which cannot be statically analized.")]
+        [RequiresUnreferencedCode("This method will call into constructors of the earlyBoundTypes array which cannot be statically analyzed.")]
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[]? earlyBoundTypes)
         {
             Reset();
