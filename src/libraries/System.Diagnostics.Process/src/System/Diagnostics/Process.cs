@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -1197,6 +1197,8 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public bool Start()
         {
             Close();
@@ -1238,6 +1240,8 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1254,6 +1258,8 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1265,6 +1271,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Starts a process resource by specifying the name of an application and a set of command line arguments
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
             if (fileName == null)
@@ -1289,6 +1297,8 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
@@ -1449,7 +1459,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
-                    await WaitUntilOutputEOF().ConfigureAwait(false);
+                    await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
                     return;
                 }
 
@@ -1477,23 +1487,23 @@ namespace System.Diagnostics
                 }
 
                 // Wait until output streams have been drained
-                await WaitUntilOutputEOF().ConfigureAwait(false);
+                await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
             }
             finally
             {
                 Exited -= handler;
             }
 
-            async ValueTask WaitUntilOutputEOF()
+            async Task WaitUntilOutputEOF(CancellationToken cancellationToken)
             {
-                if (_output != null)
+                if (_output is not null)
                 {
-                    await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _output.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (_error != null)
+                if (_error is not null)
                 {
-                    await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
+                    await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }

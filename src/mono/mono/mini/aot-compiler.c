@@ -5186,6 +5186,19 @@ is_vt_inst (MonoGenericInst *inst)
 }
 
 static gboolean
+is_vt_inst_no_enum (MonoGenericInst *inst)
+{
+	int i;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		MonoType *t = inst->type_argv [i];
+		if (MONO_TYPE_ISSTRUCT (t))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 method_has_type_vars (MonoMethod *method)
 {
 	if (has_type_vars (method->klass))
@@ -5338,7 +5351,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * WASM only since other platforms depend on the
 	 * previous behavior.
 	 */
-	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst)) {
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst_no_enum (mono_class_get_generic_class (klass)->context.class_inst)) {
 		use_gsharedvt = TRUE;
 		use_gsharedvt_for_array = TRUE;
 	}
@@ -5758,17 +5771,19 @@ add_generic_instances (MonoAotCompile *acfg)
 
 		/* Add instances of EnumEqualityComparer which are created by EqualityComparer<T> for enums */
 		{
-			MonoClass *enum_comparer;
+			MonoClass *k, *enum_comparer;
 			MonoType *insts [16];
 			int ninsts;
+			const char *enum_names [] = { "I8Enum", "I16Enum", "I32Enum", "I64Enum", "UI8Enum", "UI16Enum", "UI32Enum", "UI64Enum" };
 
 			ninsts = 0;
-			insts [ninsts ++] = int32_type;
-			insts [ninsts ++] = uint32_type;
-			insts [ninsts ++] = uint16_type;
-			insts [ninsts ++] = byte_type;
+			for (int i = 0; i < G_N_ELEMENTS (enum_names); ++i) {
+				k = mono_class_try_load_from_name (acfg->image, "Mono", enum_names [i]);
+				g_assert (k);
+				insts [ninsts ++] = m_class_get_byval_arg (k);
+			}
 			enum_comparer = mono_class_load_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
-			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
+			add_instances_of (acfg, enum_comparer, insts, ninsts, TRUE);
 		}
 
 		/* Add instances of the array generic interfaces for primitive types */
@@ -12967,29 +12982,37 @@ add_profile_instances (MonoAotCompile *acfg, ProfileData *data)
 			continue;
 		if (!m->is_inflated)
 			continue;
+		if (mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))
+			continue;
 
-		ctx = mono_method_get_context (m);
-		/* For simplicity, add instances which reference the assembly we are compiling */
-		if (((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
-			 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image))) &&
-			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) {
-			//printf ("%s\n", mono_method_full_name (m, TRUE));
+		if (acfg->aot_opts.dedup_include) {
+			/* Add all instances from the profile */
 			add_profile_method (acfg, m);
 			count ++;
-		} else if (m_class_get_image (m->klass) == acfg->image &&
-			((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
-			 (ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image))) &&
-			!mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE))  {
-			/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
-			//printf ("%s\n", mono_method_full_name (m, TRUE));
-			add_profile_method (acfg, m);
-			count ++;
+		} else {
+			ctx = mono_method_get_context (m);
+			/* For simplicity, add instances which reference the assembly we are compiling */
+			if (((ctx->class_inst && inst_references_image (ctx->class_inst, acfg->image)) ||
+				 (ctx->method_inst && inst_references_image (ctx->method_inst, acfg->image)))) {
+				//printf ("%s\n", mono_method_full_name (m, TRUE));
+				add_profile_method (acfg, m);
+				count ++;
+			} else if (m_class_get_image (m->klass) == acfg->image &&
+					   ((ctx->class_inst && is_local_inst (ctx->class_inst, acfg->image)) ||
+						(ctx->method_inst && is_local_inst (ctx->method_inst, acfg->image)))) {
+				/* Add instances where the gtd is in the assembly and its inflated with types from this assembly or corlib */
+				//printf ("%s\n", mono_method_full_name (m, TRUE));
+				add_profile_method (acfg, m);
+				count ++;
+			} else {
+				//printf ("SKIP: %s (%s)\n", mono_method_get_full_name (m), acfg->image->name);
+			}
+			/*
+			 * FIXME: We might skip some instances, for example:
+			 * Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
+			 * and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
+			 */
 		}
-		/*
-		 * FIXME: We might skip some instances, for example:
-		 * Foo<Bar> won't be compiled when compiling Foo's assembly since it doesn't match the first case,
-		 * and it won't be compiled when compiling Bar's assembly if Foo's assembly is not loaded.
-		 */
 	}
 
 	printf ("Added %d methods from profile.\n", count);

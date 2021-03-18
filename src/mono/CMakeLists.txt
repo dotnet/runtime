@@ -6,6 +6,11 @@ endif()
 
 project(mono)
 
+set(CMAKE_C_FLAGS_CHECKED "")
+set(CMAKE_CXX_FLAGS_CHECKED "")
+set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
+set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
+
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -179,7 +184,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   # See man cmake-toolchains(7) on which variables
   # control cross-compiling to ios
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
   set(HOST_IOS 1)
@@ -522,7 +526,10 @@ elseif(HOST_WASM)
   set(STATIC_ICU 1)
   set(ICU_LIBS "icucore")
 elseif(HOST_IOS)
-  # FIXME:
+  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(STATIC_ICU 1)
+  set(ICU_LIBS icuuc icui18n icudata)
 elseif(HOST_ANDROID)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
@@ -700,6 +707,9 @@ endif()
 ### End of OS specific checks
 
 add_subdirectory(mono)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCATALYST)
+  add_subdirectory(dbi)
+endif()
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)  # TODO: eglib-config.h is not needed, we're using hardcoded eglib-config.hw

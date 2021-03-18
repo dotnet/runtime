@@ -245,6 +245,11 @@ foreach ($argument in $PSBoundParameters.Keys)
 
 $failedBuilds = @()
 
+if (($os -eq "Browser") -and ($arch -ne "wasm")) {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+}
+
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {

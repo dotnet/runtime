@@ -6,6 +6,7 @@
 #include "pal_eckey.h"
 #include "pal_jni.h"
 #include "pal_utilities.h"
+#include "pal_misc.h"
 
 
 #define INIT_LOCALS(name, ...) \
@@ -322,7 +323,7 @@ static jobject AndroidCryptoNative_CreateKeyPairFromCurveParameters(
         loc[privateKey] = (*env)->CallObjectMethod(env, loc[keyFactory], g_KeyFactoryGenPrivateMethod, loc[privKeySpec]);
         ON_EXCEPTION_PRINT_AND_GOTO(error);
     }
-    keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, loc[publicKey], loc[privateKey]);
+    keyPair = AndroidCryptoNative_CreateKeyPair(env, loc[publicKey], loc[privateKey]);
 
     goto cleanup;
 
@@ -331,14 +332,16 @@ error:
     {
         // Destroy the private key data.
         (*env)->CallVoidMethod(env, loc[privateKey], g_destroy);
-        CheckJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
+        (void)TryClearJNIExceptions(env); // The destroy call might throw an exception. Clear the exception state.
     }
 
 cleanup:
     RELEASE_LOCALS_ENV(bn, ReleaseGRef);
     RELEASE_LOCALS_ENV(loc, ReleaseLRef);
-    return ToGRef(env, keyPair);
+    return keyPair;
 }
+
+#define CURVE_NOT_SUPPORTED -1
 
 int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
                                                 const char* oid,
@@ -364,7 +367,7 @@ int32_t AndroidCryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key,
     *key = AndroidCryptoNative_EcKeyCreateByOid(oid);
     if (*key == NULL)
     {
-        return FAIL;
+        return CURVE_NOT_SUPPORTED;
     }
 
     // Release the reference to the generated key pair. We're going to make our own with the explicit keys.
@@ -520,7 +523,7 @@ EC_KEY* AndroidCryptoNative_EcKeyCreateByExplicitParameters(ECCurveType curveTyp
         goto error;
     }
 
-    loc[paramSpec] = (*env)->NewObject(env, g_ECParameterSpecClass, g_ECParameterSpecCtor, loc[group], loc[G], bn[ORDER], bn[COFACTOR]);
+    loc[paramSpec] = (*env)->NewObject(env, g_ECParameterSpecClass, g_ECParameterSpecCtor, loc[group], loc[G], bn[ORDER], cofactorInt);
 
     if ((qx && qy) || d)
     {

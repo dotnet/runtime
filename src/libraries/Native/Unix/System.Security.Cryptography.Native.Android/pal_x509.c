@@ -5,6 +5,7 @@
 
 #include "pal_eckey.h"
 #include "pal_rsa.h"
+#include "pal_misc.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -225,7 +226,7 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     // CertPath certPath = certFactory.generateCertPath(stream, "PKCS7");
     loc[pkcs7Type] = JSTRING("PKCS7");
     loc[certPath] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertPathFromStream, loc[stream], loc[pkcs7Type]);
-    if (!CheckJNIExceptions(env))
+    if (!TryClearJNIExceptions(env))
     {
         ret = PAL_Pkcs7;
         goto cleanup;
@@ -235,7 +236,7 @@ PAL_X509ContentType AndroidCryptoNative_X509GetContentType(const uint8_t* buf, i
     // Certificate cert = certFactory.generateCertificate(stream);
     (*env)->CallVoidMethod(env, loc[stream], g_ByteArrayInputStreamReset);
     loc[cert] = (*env)->CallObjectMethod(env, loc[certFactory], g_CertFactoryGenerateCertificate, loc[stream]);
-    if (!CheckJNIExceptions(env))
+    if (!TryClearJNIExceptions(env))
     {
         ret = PAL_Certificate;
         goto cleanup;
@@ -260,7 +261,7 @@ void* AndroidCryptoNative_X509PublicKey(jobject /*X509Certificate*/ cert, PAL_Ke
             keyHandle = AndroidCryptoNative_NewEcKeyFromPublicKey(env, key);
             break;
         case PAL_DSA:
-            keyHandle = NULL;
+            keyHandle = AndroidCryptoNative_CreateKeyPair(env, key, NULL);
             break;
         case PAL_RSA:
             keyHandle = AndroidCryptoNative_NewRsaFromPublicKey(env, key);

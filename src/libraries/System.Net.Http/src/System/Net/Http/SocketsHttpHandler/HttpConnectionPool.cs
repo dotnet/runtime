@@ -567,6 +567,7 @@ namespace System.Net.Http
             }
 
             // Try to establish an HTTP2 connection
+            Socket? socket = null;
             Stream? stream = null;
             SslStream? sslStream = null;
             TransportContext? transportContext = null;
@@ -591,7 +592,7 @@ namespace System.Net.Http
 
                     HttpResponseMessage? failureResponse;
 
-                    (stream, transportContext, failureResponse) =
+                    (socket, stream, transportContext, failureResponse) =
                         await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
                     if (failureResponse != null)
@@ -681,7 +682,7 @@ namespace System.Net.Http
 
                 if (canUse)
                 {
-                    return (await ConstructHttp11ConnectionAsync(async, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true, null);
+                    return (await ConstructHttp11ConnectionAsync(async, socket, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), true, null);
                 }
                 else
                 {
@@ -1213,7 +1214,7 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private async ValueTask<(Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
@@ -1228,17 +1229,18 @@ namespace System.Net.Http
             try
             {
                 Stream? stream = null;
+                Socket? socket = null;
                 switch (_kind)
                 {
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
                         Debug.Assert(_originAuthority != null);
-                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        (socket, stream) = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        (socket, stream) = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                         break;
 
                     case HttpConnectionKind.ProxyTunnel:
@@ -1249,12 +1251,18 @@ namespace System.Net.Http
                         {
                             // Return non-success response from proxy.
                             response.RequestMessage = request;
-                            return (null, null, response);
+                            return (null, null, null, response);
                         }
                         break;
                 }
 
                 Debug.Assert(stream != null);
+                if (socket is null && stream is NetworkStream ns)
+                {
+                    // We weren't handed a socket directly.  But if we're able to extract one, do so.
+                    // Most likely case here is a ConnectCallback was used and returned a NetworkStream.
+                    socket = ns.Socket;
+                }
 
                 TransportContext? transportContext = null;
                 if (IsSecure)
@@ -1264,7 +1272,7 @@ namespace System.Net.Http
                     stream = sslStream;
                 }
 
-                return (stream, transportContext, null);
+                return (socket, stream, transportContext, null);
             }
             finally
             {
@@ -1272,12 +1280,13 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Socket?, Stream)> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var endPoint = new DnsEndPoint(host, port);
             Socket? socket = null;
+            Stream? stream = null;
             try
             {
                 // If a ConnectCallback was supplied, use that to establish the connection.
@@ -1294,7 +1303,7 @@ namespace System.Net.Http
                         Trace($"{nameof(SocketsHttpHandler.ConnectCallback)} completing asynchronously for a synchronous request.");
                     }
 
-                    return await streamTask.ConfigureAwait(false) ?? throw new HttpRequestException(SR.net_http_null_from_connect_callback);
+                    stream = await streamTask.ConfigureAwait(false) ?? throw new HttpRequestException(SR.net_http_null_from_connect_callback);
                 }
                 else
                 {
@@ -1313,8 +1322,10 @@ namespace System.Net.Http
                         }
                     }
 
-                    return new NetworkStream(socket, ownsSocket: true);
+                    stream = new NetworkStream(socket, ownsSocket: true);
                 }
+
+                return (socket, stream);
             }
             catch (Exception ex)
             {
@@ -1327,7 +1338,7 @@ namespace System.Net.Http
 
         internal async ValueTask<(HttpConnection?, HttpResponseMessage?)> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
+            (Socket? socket, Stream? stream, TransportContext? transportContext, HttpResponseMessage? failureResponse) =
                 await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             if (failureResponse != null)
@@ -1335,7 +1346,7 @@ namespace System.Net.Http
                 return (null, failureResponse);
             }
 
-            return (await ConstructHttp11ConnectionAsync(async, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), null);
+            return (await ConstructHttp11ConnectionAsync(async, socket, stream!, transportContext, request, cancellationToken).ConfigureAwait(false), null);
         }
 
         private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
@@ -1393,10 +1404,15 @@ namespace System.Net.Http
             return newStream;
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Socket? socket, Stream stream, TransportContext? transportContext, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            stream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            return new HttpConnection(this, stream, transportContext);
+            Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
+            if (newStream != stream)
+            {
+                // If a plaintext filter created a new stream, we can't trust that the socket is still applicable.
+                socket = null;
+            }
+            return new HttpConnection(this, socket, newStream, transportContext);
         }
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, CancellationToken cancellationToken)

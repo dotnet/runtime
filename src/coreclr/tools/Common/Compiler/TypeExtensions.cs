@@ -488,6 +488,17 @@ namespace ILCompiler
             return constrainedType ?? genericParam.Context.GetWellKnownType(WellKnownType.Object);
         }
 
+        public static bool ContainsSignatureVariables(this Instantiation instantiation, bool treatGenericParameterLikeSignatureVariable = false)
+        {
+            foreach (var arg in instantiation)
+            {
+                if (arg.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable))
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Return true when the type in question is marked with the NonVersionable attribute.
         /// </summary>

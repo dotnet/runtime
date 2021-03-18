@@ -410,6 +410,8 @@
              Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Bignum.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ecdh.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.EcDsa.cs"
@@ -426,6 +428,8 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
+             Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"
              Link="Common\System\Security\Cryptography\ECAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.ImportExport.cs"

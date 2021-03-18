@@ -28,6 +28,26 @@ you are directly using the `dotnet build`, or `build.sh`.
 
 # Running tests
 
+## Installation of JavaScript engines
+
+The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
+
+* Install npm with brew:
+
+`brew install npm`
+
+* Install jsvu with npm:
+
+`npm install jsvu -g`
+
+* Run jsvu:
+
+`jsvu`
+
+Add `~/.jsvu` to your `PATH`:
+
+`export PATH="${HOME}/.jsvu:${PATH}"`
+
 ## Libraries tests
 
 Library tests can be run with js engines: `v8`, `SpiderMonkey`,or `JavaScriptCore`:

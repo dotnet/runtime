@@ -7,6 +7,7 @@
     <ArchiveName>dotnet-runtime-internal</ArchiveName>
     <InstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-runtime-internal</InstallerName>
+    <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
     <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
@@ -112,13 +113,19 @@
   </Target>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <_diaSymArch Condition="'$(_hostArch)' != ''">$(_hostArch)</_diaSymArch>
+    <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
+    <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
     <_diaSymReaderPathIfExists Condition="Exists('$(_diaSymReaderPath)')">$(_diaSymReaderPath)</_diaSymReaderPathIfExists>
+
+    <!-- DiaSymReader for the target architecture, which is placed into the package -->
+    <_diaSymTargetArch>$(TargetArchitecture)</_diaSymTargetArch>
+    <_diaSymTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_diaSymTargetArch>
+    <_diaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetArchPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_diaSymReaderPathIfExists)' != ''">
-    <NativeRuntimeAsset Include="$(_diaSymReaderPathIfExists)" />
+  <ItemGroup Condition="Exists('$(_diaSymReaderTargetArchPath)')">
+    <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" />
   </ItemGroup>
 
   <!-- VS uses this file to show the target framework in the drop down. -->

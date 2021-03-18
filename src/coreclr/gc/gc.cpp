@@ -7620,11 +7620,11 @@ BOOL gc_heap::card_bundles_enabled ()
 }
 #endif // CARD_BUNDLE
 
-#if defined (TARGET_AMD64)
+#if defined (HOST_64BIT)
 #define brick_size ((size_t)4096)
 #else
 #define brick_size ((size_t)2048)
-#endif //TARGET_AMD64
+#endif //HOST_64BIT
 
 inline
 size_t gc_heap::brick_of (uint8_t* add)
@@ -22994,18 +22994,19 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
             if ((num_gen0_regions % pinning_seg_interval) == 0)
             {
                 int align_const = get_alignment_constant (TRUE);
-                // Pinning the first object in the region.
-                uint8_t* obj_to_pin = heap_segment_mem (gen0_region);
-                pin_by_gc (obj_to_pin);
-
-                obj_to_pin += Align (size (obj_to_pin), align_const);
-                // Pinning the middle object in the region.
+                // Pinning the first and the middle object in the region.
+                uint8_t* boundary = heap_segment_mem (gen0_region);
+                uint8_t* obj_to_pin = boundary;
+                int num_pinned_objs = 0;
                 while (obj_to_pin < heap_segment_allocated (gen0_region))
                 {
-                    if (obj_to_pin > region_mid)
+                    if (obj_to_pin >= boundary && !((CObjectHeader*)obj_to_pin)->IsFree())
                     {
                         pin_by_gc (obj_to_pin);
-                        break;
+                        num_pinned_objs++;
+                        if (num_pinned_objs >= 2)
+                            break;
+                        boundary += (gen0_region_size / 2) + 1;
                     }
                     obj_to_pin += Align (size (obj_to_pin), align_const);
                 }
@@ -33532,6 +33533,9 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
                 low = (chunk_index_within_seg == 0) ? start : (aligned_start + (size_t)chunk_index_within_seg * CARD_MARKING_STEALING_GRANULARITY);
                 high = (chunk_index_within_seg + 1 == chunk_count_within_seg) ? end : (aligned_start + (size_t)(chunk_index_within_seg + 1) * CARD_MARKING_STEALING_GRANULARITY);
                 chunk_high = high;
+
+                dprintf (3, ("cme:mn ci: %u, low: %Ix, high: %Ix", chunk_index, low, high));
+
                 return true;
             }
             else
@@ -33548,16 +33552,24 @@ bool card_marking_enumerator::move_next(heap_segment* seg, uint8_t*& low, uint8_
 
                 // keep the chunk index for later
                 old_chunk_index = chunk_index;
+
+                dprintf (3, ("cme:mn oci: %u, seg mismatch seg: %Ix, segment: %Ix", old_chunk_index, heap_segment_mem (segment), heap_segment_mem (seg)));
+
                 return false;
             }
         }
 
         segment = heap_segment_next_in_range(segment);
+        segment_start_chunk_index += chunk_count_within_seg;
         if (segment == nullptr)
         {
+            // keep the chunk index for later
+            old_chunk_index = chunk_index;
+
+            dprintf (3, ("cme:mn oci: %u no more segments", old_chunk_index));
+
             return false;
         }
-        segment_start_chunk_index += chunk_count_within_seg;
     }
 }
 
@@ -33739,7 +33751,10 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 {
                     // Switch to regions for this generation.
                     seg = generation_start_segment (generation_of (curr_gen_number));
-                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix", 
+#ifdef FEATURE_CARD_MARKING_STEALING
+                    card_mark_enumerator.switch_to_segment(seg);
+#endif // FEATURE_CARD_MARKING_STEALING
+                    dprintf (REGIONS_LOG, ("h%d switching to gen%d start seg %Ix",
                         heap_number, curr_gen_number, (size_t)seg));
                 }
             }

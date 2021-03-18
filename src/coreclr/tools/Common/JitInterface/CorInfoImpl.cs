@@ -301,6 +301,14 @@ namespace Internal.JitInterface
             MethodIL methodIL = HandleToObject(_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
+            _methodCodeNode.InitializeDebugInfo(_debugInfo);
+
+            LocalVariableDefinition[] locals = methodIL.GetLocals();
+            TypeDesc[] localTypes = new TypeDesc[locals.Length];
+            for (int i = 0; i < localTypes.Length; i++)
+                localTypes[i] = locals[i].Type;
+
+            _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
 
             PublishProfileData();
@@ -388,11 +396,7 @@ namespace Internal.JitInterface
             _ehClauses = null;
 
 #if !READYTORUN
-            _sequencePoints = null;
-            _variableToTypeDesc = null;
-
-            _parameterIndexToNameMap = null;
-            _localSlotToInfoMap = null;
+            _debugInfo = null;
 
             _additionalDependencies = null;
 #endif
@@ -3314,7 +3318,14 @@ namespace Internal.JitInterface
             }
 
             if (this.MethodBeingCompiled.IsNoOptimization)
+            {
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
+            }
+
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

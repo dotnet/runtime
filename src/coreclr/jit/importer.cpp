@@ -9719,7 +9719,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
         return impAssignMultiRegTypeToVar(op, retClsHnd DEBUGARG(unmgdCallConv));
     }
 
-#endif //  FEATURE_MULTIREG_RET && FEATURE_HFA
+#endif //  FEATURE_MULTIREG_RET && TARGET_ARM64
 
     if (!compDoOldStructRetyping() && (!op->IsCall() || !op->AsCall()->TreatAsHasRetBufArg(this)))
     {
@@ -11075,9 +11075,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         condTrue = gtNewIconNode(0, TYP_REF);
     }
 
-#define USE_QMARK_TREES
-
-#ifdef USE_QMARK_TREES
     GenTree* qmarkMT;
     //
     // Generate first QMARK - COLON tree
@@ -11090,6 +11087,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
     qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp);
+
+    if (isCastClass && impIsClassExact(pResolvedToken->hClass) && condTrue->OperIs(GT_CALL))
+    {
+        // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
+        condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+    }
 
     GenTree* qmarkNull;
     //
@@ -11119,7 +11122,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     JITDUMP("Marked V%02u as a single def temp\n", tmp);
     lvaSetClass(tmp, pResolvedToken->hClass);
     return gtNewLclvNode(tmp, TYP_REF);
-#endif
 }
 
 #ifndef DEBUG
@@ -21501,6 +21503,15 @@ void Compiler::considerGuardedDevirtualization(
 #endif
 
     JITDUMP("Considering guarded devirtualization\n");
+
+    // We currently only get likely class guesses when there is PGO data. So if we've disabled
+    // PGO, just bail out.
+
+    if (JitConfig.JitDisablePGO() != 0)
+    {
+        JITDUMP("Not guessing for class; pgo disabled\n");
+        return;
+    }
 
     // See if there's a likely guess for the class.
     //

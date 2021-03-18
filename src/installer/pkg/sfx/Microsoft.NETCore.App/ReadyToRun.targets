@@ -6,6 +6,7 @@
       <CrossDir Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">x64</CrossDir>
       <Crossgen2Dir>$(CoreCLRArtifactsPath)\$(CrossDir)\crossgen2</Crossgen2Dir>
       <Crossgen2Exe>$(Crossgen2Dir)\crossgen2$(ExeSuffix)</Crossgen2Exe>
+      <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>--targetarch:$(TargetArchitecture)</PublishReadyToRunCrossgen2ExtraArgs>
 
       <JitTargetOSComponent>unix</JitTargetOSComponent>
@@ -40,22 +41,36 @@
   <!-- Crossgen2 bring-up before SDK 6.0 Preview 2 propagates to the runtime repo. -->
   <!-- https://github.com/dotnet/runtime/issues/48252 -->
 
+  <UsingTask
+    TaskName="SetEnvVar"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+
+    <ParameterGroup>
+      <Name ParameterType="System.String" Required="true" />
+      <Value ParameterType="System.String" Required="false" />
+    </ParameterGroup>
+
+    <Task>
+      <Using Namespace="System" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          Environment.SetEnvironmentVariable(Name, Value);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
   <PropertyGroup>
-    <OriginalDotnetRootValue />
-    <DOTNET_ROOT />
+    <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
   </PropertyGroup>
 
   <Target Name="PatchDotnetRootBeforeRunningCrossgen2" BeforeTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <OriginalDotnetRootValue>$(DOTNET_ROOT)</OriginalDotnetRootValue>
-      <DOTNET_ROOT>$(RepoRoot)</DOTNET_ROOT>
-    </PropertyGroup>
+    <SetEnvVar Name="DOTNET_ROOT" Value="$(DOTNET_INSTALL_DIR)" />
   </Target>
 
   <Target Name="RestoreDotnetRootAfterRunningCrossgen2" AfterTargets="_CreateR2RImages">
-    <PropertyGroup>
-      <DOTNET_ROOT>$(OriginalDotnetRootValue)</DOTNET_ROOT>
-    </PropertyGroup>
+    <SetEnvVar Name="DOTNET_ROOT" Value="$(OriginalDotnetRootValue)" />
   </Target>
 
   <!-- End of hack to patch DOTNET_ROOT for the duration of Crossgen2 compilation. -->

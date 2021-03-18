@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Text.Encodings.Web.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class JavaScriptEncoderTests
     {
         [Fact]

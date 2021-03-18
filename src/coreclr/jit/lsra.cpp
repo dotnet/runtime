@@ -1781,7 +1781,7 @@ void LinearScan::identifyCandidates()
 
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = true;
+                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
                 setIntervalAsSpilled(newInt);
             }
 
@@ -1796,7 +1796,7 @@ void LinearScan::identifyCandidates()
             // Additionally, when we are generating code for a target with partial SIMD callee-save
             // (AVX on non-UNIX amd64 and 16-byte vectors on arm64), we keep a separate set of the
             // LargeVectorType vars.
-            if (varTypeNeedsPartialCalleeSave(varDsc->lvType))
+            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
@@ -5050,7 +5050,7 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         // Ensure that we have no partially-spilled large vector locals.
-        assert(!varTypeNeedsPartialCalleeSave(interval->registerType) || !interval->isPartiallySpilled);
+        assert(!Compiler::varTypeNeedsPartialCalleeSave(interval->registerType) || !interval->isPartiallySpilled);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_END_BB));
@@ -6922,7 +6922,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     }
 
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
 
     // On Arm64, we must always have a register to save the upper half,
     // while on x86 we can spill directly to memory.
@@ -7003,7 +7003,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     // lclVar as spilled).
     assert(lclVarReg != REG_NA);
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
 
     GenTree* restoreLcl = nullptr;
     restoreLcl          = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
@@ -10955,6 +10955,22 @@ void LinearScan::verifyFinalAllocation()
                 }
                 if (regNum == REG_NA)
                 {
+                    // If this interval is still assigned to a register
+                    if (interval->physReg != REG_NA)
+                    {
+                        // then unassign it if no new register was assigned to the RefTypeDef
+                        if (RefTypeIsDef(currentRefPosition->refType))
+                        {
+                            assert(interval->assignedReg != nullptr);
+                            if (interval->assignedReg->assignedInterval == interval)
+                            {
+                                interval->assignedReg->assignedInterval = nullptr;
+                            }
+                            interval->physReg     = REG_NA;
+                            interval->assignedReg = nullptr;
+                        }
+                    }
+
                     dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, interval);
                 }
                 else if (RefTypeIsDef(currentRefPosition->refType))
@@ -11092,6 +11108,16 @@ void LinearScan::verifyFinalAllocation()
                 if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
                 {
                     assert(!currentRefPosition->spillAfter || currentRefPosition->IsActualRef());
+
+                    if (RefTypeIsDef(currentRefPosition->refType))
+                    {
+                        // If an interval got assigned to a different register (while the different
+                        // register got spilled), then clear the assigned interval of current register.
+                        if (interval->physReg != REG_NA && interval->physReg != regNum)
+                        {
+                            interval->assignedReg->assignedInterval = nullptr;
+                        }
+                    }
 
                     interval->physReg     = REG_NA;
                     interval->assignedReg = nullptr;

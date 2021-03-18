@@ -341,8 +341,16 @@ jobject AddGRef(JNIEnv *env, jobject gref);
 void ReleaseGRef(JNIEnv *env, jobject gref);
 void ReleaseLRef(JNIEnv *env, jobject lref);
 jclass GetClassGRef(JNIEnv *env, const char* name);
+
+// Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.
 bool CheckJNIExceptions(JNIEnv* env);
+
+// Clear any JNI exceptions without printing them. Returns true if there was an exception, false otherwise.
+bool TryClearJNIExceptions(JNIEnv* env);
+
+// Assert on any JNI exceptions. Prints the exception before asserting.
 void AssertOnJNIExceptions(JNIEnv* env);
+
 jmethodID GetMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig);

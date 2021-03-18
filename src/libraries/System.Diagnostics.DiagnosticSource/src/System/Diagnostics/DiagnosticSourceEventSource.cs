@@ -1296,10 +1296,12 @@ namespace System.Diagnostics
                     Type? objType = obj?.GetType();
                     if (fetch == null || fetch.Type != objType)
                     {
-                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(
-                            objType, _propertyName);
+                        _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(objType, _propertyName);
                     }
-                    return fetch!.Fetch(obj);
+                    object? ret = null;
+                    // Avoid the exception which can be thrown during accessing the object properties.
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                    return ret;
                 }
 
                 /// <summary>

@@ -26,6 +26,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("Android"));
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -33,6 +34,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
+        public static bool IsNotMobile => IsNotBrowser && !IsMacCatalyst && !IsiOS && !IstvOS && !IsAndroid;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -55,6 +57,9 @@ namespace System
 
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+
+        public static bool IsUsingLimitedCultures => !IsNotMobile;
+        public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -132,7 +137,7 @@ namespace System
         // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
 
-        public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
+        public static bool SupportsAlpn => (IsWindows && !IsWindows7 && !IsNetFramework) ||
             (IsOpenSslSupported &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
 
@@ -182,14 +187,14 @@ namespace System
             }
         }
 
-        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(GetIsInvariantGlobalization);
+        private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.Globalization.GlobalizationMode", "Invariant"));
 
-        private static bool GetIsInvariantGlobalization()
+        private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
+            Type globalizationMode = Type.GetType(typeName);
             if (globalizationMode != null)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
+                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
                 if (methodInfo != null)
                 {
                     return (bool)methodInfo.Invoke(null, null);
@@ -229,6 +234,10 @@ namespace System
                               (version >> 8) & 0xFF,
                               version & 0xFF);
         }
+
+        private static readonly Lazy<bool> _legacyFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseLegacyStrategy"));
+
+        public static bool IsLegacyFileStreamEnabled => _legacyFileStream.Value;
 
         private static bool GetIsInContainer()
         {

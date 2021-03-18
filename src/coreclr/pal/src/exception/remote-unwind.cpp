@@ -1973,6 +1973,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
 static void
 put_unwind_info(unw_addr_space_t as, unw_proc_info_t *pip, void *arg)
 {
+#ifdef FEATURE_USE_SYSTEM_LIBUNWIND
+    if (pip->unwind_info != nullptr) {
+        free(pip->unwind_info);
+        pip->unwind_info = nullptr;
+    }
+#endif // FEATURE_USE_SYSTEM_LIBUNWIND
 }
 
 static unw_accessors_t init_unwind_accessors()

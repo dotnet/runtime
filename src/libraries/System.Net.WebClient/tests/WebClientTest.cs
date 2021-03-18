@@ -544,7 +544,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -572,7 +572,7 @@ namespace System.Net.Tests
 
                 if (IsAsync)
                 {
-                    await downloadProgressInvokedWithContentLength.Task.TimeoutAfter(TimeoutMilliseconds);
+                    await downloadProgressInvokedWithContentLength.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
                 }
             });
         }
@@ -643,7 +643,7 @@ namespace System.Net.Tests
             byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
             if (IsAsync)
             {
-                await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                await uploadProgressInvoked.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
             }
         }
 

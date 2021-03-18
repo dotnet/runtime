@@ -316,7 +316,7 @@ namespace System.Text
                 // Let's optimistically assume for now it's a high surrogate and hope
                 // that combining it with the next char yields useful results.
 
-                if (1 < (uint)source.Length)
+                if (source.Length > 1)
                 {
                     char secondChar = source[1];
                     if (TryCreate(firstChar, secondChar, out result))
@@ -817,7 +817,7 @@ namespace System.Text
 
                 // Treat 'returnValue' as the high surrogate.
 
-                if (1 >= (uint)input.Length)
+                if (input.Length <= 1)
                 {
                     return -1; // not an argument exception - just a "bad data" failure
                 }
