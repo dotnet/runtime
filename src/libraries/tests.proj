@@ -257,7 +257,7 @@
 
     <!-- Run only a small randomly chosen set of passing test suites on CI because running all suites is expected to take longer than a day -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Buffer.Tests\tests\System.Buffer.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Buffers\tests\System.Buffers.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
