@@ -2061,6 +2061,54 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
+        {
+            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
+        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
+        {
+            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
+            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
+
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
+            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
+
+            Assert.Equal(result1, result2);
+            Assert.Equal(result1, result3);
+            Assert.Equal(result1, result4);
+
+            if (expected != null) // some inputs don't roundtrip well
+            {
+                // Normalize values to make comparison easier
+                if (expected.Value.Kind != DateTimeKind.Utc)
+                {
+                    expected = expected.Value.ToUniversalTime();
+                }
+                if (result1.Kind != DateTimeKind.Utc)
+                {
+                    result1 = result1.ToUniversalTime();
+                }
+
+                Assert.Equal(expected, result1);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
+        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
+
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
+            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
+        }
+
+        [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         public void ToString_Invoke_ReturnsExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
@@ -2316,63 +2364,6 @@ namespace System.Tests
             Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
             Assert.Equal(destination.Length, charsWritten);
             Assert.Equal(expected, new string(destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
-        public static void Parse_Span_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
-        {
-            Assert.Equal(expected, DateTime.Parse(input.AsSpan(), culture));
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_ValidInput_Succeeds_MemberData))]
-        public static void ParseExact_Span_ValidInput_Succeeds(string input, string format, CultureInfo culture, DateTimeStyles style, DateTime? expected)
-        {
-            DateTime result1 = DateTime.ParseExact(input.AsSpan(), format, culture, style);
-            DateTime result2 = DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style);
-
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result3));
-            Assert.True(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out DateTime result4));
-
-            // Some of the parsed strings could not include the the date parts which make the parser use today's date in the result.
-            // It is possible the clock move to the next day between parsing operations or between calculating the expected value and the parsing.
-            // To make the test reliable, we need to check for such case.
-            if (result3.Day != result4.Day) { result3.AddDays(1); Assert.Equal(result3.Day, result4.Day); }
-            if (result2.Day != result3.Day) { result2.AddDays(1); Assert.Equal(result2.Day, result3.Day); }
-            if (result1.Day != result2.Day) { result1.AddDays(1); Assert.Equal(result1.Day, result2.Day); }
-
-            Assert.Equal(result1, result2);
-            Assert.Equal(result1, result3);
-            Assert.Equal(result1, result4);
-
-            if (expected != null) // some inputs don't roundtrip well
-            {
-                // Normalize values to make comparison easier
-                if (expected.Value.Kind != DateTimeKind.Utc)
-                {
-                    expected = expected.Value.ToUniversalTime();
-                }
-                if (result1.Kind != DateTimeKind.Utc)
-                {
-                    result1 = result1.ToUniversalTime();
-                }
-
-                if (expected.Value.Day != result1.Day) { expected.Value.AddDays(1); Assert.Equal(expected.Value.Day, result1.Day); }
-
-                Assert.Equal(expected, result1);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(ParseExact_InvalidInputs_Fail_MemberData))]
-        public static void ParseExact_Span_InvalidInputs_Fail(string input, string format, CultureInfo culture, DateTimeStyles style)
-        {
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), format, culture, style));
-            Assert.Throws<FormatException>(() => DateTime.ParseExact(input.AsSpan(), new[] { format }, culture, style));
-
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), format, culture, style, out DateTime result));
-            Assert.False(DateTime.TryParseExact(input.AsSpan(), new[] { format }, culture, style, out result));
         }
 
         [Fact]

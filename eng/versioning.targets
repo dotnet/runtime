@@ -36,11 +36,16 @@
       <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
   
-  <!-- Enables browser warnings for cross platform or Brwoser targeted builds -->
+  <!-- Enables browser warnings for cross platform or Browser targeted builds -->
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
+  <!-- Enables warnings for tvOS targeted builds -->
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true' and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="tvos"/>
+  </ItemGroup>
+  
   <ItemGroup>
     <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
   </ItemGroup>

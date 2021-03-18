@@ -283,25 +283,31 @@
 
   <!-- Packs sets -->
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.product+'))">
-    <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj" />
-    <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
-    <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
-    <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
-    <ProjectToBuild Include="@(SharedFrameworkProjectToBuild)" Category="packs" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="$(_subset.Contains('+packs.product+'))">
+      <ItemGroup Condition="'$(PgoInstrument)' != 'true'">
+        <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
+        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
+      </ItemGroup>
+      <ItemGroup>
+        <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
+        <ProjectToBuild Include="@(SharedFrameworkProjectToBuild)" Category="packs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.installers+'))">
+  <ItemGroup Condition="$(_subset.Contains('+packs.installers+')) AND '$(PgoInstrument)' != 'true'">
     <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\installers.proj" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" Category="packs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+packs.tests+'))">
+  <ItemGroup Condition="$(_subset.Contains('+packs.tests+')) AND '$(PgoInstrument)' != 'true'">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="true" Test="true" Category="packs" />
   </ItemGroup>

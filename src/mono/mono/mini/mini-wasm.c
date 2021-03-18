@@ -761,6 +761,17 @@ getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 
 G_END_DECLS
 
+/* Helper for runtime debugging */
+void
+mono_wasm_print_stack_trace (void)
+{
+	EM_ASM(
+		   var err = new Error();
+		   console.log ("Stacktrace: \n");
+		   console.log (err.stack);
+		   );
+}
+
 #endif // HOST_WASM
 
 gpointer
