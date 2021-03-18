@@ -92,8 +92,12 @@ typedef struct
 static gboolean no_exec = FALSE;
 
 static int n_appctx_props;
-static gunichar2 **appctx_keys;
-static gunichar2 **appctx_values;
+static char **appctx_keys;
+static char **appctx_values;
+
+static int n_runtimeconfig_json_props;
+static char **runtimeconfig_json_keys;
+static char **runtimeconfig_json_values;
 
 static const char *
 mono_check_corlib_version_internal (void);
@@ -1239,13 +1243,16 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values)
 {
 	n_appctx_props = nprops;
-	appctx_keys = g_new0 (gunichar2*, nprops);
-	appctx_values = g_new0 (gunichar2*, nprops);
+	appctx_keys = (char**)keys;
+	appctx_values = (char**)values;
+}
 
-	for (int i = 0; i < nprops; ++i) {
-		appctx_keys [i] = g_utf8_to_utf16 (keys [i], strlen (keys [i]), NULL, NULL, NULL);
-		appctx_values [i] = g_utf8_to_utf16 (values [i], strlen (values [i]), NULL, NULL, NULL);
-	}
+void
+mono_runtime_register_runtimeconfig_json_properties (int nprops, const char **keys,  const char **values)
+{
+	n_runtimeconfig_json_props = nprops;
+	runtimeconfig_json_keys = (char**)keys;
+	runtimeconfig_json_values = (char**)values;
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (appctx, "System", "AppContext")
@@ -1256,27 +1263,62 @@ mono_runtime_install_appctx_properties (void)
 {
 	ERROR_DECL (error);
 	gpointer args [3];
+	int n_total_props;
+	char **total_keys_raw;
+	char **total_values_raw;
+	gunichar2 **total_keys;
+	gunichar2 **total_values;
 
 	MonoMethod *setup = mono_class_get_method_from_name_checked (mono_class_get_appctx_class (), "Setup", 3, 0, error);
 	g_assert (setup);
 
 	// FIXME: TRUSTED_PLATFORM_ASSEMBLIES is very large
 
+	// Combine and convert properties
+	n_total_props = n_appctx_props + n_runtimeconfig_json_props;
+	total_keys_raw = g_new0 (char*, n_total_props);
+	total_values_raw = g_new0 (char*, n_total_props);;
+	total_keys = g_new0 (gunichar2*, n_total_props);
+	total_values = g_new0 (gunichar2*, n_total_props);
+	for (int i = 0; i < n_appctx_props; ++i) {
+		total_keys_raw [i] = g_new0 (char, strlen (appctx_keys [i]));
+		total_values_raw [i] = (char *) malloc (sizeof (char) * (strlen (appctx_values [i]))); // g_new0 doesn't work well with TRUSTED_PLATFORM_ASSEMBLIES's value
+		strcpy(total_keys_raw [i], appctx_keys [i]);
+		strcpy(total_values_raw [i], appctx_values [i]);
+	}
+	for (int i = 0; i < n_runtimeconfig_json_props; ++i) {
+		total_keys_raw [i + n_appctx_props] = g_new0 (char, strlen (runtimeconfig_json_keys [i]));
+		total_values_raw [i + n_appctx_props] = g_new0 (char, strlen (runtimeconfig_json_values [i]));
+		strcpy(total_keys_raw [i + n_appctx_props], runtimeconfig_json_keys [i]);
+		strcpy(total_values_raw [i + n_appctx_props], runtimeconfig_json_values [i]);
+	}
+	for (int i = 0; i < n_total_props; ++i) {
+		total_keys [i] = g_utf8_to_utf16 (total_keys_raw [i], strlen (total_keys_raw [i]), NULL, NULL, NULL);
+		total_values [i] = g_utf8_to_utf16 (total_values_raw [i], strlen (total_values_raw [i]), NULL, NULL, NULL);
+	}
+
 	/* internal static unsafe void Setup(char** pNames, char** pValues, int count) */
-	args [0] = appctx_keys;
-	args [1] = appctx_values;
-	args [2] = &n_appctx_props;
+	args [0] = total_keys;
+	args [1] = total_values;
+	args [2] = &n_total_props;
 
 	mono_runtime_invoke_checked (setup, NULL, args, error);
 	mono_error_assert_ok (error);
 
 	/* No longer needed */
-	for (int i = 0; i < n_appctx_props; ++i) {
-		g_free (appctx_keys [i]);
-		g_free (appctx_values [i]);
+	for (int i = 0; i < n_total_props; ++i) {
+		g_free (total_keys_raw [i]);
+		g_free (total_values_raw [i]);
+		g_free (total_keys [i]);
+		g_free (total_values [i]);
 	}
-	g_free (appctx_keys);
-	g_free (appctx_values);
+	g_free (total_keys_raw);
+	g_free (total_values_raw);
+	g_free (total_keys);
+	g_free (total_values);
+
 	appctx_keys = NULL;
 	appctx_values = NULL;
+	runtimeconfig_json_keys = NULL;
+	runtimeconfig_json_values = NULL;
 }

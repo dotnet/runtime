@@ -450,6 +450,9 @@ void
 mono_runtime_register_appctx_properties (int nprops, const char **keys,  const char **values);
 
 void
+mono_runtime_register_runtimeconfig_json_properties (int nprops, const char **keys,  const char **values);
+
+void
 mono_runtime_install_appctx_properties (void);
 
 gboolean 

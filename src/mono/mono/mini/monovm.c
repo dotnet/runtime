@@ -228,7 +228,7 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 	return 0;
 }
 
-void mono_extract_and_register_properties (const char *buffer, long fileSize);
+void mono_extract_and_register_properties (const char *buffer, guint64 file_size);
 
 // Initialize monovm with properties set by runtimeconfig.json. Primarily used by mobile targets.
 int
@@ -236,37 +236,32 @@ monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntim
 {
 	switch (arg->kind) {
 	case 0: {
-		FILE *filePtr = NULL;
-		long fileSize = 0;
-		char *buffer = NULL;
-		size_t result;
+		guint64 file_size = 0;
+		MonoFileMap *map;
+		void *ret_handle;
+		char *buffer;
 
-		filePtr = fopen(arg->runtimeconfig.name.path, "rb");
-		g_assert (filePtr != NULL);
+		map = mono_file_map_open (arg->runtimeconfig.name.path);
+		g_assert (map);
+		file_size = mono_file_map_size (map);
+		buffer = (char*)mono_file_map (file_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (map), 0, &ret_handle);
+		g_assert (buffer);
 
-		fseek (filePtr , 0 , SEEK_END);
-		fileSize = ftell (filePtr);
-		rewind (filePtr);
-
-		if (fileSize <= 0)
+		if (file_size <= 0)
 			return 0;
 
-		buffer = (char *) malloc (sizeof (char) * fileSize);
-		g_assert (buffer != NULL);
+		mono_extract_and_register_properties (buffer, file_size);
 
-		result = fread (buffer,1,fileSize,filePtr);
-		g_assert (result == fileSize);
-
-		mono_extract_and_register_properties (buffer, fileSize);
-
-		fclose (filePtr);
-		g_free (buffer);
-		(*cleanup_fn) (arg, user_data);
+		mono_file_unmap (map, ret_handle);
+		mono_file_map_close (map);
+		if (cleanup_fn)
+			(*cleanup_fn) (arg, user_data);
 		return 0;
 	}
 	case 1: {
-		mono_extract_and_register_properties (arg->runtimeconfig.data.data, (long)arg->runtimeconfig.data.data_len);
-		(*cleanup_fn) (arg, user_data);
+		mono_extract_and_register_properties (arg->runtimeconfig.data.data, (guint64)arg->runtimeconfig.data.data_len);
+		if (cleanup_fn)
+			(*cleanup_fn) (arg, user_data);
 		return 0;
 	}
 	default:
@@ -275,41 +270,45 @@ monovm_runtimeconfig_initialize (MonovmRuntimeConfigArguments *arg, MonovmRuntim
 }
 
 void
-mono_extract_and_register_properties (const char *buffer, long fileSize)
+mono_extract_and_register_properties (const char *buffer, guint64 file_size)
 {
-	int propertyCount;
-	int strLen;
-	int currentIdx = 0;
-	char *propertyKeys [MAX_PROPERTY_COUNT];
-	char *propertyValues [MAX_PROPERTY_COUNT];
+	int property_count;
+	int str_len;
+	int current_idx = 0;
+	char **property_keys;
+	char **property_values;
 
-	propertyCount = buffer [0] - '\0';
-	currentIdx = 1;
-	for (int i = 0; i < propertyCount; ++i)
+	property_count = mono_metadata_decode_value(buffer, &buffer);
+	property_keys = g_new0 (char*, property_count);
+	property_values = g_new0 (char*, property_count);
+	current_idx++;
+	for (int i = 0; i < property_count; ++i)
 	{
-		g_assert (fileSize > currentIdx);
-		strLen = buffer [currentIdx] - '\0';
-		currentIdx++;
+		g_assert (file_size > current_idx);
+		str_len = mono_metadata_decode_value(buffer, &buffer);
+		current_idx++;
 
-		g_assert (fileSize > (currentIdx + strLen));
-		propertyKeys [i] = (char *) malloc (sizeof (char) * (strLen + 1));
-		strncpy (propertyKeys [i], buffer + currentIdx, strLen);
-		propertyKeys [i][strLen] = '\0';
-		currentIdx += strLen;
+		g_assert (file_size > (current_idx + str_len));
+		property_keys [i] = g_new0 (char, str_len + 1);
+		strncpy (property_keys [i], buffer, str_len);
+		property_keys [i][str_len] = '\0';
+		current_idx += str_len;
+		buffer += str_len;
 
-		g_assert (fileSize > currentIdx);
-		strLen = buffer [currentIdx] - '\0';
-		currentIdx++;
+		g_assert (file_size > current_idx);
+		str_len = mono_metadata_decode_value(buffer, &buffer);
+		current_idx++;
 
-		g_assert (fileSize >= (currentIdx + strLen));
-		propertyValues [i] = (char *) malloc (sizeof (char) * (strLen + 1));
-		strncpy (propertyValues [i], buffer + currentIdx, strLen);
-		propertyValues [i][strLen] = '\0';
-		currentIdx += strLen;
+		g_assert (file_size >= (current_idx + str_len));
+		property_values [i] = g_new0 (char, str_len + 1);
+		strncpy (property_values [i], buffer, str_len);
+		property_values [i][str_len] = '\0';
+		current_idx += str_len;
+		buffer += str_len;
 	}
 
-	if (propertyCount > 0)
-		mono_runtime_register_appctx_properties (propertyCount, (const char **)propertyKeys, (const char **)propertyValues);
+	if (property_count > 0)
+		mono_runtime_register_runtimeconfig_json_properties (property_count, (const char**)property_keys, (const char**)property_values);
 }
 
 int
