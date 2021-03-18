@@ -39,6 +39,7 @@ namespace System.Net.Security
 
         internal const bool StartMutualAuthAsAnonymous = true;
         internal const bool CanEncryptEmptyMessage = true;
+        internal const bool DecryptsInPlace = true;
 
         public static void VerifyPackageInfo()
         {
@@ -346,7 +347,6 @@ namespace System.Net.Security
                         // output is ignored on Windows. We always decrypt in place and we set outputOffset to indicate where the data start.
                         Debug.Assert(outputOffset >= 0 && outputCount >= 0, $"Expected offset and count greater than 0, got {outputOffset} and {outputCount}");
                         Debug.Assert(checked(outputOffset + outputCount) <= input.Length, $"Expected offset+count <= buffer.Length, got {outputOffset}+{outputCount}>={input.Length}");
-                        Debug.Assert(outputOffset > 0 || outputCount == 0, "Expected positive offset when decryption yields data.");
 
                         break;
                     }

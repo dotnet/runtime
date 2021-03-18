@@ -898,7 +898,7 @@ namespace System.Net.Security
                     }
 
                     _decryptedBytesCount = decryptedCount;
-                    if (decryptedCount > 0 && decryptedOffset > 0)
+                    if (decryptedCount > 0 && SslStreamPal.DecryptsInPlace)
                     {
                         // schannel can change offset without providing decrypted data.
                         _decryptedBytesOffset = _internalOffset + decryptedOffset;
@@ -913,7 +913,7 @@ namespace System.Net.Security
                         byte[]? extraBuffer = null;
                         if (_decryptedBytesCount != 0)
                         {
-                            extraBuffer = new byte[_decryptedBytesOffset];
+                            extraBuffer = new byte[_decryptedBytesCount];
                             _internalBuffer.Span.Slice(_decryptedBytesOffset, _decryptedBytesCount).CopyTo(extraBuffer);
 
                             _decryptedBytesCount = 0;
