@@ -238,7 +238,6 @@ namespace System.Xml.Serialization
             return xmlMapping;
         }
 
-        [RequiresUnreferencedCode("Creates XmlAttributes")]
         private XmlAttributes GetAttributes(Type type, bool canBeSimpleType)
         {
             XmlAttributes? attrs = _attributeOverrides[type];
@@ -250,7 +249,6 @@ namespace System.Xml.Serialization
             return new XmlAttributes(type);
         }
 
-        [RequiresUnreferencedCode("Creates XmlAttributes")]
         private XmlAttributes GetAttributes(MemberInfo memberInfo)
         {
             XmlAttributes? attrs = _attributeOverrides[memberInfo.DeclaringType!, memberInfo.Name];
@@ -258,7 +256,7 @@ namespace System.Xml.Serialization
             return new XmlAttributes(memberInfo);
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls ImportTypeMapping")]
         private ElementAccessor ImportElement(TypeModel model, XmlRootAttribute? root, string? defaultNamespace, RecursionLimiter limiter)
         {
             XmlAttributes a = GetAttributes(model.Type, true);
@@ -389,7 +387,7 @@ namespace System.Xml.Serialization
             return ImportTypeMapping(model, ns, context, dataType, a, false, false, limiter);
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls ImportEnumMapping")]
         private TypeMapping ImportTypeMapping(TypeModel model, string? ns, ImportContext context, string dataType, XmlAttributes? a, bool repeats, bool openModel, RecursionLimiter limiter)
         {
             try
@@ -723,7 +721,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls GetRootMapping")]
         private StructMapping ImportStructLikeMapping(StructModel model, string? ns, bool openModel, XmlAttributes? a, RecursionLimiter limiter)
         {
             if (model.TypeDesc.Kind == TypeKind.Root) return GetRootMapping();
@@ -789,7 +787,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls GetTypeModel")]
         private bool InitializeStructMembers(StructMapping mapping, StructModel model, bool openModel, string? typeName, RecursionLimiter limiter)
         {
             if (mapping.IsFullyInitialized)
@@ -952,7 +950,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode("Calls GetAttributes")]
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         internal string XsdTypeName(Type type)
         {
             if (type == typeof(object)) return Soap.UrType;
@@ -999,7 +997,7 @@ namespace System.Xml.Serialization
             return sum;
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls XsdTypeName")]
         private void SetArrayMappingType(ArrayMapping mapping, string? defaultNs, Type type)
         {
             XmlAttributes a = GetAttributes(type, false);
@@ -1186,7 +1184,7 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
+        [RequiresUnreferencedCode("calls XsdTypeName")]
         private EnumMapping ImportEnumMapping(EnumModel model, string? ns, bool repeats)
         {
             XmlAttributes a = GetAttributes(model.Type, false);
@@ -1229,7 +1227,6 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        [RequiresUnreferencedCode("calls GetAttributes")]
         private ConstantMapping? ImportConstantMapping(ConstantModel model)
         {
             XmlAttributes a = GetAttributes(model.FieldInfo);
@@ -1246,7 +1243,7 @@ namespace System.Xml.Serialization
             return constant;
         }
 
-        [RequiresUnreferencedCode("calls ImportMemberMapping")]
+        [RequiresUnreferencedCode("calls GetTypeDesc")]
         private MembersMapping ImportMembersMapping(XmlReflectionMember[] xmlReflectionMembers, string? ns, bool hasWrapperElement, bool rpc, bool openModel, RecursionLimiter limiter)
         {
             MembersMapping members = new MembersMapping();
