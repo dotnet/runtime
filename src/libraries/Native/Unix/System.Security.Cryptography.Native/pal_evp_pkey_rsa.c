@@ -13,19 +13,23 @@ EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
     }
 
     EVP_PKEY* pkey = NULL;
-    int success = 1;
-    success = success && (1 == EVP_PKEY_keygen_init(ctx));
-    success = success && (1 == EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, keySize));
-    success = success && (1 == EVP_PKEY_keygen(ctx, &pkey));
+    EVP_PKEY* ret = NULL;
 
-    if (pkey != NULL && !success)
+    if (EVP_PKEY_keygen_init(ctx) == 1 &&
+        EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, keySize) == 1 &&
+        EVP_PKEY_keygen(ctx, &pkey) == 1)
     {
-        EVP_PKEY_free(pkey);
+        ret = pkey;
         pkey = NULL;
     }
 
+    if (pkey != NULL)
+    {
+        EVP_PKEY_free(pkey);
+    }
+
     EVP_PKEY_CTX_free(ctx);
-    return pkey;
+    return ret;
 }
 
 RSA* CryptoNative_EvpPkeyGetRsa(EVP_PKEY* pkey)
