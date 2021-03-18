@@ -169,9 +169,9 @@
     <_outputRID Condition="'$(TargetOS)' == 'Solaris'">solaris-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'iOSSimulator'">iOSSimulator-$(TargetArchitecture)</_outputRID>
+    <_outputRID Condition="'$(TargetOS)' == 'iOSSimulator'">iossimulator-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'tvOSSimulator'">tvOSSimulator-$(TargetArchitecture)</_outputRID>
+    <_outputRID Condition="'$(TargetOS)' == 'tvOSSimulator'">tvossimulator-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</_outputRID>
     <_outputRID Condition="'$(TargetOS)' == 'Browser'">browser-$(TargetArchitecture)</_outputRID>
 
