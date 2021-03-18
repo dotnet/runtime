@@ -361,7 +361,7 @@ namespace System.Net.Http.Functional.Tests
 
                     //  Send Digest challenge.
                     Task<List<string>> serverTask = proxyServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.ProxyAuthenticationRequired, authHeader);
-                    if (clientTask == await Task.WhenAny(clientTask, serverTask).TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds))
+                    if (clientTask == await Task.WhenAny(clientTask, serverTask).WaitAsync(TestHelper.PassingTestTimeout))
                     {
                         // Client task shouldn't have completed successfully; propagate failure.
                         Assert.NotEqual(TaskStatus.RanToCompletion, clientTask.Status);

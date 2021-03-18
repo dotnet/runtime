@@ -53,9 +53,11 @@ namespace Internal.Cryptography.Pal
             switch (algorithm)
             {
                 case Oids.Rsa:
+                    key = new RSAImplementation.RSAAndroid();
+                    break;
                 case Oids.Dsa:
-                    // TODO: [AndroidCrypto] Handle RSA / DSA
-                    throw new NotImplementedException($"{nameof(LoadKey)} ({algorithm})");
+                    key = new DSAImplementation.DSAAndroid();
+                    break;
                 case Oids.EcDiffieHellman:
                 case Oids.EcPublicKey:
                     key = new ECDsaImplementation.ECDsaAndroid();
@@ -78,7 +80,16 @@ namespace Internal.Cryptography.Pal
                 return ecdsa.DuplicateKeyHandle();
             }
 
-            // TODO: [AndroidCrypto] Handle RSA / DSA
+            if (key is RSAImplementation.RSAAndroid rsa)
+            {
+                return rsa.DuplicateKeyHandle();
+            }
+
+            if (key is DSAImplementation.DSAAndroid dsa)
+            {
+                return dsa.DuplicateKeyHandle();
+            }
+
             throw new NotImplementedException($"{nameof(GetPrivateKey)} ({key.GetType()})");
         }
     }

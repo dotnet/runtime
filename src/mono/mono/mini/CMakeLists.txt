@@ -143,6 +143,7 @@ set(mini_common_sources
     arch-stubs.c
     llvm-runtime.h
     llvm-intrinsics.h
+    llvm-intrinsics-types.h
     type-checking.c
     lldb.h
     lldb.c
@@ -341,6 +342,9 @@ if(NOT DISABLE_SHARED_LIBS)
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
+  if(NOT TARGET_WASM AND STATIC_ICU)
+    set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+  endif ()
   if(TARGET_DARWIN)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
   endif()

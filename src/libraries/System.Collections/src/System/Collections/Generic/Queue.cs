@@ -180,7 +180,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                EnsureCapacityCore(_size + 1);
+                Grow(_size + 1);
             }
 
             _array[_tail] = item;
@@ -390,38 +390,35 @@ namespace System.Collections.Generic
 
             if (_array.Length < capacity)
             {
-                EnsureCapacityCore(capacity);
+                Grow(capacity);
             }
 
             return _array.Length;
         }
 
-        private void EnsureCapacityCore(int capacity)
+        private void Grow(int capacity)
         {
-            Debug.Assert(capacity >= 0);
+            Debug.Assert(_array.Length < capacity);
 
-            if (_array.Length < capacity)
-            {
-                // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
-                const int MaxArrayLength = 0X7FEFFFFF;
-                const int GrowFactor = 2;
-                const int MinimumGrow = 4;
+            // Array.MaxArrayLength is internal to S.P.CoreLib, replicate here.
+            const int MaxArrayLength = 0X7FEFFFFF;
+            const int GrowFactor = 2;
+            const int MinimumGrow = 4;
 
-                int newcapacity = GrowFactor * _array.Length;
+            int newcapacity = GrowFactor * _array.Length;
 
-                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newcapacity > MaxArrayLength) newcapacity = MaxArrayLength;
 
-                // Ensure minimum growth is respected.
-                newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
+            // Ensure minimum growth is respected.
+            newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
 
-                // If the computed capacity is still less than specified, set to the original argument.
-                // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
-                if (newcapacity < capacity) newcapacity = capacity;
+            // If the computed capacity is still less than specified, set to the original argument.
+            // Capacities exceeding MaxArrayLength will be surfaced as OutOfMemoryException by Array.Resize.
+            if (newcapacity < capacity) newcapacity = capacity;
 
-                SetCapacity(newcapacity);
-            }
+            SetCapacity(newcapacity);
         }
 
         // Implements an enumerator for a Queue.  The enumerator uses the

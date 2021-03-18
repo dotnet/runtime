@@ -18,7 +18,7 @@ typedef struct RSA
     jobject privateKey; // RSAPrivateCrtKey
     jobject publicKey;  // RSAPublicCrtKey
     atomic_int refCount;
-    int32_t keyWidth;
+    int32_t keyWidthInBits;
 } RSA;
 
 #define CIPHER_ENCRYPT_MODE 1

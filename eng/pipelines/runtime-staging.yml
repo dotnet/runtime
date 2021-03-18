@@ -115,8 +115,8 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_AOT
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true
-      timeoutInMinutes: 120
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:AOTMode=AotInterp /p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

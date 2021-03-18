@@ -17,6 +17,6 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
             return s_provider.Create();
         }
 
-        public static bool IsSupported { get; } = !PlatformDetection.IsAndroid;
+        public static bool IsSupported { get; } = Test.Cryptography.PlatformSupport.IsRC2Supported;
     }
 }

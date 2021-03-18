@@ -973,6 +973,7 @@ mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_i
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
+/* token_index is 1-based */
 static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
 {
@@ -1081,7 +1082,6 @@ mono_assembly_name_parse_full 		     (const char	   *name,
 
 gboolean
 mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname, gboolean copyBlobs);
-
 
 MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 

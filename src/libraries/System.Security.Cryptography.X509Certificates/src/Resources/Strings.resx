@@ -445,4 +445,7 @@
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
   </data>
+  <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
+    <value>The certificate content type could not be determined.</value>
+  </data>
 </root>

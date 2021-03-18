@@ -79,7 +79,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
 
-            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().TimeoutAfter(100000));
+            await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
         }
 
         [Theory]

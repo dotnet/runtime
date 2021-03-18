@@ -5,6 +5,9 @@
          TODO: [AndroidCrypto] Remove ANDROID_OPENSSL_AAR check once Android native crypto is complete -->
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true' and '$(ANDROID_OPENSSL_AAR)' == ''">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
+    <!-- ActiveIssue Apple Silicon No usable version of libssl was found
+        https://github.com/dotnet/runtime/issues/49083 -->
+    <IgnoreForCI Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' ">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
@@ -119,6 +122,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs"

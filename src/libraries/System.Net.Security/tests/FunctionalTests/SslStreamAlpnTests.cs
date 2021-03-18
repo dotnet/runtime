@@ -158,7 +158,7 @@ namespace System.Net.Security.Tests
                     await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
                     serverStream.Dispose();
 
-                    await t1.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    await t1.WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
                 else
                 {
