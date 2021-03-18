@@ -186,7 +186,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.CTime, _fileStatus.CTimeNsec);
         }
 
-        private void SetCreationTime_OtherUnix(string path, DateTimeOffset time)
+        private void SetCreationTime_StandardUnixImpl(string path, DateTimeOffset time)
         {
             // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
             // There is no API to update the CreationTime.
@@ -197,7 +197,7 @@ namespace System.IO
             // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
             // CreationTime, GetCreationTime will return the value that was previously set (when that value
             // wasn't in the future).
-            SetLastWriteTime_OtherUnix(path, time);
+            SetLastWriteTime_StandardUnixImpl(path, time);
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -218,7 +218,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
         }
 
-        private void SetLastWriteTime_OtherUnix(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
+        private void SetLastWriteTime_StandardUnixImpl(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: false);
 
         private DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
         {

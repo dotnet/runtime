@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Xunit;
 
@@ -67,6 +68,43 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
+            });
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesAfterAnother()
+        {
+            T item = GetExistingItem();
+
+            // these linq calls make an IEnumerable of pairs of functions that are not identical
+            // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
+            // as they it have different behavior in reverse order (of functions), in addition
+            // to the pairs of functions, there is a reverse bool that allows a test for both
+            // increasing and decreasing timestamps as to not limit the test unnecessarily.
+            // Only testing with utc because it would be hard to check if lastwrite utc was the
+            // same type of method as lastwrite local since their .Getter fields are different.
+            var timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+            var booleanArray = new bool[] { false, true };
+            Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
+            {
+                // Checking that milliseconds are not dropped after setter.
+                // Emscripten drops milliseconds in Browser
+                DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt2 = new DateTime(2001, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
+                if (functions.reverse)
+                {
+                    var swap = dt3;
+                    dt3 = dt1;
+                    dt1 = swap;
+                }
+                functions.x.Setter(item, dt1);
+                functions.y.Setter(item, dt2);
+                functions.x.Setter(item, dt3);
+                DateTime result_x = functions.x.Getter(item);
+                DateTime result_y = functions.y.Getter(item);
+                Assert.Equal(dt3, result_x);
+                Assert.Equal(dt2, result_y);
             });
         }
 
