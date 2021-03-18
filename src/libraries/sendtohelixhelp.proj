@@ -270,31 +270,11 @@
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       
-      <!-- Provide toolchain to be able to AOT on helix -->
-      <HelixCorrelationPayload Include="$(EMSDK_PATH)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>emsdk</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
-      <HelixCorrelationPayload Include="$(WasmAppBuilderDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>wasmappbuilder</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
-      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>monoaotcompiler</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)cross\" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>cross</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
-      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>wasm-build</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)\src;$(MicrosoftNetCoreAppRuntimePackNativeDir)\include" Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' == 'true'">
-        <Destination>wasm-source</Destination>
-        <IncludeDirectoryName>true</IncludeDirectoryName>
-      </HelixCorrelationPayload>
+      <HelixCorrelationPayload Include="$(EMSDK_PATH)"                           Destination="build/emsdk" />
+      <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
