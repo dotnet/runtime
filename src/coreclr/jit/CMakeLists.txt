@@ -8,8 +8,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-error)
 endif()
 
-add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
-
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
@@ -447,6 +445,7 @@ function(add_jit jitName)
 
     set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_FLAGS ${JIT_EXPORTS_LINKER_OPTION})
     set_property(TARGET ${jitName} APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPORTS_FILE})
+    set_target_properties(${jitName} PROPERTIES MSVC_WARNING_LEVEL 4)
 
     target_link_libraries(${jitName}
         ${JIT_LINK_LIBRARIES}
