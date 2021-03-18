@@ -34,7 +34,7 @@ using Microsoft.Win32.SafeHandles;
  *
  */
 
-namespace System.IO
+namespace System.IO.Strategies
 {
     internal sealed partial class LegacyFileStreamStrategy : FileStreamStrategy, IFileStreamCompletionSourceStrategy
     {
@@ -192,7 +192,7 @@ namespace System.IO
                     {
                         FlushWriteBuffer(!disposing);
                     }
-                    catch (Exception e) when (!disposing && FileStream.IsIoRelatedException(e))
+                    catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
                     {
                         // On finalization, ignore failures from trying to flush the write buffer,
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
@@ -328,7 +328,7 @@ namespace System.IO
             Debug.Assert(value >= 0, "value >= 0");
             VerifyOSHandlePosition();
 
-            FileStreamHelpers.SetLength(_fileHandle, _path, value);
+            FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
 
             if (_filePosition > value)
             {
@@ -434,7 +434,7 @@ namespace System.IO
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
+                        ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
