@@ -315,7 +315,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
 
-    if (tree->OperIsIndirOrArrLength())
+    if (tree->OperIsIndirOrArrLength() || tree->OperIs(GT_XCHG))
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         optFoldNullCheck(tree, nullCheckMap);
@@ -651,9 +651,23 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrLength());
+    assert(tree->OperIsIndirOrArrLength() || tree->OperIs(GT_XCHG));
 
-    GenTree* addr = (tree->OperGet() == GT_ARR_LENGTH) ? tree->AsArrLen()->ArrRef() : tree->AsIndir()->Addr();
+    GenTree* addr;
+    if (tree->OperIs(GT_ARR_LENGTH))
+    {
+        addr = tree->AsArrLen()->ArrRef();
+    }
+    else if (tree->OperIsIndir())
+    {
+        addr = tree->AsIndir()->Addr();
+    }
+    else
+    {
+        assert(tree->OperIs(GT_XCHG));
+        const bool commaOnly = true;
+        addr                 = tree->AsUnOp()->gtGetOp1()->gtEffectiveVal(commaOnly);
+    }
 
     ssize_t offsetValue = 0;
 
