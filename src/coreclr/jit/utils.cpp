@@ -1792,8 +1792,29 @@ bool MethodSet::IsActiveMethod(const char* methodName, int methodHash)
     return false;
 }
 
+//------------------------------------------------------------------------
+// CachedCyclesPerSecond - Return the cached value of CycleTimer::CyclesPerSecond().
+//
+// Calling CycleTimer::CyclesPerSecond() can be expensive: it runs a loop of non-empty
+// code to compute its value. So call it once and cache the result.
+//
+double CachedCyclesPerSecond()
+{
+    static unsigned int s_CachedCyclesPerSecondInitialized = 0;
+    static double       s_CachedCyclesPerSecond            = 0.0;
+
+    unsigned int originalInitializedValue = InterlockedCompareExchange(&s_CachedCyclesPerSecondInitialized, 1, 0);
+    if (originalInitializedValue == 0)
+    {
+        // It wasn't initialized yet, so initialize it.
+        s_CachedCyclesPerSecond = CycleTimer::CyclesPerSecond();
+    }
+
+    return s_CachedCyclesPerSecond;
+}
+
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CycleTimer::CyclesPerSecond())
+CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
 {
 }
 
