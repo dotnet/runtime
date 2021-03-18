@@ -87,7 +87,6 @@
     <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
-    <UseVisualStudioNativeBinariesLayout Condition="'$(UseVisualStudioNativeBinariesLayout)' == '' and '$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))">true</UseVisualStudioNativeBinariesLayout>
   </PropertyGroup>
 
   <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
@@ -139,8 +138,9 @@
       <!-- Filter executables on Windows -->
       <NativeProjectBinariesExeFilter Condition="'%(Extension)' == '.exe'" Include="@(NativeProjectBinariesMatched)" />
 
-      <!-- Filter executables on Windows -->
+      <!-- Filter manifest/data files on Windows -->
       <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.manifest'" Include="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.tlb'" Include="@(NativeProjectBinariesMatched)" />
 
       <!-- Filter out the *Make* files -->
       <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'%(FileName)' != 'Makefile'" Include="@(NativeProjectBinariesExeFilter)" />
