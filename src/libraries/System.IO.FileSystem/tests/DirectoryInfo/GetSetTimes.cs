@@ -57,5 +57,15 @@ namespace System.IO.Tests
                 ((testDir) => testDir.LastWriteTimeUtc),
                 DateTimeKind.Utc);
         }
+
+        protected override DirectoryInfo CreateSymlinkToItem(DirectoryInfo item)
+        {
+            var link = new DirectoryInfo(item.FullName + ".link");
+            if (link.Exists) link.Delete();
+            bool failed = !MountHelper.CreateSymbolicLink(link.FullName, item.FullName, true);
+            link.Refresh();
+            if (failed || !link.Exists) throw new Exception("Could not create symlink.");
+            return link;
+        }
     }
 }

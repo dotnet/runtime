@@ -208,7 +208,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
         }
 
-        internal void SetLastAccessTime(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: true);
+        private void SetLastAccessTime_StandardUnixImpl(string path, DateTimeOffset time) => SetAccessOrWriteTime(path, time, isAccessTime: true);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
@@ -227,7 +227,7 @@ namespace System.IO
 
         private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
         {
-            //only used for access time on OSX (unless being used as a fallback), used for both on other unix platforms
+            // Only used as a fallback on OSX, used always on other Unix platforms.
 
             // force a refresh so that we have an up-to-date times for values not being overwritten
             _fileStatusInitialized = -1;

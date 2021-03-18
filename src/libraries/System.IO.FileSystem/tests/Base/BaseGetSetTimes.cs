@@ -23,6 +23,7 @@ namespace System.IO.Tests
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
+        protected abstract T CreateSymlinkToItem(T item);
 
         protected abstract string GetItemPath(T item);
 
@@ -72,11 +73,12 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SettingUpdatesPropertiesAfterAnother()
         {
             T item = GetExistingItem();
 
-            // these linq calls make an IEnumerable of pairs of functions that are not identical
+            // These linq calls make an IEnumerable of pairs of functions that are not identical
             // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
             // as they it have different behavior in reverse order (of functions), in addition
             // to the pairs of functions, there is a reverse bool that allows a test for both
@@ -105,6 +107,38 @@ namespace System.IO.Tests
                 DateTime result_y = functions.y.Getter(item);
                 Assert.Equal(dt3, result_x);
                 Assert.Equal(dt2, result_y);
+            });
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesOnSymlink()
+        {
+            // This test is currently consistent with the Windows behavior of setting the
+            // times on the symlink itself. It is needed as on OSX for example, the default
+            // for most APIs is to follow the symlink to completion and set the time on
+            // that entry instead (eg. the setattrlist will do this without the flag set).
+            T item = CreateSymlinkToItem(GetExistingItem());
+
+            Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
+            {
+                // Checking that milliseconds are not dropped after setter.
+                // Emscripten drops milliseconds in Browser
+                DateTime dt = new DateTime(2004, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
+                function.Setter(item, dt);
+                DateTime result = function.Getter(item);
+                Assert.Equal(dt, result);
+                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
+
+                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+                // ToUniversalTime treats it as local.
+                if (function.Kind == DateTimeKind.Unspecified)
+                {
+                    Assert.Equal(dt, result.ToUniversalTime());
+                }
+                else
+                {
+                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
+                }
             });
         }
 
