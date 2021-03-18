@@ -1764,7 +1764,7 @@ handle_parent:
 		if (!decode_value(type, val_buf, value)) {
 			return FALSE;
 		}					
-		mono_runtime_try_invoke (p->set, obj, &val_buf, &exc, error);
+		mono_runtime_try_invoke (p->set, obj, (void **)&val_buf, &exc, error);
 		if (!is_ok (error) && exc == NULL)
 			exc = (MonoObject*) mono_error_convert_to_exception (error);
 		if (exc)
