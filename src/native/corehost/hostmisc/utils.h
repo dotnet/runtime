@@ -6,6 +6,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include <type_traits>
 
 #define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
@@ -114,5 +115,13 @@ public:
         trace::set_error_writer(m_old_error_writer);
     }
 };
+
+template<typename T>
+size_t to_size_t_dbgchecked(T value)
+{
+    assert(value >= 0);
+    assert(value < static_cast<T>(std::numeric_limits<size_t>::max()));
+    return static_cast<size_t>(value);
+}
 
 #endif

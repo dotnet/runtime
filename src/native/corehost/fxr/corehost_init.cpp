@@ -136,8 +136,7 @@ const host_interface_t& corehost_init_t::get_host_init_data()
     if (bundle::info_t::is_single_file_bundle())
     {
         int64_t offset = bundle::info_t::the_app->header_offset();
-        assert(offset < static_cast<int64_t>(std::numeric_limits<size_t>::max()));
-        hi.single_file_bundle_header_offset = static_cast<size_t>(offset);
+        hi.single_file_bundle_header_offset = to_size_t_dbgchecked(offset);
     }
 
     return hi;
