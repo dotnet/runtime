@@ -82,6 +82,7 @@ namespace System.Linq
         public static TSource Last<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, bool> predicate) { throw null; }
         public static long LongCount<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
         public static long LongCount<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, bool> predicate) { throw null; }
+        public static (System.Collections.Generic.List<TSource> Matched, System.Collections.Generic.List<TSource> Unmatched) Match<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, Func<TSource, bool> predicate) { throw null; }
         public static decimal Max(this System.Collections.Generic.IEnumerable<decimal> source) { throw null; }
         public static double Max(this System.Collections.Generic.IEnumerable<double> source) { throw null; }
         public static int Max(this System.Collections.Generic.IEnumerable<int> source) { throw null; }
