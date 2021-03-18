@@ -315,7 +315,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
 
-    if (tree->OperIsIndirOrArrLength() || tree->OperIs(GT_XCHG))
+    if (tree->OperIsIndirOrArrLength() || tree->OperIsImplicitIndir())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         optFoldNullCheck(tree, nullCheckMap);
@@ -631,6 +631,9 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //    tree           - The input indirection tree.
 //    nullCheckMap   - Map of the local numbers to the latest NULLCHECKs on those locals in the current basic block
 //
+// Return Value:
+//    a null check tree if it was found, nullptr otherwise.
+//
 // Notes:
 //    Check for cases where
 //    1. One of the following trees
@@ -645,13 +648,13 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
 //       or
 //       indir(add(x, const2))
 //
-//       (indir is any node for which OperIsIndirOrArrLength() is true.)
+//       (indir is any node for which OperIsIndirOrArrLength() or OperIsImplicitIndir() is true.)
 //
 //     2.  const1 + const2 if sufficiently small.
-
+//
 GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
-    assert(tree->OperIsIndirOrArrLength() || tree->OperIs(GT_XCHG));
+    assert(tree->OperIsIndirOrArrLength() || tree->OperIsImplicitIndir());
 
     GenTree* addr;
     if (tree->OperIs(GT_ARR_LENGTH))
@@ -662,12 +665,18 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     {
         addr = tree->AsIndir()->Addr();
     }
+    else if (tree->OperIs(GT_XORR, GT_XAND, GT_XADD, GT_XCHG))
+    {
+        const bool commaOnly = true;
+        addr                 = tree->AsOp()->gtGetOp1()->gtEffectiveVal(commaOnly);
+    }
     else
     {
-        assert(tree->OperIs(GT_XCHG));
-        const bool commaOnly = true;
-        addr                 = tree->AsUnOp()->gtGetOp1()->gtEffectiveVal(commaOnly);
+        // TODO-CQ: Support other implicit indir cases.
+        assert(tree->OperIsImplicitIndir());
+        return nullptr;
     }
+    assert(addr != nullptr);
 
     ssize_t offsetValue = 0;
 
