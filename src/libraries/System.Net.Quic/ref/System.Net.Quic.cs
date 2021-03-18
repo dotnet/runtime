@@ -20,7 +20,7 @@ namespace System.Net.Quic
         public QuicConnection(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.Quic.QuicClientConnectionOptions options) { }
         public QuicConnection(System.Net.Quic.QuicClientConnectionOptions options) { }
         public bool Connected { get { throw null; } }
-        public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
+        public System.Net.IPEndPoint? LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
         public System.Net.EndPoint RemoteEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
