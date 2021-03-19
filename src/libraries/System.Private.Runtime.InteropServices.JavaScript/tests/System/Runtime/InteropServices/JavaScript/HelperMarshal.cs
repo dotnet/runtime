@@ -22,12 +22,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public static class HelperMarshal
     {
-        public static class CustomClassMarshaler {
-            static CustomClass JSToManaged (double d) {
+        public class CustomClassMarshaler {
+            public CustomClass JSToManaged (double d) {
                 return new CustomClass { D = d };
             }
 
-            static double ManagedToJS (CustomClass ct) {
+            public double ManagedToJS (CustomClass ct) {
                 return ct?.D ?? -1;
             }
         }
@@ -37,12 +37,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
         }
 
-        public static class CustomStructMarshaler {
-            static CustomStruct JSToManaged (double d) {
+        public class CustomStructMarshaler {
+            public CustomStruct JSToManaged (double d) {
                 return new CustomStruct { D = d };
             }
 
-            static double ManagedToJS (ref CustomStruct ct) {
+            public double ManagedToJS (ref CustomStruct ct) {
                 return ct.D;
             }
         }
@@ -52,11 +52,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public double D;
         }
 
-        public static class CustomDateMarshaler {
-            static string JSToManaged_PreFilter { get; } = "value.toISOString()";
-            static string ManagedToJS_PostFilter { get; } = "new Date(value)";
+        public class CustomDateMarshaler {
+            public string JSToManaged_PreFilter { get; } = "value.toISOString()";
+            public string ManagedToJS_PostFilter { get; } = "new Date(value)";
 
-            static CustomDate JSToManaged (string s) {
+            public CustomDate JSToManaged (string s) {
                 Console.WriteLine($"CustomDate.JSToManaged({s})");
                 var newDate = DateTime.Parse(s).ToUniversalTime();
                 Console.WriteLine($"newDate={newDate}");
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 };
             }
 
-            static string ManagedToJS (ref CustomDate cd) {
+            public string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
                 Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;

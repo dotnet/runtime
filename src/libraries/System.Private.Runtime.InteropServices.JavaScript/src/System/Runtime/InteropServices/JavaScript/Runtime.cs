@@ -311,11 +311,18 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         public static unsafe string? MakeMarshalSignatureInfo (IntPtr typePtr, IntPtr methodPtr) {
+            if (methodPtr == IntPtr.Zero)
+                return null;
+
             IntPtrAndHandle tmp = default(IntPtrAndHandle);
             tmp.ptr = methodPtr;
             var methodHandle = tmp.handle;
             tmp.ptr = typePtr;
             var typeHandle = tmp.typeHandle;
+
+            var type = (typePtr != IntPtr.Zero)
+                ? Type.GetTypeFromHandle(typeHandle)
+                : null;
 
             MethodBase? mb = (typePtr != IntPtr.Zero)
                 ? MethodBase.GetMethodFromHandle(methodHandle, typeHandle)
@@ -343,7 +350,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static unsafe IntPtr GetMethodPointer (Type type, string name, out Type? returnType) {
             var info = type.GetMethod(
-                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null) {
                 returnType = null;
@@ -357,14 +364,14 @@ namespace System.Runtime.InteropServices.JavaScript
             return tmp.ptr;
         }
 
-        private static unsafe string GetAndEscapeStringProperty (Type type, string name) {
+        private static unsafe string GetAndEscapeStringProperty (object? instance, Type type, string name) {
             var info = type.GetProperty(
-                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
+                name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
             );
             if (info == null)
                 return "null";
 
-            var value = info.GetValue(null) as string;
+            var value = info.GetValue(instance) as string;
             if (value == null)
                 return "null";
 
@@ -399,7 +406,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return result;
         }
 
-        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr) {
+        public static unsafe string GetCustomMarshalerInfoForType (IntPtr typePtr, out object? instance) {
+            instance = null;
             if (typePtr == IntPtr.Zero)
                 return "null";
 
@@ -408,41 +416,39 @@ namespace System.Runtime.InteropServices.JavaScript
             var typeHandle = tmp.typeHandle;
 
             var type = Type.GetTypeFromHandle(typeHandle);
-            Type? marshalerType;
+            Type? marshalerType = null;
 
             foreach (var cad in type.GetCustomAttributesData()) {
                 if (cad.AttributeType.FullName != "System.Runtime.InteropServices.JavaScript.CustomMarshalerAttribute")
                     continue;
-                
+
                 var args = cad.ConstructorArguments;
                 if (args.Count < 1)
                     continue;
-                
+
                 var arg = args[0];
                 if (arg.ArgumentType != typeof(Type))
                     continue;
-                
-                marshalerType = (Type)arg.Value;
+
+                marshalerType = (Type?)arg.Value;
                 break;
             }
 
             if (marshalerType == null)
                 return "null";
 
-            var preFilter = GetAndEscapeStringProperty(marshalerType, "JSToManaged_PreFilter");
-            var postFilter = GetAndEscapeStringProperty(marshalerType, "ManagedToJS_PostFilter");
+            instance = Activator.CreateInstance(marshalerType);
+
+            var preFilter = GetAndEscapeStringProperty(instance, marshalerType, "JSToManaged_PreFilter");
+            var postFilter = GetAndEscapeStringProperty(instance, marshalerType, "ManagedToJS_PostFilter");
 
             var inputPtr = GetMethodPointer(marshalerType, "JSToManaged", out Type? temp);
             var outputPtr = GetMethodPointer(marshalerType, "ManagedToJS", out Type? outputReturnType);
 
-            var outputNeedsToBeUnboxed = outputReturnType?.IsValueType ?? true;
-
             return ("{\n" + $"'typePtr': {typePtr}, \n" +
                 $"'preFilter': {preFilter}, 'postFilter': {postFilter}, \n" +
-                $"'inputPtr': {inputPtr}, 'outputPtr': {outputPtr}, \n" +
-                $"'outputNeedsToBeUnboxed': {(outputNeedsToBeUnboxed ? 1 : 0)} \n" +
-                "}")
-                .Replace("'", "\"");
+                $"'inputPtr': {inputPtr}, 'outputPtr': {outputPtr} \n" +
+                "}").Replace("'", "\"");
         }
 
         public static MarshalType GetMarshalTypeFromType (Type type) {

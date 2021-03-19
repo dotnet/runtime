@@ -139,7 +139,7 @@ var BindingSupportLib = {
 			//  the process of binding other methods relies on it.
 			this.make_marshal_signature_info = bind_runtime_method ("MakeMarshalSignatureInfo", "iiii");
 
-			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "i");
+			this.get_custom_marshaler_info = bind_runtime_method ("GetCustomMarshalerInfoForType", "im");
 
 			// NOTE: The bound methods have a _ prefix on their names to ensure
 			//  that any code relying on the old get_method/call_method pattern will
@@ -430,8 +430,8 @@ var BindingSupportLib = {
 				case 3: // string
 				case 29: // interned string
 					return this.conv_string (mono_obj);
-				case 4: //vts
-					return this._unbox_struct_rooted (mono_obj);
+				case 4: // struct
+					return this.extract_js_obj_with_possible_converter (mono_obj, klass);
 				case 5: // delegate
 					return this._unbox_delegate_rooted (mono_obj);
 				case 6: // Task
@@ -863,7 +863,7 @@ var BindingSupportLib = {
 			if (mono_obj == 0)
 				return null;
 
-			var converter = this._try_get_converter_for_managed_class (klass);
+			var converter = this._get_struct_unboxer_for_class (klass);
 			if (converter)
 				return converter (mono_obj);
 
@@ -1018,7 +1018,10 @@ var BindingSupportLib = {
 				var typePtr = classPtr 
 					? this.mono_wasm_class_get_type (classPtr) 
 					: 0;
-				// console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr}, at offset ${infoPtr}`);
+				var typeName = typePtr 
+					? this.mono_wasm_get_type_name(typePtr)
+					: "null";
+				console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
 				var json = this.make_marshal_signature_info (typePtr, methodPtr);
 				if (!json)
 					throw new Error (`MakeMarshalSignatureInfo failed`);				
@@ -1064,36 +1067,6 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_try_get_converter_for_managed_class: function (klass) {
-			// console.log (`klass ${klass}`);
-
-			if (!this._class_converter_cache)
-				this._class_converter_cache = new Map ();
-
-			if (!this._class_converter_cache.has (klass)) {
-				var convMethod = this.find_method (klass, "ManagedToJS", 1);
-				if (!convMethod)
-					this._class_converter_cache.set (klass, null);
-				else {
-					var sigInfo = this.get_method_signature_info (klass, convMethod);
-					var signature = "m";
-					var boundConverter = this.bind_method (
-						convMethod, 0, signature, "ManagedToJS_class" + klass
-					);
-
-					// FIXME: Optimize this
-					var postFilterGetter = this.find_method (klass, "ManagedToJS_PostFilter", 0);
-					var postFilter = postFilterGetter 
-						? this.call_method (postFilterGetter, 0, "", [])
-						: null;
-
-					this._class_converter_cache.set (klass, this._compile_post_filter (klass, boundConverter, postFilter));
-				}
-			}
-
-			return this._class_converter_cache.get (klass);
-		},
-
 		_pick_result_chara_for_marshal_type: function (mtype) {
 			var signatureChForMtype = {
 				1: 'i',
@@ -1122,9 +1095,15 @@ var BindingSupportLib = {
 			
 			var result;
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
-				var json = this.get_custom_marshaler_info (typePtr);
-				// console.log(json);
+				var root = MONO.mono_wasm_new_root ();
+				var json = this.get_custom_marshaler_info (typePtr, root.get_address());
+				console.log(json);
 				result = JSON.parse(json);
+				console.log("instancePtr=", root.value);
+				if (result) {
+					result.instanceRoot = root;
+					result.instancePtr = root.value;
+				}
 				this._custom_marshaler_info_cache.set (typePtr, result);
 			} else {
 				result = this._custom_marshaler_info_cache.get (typePtr);
@@ -1142,15 +1121,7 @@ var BindingSupportLib = {
 			return this._get_custom_marshaler_info_for_type (typePtr);
 		},
 
-		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
-			var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
-			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
-			var dataOffset = unbox_buffer + 8;
-			if (!classPtr)
-				throw new Error("classPtr is null or undefined");
-
-			// console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
-
+		_get_struct_unboxer_for_class: function (classPtr) {
 			if (!this._struct_unboxer_cache)
 				this._struct_unboxer_cache = new Map ();
 
@@ -1170,7 +1141,6 @@ var BindingSupportLib = {
 				if (!convMethod)
 					this._struct_unboxer_cache.set (classPtr, null);
 				else {
-					var sigInfo = this.get_method_signature_info (classPtr, convMethod);
 					var signature = "m";
 					var boundConverter = this.bind_method (
 						convMethod, 0, signature, "ManagedToJS_class" + classPtr
@@ -1180,7 +1150,19 @@ var BindingSupportLib = {
 				}
 			}
 
-			var unboxer = this._struct_unboxer_cache.get (classPtr);
+			return this._struct_unboxer_cache.get (classPtr);
+		},
+
+		_unbox_struct_rooted: function (unbox_buffer, mono_obj) {
+			var objSize = Module.HEAP32[(unbox_buffer / 4) | 0];
+			var classPtr = Module.HEAP32[((unbox_buffer / 4) | 0) + 1];
+			var dataOffset = unbox_buffer + 8;
+			if (!classPtr)
+				throw new Error("classPtr is null or undefined");
+
+			// console.log (`objSize ${objSize} classPtr ${classPtr} dataOffset ${dataOffset}`);
+
+			var unboxer = this._get_struct_unboxer_for_class(classPtr);
 			if (!unboxer) {
 				var className = this.mono_wasm_get_type_name(this.mono_wasm_class_get_type(classPtr));
 				throw new Error ("No managed-to-js converter found for struct type " + className);
@@ -1250,7 +1232,7 @@ var BindingSupportLib = {
 				var classPtr = this.mono_wasm_type_get_class (typePtr);
 
 				// FIXME
-				var sigInfo = this.get_method_signature_info (classPtr, convMethod);
+				var sigInfo = this.get_method_signature_info (0, convMethod);
 				// Return unboxed so it can go directly into the arguments list
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
