@@ -369,9 +369,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     GenTree* op2 = nullptr;
     GenTree* op3 = nullptr;
 
-    SimdAsHWIntrinsicClassId classId          = SimdAsHWIntrinsicInfo::lookupClassId(intrinsic);
-    unsigned                 numArgs          = sig->numArgs;
-    bool                     isInstanceMethod = false;
+    unsigned numArgs          = sig->numArgs;
+    bool     isInstanceMethod = false;
 
     if (sig->hasThis())
     {

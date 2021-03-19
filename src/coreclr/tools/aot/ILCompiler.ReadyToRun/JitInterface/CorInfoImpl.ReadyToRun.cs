@@ -47,17 +47,17 @@ namespace Internal.JitInterface
         public readonly TypeDesc OwningType;
 
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            OwningType = GetMethodTokenOwningType(this, constrainedType, context, out OwningTypeNotDerivedFromToken);
+            OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, out bool owningTypeNotDerivedFromToken)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
             owningTypeNotDerivedFromToken = false;
@@ -72,7 +72,7 @@ namespace Internal.JitInterface
             if (moduleToken.TokenType == CorTokenType.mdtMethodDef)
             {
                 var methodDefinition = moduleToken.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)moduleToken.Handle);
-                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, context, ref owningTypeNotDerivedFromToken);
+                return HandleContext(moduleToken.Module, methodDefinition.GetDeclaringType(), methodToken.Method.OwningType, constrainedType, context, devirtualizedMethodOwner, ref owningTypeNotDerivedFromToken);
             }
 
             // At this point moduleToken must point at a MemberRef.
@@ -84,14 +84,15 @@ namespace Internal.JitInterface
                 case HandleKind.TypeReference:
                 case HandleKind.TypeSpecification:
                     {
-                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, ref owningTypeNotDerivedFromToken);
+                        Debug.Assert(devirtualizedMethodOwner == null); // Devirtualization is expected to always use a methoddef token
+                        return HandleContext(moduleToken.Module, memberRef.Parent, methodToken.Method.OwningType, constrainedType, context, null, ref owningTypeNotDerivedFromToken);
                     }
 
                 default:
                     return methodToken.Method.OwningType;
             }
 
-            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, ref bool owningTypeNotDerivedFromToken)
+            TypeDesc HandleContext(EcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
             {
                 var tokenOnlyOwningType = module.GetType(handle);
                 TypeDesc actualOwningType;
@@ -116,7 +117,36 @@ namespace Internal.JitInterface
                         typeInstantiation = typeContext.Instantiation;
                     }
 
-                    var instantiatedOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    TypeDesc instantiatedOwningType = null;
+
+                    if (devirtualizedMethodOwner != null)
+                    {
+                        // We might be in a situation where we use the passed in type (devirtualization scenario)
+                        // Check to see if devirtualizedMethodOwner actually is a type derived from the type definition in some way.
+                        bool derivesFromTypeDefinition = false;
+                        TypeDesc currentType = devirtualizedMethodOwner;
+                        do
+                        {
+                            derivesFromTypeDefinition = currentType.GetTypeDefinition() == tokenOnlyOwningType;
+                            currentType = currentType.BaseType;
+                        } while(currentType != null && !derivesFromTypeDefinition);
+
+                        if (derivesFromTypeDefinition)
+                        {
+                            instantiatedOwningType = devirtualizedMethodOwner;
+                        }
+                        else
+                        {
+                            Debug.Assert(false); // This is expected to fire if and only if we implement devirtualization to default interface methods
+                            throw new RequiresRuntimeJitException(methodTargetOwner.ToString());
+                        }
+                    }
+
+                    if (instantiatedOwningType == null)
+                    {
+                        instantiatedOwningType = tokenOnlyOwningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                    }
+
                     var canonicalizedOwningType = instantiatedOwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                     if ((instantiatedOwningType == canonicalizedOwningType) || (constrainedType != null))
                     {
@@ -884,7 +914,14 @@ namespace Internal.JitInterface
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)
         {
             ModuleToken token = HandleToModuleToken(ref pResolvedToken, method, out object context, ref constrainedType);
-            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context);
+
+            TypeDesc devirtualizedMethodOwner = null;
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+            {
+                devirtualizedMethodOwner = HandleToObject(pResolvedToken.hClass);
+            }
+
+            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
         }
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)

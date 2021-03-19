@@ -25,6 +25,7 @@ usage_list+=("-staticanalyzer: skip native image generation.")
 usage_list+=("-skipjit: skip building jit.")
 usage_list+=("-skipalljits: skip building crosstargetting jits.")
 usage_list+=("-skipruntime: skip building runtime.")
+usage_list+=("-skipiltools: skip building IL tools.")
 usage_list+=("-paltests: build the pal tests.")
 
 setup_dirs_local()
@@ -184,6 +185,7 @@ __CMakeArgs=""
 __RequestedBuildComponents=""
 __BuildAllJits=1
 __BuildRuntime=1
+__BuildILTools=1
 
 source "$__ProjectRoot"/_build-commons.sh
 

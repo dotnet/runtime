@@ -54,8 +54,15 @@ namespace System.Diagnostics
         }
 
         /// <summary>Terminates the associated process immediately.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             EnsureState(State.HaveId);
 
             // Check if we know the process has exited. This avoids us targetting another
@@ -345,6 +352,11 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             EnsureInitialized();
 
             string? filename;

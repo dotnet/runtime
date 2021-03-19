@@ -474,8 +474,7 @@ else()
 endif()
 
 create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} ADDITIONAL_DESTINATIONS sharedFramework)
-install_clr(TARGETS clrjit ADDITIONAL_DESTINATIONS sharedFramework COMPONENT clrjit)
-add_dependencies(clrjit_install clrjit)
+install_clr(TARGETS clrjit ADDITIONAL_DESTINATIONS sharedFramework COMPONENT jit)
 
 # Enable profile guided optimization
 add_pgo(clrjit)
@@ -495,7 +494,10 @@ create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
 create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 
 if (CLR_CMAKE_TARGET_UNIX)
-    install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME})
+    install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} COMPONENT jit)
+    if (ARCH_TARGET_NAME STREQUAL arm)
+      target_compile_definitions(clrjit_unix_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
+  endif (ARCH_TARGET_NAME STREQUAL arm)
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
