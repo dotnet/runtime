@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
@@ -172,7 +173,7 @@ namespace System.Xml.Xsl.IlGen
         /// Add early bound information to a list that is used by this query.  Return the index of
         /// the early bound information in the list.
         /// </summary>
-        public int DeclareEarlyBound(string namespaceUri, Type ebType)
+        public int DeclareEarlyBound(string namespaceUri, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type ebType)
         {
             if (_earlyInfo == null)
                 _earlyInfo = new UniqueList<EarlyBoundInfo>();
