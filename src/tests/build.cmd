@@ -568,7 +568,7 @@ if defined __CreatePdb (
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
 ) else (
-    set __CrossgenCmd=%__CrossgenCmd% --large-bubble --crossgen2-parallelism 1
+    set __CrossgenCmd=%__CrossgenCmd% --crossgen2-parallelism 1
 )
 
 set __CrossgenDir=%__BinDir%
