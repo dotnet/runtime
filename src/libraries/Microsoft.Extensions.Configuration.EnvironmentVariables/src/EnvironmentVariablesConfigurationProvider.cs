@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomPrefix = "CUSTOMCONNSTR_";
 
-        private static IDictionary? s_environmentVariablesCache;
+        private static volatile IDictionary? s_environmentVariablesCache;
 
         private readonly string _prefix;
 
