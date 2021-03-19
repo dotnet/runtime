@@ -13,6 +13,10 @@ addprefix(hot_reload_sources ../component "${hot_reload_sources_base}")
 
 add_library(hot_reload-objects OBJECT "${hot_reload_sources}")
 
+if (NOT STATIC_COMPONENTS)
+  target_compile_definitions (hot_reload-objects PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
+endif()
+
 if(NOT STATIC_COMPONENTS)
   add_library(mono-component-hot_reload SHARED $<TARGET_OBJECTS:hot_reload-objects>)
   target_link_libraries(mono-component-hot_reload monosgen-shared)
