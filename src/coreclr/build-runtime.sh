@@ -21,12 +21,8 @@ export PYTHON
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-staticanalyzer: skip native image generation.")
-usage_list+=("-skipjit: skip building jit.")
-usage_list+=("-skipalljits: skip building crosstargetting jits.")
-usage_list+=("-skipruntime: skip building runtime.")
-usage_list+=("-skipiltools: skip building IL tools.")
-usage_list+=("-paltests: build the pal tests.")
+usage_list+=("-staticanalyzer: use scan_build static analyzer.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'jit', 'runtime', 'paltests', 'alljits', and 'iltools'. Can be specified multiple times.")
 
 setup_dirs_local()
 {
@@ -244,9 +240,8 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
 fi
 
 __CMakeTarget=""
-echo "Requested build components: -$__RequestedBuildComponents-"
 if [[ "-$__RequestedBuildComponents-" =~ "-jit-" ]]; then
-    __CMakeTarget="${__CMakeTarget} clrjit_install"
+    __CMakeTarget="${__CMakeTarget} jit"
 fi
 if [[ "-$__RequestedBuildComponents-" =~ "-alljits-" ]]; then
     __CMakeTarget="${__CMakeTarget}  all_jits"

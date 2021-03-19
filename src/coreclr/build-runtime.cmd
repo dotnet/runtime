@@ -415,7 +415,7 @@ set __CMakeTarget=
 for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     set "string=%%a"
     if not "!string:-jit-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! clrjit_install
+        set __CMakeTarget=!__CMakeTarget! jit
     )
     if not "!string:-alljits-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! all_jits
