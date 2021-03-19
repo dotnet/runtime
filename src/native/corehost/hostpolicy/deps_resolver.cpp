@@ -43,29 +43,25 @@ void add_unique_path(
     pal::string_t* non_serviced,
     const pal::string_t& svc_dir)
 {
-    // Resolve sym links.
-    pal::string_t real = path;
-    // pal::realpath(&real);
-
-    if (existing->count(real))
+    if (existing->count(path))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
+    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
-    if (starts_with(real, svc_dir, false))
+    if (starts_with(path, svc_dir, false))
     {
-        serviced->append(real);
+        serviced->append(path);
         serviced->push_back(PATH_SEPARATOR);
     }
     else
     {
-        non_serviced->append(real);
+        non_serviced->append(path);
         non_serviced->push_back(PATH_SEPARATOR);
     }
 
-    existing->insert(real);
+    existing->insert(path);
 }
 
 // Return the filename from deps path; a deps path always uses a '/' for the separator.
@@ -588,10 +584,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // Convert the paths into a string and return it 
     for (const auto& item : items)
     {
-        // Workaround for CoreFX not being able to resolve sym links.
-        pal::string_t real_asset_path = item.second.resolved_path;
-        //pal::realpath(&real_asset_path);
-        output->append(real_asset_path);
+        output->append(item.second.resolved_path);
         output->push_back(PATH_SEPARATOR);
     }
 

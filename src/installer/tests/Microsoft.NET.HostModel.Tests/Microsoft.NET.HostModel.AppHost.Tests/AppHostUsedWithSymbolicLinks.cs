@@ -6,6 +6,8 @@ using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Microsoft.NET.HostModel.Tests
@@ -14,26 +16,32 @@ namespace Microsoft.NET.HostModel.Tests
     {
         private SharedTestState sharedTestState;
 
+        private void CreateSymbolicLink(string source, string target)
+        {
+            if (!SymbolicLinking.MakeSymbolicLink(source, target, out var errorString))
+                throw new Exception($"Failed to create symbolic link '{source}' targeting: '{target}': {errorString}");
+        }
+
         public AppHostUsedWithSymbolicLinks(AppHostUsedWithSymbolicLinks.SharedTestState fixture)
         {
             sharedTestState = fixture;            
         }
 
         [Theory]
-        [InlineData ("../../SymlinkToApphost")]
-        [InlineData ("../SymlinkToApphost")]
+        [InlineData ("a/b/SymlinkToApphost")]
+        [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
-            
-            var appExe = fixture.TestProject.AppExe;
-            string symbolicLink = Path.GetFullPath(Path.Combine(appExe, symlinkRelativePath));
-            string targetFileName = appExe;
-            if (!SymbolicLinking.MakeSymbolicLink (symbolicLink, targetFileName, out var errorString))
-                throw new Exception($"Failed to create symbolic link '{symbolicLink}' targeting '{targetFileName}': {errorString}");
 
-            Command.Create(symbolicLink)
+            var appExe = fixture.TestProject.AppExe;
+            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
+            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
+            var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
+
+            CreateSymbolicLink(symlinkFullPath, appExe);
+            Command.Create(symlinkFullPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -42,26 +50,27 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Theory]
-        [InlineData ("../../FirstSymlink", "../../SecondSymlink")]
-        [InlineData ("../../FirstSymlink", "../SecondSymlink")]
-        [InlineData ("../FirstSymlink", "../../SecondSymlink")]
-        [InlineData ("../FirstSymlink", "../SecondSymlink")]
+        [InlineData ("a/b/FirstSymlink", "c/d/SecondSymlink")]
+        [InlineData ("a/b/FirstSymlink", "c/SecondSymlink")]
+        [InlineData ("a/FirstSymlink", "c/d/SecondSymlink")]
+        [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
             
             var appExe = fixture.TestProject.AppExe;
+            var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
+            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(firstSymlinkRelativePath)));
+            Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(secondSymlinkRelativePath)));
+
             // second symlink -> apphost
-            string secondSymbolicLink = Path.GetFullPath(Path.Combine(appExe, secondSymlinkRelativePath));
-            string targetFileName = appExe;
-            if (!SymbolicLinking.MakeSymbolicLink (secondSymbolicLink, targetFileName, out var errorString))
-                throw new Exception($"Failed to create symbolic link '{secondSymbolicLink}' targeting '{targetFileName}': {errorString}");
+            string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
+            CreateSymbolicLink(secondSymbolicLink, appExe);
 
             // first symlink -> second symlink
-            string firstSymbolicLink = Path.GetFullPath(Path.Combine(appExe, firstSymlinkRelativePath));
-            if (!SymbolicLinking.MakeSymbolicLink (firstSymbolicLink, secondSymbolicLink, out errorString))
-                throw new Exception($"Failed to create symbolic link '{firstSymbolicLink}' targeting '{secondSymbolicLink}': {errorString}");
+            string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
+            CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
 
             Command.Create(firstSymbolicLink)
                 .CaptureStdErr()
@@ -71,9 +80,105 @@ namespace Microsoft.NET.HostModel.Tests
                 .And.HaveStdOutContaining("Hello World");
         }
 
+        [Fact]
+        public void Put_app_directory_behind_symlink()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var binDir = fixture.TestProject.OutputDirectory;
+            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
+            Directory.Move(binDir, binDirNewPath);
+
+            CreateSymbolicLink(binDir, binDirNewPath);
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Put_app_directory_behind_symlink_and_use_dotnet()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var binDir = fixture.TestProject.OutputDirectory;
+            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
+            Directory.Move(binDir, binDirNewPath);
+
+            CreateSymbolicLink(binDir, binDirNewPath);
+            dotnet.Exec(fixture.TestProject.AppDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Put_app_directory_behind_symlink_and_use_dotnet_run()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var dotnet = fixture.SdkDotnet;
+            var binDir = fixture.TestProject.OutputDirectory;
+            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse"); 
+            Directory.Move(binDir, binDirNewPath);
+
+            CreateSymbolicLink(binDir, binDirNewPath);
+            dotnet.Exec("run")
+                .WorkingDirectory(fixture.TestProject.Location)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Put_satellite_assembly_behind_symlink()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Localized
+                .Copy();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Set code page to output unicode characters.
+                Command.Create("chcp 65001").Execute();
+            }
+
+            var appExe = fixture.TestProject.AppExe;
+            var binDir = fixture.TestProject.OutputDirectory;
+            var satellitesDir = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutSatellitesSomewhereElse");
+            Directory.CreateDirectory(satellitesDir);
+
+            var firstSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("kn-IN"));
+            var firstSatelliteNewDir = Path.Combine(satellitesDir, "kn-IN");
+            Directory.Move(firstSatelliteDir, firstSatelliteNewDir);
+            CreateSymbolicLink(firstSatelliteDir, firstSatelliteNewDir);
+
+            var secondSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("ta-IN"));
+            var secondSatelliteNewDir = Path.Combine(satellitesDir, "ta-IN");
+            Directory.Move(secondSatelliteDir, secondSatelliteNewDir);
+            CreateSymbolicLink(secondSatelliteDir, secondSatelliteNewDir);
+
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
+        }
+
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture StandaloneAppFixture_Built { get; }
+            public TestProjectFixture StandaloneAppFixture_Localized { get; }
             public TestProjectFixture StandaloneAppFixture_Published { get; }
             public RepoDirectoriesProvider RepoDirectories { get; }
 
@@ -81,23 +186,23 @@ namespace Microsoft.NET.HostModel.Tests
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
-                buildFixture
-                    .EnsureRestoredForRid(buildFixture.CurrentRid)
-                    .BuildProject(runtime: buildFixture.CurrentRid);
+                var localizedFixture = new TestProjectFixture("LocalizedApp", RepoDirectories);
+                localizedFixture
+                    .EnsureRestoredForRid(localizedFixture.CurrentRid)
+                    .PublishProject(runtime: localizedFixture.CurrentRid);
 
                 var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 publishFixture
                     .EnsureRestoredForRid(publishFixture.CurrentRid)
                     .PublishProject(runtime: publishFixture.CurrentRid);
 
-                StandaloneAppFixture_Built = buildFixture;
+                StandaloneAppFixture_Localized = localizedFixture;
                 StandaloneAppFixture_Published = publishFixture;
             }
 
             public void Dispose()
             {
-                StandaloneAppFixture_Built.Dispose();
+                StandaloneAppFixture_Localized.Dispose();
                 StandaloneAppFixture_Published.Dispose();
             }
         }
