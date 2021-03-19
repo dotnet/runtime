@@ -1021,7 +1021,7 @@ var BindingSupportLib = {
 				var typeName = typePtr 
 					? this.mono_wasm_get_type_name(typePtr)
 					: "null";
-				console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
+				// console.log(`Calling MakeMarshalSignatureInfo for classPtr ${classPtr}, typePtr ${typePtr} and methodPtr ${methodPtr} (typeName ${typeName})`);
 				var json = this.make_marshal_signature_info (typePtr, methodPtr);
 				if (!json)
 					throw new Error (`MakeMarshalSignatureInfo failed`);				
@@ -1097,9 +1097,9 @@ var BindingSupportLib = {
 			if (!this._custom_marshaler_info_cache.has (typePtr)) {
 				var root = MONO.mono_wasm_new_root ();
 				var json = this.get_custom_marshaler_info (typePtr, root.get_address());
-				console.log(json);
+				// console.log(json);
 				result = JSON.parse(json);
-				console.log("instancePtr=", root.value);
+				// console.log("instancePtr=", root.value);
 				if (result) {
 					result.instanceRoot = root;
 					result.instancePtr = root.value;
@@ -1143,7 +1143,7 @@ var BindingSupportLib = {
 				else {
 					var signature = "m";
 					var boundConverter = this.bind_method (
-						convMethod, 0, signature, "ManagedToJS_class" + classPtr
+						convMethod, info.instancePtr, signature, "ManagedToJS_class" + classPtr
 					);
 
 					this._struct_unboxer_cache.set (classPtr, this._compile_post_filter (classPtr, boundConverter, postFilter));
@@ -1237,7 +1237,7 @@ var BindingSupportLib = {
 				var signature = this._pick_result_chara_for_marshal_type (sigInfo.parameters[0].marshalType) + "!";
 				// console.log("jstm signature", signature);
 				var boundConverter = this.bind_method (
-					convMethod, 0, signature, "JSToManaged_type" + typePtr
+					convMethod,info.instancePtr, signature, "JSToManaged_type" + typePtr
 				);
 
 				var result = this._compile_pre_filter (classPtr, boundConverter, preFilter);

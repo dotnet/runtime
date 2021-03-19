@@ -57,9 +57,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             public string ManagedToJS_PostFilter { get; } = "new Date(value)";
 
             public CustomDate JSToManaged (string s) {
-                Console.WriteLine($"CustomDate.JSToManaged({s})");
+                // Console.WriteLine($"CustomDate.JSToManaged({s})");
                 var newDate = DateTime.Parse(s).ToUniversalTime();
-                Console.WriteLine($"newDate={newDate}");
+                // Console.WriteLine($"newDate={newDate}");
                 return new CustomDate { 
                     Date = newDate
                 };
@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             public string ManagedToJS (ref CustomDate cd) {
                 var result = cd.Date.ToString("o");
-                Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
+                // Console.WriteLine($"CustomDate.ManagedToJS({cd.Date}) === {result}");
                 return result;
             }
         }
