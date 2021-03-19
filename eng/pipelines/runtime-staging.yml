@@ -66,6 +66,7 @@ jobs:
     platforms:
     - Android_x86
     - Android_x64
+    - Android_arm
     - iOS_x64
     variables:
       # disable using OpenSSL
@@ -107,6 +108,9 @@ jobs:
     platforms:
     - Android_arm64
     variables:
+      # disable using OpenSSL
+      - name: ANDROID_OPENSSL_AAR
+        value: ''
       # map dependencies variables to local variables
       - name: librariesContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
