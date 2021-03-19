@@ -7,6 +7,16 @@
 #include "pal.h"
 #include "utils.h"
 
+#if defined(NATIVE_LIBS_EMBEDDED)
+extern "C"
+{
+#include "../../../libraries/Native/AnyOS/zlib/pal_zlib.h"
+}
+#endif
+
+// Suppress prefast warning #6255: alloca indicates failure by raising a stack overflow exception
+#pragma warning(disable:6255)
+
 using namespace bundle;
 
 pal::string_t& extractor_t::extraction_dir()
@@ -105,12 +115,57 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
     reader.set_offset(entry.offset());
     size_t size = entry.size();
     size_t cast_size = to_size_t_dbgchecked(size);
-    size_t extracted_size;
+    size_t extracted_size = 0;
 
     if (entry.compressedSize() != 0)
     {
-        // TODO: VS decompress
-        extracted_size = fwrite(reader, 1, size, file);
+#if defined(NATIVE_LIBS_EMBEDDED)
+        PAL_ZStream zStream;
+        zStream.nextIn = (uint8_t*)(const void*)reader;
+        zStream.availIn = entry.compressedSize();
+
+        const int Deflate_DefaultWindowBits = -15; // Legal values are 8..15 and -8..-15. 15 is the window size,
+                                                   // negative val causes deflate to produce raw deflate data (no zlib header).
+
+        int ret = CompressionNative_InflateInit2_(&zStream, Deflate_DefaultWindowBits);
+        if (ret != PAL_Z_OK)
+        {
+            trace::error(_X("Failure initializing zLib stream."));
+            throw StatusCode::BundleExtractionIOError;
+        }
+
+        const int bufSize = 4096;
+        uint8_t* buf = (uint8_t*)alloca(bufSize);
+
+        do
+        {
+            zStream.nextOut = buf;
+            zStream.availOut = bufSize;
+
+            ret = CompressionNative_Inflate(&zStream, PAL_Z_NOFLUSH);
+            if (ret < 0)
+            {
+                CompressionNative_InflateEnd(&zStream);
+                trace::error(_X("Failure inflating zLib stream. %s"), zStream.msg);
+                throw StatusCode::BundleExtractionIOError;
+            }
+
+            int produced = bufSize - zStream.availOut;
+            if (fwrite(buf, 1, produced, file) != produced)
+            {
+                CompressionNative_InflateEnd(&zStream);
+                trace::error(_X("I/O failure when writing decompressed file."));
+                throw StatusCode::BundleExtractionIOError;
+            }
+
+            extracted_size += produced;
+        } while (zStream.availOut == 0);
+
+        CompressionNative_InflateEnd(&zStream);
+#else
+        trace::error(_X("Compressed file in a standalone host scenario?"));
+        throw StatusCode::BundleExtractionIOError;
+#endif
     }
     else
     {
@@ -119,7 +174,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 
     if (extracted_size != cast_size)
     {
-        trace::error(_X("Failure extracting contents of the application bundle."));
+        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%d Actual size:%d"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
         throw StatusCode::BundleExtractionIOError;
     }

@@ -65,7 +65,15 @@ namespace Microsoft.NET.HostModel.Bundle
                 return false;
             }
 
-            return false; // type == FileType.Symbols;
+            switch (type)
+            {
+                case FileType.Symbols:
+                case FileType.NativeBinary:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
@@ -83,7 +91,9 @@ namespace Microsoft.NET.HostModel.Bundle
                 long fileLength = file.Length;
                 file.Position = 0;
 
-                using (GZipStream compressionStream = new GZipStream(bundle, CompressionMode.Compress, leaveOpen: true))
+                // We use DeflateStream here.
+                // It uses GZip algorithm, but with a trivial header that does not contain file info.
+                using (DeflateStream compressionStream = new DeflateStream(bundle, CompressionLevel.Optimal, leaveOpen: true))
                 {
                     file.CopyTo(compressionStream);
                 }
@@ -95,7 +105,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 }
 
                 // compression rate was not good enough
-                // roll back the bundle and let the uncompressed code path take care of the entry.
+                // roll back the bundle offset and let the uncompressed code path take care of the entry.
                 bundle.Seek(startOffset, SeekOrigin.Begin);
             }
 
@@ -114,7 +124,7 @@ namespace Microsoft.NET.HostModel.Bundle
             startOffset = bundle.Position;
             file.CopyTo(bundle);
 
-            return (startOffset, 42);
+            return (startOffset, 0);
         }
 
         private bool IsHost(string fileRelativePath)

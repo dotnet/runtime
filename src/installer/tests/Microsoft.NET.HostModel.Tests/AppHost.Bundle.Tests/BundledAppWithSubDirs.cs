@@ -42,7 +42,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
-            UseFrameworkDependentHost(fixture);
+            UseSingleFileSelfContainedHost(fixture);
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
@@ -59,6 +59,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_Self_Contained_App_Run_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestSelfContainedFixture.Copy();
+            UseSingleFileSelfContainedHost(fixture);
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the bundled app (extract files)
@@ -75,6 +76,7 @@ namespace AppHost.Bundle.Tests
         public void Bundled_With_Empty_File_Succeeds(BundleOptions options)
         {
             var fixture = sharedTestState.TestAppWithEmptyFileFixture.Copy();
+            UseSingleFileSelfContainedHost(fixture);
             var singleFile = BundleHelper.BundleApp(fixture, options);
 
             // Run the app

@@ -20,12 +20,6 @@ file_entry_t file_entry_t::read(reader_t &reader, bool force_extraction)
     const file_entry_fixed_t* fixed_data = reinterpret_cast<const file_entry_fixed_t*>(reader.read_direct(sizeof(file_entry_fixed_t)));
     file_entry_t entry(fixed_data, force_extraction);
 
-    if (fixed_data->compressedSize != 42)
-    {
-        trace::error(_X("v3 must have csize == 42, has %d"), (int)fixed_data->compressedSize);
-        throw StatusCode::BundleExtractionFailure;
-    }
-
     if (!entry.is_valid())
     {
         trace::error(_X("Failure processing application bundle; possible file corruption."));
