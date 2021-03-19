@@ -166,7 +166,7 @@ namespace System
 
                 if (start.Year == end.Year || !rule.NoDaylightTransitions)
                 {
-                    // If the rule is covering only one year then the start and end transitions would occure in that year, we don't need to split the rule.
+                    // If the rule is covering only one year then the start and end transitions would occur in that year, we don't need to split the rule.
                     // Also, rule.NoDaylightTransitions be false in case the rule was created from a POSIX time zone string and having a DST transition. We can represent this in one rule too
                     TransitionTime startTransition = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day) : rule.DaylightTransitionStart;
                     TransitionTime endTransition   = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day) : rule.DaylightTransitionEnd;

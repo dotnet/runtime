@@ -1823,13 +1823,14 @@ namespace System.Tests
         public static void TestSplittingRulesWhenReported()
         {
             // This test confirm we are splitting the rules which span multiple years on Linux
-            // we use "America/Los_Angeles" which has the rule covering 2/9/194 to 8/14/1945
+            // we use "America/Los_Angeles" which has the rule covering 2/9/1942 to 8/14/1945
             // with daylight transition by 01:00:00. This rule should be split into 3 rules:
             //      - rule 1 from 2/9/1942 to 12/31/1942
             //      - rule 2 from 1/1/1943 to 12/31/1944
             //      - rule 3 from 1/1/1945 to 8/14/1945
             TimeZoneInfo.AdjustmentRule[] rules = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific).GetAdjustmentRules();
 
+            bool ruleEncountered = false;
             for (int i = 0; i < rules.Length; i++)
             {
                 if (rules[i].DateStart == new DateTime(1942, 2, 9))
@@ -1871,8 +1872,13 @@ namespace System.Tests
                     Assert.Equal(daylightDelta, rules[i + 2].DaylightDelta);
                     Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 1, 1), rules[i + 2].DaylightTransitionStart);
                     Assert.Equal(TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 15, 59, 59, 999), 8, 14), rules[i + 2].DaylightTransitionEnd);
+
+                    ruleEncountered = true;
+                    break;
                 }
             }
+
+            Assert.True(ruleEncountered, "The 1942 rule of America/Los_Angeles not found.");
         }
 
         [Theory]
