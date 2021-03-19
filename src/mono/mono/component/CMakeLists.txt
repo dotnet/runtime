@@ -1,24 +1,38 @@
 
+
+# a list of every component, add a new component here
+set(components
+  hot_reload
+  #component_two, etc...
+  )
+
+# the generic components source files
 set(component_sources_base
   component.h
   )
 
-set(hot_reload_sources_base
+# the sources for each individiable component
+# define a new component_name-sources_base list for each component
+
+set(hot_reload-sources_base
   ${component_source_base}
   hot_reload.c
   hot_reload.h
   )
 
-addprefix(hot_reload_sources ../component "${hot_reload_sources_base}")
+# from here down, all the components are treated in the same way
 
-add_library(hot_reload-objects OBJECT "${hot_reload_sources}")
+# define a component_name-objects oject target with the relative source file names
+foreach (component IN LISTS components)
+  addprefix("${component}-sources" ../component "${${component}-sources_base}")
+  add_library("${component}-objects" OBJECT "${${component}-sources}")
+endforeach()
 
 if (NOT STATIC_COMPONENTS)
-  target_compile_definitions (hot_reload-objects PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
-endif()
-
-if(NOT STATIC_COMPONENTS)
-  add_library(mono-component-hot_reload SHARED $<TARGET_OBJECTS:hot_reload-objects>)
-  target_link_libraries(mono-component-hot_reload monosgen-shared)
-  install(TARGETS mono-component-hot_reload LIBRARY)
+  foreach (component IN LISTS components)
+    target_compile_definitions ("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC)
+    add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
+    target_link_libraries("mono-component-${component}" monosgen-shared)
+    install(TARGETS "mono-component-${component}" LIBRARY)
+  endforeach()
 endif()
