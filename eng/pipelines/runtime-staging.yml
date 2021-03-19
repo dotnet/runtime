@@ -65,7 +65,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Android_x64
-    - iOS_x64
+    - iOSSimulator_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
