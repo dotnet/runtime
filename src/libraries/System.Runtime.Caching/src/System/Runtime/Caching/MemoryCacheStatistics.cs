@@ -146,10 +146,12 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
                 _configPhysicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
             }
-            if (!PhysicalMemoryMonitor.IsSupported() && _configPhysicalMemoryLimitPercentage > 0)
+#if !NET5_0
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _configPhysicalMemoryLimitPercentage > 0)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_PhysicalMemoryLimitPercentage);
             }
+#endif
         }
 
         private void InitDisposableMembers()

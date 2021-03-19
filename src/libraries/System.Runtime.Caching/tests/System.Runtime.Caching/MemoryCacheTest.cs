@@ -42,6 +42,7 @@ using MonoTests.Common;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Runtime.Versioning;
 
 namespace MonoTests.System.Runtime.Caching
 {
@@ -51,16 +52,16 @@ namespace MonoTests.System.Runtime.Caching
         {
             get
             {
+                // This is always supported on windows
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     return true;
                 }
 
-                // Other OS's support if they have /proc/meminfo with "MemAvailable"
-                if (File.Exists("/proc/meminfo"))
+                // On non-windows, we only support .Net 5.0 and higher
+                if (Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase))
                 {
-                    string meminfo = File.ReadAllText("/proc/meminfo");
-                    return Regex.IsMatch(meminfo, "MemAvailable:");
+                    return true;
                 }
 
                 return false;
