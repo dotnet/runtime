@@ -582,7 +582,6 @@ __SkipRestorePackages=0
 __SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
-__LocalCoreFXConfig=${__BuildType}
 __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""

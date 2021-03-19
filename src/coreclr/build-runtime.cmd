@@ -72,6 +72,7 @@ set __BuildJit=1
 set __BuildPALTests=0
 set __BuildAllJits=1
 set __BuildRuntime=1
+set __BuildILTools=1
 set __CrossArch=
 set __CrossArch2=
 set __CrossOS=0
@@ -158,6 +159,7 @@ if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!pro
 if /i "%1" == "-skipjit"             (set __BuildJit=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipalljits"         (set __BuildAllJits=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipruntime"         (set __BuildRuntime=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipiltools"         (set __BuildILTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -416,7 +418,7 @@ if NOT DEFINED PYTHON (
     goto ExitWithError
 )
 
-set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%"
+set __CMakeClrBuildSubsetArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=%__BuildJit%" "-DCLR_CMAKE_BUILD_SUBSET_ALLJITS=%__BuildAllJits%" "-DCLR_CMAKE_BUILD_SUBSET_RUNTIME=%__BuildRuntime%" "-DCLR_CMAKE_BUILD_SUBSET_ILTOOLS=%__BuildILTools%"
 
 REM =========================================================================================
 REM ===

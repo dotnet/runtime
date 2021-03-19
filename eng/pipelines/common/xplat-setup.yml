@@ -120,7 +120,7 @@ jobs:
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
-        ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'tvOS') }}:
+        ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
           vmImage: 'macOS-10.15'
 
         # Official Build Windows Pool

@@ -1952,8 +1952,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
-    DWORD startTickCount = GetTickCount();
-
 #if defined(FEATURE_EH_FUNCLETS)
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)

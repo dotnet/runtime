@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Globalization;
 using System.IO;
 using System.Text.Unicode;
@@ -9,7 +8,7 @@ using Xunit;
 
 namespace System.Text.Encodings.Web.Tests
 {
-    public partial class JavaScriptStringEncoderTests
+    public partial class JavaScriptEncoderTests
     {
         [Fact]
         public void TestSurrogate_Relaxed()
@@ -26,8 +25,8 @@ namespace System.Text.Encodings.Web.Tests
         public void Relaxed_EquivalentToAll_WithExceptions()
         {
             // Arrange
-            JavaScriptStringEncoder controlEncoder = new JavaScriptStringEncoder(UnicodeRanges.All);
-            JavaScriptStringEncoder testEncoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder controlEncoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+            JavaScriptEncoder testEncoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act & assert
             for (int i = 0; i <= char.MaxValue; i++)
@@ -35,27 +34,27 @@ namespace System.Text.Encodings.Web.Tests
                 if (i == '"' || i == '&' || i == '<' || i == '>' || i == '+' || i == '\'' || i == '`')
                 {
                     string input = new string((char)i, 1);
-                    Assert.NotEqual(controlEncoder.JavaScriptStringEncode(input), testEncoder.JavaScriptStringEncode(input));
+                    Assert.NotEqual(controlEncoder.Encode(input), testEncoder.Encode(input));
                     continue;
                 }
 
                 if (!IsSurrogateCodePoint(i))
                 {
                     string input = new string((char)i, 1);
-                    Assert.Equal(controlEncoder.JavaScriptStringEncode(input), testEncoder.JavaScriptStringEncode(input));
+                    Assert.Equal(controlEncoder.Encode(input), testEncoder.Encode(input));
                 }
             }
         }
 
         [Fact]
-        public void JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple_Escaping()
+        public void JavaScriptEncode_Relaxed_StillEncodesForbiddenChars_Simple_Escaping()
         {
             // The following two calls could be simply InlineData to the Theory below
             // Unfortunately, the xUnit logger fails to escape the inputs when logging the test results,
             // and so the suite fails despite all tests passing.
             // TODO: I will try to fix it in xUnit, but for now this is a workaround to enable these tests.
-            JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple("\b", @"\b");
-            JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple("\f", @"\f");
+            JavaScriptEncode_Relaxed_StillEncodesForbiddenChars_Simple("\b", @"\b");
+            JavaScriptEncode_Relaxed_StillEncodesForbiddenChars_Simple("\f", @"\f");
         }
 
         [Theory]
@@ -64,23 +63,23 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("\n", @"\n")]
         [InlineData("\t", @"\t")]
         [InlineData("\r", @"\r")]
-        public void JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Simple(string input, string expected)
+        public void JavaScriptEncode_Relaxed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act
-            string retVal = encoder.JavaScriptStringEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
         }
 
         [Fact]
-        public void JavaScriptStringEncode_Relaxed_StillEncodesForbiddenChars_Extended()
+        public void JavaScriptEncode_Relaxed_StillEncodesForbiddenChars_Extended()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act & assert - BMP chars
             for (int i = 0; i <= 0xFFFF; i++)
@@ -89,7 +88,7 @@ namespace System.Text.Encodings.Web.Tests
                 string expected;
                 if (IsSurrogateCodePoint(i))
                 {
-                    expected = "\uFFFD"; // unpaired surrogate -> Unicode replacement char
+                    expected = "\\uFFFD"; // unpaired surrogate -> Unicode replacement char
                 }
                 else
                 {
@@ -129,7 +128,7 @@ namespace System.Text.Encodings.Web.Tests
                         {
                             mustEncode = true; // control char
                         }
-                        else if (!UnicodeHelpers.IsCharacterDefined((char)i))
+                        else if (!UnicodeTestHelpers.IsCharacterDefined((char)i))
                         {
                             mustEncode = true; // undefined (or otherwise disallowed) char
                         }
@@ -145,7 +144,7 @@ namespace System.Text.Encodings.Web.Tests
                     }
                 }
 
-                string retVal = encoder.JavaScriptStringEncode(input);
+                string retVal = encoder.Encode(input);
                 Assert.Equal(expected, retVal);
             }
 
@@ -154,107 +153,107 @@ namespace System.Text.Encodings.Web.Tests
             {
                 string input = char.ConvertFromUtf32(i);
                 string expected = string.Format(CultureInfo.InvariantCulture, @"\u{0:X4}\u{1:X4}", (uint)input[0], (uint)input[1]);
-                string retVal = encoder.JavaScriptStringEncode(input);
+                string retVal = encoder.Encode(input);
                 Assert.Equal(expected, retVal);
             }
         }
 
         [Fact]
-        public void JavaScriptStringEncode_BadSurrogates_ReturnsUnicodeReplacementChar_Relaxed()
+        public void JavaScriptEncode_BadSurrogates_ReturnsUnicodeReplacementChar_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping; // allow all codepoints
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping; // allow all codepoints
 
             // "a<unpaired leading>b<unpaired trailing>c<trailing before leading>d<unpaired trailing><valid>e<high at end of string>"
             const string input = "a\uD800b\uDFFFc\uDFFF\uD800d\uDFFF\uD800\uDFFFe\uD800";
-            const string expected = "a\uFFFDb\uFFFDc\uFFFD\uFFFDd\uFFFD\\uD800\\uDFFFe\uFFFD"; // 'D800' 'DFFF' was preserved since it's valid
+            const string expected = "a\\uFFFDb\\uFFFDc\\uFFFD\\uFFFDd\\uFFFD\\uD800\\uDFFFe\\uFFFD"; // 'D800' 'DFFF' was preserved since it's valid
 
             // Act
-            string retVal = encoder.JavaScriptStringEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
         }
 
         [Fact]
-        public void JavaScriptStringEncode_EmptyStringInput_ReturnsEmptyString_Relaxed()
+        public void JavaScriptEncode_EmptyStringInput_ReturnsEmptyString_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act & assert
-            Assert.Equal("", encoder.JavaScriptStringEncode(""));
+            Assert.Equal("", encoder.Encode(""));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_InputDoesNotRequireEncoding_ReturnsOriginalStringInstance_Relaxed()
+        public void JavaScriptEncode_InputDoesNotRequireEncoding_ReturnsOriginalStringInstance_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
             string input = "Hello, there!";
 
             // Act & assert
-            Assert.Same(input, encoder.JavaScriptStringEncode(input));
+            Assert.Same(input, encoder.Encode(input));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_NullInput_Throws_Relaxed()
+        public void JavaScriptEncode_NullInput_Throws_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
-            Assert.Throws<ArgumentNullException>(() => { encoder.JavaScriptStringEncode(null); });
+            Assert.Throws<ArgumentNullException>(() => { encoder.Encode(null); });
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingAtBeginning_Relaxed()
+        public void JavaScriptEncode_WithCharsRequiringEncodingAtBeginning_Relaxed()
         {
-            Assert.Equal(@"\\Hello, there!", JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping.JavaScriptStringEncode("\\Hello, there!"));
+            Assert.Equal(@"\\Hello, there!", JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode("\\Hello, there!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingAtEnd_Relaxed()
+        public void JavaScriptEncode_WithCharsRequiringEncodingAtEnd_Relaxed()
         {
-            Assert.Equal(@"Hello, there!\\", JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping.JavaScriptStringEncode("Hello, there!\\"));
+            Assert.Equal(@"Hello, there!\\", JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode("Hello, there!\\"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingInMiddle_Relaxed()
+        public void JavaScriptEncode_WithCharsRequiringEncodingInMiddle_Relaxed()
         {
-            Assert.Equal(@"Hello, \\there!", JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping.JavaScriptStringEncode("Hello, \\there!"));
+            Assert.Equal(@"Hello, \\there!", JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode("Hello, \\there!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_WithCharsRequiringEncodingInterspersed_Relaxed()
+        public void JavaScriptEncode_WithCharsRequiringEncodingInterspersed_Relaxed()
         {
-            Assert.Equal("Hello, \\\\there\\\"!", JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping.JavaScriptStringEncode("Hello, \\there\"!"));
+            Assert.Equal("Hello, \\\\there\\\"!", JavaScriptEncoder.UnsafeRelaxedJsonEscaping.Encode("Hello, \\there\"!"));
         }
 
         [Fact]
-        public void JavaScriptStringEncode_CharArray_Relaxed()
+        public void JavaScriptEncode_CharArray_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             using var output = new StringWriter();
 
             // Act
-            encoder.JavaScriptStringEncode("Hello\\world!".ToCharArray(), 3, 5, output);
+            encoder.Encode(output, "Hello\\world!".ToCharArray(), 3, 5);
 
             // Assert
             Assert.Equal(@"lo\\wo", output.ToString());
         }
 
         [Fact]
-        public void JavaScriptStringEncode_StringSubstring_Relaxed()
+        public void JavaScriptEncode_StringSubstring_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             using var output = new StringWriter();
 
             // Act
-            encoder.JavaScriptStringEncode("Hello\\world!", 3, 5, output);
+            encoder.Encode(output, "Hello\\world!", 3, 5);
 
             // Assert
             Assert.Equal(@"lo\\wo", output.ToString());
@@ -263,13 +262,13 @@ namespace System.Text.Encodings.Web.Tests
         [Theory]
         [InlineData("\"", "\\\"")]
         [InlineData("'", "'")]
-        public void JavaScriptStringEncode_Quotes_Relaxed(string input, string expected)
+        public void JavaScriptEncode_Quotes_Relaxed(string input, string expected)
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act
-            string retVal = encoder.JavaScriptStringEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
@@ -279,23 +278,23 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData("hello+world", "hello+world")]
         [InlineData("hello<world>", "hello<world>")]
         [InlineData("hello&world", "hello&world")]
-        public void JavaScriptStringEncode_DoesOutputHtmlSensitiveCharacters_Relaxed(string input, string expected)
+        public void JavaScriptEncode_DoesOutputHtmlSensitiveCharacters_Relaxed(string input, string expected)
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act
-            string retVal = encoder.JavaScriptStringEncode(input);
+            string retVal = encoder.Encode(input);
 
             // Assert
             Assert.Equal(expected, retVal);
         }
 
         [Fact]
-        public void JavaScriptStringEncode_AboveAscii_Relaxed()
+        public void JavaScriptEncode_AboveAscii_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act & assert
             for (int i = 0x128; i <= 0xFFFF; i++)
@@ -311,16 +310,16 @@ namespace System.Text.Encodings.Web.Tests
                     continue; // skip undefined characters like U+0378, or spacing characters like U+2028
                 }
 
-                string javaScriptStringEncoded = encoder.JavaScriptStringEncode(char.ConvertFromUtf32(i));
-                Assert.True(char.ConvertFromUtf32(i) == javaScriptStringEncoded, i.ToString());
+                string javaScriptEncoded = encoder.Encode(char.ConvertFromUtf32(i));
+                Assert.True(char.ConvertFromUtf32(i) == javaScriptEncoded, i.ToString());
             }
         }
 
         [Fact]
-        public void JavaScriptStringEncode_ControlCharacters_Relaxed()
+        public void JavaScriptEncode_ControlCharacters_Relaxed()
         {
             // Arrange
-            JavaScriptStringEncoder encoder = JavaScriptStringEncoder.UnsafeRelaxedJsonEscaping;
+            JavaScriptEncoder encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
             // Act & assert
             for (int i = 0; i <= 0x1F; i++)
@@ -330,9 +329,9 @@ namespace System.Text.Encodings.Web.Tests
                 {
                     continue;
                 }
-                string javaScriptStringEncoded = encoder.JavaScriptStringEncode(char.ConvertFromUtf32(i));
+                string javaScriptEncoded = encoder.Encode(char.ConvertFromUtf32(i));
                 string expected = string.Format("\\u00{0:X2}", i);
-                Assert.Equal(expected, javaScriptStringEncoded);
+                Assert.Equal(expected, javaScriptEncoded);
             }
         }
     }

@@ -4,9 +4,10 @@
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS>iOS</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)\runtimes\ios-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <RuntimeIdentifier>ios-$(TargetArchitecture)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
@@ -16,7 +17,7 @@
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.ios-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
@@ -32,7 +33,7 @@
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
-      <IosSimulator Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86'">iPhone 11</IosSimulator>
+      <IosSimulator Condition="'$(TargetsiOSSimulator)' == 'true'">iPhone 11</IosSimulator>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
       <RunAOTCompilation Condition="'$(IosSimulator)' == '' or '$(ForceAOT)' == 'true'">true</RunAOTCompilation>
     </PropertyGroup>
