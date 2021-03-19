@@ -93,6 +93,8 @@ include(${PROJECT_SOURCE_DIR}/../../../eng/native/configureplatform.cmake)
 include(${PROJECT_SOURCE_DIR}/../../../eng/native/configurecompiler.cmake)
 
 if (CLR_CMAKE_HOST_UNIX)
+  # Add custom target that the pal tests build expects.
+  add_custom_target(paltests_install)
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/inc/rt")
   include_directories("${PROJECT_SOURCE_DIR}/../../coreclr/pal/src/safecrt")
