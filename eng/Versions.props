@@ -17,7 +17,7 @@
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
-    <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
+    <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <!--
       The NETStandard.Library targeting pack uses this patch version, which does not match the
@@ -116,6 +116,9 @@
     <SystemSecurityCryptographyX509CertificatesTestDataVersion>6.0.0-beta.21162.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
     <SystemWindowsExtensionsTestDataVersion>6.0.0-beta.21162.1</SystemWindowsExtensionsTestDataVersion>
     <!-- dotnet-optimization dependencies -->
+    <optimizationwindows_ntx64MIBCRuntimeVersion>99.99.99-master-20210317.2</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>99.99.99-master-20210317.2</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>99.99.99-master-20210317.2</optimizationlinuxx64MIBCRuntimeVersion>
     <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreFxVersion>
     <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200806.6</optimizationlinuxx64IBCCoreFxVersion>
     <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200806.6</optimizationwindows_ntx64IBCCoreCLRVersion>
