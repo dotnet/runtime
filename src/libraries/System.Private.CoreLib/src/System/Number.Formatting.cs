@@ -1213,7 +1213,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = UInt32ToDecChars(buffer.Slice(0, bufferLength), (uint)(-value), digits);
+            int p = UInt32ToDecChars(buffer, (uint)(-value), digits);
             Debug.Assert(p == sNegative.Length);
 
             for (int i = 0; i < sNegative.Length && i < buffer.Length; i++)
@@ -1260,7 +1260,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = Int32ToHexChars(buffer.Slice(0, bufferLength), (uint)value, hexBase, digits);
+            int p = Int32ToHexChars(buffer, (uint)value, hexBase, digits);
             Debug.Assert(p == 0);
 
             return result;
@@ -1380,7 +1380,7 @@ namespace System
             string result = string.FastAllocateString(bufferLength);
             Span<char> buffer = new Span<char>(ref result.GetRawStringData(), bufferLength);
 
-            int p = UInt32ToDecChars(buffer.Slice(0, bufferLength), value, digits);
+            int p = UInt32ToDecChars(buffer, value, digits);
             Debug.Assert(p == 0);
 
             return result;
