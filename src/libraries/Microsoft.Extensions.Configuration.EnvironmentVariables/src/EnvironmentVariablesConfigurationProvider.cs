@@ -17,6 +17,8 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         private const string SqlServerPrefix = "SQLCONNSTR_";
         private const string CustomPrefix = "CUSTOMCONNSTR_";
 
+        private static IDictionary? s_environmentVariablesCache;
+
         private readonly string _prefix;
 
         /// <summary>
@@ -36,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// Loads the environment variables.
         /// </summary>
         public override void Load() =>
-            Load(Environment.GetEnvironmentVariables());
+            Load(s_environmentVariablesCache ?? CreateEnvironmentVariablesCache());
 
         internal void Load(IDictionary envVariables)
         {
@@ -112,5 +114,22 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         }
 
         private static string NormalizeKey(string key) => key.Replace("__", ConfigurationPath.KeyDelimiter);
+
+        private static IDictionary CreateEnvironmentVariablesCache()
+        {
+            IDictionary environmentVariables;
+            s_environmentVariablesCache = environmentVariables = Environment.GetEnvironmentVariables();
+            // We wait till Gen2 to cleanup as there might be a lot of allocations at startup.
+            Gen2GcCallback.Register((o) => CleanupEnvironmentVariablesCache(), environmentVariables);
+            return environmentVariables;
+        }
+
+        private static bool CleanupEnvironmentVariablesCache()
+        {
+            // Clear the cache
+            s_environmentVariablesCache = null;
+            // Stop running the Gen2 callback
+            return false;
+        }
     }
 }
