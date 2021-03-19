@@ -1,16 +1,12 @@
 using System;
 
-namespace ExampleLibrary
+namespace DebuggerTests
 {
-    public static class Greeter
+    public static class ClassToBreak
     {
-        public static string Greet(string name)
+        public static int TestBreakpoint()
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            return $"Hello {name}!";
+            return 50;
         }
     }
 }

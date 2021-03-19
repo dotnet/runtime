@@ -31,6 +31,7 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
 

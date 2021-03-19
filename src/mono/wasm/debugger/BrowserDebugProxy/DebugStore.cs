@@ -584,19 +584,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (KeyValuePair<string, string> sourceLinkDocument in sourceLinkMappings)
             {
-                string key = sourceLinkDocument.Key;
-
-                if (Path.GetFileName(key) != "*")
-                {
-                    continue;
-                }
-
-                string keyTrim = key.TrimEnd('*');
-
+                var keyTrim = sourceLinkDocument.Key.TrimEnd('*');
                 if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
                 {
-                    string docUrlPart = document.Replace(keyTrim, "");
-                    return new Uri(sourceLinkDocument.Value.TrimEnd('*') + docUrlPart);
+                    string urlToReplace = sourceLinkDocument.Value.TrimEnd('*');
+                    string docUrlPart = document.Replace(keyTrim, urlToReplace);
+                    return new Uri(docUrlPart);
                 }
             }
 
@@ -782,7 +775,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (Uri url in new[] { SourceUri, SourceLinkUri })
             {
                 MemoryStream mem = await GetDataAsync(url, token).ConfigureAwait(false);
-                if (mem != null && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
+                if (mem != null && mem.Length > 0 && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
                 {
                     mem.Position = 0;
                     return mem;
