@@ -737,17 +737,6 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 break;
         }
     }
-    else // must be a VNF_ function
-    {
-        switch (vnf)
-        {
-            // Here we handle those that are the same for all integer types.
-
-            default:
-                // For any other value of 'vnf', we will assert below
-                break;
-        }
-    }
 
     noway_assert(!"Unhandled operation in EvalOpSpecialized<T> - binary");
     return v0;
