@@ -52,7 +52,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
   Write-Host "                                 Path or any project or solution name is accepted."
-  Write-Host "                                 (Example: -vs Microsoft.CSharp)"
+  Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.sln)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
