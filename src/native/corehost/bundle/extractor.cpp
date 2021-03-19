@@ -151,7 +151,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
             }
 
             int produced = bufSize - zStream.availOut;
-            if (fwrite(buf, 1, produced, file) != produced)
+            if (fwrite(buf, 1, produced, file) != (size_t)produced)
             {
                 CompressionNative_InflateEnd(&zStream);
                 trace::error(_X("I/O failure when writing decompressed file."));
