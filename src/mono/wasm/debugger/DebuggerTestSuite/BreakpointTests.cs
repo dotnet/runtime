@@ -287,25 +287,5 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
-        public async Task GetSourceUsingSourceLink()
-        {
-            var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
-            var pause_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test-with-source-link] DebuggerTests.ClassToBreak:TestBreakpoint'); }, 1);",
-                "dotnet://debugger-test-with-source-link.dll/test.cs",
-                bp.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp.Value["locations"][0]["columnNumber"].Value<int>(),
-                "TestBreakpoint");
-
-            var sourceToGet = JObject.FromObject(new
-            {
-                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
-            });
-
-            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
-            Assert.True(source.IsOk);
-        }
-
     }
 }
