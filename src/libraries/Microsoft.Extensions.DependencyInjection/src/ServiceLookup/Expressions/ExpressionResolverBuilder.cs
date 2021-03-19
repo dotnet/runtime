@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Expression.Assign(ResolvedServices,
                 Expression.Property(
                     ScopeParameter,
-                    typeof(ServiceProviderEngineScope).GetMethod("get_" + nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
+                    typeof(ServiceProviderEngineScope).GetProperty(nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)));
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
