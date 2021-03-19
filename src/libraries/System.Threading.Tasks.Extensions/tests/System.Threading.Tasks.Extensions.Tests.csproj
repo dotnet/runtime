@@ -6,8 +6,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
+    <Compile Include="AsyncMethodBuilderOverrideAttributeTests.cs" />
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ManualResetValueTaskSourceTests.cs" />
+    <Compile Include="PoolingAsyncValueTaskMethodBuilderTests.cs" />
     <Compile Include="ValueTaskTests.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs"
              Link="Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs" />

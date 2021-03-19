@@ -9120,6 +9120,12 @@ namespace System.Runtime.CompilerServices
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Property | System.AttributeTargets.Module, Inherited = false, AllowMultiple = true)]
+    public sealed partial class AsyncMethodBuilderOverrideAttribute : System.Attribute
+    {
+        public AsyncMethodBuilderOverrideAttribute(System.Type builderType) { }
+        public System.Type BuilderType { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
@@ -9523,6 +9529,33 @@ namespace System.Runtime.CompilerServices
     public sealed partial class ModuleInitializerAttribute : System.Attribute
     {
         public ModuleInitializerAttribute() { }
+    }
+    public partial struct PoolingAsyncValueTaskMethodBuilder
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.ValueTask Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult() { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
+    public partial struct PoolingAsyncValueTaskMethodBuilder<TResult>
+    {
+        private TResult _result;
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.ValueTask<TResult> Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder<TResult> Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
