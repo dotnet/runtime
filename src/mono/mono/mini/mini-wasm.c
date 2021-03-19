@@ -218,7 +218,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			g_error ("vret_addr = ");
+			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
