@@ -624,11 +624,16 @@
 
     <!-- Copy Mono runtime files to artifacts directory -->
     <ItemGroup>
+      <_MonoRuntimeComponentsFilePath Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*" Condition="Exists($(_MonoRuntimeFilePath))" />
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
         <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)">
         <Destination>$(RuntimeBinDir)$(MonoStaticFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <!-- copy the mono runtime component shared or static libraries -->
+      <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsFilePath)">
+	<Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsFilePath.Filename)%(_MonoRuntimeComponentsFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\mono-aot-cross$(ExeExt)</Destination>
@@ -672,6 +677,10 @@
                                $(_IcuLibdir)\*.dat" />
     </ItemGroup>
 
+    <Message Importance="High" Text="....... Directory $([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))"  />
+    <Message Importance="High" Text="1111111 Components @(_MonoRuntimeComponentsFilePath)" />
+    <Message Importance="High" Text="aaaaaaaa Copying @(_MonoRuntimeArtifacts)" />
+    
     <Copy Condition="'$(_MonoIncludeIcuFiles)' == 'true'"
           SourceFiles="@(_IcuArtifacts)"
           DestinationFolder="$(RuntimeBinDir)"
