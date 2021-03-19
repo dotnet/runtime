@@ -371,7 +371,7 @@ In addition to the guarantees that apply to all type initializers, the CLI shall
 
 We propose to allow default implementations of interface methods.
 
-Default interface methods is a runtime feature designed to support the [default interface methods](https://github.com/dotnet/csharplang/blob/21dc9561aeffc87a31da44588ce7ed6930ee3333/proposals/default-interface-methods.md) C# language feature posed for C# 8.0.
+Default interface methods is a runtime feature designed to support the [default interface methods](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-8.0/default-interface-methods.md) C# 8.0 language feature.
 
 The major changes are:
 
