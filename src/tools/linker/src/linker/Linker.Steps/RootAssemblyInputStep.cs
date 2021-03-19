@@ -135,13 +135,22 @@ namespace Mono.Linker.Steps
 			if ((preserve & TypePreserveMembers.Internal) != 0 && IsTypePrivate (type))
 				preserve_anything &= ~TypePreserveMembers.Internal;
 
-			// For now there are no cases where library mode for non-visible type would need
-			// to mark anything
-			if ((preserve_anything & ~TypePreserveMembers.Library) == 0)
+			switch (preserve_anything) {
+			case 0:
 				return;
-
-			Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
-			Annotations.SetMembersPreserve (type, preserve);
+			case TypePreserveMembers.Library:
+				//
+				// In library mode private type can have members kept for serialization if
+				// the type is referenced
+				//
+				preserve = preserve_anything;
+				Annotations.SetMembersPreserve (type, preserve);
+				break;
+			default:
+				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
+				Annotations.SetMembersPreserve (type, preserve);
+				break;
+			}
 
 			if (!type.HasNestedTypes)
 				return;

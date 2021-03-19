@@ -20,6 +20,8 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		[Kept]
 		public static void Main ()
 		{
+			var t = typeof (SerializationTestPrivate);
+			t = typeof (SerializationTestNested.SerializationTestPrivate);
 		}
 
 		[Kept]
@@ -71,6 +73,39 @@ namespace Mono.Linker.Tests.Cases.Libraries
 		}
 
 		[Kept]
+		private class SerializationTestPrivate
+		{
+			[Kept]
+			private SerializationTestPrivate (SerializationInfo info, StreamingContext context)
+			{
+			}
+
+			public void NotUsed ()
+			{
+			}
+		}
+
+		[Kept]
+		private class SerializationTestNested
+		{
+			internal class SerializationTestPrivate
+			{
+				[Kept]
+				private SerializationTestPrivate (SerializationInfo info, StreamingContext context)
+				{
+				}
+
+				public void NotUsed ()
+				{
+				}
+			}
+
+			public void NotUsed ()
+			{
+			}
+		}
+
+		[Kept]
 		public class SubstitutionsTest
 		{
 			[Kept]
@@ -113,5 +148,12 @@ namespace Mono.Linker.Tests.Cases.Libraries
 
 	internal class RootLibrary_Internal
 	{
+		protected RootLibrary_Internal (SerializationInfo info, StreamingContext context)
+		{
+		}
+
+		internal void Unused ()
+		{
+		}
 	}
 }
