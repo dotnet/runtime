@@ -1819,7 +1819,8 @@ namespace System.Tests
             Assert.Equal(offset, s_casablancaTz.GetUtcOffset(dt));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         public static void TestSplittingRulesWhenReported()
         {
             // This test confirm we are splitting the rules which span multiple years on Linux
