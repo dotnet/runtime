@@ -21,6 +21,12 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2055</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Microsoft.CSharp.RuntimeBinder.Semantics.AggregateType.CalculateAssociatedSystemType</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2060</argument>
       <property name="Scope">member</property>
       <property name="Target">M:Microsoft.CSharp.RuntimeBinder.Semantics.ExprMethodInfo.get_MethodInfo</property>
