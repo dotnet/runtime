@@ -152,6 +152,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override void ImportParameters(RSAParameters parameters)
             {
                 ValidateParameters(parameters);
@@ -193,6 +195,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override unsafe void ImportSubjectPublicKeyInfo(
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
@@ -216,6 +220,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
@@ -838,6 +844,8 @@ namespace System.Security.Cryptography
                 }
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
             {
                 AsnWriter keyWriter;

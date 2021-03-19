@@ -122,6 +122,8 @@ namespace System.Security.Cryptography
             current?.Dispose();
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
         {
             const string ExportPassword = "DotnetExportPassphrase";
@@ -178,6 +180,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal int ImportParameters(ECParameters parameters)
         {
             parameters.Validate();
@@ -239,6 +243,8 @@ namespace System.Security.Cryptography
             return (int)size;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
         {
             AsnWriter keyWriter;
@@ -276,6 +282,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         internal unsafe int ImportSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out int bytesRead)

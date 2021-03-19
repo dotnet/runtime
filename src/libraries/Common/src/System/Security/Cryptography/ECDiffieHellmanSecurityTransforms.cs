@@ -82,11 +82,15 @@ namespace System.Security.Cryptography
                 return _ecc.ExportParameters(includePrivateParameters, KeySize);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override void ImportParameters(ECParameters parameters)
             {
                 KeySizeValue = _ecc.ImportParameters(parameters);
             }
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             public override void ImportSubjectPublicKeyInfo(
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
@@ -275,6 +279,8 @@ namespace System.Security.Cryptography
             public override ECDiffieHellmanPublicKey PublicKey =>
                 new ECDiffieHellmanSecurityTransformsPublicKey(ExportParameters(false));
 
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
                 private EccSecurityTransforms _ecc;
