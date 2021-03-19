@@ -31,6 +31,7 @@ namespace System
             public NumberBuffer(NumberBufferKind kind, Span<byte> digits)
             {
                 Debug.Assert(digits != null);
+                Debug.Assert(digits.Length > 0);
 
                 DigitsCount = 0;
                 Scale = 0;

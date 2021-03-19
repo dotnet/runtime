@@ -123,7 +123,7 @@ namespace System
             while (remaining != 0)
             {
                 uint count = Math.Min(remaining, 9);
-                uint value = DigitsToUInt32(src, (int)(count));
+                uint value = DigitsToUInt32(src.Slice(0, (int)count));
 
                 result.MultiplyPow10(count);
                 result.Add(value);
@@ -305,30 +305,31 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        private static uint DigitsToUInt32(Span<byte> p, int count)
+        private static uint DigitsToUInt32(Span<byte> p)
         {
-            Debug.Assert((1 <= count) && (count <= 9));
+            Debug.Assert((1 <= p.Length) && (p.Length <= 9));
 
-            uint res = (uint)(p[0] - '0');
+            uint res = 0;
 
-            for (int i = 1; i < count; i++)
+            for (int i = 0; i < p.Length; i++)
             {
-                res = (10 * res) + p[i] - '0';
+                res = (10 * res) + (uint)(p[i] - '0');
             }
 
             return res;
         }
 
+
         // get 64-bit integer from at most 19 digits
-        private static ulong DigitsToUInt64(Span<byte> p, int count)
+        private static ulong DigitsToUInt64(Span<byte> p)
         {
-            Debug.Assert((1 <= count) && (count <= 19));
+            Debug.Assert((1 <= p.Length) && (p.Length <= 19));
 
-            ulong res = (ulong)(p[0] - '0');
+            ulong res = 0;
 
-            for (int i = 1; i < count; i++)
+            for (int i = 0; i < p.Length; i++)
             {
-                res = (10 * res) + p[i] - '0';
+                res = (10 * res) + (ulong)(p[i] - '0');
             }
 
             return res;
@@ -374,7 +375,7 @@ namespace System
 
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
-                double result = DigitsToUInt64(src, (int)(totalDigits));
+                double result = DigitsToUInt64(src.Slice(0, (int)totalDigits));
                 double scale = s_Pow10DoubleTable[fastExponent];
 
                 if (fractionalDigitsPresent != 0)
@@ -436,7 +437,7 @@ namespace System
                 // values since we can lose some of the mantissa bits and would return the
                 // wrong value when upcasting to double.
 
-                float result = DigitsToUInt32(src, (int)(totalDigits));
+                float result = DigitsToUInt32(src.Slice(0, (int)totalDigits));
                 float scale = s_Pow10SingleTable[fastExponent];
 
                 if (fractionalDigitsPresent != 0)
@@ -453,7 +454,7 @@ namespace System
 
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
-                double result = DigitsToUInt64(src, (int)(totalDigits));
+                double result = DigitsToUInt64(src.Slice(0, (int)totalDigits));
                 double scale = s_Pow10DoubleTable[fastExponent];
 
                 if (fractionalDigitsPresent != 0)
@@ -515,7 +516,7 @@ namespace System
                 // values since we can lose some of the mantissa bits and would return the
                 // wrong value when upcasting to double.
 
-                float result = DigitsToUInt32(src, (int)(totalDigits));
+                float result = DigitsToUInt32(src.Slice(0, (int)totalDigits));
                 float scale = s_Pow10SingleTable[fastExponent];
 
                 if (fractionalDigitsPresent != 0)
@@ -532,7 +533,7 @@ namespace System
 
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
-                double result = DigitsToUInt64(src, (int)(totalDigits));
+                double result = DigitsToUInt64(src.Slice(0, (int)totalDigits));
                 double scale = s_Pow10DoubleTable[fastExponent];
 
                 if (fractionalDigitsPresent != 0)
