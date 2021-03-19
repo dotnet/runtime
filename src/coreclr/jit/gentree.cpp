@@ -5743,6 +5743,15 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_NULLCHECK:
             return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
 
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        {
+            GenTree* addr = this->AsOp()->gtGetOp1();
+            return comp->fgAddrCouldBeNull(addr);
+        }
+
         case GT_ARR_LENGTH:
             return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
                     comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()));

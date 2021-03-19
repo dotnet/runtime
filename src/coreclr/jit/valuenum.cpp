@@ -10293,6 +10293,13 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForCkFinite(tree);
                 break;
 
+            case GT_XAND:
+            case GT_XORR:
+            case GT_XADD:
+            case GT_XCHG:
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtGetOp1());
+                break;
+
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
                 // ToDo: model the exceptions for Intrinsics

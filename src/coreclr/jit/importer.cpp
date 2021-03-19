@@ -3825,7 +3825,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // on a local are probably pretty useless anyway, so we probably don't care.
 
             op1 = gtNewOperNode(interlockedOperator, genActualType(callType), op1, op2);
-            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+            op1->gtFlags |= GTF_GLOB_REF | GTF_ASG | GTF_EXCEPT;
             retNode = op1;
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
@@ -4350,7 +4350,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
                     retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
-                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG | GTF_EXCEPT;
                 }
                 break;
             }
