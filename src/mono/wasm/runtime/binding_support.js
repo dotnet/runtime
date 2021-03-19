@@ -72,7 +72,6 @@ var BindingSupportLib = {
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 			this.mono_wasm_get_delegate_invoke = Module.cwrap ('mono_wasm_get_delegate_invoke', 'number', ['number']);
 			this.mono_wasm_string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
-			this.mono_wasm_create_method_signature_info = Module.cwrap ('mono_wasm_create_method_signature_info', 'number', ['number']);
 			this.mono_wasm_unbox_rooted = Module.cwrap ('mono_wasm_unbox_rooted', 'number', ['number']);
 			this.mono_wasm_get_class_for_bind_or_invoke = Module.cwrap ('mono_wasm_get_class_for_bind_or_invoke', 'number', ['number', 'number']);
 			this.mono_wasm_class_get_type = Module.cwrap ('mono_wasm_class_get_type', 'number', ['number']);
