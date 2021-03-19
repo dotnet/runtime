@@ -24,7 +24,7 @@ namespace Microsoft.NET.HostModel.Tests
 
         public AppHostUsedWithSymbolicLinks(AppHostUsedWithSymbolicLinks.SharedTestState fixture)
         {
-            sharedTestState = fixture;            
+            sharedTestState = fixture;
         }
 
         [Theory]
@@ -32,6 +32,10 @@ namespace Microsoft.NET.HostModel.Tests
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -56,6 +60,10 @@ namespace Microsoft.NET.HostModel.Tests
         [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
             
@@ -83,6 +91,10 @@ namespace Microsoft.NET.HostModel.Tests
         [Fact]
         public void Put_app_directory_behind_symlink()
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -103,6 +115,10 @@ namespace Microsoft.NET.HostModel.Tests
         [Fact]
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -123,6 +139,10 @@ namespace Microsoft.NET.HostModel.Tests
         [Fact]
         public void Put_app_directory_behind_symlink_and_use_dotnet_run()
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -144,6 +164,10 @@ namespace Microsoft.NET.HostModel.Tests
         [Fact]
         public void Put_satellite_assembly_behind_symlink()
         {
+            // Creating symbolic links requires administrative privilege on Windows, so skip test.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
             var fixture = sharedTestState.StandaloneAppFixture_Localized
                 .Copy();
 

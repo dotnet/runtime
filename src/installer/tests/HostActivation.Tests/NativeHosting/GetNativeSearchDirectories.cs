@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNet.BinPath)
                 .Execute();
 
-            string pathSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Path.DirectorySeparatorChar.ToString() : string.Empty;
+            string pathSuffix = Path.DirectorySeparatorChar.ToString();
             string expectedSearchDirectories =
                 Path.GetDirectoryName(sharedState.AppPath) + pathSuffix + Path.PathSeparator +
                 Path.Combine(sharedState.DotNet.BinPath, "shared", "Microsoft.NETCore.App", SharedTestState.NetCoreAppVersion) + pathSuffix + Path.PathSeparator;

@@ -18,7 +18,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.I1)]
         internal static extern bool CreateSymbolicLink(
             string symbolicLinkName,
             string targetFileName,
@@ -40,6 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (!CreateSymbolicLink(symbolicLinkName, targetFileName, SymbolicLinkFlag.IsFile))
             {
                 int errno = Marshal.GetLastWin32Error();
+                errorMessage = $"CreateSymbolicLink failed with error number {errno}";
                 return false;
             }
 #else
