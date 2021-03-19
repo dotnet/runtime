@@ -2988,8 +2988,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     {
         argx = args->GetNode()->gtSkipPutArgType();
 
-        fgArgTabEntry* argEntry = nullptr;
-
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
 
@@ -3010,12 +3008,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #if !defined(OSX_ARM64_ABI)
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
 #endif
-        unsigned             size          = 0;
-        unsigned             byteSize      = 0;
-        CORINFO_CLASS_HANDLE copyBlkClass  = nullptr;
-        bool                 isRegArg      = false;
-        bool                 isNonStandard = false;
-        regNumber            nonStdRegNum  = REG_NA;
+        unsigned  size          = 0;
+        unsigned  byteSize      = 0;
+        bool      isRegArg      = false;
+        bool      isNonStandard = false;
+        regNumber nonStdRegNum  = REG_NA;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
@@ -3214,9 +3211,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
         if (isStructArg)
         {
-            // We have an argument with a struct type, but it may be be a child of a GT_COMMA
-            GenTree* argObj = argx->gtEffectiveVal(true /*commaOnly*/);
-
             assert(argx == args->GetNode());
             assert(structSize != 0);
 
@@ -3679,7 +3673,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     // Set up the fgArgInfo.
     fgInitArgInfo(call);
-    unsigned numArgs = call->fgArgInfo->ArgCount();
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
 
     // If we are remorphing, process the late arguments (which were determined by a previous caller).
@@ -3769,9 +3762,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // Get information about this argument.
         var_types hfaType            = argEntry->GetHfaType();
         bool      isHfaArg           = (hfaType != TYP_UNDEF);
-        unsigned  hfaSlots           = argEntry->numRegs;
         bool      passUsingFloatRegs = argEntry->isPassedInFloatRegisters();
-        bool      isBackFilled       = argEntry->IsBackFilled();
         unsigned  structSize         = 0;
 
         // Struct arguments may be morphed into a node that is not a struct type.
@@ -4276,10 +4267,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //
 void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 {
-    bool       foundStructArg = false;
-    unsigned   initialFlags   = call->gtFlags;
-    unsigned   flagsSummary   = 0;
-    fgArgInfo* allArgInfo     = call->fgArgInfo;
+    bool     foundStructArg = false;
+    unsigned flagsSummary   = 0;
 
 #ifdef TARGET_X86
     assert(!"Logic error: no MultiregStructArgs for X86");
@@ -12767,7 +12756,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                                         "the return [%06u]\n",
                                         lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
                                 lclVar->SetLclNum(fieldLclNum);
-                                var_types fieldType = fieldDsc->lvType;
                                 lclVar->ChangeType(fieldDsc->lvType);
                             }
                         }
@@ -13532,8 +13520,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         goto SKIP;
                     }
-
-                    LclVarDsc* varDsc = lvaTable + lclNum;
 
                     /* Set op1 to the right side of asg, (i.e. the RELOP) */
                     op1 = asg->AsOp()->gtOp2;
@@ -18927,7 +18913,6 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
     GenTree*      fieldSeqNode     = addr;
     bool          fieldSeqRecorded = false;
-    bool          isMapAnnotation  = false;
 
 #ifdef DEBUG
     if (verbose)

@@ -1401,8 +1401,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         unsigned   fieldVarNum = varDsc->lvFieldLclStart + multiRegIndex;
         LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
         assert(fldVarDsc->lvLRACandidate);
-        bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-        bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
         bool isFieldDying = lcl->IsLastUse(multiRegIndex);
 
         if (fldVarDsc->GetRegNum() == REG_STK)
@@ -1507,8 +1505,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
             {
                 reg = lcl->AsLclVar()->GetRegNumByIdx(i);
             }
-            bool isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-            bool isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
             bool isFieldDying = lcl->IsLastUse(i);
 
             if (fldVarDsc->GetRegNum() == REG_STK)
