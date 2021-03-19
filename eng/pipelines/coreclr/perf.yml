@@ -117,6 +117,26 @@ jobs:
       runtimeFlavor: mono
       platforms:
       - Linux_x64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: AOT
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: AOT Mono Artifacts
+          artifactName: LinuxMonoAOTx64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
       - Linux_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
@@ -127,7 +147,7 @@ jobs:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
           displayName: AOT Mono Artifacts
-          artifactName: LinuxMonoAOT
+          artifactName: LinuxMonoAOTarm64
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
