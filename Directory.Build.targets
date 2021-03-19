@@ -1,6 +1,6 @@
 <Project InitialTargets="ErrorForMissingPackageDescription;_OverridePackDependsOn">
   <PropertyGroup>
-    <!--
+    <!--  one dummy change
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
     tell Microsoft.Common.targets not to import Directory.Build.targets again
     -->
