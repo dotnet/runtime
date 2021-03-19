@@ -3,7 +3,7 @@
     <!-- OutDir is not set early enough to set this property in .props file. -->
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' and $(TargetArchitecture.StartsWith('arm'))">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
     <JSEngine Condition="'$(TargetOS)' == 'Browser' and '$(JSEngine)' == ''">V8</JSEngine>
     <JSEngineArgs Condition="'$(JSEngine)' == 'V8'">$(JSEngineArgs) --engine-arg=--stack-trace-limit=1000</JSEngineArgs>
 
@@ -119,7 +119,7 @@
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
-  <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'"
+  <UsingTask Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"
              TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -127,7 +127,7 @@
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
 
-  <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Name="BundleTestAppleApp">
+  <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
     <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account." />
@@ -282,7 +282,7 @@
           AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
-      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" />
+      <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
       <_runnerFilesToPublish Include="$(WasmTestRunnerDir)*" Condition="'$(TargetOS)' == 'Browser'" />
 
       <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->

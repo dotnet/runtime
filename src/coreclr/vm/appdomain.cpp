@@ -3043,6 +3043,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Find the list lock entry
         FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pFile);
+        bool registerNewAssembly = false;
         if (fileLock == NULL)
         {
             // Check again in case we were racing
@@ -3050,6 +3051,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             if (result == NULL)
             {
                 // We are the first one in - create the DomainAssembly
+                registerNewAssembly = true;
                 fileLock = FileLoadLock::Create(lock, pFile, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
 #ifndef CROSSGEN_COMPILE
@@ -3081,6 +3083,11 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         else
         {
             result->EnsureLoadLevel(targetLevel);
+        }
+
+        if (registerNewAssembly)
+        {
+            pFile->GetAssemblyLoadContext()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
         }
     }
     else
