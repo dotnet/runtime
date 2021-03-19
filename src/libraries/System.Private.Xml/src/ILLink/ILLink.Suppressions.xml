@@ -17,6 +17,12 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:System.Xml.Serialization.TempAssembly.GetTypeFromAssembly(System.Reflection.Assembly,System.String)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:System.Xml.Serialization.TempAssembly.LoadGeneratedAssembly(System.Type,System.String,System.Xml.Serialization.XmlSerializerImplementation@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
